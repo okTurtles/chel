@@ -18,6 +18,7 @@ export async function deploy (args: string[]) {
     if (body.contractSlim) {
       toUpload.push(path.join(dirname, body.contractSlim.file))
     }
+    toUpload.push(manifestPath)
   }
-  await upload([url, ...toUpload])
+  await upload([url, ...toUpload], true)
 }
