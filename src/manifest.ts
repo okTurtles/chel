@@ -2,20 +2,18 @@
 
 // chel manifest [--add-key <pubkey1> [--add-key <pubkey2> ...]] [--out=<manifest.json>] [--slim <contract-slim.js>] <key.json> <contract-bundle.js>
 
-import { parse } from 'https://deno.land/std@0.140.0/flags/mod.ts'
-import { basename, parse as parsePath, join } from 'https://deno.land/std@0.141.0/path/mod.ts'
+import { flags, path, colors } from './deps.ts'
 import { hash } from './hash.ts'
-import { green } from "https://deno.land/std@0.141.0/fmt/colors.ts"
 
 // import { writeAllSync } from "https://deno.land/std@0.141.0/streams/mod.ts"
 
 export async function manifest (args: string[]) {
-  const parsedArgs = parse(args)
+  const parsedArgs = flags.parse(args)
   // console.log(parsedArgs)
-  const [keyFile, contractFile] = parsedArgs._
-  const parsedFilepath = parsePath(contractFile as string)
+  const [_keyFile, contractFile] = parsedArgs._
+  const parsedFilepath = path.parse(contractFile as string)
   const { name: contractName, base: contractBasename } = parsedFilepath
-  const outFilepath = join(parsedFilepath.dir, `${contractName}.manifest.json`)
+  const outFilepath = `${contractName}.manifest.json`
   const body: {[key: string]: unknown} = {
     contract: {
       hash: await hash([contractFile as string], true),
@@ -28,7 +26,7 @@ export async function manifest (args: string[]) {
   }
   if (parsedArgs.slim) {
     body.contractSlim = {
-      file: basename(parsedArgs.slim),
+      file: path.basename(parsedArgs.slim),
       hash: await hash([parsedArgs.slim], true)
     }
   }
@@ -45,6 +43,6 @@ export async function manifest (args: string[]) {
   } else {
     const outFile = parsedArgs.out || outFilepath
     Deno.writeTextFileSync(outFile, manifest)
-    console.log(green('wrote:'), outFile)
+    console.log(colors.green('wrote:'), outFile)
   }
 }

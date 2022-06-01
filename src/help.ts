@@ -1,13 +1,13 @@
 'use strict'
 
 export function help (args?: string[]) {
-  if (!args) {
+  if (!args || args.length === 0) {
     console.log(`
       chel
       chel help [command]
       chel version
       chel keygen [--out <key.json>]
-      chel manifest [--add-key <pubkey1> [--add-key <pubkey2> ...]] [--out <manifest.json>] [--slim <contract-slim.js>] <key.json> <contract-bundle.js>
+      chel manifest [--add-key <pubkey1> [--add-key <pubkey2> ...]] [--out=<manifest.json>] [--slim <contract-slim.js>] <key.json> <contract-bundle.js>
       chel deploy <url> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
       chel upload <url> <file1> [<file2> [<file3> ...]]
       chel latestState <url> <contractID>
@@ -25,5 +25,20 @@ export function help (args?: string[]) {
 const helpDict: {[key:string]: string} = {
   help: `
     chel help [command]
+  `,
+  hash: `
+    chel hash <file>
+  `,
+  manifest: `
+    chel manifest [--add-key <pubkey1> [--add-key <pubkey2> ...]]
+                  [--out=<manifest.json>]
+                  [--slim <contract-slim.js>]
+                  <key.json> <contract-bundle.js>
+  `,
+  upload: `
+    chel upload <url> <file1> [<file2> [<file3> ...]]
+  `,
+  deploy: `
+    chel deploy <url> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
   `
 }
