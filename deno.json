@@ -1,0 +1,7 @@
+{
+  "tasks": {
+    "lint": "standard ./src",
+    "collect": "deno run --allow-read=. --allow-write=. scripts/collect.js",
+    "analyze": "deno run --allow-read=. scripts/analyze.js"
+  }
+}
