@@ -8,6 +8,8 @@
 // Deno examples:
 // https://doc.deno.land/https://deno.land/std@0.141.0/examples
 // https://examples.deno.land/
+// Third-party modules:
+// https://deno.land/x
 
 import * as commands from './commands.ts'
 

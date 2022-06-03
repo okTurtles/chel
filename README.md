@@ -5,7 +5,7 @@ chel
 chel help [command]
 chel version
 chel keygen [--out=<key.json>]
-chel manifest [--add-key <pubkey1> [--add-key <pubkey2> ...]] [--out=<manifest.json>] [--slim <contract-slim.js>] <key.json> <contract-bundle.js>
+chel manifest [-k|--key <pubkey1> [-k|--key <pubkey2> ...]] [--out=<manifest.json>] [-s|--slim <contract-slim.js>] [-v|--version <version>] <key.json> <contract-bundle.js>
 chel deploy <url> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
 chel upload <url> <file1> [<file2> [<file3> ...]]
 chel latestState <url> <contractID>
@@ -43,9 +43,10 @@ Running `chel manifest --add-key alex.json --slim contract-slim.js deploy-key.js
 ```
 {
   "head": {
-    "version": "1.0.0"
+    "manifestVersion": "1.0.0"
   },
   "body": JSON.stringify({
+    "version": "<contract version string, 'x'> by default",
     "contract": { "hash": "<hash of contract-bundle.js>", "file": "contract-bundle.js" },
     "contractSlim": { "hash": "<hash of contract-slim.js>", "file": "contract-slim.js" },
     "authors": [
@@ -77,3 +78,9 @@ Deploys manifest(s) generated with `chel manifest`.
 Automatically uploads any corresponding contract files.
 
 Outputs the hash(es) corresponding to the manifest(s).
+
+Useful command:
+
+```
+cp -r path/to/contracts/* test/assets/ && ls ./test/assets/*-slim.js | sed -En 's/.*\/(.*)-slim.js/\1/p' | xargs -I {} ./src/main.ts manifest --out=test/assets/{}.manifest.json --slim test/assets/{}-slim.js key.json test/assets/{}.js && ls ./test/assets/*.manifest.json | xargs ./src/main.ts deploy http://127.0.0.1:3000
+```

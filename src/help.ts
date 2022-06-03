@@ -7,7 +7,7 @@ export function help (args?: string[]) {
       chel help [command]
       chel version
       chel keygen [--out <key.json>]
-      chel manifest [--add-key <pubkey1> [--add-key <pubkey2> ...]] [--out=<manifest.json>] [--slim <contract-slim.js>] <key.json> <contract-bundle.js>
+      chel manifest [-k|--key <pubkey1> [-k|--key <pubkey2> ...]] [--out=<manifest.json>] [-s|--slim <contract-slim.js>] [-v|--version <version>] <key.json> <contract-bundle.js>
       chel deploy <url> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
       chel upload <url> <file1> [<file2> [<file3> ...]]
       chel latestState <url> <contractID>
@@ -30,10 +30,13 @@ const helpDict: {[key:string]: string} = {
     chel hash <file>
   `,
   manifest: `
-    chel manifest [--add-key <pubkey1> [--add-key <pubkey2> ...]]
+    chel manifest [-k|--key <pubkey1> [-k|--key <pubkey2> ...]]
                   [--out=<manifest.json>]
                   [--slim <contract-slim.js>]
+                  [-v|--version <version>]
                   <key.json> <contract-bundle.js>
+
+    If unspecified, <version> is set to 'x'.
   `,
   upload: `
     chel upload <url> <file1> [<file2> [<file3> ...]]

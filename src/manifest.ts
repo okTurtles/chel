@@ -1,6 +1,9 @@
 'use strict'
 
-// chel manifest [--add-key <pubkey1> [--add-key <pubkey2> ...]] [--out=<manifest.json>] [--slim <contract-slim.js>] <key.json> <contract-bundle.js>
+// chel manifest [-k|--key <pubkey1> [-k|--key <pubkey2> ...]] [--out=<manifest.json>] [-s|--slim <contract-slim.js>] [-v|--version <version>] <key.json> <contract-bundle.js>
+
+// TODO: consider a --copy-files option that works with --out which copies version-stamped
+//       contracts to the same folder as --out.
 
 import { flags, path, colors } from './deps.ts'
 import { hash } from './hash.ts'
@@ -13,8 +16,11 @@ export async function manifest (args: string[]) {
   const [_keyFile, contractFile] = parsedArgs._
   const parsedFilepath = path.parse(contractFile as string)
   const { name: contractName, base: contractBasename } = parsedFilepath
-  const outFilepath = `${contractName}.manifest.json`
+  const version = parsedArgs.version || parsedArgs.v || 'x'
+  const slim = parsedArgs.slim || parsedArgs.s
+  const outFilepath = `${contractName}.${version}.manifest.json`
   const body: {[key: string]: unknown} = {
+    version,
     contract: {
       hash: await hash([contractFile as string], true),
       file: contractBasename
@@ -24,14 +30,14 @@ export async function manifest (args: string[]) {
       {cipher: "algo", key: "<pubkey from alex.json>"}
     ]
   }
-  if (parsedArgs.slim) {
+  if (slim) {
     body.contractSlim = {
-      file: path.basename(parsedArgs.slim),
-      hash: await hash([parsedArgs.slim], true)
+      file: path.basename(slim),
+      hash: await hash([slim], true)
     }
   }
   const manifest = JSON.stringify({
-    head: { version: "1.0.0" },
+    head: { manifestVersion: "1.0.0" },
     body: JSON.stringify(body),
     signature: {
       key: "<which of the 'authors' keys was used to sign 'body'>",
