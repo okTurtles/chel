@@ -1,6 +1,8 @@
 {
   "tasks": {
     "lint": "standard ./src",
+    "vendor": "deno vendor -f src/main.ts scripts/compile.ts",
+    "compile": "deno run --allow-run --allow-read=. --allow-write=./dist scripts/compile.ts",
     "collect": "deno run --allow-read=. --allow-write=. scripts/collect.js",
     "analyze": "deno run --allow-read=. scripts/analyze.js"
   },
@@ -10,7 +12,7 @@
   },
   "lint": {
     "files": {
-      "exclude": ["node_modules/", "test/"]
+      "exclude": ["node_modules/", "test/", "vendor/", "dist/"]
     }
   },
 }

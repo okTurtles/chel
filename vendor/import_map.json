@@ -1,0 +1,9 @@
+{
+  "imports": {
+    "https://deno.land/": "./deno.land/",
+    "https://deno.land/std/io/util.ts": "./deno.land/std@0.144.0/io/util.ts",
+    "https://esm.sh/": "./esm.sh/",
+    "https://esm.sh/blakejs@1.2.1": "./esm.sh/blakejs@1.2.1.js",
+    "https://esm.sh/multihashes@4.0.3?bundle": "./esm.sh/multihashes@4.0.3.js"
+  }
+}

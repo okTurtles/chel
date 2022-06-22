@@ -2,13 +2,24 @@
   "name": "@chelonia/cli",
   "version": "1.0.0",
   "description": "Chelonia Command-line Interface",
-  "main": "src/index.js",
+  "main": "src/main.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "node ./scripts/install.js"
+  },
+  "bin": {
+    "chel": "./scripts/run.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/okTurtles/chel"
   },
   "author": "Greg Slepak <greg@okturtles.org>",
   "license": "AGPL-3.0",
-  "devDependencies": {
-    "eslint-config-standard": "17.0.0"
+  "files": [
+    "scripts/**/*"
+  ],
+  "dependencies": {
+    "binary-install": "1.0.1"
   }
 }
