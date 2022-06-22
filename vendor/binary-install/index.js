@@ -4,7 +4,7 @@
 // see: https://github.com/EverlastingBugstopper/binary-install/tree/main/packages/binary-install
 
 const { existsSync, mkdirSync } = require("fs")
-const { join } = require("path")
+const { join, resolve } = require("path")
 const { spawnSync } = require("child_process")
 
 const axios = require("axios")
@@ -47,7 +47,7 @@ class Binary {
     }
     this.url = url
     this.name = name
-    this.installDirectory = join(__dirname, "node_modules", ".bin")
+    this.installDirectory = resolve(join("node_modules", ".bin"))
 
     if (!existsSync(this.installDirectory)) {
       mkdirSync(this.installDirectory, { recursive: true })
