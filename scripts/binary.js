@@ -2,7 +2,7 @@
 
 const { Binary } = require('binary-install')
 const os = require('os')
-const { version, repository } = require('./package.json')
+const { version, repository } = require('../package.json')
 
 const supportedPlatforms = {
   'Windows_NT_x64': {
