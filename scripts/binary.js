@@ -37,6 +37,6 @@ const getBinary = () => {
 }
 
 module.exports = {
-  install () { getBinary().install() }
+  install () { getBinary().install() },
   run () { getBinary().run() }
 }

@@ -19,7 +19,7 @@ async function compile () {
     await $(`mkdir -vp ${dir}`)
     await $(`deno compile --allow-read --allow-write=./  --allow-net --no-remote --import-map=vendor/import_map.json -o ${dir}/${bin} --target ${arch} ./src/main.ts`)
     await $(`tar -C ./dist/tmp -czvf ./dist/chel-v${version}-${arch}.tar.gz ${arch}`)
-    await $('sha256sum dist/*.tar.gz')
+    await $(`sha256sum dist/chel-v${version}-*`)
   }
 }
 
