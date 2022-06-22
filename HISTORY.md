@@ -1,5 +1,9 @@
 # HISTORY
 
+### v1.0.6
+
+- Hack to `.gitignore`, hopefully 3rd and final attempt to get perfect binary installation working.
+
 ### v1.0.5
 
 - Second attempt.
