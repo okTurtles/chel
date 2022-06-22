@@ -47,7 +47,7 @@ class Binary {
     }
     this.url = url
     this.name = name
-    this.installDirectory = resolve(join("node_modules", ".bin"))
+    this.installDirectory = resolve("bin")
 
     if (!existsSync(this.installDirectory)) {
       mkdirSync(this.installDirectory, { recursive: true })
