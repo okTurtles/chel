@@ -1,6 +1,6 @@
 {
   "name": "@chelonia/cli",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "Chelonia Command-line Interface",
   "main": "src/main.ts",
   "scripts": {
@@ -8,7 +8,7 @@
     "postinstall": "node ./scripts/install.js"
   },
   "bin": {
-    "chel": "./node_modules/.bin/chel"
+    "chel": "./bin/chel"
   },
   "repository": {
     "type": "git",
