@@ -1,6 +1,6 @@
 {
   "name": "@chelonia/cli",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Chelonia Command-line Interface",
   "main": "src/main.ts",
   "scripts": {

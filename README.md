@@ -92,7 +92,16 @@ cp -r path/to/contracts/* test/assets/ && ls ./test/assets/*-slim.js | sed -En '
 Current release hashes will always be listed here.
 
 ```
-d7a5340bad98000560609cb7f793d6f97dcd77a0c11144ebd8067e35df13c9e0  dist/chel-v1.0.2-x86_64-apple-darwin.tar.gz
-21418877202ddc596cae3de3aa4c5dacb04de564e135916b40227bbe7d043c04  dist/chel-v1.0.2-x86_64-pc-windows-msvc.tar.gz
-93bc42ec21c6b4c679deb8924ad2c6fe381cfa2a0a4742ce8b318c7b10ea5186  dist/chel-v1.0.2-x86_64-unknown-linux-gnu.tar.gz
+f87397b39f996e78be9022dbc98c2a861dcbc202deaded9ed8c7517dc71da6bc  dist/chel-v1.0.3-x86_64-apple-darwin.tar.gz
+52f5c4a78d78fae559950b70a1d3331331e8eb3f3df9912b264feb5248ca05d5  dist/chel-v1.0.3-x86_64-pc-windows-msvc.tar.gz
+bc046848b05ed5ee4b50ac3481ef042b9f6a6e5336d18e3e16b71eb06a9875e7  dist/chel-v1.0.3-x86_64-unknown-linux-gnu.tar.gz
 ```
+
+## History
+
+See [HISTORY.md](HISTORY.md)
+
+## License
+
+[AGPL-3.0](LICENSE)
+
