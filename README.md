@@ -86,3 +86,13 @@ Useful command:
 ```
 cp -r path/to/contracts/* test/assets/ && ls ./test/assets/*-slim.js | sed -En 's/.*\/(.*)-slim.js/\1/p' | xargs -I {} ./src/main.ts manifest --out=test/assets/{}.manifest.json --slim test/assets/{}-slim.js key.json test/assets/{}.js && ls ./test/assets/*.manifest.json | xargs ./src/main.ts deploy http://127.0.0.1:3000
 ```
+
+### sha256sum
+
+Current release hashes will always be listed here.
+
+```
+747cf89fcf9ebfc6a2230604048fd1e1c3b59906d9d6e0376bf6acf1f3809486  dist/chel-v1.0.0-x86_64-apple-darwin.tar.gz
+eb18733ad1edd3672500351b72572e38b566d47eb6b62c082452c41a179ed6bc  dist/chel-v1.0.0-x86_64-pc-windows-msvc.tar.gz
+a2751c1967416e16f01e4a67e78581df62250fe751e5029037b49259586a18dc  dist/chel-v1.0.0-x86_64-unknown-linux-gnu.tar.gz
+```
