@@ -1,6 +1,6 @@
 {
   "name": "@chelonia/cli",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Chelonia Command-line Interface",
   "main": "src/main.ts",
   "scripts": {
@@ -8,7 +8,7 @@
     "postinstall": "node ./scripts/install.js"
   },
   "bin": {
-    "chel": "./scripts/run.js"
+    "chel": "./node_modules/.bin/chel"
   },
   "repository": {
     "type": "git",
@@ -17,9 +17,11 @@
   "author": "Greg Slepak <greg@okturtles.org>",
   "license": "AGPL-3.0",
   "files": [
-    "scripts/**/*"
+    "scripts/**/*", "vendor/binary-install/**/*"
   ],
   "dependencies": {
-    "binary-install": "1.0.1"
+    "axios": "0.27.2",
+    "rimraf": "3.0.2",
+    "tar": "6.1.11"
   }
 }

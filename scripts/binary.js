@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 
-const { Binary } = require('binary-install')
+// TODO: include 'binary-install' under the 'vendor/' folder and modify it so that we directly download
+//       the binary into the node_modules of this module instead of that of binary-install, so that
+//       we can directly reference it from "package.json"'s "bin" as { "chel": "./node_modules/.bin/chel" }
+//       and therefore speed up its startup time.
+
+const { Binary } = require('../vendor/binary-install/index.js')
 const os = require('os')
 const { version, repository } = require('../package.json')
 
