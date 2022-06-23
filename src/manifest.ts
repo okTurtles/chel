@@ -15,10 +15,10 @@ export async function manifest (args: string[]) {
   // console.log(parsedArgs)
   const [_keyFile, contractFile] = parsedArgs._
   const parsedFilepath = path.parse(contractFile as string)
-  const { name: contractName, base: contractBasename } = parsedFilepath
+  const { name: contractName, base: contractBasename, dir: contractDir } = parsedFilepath
   const version = parsedArgs.version || parsedArgs.v || 'x'
   const slim = parsedArgs.slim || parsedArgs.s
-  const outFilepath = `${contractName}.${version}.manifest.json`
+  const outFilepath = path.join(contractDir, `${contractName}.${version}.manifest.json`)
   const body: {[key: string]: unknown} = {
     version,
     contract: {

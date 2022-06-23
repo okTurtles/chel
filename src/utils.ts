@@ -15,7 +15,7 @@ export function isDir (path: string | URL): boolean {
   try {
     const info = Deno.lstatSync(path)
     return info.isDirectory
-  } catch (e) {
+  } catch (_e) {
     return false
   }
 }

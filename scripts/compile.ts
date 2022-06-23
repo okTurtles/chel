@@ -8,7 +8,7 @@ function $ (command: string) {
 
 const { default: { version } } = await import('../package.json', { assert: { type: "json" } })
 
-async function compile () {
+export async function compile () {
   // NOTE: Apple ARM is slower than x86 on M1!
   // https://github.com/denoland/deno/issues/14935
   const archs = ['x86_64-unknown-linux-gnu', 'x86_64-pc-windows-msvc', 'x86_64-apple-darwin' /*, 'aarch64-apple-darwin'*/]
@@ -19,9 +19,9 @@ async function compile () {
     await $(`mkdir -vp ${dir}`)
     await $(`deno compile --allow-read --allow-write=./  --allow-net --no-remote --import-map=vendor/import_map.json -o ${dir}/${bin} --target ${arch} ./src/main.ts`)
     await $(`tar -C ./dist/tmp -czvf ./dist/chel-v${version}-${arch}.tar.gz ${arch}`)
-    await $(`sha256sum dist/chel-v${version}-*`)
-    // TODO: sign the sha256sum! pipe this to gpg and include a link to your GPG key in the release notes!
   }
+  await $(`sha256sum dist/chel-v${version}-*`)
+  // TODO: sign the sha256sum! pipe this to gpg and include a link to your GPG key in the release notes!
 }
 
 try {

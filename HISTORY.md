@@ -1,5 +1,9 @@
 # HISTORY
 
+### v1.1.1
+
+- BREAKING (but nobody is using this right now so it's OK): by default `manifest` saves manifest next to the contract file instead of in CWD.
+
 ### v1.1.0
 
 - `upload` and `deploy` support using directory as destination.
