@@ -12,6 +12,7 @@ export async function hash (args: string[], internal = false) {
     console.error('please pass in a file')
     Deno.exit(1)
   }
+  // TODO: implement this in a way that chunks the input, so that we don't read the entire file into memory at once
   const file = await Deno.open(filename, {read: true})
   const myFileContent = await streams.readAll(file)
   Deno.close(file.rid)

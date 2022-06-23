@@ -76,6 +76,7 @@ class Binary {
         })
       })
       .then(() => {
+        // TODO: verify the blake32hash of the downloaded binary upon install
         console.log(`${this.name} has been installed!`)
       })
       .catch(e => {

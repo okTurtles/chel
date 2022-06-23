@@ -1,37 +1,49 @@
 'use strict'
 
 import { path, colors } from './deps.ts'
-import { blake32Hash } from './utils.ts'
+import { blake32Hash, isDir } from './utils.ts'
 
-// chel upload <url> <file1> [<file2> [<file3> ...]]
+// chel upload <url-or-dir> <file1> [<file2> [<file3> ...]]
 
 export async function upload (args: string[], internal = false) {
-  const [url, ...files] = args
+  const [urlOrDir, ...files] = args
   if (files.length === 0) throw new Error(`missing files!`)
   const uploaded = []
+  const uploaderFn = isDir(urlOrDir) ? uploadToDir : uploadToURL
   for (const filepath of files) {
-    const form = new FormData()
-    const buffer = Deno.readFileSync(filepath)
-    const hash = blake32Hash(buffer)
-    form.append('hash', hash)
-    form.append('data', new Blob([buffer]), path.basename(filepath))
-    const uploadURL = await fetch(`${url}/file`, { method: 'POST', body: form })
-      .then(handleFetchResult('text'))
-      .then(r => {
-        if (r !== `/file/${hash}`) {
-          throw new Error(`server returned bad URL: ${r}`)
-        }
-        const uploadURL = `${url}${r}`
-        if (!internal) {
-          console.log(colors.green('uploaded:'), uploadURL)
-        } else {
-          console.log(colors.green(`${path.relative('.', filepath)}:`), uploadURL)
-        }
-        return uploadURL
-      })
-    uploaded.push([filepath, uploadURL])
+    const destination = await uploaderFn(filepath, urlOrDir)
+    if (!internal) {
+      console.log(colors.green('uploaded:'), destination)
+    } else {
+      console.log(colors.green(`${path.relative('.', filepath)}:`), destination)
+    }
+    uploaded.push([filepath, destination])
   }
   return uploaded
+}
+
+function uploadToURL (filepath: string, url: string): Promise<string> {
+  const buffer = Deno.readFileSync(filepath)
+  const hash = blake32Hash(buffer)
+  const form = new FormData()
+  form.append('hash', hash)
+  form.append('data', new Blob([buffer]), path.basename(filepath))
+  return fetch(`${url}/file`, { method: 'POST', body: form })
+    .then(handleFetchResult('text'))
+    .then(r => {
+      if (r !== `/file/${hash}`) {
+        throw new Error(`server returned bad URL: ${r}`)
+      }
+      return `${url}${r}`
+    })
+}
+
+async function uploadToDir (filepath: string, dir: string) {
+  const buffer = Deno.readFileSync(filepath)
+  const hash = blake32Hash(buffer)
+  const destination = path.join(dir, hash)
+  await Deno.writeFile(destination, buffer)
+  return destination
 }
 
 type ResponseTypeFn = 'arrayBuffer' | 'blob' | 'clone' | 'formData' | 'json' | 'text'
