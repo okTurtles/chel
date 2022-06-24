@@ -26,6 +26,9 @@ const helpDict: {[key:string]: string} = {
   help: `
     chel help [command]
   `,
+  version: `
+    chel version
+  `,
   hash: `
     chel hash <file>
   `,

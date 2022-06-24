@@ -1,5 +1,9 @@
 # HISTORY
 
+### v1.1.2
+
+- Fixed errors related to `import()` usage.
+
 ### v1.1.1
 
 - BREAKING (but nobody is using this right now so it's OK): by default `manifest` saves manifest next to the contract file instead of in CWD.

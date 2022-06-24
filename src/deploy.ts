@@ -9,9 +9,8 @@ export async function deploy (args: string[]) {
   const [urlOrDir, ...manifests] = args
   if (manifests.length === 0) throw new Error('missing url or manifests!')
   const toUpload = []
-  for (const manifest of manifests) {
-    const manifestPath = path.join(Deno.cwd(), manifest)
-    const { default: json } = await import(manifestPath, { assert: { type: "json" } })
+  for (const manifestPath of manifests) {
+    const json = JSON.parse(Deno.readTextFileSync(manifestPath))
     const body = JSON.parse(json.body)
     const dirname = path.dirname(manifestPath)
     toUpload.push(path.join(dirname, body.contract.file))
