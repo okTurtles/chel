@@ -1,5 +1,4 @@
-#!/usr/bin/env -S deno run --allow-read --allow-write=./  --allow-net --no-remote --import-map=vendor/import_map.json
-"use strict";
+#!/usr/bin/env -S deno run --allow-read=./ --allow-write=./  --allow-net --no-remote --import-map=vendor/import_map.json
 var __defProp = Object.defineProperty;
 var __export = (target, all) => {
   for (var name in all)
