@@ -216,7 +216,7 @@ async function deploy(args) {
 
 // src/version.ts
 function version() {
-  console.log("1.1.2");
+  console.log("1.1.3");
 }
 
 // src/main.ts

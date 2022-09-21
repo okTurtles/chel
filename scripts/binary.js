@@ -16,6 +16,10 @@ const supportedPlatforms = {
   'Darwin_x64': {
     TARGET: 'x86_64-apple-darwin',
     BINARY_NAME: 'chel'
+  },
+  'Darwin_arm64': {
+    TARGET: 'x86_64-apple-darwin',
+    BINARY_NAME: 'chel'
   }
 }
 

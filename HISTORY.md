@@ -1,5 +1,9 @@
 # HISTORY
 
+### v1.1.3
+
+- Fixed install issue on Apple Silicon
+
 ### v1.1.2
 
 - Fixed errors related to `import()` usage.
