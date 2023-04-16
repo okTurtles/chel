@@ -10,12 +10,16 @@ import { blake32Hash, isDir } from './utils.ts'
 //       and use this everywhere so that we protect against malicious contracts
 
 export async function upload (args: string[], internal = false) {
-  const [urlOrDirOrDatabaseFile, ...files] = args
+  const [urlOrDirOrSqliteFile, ...files] = args
   if (files.length === 0) throw new Error(`missing files!`)
   const uploaded = []
-  const uploaderFn = isDir(urlOrDirOrDatabaseFile) ? uploadToDir : urlOrDirOrDatabaseFile.endsWith('.db') ? uploadToSQLite : uploadToURL
+  const uploaderFn = isDir(urlOrDirOrSqliteFile)
+    ? uploadToDir
+    : urlOrDirOrSqliteFile.endsWith('.db')
+      ? uploadToSQLite
+      : uploadToURL
   for (const filepath of files) {
-    const destination = await uploaderFn(filepath, urlOrDirOrDatabaseFile)
+    const destination = await uploaderFn(filepath, urlOrDirOrSqliteFile)
     if (!internal) {
       console.log(colors.green('uploaded:'), destination)
     } else {
@@ -55,9 +59,8 @@ async function uploadToSQLite (filepath: string, databaseFile: string) {
   initStorage(databaseFile)
   const buffer = await Deno.readFile(filepath)
   const hash = blake32Hash(buffer)
-  const key = `blob=${hash}`
-  writeData(key, buffer)
-  return key
+  writeData(`blob=${hash}`, buffer)
+  return hash
 }
 
 type ResponseTypeFn = 'arrayBuffer' | 'blob' | 'clone' | 'formData' | 'json' | 'text'

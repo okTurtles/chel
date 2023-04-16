@@ -119,7 +119,7 @@ function help(args) {
       chel keygen [--out <key.json>]
       chel manifest [-k|--key <pubkey1> [-k|--key <pubkey2> ...]] [--out=<manifest.json>] [-s|--slim <contract-slim.js>] [-v|--version <version>] <key.json> <contract-bundle.js>
       chel deploy <url-or-dir> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
-      chel upload <url-or-dir-or-sqlitefile> <file1> [<file2> [<file3> ...]]
+      chel upload <url-or-dir-or-sqlitedb> <file1> [<file2> [<file3> ...]]
       chel latestState <url> <contractID>
       chel eventsSince [--limit N] <url> <contractID> <hash>
       chel eventsBefore [--limit N] <url> <contractID> <hash>
@@ -151,7 +151,7 @@ var helpDict = {
     If unspecified, <version> is set to 'x'.
   `,
   upload: `
-    chel upload <url-or-dir-or-sqlitefile> <file1> [<file2> [<file3> ...]]
+    chel upload <url-or-dir-or-sqlitedb> <file1> [<file2> [<file3> ...]]
 
     Reqires read and write access to the destination.
   `,
@@ -207,13 +207,13 @@ async function manifest(args) {
 // src/upload.ts
 init_deps();
 async function upload(args, internal = false) {
-  const [urlOrDirOrDatabaseFile, ...files] = args;
+  const [urlOrDirOrSqliteFile, ...files] = args;
   if (files.length === 0)
     throw new Error(`missing files!`);
   const uploaded = [];
-  const uploaderFn = isDir(urlOrDirOrDatabaseFile) ? uploadToDir : urlOrDirOrDatabaseFile.endsWith(".db") ? uploadToSQLite : uploadToURL;
+  const uploaderFn = isDir(urlOrDirOrSqliteFile) ? uploadToDir : urlOrDirOrSqliteFile.endsWith(".db") ? uploadToSQLite : uploadToURL;
   for (const filepath of files) {
-    const destination = await uploaderFn(filepath, urlOrDirOrDatabaseFile);
+    const destination = await uploaderFn(filepath, urlOrDirOrSqliteFile);
     if (!internal) {
       console.log(colors.green("uploaded:"), destination);
     } else {
@@ -248,9 +248,8 @@ async function uploadToSQLite(filepath, databaseFile) {
   initStorage2(databaseFile);
   const buffer = await Deno.readFile(filepath);
   const hash2 = blake32Hash(buffer);
-  const key = `blob=${hash2}`;
-  writeData2(key, buffer);
-  return key;
+  writeData2(`blob=${hash2}`, buffer);
+  return hash2;
 }
 function handleFetchResult(type) {
   return function(r) {
@@ -263,7 +262,7 @@ function handleFetchResult(type) {
 // src/deploy.ts
 init_deps();
 async function deploy(args) {
-  const [urlOrDirOrDatabaseFile, ...manifests] = args;
+  const [urlOrDirOrSqliteFile, ...manifests] = args;
   if (manifests.length === 0)
     throw new Error("missing url or manifests!");
   const toUpload = [];
@@ -277,7 +276,7 @@ async function deploy(args) {
     }
     toUpload.push(manifestPath);
   }
-  await upload([urlOrDirOrDatabaseFile, ...toUpload], true);
+  await upload([urlOrDirOrSqliteFile, ...toUpload], true);
 }
 
 // src/version.ts
