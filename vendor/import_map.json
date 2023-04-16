@@ -1,9 +1,21 @@
 {
   "imports": {
-    "https://deno.land/": "./deno.land/",
-    "https://deno.land/std/io/util.ts": "./deno.land/std@0.144.0/io/util.ts",
-    "https://esm.sh/": "./esm.sh/",
+    "https://esm.sh/multihashes@4.0.3?bundle": "./esm.sh/multihashes@4.0.3.js",
     "https://esm.sh/blakejs@1.2.1": "./esm.sh/blakejs@1.2.1.js",
-    "https://esm.sh/multihashes@4.0.3?bundle": "./esm.sh/multihashes@4.0.3.js"
+    "https://deno.land/x/sqlite/mod.ts": "./deno.land/x/sqlite@v3.7.1/mod.ts",
+    "https://deno.land/std/io/util.ts": "./deno.land/std@0.144.0/io/util.ts",
+    "https://deno.land/": "./deno.land/",
+    "https://esm.sh/": "./esm.sh/"
+  },
+  "scopes": {
+    "./esm.sh/": {
+      "/v115/@multiformats/base-x@4.0.1/deno/base-x.mjs": "./esm.sh/v115/@multiformats/base-x@4.0.1/deno/base-x.mjs",
+      "/v115/multibase@4.0.6/deno/multibase.mjs": "./esm.sh/v115/multibase@4.0.6/deno/multibase.mjs",
+      "/v115/uint8arrays@3.1.1/deno/concat.js": "./esm.sh/v115/uint8arrays@3.1.1/deno/concat.js",
+      "/v115/uint8arrays@3.1.1/deno/from-string.js": "./esm.sh/v115/uint8arrays@3.1.1/deno/from-string.js",
+      "/v115/uint8arrays@3.1.1/deno/to-string.js": "./esm.sh/v115/uint8arrays@3.1.1/deno/to-string.js",
+      "/v115/varint@5.0.2/deno/varint.mjs": "./esm.sh/v115/varint@5.0.2/deno/varint.mjs",
+      "/v115/multiformats@9.9.0/deno/basics.js": "./esm.sh/v115/multiformats@9.9.0/deno/basics.js"
+    }
   }
 }

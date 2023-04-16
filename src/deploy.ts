@@ -6,7 +6,7 @@ import { path } from './deps.ts'
 import { upload } from './upload.ts'
 
 export async function deploy (args: string[]) {
-  const [urlOrDir, ...manifests] = args
+  const [urlOrDirOrDatabaseFile, ...manifests] = args
   if (manifests.length === 0) throw new Error('missing url or manifests!')
   const toUpload = []
   for (const manifestPath of manifests) {
@@ -19,5 +19,5 @@ export async function deploy (args: string[]) {
     }
     toUpload.push(manifestPath)
   }
-  await upload([urlOrDir, ...toUpload], true)
+  await upload([urlOrDirOrDatabaseFile, ...toUpload], true)
 }

@@ -2,8 +2,7 @@
 
 'use strict'
 
-import * as esbuild from 'https://deno.land/x/esbuild/mod.js'
-import { colors } from '../src/deps.ts'
+import { colors, esbuild } from '../src/deps.ts'
 
 const { default: { version } } = await import('../package.json', { assert: { type: "json" } })
 

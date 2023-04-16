@@ -1,4 +1,7 @@
 {
+  "imports": {
+    "https://deno.land/std/io/util.ts": "https://deno.land/std@0.144.0/io/util.ts"
+  },
   "tasks": {
     "lint": "standard ./src",
     "vendor": "deno vendor -f src/main.ts scripts/compile.ts",
