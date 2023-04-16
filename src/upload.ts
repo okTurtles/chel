@@ -3,19 +3,19 @@
 import { path, colors } from './deps.ts'
 import { blake32Hash, isDir } from './utils.ts'
 
-// chel upload <url-or-dir> <file1> [<file2> [<file3> ...]]
+// chel upload <url-or-dir-or-sqlitedb> <file1> [<file2> [<file3> ...]]
 
 // TODO: use Deno.permissions.request(...) to request permissions to the specific URL
 //       https://deno.land/manual/runtime/permission_apis
 //       and use this everywhere so that we protect against malicious contracts
 
 export async function upload (args: string[], internal = false) {
-  const [urlOrDir, ...files] = args
+  const [urlOrDirOrDatabaseFile, ...files] = args
   if (files.length === 0) throw new Error(`missing files!`)
   const uploaded = []
-  const uploaderFn = isDir(urlOrDir) ? uploadToDir : uploadToURL
+  const uploaderFn = isDir(urlOrDirOrDatabaseFile) ? uploadToDir : urlOrDirOrDatabaseFile.endsWith('.db') ? uploadToSQLite : uploadToURL
   for (const filepath of files) {
-    const destination = await uploaderFn(filepath, urlOrDir)
+    const destination = await uploaderFn(filepath, urlOrDirOrDatabaseFile)
     if (!internal) {
       console.log(colors.green('uploaded:'), destination)
     } else {
@@ -50,6 +50,16 @@ async function uploadToDir (filepath: string, dir: string) {
   return destination
 }
 
+async function uploadToSQLite (filepath: string, databaseFile: string) {
+  const { initStorage, writeData } = await import('./database-sqlite.ts')
+  initStorage(databaseFile)
+  const buffer = await Deno.readFile(filepath)
+  const hash = blake32Hash(buffer)
+  const key = `blob=${hash}`
+  writeData(key, buffer)
+  return key
+}
+
 type ResponseTypeFn = 'arrayBuffer' | 'blob' | 'clone' | 'formData' | 'json' | 'text'
 export function handleFetchResult (type: ResponseTypeFn): ((r: Response) => unknown) {
   return function (r: Response) {
@@ -57,3 +67,4 @@ export function handleFetchResult (type: ResponseTypeFn): ((r: Response) => unkn
     return r[type]()
   }
 }
+

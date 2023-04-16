@@ -18,8 +18,8 @@ import * as streams from "https://deno.land/std@0.141.0/streams/mod.ts";
 import * as fs from "https://deno.land/std@0.141.0/fs/mod.ts";
 import { default as default2 } from "https://esm.sh/multihashes@4.0.3?bundle";
 import { default as default3 } from "https://esm.sh/blakejs@1.2.1";
-import * as esbuild from "https://deno.land/x/esbuild@v0.14.47/mod.js";
 import { miniexec } from "https://deno.land/x/miniexec@1.0.0/mod.ts";
+import * as esbuild from "https://deno.land/x/esbuild@v0.14.47/mod.js";
 import * as sqlite from "https://deno.land/x/sqlite/mod.ts";
 var init_deps = __esm({
   "src/deps.ts"() {
@@ -119,7 +119,7 @@ function help(args) {
       chel keygen [--out <key.json>]
       chel manifest [-k|--key <pubkey1> [-k|--key <pubkey2> ...]] [--out=<manifest.json>] [-s|--slim <contract-slim.js>] [-v|--version <version>] <key.json> <contract-bundle.js>
       chel deploy <url-or-dir> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
-      chel upload <url-or-dir> <file1> [<file2> [<file3> ...]]
+      chel upload <url-or-dir-or-sqlitefile> <file1> [<file2> [<file3> ...]]
       chel latestState <url> <contractID>
       chel eventsSince [--limit N] <url> <contractID> <hash>
       chel eventsBefore [--limit N] <url> <contractID> <hash>
@@ -151,7 +151,9 @@ var helpDict = {
     If unspecified, <version> is set to 'x'.
   `,
   upload: `
-    chel upload <url-or-dir> <file1> [<file2> [<file3> ...]]
+    chel upload <url-or-dir-or-sqlitefile> <file1> [<file2> [<file3> ...]]
+
+    Reqires read and write access to the destination.
   `,
   deploy: `
     chel deploy <url-or-dir> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
