@@ -48,7 +48,7 @@ function initStorage(filename) {
   db = new DB(path.resolve(filename), { mode: "write" });
   databaseFilename = filename;
   console.log("Connected to the %s SQLite database.", filename);
-  writeStatement = db.prepareQuery("REPLACE INTO Data(key, value) VALUES(?, ?)");
+  writeStatement = db.prepareQuery("INSERT INTO Data(key, value) VALUES(?, ?) ON CONFLICT (key) DO NOTHING");
 }
 function writeData(key, value) {
   checkKey(key);

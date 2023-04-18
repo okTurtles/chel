@@ -4,7 +4,6 @@ const { DB } = sqlite
 
 let db = null
 let databaseFilename
-// let readStatement
 let writeStatement
 
 export function checkKey (key: string): void {
@@ -23,9 +22,9 @@ export function initStorage (filename: string): Promise<void> {
   db = new DB(path.resolve(filename), { mode: "write" })
   databaseFilename = filename
   console.log('Connected to the %s SQLite database.', filename)
-
-  // readStatement = db.prepareQuery('SELECT value FROM Data WHERE key = ?')
-  writeStatement = db.prepareQuery('REPLACE INTO Data(key, value) VALUES(?, ?)')
+  // Use "upsert" syntax to store an entry only if the key is not already in the DB.
+  // https://www.sqlite.org/lang_upsert.html
+  writeStatement = db.prepareQuery('INSERT INTO Data(key, value) VALUES(?, ?) ON CONFLICT (key) DO NOTHING')
 }
 
 export function writeData (key: string, value: Buffer | string): Promise<void> {
