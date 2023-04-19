@@ -34,32 +34,33 @@ __export(database_sqlite_exports, {
   writeData: () => writeData
 });
 function checkKey(key) {
-  if (/[/\\]/.test(key)) {
-    throw new Error(`bad key: ${key}`);
+  if (/[\x00-\x1f\x7f\t\\/]/.test(key)) {
+    throw new Error(`bad key: ${JSON.stringify(key)}`);
   }
 }
-function initStorage(filename) {
-  if (db !== null && filename === databaseFilename) {
-    return;
-  }
-  if (db !== null && filename !== databaseFilename) {
+function initStorage(sqlitedb) {
+  const filepath = path.resolve(sqlitedb);
+  if (db !== void 0) {
+    if (filepath === dbPath) {
+      return;
+    }
     db.close();
   }
-  db = new DB(path.resolve(filename), { mode: "write" });
-  databaseFilename = filename;
-  console.log("Connected to the %s SQLite database.", filename);
+  db = new DB(filepath);
+  db.execute("CREATE TABLE IF NOT EXISTS Data(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)");
+  dbPath = filepath;
+  console.log("Connected to the %s SQLite database.", filepath);
   writeStatement = db.prepareQuery("INSERT INTO Data(key, value) VALUES(?, ?) ON CONFLICT (key) DO NOTHING");
 }
 function writeData(key, value) {
   checkKey(key);
   writeStatement.execute([key, value]);
 }
-var DB, db, databaseFilename, writeStatement;
+var DB, db, dbPath, writeStatement;
 var init_database_sqlite = __esm({
   "src/database-sqlite.ts"() {
     init_deps();
     ({ DB } = sqlite);
-    db = null;
   }
 });
 
@@ -243,9 +244,9 @@ async function uploadToDir(filepath, dir) {
   await Deno.writeFile(destination, buffer);
   return destination;
 }
-async function uploadToSQLite(filepath, databaseFile) {
+async function uploadToSQLite(filepath, sqlitedb) {
   const { initStorage: initStorage2, writeData: writeData2 } = await Promise.resolve().then(() => (init_database_sqlite(), database_sqlite_exports));
-  initStorage2(databaseFile);
+  initStorage2(sqlitedb);
   const buffer = await Deno.readFile(filepath);
   const hash2 = blake32Hash(buffer);
   writeData2(`blob=${hash2}`, buffer);
