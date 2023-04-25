@@ -7,7 +7,7 @@ export { default as multihash } from 'https://esm.sh/multihashes@4.0.3?bundle'
 export { default as blake } from 'https://esm.sh/blakejs@1.2.1'
 export { miniexec as sh } from "https://deno.land/x/miniexec@1.0.0/mod.ts"
 export * as esbuild from "https://deno.land/x/esbuild@v0.14.47/mod.js"
-export * as sqlite from "https://deno.land/x/sqlite/mod.ts"
+export * as sqlite from "https://deno.land/x/sqlite@v3.7.1/mod.ts"
 // Other third-party shell libs:
 // https://deno.land/x/shell_tag
 // https://deno.land/x/violet

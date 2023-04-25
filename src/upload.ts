@@ -59,7 +59,7 @@ async function uploadToSQLite (filepath: string, sqlitedb: string) {
   initStorage(sqlitedb)
   const buffer = await Deno.readFile(filepath)
   const hash = blake32Hash(buffer)
-  writeData(`blob=${hash}`, buffer)
+  writeData(hash, buffer)
   return hash
 }
 

@@ -20,7 +20,7 @@ import { default as default2 } from "https://esm.sh/multihashes@4.0.3?bundle";
 import { default as default3 } from "https://esm.sh/blakejs@1.2.1";
 import { miniexec } from "https://deno.land/x/miniexec@1.0.0/mod.ts";
 import * as esbuild from "https://deno.land/x/esbuild@v0.14.47/mod.js";
-import * as sqlite from "https://deno.land/x/sqlite/mod.ts";
+import * as sqlite from "https://deno.land/x/sqlite@v3.7.1/mod.ts";
 var init_deps = __esm({
   "src/deps.ts"() {
   }
@@ -249,7 +249,7 @@ async function uploadToSQLite(filepath, sqlitedb) {
   initStorage2(sqlitedb);
   const buffer = await Deno.readFile(filepath);
   const hash2 = blake32Hash(buffer);
-  writeData2(`blob=${hash2}`, buffer);
+  writeData2(hash2, buffer);
   return hash2;
 }
 function handleFetchResult(type) {

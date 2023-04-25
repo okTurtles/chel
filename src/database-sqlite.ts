@@ -8,7 +8,8 @@ let writeStatement
 
 export function checkKey (key: string): void {
   // Disallow unprintable characters, slashes, and TAB.
-  if (/[\x00-\x1f\x7f\t\\/]/.test(key)) { // eslint-disable-line no-control-regex
+  // deno-lint-ignore no-control-regex
+  if (/[\x00-\x1f\x7f\t\\/]/.test(key)) {
     throw new Error(`bad key: ${JSON.stringify(key)}`)
   }
 }
