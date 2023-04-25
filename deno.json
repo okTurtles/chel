@@ -1,7 +1,4 @@
 {
-  "imports": {
-    "https://deno.land/std/io/util.ts": "https://deno.land/std@0.144.0/io/util.ts"
-  },
   "tasks": {
     "chel": "deno task build && deno run --allow-read=. --allow-write build/main.js",
     "lint": "standard ./src",
@@ -12,6 +9,7 @@
     "build": "deno run --allow-run --allow-read --allow-env --allow-write=./build --allow-net scripts/build.ts",
     "dist": "deno lint && deno task build && deno task compile"
   },
+  "importMap": "./vendor/import_map.json",
   "compilerOptions": {
     "allowJs": true,
     "strict": true
