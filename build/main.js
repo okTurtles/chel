@@ -1,9 +1,68 @@
 #!/usr/bin/env -S deno run --allow-read=./ --allow-write=./  --allow-net --no-remote --import-map=vendor/import_map.json
+"use strict";
 var __defProp = Object.defineProperty;
+var __getOwnPropNames = Object.getOwnPropertyNames;
+var __esm = (fn, res) => function __init() {
+  return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
+};
 var __export = (target, all) => {
   for (var name in all)
     __defProp(target, name, { get: all[name], enumerable: true });
 };
+
+// src/deps.ts
+import * as flags from "https://deno.land/std@0.141.0/flags/mod.ts";
+import * as path from "https://deno.land/std@0.141.0/path/mod.ts";
+import * as colors from "https://deno.land/std@0.141.0/fmt/colors.ts";
+import * as streams from "https://deno.land/std@0.141.0/streams/mod.ts";
+import * as fs from "https://deno.land/std@0.141.0/fs/mod.ts";
+import { default as default2 } from "https://esm.sh/multihashes@4.0.3?bundle";
+import { default as default3 } from "https://esm.sh/blakejs@1.2.1";
+import { miniexec } from "https://deno.land/x/miniexec@1.0.0/mod.ts";
+import * as esbuild from "https://deno.land/x/esbuild@v0.14.47/mod.js";
+import * as sqlite from "https://deno.land/x/sqlite@v3.7.1/mod.ts";
+var init_deps = __esm({
+  "src/deps.ts"() {
+  }
+});
+
+// src/database-sqlite.ts
+var database_sqlite_exports = {};
+__export(database_sqlite_exports, {
+  checkKey: () => checkKey,
+  initStorage: () => initStorage,
+  writeData: () => writeData
+});
+function checkKey(key) {
+  if (/[\x00-\x1f\x7f\t\\/]/.test(key)) {
+    throw new Error(`bad key: ${JSON.stringify(key)}`);
+  }
+}
+function initStorage(sqlitedb) {
+  const filepath = path.resolve(sqlitedb);
+  if (db !== void 0) {
+    if (filepath === dbPath) {
+      return;
+    }
+    db.close();
+  }
+  db = new DB(filepath);
+  db.execute("CREATE TABLE IF NOT EXISTS Data(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)");
+  dbPath = filepath;
+  console.log("Connected to the %s SQLite database.", filepath);
+  writeStatement = db.prepareQuery("INSERT INTO Data(key, value) VALUES(?, ?) ON CONFLICT (key) DO NOTHING");
+}
+function writeData(key, value) {
+  checkKey(key);
+  writeStatement.execute([key, value]);
+}
+var DB, db, dbPath, writeStatement;
+var init_database_sqlite = __esm({
+  "src/database-sqlite.ts"() {
+    init_deps();
+    ({ DB } = sqlite);
+  }
+});
 
 // src/commands.ts
 var commands_exports = {};
@@ -16,17 +75,11 @@ __export(commands_exports, {
   version: () => version
 });
 
-// src/deps.ts
-import * as flags from "https://deno.land/std@0.141.0/flags/mod.ts";
-import * as path from "https://deno.land/std@0.141.0/path/mod.ts";
-import * as colors from "https://deno.land/std@0.141.0/fmt/colors.ts";
-import * as streams from "https://deno.land/std@0.141.0/streams/mod.ts";
-import * as fs from "https://deno.land/std@0.141.0/fs/mod.ts";
-import { default as default2 } from "https://esm.sh/multihashes@4.0.3?bundle";
-import { default as default3 } from "https://esm.sh/blakejs@1.2.1";
-import { miniexec } from "https://deno.land/x/miniexec@1.0.0/mod.ts";
+// src/hash.ts
+init_deps();
 
 // src/utils.ts
+init_deps();
 function blake32Hash(data) {
   const uint8array = default3.blake2b(data, void 0, 32);
   return default2.toB58String(default2.encode(uint8array, "blake2b-32", 32));
@@ -66,8 +119,8 @@ function help(args) {
       chel version
       chel keygen [--out <key.json>]
       chel manifest [-k|--key <pubkey1> [-k|--key <pubkey2> ...]] [--out=<manifest.json>] [-s|--slim <contract-slim.js>] [-v|--version <version>] <key.json> <contract-bundle.js>
-      chel deploy <url-or-dir> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
-      chel upload <url-or-dir> <file1> [<file2> [<file3> ...]]
+      chel deploy <url-or-dir-or-sqlitedb> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
+      chel upload <url-or-dir-or-sqlitedb> <file1> [<file2> [<file3> ...]]
       chel latestState <url> <contractID>
       chel eventsSince [--limit N] <url> <contractID> <hash>
       chel eventsBefore [--limit N] <url> <contractID> <hash>
@@ -99,7 +152,9 @@ var helpDict = {
     If unspecified, <version> is set to 'x'.
   `,
   upload: `
-    chel upload <url-or-dir> <file1> [<file2> [<file3> ...]]
+    chel upload <url-or-dir-or-sqlitedb> <file1> [<file2> [<file3> ...]]
+
+    Reqires read and write access to the destination.
   `,
   deploy: `
     chel deploy <url-or-dir> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
@@ -107,6 +162,7 @@ var helpDict = {
 };
 
 // src/manifest.ts
+init_deps();
 async function manifest(args) {
   const parsedArgs = flags.parse(args);
   const [_keyFile, contractFile] = parsedArgs._;
@@ -150,14 +206,15 @@ async function manifest(args) {
 }
 
 // src/upload.ts
+init_deps();
 async function upload(args, internal = false) {
-  const [urlOrDir, ...files] = args;
+  const [urlOrDirOrSqliteFile, ...files] = args;
   if (files.length === 0)
     throw new Error(`missing files!`);
   const uploaded = [];
-  const uploaderFn = isDir(urlOrDir) ? uploadToDir : uploadToURL;
+  const uploaderFn = isDir(urlOrDirOrSqliteFile) ? uploadToDir : urlOrDirOrSqliteFile.endsWith(".db") ? uploadToSQLite : uploadToURL;
   for (const filepath of files) {
-    const destination = await uploaderFn(filepath, urlOrDir);
+    const destination = await uploaderFn(filepath, urlOrDirOrSqliteFile);
     if (!internal) {
       console.log(colors.green("uploaded:"), destination);
     } else {
@@ -187,6 +244,14 @@ async function uploadToDir(filepath, dir) {
   await Deno.writeFile(destination, buffer);
   return destination;
 }
+async function uploadToSQLite(filepath, sqlitedb) {
+  const { initStorage: initStorage2, writeData: writeData2 } = await Promise.resolve().then(() => (init_database_sqlite(), database_sqlite_exports));
+  initStorage2(sqlitedb);
+  const buffer = await Deno.readFile(filepath);
+  const hash2 = blake32Hash(buffer);
+  writeData2(hash2, buffer);
+  return hash2;
+}
 function handleFetchResult(type) {
   return function(r) {
     if (!r.ok)
@@ -196,8 +261,9 @@ function handleFetchResult(type) {
 }
 
 // src/deploy.ts
+init_deps();
 async function deploy(args) {
-  const [urlOrDir, ...manifests] = args;
+  const [urlOrDirOrSqliteFile, ...manifests] = args;
   if (manifests.length === 0)
     throw new Error("missing url or manifests!");
   const toUpload = [];
@@ -211,7 +277,7 @@ async function deploy(args) {
     }
     toUpload.push(manifestPath);
   }
-  await upload([urlOrDir, ...toUpload], true);
+  await upload([urlOrDirOrSqliteFile, ...toUpload], true);
 }
 
 // src/version.ts
