@@ -1,15 +1,15 @@
 {
   "tasks": {
-    "chel": "deno task build && deno run --allow-read=. --allow-write build/main.js",
+    "chel": "deno task build && deno run --import-map=./vendor/import_map.json --allow-read=. --allow-write build/main.js",
     "lint": "standard ./src",
     "vendor": "deno vendor -f src/main.ts scripts/compile.ts",
-    "compile": "deno run --allow-run --allow-read=. --allow-write=./dist scripts/compile.ts",
-    "collect": "deno run --allow-read=. --allow-write=. scripts/collect.js",
-    "analyze": "deno run --allow-read=. scripts/analyze.js",
-    "build": "deno run --allow-run --allow-read --allow-env --allow-write=./build --allow-net scripts/build.ts",
+    "compile": "deno run --import-map=./vendor/import_map.json --no-remote --allow-run --allow-read=. --allow-write=./dist scripts/compile.ts",
+    "build": "deno run --import-map=./vendor/import_map.json --no-remote --allow-run --allow-read --allow-env --allow-write=./build --allow-net scripts/build.ts",
     "dist": "deno lint && deno task build && deno task compile"
   },
-  "importMap": "./vendor/import_map.json",
+  "imports": {
+    "https://deno.land/std/io/util.ts": "https://deno.land/std@0.156.0/io/util.ts"
+  },
   "compilerOptions": {
     "allowJs": true,
     "strict": true
