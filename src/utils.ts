@@ -1,6 +1,8 @@
 'use strict'
 
-import { multihash, blake } from './deps.ts'
+import { blake, colors, multihash } from './deps.ts'
+
+const HASH_LENGTH = 50
 
 // TODO: implement a streaming hashing function for large files
 export function blake32Hash (data: string | Uint8Array): string {
@@ -11,6 +13,17 @@ export function blake32Hash (data: string | Uint8Array): string {
   return multihash.toB58String(multihash.encode(uint8array, 'blake2b-32', 32))
 }
 
+export function checkKey (key: string): void {
+  if (!isValidKey(key)) {
+    throw new Error(`bad key: ${JSON.stringify(key)}`)
+  }
+}
+
+export function exit (message: string): never {
+  console.error('[chel]', colors.red('Error:'), message)
+  Deno.exit(1)
+}
+
 export function isDir (path: string | URL): boolean {
   try {
     const info = Deno.lstatSync(path)
@@ -18,4 +31,23 @@ export function isDir (path: string | URL): boolean {
   } catch (_e) {
     return false
   }
+}
+
+export function isFile (path: string | URL): boolean {
+  try {
+    const info = Deno.lstatSync(path)
+    return info.isFile
+  } catch (_e) {
+    return false
+  }
+}
+
+export function isHashKey (key: string): boolean {
+  return key.length === HASH_LENGTH && !key.startsWith('head=') && !key.startsWith('name=')
+}
+
+export function isValidKey (key: string): boolean {
+  // Disallow unprintable characters, slashes, and TAB.
+  // deno-lint-ignore no-control-regex
+  return !/[\x00-\x1f\x7f\t\\/]/.test(key)
 }
