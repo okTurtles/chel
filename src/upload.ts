@@ -56,7 +56,7 @@ async function uploadToDir (filepath: string, dir: string) {
 
 async function uploadToSQLite (filepath: string, sqlitedb: string) {
   const { initStorage, writeData } = await import('./database-sqlite.ts')
-  initStorage(sqlitedb)
+  initStorage({dirname: path.dirname(sqlitedb), filename: path.basename(sqlitedb)})
   const buffer = await Deno.readFile(filepath)
   const hash = blake32Hash(buffer)
   writeData(hash, buffer)

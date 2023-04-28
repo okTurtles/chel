@@ -2,7 +2,7 @@
 // chel migrate --from fs --to sqlite --out ./database.db ./data
 
 import { colors, flags, path } from './deps.ts'
-import { exit, isDir, isFile, isHashKey, isValidKey } from './utils.ts'
+import { exit, isDir, isFile, isNotHashKey, isValidKey } from './utils.ts'
 
 const backends = {
   fs: await import('./database-fs.ts'),
@@ -12,15 +12,18 @@ const backends = {
 export async function migrate(args: string[]) {
   const parsedArgs = flags.parse(args)
 
-  const { from, to, out, _ = ['.'] } = parsedArgs
-  const src = path.resolve(_[0])
+  const { from, to, out } = parsedArgs
+  const src = path.resolve(String(parsedArgs._[0]) ?? '.')
 
   if (!from) exit('missing argument: --from')
   if (!to) exit('missing argument: --to')
   if (!out) exit('missing argument: --out')
 
-  if (!backends[from]) exit(`unknown storage backend: "${from}"`)
-  if (!backends[to]) exit(`unknown storage backend: "${to}"`)
+  const backendFrom = backends[from as keyof typeof backends]
+  const backendTo = backends[to as keyof typeof backends]
+  
+  if (!backendFrom) exit(`unknown storage backend: "${from}"`)
+  if (!backendTo) exit(`unknown storage backend: "${to}"`)
   if (from === to) exit('arguments --from and --to must be different')
 
   if (isDir(src)) {
@@ -40,26 +43,29 @@ export async function migrate(args: string[]) {
   }
 
   try {
-    backends[from].initStorage(from === 'fs' ? {dirname: src} : {dirname: path.dirname(src), filename: path.basename(src)})
+    await backendFrom.initStorage(from === 'fs' ? {dirname: src} : {dirname: path.dirname(src), filename: path.basename(src)})
   } catch (error) {
     exit(`could not init storage backend at "${src}" to migrate from: ${error.message}`)
   }
   try {
-    backends[to].initStorage(to === 'fs' ? {dirname: out} : {dirname: path.dirname(out), filename: path.basename(out)})
+    await backendTo.initStorage(to === 'fs' ? {dirname: out} : {dirname: path.dirname(out), filename: path.basename(out)})
   } catch (error) {
     exit(`could not init storage backend to migrate to: ${error.message}`)
   }
 
-  const keys = (await backends[from].readKeys()).filter(isValidKey)
-  const numKeys = keys.length
+  const numKeys = await backendFrom.count()
+
   let numVisitedKeys = 0
 
-  for (const key of keys) {
-    const value = await backends[from].readData(key)
-    if (isHashKey(key)) {
-      await backends[to].writeDataOnce(key, value)
+  for await (const key of backendFrom.iterKeys()) {
+    if (!isValidKey(key)) continue
+    const value = await backendFrom.readData(key)
+    // Make `deno check` happy.
+    if (value === undefined) continue
+    if (isNotHashKey(key)) {
+      await backendTo.writeData(key, value)
     } else {
-      await backends[to].writeData(key, value)
+      await backendTo.writeDataOnce(key, value)
     }
     ++numVisitedKeys
     // Prints a message roughly every 10% of progress.

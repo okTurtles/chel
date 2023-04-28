@@ -14,6 +14,7 @@ chel latestState <url> <contractID>
 chel eventsSince [--limit N] <url> <contractID> <hash>
 chel eventsBefore [--limit N] <url> <contractID> <hash>
 chel hash <file>
+chel migrate --from <backend> --to <backend> --out <dir-or-sqlitedb>
 ```
 
 Note: in many (if not all) instances, the `<url>` parameter can refer to a local folder path, in which case the command will operate without making a network connection, and will instead use the folder's contents to perform its operations.

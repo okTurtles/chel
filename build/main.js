@@ -21,6 +21,7 @@ import { default as default3 } from "https://esm.sh/blakejs@1.2.1?pin=v95";
 import { miniexec } from "https://deno.land/x/miniexec@1.0.0/mod.ts";
 import * as esbuild from "https://deno.land/x/esbuild@v0.14.47/mod.js";
 import * as sqlite from "https://deno.land/x/sqlite@v3.7.1/mod.ts";
+import {} from "https://deno.land/x/sqlite@v3.7.1/mod.ts";
 var init_deps = __esm({
   "src/deps.ts"() {
   }
@@ -56,18 +57,16 @@ function isFile(path2) {
     return false;
   }
 }
-function isHashKey(key) {
-  return key.length === HASH_LENGTH && !key.startsWith("head=") && !key.startsWith("name=");
+function isNotHashKey(key) {
+  return key.startsWith("head=") || key.startsWith("name=");
 }
 function isValidKey(key) {
   return !/[\x00-\x1f\x7f\t\\/]/.test(key);
 }
-var HASH_LENGTH;
 var init_utils = __esm({
   "src/utils.ts"() {
     "use strict";
     init_deps();
-    HASH_LENGTH = 50;
   }
 });
 
@@ -75,33 +74,59 @@ var init_utils = __esm({
 var database_fs_exports = {};
 __export(database_fs_exports, {
   clear: () => clear,
+  count: () => count,
   initStorage: () => initStorage,
+  iterKeys: () => iterKeys,
   readData: () => readData,
-  readKeys: () => readKeys,
-  writeData: () => writeData
+  writeData: () => writeData,
+  writeDataOnce: () => writeDataOnce
 });
 async function initStorage(options = {}) {
   dataFolder = path.resolve(options.dirname);
   await Deno.mkdir(dataFolder, { mode: 488, recursive: true });
 }
-function clear() {
-  return readKeys().then((keys) => Promise.all(keys.map((key) => Deno.remove(path.join(dataFolder, key)))));
+async function clear() {
+  for await (const key of iterKeys()) {
+    await Deno.remove(path.join(dataFolder, key));
+  }
+}
+async function count() {
+  let n = 0;
+  for await (const _entry of Deno.readDir(dataFolder)) {
+    n++;
+  }
+  return n;
+}
+async function* iterKeys() {
+  for await (const entry of Deno.readDir(dataFolder)) {
+    if (entry.isFile) {
+      yield entry.name;
+    }
+  }
 }
 async function readData(key) {
   checkKey(key);
-  return Deno.readFile(path.join(dataFolder, key)).catch((err) => void 0);
-}
-async function readKeys() {
-  const keys = [];
-  for await (const entry of Deno.readDir(dataFolder)) {
-    if (entry.isFile) {
-      keys.push(entry.name);
-    }
-  }
-  return keys;
+  return await Deno.readFile(path.join(dataFolder, key)).catch((_err) => void 0);
 }
 async function writeData(key, value) {
-  return (typeof value === "string" ? Deno.writeTextFile : Deno.writeFile)(path.join(dataFolder, key), value);
+  if (typeof value === "string") {
+    await Deno.writeTextFile(path.join(dataFolder, key), value);
+  } else {
+    await Deno.writeFile(path.join(dataFolder, key), value);
+  }
+}
+async function writeDataOnce(key, value) {
+  const options = { createNew: true };
+  try {
+    if (typeof value === "string") {
+      await Deno.writeTextFile(path.join(dataFolder, key), value, options);
+    } else {
+      await Deno.writeFile(path.join(dataFolder, key), value, options);
+    }
+  } catch (err) {
+    if (err.name !== "AlreadyExists")
+      throw err;
+  }
 }
 var dataFolder;
 var init_database_fs = __esm({
@@ -116,13 +141,14 @@ var init_database_fs = __esm({
 // src/database-sqlite.ts
 var database_sqlite_exports = {};
 __export(database_sqlite_exports, {
+  count: () => count2,
   initStorage: () => initStorage2,
+  iterKeys: () => iterKeys2,
   readData: () => readData2,
-  readKeys: () => readKeys2,
   writeData: () => writeData2,
-  writeDataOnce: () => writeDataOnce
+  writeDataOnce: () => writeDataOnce2
 });
-function initStorage2(options = {}) {
+async function initStorage2(options = {}) {
   const { dirname, filename } = options;
   const dataFolder2 = path.resolve(dirname);
   const filepath = path.join(dataFolder2, filename);
@@ -136,25 +162,32 @@ function initStorage2(options = {}) {
   db.execute("CREATE TABLE IF NOT EXISTS Data(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)");
   dbPath = filepath;
   console.log("Connected to the %s SQLite database.", filepath);
+  iterKeysStatement = db.prepareQuery("SELECT key FROM Data");
   readStatement = db.prepareQuery("SELECT value FROM Data WHERE key = ?");
   writeOnceStatement = db.prepareQuery("INSERT INTO Data(key, value) VALUES(?, ?) ON CONFLICT (key) DO NOTHING");
   writeStatement = db.prepareQuery("REPLACE INTO Data(key, value) VALUES(?, ?)");
 }
-function readData2(key) {
-  return readStatement.first([key])[0] ?? new Uint8Array();
+function count2() {
+  return db.query("SELECT COUNT(*) FROM Data")[0][0];
 }
-async function readKeys2() {
-  return Promise.resolve(db.query("SELECT key FROM Data").map((row) => row[0]));
+async function readData2(key) {
+  const maybeRow = readStatement.first([key]);
+  return maybeRow === void 0 ? void 0 : maybeRow[0] ?? new Uint8Array();
+}
+async function* iterKeys2() {
+  for (const row of iterKeysStatement.iter()) {
+    yield row[0];
+  }
 }
 async function writeData2(key, value) {
   checkKey(key);
   writeStatement.execute([key, value]);
 }
-async function writeDataOnce(key, value) {
+async function writeDataOnce2(key, value) {
   checkKey(key);
   writeOnceStatement.execute([key, value]);
 }
-var DB, db, dbPath, readStatement, writeOnceStatement, writeStatement;
+var DB, db, dbPath, iterKeysStatement, readStatement, writeOnceStatement, writeStatement;
 var init_database_sqlite = __esm({
   "src/database-sqlite.ts"() {
     init_deps();
@@ -298,17 +331,19 @@ var backends = {
 };
 async function migrate(args) {
   const parsedArgs = flags.parse(args);
-  const { from, to, out, _ = ["."] } = parsedArgs;
-  const src = path.resolve(_[0]);
+  const { from, to, out } = parsedArgs;
+  const src = path.resolve(String(parsedArgs._[0]) ?? ".");
   if (!from)
     exit("missing argument: --from");
   if (!to)
     exit("missing argument: --to");
   if (!out)
     exit("missing argument: --out");
-  if (!backends[from])
+  const backendFrom = backends[from];
+  const backendTo = backends[to];
+  if (!backendFrom)
     exit(`unknown storage backend: "${from}"`);
-  if (!backends[to])
+  if (!backendTo)
     exit(`unknown storage backend: "${to}"`);
   if (from === to)
     exit("arguments --from and --to must be different");
@@ -332,24 +367,27 @@ async function migrate(args) {
       exit(`argument --out ends with a slash: "${out}"`);
   }
   try {
-    backends[from].initStorage(from === "fs" ? { dirname: src } : { dirname: path.dirname(src), filename: path.basename(src) });
+    await backendFrom.initStorage(from === "fs" ? { dirname: src } : { dirname: path.dirname(src), filename: path.basename(src) });
   } catch (error) {
     exit(`could not init storage backend at "${src}" to migrate from: ${error.message}`);
   }
   try {
-    backends[to].initStorage(to === "fs" ? { dirname: out } : { dirname: path.dirname(out), filename: path.basename(out) });
+    await backendTo.initStorage(to === "fs" ? { dirname: out } : { dirname: path.dirname(out), filename: path.basename(out) });
   } catch (error) {
     exit(`could not init storage backend to migrate to: ${error.message}`);
   }
-  const keys = (await backends[from].readKeys()).filter(isValidKey);
-  const numKeys = keys.length;
+  const numKeys = await backendFrom.count();
   let numVisitedKeys = 0;
-  for (const key of keys) {
-    const value = await backends[from].readData(key);
-    if (isHashKey(key)) {
-      await backends[to].writeDataOnce(key, value);
+  for await (const key of backendFrom.iterKeys()) {
+    if (!isValidKey(key))
+      continue;
+    const value = await backendFrom.readData(key);
+    if (value === void 0)
+      continue;
+    if (isNotHashKey(key)) {
+      await backendTo.writeData(key, value);
     } else {
-      await backends[to].writeData(key, value);
+      await backendTo.writeDataOnce(key, value);
     }
     ++numVisitedKeys;
     if (numVisitedKeys % (numKeys / 10) < 1) {
@@ -401,7 +439,7 @@ async function uploadToDir(filepath, dir) {
 }
 async function uploadToSQLite(filepath, sqlitedb) {
   const { initStorage: initStorage3, writeData: writeData3 } = await Promise.resolve().then(() => (init_database_sqlite(), database_sqlite_exports));
-  initStorage3(sqlitedb);
+  initStorage3({ dirname: path.dirname(sqlitedb), filename: path.basename(sqlitedb) });
   const buffer = await Deno.readFile(filepath);
   const hash2 = blake32Hash(buffer);
   writeData3(hash2, buffer);

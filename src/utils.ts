@@ -2,8 +2,6 @@
 
 import { blake, colors, multihash } from './deps.ts'
 
-const HASH_LENGTH = 50
-
 // TODO: implement a streaming hashing function for large files
 export function blake32Hash (data: string | Uint8Array): string {
   // TODO: for node/electron, switch to: https://github.com/ludios/node-blake2
@@ -42,8 +40,8 @@ export function isFile (path: string | URL): boolean {
   }
 }
 
-export function isHashKey (key: string): boolean {
-  return key.length === HASH_LENGTH && !key.startsWith('head=') && !key.startsWith('name=')
+export function isNotHashKey (key: string): boolean {
+  return key.startsWith('head=') || key.startsWith('name=')
 }
 
 export function isValidKey (key: string): boolean {
