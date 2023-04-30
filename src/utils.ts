@@ -22,18 +22,20 @@ export function exit (message: string): never {
   Deno.exit(1)
 }
 
+// Checks whether a path points to a directory, following symlinks if any.
 export function isDir (path: string | URL): boolean {
   try {
-    const info = Deno.lstatSync(path)
+    const info = Deno.statSync(path)
     return info.isDirectory
   } catch (_e) {
     return false
   }
 }
 
+// Checks whether a path points to a file, following symlinks if any.
 export function isFile (path: string | URL): boolean {
   try {
-    const info = Deno.lstatSync(path)
+    const info = Deno.statSync(path)
     return info.isFile
   } catch (_e) {
     return false
