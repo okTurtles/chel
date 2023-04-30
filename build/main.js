@@ -242,6 +242,7 @@ function help(args) {
       chel eventsSince [--limit N] <url> <contractID> <hash>
       chel eventsBefore [--limit N] <url> <contractID> <hash>
       chel hash <file>
+      chel migrate --from <backend> --to <backend> --out <dir-or-sqlitedb> <dir-or-sqlitedb>
     `);
   } else if (helpDict[args[0]]) {
     console.log(helpDict[args[0]]);
@@ -268,10 +269,22 @@ var helpDict = {
 
     If unspecified, <version> is set to 'x'.
   `,
+  migrate: `
+    chel migrate --from (fs|sqlite) --to (fs|sqlite) --out <dir-or-sqlitedb> [<dir-or-sqlitedb>='.']
+
+    Reads all key-value pairs from a given database and creates or updates another database accordingly.
+    - The output database will be created if necessary.
+    - The source database won't be modified nor deleted.
+    - Invalid key-value pairs entries will be skipped.
+    - Arguments --from and --to must be different.
+    - The source and --out must resolve to distinct paths.
+    - Requires read and write access to the source.
+    - Requires read and write access to --out.
+  `,
   upload: `
     chel upload <url-or-dir-or-sqlitedb> <file1> [<file2> [<file3> ...]]
 
-    Reqires read and write access to the destination.
+    Requires read and write access to the destination.
   `,
   deploy: `
     chel deploy <url-or-dir> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
