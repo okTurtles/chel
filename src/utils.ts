@@ -1,14 +1,18 @@
 'use strict'
 
-import { blake, colors, multihash } from './deps.ts'
+import { base58btc, blake, colors } from './deps.ts'
 
 // TODO: implement a streaming hashing function for large files
 export function blake32Hash (data: string | Uint8Array): string {
   // TODO: for node/electron, switch to: https://github.com/ludios/node-blake2
+  // Note: Could also use `@multiformats/blake2`:
+  // import blake from "https://esm.sh/@multiformats/blake2"
+  // const uint8array = blake.blake2b.blake2b256.encode(data)
+  // Output is 32 byte long.
   const uint8array = blake.blake2b(data, undefined, 32)
-  // if you need Buffer: https://doc.deno.land/https://deno.land/std@0.141.0/io/mod.ts/~/Buffer
-  // const buf = Buffer.from(uint8array.buffer)
-  return multihash.toB58String(multihash.encode(uint8array, 'blake2b-32', 32))
+  // Previously we had to pass this 32 byte array to `multihash.encode()` to prepend
+  // four bytes of metadata before base-encoding to base58.
+  return base58btc.encode(uint8array)
 }
 
 export function checkKey (key: string): void {

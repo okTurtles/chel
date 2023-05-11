@@ -16,8 +16,8 @@ import * as path from "https://deno.land/std@0.141.0/path/mod.ts";
 import * as colors from "https://deno.land/std@0.141.0/fmt/colors.ts";
 import * as streams from "https://deno.land/std@0.141.0/streams/mod.ts";
 import * as fs from "https://deno.land/std@0.141.0/fs/mod.ts";
-import { default as default2 } from "https://esm.sh/multihashes@4.0.3?bundle&pin=v86";
-import { default as default3 } from "https://esm.sh/blakejs@1.2.1?pin=v95";
+import { base58btc } from "https://esm.sh/multiformats/bases/base58?pin=v120";
+import { default as default2 } from "https://esm.sh/blakejs@1.2.1?pin=v95";
 import { miniexec } from "https://deno.land/x/miniexec@1.0.0/mod.ts";
 import * as esbuild from "https://deno.land/x/esbuild@v0.14.47/mod.js";
 import * as sqlite from "https://deno.land/x/sqlite@v3.7.1/mod.ts";
@@ -29,8 +29,8 @@ var init_deps = __esm({
 
 // src/utils.ts
 function blake32Hash(data) {
-  const uint8array = default3.blake2b(data, void 0, 32);
-  return default2.toB58String(default2.encode(uint8array, "blake2b-32", 32));
+  const uint8array = default2.blake2b(data, void 0, 32);
+  return base58btc.encode(uint8array);
 }
 function checkKey(key) {
   if (!isValidKey(key)) {
@@ -43,7 +43,7 @@ function exit(message) {
 }
 function isDir(path2) {
   try {
-    const info = Deno.lstatSync(path2);
+    const info = Deno.statSync(path2);
     return info.isDirectory;
   } catch (_e) {
     return false;
@@ -51,7 +51,7 @@ function isDir(path2) {
 }
 function isFile(path2) {
   try {
-    const info = Deno.lstatSync(path2);
+    const info = Deno.statSync(path2);
     return info.isFile;
   } catch (_e) {
     return false;

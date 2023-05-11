@@ -1,20 +1,9 @@
 {
   "imports": {
-    "https://esm.sh/multihashes@4.0.3?bundle&pin=v86": "./esm.sh/multihashes@4.0.3.js",
+    "https://esm.sh/multiformats/bases/base58?pin=v120": "./esm.sh/multiformats@11.0.2/bases/base58.js",
     "https://esm.sh/blakejs@1.2.1?pin=v95": "./esm.sh/blakejs@1.2.1.js",
     "https://deno.land/std/io/util.ts": "./deno.land/std@0.156.0/io/util.ts",
     "https://deno.land/": "./deno.land/",
     "https://esm.sh/": "./esm.sh/"
-  },
-  "scopes": {
-    "./esm.sh/": {
-      "/v86/@multiformats/base-x@4.0.1/deno/base-x.mjs": "./esm.sh/v86/@multiformats/base-x@4.0.1/deno/base-x.mjs",
-      "/v86/uint8arrays@3.1.1/deno/concat.js": "./esm.sh/v86/uint8arrays@3.1.1/deno/concat.js",
-      "/v86/uint8arrays@3.1.1/deno/from-string.js": "./esm.sh/v86/uint8arrays@3.1.1/deno/from-string.js",
-      "/v86/uint8arrays@3.1.1/deno/to-string.js": "./esm.sh/v86/uint8arrays@3.1.1/deno/to-string.js",
-      "/v86/varint@5.0.2/deno/varint.mjs": "./esm.sh/v86/varint@5.0.2/deno/varint.mjs",
-      "/v86/multibase@4.0.6/deno/multibase.mjs": "./esm.sh/v86/multibase@4.0.6/deno/multibase.mjs",
-      "/v86/multiformats@9.9.0/deno/basics.js": "./esm.sh/v86/multiformats@9.9.0/deno/basics.js"
-    }
   }
 }
