@@ -17,7 +17,7 @@ import * as colors from "https://deno.land/std@0.141.0/fmt/colors.ts";
 import * as streams from "https://deno.land/std@0.141.0/streams/mod.ts";
 import * as fs from "https://deno.land/std@0.141.0/fs/mod.ts";
 import { base58btc } from "https://esm.sh/multiformats/bases/base58?pin=v120";
-import { default as default2 } from "https://esm.sh/blakejs@1.2.1?pin=v95";
+import { default as default2 } from "https://esm.sh/blakejs@1.2.1?pin=v120";
 import { miniexec } from "https://deno.land/x/miniexec@1.0.0/mod.ts";
 import * as esbuild from "https://deno.land/x/esbuild@v0.14.47/mod.js";
 import * as sqlite from "https://deno.land/x/sqlite@v3.7.1/mod.ts";
