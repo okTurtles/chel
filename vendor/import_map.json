@@ -2,9 +2,16 @@
   "imports": {
     "https://esm.sh/multiformats/bases/base58?pin=v120": "./esm.sh/multiformats@11.0.2/bases/base58.js",
     "https://esm.sh/multiformats?pin=v120": "./esm.sh/multiformats@11.0.2.js",
-    "https://esm.sh/blakejs@1.2.1?pin=v120": "./esm.sh/blakejs@1.2.1.js",
+    "https://esm.sh/@multiformats/blake2?pin=v120": "./esm.sh/@multiformats/blake2@1.0.13.js",
     "https://deno.land/std/io/util.ts": "./deno.land/std@0.156.0/io/util.ts",
     "https://deno.land/": "./deno.land/",
     "https://esm.sh/": "./esm.sh/"
+  },
+  "scopes": {
+    "./esm.sh/": {
+      "/v120/blakejs@1.2.1/deno/blakejs.mjs": "./esm.sh/v120/blakejs@1.2.1/deno/blakejs.mjs",
+      "/v120/multiformats@9.9.0/deno/hashes/hasher.js": "./esm.sh/v120/multiformats@9.9.0/deno/hashes/hasher.js",
+      "/v120/multiformats@9.9.0/deno/multiformats.mjs": "./esm.sh/v120/multiformats@9.9.0/deno/multiformats.mjs"
+    }
   }
 }
