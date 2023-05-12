@@ -1,9 +1,10 @@
 'use strict'
 
 import { base58btc, blake, colors } from './deps.ts'
+import { type Multibase } from './deps.ts'
 
 // TODO: implement a streaming hashing function for large files
-export function blake32Hash (data: string | Uint8Array): string {
+export function blake32Hash (data: string | Uint8Array): Multibase<'z'> {
   // TODO: for node/electron, switch to: https://github.com/ludios/node-blake2
   // Note: Could also use `@multiformats/blake2`:
   // import blake from "https://esm.sh/@multiformats/blake2"
