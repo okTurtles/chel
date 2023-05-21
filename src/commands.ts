@@ -1,9 +1,10 @@
 'use strict'
 
+export { deploy } from './deploy.ts'
+export { eventsSince } from './eventsSince.ts'
 export { hash } from './hash.ts'
 export { help } from './help.ts'
 export { manifest } from './manifest.ts'
 export { migrate } from './migrate.ts'
 export { upload } from './upload.ts'
-export { deploy } from './deploy.ts'
 export { version } from './version.ts'

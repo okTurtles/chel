@@ -72,10 +72,9 @@ var init_utils = __esm({
   }
 });
 
-// src/database-fs.ts
-var database_fs_exports = {};
-__export(database_fs_exports, {
-  clear: () => clear,
+// src/database-sqlite.ts
+var database_sqlite_exports = {};
+__export(database_sqlite_exports, {
   count: () => count,
   initStorage: () => initStorage,
   iterKeys: () => iterKeys,
@@ -84,40 +83,99 @@ __export(database_fs_exports, {
   writeDataOnce: () => writeDataOnce
 });
 async function initStorage(options = {}) {
+  const { dirname, filename } = options;
+  const dataFolder2 = path.resolve(dirname);
+  const filepath = path.join(dataFolder2, filename);
+  if (db !== void 0) {
+    if (filepath === dbPath) {
+      return;
+    }
+    db.close();
+  }
+  db = new DB(filepath);
+  db.execute("CREATE TABLE IF NOT EXISTS Data(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)");
+  dbPath = filepath;
+  console.log("Connected to the %s SQLite database.", filepath);
+  iterKeysStatement = db.prepareQuery("SELECT key FROM Data");
+  readStatement = db.prepareQuery("SELECT value FROM Data WHERE key = ?");
+  writeOnceStatement = db.prepareQuery("INSERT INTO Data(key, value) VALUES(?, ?) ON CONFLICT (key) DO NOTHING");
+  writeStatement = db.prepareQuery("REPLACE INTO Data(key, value) VALUES(?, ?)");
+}
+function count() {
+  return db.query("SELECT COUNT(*) FROM Data")[0][0];
+}
+async function readData(key) {
+  const maybeRow = readStatement.first([key]);
+  return maybeRow === void 0 ? void 0 : maybeRow[0] ?? new Uint8Array();
+}
+async function* iterKeys() {
+  for (const row of iterKeysStatement.iter()) {
+    yield row[0];
+  }
+}
+async function writeData(key, value) {
+  checkKey(key);
+  writeStatement.execute([key, value]);
+}
+async function writeDataOnce(key, value) {
+  checkKey(key);
+  writeOnceStatement.execute([key, value]);
+}
+var DB, db, dbPath, iterKeysStatement, readStatement, writeOnceStatement, writeStatement;
+var init_database_sqlite = __esm({
+  "src/database-sqlite.ts"() {
+    init_deps();
+    init_utils();
+    ({ DB } = sqlite);
+  }
+});
+
+// src/database-fs.ts
+var database_fs_exports = {};
+__export(database_fs_exports, {
+  clear: () => clear,
+  count: () => count2,
+  initStorage: () => initStorage2,
+  iterKeys: () => iterKeys2,
+  readData: () => readData2,
+  writeData: () => writeData2,
+  writeDataOnce: () => writeDataOnce2
+});
+async function initStorage2(options = {}) {
   dataFolder = path.resolve(options.dirname);
   await Deno.mkdir(dataFolder, { mode: 488, recursive: true });
 }
 async function clear() {
-  for await (const key of iterKeys()) {
+  for await (const key of iterKeys2()) {
     await Deno.remove(path.join(dataFolder, key));
   }
 }
-async function count() {
+async function count2() {
   let n = 0;
   for await (const _entry of Deno.readDir(dataFolder)) {
     n++;
   }
   return n;
 }
-async function* iterKeys() {
+async function* iterKeys2() {
   for await (const entry of Deno.readDir(dataFolder)) {
     if (entry.isFile) {
       yield entry.name;
     }
   }
 }
-async function readData(key) {
+async function readData2(key) {
   checkKey(key);
   return await Deno.readFile(path.join(dataFolder, key)).catch((_err) => void 0);
 }
-async function writeData(key, value) {
+async function writeData2(key, value) {
   if (typeof value === "string") {
     await Deno.writeTextFile(path.join(dataFolder, key), value);
   } else {
     await Deno.writeFile(path.join(dataFolder, key), value);
   }
 }
-async function writeDataOnce(key, value) {
+async function writeDataOnce2(key, value) {
   const options = { createNew: true };
   try {
     if (typeof value === "string") {
@@ -140,68 +198,11 @@ var init_database_fs = __esm({
   }
 });
 
-// src/database-sqlite.ts
-var database_sqlite_exports = {};
-__export(database_sqlite_exports, {
-  count: () => count2,
-  initStorage: () => initStorage2,
-  iterKeys: () => iterKeys2,
-  readData: () => readData2,
-  writeData: () => writeData2,
-  writeDataOnce: () => writeDataOnce2
-});
-async function initStorage2(options = {}) {
-  const { dirname, filename } = options;
-  const dataFolder2 = path.resolve(dirname);
-  const filepath = path.join(dataFolder2, filename);
-  if (db !== void 0) {
-    if (filepath === dbPath) {
-      return;
-    }
-    db.close();
-  }
-  db = new DB(filepath);
-  db.execute("CREATE TABLE IF NOT EXISTS Data(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)");
-  dbPath = filepath;
-  console.log("Connected to the %s SQLite database.", filepath);
-  iterKeysStatement = db.prepareQuery("SELECT key FROM Data");
-  readStatement = db.prepareQuery("SELECT value FROM Data WHERE key = ?");
-  writeOnceStatement = db.prepareQuery("INSERT INTO Data(key, value) VALUES(?, ?) ON CONFLICT (key) DO NOTHING");
-  writeStatement = db.prepareQuery("REPLACE INTO Data(key, value) VALUES(?, ?)");
-}
-function count2() {
-  return db.query("SELECT COUNT(*) FROM Data")[0][0];
-}
-async function readData2(key) {
-  const maybeRow = readStatement.first([key]);
-  return maybeRow === void 0 ? void 0 : maybeRow[0] ?? new Uint8Array();
-}
-async function* iterKeys2() {
-  for (const row of iterKeysStatement.iter()) {
-    yield row[0];
-  }
-}
-async function writeData2(key, value) {
-  checkKey(key);
-  writeStatement.execute([key, value]);
-}
-async function writeDataOnce2(key, value) {
-  checkKey(key);
-  writeOnceStatement.execute([key, value]);
-}
-var DB, db, dbPath, iterKeysStatement, readStatement, writeOnceStatement, writeStatement;
-var init_database_sqlite = __esm({
-  "src/database-sqlite.ts"() {
-    init_deps();
-    init_utils();
-    ({ DB } = sqlite);
-  }
-});
-
 // src/commands.ts
 var commands_exports = {};
 __export(commands_exports, {
   deploy: () => deploy,
+  eventsSince: () => eventsSince,
   hash: () => hash,
   help: () => help,
   manifest: () => manifest,
@@ -209,6 +210,158 @@ __export(commands_exports, {
   upload: () => upload,
   version: () => version
 });
+
+// src/deploy.ts
+init_deps();
+
+// src/upload.ts
+init_deps();
+init_utils();
+async function upload(args, internal = false) {
+  const [urlOrDirOrSqliteFile, ...files] = args;
+  if (files.length === 0)
+    throw new Error(`missing files!`);
+  const uploaded = [];
+  const uploaderFn = isDir(urlOrDirOrSqliteFile) ? uploadToDir : urlOrDirOrSqliteFile.endsWith(".db") ? uploadToSQLite : uploadToURL;
+  for (const filepath of files) {
+    const destination = await uploaderFn(filepath, urlOrDirOrSqliteFile);
+    if (!internal) {
+      console.log(colors.green("uploaded:"), destination);
+    } else {
+      console.log(colors.green(`${path.relative(".", filepath)}:`), destination);
+    }
+    uploaded.push([filepath, destination]);
+  }
+  return uploaded;
+}
+function uploadToURL(filepath, url) {
+  const buffer = Deno.readFileSync(filepath);
+  const hash2 = blake32Hash(buffer);
+  const form = new FormData();
+  form.append("hash", hash2);
+  form.append("data", new Blob([buffer]), path.basename(filepath));
+  return fetch(`${url}/file`, { method: "POST", body: form }).then(handleFetchResult("text")).then((r) => {
+    if (r !== `/file/${hash2}`) {
+      throw new Error(`server returned bad URL: ${r}`);
+    }
+    return `${url}${r}`;
+  });
+}
+async function uploadToDir(filepath, dir) {
+  const buffer = Deno.readFileSync(filepath);
+  const hash2 = blake32Hash(buffer);
+  const destination = path.join(dir, hash2);
+  await Deno.writeFile(destination, buffer);
+  return destination;
+}
+async function uploadToSQLite(filepath, sqlitedb) {
+  const { initStorage: initStorage3, writeData: writeData3 } = await Promise.resolve().then(() => (init_database_sqlite(), database_sqlite_exports));
+  initStorage3({ dirname: path.dirname(sqlitedb), filename: path.basename(sqlitedb) });
+  const buffer = await Deno.readFile(filepath);
+  const hash2 = blake32Hash(buffer);
+  writeData3(hash2, buffer);
+  return hash2;
+}
+function handleFetchResult(type) {
+  return function(r) {
+    if (!r.ok)
+      throw new Error(`${r.status}: ${r.statusText}`);
+    return r[type]();
+  };
+}
+
+// src/deploy.ts
+async function deploy(args) {
+  const [urlOrDirOrSqliteFile, ...manifests] = args;
+  if (manifests.length === 0)
+    throw new Error("missing url or manifests!");
+  const toUpload = [];
+  for (const manifestPath of manifests) {
+    const json = JSON.parse(Deno.readTextFileSync(manifestPath));
+    const body = JSON.parse(json.body);
+    const dirname = path.dirname(manifestPath);
+    toUpload.push(path.join(dirname, body.contract.file));
+    if (body.contractSlim) {
+      toUpload.push(path.join(dirname, body.contractSlim.file));
+    }
+    toUpload.push(manifestPath);
+  }
+  await upload([urlOrDirOrSqliteFile, ...toUpload], true);
+}
+
+// src/eventsSince.ts
+init_deps();
+init_utils();
+var headPrefix = "head=";
+function isURL(arg) {
+  return URL.canParse(arg) && Boolean(new URL(arg).host);
+}
+var backends = {
+  fs: await Promise.resolve().then(() => (init_database_fs(), database_fs_exports)),
+  sqlite: await Promise.resolve().then(() => (init_database_sqlite(), database_sqlite_exports))
+};
+var backendFrom;
+async function eventsSince(args) {
+  const parsedArgs = flags.parse(args);
+  const limit = Number.parseInt(parsedArgs.limit ?? 50);
+  const [urlOrLocalPath, contractID, hash2] = parsedArgs._;
+  const src = urlOrLocalPath;
+  let from;
+  if (isDir(src)) {
+    from = "fs";
+  } else if (isFile(src)) {
+    from = "sqlite";
+  } else if (isURL(src)) {
+    from = "remote";
+  } else {
+    exit(`invalid argument: "${src}"`);
+  }
+  backendFrom = backends[from];
+  try {
+    await backendFrom.initStorage(from === "fs" ? { dirname: src } : { dirname: path.dirname(src), filename: path.basename(src) });
+  } catch (error) {
+    exit(`could not init storage backend at "${src}" to fetch events from: ${error.message}`);
+  }
+  const messages = await getMessagesSince(contractID, hash2, limit);
+  console.log(Deno.inspect(messages.map((s) => JSON.parse(s)), { colors: true, strAbbreviateSize: Infinity }));
+}
+var getMessage = async function(hash2) {
+  const value = await readString(hash2);
+  if (!value)
+    throw new Error(`no entry for ${hash2}!`);
+  return JSON.parse(value).message;
+};
+async function readString(key) {
+  const rv = await backendFrom.readData(key);
+  if (rv === void 0)
+    return void 0;
+  return typeof rv === "string" ? rv : new TextDecoder().decode(rv);
+}
+async function getMessagesSince(contractID, since, limit = 50) {
+  let currentHEAD = await readString(`${headPrefix}${contractID}`);
+  const entries = [];
+  try {
+    while (true) {
+      if (currentHEAD === void 0) {
+        throw new Deno.errors.NotFound(`entry ${contractID} doesn't exist!`);
+      }
+      const entry = await getMessage(currentHEAD);
+      if (!entry) {
+        console.error(`[chel] entry ${currentHEAD} no longer exists.`);
+        break;
+      }
+      entries.push(entry);
+      if (currentHEAD === since || since === contractID && entries.length === limit) {
+        break;
+      } else {
+        currentHEAD = JSON.parse(entry).previousHEAD;
+      }
+    }
+  } catch (error) {
+    console.error(`[chel] ${error.message}:`, error);
+  }
+  return entries;
+}
 
 // src/hash.ts
 init_deps();
@@ -340,7 +493,7 @@ async function manifest(args) {
 // src/migrate.ts
 init_deps();
 init_utils();
-var backends = {
+var backends2 = {
   fs: await Promise.resolve().then(() => (init_database_fs(), database_fs_exports)),
   sqlite: await Promise.resolve().then(() => (init_database_sqlite(), database_sqlite_exports))
 };
@@ -354,9 +507,9 @@ async function migrate(args) {
     exit("missing argument: --to");
   if (!out)
     exit("missing argument: --out");
-  const backendFrom = backends[from];
-  const backendTo = backends[to];
-  if (!backendFrom)
+  const backendFrom2 = backends2[from];
+  const backendTo = backends2[to];
+  if (!backendFrom2)
     exit(`unknown storage backend: "${from}"`);
   if (!backendTo)
     exit(`unknown storage backend: "${to}"`);
@@ -382,7 +535,7 @@ async function migrate(args) {
       exit(`argument --out ends with a slash: "${out}"`);
   }
   try {
-    await backendFrom.initStorage(from === "fs" ? { dirname: src } : { dirname: path.dirname(src), filename: path.basename(src) });
+    await backendFrom2.initStorage(from === "fs" ? { dirname: src } : { dirname: path.dirname(src), filename: path.basename(src) });
   } catch (error) {
     exit(`could not init storage backend at "${src}" to migrate from: ${error.message}`);
   }
@@ -391,12 +544,12 @@ async function migrate(args) {
   } catch (error) {
     exit(`could not init storage backend to migrate to: ${error.message}`);
   }
-  const numKeys = await backendFrom.count();
+  const numKeys = await backendFrom2.count();
   let numVisitedKeys = 0;
-  for await (const key of backendFrom.iterKeys()) {
+  for await (const key of backendFrom2.iterKeys()) {
     if (!isValidKey(key))
       continue;
-    const value = await backendFrom.readData(key);
+    const value = await backendFrom2.readData(key);
     if (value === void 0)
       continue;
     if (isNotHashKey(key)) {
@@ -410,82 +563,6 @@ async function migrate(args) {
     }
   }
   numKeys && console.log(`[chel] ${colors.green("Migrated:")} ${numKeys} entries`);
-}
-
-// src/upload.ts
-init_deps();
-init_utils();
-async function upload(args, internal = false) {
-  const [urlOrDirOrSqliteFile, ...files] = args;
-  if (files.length === 0)
-    throw new Error(`missing files!`);
-  const uploaded = [];
-  const uploaderFn = isDir(urlOrDirOrSqliteFile) ? uploadToDir : urlOrDirOrSqliteFile.endsWith(".db") ? uploadToSQLite : uploadToURL;
-  for (const filepath of files) {
-    const destination = await uploaderFn(filepath, urlOrDirOrSqliteFile);
-    if (!internal) {
-      console.log(colors.green("uploaded:"), destination);
-    } else {
-      console.log(colors.green(`${path.relative(".", filepath)}:`), destination);
-    }
-    uploaded.push([filepath, destination]);
-  }
-  return uploaded;
-}
-function uploadToURL(filepath, url) {
-  const buffer = Deno.readFileSync(filepath);
-  const hash2 = blake32Hash(buffer);
-  const form = new FormData();
-  form.append("hash", hash2);
-  form.append("data", new Blob([buffer]), path.basename(filepath));
-  return fetch(`${url}/file`, { method: "POST", body: form }).then(handleFetchResult("text")).then((r) => {
-    if (r !== `/file/${hash2}`) {
-      throw new Error(`server returned bad URL: ${r}`);
-    }
-    return `${url}${r}`;
-  });
-}
-async function uploadToDir(filepath, dir) {
-  const buffer = Deno.readFileSync(filepath);
-  const hash2 = blake32Hash(buffer);
-  const destination = path.join(dir, hash2);
-  await Deno.writeFile(destination, buffer);
-  return destination;
-}
-async function uploadToSQLite(filepath, sqlitedb) {
-  const { initStorage: initStorage3, writeData: writeData3 } = await Promise.resolve().then(() => (init_database_sqlite(), database_sqlite_exports));
-  initStorage3({ dirname: path.dirname(sqlitedb), filename: path.basename(sqlitedb) });
-  const buffer = await Deno.readFile(filepath);
-  const hash2 = blake32Hash(buffer);
-  writeData3(hash2, buffer);
-  return hash2;
-}
-function handleFetchResult(type) {
-  return function(r) {
-    if (!r.ok)
-      throw new Error(`${r.status}: ${r.statusText}`);
-    return r[type]();
-  };
-}
-
-// src/deploy.ts
-init_deps();
-async function deploy(args) {
-  const [urlOrDirOrSqliteFile, ...manifests] = args;
-  if (manifests.length === 0)
-    throw new Error("missing url or manifests!");
-  const toUpload = [];
-  for (const manifestPath of manifests) {
-    const json = JSON.parse(Deno.readTextFileSync(manifestPath));
-    const body = JSON.parse(json.body);
-    const dirname = path.dirname(manifestPath);
-    toUpload.push(path.join(dirname, body.contract.file));
-    if (body.contractSlim) {
-      toUpload.push(path.join(dirname, body.contractSlim.file));
-    }
-    toUpload.push(manifestPath);
-  }
-  await upload([urlOrDirOrSqliteFile, ...toUpload], true);
 }
 
 // src/version.ts
