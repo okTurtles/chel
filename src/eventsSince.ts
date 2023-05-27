@@ -17,7 +17,7 @@ const backends = {
 
 let backendFrom: typeof backends.sqlite | typeof backends.fs
 
-export async function eventsSince (args: string[]): Promise<string[]> {
+export async function eventsSince (args: string[]): Promise<void> {
   const parsedArgs = flags.parse(args)
 
   const limit = Number.parseInt(parsedArgs.limit ?? 50)
@@ -37,12 +37,13 @@ export async function eventsSince (args: string[]): Promise<string[]> {
 
   backendFrom = backends[from as keyof typeof backends]
   try {
-    await backendFrom.initStorage(from === 'fs' ? {dirname: src} : {dirname: path.dirname(src), filename: path.basename(src)})
+    const options = { internal: true, ...(from === 'fs' ? { dirname: src } : { dirname: path.dirname(src), filename: path.basename(src) }) }
+    await backendFrom.initStorage(options)
   } catch (error) {
     exit(`could not init storage backend at "${src}" to fetch events from: ${error.message}`)
   }
   const messages = await getMessagesSince(contractID, hash, limit)
-  console.log(Deno.inspect(messages.map(s => JSON.parse(s)), { colors: true, strAbbreviateSize: Infinity }))
+  console.log(JSON.stringify(messages.map(s => JSON.parse(s)), null, 2))
 }
 
 const getMessage = async function (hash: string): Promise<string> {
@@ -81,5 +82,5 @@ export async function getMessagesSince (contractID: string, since: string, limit
   } catch (error) {
     console.error(`[chel] ${error.message}:`, error)
   }
-  return entries
+  return entries.reverse()
 }

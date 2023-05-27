@@ -95,7 +95,9 @@ async function initStorage(options = {}) {
   db = new DB(filepath);
   db.execute("CREATE TABLE IF NOT EXISTS Data(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)");
   dbPath = filepath;
-  console.log("Connected to the %s SQLite database.", filepath);
+  if (!options.internal) {
+    console.log("Connected to the %s SQLite database.", filepath);
+  }
   iterKeysStatement = db.prepareQuery("SELECT key FROM Data");
   readStatement = db.prepareQuery("SELECT value FROM Data WHERE key = ?");
   writeOnceStatement = db.prepareQuery("INSERT INTO Data(key, value) VALUES(?, ?) ON CONFLICT (key) DO NOTHING");
@@ -318,12 +320,13 @@ async function eventsSince(args) {
   }
   backendFrom = backends[from];
   try {
-    await backendFrom.initStorage(from === "fs" ? { dirname: src } : { dirname: path.dirname(src), filename: path.basename(src) });
+    const options = { internal: true, ...from === "fs" ? { dirname: src } : { dirname: path.dirname(src), filename: path.basename(src) } };
+    await backendFrom.initStorage(options);
   } catch (error) {
     exit(`could not init storage backend at "${src}" to fetch events from: ${error.message}`);
   }
   const messages = await getMessagesSince(contractID, hash2, limit);
-  console.log(Deno.inspect(messages.map((s) => JSON.parse(s)), { colors: true, strAbbreviateSize: Infinity }));
+  console.log(JSON.stringify(messages.map((s) => JSON.parse(s)), null, 2));
 }
 var getMessage = async function(hash2) {
   const value = await readString(hash2);
@@ -360,7 +363,7 @@ async function getMessagesSince(contractID, since, limit = 50) {
   } catch (error) {
     console.error(`[chel] ${error.message}:`, error);
   }
-  return entries;
+  return entries.reverse();
 }
 
 // src/hash.ts
