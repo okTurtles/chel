@@ -1,7 +1,7 @@
 'use strict'
 // chel eventsSince [--limit N] <url-or-localpath> <contractID> <hash>
 
-import { flags, path } from './deps.ts'
+import { base64, flags, path } from './deps.ts'
 import { exit, isDir, isFile } from './utils.ts'
 
 const headPrefix = 'head='
@@ -21,7 +21,7 @@ export async function eventsSince (args: string[]): Promise<void> {
   const parsedArgs = flags.parse(args)
 
   const limit = Number.parseInt(parsedArgs.limit ?? 50)
-  const [urlOrLocalPath, contractID, hash] = parsedArgs._
+  const [urlOrLocalPath, contractID, hash] = parsedArgs._.map(String)
   const src = urlOrLocalPath
 
   let from
@@ -35,6 +35,11 @@ export async function eventsSince (args: string[]): Promise<void> {
     exit(`invalid argument: "${src}"`)
   }
 
+  if (from === 'remote') {
+    const messages = await getRemoteMessagesSince(src, contractID, hash, limit)
+    console.log(JSON.stringify(messages.reverse().map(s => JSON.parse(s)), null, 2))
+    return
+  }
   backendFrom = backends[from as keyof typeof backends]
   try {
     const options = { internal: true, ...(from === 'fs' ? { dirname: src } : { dirname: path.dirname(src), filename: path.basename(src) }) }
@@ -43,22 +48,16 @@ export async function eventsSince (args: string[]): Promise<void> {
     exit(`could not init storage backend at "${src}" to fetch events from: ${error.message}`)
   }
   const messages = await getMessagesSince(contractID, hash, limit)
-  console.log(JSON.stringify(messages.map(s => JSON.parse(s)), null, 2))
+  console.log(JSON.stringify(messages.reverse().map(s => JSON.parse(s)), null, 2))
 }
 
-const getMessage = async function (hash: string): Promise<string> {
+async function getMessage (hash: string): Promise<string> {
   const value = await readString(hash)
   if (!value) throw new Error(`no entry for ${hash}!`)
   return JSON.parse(value).message
 }
 
-async function readString (key: string): Promise<string|void> {
-  const rv = await backendFrom.readData(key)
-  if (rv === undefined) return undefined
-  return typeof rv === 'string' ? rv : new TextDecoder().decode(rv)
-}
-
-export async function getMessagesSince (contractID: string, since: string, limit = 50): Promise<string[]> {
+async function getMessagesSince (contractID: string, since: string, limit = 50): Promise<string[]> {
   let currentHEAD: string|void = await readString(`${headPrefix}${contractID}`)
 
   const entries = []
@@ -82,5 +81,16 @@ export async function getMessagesSince (contractID: string, since: string, limit
   } catch (error) {
     console.error(`[chel] ${error.message}:`, error)
   }
-  return entries.reverse()
+  return entries
+}
+
+async function getRemoteMessagesSince (src: string = 'http://localhost:8000', contractID: string, since: string, limit = 50): Promise<string[]> {
+  const b64messages: string[] = await fetch(`${src}/eventsSince/${contractID}/${since}`).then(r => r.json())
+  return b64messages.map(b64str => JSON.parse(new TextDecoder().decode(base64.decode(b64str))).message)
+}
+
+async function readString (key: string): Promise<string|void> {
+  const rv = await backendFrom.readData(key)
+  if (rv === undefined) return undefined
+  return typeof rv === 'string' ? rv : new TextDecoder().decode(rv)
 }

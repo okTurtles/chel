@@ -16,6 +16,7 @@ import * as path from "https://deno.land/std@0.141.0/path/mod.ts";
 import * as colors from "https://deno.land/std@0.141.0/fmt/colors.ts";
 import * as streams from "https://deno.land/std@0.141.0/streams/mod.ts";
 import * as fs from "https://deno.land/std@0.141.0/fs/mod.ts";
+import * as base64 from "https://deno.land/std@0.141.0/encoding/base64.ts";
 import { base58btc } from "https://esm.sh/multiformats/bases/base58?pin=v120";
 import {} from "https://esm.sh/multiformats?pin=v120";
 import { default as default2 } from "https://esm.sh/@multiformats/blake2?pin=v120";
@@ -306,7 +307,7 @@ var backendFrom;
 async function eventsSince(args) {
   const parsedArgs = flags.parse(args);
   const limit = Number.parseInt(parsedArgs.limit ?? 50);
-  const [urlOrLocalPath, contractID, hash2] = parsedArgs._;
+  const [urlOrLocalPath, contractID, hash2] = parsedArgs._.map(String);
   const src = urlOrLocalPath;
   let from;
   if (isDir(src)) {
@@ -318,6 +319,11 @@ async function eventsSince(args) {
   } else {
     exit(`invalid argument: "${src}"`);
   }
+  if (from === "remote") {
+    const messages2 = await getRemoteMessagesSince(src, contractID, hash2, limit);
+    console.log(JSON.stringify(messages2.reverse().map((s) => JSON.parse(s)), null, 2));
+    return;
+  }
   backendFrom = backends[from];
   try {
     const options = { internal: true, ...from === "fs" ? { dirname: src } : { dirname: path.dirname(src), filename: path.basename(src) } };
@@ -326,19 +332,13 @@ async function eventsSince(args) {
     exit(`could not init storage backend at "${src}" to fetch events from: ${error.message}`);
   }
   const messages = await getMessagesSince(contractID, hash2, limit);
-  console.log(JSON.stringify(messages.map((s) => JSON.parse(s)), null, 2));
+  console.log(JSON.stringify(messages.reverse().map((s) => JSON.parse(s)), null, 2));
 }
-var getMessage = async function(hash2) {
+async function getMessage(hash2) {
   const value = await readString(hash2);
   if (!value)
     throw new Error(`no entry for ${hash2}!`);
   return JSON.parse(value).message;
-};
-async function readString(key) {
-  const rv = await backendFrom.readData(key);
-  if (rv === void 0)
-    return void 0;
-  return typeof rv === "string" ? rv : new TextDecoder().decode(rv);
 }
 async function getMessagesSince(contractID, since, limit = 50) {
   let currentHEAD = await readString(`${headPrefix}${contractID}`);
@@ -363,7 +363,17 @@ async function getMessagesSince(contractID, since, limit = 50) {
   } catch (error) {
     console.error(`[chel] ${error.message}:`, error);
   }
-  return entries.reverse();
+  return entries;
+}
+async function getRemoteMessagesSince(src = "http://localhost:8000", contractID, since, limit = 50) {
+  const b64messages = await fetch(`${src}/eventsSince/${contractID}/${since}`).then((r) => r.json());
+  return b64messages.map((b64str) => JSON.parse(new TextDecoder().decode(base64.decode(b64str))).message);
+}
+async function readString(key) {
+  const rv = await backendFrom.readData(key);
+  if (rv === void 0)
+    return void 0;
+  return typeof rv === "string" ? rv : new TextDecoder().decode(rv);
 }
 
 // src/hash.ts
