@@ -298,47 +298,35 @@ async function deploy(args) {
 // src/eventsSince.ts
 init_deps();
 init_utils();
+var backend;
+var backends = {
+  fs: await Promise.resolve().then(() => (init_database_fs(), database_fs_exports)),
+  sqlite: await Promise.resolve().then(() => (init_database_sqlite(), database_sqlite_exports))
+};
 var defaultLimit = 50;
 var headPrefix = "head=";
 function isURL(arg) {
   return URL.canParse(arg) && Boolean(new URL(arg).host);
 }
-var backends = {
-  fs: await Promise.resolve().then(() => (init_database_fs(), database_fs_exports)),
-  sqlite: await Promise.resolve().then(() => (init_database_sqlite(), database_sqlite_exports))
-};
-var backendFrom;
 async function eventsSince(args) {
   const parsedArgs = flags.parse(args);
   const limit = Number(parsedArgs.limit ?? defaultLimit);
+  console.log(limit);
   if (!isArrayLength(limit))
     exit("argument --limit must be a valid array length");
   const [urlOrLocalPath, contractID, hash2] = parsedArgs._.map(String);
   const src = urlOrLocalPath;
-  let from;
-  if (isDir(src)) {
-    from = "fs";
-  } else if (isFile(src)) {
-    from = "sqlite";
-  } else if (isURL(src)) {
-    from = "remote";
-  } else {
-    exit(`invalid argument: "${src}"`);
-  }
-  if (from === "remote") {
-    const messages2 = await getRemoteMessagesSince(src, contractID, hash2, limit);
-    console.log(JSON.stringify(messages2.reverse().map((s) => JSON.parse(s)), null, 2));
-    return;
-  }
-  backendFrom = backends[from];
   try {
-    const options = { internal: true, ...from === "fs" ? { dirname: src } : { dirname: path.dirname(src), filename: path.basename(src) } };
-    await backendFrom.initStorage(options);
+    let messages;
+    if (isURL(src)) {
+      messages = await getRemoteMessagesSince(src, contractID, hash2, limit);
+    } else {
+      messages = await getMessagesSince(src, contractID, hash2, limit);
+    }
+    console.log(JSON.stringify(messages.map((s) => JSON.parse(s)), null, 2));
   } catch (error) {
-    exit(`could not init storage backend at "${src}" to fetch events from: ${error.message}`);
+    exit(error.message);
   }
-  const messages = await getMessagesSince(contractID, hash2, limit);
-  console.log(JSON.stringify(messages.reverse().map((s) => JSON.parse(s)), null, 2));
 }
 async function getMessage(hash2) {
   const value = await readString(hash2);
@@ -346,40 +334,55 @@ async function getMessage(hash2) {
     throw new Error(`no entry for ${hash2}!`);
   return JSON.parse(value).message;
 }
-async function getMessagesSince(contractID, since, limit) {
-  let currentHEAD = await readString(`${headPrefix}${contractID}`);
-  const entries = [];
+async function getMessagesSince(src, contractID, since, limit) {
+  let from;
+  let options;
+  if (isDir(src)) {
+    from = "fs";
+    options = { internal: true, dirname: src };
+  } else if (isFile(src)) {
+    from = "sqlite";
+    options = { internal: true, dirname: path.dirname(src), filename: path.basename(src) };
+  } else
+    throw new Error(`invalid argument: "${src}"`);
+  backend = backends[from];
   try {
-    while (true) {
-      if (currentHEAD === void 0) {
-        throw new Deno.errors.NotFound(`entry ${contractID} doesn't exist!`);
-      }
-      const entry = await getMessage(currentHEAD);
-      if (!entry) {
-        console.error(`[chel] entry ${currentHEAD} no longer exists.`);
-        break;
-      }
-      entries.push(entry);
-      if (currentHEAD === since || since === contractID && entries.length === limit) {
-        break;
-      } else {
-        currentHEAD = JSON.parse(entry).previousHEAD;
+    await backend.initStorage(options);
+  } catch (error) {
+    exit(`could not init storage backend at "${src}" to fetch events from: ${error.message}`);
+  }
+  const contractHEAD = await readString(`${headPrefix}${contractID}`);
+  if (contractHEAD === void 0) {
+    throw new Deno.errors.NotFound(`contract ${contractID} doesn't exist!`);
+  }
+  const entries = [];
+  let currentHEAD = contractHEAD;
+  while (true) {
+    const entry = await getMessage(currentHEAD);
+    if (!entry) {
+      throw new Deno.errors.NotFound(`entry ${currentHEAD} no longer exists.`);
+    }
+    entries.push(entry);
+    if (currentHEAD === since) {
+      break;
+    } else {
+      currentHEAD = JSON.parse(entry).previousHEAD;
+      if (currentHEAD === null) {
+        throw new Deno.errors.NotFound(`entry ${since} was not found in contract ${contractID}.`);
       }
     }
-  } catch (error) {
-    console.error(`[chel] ${error.message}:`, error);
   }
-  return entries;
+  return entries.reverse().slice(0, limit);
 }
 async function getRemoteMessagesSince(src, contractID, since, limit) {
-  const b64messages = await fetch(`${src}/eventsSince/${contractID}/${since}`).then((r) => r.json()).catch((err) => exit(err.message));
+  const b64messages = (await fetch(`${src}/eventsSince/${contractID}/${since}`).then((r) => r.ok ? r.json() : Promise.reject(new Error(`failed network request to ${src}: ${r.status} - ${r.statusText}`)))).reverse();
   if (b64messages.length > limit) {
     b64messages.length = limit;
   }
   return b64messages.map((b64str) => JSON.parse(new TextDecoder().decode(base64.decode(b64str))).message);
 }
 async function readString(key) {
-  const rv = await backendFrom.readData(key);
+  const rv = await backend.readData(key);
   if (rv === void 0)
     return void 0;
   return typeof rv === "string" ? rv : new TextDecoder().decode(rv);
@@ -416,7 +419,7 @@ function help(args) {
       chel deploy <url-or-dir-or-sqlitedb> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
       chel upload <url-or-dir-or-sqlitedb> <file1> [<file2> [<file3> ...]]
       chel latestState <url> <contractID>
-      chel eventsSince [--limit N] <url> <contractID> <hash>
+      chel eventsSince [--limit N] <url-or-dir-or-sqlitedb> <contractID> <hash>
       chel eventsBefore [--limit N] <url> <contractID> <hash>
       chel hash <file>
       chel migrate --from <backend> --to <backend> --out <dir-or-sqlitedb> <dir-or-sqlitedb>
@@ -465,6 +468,15 @@ var helpDict = {
   `,
   deploy: `
     chel deploy <url-or-dir> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
+  `,
+  eventsSince: `
+    chel eventsSince [--limit N=50] <url-or-localpath> <contractID> <hash>
+
+    Displays a JSON array of the N first events that happened in a given contract, since a given entry identified by its hash.
+    - Older events are displayed first.
+    - The output is parseable with tools such as 'jq'.
+    - If <hash> is the same as <contractID>, then the oldest events will be returned.
+    - If <url-or-localpath> is a URL, then its /eventsSince REST endpoint will be called.
   `
 };
 
@@ -529,9 +541,9 @@ async function migrate(args) {
     exit("missing argument: --to");
   if (!out)
     exit("missing argument: --out");
-  const backendFrom2 = backends2[from];
+  const backendFrom = backends2[from];
   const backendTo = backends2[to];
-  if (!backendFrom2)
+  if (!backendFrom)
     exit(`unknown storage backend: "${from}"`);
   if (!backendTo)
     exit(`unknown storage backend: "${to}"`);
@@ -557,7 +569,7 @@ async function migrate(args) {
       exit(`argument --out ends with a slash: "${out}"`);
   }
   try {
-    await backendFrom2.initStorage(from === "fs" ? { dirname: src } : { dirname: path.dirname(src), filename: path.basename(src) });
+    await backendFrom.initStorage(from === "fs" ? { dirname: src } : { dirname: path.dirname(src), filename: path.basename(src) });
   } catch (error) {
     exit(`could not init storage backend at "${src}" to migrate from: ${error.message}`);
   }
@@ -566,12 +578,12 @@ async function migrate(args) {
   } catch (error) {
     exit(`could not init storage backend to migrate to: ${error.message}`);
   }
-  const numKeys = await backendFrom2.count();
+  const numKeys = await backendFrom.count();
   let numVisitedKeys = 0;
-  for await (const key of backendFrom2.iterKeys()) {
+  for await (const key of backendFrom.iterKeys()) {
     if (!isValidKey(key))
       continue;
-    const value = await backendFrom2.readData(key);
+    const value = await backendFrom.readData(key);
     if (value === void 0)
       continue;
     if (isNotHashKey(key)) {
