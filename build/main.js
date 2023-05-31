@@ -65,6 +65,9 @@ function isNotHashKey(key) {
 function isValidKey(key) {
   return !/[\x00-\x1f\x7f\t\\/]/.test(key);
 }
+async function revokeNet() {
+  await Deno.permissions.revoke({ name: "net" });
+}
 var init_utils = __esm({
   "src/utils.ts"() {
     "use strict";
@@ -295,7 +298,9 @@ var helpDict = {
 
 // src/manifest.ts
 init_deps();
+init_utils();
 async function manifest(args) {
+  await revokeNet();
   const parsedArgs = flags.parse(args);
   const [_keyFile, contractFile] = parsedArgs._;
   const parsedFilepath = path.parse(contractFile);
@@ -345,6 +350,7 @@ var backends = {
   sqlite: await Promise.resolve().then(() => (init_database_sqlite(), database_sqlite_exports))
 };
 async function migrate(args) {
+  await revokeNet();
   const parsedArgs = flags.parse(args);
   const { from, to, out } = parsedArgs;
   const src = path.resolve(String(parsedArgs._[0]) ?? ".");
@@ -416,6 +422,7 @@ async function migrate(args) {
 init_deps();
 init_utils();
 async function upload(args, internal = false) {
+  await revokeNet();
   const [urlOrDirOrSqliteFile, ...files] = args;
   if (files.length === 0)
     throw new Error(`missing files!`);

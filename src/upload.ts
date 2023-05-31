@@ -1,15 +1,12 @@
 'use strict'
 
 import { path, colors } from './deps.ts'
-import { blake32Hash, isDir } from './utils.ts'
+import { blake32Hash, isDir, revokeNet } from './utils.ts'
 
 // chel upload <url-or-dir-or-sqlitedb> <file1> [<file2> [<file3> ...]]
 
-// TODO: use Deno.permissions.request(...) to request permissions to the specific URL
-//       https://deno.land/manual/runtime/permission_apis
-//       and use this everywhere so that we protect against malicious contracts
-
 export async function upload (args: string[], internal = false) {
+  await revokeNet()
   const [urlOrDirOrSqliteFile, ...files] = args
   if (files.length === 0) throw new Error(`missing files!`)
   const uploaded = []
