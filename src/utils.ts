@@ -52,6 +52,10 @@ export function isNotHashKey (key: string): boolean {
   return key.startsWith('head=') || key.startsWith('name=')
 }
 
+export function isURL (arg: string): boolean {
+  return URL.canParse(arg) && Boolean(new URL(arg).host)
+}
+
 export function isValidKey (key: string): boolean {
   // Disallow unprintable characters, slashes, and TAB.
   // deno-lint-ignore no-control-regex

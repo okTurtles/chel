@@ -66,6 +66,9 @@ function isFile(path2) {
 function isNotHashKey(key) {
   return key.startsWith("head=") || key.startsWith("name=");
 }
+function isURL(arg) {
+  return URL.canParse(arg) && Boolean(new URL(arg).host);
+}
 function isValidKey(key) {
   return !/[\x00-\x1f\x7f\t\\/]/.test(key);
 }
@@ -305,9 +308,6 @@ var backends = {
 };
 var defaultLimit = 50;
 var headPrefix = "head=";
-function isURL(arg) {
-  return URL.canParse(arg) && Boolean(new URL(arg).host);
-}
 async function eventsSince(args) {
   const parsedArgs = flags.parse(args);
   const limit = Number(parsedArgs.limit ?? defaultLimit);

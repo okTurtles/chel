@@ -2,7 +2,7 @@
 // chel eventsSince [--limit N] <url-or-localpath> <contractID> <hash>
 
 import { base64, flags, path } from './deps.ts'
-import { exit, isArrayLength, isDir, isFile } from './utils.ts'
+import { exit, isArrayLength, isDir, isFile, isURL } from './utils.ts'
 
 let backend: typeof backends.sqlite | typeof backends.fs
 const backends = {
@@ -11,10 +11,6 @@ const backends = {
 }
 const defaultLimit = 50
 const headPrefix = 'head='
-
-function isURL (arg: string): boolean {
-  return URL.canParse(arg) && Boolean(new URL(arg).host)
-}
 
 export async function eventsSince (args: string[]): Promise<void> {
   const parsedArgs = flags.parse(args)
