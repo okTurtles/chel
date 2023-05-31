@@ -2,8 +2,9 @@
 // chel eventsSince [--limit N] <url-or-localpath> <contractID> <hash>
 
 import { base64, flags, path } from './deps.ts'
-import { exit, isDir, isFile } from './utils.ts'
+import { exit, isArrayLength, isDir, isFile } from './utils.ts'
 
+const defaultLimit = 50
 const headPrefix = 'head='
 
 function isURL (arg: string): boolean {
@@ -20,7 +21,8 @@ let backendFrom: typeof backends.sqlite | typeof backends.fs
 export async function eventsSince (args: string[]): Promise<void> {
   const parsedArgs = flags.parse(args)
 
-  const limit = Number.parseInt(parsedArgs.limit ?? 50)
+  const limit = Number(parsedArgs.limit ?? defaultLimit)
+  if (!isArrayLength(limit)) exit('argument --limit must be a valid array length')
   const [urlOrLocalPath, contractID, hash] = parsedArgs._.map(String)
   const src = urlOrLocalPath
 
@@ -57,7 +59,7 @@ async function getMessage (hash: string): Promise<string> {
   return JSON.parse(value).message
 }
 
-async function getMessagesSince (contractID: string, since: string, limit = 50): Promise<string[]> {
+async function getMessagesSince (contractID: string, since: string, limit: number): Promise<string[]> {
   let currentHEAD: string|void = await readString(`${headPrefix}${contractID}`)
 
   const entries = []
@@ -84,8 +86,13 @@ async function getMessagesSince (contractID: string, since: string, limit = 50):
   return entries
 }
 
-async function getRemoteMessagesSince (src: string = 'http://localhost:8000', contractID: string, since: string, limit = 50): Promise<string[]> {
-  const b64messages: string[] = await fetch(`${src}/eventsSince/${contractID}/${since}`).then(r => r.json())
+async function getRemoteMessagesSince (src: string, contractID: string, since: string, limit: number): Promise<string[]> {
+  const b64messages: string[] = await fetch(`${src}/eventsSince/${contractID}/${since}`)
+    .then(r => r.json())
+    .catch(err => exit(err.message))
+  if (b64messages.length > limit) {
+    b64messages.length = limit
+  }
   return b64messages.map(b64str => JSON.parse(new TextDecoder().decode(base64.decode(b64str))).message)
 }
 

@@ -44,6 +44,9 @@ function exit(message) {
   console.error("[chel]", colors.red("Error:"), message);
   Deno.exit(1);
 }
+function isArrayLength(arg) {
+  return Number.isInteger(arg) && arg >= 0 && arg <= 2 ** 32 - 1;
+}
 function isDir(path2) {
   try {
     const info = Deno.statSync(path2);
@@ -295,6 +298,7 @@ async function deploy(args) {
 // src/eventsSince.ts
 init_deps();
 init_utils();
+var defaultLimit = 50;
 var headPrefix = "head=";
 function isURL(arg) {
   return URL.canParse(arg) && Boolean(new URL(arg).host);
@@ -306,7 +310,9 @@ var backends = {
 var backendFrom;
 async function eventsSince(args) {
   const parsedArgs = flags.parse(args);
-  const limit = Number.parseInt(parsedArgs.limit ?? 50);
+  const limit = Number(parsedArgs.limit ?? defaultLimit);
+  if (!isArrayLength(limit))
+    exit("argument --limit must be a valid array length");
   const [urlOrLocalPath, contractID, hash2] = parsedArgs._.map(String);
   const src = urlOrLocalPath;
   let from;
@@ -340,7 +346,7 @@ async function getMessage(hash2) {
     throw new Error(`no entry for ${hash2}!`);
   return JSON.parse(value).message;
 }
-async function getMessagesSince(contractID, since, limit = 50) {
+async function getMessagesSince(contractID, since, limit) {
   let currentHEAD = await readString(`${headPrefix}${contractID}`);
   const entries = [];
   try {
@@ -365,8 +371,11 @@ async function getMessagesSince(contractID, since, limit = 50) {
   }
   return entries;
 }
-async function getRemoteMessagesSince(src = "http://localhost:8000", contractID, since, limit = 50) {
-  const b64messages = await fetch(`${src}/eventsSince/${contractID}/${since}`).then((r) => r.json());
+async function getRemoteMessagesSince(src, contractID, since, limit) {
+  const b64messages = await fetch(`${src}/eventsSince/${contractID}/${since}`).then((r) => r.json()).catch((err) => exit(err.message));
+  if (b64messages.length > limit) {
+    b64messages.length = limit;
+  }
   return b64messages.map((b64str) => JSON.parse(new TextDecoder().decode(base64.decode(b64str))).message);
 }
 async function readString(key) {
