@@ -1,13 +1,9 @@
 'use strict'
 
 import { path, colors } from './deps.ts'
-import { blake32Hash, isDir } from './utils.ts'
+import { blake32Hash, isDir, revokeNet } from './utils.ts'
 
 // chel upload <url-or-dir-or-sqlitedb> <file1> [<file2> [<file3> ...]]
-
-// TODO: use Deno.permissions.request(...) to request permissions to the specific URL
-//       https://deno.land/manual/runtime/permission_apis
-//       and use this everywhere so that we protect against malicious contracts
 
 export async function upload (args: string[], internal = false) {
   const [urlOrDirOrSqliteFile, ...files] = args
@@ -47,6 +43,7 @@ function uploadToURL (filepath: string, url: string): Promise<string> {
 }
 
 async function uploadToDir (filepath: string, dir: string) {
+  await revokeNet()
   const buffer = Deno.readFileSync(filepath)
   const hash = blake32Hash(buffer)
   const destination = path.join(dir, hash)
@@ -55,6 +52,7 @@ async function uploadToDir (filepath: string, dir: string) {
 }
 
 async function uploadToSQLite (filepath: string, sqlitedb: string) {
+  await revokeNet()
   const { initStorage, writeData } = await import('./database-sqlite.ts')
   initStorage({dirname: path.dirname(sqlitedb), filename: path.basename(sqlitedb)})
   const buffer = await Deno.readFile(filepath)

@@ -72,6 +72,9 @@ function isURL(arg) {
 function isValidKey(key) {
   return !/[\x00-\x1f\x7f\t\\/]/.test(key);
 }
+async function revokeNet() {
+  await Deno.permissions.revoke({ name: "net" });
+}
 var init_utils = __esm({
   "src/utils.ts"() {
     "use strict";
@@ -257,6 +260,7 @@ function uploadToURL(filepath, url) {
   });
 }
 async function uploadToDir(filepath, dir) {
+  await revokeNet();
   const buffer = Deno.readFileSync(filepath);
   const hash2 = blake32Hash(buffer);
   const destination = path.join(dir, hash2);
@@ -264,6 +268,7 @@ async function uploadToDir(filepath, dir) {
   return destination;
 }
 async function uploadToSQLite(filepath, sqlitedb) {
+  await revokeNet();
   const { initStorage: initStorage3, writeData: writeData3 } = await Promise.resolve().then(() => (init_database_sqlite(), database_sqlite_exports));
   initStorage3({ dirname: path.dirname(sqlitedb), filename: path.basename(sqlitedb) });
   const buffer = await Deno.readFile(filepath);
@@ -481,7 +486,9 @@ var helpDict = {
 
 // src/manifest.ts
 init_deps();
+init_utils();
 async function manifest(args) {
+  await revokeNet();
   const parsedArgs = flags.parse(args);
   const [_keyFile, contractFile] = parsedArgs._;
   const parsedFilepath = path.parse(contractFile);
@@ -531,6 +538,7 @@ var backends2 = {
   sqlite: await Promise.resolve().then(() => (init_database_sqlite(), database_sqlite_exports))
 };
 async function migrate(args) {
+  await revokeNet();
   const parsedArgs = flags.parse(args);
   const { from, to, out } = parsedArgs;
   const src = path.resolve(String(parsedArgs._[0]) ?? ".");

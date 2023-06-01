@@ -61,3 +61,7 @@ export function isValidKey (key: string): boolean {
   // deno-lint-ignore no-control-regex
   return !/[\x00-\x1f\x7f\t\\/]/.test(key)
 }
+
+export async function revokeNet () {
+  await Deno.permissions.revoke({ name: 'net' })
+}

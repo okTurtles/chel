@@ -2,7 +2,7 @@
 // chel migrate --from fs --to sqlite --out ./database.db ./data
 
 import { colors, flags, path } from './deps.ts'
-import { exit, isDir, isFile, isNotHashKey, isValidKey } from './utils.ts'
+import { exit, isDir, isFile, isNotHashKey, isValidKey, revokeNet } from './utils.ts'
 
 const backends = {
   fs: await import('./database-fs.ts'),
@@ -10,6 +10,7 @@ const backends = {
 }
 
 export async function migrate(args: string[]) {
+  await revokeNet()
   const parsedArgs = flags.parse(args)
 
   const { from, to, out } = parsedArgs

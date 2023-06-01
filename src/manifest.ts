@@ -7,12 +7,13 @@
 
 import { flags, path, colors } from './deps.ts'
 import { hash } from './hash.ts'
+import { revokeNet } from './utils.ts'
 
 // import { writeAllSync } from "https://deno.land/std@0.141.0/streams/mod.ts"
 
 export async function manifest (args: string[]) {
+  await revokeNet()
   const parsedArgs = flags.parse(args)
-  // console.log(parsedArgs)
   const [_keyFile, contractFile] = parsedArgs._
   const parsedFilepath = path.parse(contractFile as string)
   const { name: contractName, base: contractBasename, dir: contractDir } = parsedFilepath
