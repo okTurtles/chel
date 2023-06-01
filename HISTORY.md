@@ -1,5 +1,9 @@
 # HISTORY
 
+### v1.2.1
+
+- Restore `bin/chel`
+
 ### v1.2.0
 
 - `chel deploy` and `chel upload` now accept an SQLite database file as destination. (PR [#5](https://github.com/okTurtles/chel/pull/5) via [@snowteamer](https://github.com/snowteamer))
