@@ -18,5 +18,5 @@
     "files": {
       "exclude": ["node_modules/", "test/", "vendor/", "dist/", "build/"]
     }
-  },
+  }
 }

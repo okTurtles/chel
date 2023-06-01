@@ -18,6 +18,8 @@ const supportedPlatforms = {
     BINARY_NAME: 'chel'
   },
   'Darwin_arm64': {
+    // When https://github.com/denoland/deno/issues/14935 is closed we can finally use the native binary
+    // TARGET: 'aarch64-apple-darwin',
     TARGET: 'x86_64-apple-darwin',
     BINARY_NAME: 'chel'
   }

@@ -93,9 +93,9 @@ cp -r path/to/contracts/* test/assets/ && ls ./test/assets/*-slim.js | sed -En '
 Current release hashes will always be listed here.
 
 ```
-867d54d8c01488da2381c493b4cb51a30cdccedecd8925b0abce28199dceb44f  dist/chel-v1.1.3-x86_64-apple-darwin.tar.gz
-f5e5ae2c0e8e192e5cdf04fd213b4c3f9db77db9747c341ab967ef9cf5e1b604  dist/chel-v1.1.3-x86_64-pc-windows-msvc.tar.gz
-3b11ec7211eae42e8e5c5e42de701097c69653cbd840d5e5a0746fca90d7e9d2  dist/chel-v1.1.3-x86_64-unknown-linux-gnu.tar.gz
+fbadd76a90201d8b9cfd606bc8036b034d7065991c198b5836f2f8a1f8e60261  dist/chel-v1.2.0-x86_64-apple-darwin.tar.gz
+884a5a1aef78c536f2f153bce50514a318f912039e91cbb13e3caccf229db1d8  dist/chel-v1.2.0-x86_64-pc-windows-msvc.tar.gz
+fadb3d632656869db4938764471f528f6bcec558270422dd4211848f808db3a4  dist/chel-v1.2.0-x86_64-unknown-linux-gnu.tar.gz
 ```
 
 ## History
