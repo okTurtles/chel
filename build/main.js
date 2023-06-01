@@ -311,7 +311,6 @@ var headPrefix = "head=";
 async function eventsSince(args) {
   const parsedArgs = flags.parse(args);
   const limit = Number(parsedArgs.limit ?? defaultLimit);
-  console.log(limit);
   if (!isArrayLength(limit))
     exit("argument --limit must be a valid array length");
   const [urlOrLocalPath, contractID, hash2] = parsedArgs._.map(String);

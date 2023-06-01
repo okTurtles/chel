@@ -16,9 +16,7 @@ export async function eventsSince (args: string[]): Promise<void> {
   const parsedArgs = flags.parse(args)
 
   const limit = Number(parsedArgs.limit ?? defaultLimit)
-  console.log(limit)
   if (!isArrayLength(limit)) exit('argument --limit must be a valid array length')
-
   const [urlOrLocalPath, contractID, hash] = parsedArgs._.map(String)
   const src = urlOrLocalPath
 
