@@ -230,7 +230,6 @@ init_deps();
 init_deps();
 init_utils();
 async function upload(args, internal = false) {
-  await revokeNet();
   const [urlOrDirOrSqliteFile, ...files] = args;
   if (files.length === 0)
     throw new Error(`missing files!`);
@@ -261,6 +260,7 @@ function uploadToURL(filepath, url) {
   });
 }
 async function uploadToDir(filepath, dir) {
+  await revokeNet();
   const buffer = Deno.readFileSync(filepath);
   const hash2 = blake32Hash(buffer);
   const destination = path.join(dir, hash2);
@@ -268,6 +268,7 @@ async function uploadToDir(filepath, dir) {
   return destination;
 }
 async function uploadToSQLite(filepath, sqlitedb) {
+  await revokeNet();
   const { initStorage: initStorage3, writeData: writeData3 } = await Promise.resolve().then(() => (init_database_sqlite(), database_sqlite_exports));
   initStorage3({ dirname: path.dirname(sqlitedb), filename: path.basename(sqlitedb) });
   const buffer = await Deno.readFile(filepath);

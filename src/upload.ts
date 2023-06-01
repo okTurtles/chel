@@ -6,7 +6,6 @@ import { blake32Hash, isDir, revokeNet } from './utils.ts'
 // chel upload <url-or-dir-or-sqlitedb> <file1> [<file2> [<file3> ...]]
 
 export async function upload (args: string[], internal = false) {
-  await revokeNet()
   const [urlOrDirOrSqliteFile, ...files] = args
   if (files.length === 0) throw new Error(`missing files!`)
   const uploaded = []
@@ -44,6 +43,7 @@ function uploadToURL (filepath: string, url: string): Promise<string> {
 }
 
 async function uploadToDir (filepath: string, dir: string) {
+  await revokeNet()
   const buffer = Deno.readFileSync(filepath)
   const hash = blake32Hash(buffer)
   const destination = path.join(dir, hash)
@@ -52,6 +52,7 @@ async function uploadToDir (filepath: string, dir: string) {
 }
 
 async function uploadToSQLite (filepath: string, sqlitedb: string) {
+  await revokeNet()
   const { initStorage, writeData } = await import('./database-sqlite.ts')
   initStorage({dirname: path.dirname(sqlitedb), filename: path.basename(sqlitedb)})
   const buffer = await Deno.readFile(filepath)
