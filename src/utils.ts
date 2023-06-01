@@ -24,6 +24,10 @@ export function exit (message: string): never {
   Deno.exit(1)
 }
 
+export function isArrayLength (arg: number): boolean {
+  return Number.isInteger(arg) && arg >= 0 && arg <= 2 ** 32 - 1
+}
+
 // Checks whether a path points to a directory, following symlinks if any.
 export function isDir (path: string | URL): boolean {
   try {
@@ -46,6 +50,10 @@ export function isFile (path: string | URL): boolean {
 
 export function isNotHashKey (key: string): boolean {
   return key.startsWith('head=') || key.startsWith('name=')
+}
+
+export function isURL (arg: string): boolean {
+  return URL.canParse(arg) && Boolean(new URL(arg).host)
 }
 
 export function isValidKey (key: string): boolean {

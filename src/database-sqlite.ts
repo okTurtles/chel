@@ -28,7 +28,9 @@ export async function initStorage (options: Record<string, unknown> = {}): Promi
   // Important: keep this in sync with the schema used in GroupIncome.
   db.execute('CREATE TABLE IF NOT EXISTS Data(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)')
   dbPath = filepath
-  console.log('Connected to the %s SQLite database.', filepath)
+  if (!options.internal) {
+    console.log('Connected to the %s SQLite database.', filepath)
+  }
   iterKeysStatement = db.prepareQuery<[string]>('SELECT key FROM Data')
   readStatement = db.prepareQuery<[string]>('SELECT value FROM Data WHERE key = ?')
   // Use "upsert" syntax to store an entry only if the key is not already in the DB.
