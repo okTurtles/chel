@@ -608,7 +608,7 @@ async function migrate(args) {
 
 // src/version.ts
 function version() {
-  console.log("1.2.0");
+  console.log("1.2.2");
 }
 
 // src/main.ts
