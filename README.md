@@ -11,7 +11,7 @@ chel manifest [-k|--key <pubkey1> [-k|--key <pubkey2> ...]] [--out=<manifest.jso
 chel deploy <url-or-dir-or-sqlitedb> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
 chel upload <url-or-dir-or-sqlitedb> <file1> [<file2> [<file3> ...]]
 chel latestState <url> <contractID>
-chel eventsSince [--limit N] <url> <contractID> <hash>
+chel eventsAfter [--limit N] <url> <contractID> <hash>
 chel eventsBefore [--limit N] <url> <contractID> <hash>
 chel hash <file>
 chel migrate --from <backend> --to <backend> --out <dir-or-sqlitedb>
