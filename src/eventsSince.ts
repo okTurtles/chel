@@ -1,5 +1,5 @@
 'use strict'
-// chel eventsSince [--limit N] <url-or-localpath> <contractID> <hash>
+// chel eventsAfter [--limit N] <url-or-localpath> <contractID> <hash>
 
 import { base64, flags, path } from './deps.ts'
 import { exit, isArrayLength, isDir, isFile, isURL } from './utils.ts'
@@ -12,7 +12,7 @@ const backends = {
 const defaultLimit = 50
 const headPrefix = 'head='
 
-export async function eventsSince (args: string[]): Promise<void> {
+export async function eventsAfter (args: string[]): Promise<void> {
   const parsedArgs = flags.parse(args)
 
   const limit = Number(parsedArgs.limit ?? defaultLimit)
@@ -84,7 +84,7 @@ async function getMessagesSince (src: string, contractID: string, since: string,
 
 async function getRemoteMessagesSince (src: string, contractID: string, since: string, limit: number): Promise<string[]> {
   const b64messages: string[] = (
-    await fetch(`${src}/eventsSince/${contractID}/${since}`)
+    await fetch(`${src}/eventsAfter/${contractID}/${since}`)
       .then(r => r.ok ? r.json() : Promise.reject(new Error(`failed network request to ${src}: ${r.status} - ${r.statusText}`)))
   ).reverse()
   if (b64messages.length > limit) {
