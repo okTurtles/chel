@@ -1,7 +1,7 @@
 'use strict'
 
 export { deploy } from './deploy.ts'
-export { eventsSince } from './eventsSince.ts'
+export { eventsAfter } from './eventsSince.ts'
 export { get } from './get.ts'
 export { hash } from './hash.ts'
 export { help } from './help.ts'

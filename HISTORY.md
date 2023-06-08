@@ -1,5 +1,16 @@
 # HISTORY
 
+### v1.2.1, v1.2.2
+
+- Restore `bin/chel`
+
+### v1.2.0
+
+- `chel deploy` and `chel upload` now accept an SQLite database file as destination. (PR [#5](https://github.com/okTurtles/chel/pull/5) via [@snowteamer](https://github.com/snowteamer))
+- `chel migrate` + pinned esm.sh dependencies. (PR [#7](https://github.com/okTurtles/chel/pull/7) via [@snowteamer](https://github.com/snowteamer))
+- `chel eventsSince` implemented. (PR [#9](https://github.com/okTurtles/chel/pull/9) via [@snowteamer](https://github.com/snowteamer))
+- Drop net perms. (PR [#10](https://github.com/okTurtles/chel/pull/10) via [@snowteamer](https://github.com/snowteamer))
+
 ### v1.1.3
 
 - Fixed install issue on Apple Silicon

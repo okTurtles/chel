@@ -11,7 +11,7 @@ chel manifest [-k|--key <pubkey1> [-k|--key <pubkey2> ...]] [--out=<manifest.jso
 chel deploy <url-or-dir-or-sqlitedb> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
 chel upload <url-or-dir-or-sqlitedb> <file1> [<file2> [<file3> ...]]
 chel latestState <url> <contractID>
-chel eventsSince [--limit N] <url> <contractID> <hash>
+chel eventsAfter [--limit N] <url> <contractID> <hash>
 chel eventsBefore [--limit N] <url> <contractID> <hash>
 chel hash <file>
 chel migrate --from <backend> --to <backend> --out <dir-or-sqlitedb>
@@ -93,9 +93,10 @@ cp -r path/to/contracts/* test/assets/ && ls ./test/assets/*-slim.js | sed -En '
 Current release hashes will always be listed here.
 
 ```
-867d54d8c01488da2381c493b4cb51a30cdccedecd8925b0abce28199dceb44f  dist/chel-v1.1.3-x86_64-apple-darwin.tar.gz
-f5e5ae2c0e8e192e5cdf04fd213b4c3f9db77db9747c341ab967ef9cf5e1b604  dist/chel-v1.1.3-x86_64-pc-windows-msvc.tar.gz
-3b11ec7211eae42e8e5c5e42de701097c69653cbd840d5e5a0746fca90d7e9d2  dist/chel-v1.1.3-x86_64-unknown-linux-gnu.tar.gz
+80728870dff7e37afcd0947de5e4f5435ec11343f81e4b1a13f39e5847118d54  dist/chel-v1.2.2-aarch64-apple-darwin.tar.gz
+329b48851fbab472c7ea28b8dcd227efcbfb43c441883ba7d1b1b311608754c5  dist/chel-v1.2.2-x86_64-apple-darwin.tar.gz
+4a3fba0bdd8ed38ae5588949d537f36aae35c370e809453f9e32bcc84f290848  dist/chel-v1.2.2-x86_64-pc-windows-msvc.tar.gz
+24cca69109bfd641d057ed5f8a37ea8471de37cf98345befb11ddac361074887  dist/chel-v1.2.2-x86_64-unknown-linux-gnu.tar.gz
 ```
 
 ## History

@@ -1,6 +1,6 @@
 'use strict'
 
 export function version () {
-  // @ts-ignore
+  // @ts-ignore: "cannot find name 'process'"
   console.log(process.env.VERSION)
 }
