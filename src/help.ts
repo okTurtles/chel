@@ -13,6 +13,7 @@ export function help (args?: string[]) {
       chel latestState <url> <contractID>
       chel eventsSince [--limit N] <url-or-dir-or-sqlitedb> <contractID> <hash>
       chel eventsBefore [--limit N] <url> <contractID> <hash>
+      chel get <url-or-dir-or-sqlitedb> <hash>
       chel hash <file>
       chel migrate --from <backend> --to <backend> --out <dir-or-sqlitedb> <dir-or-sqlitedb>
     `)
@@ -70,5 +71,14 @@ const helpDict: {[key:string]: string} = {
     - The output is parseable with tools such as 'jq'.
     - If <hash> is the same as <contractID>, then the oldest events will be returned.
     - If <url-or-localpath> is a URL, then its /eventsSince REST endpoint will be called.
-  `
+  `,
+  get: `
+    chel get <url-or-dir-or-sqlitedb> <hash>
+    
+    Retrieves the entry associated with a given <hash> key, from a given database or server.
+    When the first argument is a URL, this queries the GET <url>/file/<hash> route.
+
+    - The output can be piped to a file, like this:
+      chel get https://url.com mygreatlongkey > file.png
+`
 }

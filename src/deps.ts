@@ -4,9 +4,9 @@ export * as colors from "https://deno.land/std@0.141.0/fmt/colors.ts"
 export * as streams from "https://deno.land/std@0.141.0/streams/mod.ts"
 export * as fs from 'https://deno.land/std@0.141.0/fs/mod.ts'
 export * as base64 from 'https://deno.land/std@0.141.0/encoding/base64.ts'
-export { base58btc } from 'https://esm.sh/multiformats/bases/base58?pin=v120'
-export { type Multibase } from 'https://esm.sh/multiformats?pin=v120'
-export { default as blake } from "https://esm.sh/@multiformats/blake2?pin=v120"
+export { base58btc } from 'https://esm.sh/multiformats@11.0.2/bases/base58?pin=v120'
+export { type Multibase } from 'https://esm.sh/multiformats@11.0.2?pin=v120'
+export { default as blake } from "https://esm.sh/@multiformats/blake2@1.0.13?pin=v120"
 export { miniexec as sh } from "https://deno.land/x/miniexec@1.0.0/mod.ts"
 export * as esbuild from "https://deno.land/x/esbuild@v0.14.47/mod.js"
 export * as sqlite from "https://deno.land/x/sqlite@v3.7.1/mod.ts"
