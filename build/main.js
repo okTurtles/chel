@@ -214,7 +214,7 @@ var init_database_fs = __esm({
 var commands_exports = {};
 __export(commands_exports, {
   deploy: () => deploy,
-  eventsSince: () => eventsSince,
+  eventsAfter: () => eventsAfter,
   hash: () => hash,
   help: () => help,
   manifest: () => manifest,
@@ -303,7 +303,7 @@ async function deploy(args) {
   await upload([urlOrDirOrSqliteFile, ...toUpload], true);
 }
 
-// src/eventsSince.ts
+// src/eventsAfter.ts
 init_deps();
 init_utils();
 var backend;
@@ -313,7 +313,7 @@ var backends = {
 };
 var defaultLimit = 50;
 var headPrefix = "head=";
-async function eventsSince(args) {
+async function eventsAfter(args) {
   const parsedArgs = flags.parse(args);
   const limit = Number(parsedArgs.limit ?? defaultLimit);
   if (!isArrayLength(limit))
@@ -379,7 +379,7 @@ async function getMessagesSince(src, contractID, since, limit) {
   return entries.reverse().slice(0, limit);
 }
 async function getRemoteMessagesSince(src, contractID, since, limit) {
-  const b64messages = (await fetch(`${src}/eventsSince/${contractID}/${since}`).then((r) => r.ok ? r.json() : Promise.reject(new Error(`failed network request to ${src}: ${r.status} - ${r.statusText}`)))).reverse();
+  const b64messages = (await fetch(`${src}/eventsAfter/${contractID}/${since}`).then((r) => r.ok ? r.json() : Promise.reject(new Error(`failed network request to ${src}: ${r.status} - ${r.statusText}`)))).reverse();
   if (b64messages.length > limit) {
     b64messages.length = limit;
   }
@@ -423,7 +423,7 @@ function help(args) {
       chel deploy <url-or-dir-or-sqlitedb> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
       chel upload <url-or-dir-or-sqlitedb> <file1> [<file2> [<file3> ...]]
       chel latestState <url> <contractID>
-      chel eventsSince [--limit N] <url-or-dir-or-sqlitedb> <contractID> <hash>
+      chel eventsAfter [--limit N] <url-or-dir-or-sqlitedb> <contractID> <hash>
       chel eventsBefore [--limit N] <url> <contractID> <hash>
       chel hash <file>
       chel migrate --from <backend> --to <backend> --out <dir-or-sqlitedb> <dir-or-sqlitedb>
@@ -473,14 +473,14 @@ var helpDict = {
   deploy: `
     chel deploy <url-or-dir> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
   `,
-  eventsSince: `
-    chel eventsSince [--limit N=50] <url-or-localpath> <contractID> <hash>
+  eventsAfter: `
+    chel eventsAfter [--limit N=50] <url-or-localpath> <contractID> <hash>
 
     Displays a JSON array of the N first events that happened in a given contract, since a given entry identified by its hash.
     - Older events are displayed first.
     - The output is parseable with tools such as 'jq'.
     - If <hash> is the same as <contractID>, then the oldest events will be returned.
-    - If <url-or-localpath> is a URL, then its /eventsSince REST endpoint will be called.
+    - If <url-or-localpath> is a URL, then its /eventsAfter REST endpoint will be called.
   `
 };
 
