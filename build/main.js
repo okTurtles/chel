@@ -379,7 +379,12 @@ async function getMessagesSince(src, contractID, since, limit) {
   return entries.reverse().slice(0, limit);
 }
 async function getRemoteMessagesSince(src, contractID, since, limit) {
-  const b64messages = (await fetch(`${src}/eventsAfter/${contractID}/${since}`).then((r) => r.ok ? r.json() : Promise.reject(new Error(`failed network request to ${src}: ${r.status} - ${r.statusText}`)))).reverse();
+  const response = await fetch(`${src}/eventsAfter/${contractID}/${since}`);
+  if (!response.ok) {
+    const bodyText = await response.text().catch((_) => "") || ``;
+    throw new Error(`failed network request to ${src}: ${response.status} - ${response.statusText} - '${bodyText}'`);
+  }
+  const b64messages = (await response.json()).reverse();
   if (b64messages.length > limit) {
     b64messages.length = limit;
   }
