@@ -83,10 +83,13 @@ async function getMessagesSince (src: string, contractID: string, since: string,
 }
 
 async function getRemoteMessagesSince (src: string, contractID: string, since: string, limit: number): Promise<string[]> {
-  const b64messages: string[] = (
-    await fetch(`${src}/eventsAfter/${contractID}/${since}`)
-      .then(r => r.ok ? r.json() : Promise.reject(new Error(`failed network request to ${src}: ${r.status} - ${r.statusText}`)))
-  ).reverse()
+  const response = await fetch(`${src}/eventsAfter/${contractID}/${since}`)
+  if (!response.ok) {
+    // The response body may contain some useful error info if we got a Boom error response.
+    const bodyText = await response.text().catch(_ => '') || ``
+    throw new Error(`failed network request to ${src}: ${response.status} - ${response.statusText} - '${bodyText}'`)
+  }
+  const b64messages: string[] = (await response.json()).reverse()
   if (b64messages.length > limit) {
     b64messages.length = limit
   }
