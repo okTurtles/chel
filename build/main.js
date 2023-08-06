@@ -11,15 +11,17 @@ var __export = (target, all) => {
 };
 
 // src/deps.ts
-import * as flags from "https://deno.land/std@0.141.0/flags/mod.ts";
-import * as path from "https://deno.land/std@0.141.0/path/mod.ts";
-import * as colors from "https://deno.land/std@0.141.0/fmt/colors.ts";
-import * as streams from "https://deno.land/std@0.141.0/streams/mod.ts";
-import * as fs from "https://deno.land/std@0.141.0/fs/mod.ts";
+import { assert, assertEquals } from "https://deno.land/std@0.141.0/testing/asserts.ts";
 import * as base64 from "https://deno.land/std@0.141.0/encoding/base64.ts";
+import * as flags from "https://deno.land/std@0.141.0/flags/mod.ts";
+import * as colors from "https://deno.land/std@0.141.0/fmt/colors.ts";
+import * as fs from "https://deno.land/std@0.141.0/fs/mod.ts";
+import * as path from "https://deno.land/std@0.141.0/path/mod.ts";
+import * as streams from "https://deno.land/std@0.141.0/streams/mod.ts";
 import { base58btc } from "https://esm.sh/multiformats@11.0.2/bases/base58?pin=v120";
 import {} from "https://esm.sh/multiformats@11.0.2?pin=v120";
 import { default as default2 } from "https://esm.sh/@multiformats/blake2@1.0.13?pin=v120";
+import { CID } from "https://esm.sh/multiformats@11.0.2/cid?pin=v120";
 import { miniexec } from "https://deno.land/x/miniexec@1.0.0/mod.ts";
 import * as esbuild from "https://deno.land/x/esbuild@v0.14.47/mod.js";
 import * as sqlite from "https://deno.land/x/sqlite@v3.7.1/mod.ts";
@@ -158,15 +160,24 @@ var init_database_sqlite = __esm({
 });
 
 // src/utils.ts
-function blake32Hash(data) {
-  const uint8array = typeof data === "string" ? new TextEncoder().encode(data) : data;
-  const digest = default2.blake2b.blake2b256.digest(uint8array);
-  return base58btc.encode(digest.bytes);
-}
 function checkKey(key) {
   if (!isValidKey(key)) {
     throw new Error(`bad key: ${JSON.stringify(key)}`);
   }
+}
+async function createEntryFromFile(filepath) {
+  const buffer = await Deno.readFile(filepath);
+  const multicode = getPathExtension(filepath) === ".json" ? multicodes.JSON : multicodes.RAW;
+  const key = createCID(buffer, multicode);
+  return [key, buffer];
+}
+function createCID(data, multicode = multicodes.RAW) {
+  const uint8array = typeof data === "string" ? new TextEncoder().encode(data) : data;
+  const digest = multihasher.digest(uint8array);
+  const cid = CID.create(1, multicode, digest);
+  const key = cid.toString(multibase.encoder);
+  checkKey(key);
+  return key;
 }
 function exit(message) {
   console.error("[chel]", colors.red("Error:"), message);
@@ -190,6 +201,12 @@ async function getBackend(src) {
     throw new Error(`could not init storage backend at "${src}": ${error.message}`);
   }
   return backend2;
+}
+function getPathExtension(path2) {
+  const index = path2.lastIndexOf(".");
+  if (index === -1 || index === 0)
+    return "";
+  return path2.slice(index).toLowerCase();
 }
 function isArrayLength(arg) {
   return Number.isInteger(arg) && arg >= 0 && arg <= 2 ** 32 - 1;
@@ -226,7 +243,7 @@ async function readRemoteData(src, key) {
 async function revokeNet() {
   await Deno.permissions.revoke({ name: "net" });
 }
-var backends;
+var backends, multibase, multicodes, multihasher;
 var init_utils = __esm({
   "src/utils.ts"() {
     "use strict";
@@ -234,6 +251,9 @@ var init_utils = __esm({
     init_database_fs();
     init_database_sqlite();
     backends = { fs: database_fs_exports, sqlite: database_sqlite_exports };
+    multibase = base58btc;
+    multicodes = { JSON: 512, RAW: 85 };
+    multihasher = default2.blake2b.blake2b256;
   }
 });
 
@@ -262,9 +282,10 @@ async function upload(args, internal = false) {
   if (files.length === 0)
     throw new Error(`missing files!`);
   const uploaded = [];
-  const uploaderFn = isDir(urlOrDirOrSqliteFile) ? uploadToDir : urlOrDirOrSqliteFile.endsWith(".db") ? uploadToSQLite : uploadToURL;
+  const uploaderFn = isDir(urlOrDirOrSqliteFile) ? uploadEntryToDir : urlOrDirOrSqliteFile.endsWith(".db") ? uploadEntryToSQLite : uploadEntryToURL;
   for (const filepath of files) {
-    const destination = await uploaderFn(filepath, urlOrDirOrSqliteFile);
+    const entry = await createEntryFromFile(filepath);
+    const destination = await uploaderFn(entry, urlOrDirOrSqliteFile);
     if (!internal) {
       console.log(colors.green("uploaded:"), destination);
     } else {
@@ -274,35 +295,29 @@ async function upload(args, internal = false) {
   }
   return uploaded;
 }
-function uploadToURL(filepath, url) {
-  const buffer = Deno.readFileSync(filepath);
-  const hash2 = blake32Hash(buffer);
+function uploadEntryToURL([cid, buffer], url) {
   const form = new FormData();
-  form.append("hash", hash2);
-  form.append("data", new Blob([buffer]), path.basename(filepath));
+  form.append("hash", cid);
+  form.append("data", new Blob([buffer]));
   return fetch(`${url}/file`, { method: "POST", body: form }).then(handleFetchResult("text")).then((r) => {
-    if (r !== `/file/${hash2}`) {
+    if (r !== `/file/${cid}`) {
       throw new Error(`server returned bad URL: ${r}`);
     }
     return `${url}${r}`;
   });
 }
-async function uploadToDir(filepath, dir) {
+async function uploadEntryToDir([cid, buffer], dir) {
   await revokeNet();
-  const buffer = Deno.readFileSync(filepath);
-  const hash2 = blake32Hash(buffer);
-  const destination = path.join(dir, hash2);
+  const destination = path.join(dir, cid);
   await Deno.writeFile(destination, buffer);
   return destination;
 }
-async function uploadToSQLite(filepath, sqlitedb) {
+async function uploadEntryToSQLite([cid, buffer], sqlitedb) {
   await revokeNet();
   const { initStorage: initStorage3, writeData: writeData3 } = await Promise.resolve().then(() => (init_database_sqlite(), database_sqlite_exports));
   initStorage3({ dirname: path.dirname(sqlitedb), filename: path.basename(sqlitedb) });
-  const buffer = await Deno.readFile(filepath);
-  const hash2 = blake32Hash(buffer);
-  writeData3(hash2, buffer);
-  return hash2;
+  writeData3(cid, buffer);
+  return cid;
 }
 function handleFetchResult(type) {
   return function(r) {
@@ -453,7 +468,6 @@ async function get(args) {
 }
 
 // src/hash.ts
-init_deps();
 init_utils();
 async function hash(args, internal = false) {
   const [filename] = args;
@@ -461,14 +475,11 @@ async function hash(args, internal = false) {
     console.error("please pass in a file");
     Deno.exit(1);
   }
-  const file = await Deno.open(filename, { read: true });
-  const myFileContent = await streams.readAll(file);
-  Deno.close(file.rid);
-  const hash2 = blake32Hash(myFileContent);
+  const [cid] = await createEntryFromFile(filename);
   if (!internal) {
-    console.log(`blake32Hash(${filename}):`, hash2);
+    console.log(`CID for file (${filename}):`, cid);
   }
-  return hash2;
+  return cid;
 }
 
 // src/help.ts
@@ -504,6 +515,9 @@ var helpDict = {
   `,
   hash: `
     chel hash <file>
+
+    Computes and logs the content identifier (CID) for the given file.
+    File contents will be interpreted as raw binary data, unless the file extension is '.json'.
   `,
   manifest: `
     chel manifest [-k|--key <pubkey1> [-k|--key <pubkey2> ...]]

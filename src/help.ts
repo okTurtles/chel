@@ -33,6 +33,9 @@ const helpDict: {[key:string]: string} = {
   `,
   hash: `
     chel hash <file>
+
+    Computes and logs the content identifier (CID) for the given file.
+    File contents will be interpreted as raw binary data, unless the file extension is '.json'.
   `,
   manifest: `
     chel manifest [-k|--key <pubkey1> [-k|--key <pubkey2> ...]]

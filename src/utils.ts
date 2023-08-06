@@ -1,29 +1,44 @@
 'use strict'
 
-import { base58btc, blake, colors, path } from './deps.ts'
-import { type Multibase } from './deps.ts'
+import { CID, base58btc, blake, colors, path } from './deps.ts'
 import * as fs from './database-fs.ts'
 import * as sqlite from './database-sqlite.ts'
 
-const backends = { fs, sqlite}
+const backends = { fs, sqlite }
+
+// We can change these constants later if we want.
+const multibase = base58btc
+const multicodes = { JSON: 0x0200, RAW: 0x55 }
+// @ts-ignore Property 'blake2b256' does not exist on type '{}'.
+const multihasher = blake.blake2b.blake2b256
 
 export type Backend = typeof backends.sqlite | typeof backends.fs
 
-// TODO: implement a streaming hashing function for large files
-export function blake32Hash (data: string | Uint8Array): Multibase<'z'> {
-  // TODO: for node/electron, switch to: https://github.com/ludios/node-blake2
-  const uint8array = typeof data === 'string' ? new TextEncoder().encode(data) : data
-  // @ts-ignore Property 'blake2b256' does not exist on type '{}'.
-  const digest = blake.blake2b.blake2b256.digest(uint8array)
-  // While `digest.digest` is only 32 bytes long in this case,
-  // `digest.bytes` is 36 bytes because it includes a multiformat prefix.
-  return base58btc.encode(digest.bytes)
-}
+// For now our entry keys are CIDs serialized to base58btc and our values are always Uint8Array instances.
+export type Entry = [string, Uint8Array]
 
 export function checkKey (key: string): void {
   if (!isValidKey(key)) {
     throw new Error(`bad key: ${JSON.stringify(key)}`)
   }
+}
+
+export async function createEntryFromFile (filepath: string): Promise<Entry> {
+  const buffer = await Deno.readFile(filepath)
+  const multicode = getPathExtension(filepath) === '.json' ? multicodes.JSON : multicodes.RAW
+  const key = createCID(buffer, multicode)
+  return [key, buffer]
+}
+
+// TODO: implement a streaming hashing function for large files.
+// Note: in fact this returns a serialized CID, not a CID object.
+export function createCID (data: string | Uint8Array, multicode = multicodes.RAW): string {
+  const uint8array = typeof data === 'string' ? new TextEncoder().encode(data) : data
+  const digest = multihasher.digest(uint8array)
+  const cid = CID.create(1, multicode, digest)
+  const key = cid.toString(multibase.encoder)
+  checkKey(key)
+  return key
 }
 
 export function exit (message: string): never {
@@ -49,6 +64,12 @@ export async function getBackend (src: string): Promise<Backend> {
     throw new Error(`could not init storage backend at "${src}": ${error.message}`)
   }
   return backend
+}
+
+export function getPathExtension (path: string): string {
+  const index = path.lastIndexOf(".")
+  if (index === -1 || index === 0) return ""
+  return path.slice(index).toLowerCase()
 }
 
 export function isArrayLength (arg: number): boolean {
