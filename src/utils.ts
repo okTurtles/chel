@@ -35,10 +35,7 @@ export async function createEntryFromFile (filepath: string): Promise<Entry> {
 export function createCID (data: string | Uint8Array, multicode = multicodes.RAW): string {
   const uint8array = typeof data === 'string' ? new TextEncoder().encode(data) : data
   const digest = multihasher.digest(uint8array)
-  const cid = CID.create(1, multicode, digest)
-  const key = cid.toString(multibase.encoder)
-  checkKey(key)
-  return key
+  return CID.create(1, multicode, digest).toString(multibase.encoder)
 }
 
 export function exit (message: string): never {

@@ -174,10 +174,7 @@ async function createEntryFromFile(filepath) {
 function createCID(data, multicode = multicodes.RAW) {
   const uint8array = typeof data === "string" ? new TextEncoder().encode(data) : data;
   const digest = multihasher.digest(uint8array);
-  const cid = CID.create(1, multicode, digest);
-  const key = cid.toString(multibase.encoder);
-  checkKey(key);
-  return key;
+  return CID.create(1, multicode, digest).toString(multibase.encoder);
 }
 function exit(message) {
   console.error("[chel]", colors.red("Error:"), message);
