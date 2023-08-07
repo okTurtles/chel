@@ -4,7 +4,7 @@ import { path } from './deps.ts'
 import { checkKey } from './utils.ts'
 
 // Initialized in `initStorage()`.
-let dataFolder = ''
+export let dataFolder = ''
 
 export async function initStorage(options: Record<string, unknown> = {}): Promise<void> {
   dataFolder = path.resolve(options.dirname as string)

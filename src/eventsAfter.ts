@@ -1,14 +1,11 @@
 'use strict'
 // chel eventsAfter [--limit N] <url-or-localpath> <contractID> <hash>
 
-import { base64, flags, path } from './deps.ts'
-import { exit, isArrayLength, isDir, isFile, isURL } from './utils.ts'
+import { base64, flags } from './deps.ts'
+import { type Backend, exit, isArrayLength, getBackend, isURL } from './utils.ts'
 
-let backend: typeof backends.sqlite | typeof backends.fs
-const backends = {
-  fs: await import('./database-fs.ts'),
-  sqlite: await import('./database-sqlite.ts')
-}
+let backend: Backend
+
 const defaultLimit = 50
 const headPrefix = 'head='
 
@@ -41,22 +38,7 @@ async function getMessage (hash: string): Promise<string> {
 }
 
 async function getMessagesSince (src: string, contractID: string, since: string, limit: number): Promise<string[]> {
-  let from
-  let options
-  if (isDir(src)) {
-    from = 'fs'
-    options = { internal: true, dirname: src }
-  } else if (isFile(src)) {
-    from = 'sqlite'
-    options = { internal: true, dirname: path.dirname(src), filename: path.basename(src) }
-  } else throw new Error(`invalid argument: "${src}"`)
-
-  backend = backends[from as keyof typeof backends]
-  try {
-    await backend.initStorage(options)
-  } catch (error) {
-    exit(`could not init storage backend at "${src}" to fetch events from: ${error.message}`)
-  }
+  backend = await getBackend(src)
 
   const contractHEAD: string | void = await readString(`${headPrefix}${contractID}`)
   if (contractHEAD === undefined) {

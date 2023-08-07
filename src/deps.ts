@@ -1,4 +1,4 @@
-export { assert, assertEquals } from 'https://deno.land/std@0.141.0/testing/asserts.ts'
+export { assert, assertEquals, assertRejects, assertThrows } from 'https://deno.land/std@0.141.0/testing/asserts.ts'
 export * as base64 from 'https://deno.land/std@0.141.0/encoding/base64.ts'
 export * as flags from 'https://deno.land/std@0.141.0/flags/mod.ts'
 export * as colors from "https://deno.land/std@0.141.0/fmt/colors.ts"

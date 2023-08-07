@@ -11,7 +11,7 @@ var __export = (target, all) => {
 };
 
 // src/deps.ts
-import { assert, assertEquals } from "https://deno.land/std@0.141.0/testing/asserts.ts";
+import { assert, assertEquals, assertRejects, assertThrows } from "https://deno.land/std@0.141.0/testing/asserts.ts";
 import * as base64 from "https://deno.land/std@0.141.0/encoding/base64.ts";
 import * as flags from "https://deno.land/std@0.141.0/flags/mod.ts";
 import * as colors from "https://deno.land/std@0.141.0/fmt/colors.ts";
@@ -36,6 +36,7 @@ var database_fs_exports = {};
 __export(database_fs_exports, {
   clear: () => clear,
   count: () => count,
+  dataFolder: () => dataFolder,
   initStorage: () => initStorage,
   iterKeys: () => iterKeys,
   readData: () => readData,
@@ -103,6 +104,7 @@ var init_database_fs = __esm({
 var database_sqlite_exports = {};
 __export(database_sqlite_exports, {
   count: () => count2,
+  dataFolder: () => dataFolder2,
   initStorage: () => initStorage2,
   iterKeys: () => iterKeys2,
   readData: () => readData2,
@@ -111,13 +113,13 @@ __export(database_sqlite_exports, {
 });
 async function initStorage2(options = {}) {
   const { dirname, filename } = options;
-  const dataFolder2 = path.resolve(dirname);
+  dataFolder2 = path.resolve(dirname);
   const filepath = path.join(dataFolder2, filename);
   if (db !== void 0) {
     if (filepath === dbPath) {
       return;
     }
-    db.close();
+    db.close(true);
   }
   db = new DB(filepath);
   db.execute("CREATE TABLE IF NOT EXISTS Data(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)");
@@ -150,12 +152,13 @@ async function writeDataOnce2(key, value) {
   checkKey(key);
   writeOnceStatement.execute([key, value]);
 }
-var DB, db, dbPath, iterKeysStatement, readStatement, writeOnceStatement, writeStatement;
+var DB, db, dbPath, iterKeysStatement, readStatement, writeOnceStatement, writeStatement, dataFolder2;
 var init_database_sqlite = __esm({
   "src/database-sqlite.ts"() {
     init_deps();
     init_utils();
     ({ DB } = sqlite);
+    dataFolder2 = "";
   }
 });
 
@@ -180,22 +183,36 @@ function exit(message) {
   console.error("[chel]", colors.red("Error:"), message);
   Deno.exit(1);
 }
-async function getBackend(src) {
-  let from;
-  let options;
-  if (isDir(src)) {
-    from = "fs";
-    options = { internal: true, dirname: src };
-  } else if (isFile(src)) {
-    from = "sqlite";
-    options = { internal: true, dirname: path.dirname(src), filename: path.basename(src) };
-  } else
-    throw new Error(`invalid argument: "${src}"`);
+async function getBackend(src, { type, create } = { type: "", create: false }) {
+  const fsOptions = { internal: true, dirname: src };
+  const sqliteOptions = { internal: true, dirname: path.dirname(src), filename: path.basename(src) };
+  if (!create && !await isDir(src) && !await isFile(src))
+    throw new Error(`not found: "${src}"`);
+  let from = type;
+  if (!from) {
+    if (await isDir(src))
+      from = "fs";
+    else if (await isFile(src))
+      from = "sqlite";
+    else
+      throw new Error(`could not infer backend type. Not found: "${src}"`);
+  }
+  let initOptions;
+  switch (from) {
+    case "fs":
+      initOptions = fsOptions;
+      break;
+    case "sqlite":
+      initOptions = sqliteOptions;
+      break;
+    default:
+      throw new Error(`unknown backend type: "${from}"`);
+  }
   const backend2 = backends[from];
   try {
-    await backend2.initStorage(options);
+    await backend2.initStorage(initOptions);
   } catch (error) {
-    throw new Error(`could not init storage backend at "${src}": ${error.message}`);
+    throw new Error(`could not init '${from}' storage backend at "${src}": ${error.message}`);
   }
   return backend2;
 }
@@ -208,19 +225,17 @@ function getPathExtension(path2) {
 function isArrayLength(arg) {
   return Number.isInteger(arg) && arg >= 0 && arg <= 2 ** 32 - 1;
 }
-function isDir(path2) {
+async function isDir(path2) {
   try {
-    const info = Deno.statSync(path2);
-    return info.isDirectory;
-  } catch (_e) {
+    return (await Deno.stat(path2)).isDirectory;
+  } catch {
     return false;
   }
 }
-function isFile(path2) {
+async function isFile(path2) {
   try {
-    const info = Deno.statSync(path2);
-    return info.isFile;
-  } catch (_e) {
+    return (await Deno.stat(path2)).isFile;
+  } catch {
     return false;
   }
 }
@@ -279,7 +294,7 @@ async function upload(args, internal = false) {
   if (files.length === 0)
     throw new Error(`missing files!`);
   const uploaded = [];
-  const uploaderFn = isDir(urlOrDirOrSqliteFile) ? uploadEntryToDir : urlOrDirOrSqliteFile.endsWith(".db") ? uploadEntryToSQLite : uploadEntryToURL;
+  const uploaderFn = await isDir(urlOrDirOrSqliteFile) ? uploadEntryToDir : urlOrDirOrSqliteFile.endsWith(".db") ? uploadEntryToSQLite : uploadEntryToURL;
   for (const filepath of files) {
     const entry = await createEntryFromFile(filepath);
     const destination = await uploaderFn(entry, urlOrDirOrSqliteFile);
@@ -347,10 +362,6 @@ async function deploy(args) {
 init_deps();
 init_utils();
 var backend;
-var backends2 = {
-  fs: await Promise.resolve().then(() => (init_database_fs(), database_fs_exports)),
-  sqlite: await Promise.resolve().then(() => (init_database_sqlite(), database_sqlite_exports))
-};
 var defaultLimit = 50;
 var headPrefix = "head=";
 async function eventsAfter(args) {
@@ -379,22 +390,7 @@ async function getMessage(hash2) {
   return JSON.parse(value).message;
 }
 async function getMessagesSince(src, contractID, since, limit) {
-  let from;
-  let options;
-  if (isDir(src)) {
-    from = "fs";
-    options = { internal: true, dirname: src };
-  } else if (isFile(src)) {
-    from = "sqlite";
-    options = { internal: true, dirname: path.dirname(src), filename: path.basename(src) };
-  } else
-    throw new Error(`invalid argument: "${src}"`);
-  backend = backends2[from];
-  try {
-    await backend.initStorage(options);
-  } catch (error) {
-    exit(`could not init storage backend at "${src}" to fetch events from: ${error.message}`);
-  }
+  backend = await getBackend(src);
   const contractHEAD = await readString(`${headPrefix}${contractID}`);
   if (contractHEAD === void 0) {
     throw new Deno.errors.NotFound(`contract ${contractID} doesn't exist!`);
@@ -445,13 +441,7 @@ async function get(args) {
   const [urlOrLocalPath, key] = parsedArgs._.map(String);
   const src = urlOrLocalPath;
   try {
-    let data;
-    if (isURL(src)) {
-      data = await readRemoteData(src, key);
-    } else {
-      const backend2 = await getBackend(src);
-      data = await backend2.readData(key);
-    }
+    const data = isURL(src) ? await readRemoteData(src, key) : await (await getBackend(src)).readData(key);
     if (data === void 0)
       exit(`no entry found for ${key}`);
     if (typeof data === "string") {
@@ -614,10 +604,6 @@ async function manifest(args) {
 // src/migrate.ts
 init_deps();
 init_utils();
-var backends3 = {
-  fs: await Promise.resolve().then(() => (init_database_fs(), database_fs_exports)),
-  sqlite: await Promise.resolve().then(() => (init_database_sqlite(), database_sqlite_exports))
-};
 async function migrate(args) {
   await revokeNet();
   const parsedArgs = flags.parse(args);
@@ -629,42 +615,15 @@ async function migrate(args) {
     exit("missing argument: --to");
   if (!out)
     exit("missing argument: --out");
-  const backendFrom = backends3[from];
-  const backendTo = backends3[to];
-  if (!backendFrom)
-    exit(`unknown storage backend: "${from}"`);
-  if (!backendTo)
-    exit(`unknown storage backend: "${to}"`);
   if (from === to)
     exit("arguments --from and --to must be different");
-  if (isDir(src)) {
-    if (from === "sqlite")
-      exit(`not a database file: "${src}"`);
-  } else if (isFile(src)) {
-    if (from === "fs")
-      exit(`not a directory: "${src}"`);
-  } else {
-    exit(`not found: "${src}"`);
-  }
-  if (isDir(out)) {
-    if (to === "sqlite")
-      exit(`argument --out is a directory: "${out}"`);
-  } else if (isFile(out)) {
-    if (to === "fs")
-      exit(`argument --out is a file: "${out}"`);
-  } else if (out.endsWith("./")) {
-    if (to === "sqlite")
-      exit(`argument --out ends with a slash: "${out}"`);
-  }
+  let backendFrom;
+  let backendTo;
   try {
-    await backendFrom.initStorage(from === "fs" ? { dirname: src } : { dirname: path.dirname(src), filename: path.basename(src) });
+    backendFrom = await getBackend(src, { type: from, create: false });
+    backendTo = await getBackend(out, { type: to, create: true });
   } catch (error) {
-    exit(`could not init storage backend at "${src}" to migrate from: ${error.message}`);
-  }
-  try {
-    await backendTo.initStorage(to === "fs" ? { dirname: out } : { dirname: path.dirname(out), filename: path.basename(out) });
-  } catch (error) {
-    exit(`could not init storage backend to migrate to: ${error.message}`);
+    exit(error.message);
   }
   const numKeys = await backendFrom.count();
   let numVisitedKeys = 0;

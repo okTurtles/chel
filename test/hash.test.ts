@@ -1,3 +1,5 @@
+'use strict'
+
 import { hash } from '../src/hash.ts'
 import { CID, assertEquals, base58btc } from '../src/deps.ts'
 
@@ -7,7 +9,7 @@ Deno.test({
     async fn (t) {
         await t.step('it should create a raw CID for a plain text file', async () => {
             const filepath = './test/assets/hello.txt'
-            const actual = await(hash([filepath], true))
+            const actual = await hash([filepath], true)
             const expected = 'zCT5htke28mL1LCgthoKDptxENznEFXdk1as6fAj31NroNyQVpyE'
             assertEquals(actual, expected)
 
@@ -20,7 +22,7 @@ Deno.test({
 
         await t.step('it should create a json CID for a json file', async () => {
             const filepath = './test/assets/hello.json'
-            const actual = await(hash([filepath], true))
+            const actual = await hash([filepath], true)
             const expected = 'zyop8PQypgycyyCEcQsEHoc9Z8S9bQt1CuHuRKnXrAXagVBGxQyvH'
             assertEquals(actual, expected)
 

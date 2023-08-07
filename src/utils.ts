@@ -4,16 +4,14 @@ import { CID, base58btc, blake, colors, path } from './deps.ts'
 import * as fs from './database-fs.ts'
 import * as sqlite from './database-sqlite.ts'
 
+// We can update these constants later if we want.
 const backends = { fs, sqlite }
-
-// We can change these constants later if we want.
 const multibase = base58btc
 const multicodes = { JSON: 0x0200, RAW: 0x55 }
 // @ts-ignore Property 'blake2b256' does not exist on type '{}'.
 const multihasher = blake.blake2b.blake2b256
 
 export type Backend = typeof backends.sqlite | typeof backends.fs
-
 // For now our entry keys are CIDs serialized to base58btc and our values are always Uint8Array instances.
 export type Entry = [string, Uint8Array]
 
@@ -43,22 +41,35 @@ export function exit (message: string): never {
   Deno.exit(1)
 }
 
-export async function getBackend (src: string): Promise<Backend> {
-  let from
-  let options
-  if (isDir(src)) {
-    from = 'fs'
-    options = { internal: true, dirname: src }
-  } else if (isFile(src)) {
-    from = 'sqlite'
-    options = { internal: true, dirname: path.dirname(src), filename: path.basename(src) }
-  } else throw new Error(`invalid argument: "${src}"`)
+// Supported backend types: fs and sqlite
+export async function getBackend (src: string, { type, create } = { type: '', create: false }): Promise<Backend> {
+  const fsOptions = { internal: true, dirname: src }
+  const sqliteOptions = { internal: true, dirname: path.dirname(src), filename: path.basename(src) }
+
+  // If 'create' is falsy then make sure 'src' already exists, becqause otherwise 'initStorage()' would create it.
+  if (!create && !await isDir(src) && !await isFile(src)) throw new Error(`not found: "${src}"`)
+
+  // We first need to know the backend type and init options.
+  let from = type
+  if (!from) {
+    // Attempt to auto-detect the backend type.
+    if (await isDir(src)) from = 'fs'
+    else if (await isFile(src)) from = 'sqlite'
+    else throw new Error(`could not infer backend type. Not found: "${src}"`)
+  }
+
+  let initOptions
+  switch (from) {
+    case 'fs': initOptions = fsOptions; break
+    case 'sqlite': initOptions = sqliteOptions; break
+    default: throw new Error(`unknown backend type: "${from}"`)
+  }
 
   const backend: Backend = backends[from as keyof typeof backends]
   try {
-    await backend.initStorage(options)
+    await backend.initStorage(initOptions)
   } catch (error) {
-    throw new Error(`could not init storage backend at "${src}": ${error.message}`)
+    throw new Error(`could not init '${from}' storage backend at "${src}": ${error.message}`)
   }
   return backend
 }
@@ -74,21 +85,19 @@ export function isArrayLength (arg: number): boolean {
 }
 
 // Checks whether a path points to a directory, following symlinks if any.
-export function isDir (path: string | URL): boolean {
+export async function isDir (path: string | URL): Promise<boolean> {
   try {
-    const info = Deno.statSync(path)
-    return info.isDirectory
-  } catch (_e) {
+    return (await Deno.stat(path)).isDirectory
+  } catch {
     return false
   }
 }
 
 // Checks whether a path points to a file, following symlinks if any.
-export function isFile (path: string | URL): boolean {
+export async function isFile (path: string | URL): Promise<boolean> {
   try {
-    const info = Deno.statSync(path)
-    return info.isFile
-  } catch (_e) {
+    return (await Deno.stat(path)).isFile
+  } catch {
     return false
   }
 }

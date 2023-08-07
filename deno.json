@@ -6,7 +6,7 @@
     "compile": "deno run --import-map=./vendor/import_map.json --no-remote --allow-run --allow-read=. --allow-write=./dist scripts/compile.ts",
     "build": "deno run --import-map=./vendor/import_map.json --no-remote --allow-run --allow-read --allow-env --allow-write=./build --allow-net scripts/build.ts",
     "dist": "deno lint && deno task build && deno task compile",
-    "test": "deno test --import-map=./vendor/import_map.json --allow-read=. --no-remote"
+    "test": "deno test --import-map=./vendor/import_map.json --allow-read=. --allow-write=test --no-remote"
   },
   "imports": {
     "https://deno.land/std/io/util.ts": "https://deno.land/std@0.156.0/io/util.ts"

@@ -18,14 +18,10 @@ export async function get (args: string[]): Promise<void> {
   const src = urlOrLocalPath
 
   try {
-    let data
+    const data = isURL(src)
+      ? await readRemoteData(src, key)
+      : await (await getBackend(src)).readData(key)
 
-    if (isURL(src)) {
-      data = await readRemoteData(src, key)
-    } else {
-      const backend = await getBackend(src)
-      data = await backend.readData(key)
-    }
     if (data === undefined) exit(`no entry found for ${key}`)
 
     if (typeof data === 'string') {

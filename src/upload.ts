@@ -9,7 +9,7 @@ export async function upload (args: string[], internal = false) {
   const [urlOrDirOrSqliteFile, ...files] = args
   if (files.length === 0) throw new Error(`missing files!`)
   const uploaded = []
-  const uploaderFn = isDir(urlOrDirOrSqliteFile)
+  const uploaderFn = await isDir(urlOrDirOrSqliteFile)
     ? uploadEntryToDir
     : urlOrDirOrSqliteFile.endsWith('.db')
       ? uploadEntryToSQLite
