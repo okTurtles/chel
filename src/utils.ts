@@ -7,6 +7,7 @@ import * as sqlite from './database-sqlite.ts'
 // We can update these constants later if we want.
 const backends = { fs, sqlite }
 const multibase = base58btc
+// Values from https://github.com/multiformats/multicodec/blob/master/table.csv
 const multicodes = { JSON: 0x0200, RAW: 0x55 }
 // @ts-ignore Property 'blake2b256' does not exist on type '{}'.
 const multihasher = blake.blake2b.blake2b256

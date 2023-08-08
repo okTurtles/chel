@@ -13,7 +13,7 @@ export async function hash (args: string[], internal = false) {
   }
   const [cid] = await createEntryFromFile(filename)
   if (!internal) {
-    console.log(`CID for file (${filename}):`, cid)
+    console.log(`CID(${filename}):`, cid)
   }
   return cid
 }
