@@ -10,10 +10,13 @@ let readStatement: PreparedQuery<[string]>
 let writeOnceStatement: PreparedQuery
 let writeStatement: PreparedQuery
 
+// Initialized in initStorage().
+export let dataFolder = ''
+
 // deno-lint-ignore require-await
 export async function initStorage (options: Record<string, unknown> = {}): Promise<void> {
   const { dirname, filename } = options
-  const dataFolder = path.resolve(dirname as string)
+  dataFolder = path.resolve(dirname as string)
   const filepath = path.join(dataFolder, filename as string)
 
   if (db !== undefined) {
@@ -22,7 +25,7 @@ export async function initStorage (options: Record<string, unknown> = {}): Promi
       return
     }
     // Close the old DB object since we're going to open a new one.
-    db.close()
+    db.close(true)
   }
   db = new DB(filepath)
   // Important: keep this in sync with the schema used in GroupIncome.

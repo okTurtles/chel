@@ -11,15 +11,17 @@ var __export = (target, all) => {
 };
 
 // src/deps.ts
-import * as flags from "https://deno.land/std@0.141.0/flags/mod.ts";
-import * as path from "https://deno.land/std@0.141.0/path/mod.ts";
-import * as colors from "https://deno.land/std@0.141.0/fmt/colors.ts";
-import * as streams from "https://deno.land/std@0.141.0/streams/mod.ts";
-import * as fs from "https://deno.land/std@0.141.0/fs/mod.ts";
+import { assert, assertEquals, assertRejects, assertThrows } from "https://deno.land/std@0.141.0/testing/asserts.ts";
 import * as base64 from "https://deno.land/std@0.141.0/encoding/base64.ts";
+import * as flags from "https://deno.land/std@0.141.0/flags/mod.ts";
+import * as colors from "https://deno.land/std@0.141.0/fmt/colors.ts";
+import * as fs from "https://deno.land/std@0.141.0/fs/mod.ts";
+import * as path from "https://deno.land/std@0.141.0/path/mod.ts";
+import * as streams from "https://deno.land/std@0.141.0/streams/mod.ts";
 import { base58btc } from "https://esm.sh/multiformats@11.0.2/bases/base58?pin=v120";
 import {} from "https://esm.sh/multiformats@11.0.2?pin=v120";
 import { default as default2 } from "https://esm.sh/@multiformats/blake2@1.0.13?pin=v120";
+import { CID } from "https://esm.sh/multiformats@11.0.2/cid?pin=v120";
 import { miniexec } from "https://deno.land/x/miniexec@1.0.0/mod.ts";
 import * as esbuild from "https://deno.land/x/esbuild@v0.14.47/mod.js";
 import * as sqlite from "https://deno.land/x/sqlite@v3.7.1/mod.ts";
@@ -34,6 +36,7 @@ var database_fs_exports = {};
 __export(database_fs_exports, {
   clear: () => clear,
   count: () => count,
+  dataFolder: () => dataFolder,
   initStorage: () => initStorage,
   iterKeys: () => iterKeys,
   readData: () => readData,
@@ -101,6 +104,7 @@ var init_database_fs = __esm({
 var database_sqlite_exports = {};
 __export(database_sqlite_exports, {
   count: () => count2,
+  dataFolder: () => dataFolder2,
   initStorage: () => initStorage2,
   iterKeys: () => iterKeys2,
   readData: () => readData2,
@@ -109,13 +113,13 @@ __export(database_sqlite_exports, {
 });
 async function initStorage2(options = {}) {
   const { dirname, filename } = options;
-  const dataFolder2 = path.resolve(dirname);
+  dataFolder2 = path.resolve(dirname);
   const filepath = path.join(dataFolder2, filename);
   if (db !== void 0) {
     if (filepath === dbPath) {
       return;
     }
-    db.close();
+    db.close(true);
   }
   db = new DB(filepath);
   db.execute("CREATE TABLE IF NOT EXISTS Data(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)");
@@ -148,65 +152,90 @@ async function writeDataOnce2(key, value) {
   checkKey(key);
   writeOnceStatement.execute([key, value]);
 }
-var DB, db, dbPath, iterKeysStatement, readStatement, writeOnceStatement, writeStatement;
+var DB, db, dbPath, iterKeysStatement, readStatement, writeOnceStatement, writeStatement, dataFolder2;
 var init_database_sqlite = __esm({
   "src/database-sqlite.ts"() {
     init_deps();
     init_utils();
     ({ DB } = sqlite);
+    dataFolder2 = "";
   }
 });
 
 // src/utils.ts
-function blake32Hash(data) {
-  const uint8array = typeof data === "string" ? new TextEncoder().encode(data) : data;
-  const digest = default2.blake2b.blake2b256.digest(uint8array);
-  return base58btc.encode(digest.bytes);
-}
 function checkKey(key) {
   if (!isValidKey(key)) {
     throw new Error(`bad key: ${JSON.stringify(key)}`);
   }
 }
+async function createEntryFromFile(filepath) {
+  const buffer = await Deno.readFile(filepath);
+  const multicode = getPathExtension(filepath) === ".json" ? multicodes.JSON : multicodes.RAW;
+  const key = createCID(buffer, multicode);
+  return [key, buffer];
+}
+function createCID(data, multicode = multicodes.RAW) {
+  const uint8array = typeof data === "string" ? new TextEncoder().encode(data) : data;
+  const digest = multihasher.digest(uint8array);
+  return CID.create(1, multicode, digest).toString(multibase.encoder);
+}
 function exit(message) {
   console.error("[chel]", colors.red("Error:"), message);
   Deno.exit(1);
 }
-async function getBackend(src) {
-  let from;
-  let options;
-  if (isDir(src)) {
-    from = "fs";
-    options = { internal: true, dirname: src };
-  } else if (isFile(src)) {
-    from = "sqlite";
-    options = { internal: true, dirname: path.dirname(src), filename: path.basename(src) };
-  } else
-    throw new Error(`invalid argument: "${src}"`);
+async function getBackend(src, { type, create } = { type: "", create: false }) {
+  const fsOptions = { internal: true, dirname: src };
+  const sqliteOptions = { internal: true, dirname: path.dirname(src), filename: path.basename(src) };
+  if (!create && !await isDir(src) && !await isFile(src))
+    throw new Error(`not found: "${src}"`);
+  let from = type;
+  if (!from) {
+    if (await isDir(src))
+      from = "fs";
+    else if (await isFile(src))
+      from = "sqlite";
+    else
+      throw new Error(`could not infer backend type. Not found: "${src}"`);
+  }
+  let initOptions;
+  switch (from) {
+    case "fs":
+      initOptions = fsOptions;
+      break;
+    case "sqlite":
+      initOptions = sqliteOptions;
+      break;
+    default:
+      throw new Error(`unknown backend type: "${from}"`);
+  }
   const backend2 = backends[from];
   try {
-    await backend2.initStorage(options);
+    await backend2.initStorage(initOptions);
   } catch (error) {
-    throw new Error(`could not init storage backend at "${src}": ${error.message}`);
+    throw new Error(`could not init '${from}' storage backend at "${src}": ${error.message}`);
   }
   return backend2;
+}
+function getPathExtension(path2) {
+  const index = path2.lastIndexOf(".");
+  if (index === -1 || index === 0)
+    return "";
+  return path2.slice(index).toLowerCase();
 }
 function isArrayLength(arg) {
   return Number.isInteger(arg) && arg >= 0 && arg <= 2 ** 32 - 1;
 }
-function isDir(path2) {
+async function isDir(path2) {
   try {
-    const info = Deno.statSync(path2);
-    return info.isDirectory;
-  } catch (_e) {
+    return (await Deno.stat(path2)).isDirectory;
+  } catch {
     return false;
   }
 }
-function isFile(path2) {
+async function isFile(path2) {
   try {
-    const info = Deno.statSync(path2);
-    return info.isFile;
-  } catch (_e) {
+    return (await Deno.stat(path2)).isFile;
+  } catch {
     return false;
   }
 }
@@ -226,7 +255,7 @@ async function readRemoteData(src, key) {
 async function revokeNet() {
   await Deno.permissions.revoke({ name: "net" });
 }
-var backends;
+var backends, multibase, multicodes, multihasher;
 var init_utils = __esm({
   "src/utils.ts"() {
     "use strict";
@@ -234,6 +263,9 @@ var init_utils = __esm({
     init_database_fs();
     init_database_sqlite();
     backends = { fs: database_fs_exports, sqlite: database_sqlite_exports };
+    multibase = base58btc;
+    multicodes = { JSON: 512, RAW: 85 };
+    multihasher = default2.blake2b.blake2b256;
   }
 });
 
@@ -262,9 +294,10 @@ async function upload(args, internal = false) {
   if (files.length === 0)
     throw new Error(`missing files!`);
   const uploaded = [];
-  const uploaderFn = isDir(urlOrDirOrSqliteFile) ? uploadToDir : urlOrDirOrSqliteFile.endsWith(".db") ? uploadToSQLite : uploadToURL;
+  const uploaderFn = await isDir(urlOrDirOrSqliteFile) ? uploadEntryToDir : urlOrDirOrSqliteFile.endsWith(".db") ? uploadEntryToSQLite : uploadEntryToURL;
   for (const filepath of files) {
-    const destination = await uploaderFn(filepath, urlOrDirOrSqliteFile);
+    const entry = await createEntryFromFile(filepath);
+    const destination = await uploaderFn(entry, urlOrDirOrSqliteFile);
     if (!internal) {
       console.log(colors.green("uploaded:"), destination);
     } else {
@@ -274,35 +307,29 @@ async function upload(args, internal = false) {
   }
   return uploaded;
 }
-function uploadToURL(filepath, url) {
-  const buffer = Deno.readFileSync(filepath);
-  const hash2 = blake32Hash(buffer);
+function uploadEntryToURL([cid, buffer], url) {
   const form = new FormData();
-  form.append("hash", hash2);
-  form.append("data", new Blob([buffer]), path.basename(filepath));
+  form.append("hash", cid);
+  form.append("data", new Blob([buffer]));
   return fetch(`${url}/file`, { method: "POST", body: form }).then(handleFetchResult("text")).then((r) => {
-    if (r !== `/file/${hash2}`) {
+    if (r !== `/file/${cid}`) {
       throw new Error(`server returned bad URL: ${r}`);
     }
     return `${url}${r}`;
   });
 }
-async function uploadToDir(filepath, dir) {
+async function uploadEntryToDir([cid, buffer], dir) {
   await revokeNet();
-  const buffer = Deno.readFileSync(filepath);
-  const hash2 = blake32Hash(buffer);
-  const destination = path.join(dir, hash2);
+  const destination = path.join(dir, cid);
   await Deno.writeFile(destination, buffer);
   return destination;
 }
-async function uploadToSQLite(filepath, sqlitedb) {
+async function uploadEntryToSQLite([cid, buffer], sqlitedb) {
   await revokeNet();
   const { initStorage: initStorage3, writeData: writeData3 } = await Promise.resolve().then(() => (init_database_sqlite(), database_sqlite_exports));
   initStorage3({ dirname: path.dirname(sqlitedb), filename: path.basename(sqlitedb) });
-  const buffer = await Deno.readFile(filepath);
-  const hash2 = blake32Hash(buffer);
-  writeData3(hash2, buffer);
-  return hash2;
+  writeData3(cid, buffer);
+  return cid;
 }
 function handleFetchResult(type) {
   return function(r) {
@@ -335,10 +362,6 @@ async function deploy(args) {
 init_deps();
 init_utils();
 var backend;
-var backends2 = {
-  fs: await Promise.resolve().then(() => (init_database_fs(), database_fs_exports)),
-  sqlite: await Promise.resolve().then(() => (init_database_sqlite(), database_sqlite_exports))
-};
 var defaultLimit = 50;
 var headPrefix = "head=";
 async function eventsAfter(args) {
@@ -367,22 +390,7 @@ async function getMessage(hash2) {
   return JSON.parse(value).message;
 }
 async function getMessagesSince(src, contractID, since, limit) {
-  let from;
-  let options;
-  if (isDir(src)) {
-    from = "fs";
-    options = { internal: true, dirname: src };
-  } else if (isFile(src)) {
-    from = "sqlite";
-    options = { internal: true, dirname: path.dirname(src), filename: path.basename(src) };
-  } else
-    throw new Error(`invalid argument: "${src}"`);
-  backend = backends2[from];
-  try {
-    await backend.initStorage(options);
-  } catch (error) {
-    exit(`could not init storage backend at "${src}" to fetch events from: ${error.message}`);
-  }
+  backend = await getBackend(src);
   const contractHEAD = await readString(`${headPrefix}${contractID}`);
   if (contractHEAD === void 0) {
     throw new Deno.errors.NotFound(`contract ${contractID} doesn't exist!`);
@@ -433,13 +441,7 @@ async function get(args) {
   const [urlOrLocalPath, key] = parsedArgs._.map(String);
   const src = urlOrLocalPath;
   try {
-    let data;
-    if (isURL(src)) {
-      data = await readRemoteData(src, key);
-    } else {
-      const backend2 = await getBackend(src);
-      data = await backend2.readData(key);
-    }
+    const data = isURL(src) ? await readRemoteData(src, key) : await (await getBackend(src)).readData(key);
     if (data === void 0)
       exit(`no entry found for ${key}`);
     if (typeof data === "string") {
@@ -453,7 +455,6 @@ async function get(args) {
 }
 
 // src/hash.ts
-init_deps();
 init_utils();
 async function hash(args, internal = false) {
   const [filename] = args;
@@ -461,14 +462,11 @@ async function hash(args, internal = false) {
     console.error("please pass in a file");
     Deno.exit(1);
   }
-  const file = await Deno.open(filename, { read: true });
-  const myFileContent = await streams.readAll(file);
-  Deno.close(file.rid);
-  const hash2 = blake32Hash(myFileContent);
+  const [cid] = await createEntryFromFile(filename);
   if (!internal) {
-    console.log(`blake32Hash(${filename}):`, hash2);
+    console.log(`CID for file (${filename}):`, cid);
   }
-  return hash2;
+  return cid;
 }
 
 // src/help.ts
@@ -504,6 +502,9 @@ var helpDict = {
   `,
   hash: `
     chel hash <file>
+
+    Computes and logs the content identifier (CID) for the given file.
+    File contents will be interpreted as raw binary data, unless the file extension is '.json'.
   `,
   manifest: `
     chel manifest [-k|--key <pubkey1> [-k|--key <pubkey2> ...]]
@@ -603,10 +604,6 @@ async function manifest(args) {
 // src/migrate.ts
 init_deps();
 init_utils();
-var backends3 = {
-  fs: await Promise.resolve().then(() => (init_database_fs(), database_fs_exports)),
-  sqlite: await Promise.resolve().then(() => (init_database_sqlite(), database_sqlite_exports))
-};
 async function migrate(args) {
   await revokeNet();
   const parsedArgs = flags.parse(args);
@@ -618,42 +615,15 @@ async function migrate(args) {
     exit("missing argument: --to");
   if (!out)
     exit("missing argument: --out");
-  const backendFrom = backends3[from];
-  const backendTo = backends3[to];
-  if (!backendFrom)
-    exit(`unknown storage backend: "${from}"`);
-  if (!backendTo)
-    exit(`unknown storage backend: "${to}"`);
   if (from === to)
     exit("arguments --from and --to must be different");
-  if (isDir(src)) {
-    if (from === "sqlite")
-      exit(`not a database file: "${src}"`);
-  } else if (isFile(src)) {
-    if (from === "fs")
-      exit(`not a directory: "${src}"`);
-  } else {
-    exit(`not found: "${src}"`);
-  }
-  if (isDir(out)) {
-    if (to === "sqlite")
-      exit(`argument --out is a directory: "${out}"`);
-  } else if (isFile(out)) {
-    if (to === "fs")
-      exit(`argument --out is a file: "${out}"`);
-  } else if (out.endsWith("./")) {
-    if (to === "sqlite")
-      exit(`argument --out ends with a slash: "${out}"`);
-  }
+  let backendFrom;
+  let backendTo;
   try {
-    await backendFrom.initStorage(from === "fs" ? { dirname: src } : { dirname: path.dirname(src), filename: path.basename(src) });
+    backendFrom = await getBackend(src, { type: from, create: false });
+    backendTo = await getBackend(out, { type: to, create: true });
   } catch (error) {
-    exit(`could not init storage backend at "${src}" to migrate from: ${error.message}`);
-  }
-  try {
-    await backendTo.initStorage(to === "fs" ? { dirname: out } : { dirname: path.dirname(out), filename: path.basename(out) });
-  } catch (error) {
-    exit(`could not init storage backend to migrate to: ${error.message}`);
+    exit(error.message);
   }
   const numKeys = await backendFrom.count();
   let numVisitedKeys = 0;
