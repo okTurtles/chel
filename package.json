@@ -1,10 +1,10 @@
 {
   "name": "@chelonia/cli",
-  "version": "1.2.2",
+  "version": "2.0.0",
   "description": "Chelonia Command-line Interface",
   "main": "src/main.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "deno task test",
     "postinstall": "node ./scripts/install.js"
   },
   "bin": {

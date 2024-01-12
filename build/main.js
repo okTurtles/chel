@@ -464,7 +464,7 @@ async function hash(args, internal = false) {
   }
   const [cid] = await createEntryFromFile(filename);
   if (!internal) {
-    console.log(`CID for file (${filename}):`, cid);
+    console.log(`CID(${filename}):`, cid);
   }
   return cid;
 }
@@ -648,7 +648,7 @@ async function migrate(args) {
 
 // src/version.ts
 function version() {
-  console.log("1.2.2");
+  console.log("2.0.0");
 }
 
 // src/main.ts

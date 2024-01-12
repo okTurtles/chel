@@ -1,5 +1,14 @@
 # HISTORY
 
+### v2.0.0
+
+Breaking changes: hash format is now different (correct representation for `blake2b-256` and uses [CIDs](https://github.com/multiformats/cid)).
+
+- Rename eventsSince to eventsAfter (h/t [@snowteamer](https://github.com/okTurtles/chel/pull/15))
+- Add chel get command  (h/t [@snowteamer](https://github.com/okTurtles/chel/pull/16))
+- Use CIDs for content addressing rather than plain hashes (h/t [@snowteamer](https://github.com/okTurtles/chel/pull/21))
+- Native ARM binary for M-series macs.
+
 ### v1.2.1, v1.2.2
 
 - Restore `bin/chel`
