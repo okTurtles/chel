@@ -1,5 +1,12 @@
 # HISTORY
 
+### v2.0.1
+
+(Though breaking change, doesn't affect anyone.)
+
+- multicode RAW changed from `0x55` to `0x00`
+- use multicode RAW for all files, including json files
+
 ### v2.0.0
 
 Breaking changes: hash format is now different (correct representation for `blake2b-256` and uses [CIDs](https://github.com/multiformats/cid)).

@@ -8,7 +8,7 @@ import * as sqlite from './database-sqlite.ts'
 const backends = { fs, sqlite }
 const multibase = base58btc
 // Values from https://github.com/multiformats/multicodec/blob/master/table.csv
-const multicodes = { JSON: 0x0200, RAW: 0x55 }
+const multicodes = { JSON: 0x0200, RAW: 0x00 }
 // @ts-ignore Property 'blake2b256' does not exist on type '{}'.
 const multihasher = blake.blake2b.blake2b256
 
@@ -24,8 +24,7 @@ export function checkKey (key: string): void {
 
 export async function createEntryFromFile (filepath: string): Promise<Entry> {
   const buffer = await Deno.readFile(filepath)
-  const multicode = getPathExtension(filepath) === '.json' ? multicodes.JSON : multicodes.RAW
-  const key = createCID(buffer, multicode)
+  const key = createCID(buffer)
   return [key, buffer]
 }
 

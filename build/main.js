@@ -170,8 +170,7 @@ function checkKey(key) {
 }
 async function createEntryFromFile(filepath) {
   const buffer = await Deno.readFile(filepath);
-  const multicode = getPathExtension(filepath) === ".json" ? multicodes.JSON : multicodes.RAW;
-  const key = createCID(buffer, multicode);
+  const key = createCID(buffer);
   return [key, buffer];
 }
 function createCID(data, multicode = multicodes.RAW) {
@@ -216,12 +215,6 @@ async function getBackend(src, { type, create } = { type: "", create: false }) {
   }
   return backend2;
 }
-function getPathExtension(path2) {
-  const index = path2.lastIndexOf(".");
-  if (index === -1 || index === 0)
-    return "";
-  return path2.slice(index).toLowerCase();
-}
 function isArrayLength(arg) {
   return Number.isInteger(arg) && arg >= 0 && arg <= 2 ** 32 - 1;
 }
@@ -264,7 +257,7 @@ var init_utils = __esm({
     init_database_sqlite();
     backends = { fs: database_fs_exports, sqlite: database_sqlite_exports };
     multibase = base58btc;
-    multicodes = { JSON: 512, RAW: 85 };
+    multicodes = { JSON: 512, RAW: 0 };
     multihasher = default2.blake2b.blake2b256;
   }
 });
@@ -648,7 +641,7 @@ async function migrate(args) {
 
 // src/version.ts
 function version() {
-  console.log("2.0.0");
+  console.log("2.0.1");
 }
 
 // src/main.ts
