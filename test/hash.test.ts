@@ -20,7 +20,7 @@ Deno.test({
             assertEquals(cid.version, 1)
         })
 
-        await t.step('it should create a json CID for a json file', async () => {
+        await t.step('it should create a raw CID for a json file', async () => {
             const filepath = './test/assets/hello.json'
             const actual = await hash([filepath], true)
             const expected = 'z9brRu3VWh2crTt5nDjmu8dciMkHp1LR3wmDaqEqXHK46RbuTPy3'
