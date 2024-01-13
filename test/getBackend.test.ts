@@ -19,25 +19,25 @@ Deno.test({
         await t.step('it should fail given a non-existing folder if option `create` was not `true`', async () => {
             const src = fakeDataFolder
             assert(!await exists(src))
-            assertRejects(() => getBackend(src))
-            assertRejects(() => getBackend(src, { type: 'fs', create: false }))
-            assertRejects(() => getBackend(src, { type: 'sqlite', create: false }))
+            await assertRejects(() => getBackend(src))
+            await assertRejects(() => getBackend(src, { type: 'fs', create: false }))
+            await assertRejects(() => getBackend(src, { type: 'sqlite', create: false }))
             assert(!await exists(src), 'the folder should not have been created')
         })
 
         await t.step('FS - should fail given a file instead of a folder', async () => {
             const src = realFilepath
             assert(await exists(src))
-            assertRejects(() => getBackend(src, { type: 'fs', create: false }))
-            assertRejects(() => getBackend(src, { type: 'fs', create: true }))
+            await assertRejects(() => getBackend(src, { type: 'fs', create: false }))
+            await assertRejects(() => getBackend(src, { type: 'fs', create: true }))
             assert(await exists(src), 'the file should not have been deleted')
         })
 
         await t.step('SQLite - should fail given a folder instead of a file', async () => {
             const src = realDataFolder
             assert(await exists(src))
-            assertRejects(() => getBackend(src, { type: 'sqlite', create: false }))
-            assertRejects(() => getBackend(src, { type: 'sqlite', create: true }))
+            await assertRejects(() => getBackend(src, { type: 'sqlite', create: false }))
+            await assertRejects(() => getBackend(src, { type: 'sqlite', create: true }))
             assert(await exists(src), 'the folder should not have been deleted')
         })
 
