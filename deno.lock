@@ -1,5 +1,16 @@
 {
   "version": "3",
+  "packages": {
+    "specifiers": {
+      "npm:@types/node": "npm:@types/node@18.16.19"
+    },
+    "npm": {
+      "@types/node@18.16.19": {
+        "integrity": "sha512-IXl7o+R9iti9eBW4Wg2hx1xQDig183jj7YLn8F7udNceyfkbn1ZxmzZXuak20gR40D7pIkIY1kYGx5VIGbaHKA==",
+        "dependencies": {}
+      }
+    }
+  },
   "remote": {
     "https://deno.land/std@0.141.0/_deno_unstable.ts": "be3276fd42cffb49f51b705c4b0aa8656aaf2a34be22d769455c8e50ea38e51a",
     "https://deno.land/std@0.141.0/_util/assert.ts": "e94f2eb37cebd7f199952e242c77654e43333c1ac4c5c700e929ea3aa5489f74",
@@ -73,6 +84,7 @@
     "https://esm.sh/multiformats@11.0.2/bases/base58?pin=v120": "56b47cfb7575c0f28044b5340f14a38e1775be6ab2c2fe5f81a882c19260f78a",
     "https://esm.sh/multiformats@11.0.2/cid?pin=v120": "56f33147af16cdb712f1d51858d1d483353ed09d54acde4fa86b379e83e058f9",
     "https://esm.sh/multiformats@11.0.2?pin=v120": "61b319b9f022bc676137ccd138d2f4abffc45c0887063c697a00068577910f82",
+    "https://esm.sh/tweetnacl@1.0.3?pin=v120": "7fd2e067403532babb7e801d6c3746135710d6e053200225fa146dc9782db4fa",
     "https://esm.sh/v120/@multiformats/blake2@1.0.13/denonext/blake2.mjs": "06b7a0e19c9829682b687896238cee5af51914a6c4e36189962495c5fab6ca39",
     "https://esm.sh/v120/@multiformats/blake2@1.0.13/denonext/blake2b.js": "941975606700293e37053d2447cbc9f69a1c8dab5dcfb83e3e601bfb04e8a89a",
     "https://esm.sh/v120/@multiformats/blake2@1.0.13/denonext/blake2s.js": "501b9234b3c12c9126998ed31d7b7749f747ae672aceb25048d0769faa2542e1",
@@ -91,6 +103,16 @@
     "https://esm.sh/v120/multiformats@9.9.0/denonext/cid.js": "48cf6a7ce1549d22c4c1c52f7bdc86764e8b0b554e63479c225dfee55e5e2680",
     "https://esm.sh/v120/multiformats@9.9.0/denonext/hashes/digest.js": "48b56d71af6b63bbcc2ba2e950c4cad2ae39d1d1ffdac0bfa66b0158884870d7",
     "https://esm.sh/v120/multiformats@9.9.0/denonext/hashes/hasher.js": "0c14237ee590ff3bf5ef2d5dd2a9cac4bea36b9b0b58b66cb1dd8e6cfac505cc",
-    "https://esm.sh/v120/multiformats@9.9.0/denonext/multiformats.mjs": "39aa6f06f0810d8e179e2cabbc0e5d56ce80c4167994ccb24d1730648d958ef9"
+    "https://esm.sh/v120/multiformats@9.9.0/denonext/multiformats.mjs": "39aa6f06f0810d8e179e2cabbc0e5d56ce80c4167994ccb24d1730648d958ef9",
+    "https://esm.sh/v120/tweetnacl@1.0.3/denonext/tweetnacl.mjs": "b4b0ea92630faa255eef33b2ac85734313cd8930834375bb2527392f1823775e"
+  },
+  "workspace": {
+    "packageJson": {
+      "dependencies": [
+        "npm:axios@0.27.2",
+        "npm:rimraf@3.0.2",
+        "npm:tar@6.1.11"
+      ]
+    }
   }
 }
