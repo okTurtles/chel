@@ -36,7 +36,8 @@ export function createCID (data: string | Uint8Array, multicode = multicodes.RAW
   return CID.create(1, multicode, digest).toString(multibase.encoder)
 }
 
-export function exit (message: string): never {
+export function exit (message: string, internal = false): never {
+  if (internal) throw new Error(message)
   console.error('[chel]', colors.red('Error:'), message)
   Deno.exit(1)
 }
@@ -124,4 +125,12 @@ export async function readRemoteData (src: string, key: string): Promise<Uint8Ar
 
 export async function revokeNet () {
   await Deno.permissions.revoke({ name: 'net' })
+}
+
+export const importJsonFile = async (file: unknown) => {
+  const data = await import(
+    path.toFileUrl(path.resolve(String(file))).toString(),
+    { with: { type: 'json' }}
+  )
+  return data.default
 }

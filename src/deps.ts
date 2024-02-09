@@ -5,6 +5,7 @@ export * as colors from "https://deno.land/std@0.141.0/fmt/colors.ts"
 export * as fs from 'https://deno.land/std@0.141.0/fs/mod.ts'
 export * as path from 'https://deno.land/std@0.141.0/path/mod.ts'
 export * as streams from "https://deno.land/std@0.141.0/streams/mod.ts"
+export { default as tweetnacl } from 'https://esm.sh/tweetnacl@1.0.3?pin=v120'
 export { base58btc } from 'https://esm.sh/multiformats@11.0.2/bases/base58?pin=v120'
 export { type Multibase } from 'https://esm.sh/multiformats@11.0.2?pin=v120'
 export { default as blake } from 'https://esm.sh/@multiformats/blake2@1.0.13?pin=v120'

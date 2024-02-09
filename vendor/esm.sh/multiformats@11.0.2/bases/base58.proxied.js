@@ -1,2 +1,4 @@
 /* esm.sh - multiformats@11.0.2/bases/base58 */
-export * from "https://esm.sh/v120/multiformats@11.0.2/deno/bases/base58.js";
+import "/v120/multiformats@11.0.2/denonext/bytes.js";
+import "/v120/multiformats@11.0.2/denonext/bases/interface.js";
+export * from "/v120/multiformats@11.0.2/denonext/bases/base58.js";
