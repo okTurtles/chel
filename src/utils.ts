@@ -36,7 +36,8 @@ export function createCID (data: string | Uint8Array, multicode = multicodes.RAW
   return CID.create(1, multicode, digest).toString(multibase.encoder)
 }
 
-export function exit (message: string): never {
+export function exit (message: string, internal = false): never {
+  if (internal) throw new Error(message)
   console.error('[chel]', colors.red('Error:'), message)
   Deno.exit(1)
 }

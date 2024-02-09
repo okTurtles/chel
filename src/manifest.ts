@@ -7,7 +7,7 @@
 
 import { flags, path, colors } from './deps.ts'
 import { hash } from './hash.ts'
-import { importJsonFile, revokeNet } from './utils.ts'
+import { exit, importJsonFile, revokeNet } from './utils.ts'
 import { EDWARDS25519SHA512BATCH, deserializeKey, keyId, serializeKey, sign } from './lib/crypto.ts'
 
 // import { writeAllSync } from "https://deno.land/std@0.141.0/streams/mod.ts"
@@ -22,7 +22,7 @@ export async function manifest (args: string[]) {
   const version = parsedArgs.version || parsedArgs.v || 'x'
   const slim = parsedArgs.slim || parsedArgs.s
   const outFilepath = path.join(contractDir, `${contractName}.${version}.manifest.json`)
-  if (!keyFile) throw new Error('Missing signing key file')
+  if (!keyFile) exit('Missing signing key file')
 
   const signingKeyDescriptor = await importJsonFile(keyFile)
   const signingKey = deserializeKey(signingKeyDescriptor.privkey)
@@ -35,7 +35,7 @@ export async function manifest (args: string[]) {
           const descriptor = await importJsonFile(kf)
           const key = deserializeKey(descriptor.pubkey)
           if (key.type !== EDWARDS25519SHA512BATCH) {
-            throw new Error(`Invalid key type ${key.type}; only ${EDWARDS25519SHA512BATCH} keys are supported.`)
+            exit(`Invalid key type ${key.type}; only ${EDWARDS25519SHA512BATCH} keys are supported.`)
           }
           return serializeKey(key, false)
         }

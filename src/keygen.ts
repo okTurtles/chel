@@ -22,8 +22,8 @@ export const keygen = async (args: string[]) => {
   const pubOutFile = parsedArgs['pubout'] || `${EDWARDS25519SHA512BATCH}-${idx}.pub.json`
 
   await Deno.writeTextFile(outFile, result)
-  console.log(colors.green('wrote:'), outFile, colors.green('(secret)'))
+  console.log(colors.green('wrote:'), outFile, colors.blue('(secret)'))
 
   await Deno.writeTextFile(pubOutFile, pubResult)
-  console.log(colors.green('wrote:'), pubOutFile, colors.green('(public)'))
+  console.log(colors.green('wrote:'), pubOutFile, colors.blue('(public)'))
 }
