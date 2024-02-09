@@ -50,5 +50,19 @@ Deno.test({
             await assertRejects(() => verifySignature([manifestFile], true), Error, 'Invalid signature')
             await assertRejects(() => verifySignature(['-k', signingKeyFile, manifestFile], true), Error, 'Invalid signature')
         })
+
+        await t.step('it should not validate a tampered with bundle contract', async () => {
+            const signingKeyFile = './test/assets/edwards25519sha512batch-g6kUyhtL5bPd.pub.json'
+            const manifestFile = './test/assets/bundle-tampered.bundle.x.manifest.json'
+            await assertRejects(() => verifySignature([manifestFile], true), Error, 'Invalid contract file hash')
+            await assertRejects(() => verifySignature(['-k', signingKeyFile, manifestFile], true), Error, 'Invalid contract file hash')
+        })
+
+        await t.step('it should not validate a tampered with slim contract', async () => {
+            const signingKeyFile = './test/assets/edwards25519sha512batch-g6kUyhtL5bPd.pub.json'
+            const manifestFile = './test/assets/slim-tampered.bundle.x.manifest.json'
+            await assertRejects(() => verifySignature([manifestFile], true), Error, 'Invalid slim contract file hash')
+            await assertRejects(() => verifySignature(['-k', signingKeyFile, manifestFile], true), Error, 'Invalid slim contract file hash')
+        })
     }
 })

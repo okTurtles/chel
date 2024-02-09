@@ -57,12 +57,13 @@ export async function manifest (args: string[]) {
   }
   const serializedBody = JSON.stringify(body)
   const head = { manifestVersion: "1.0.0" }
+  const serializedHead = JSON.stringify(head)
   const manifest = JSON.stringify({
-    head,
+    head: serializedHead,
     body: serializedBody,
     signature: {
       keyId: keyId(signingKey),
-      value: sign(signingKey, serializedBody + head.manifestVersion)
+      value: sign(signingKey, serializedBody + serializedHead)
     }
   })
   if (parsedArgs.out === '-') {

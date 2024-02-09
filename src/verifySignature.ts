@@ -1,7 +1,7 @@
-import { colors, flags } from './deps.ts'
-import { exit, revokeNet } from './utils.ts'
-import { deserializeKey, keyId, verifySignature as cryptoVerifySignature } from './lib/crypto.ts'
-import { importJsonFile } from './utils.ts'
+import { hash } from './commands.ts'
+import { colors, flags, path } from './deps.ts'
+import { verifySignature as cryptoVerifySignature, deserializeKey, keyId } from './lib/crypto.ts'
+import { exit, importJsonFile, revokeNet } from './utils.ts'
 
 export const verifySignature = async (args: string[], internal = false) => {
   await revokeNet()
@@ -15,8 +15,8 @@ export const verifySignature = async (args: string[], internal = false) => {
   if (keyFile && !externalKeyDescriptor.pubkey) {
     exit('Public key missing from key file', internal)
   }
-  if (!manifest.head?.manifestVersion) {
-    exit('Invalid manifest: missing head or manifest version', internal)
+  if (!manifest.head) {
+    exit('Invalid manifest: missing head', internal)
   }
   if (!manifest.body) {
     exit('Invalid manifest: missing body', internal)
@@ -50,10 +50,30 @@ export const verifySignature = async (args: string[], internal = false) => {
   }
 
   const pubKey = deserializeKey(serializedPubKey)
-  cryptoVerifySignature(pubKey, manifest.body + manifest.head.manifestVersion, manifest.signature.value)
+  try {
+    cryptoVerifySignature(pubKey, manifest.body + manifest.head, manifest.signature.value)
+  } catch(e) {
+    exit('Error validating signature: ' + (e?.message || String(e)), internal)
+  }
 
   if (!signingKey) {
     exit('The signature is valid but the signing key is not listed in signingKeys', internal)
+  }
+
+  const parsedFilepath = path.parse(manifestFile as string)
+  if (!body.contract?.file) {
+    exit('Invalid manifest: no contract file', internal)
+  }
+  const computedHash = await hash([path.join(parsedFilepath.dir, body.contract.file)], true)
+  if (computedHash !== body.contract.hash) {
+    exit(`Invalid contract file hash. Expected ${body.contract.hash} but got ${computedHash}`, internal)
+  }
+
+  if (body.contractSlim) {
+    const computedHash = await hash([path.join(parsedFilepath.dir, body.contractSlim.file)], true)
+    if (computedHash !== body.contractSlim.hash) {
+      exit(`Invalid slim contract file hash. Expected ${body.contractSlim.hash} but got ${computedHash}`, internal)
+    }
   }
 
   if (!internal) console.log(colors.green('ok'), 'all checks passed')
