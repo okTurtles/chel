@@ -7,7 +7,7 @@
 
 import { flags, path, colors } from './deps.ts'
 import { hash } from './hash.ts'
-import { revokeNet } from './utils.ts'
+import { importJsonFile, revokeNet } from './utils.ts'
 import { EDWARDS25519SHA512BATCH, deserializeKey, keyId, serializeKey, sign } from './lib/crypto.ts'
 
 // import { writeAllSync } from "https://deno.land/std@0.141.0/streams/mod.ts"
@@ -24,20 +24,22 @@ export async function manifest (args: string[]) {
   const outFilepath = path.join(contractDir, `${contractName}.${version}.manifest.json`)
   if (!keyFile) throw new Error('Missing signing key file')
 
-  const signingKeyDescriptor = await import(
-    path.toFileUrl(path.resolve(String(keyFile))).toString(),
-    { with: { type: 'json' }}
-  )
-  const signingKey = deserializeKey(signingKeyDescriptor.default.privkey)
+  const signingKeyDescriptor = await importJsonFile(keyFile)
+  const signingKey = deserializeKey(signingKeyDescriptor.privkey)
 
   // Add all additional public keys in addition to the signing key
   const publicKeys = Array.from(new Set(
     [serializeKey(signingKey, false)]
-      .concat(parsedArgs.key?.map((k: number | string) => {
-        const key = deserializeKey(String(k))
-        if (key.type !== EDWARDS25519SHA512BATCH) throw new Error(`Invalid key type ${key.type}; only ${EDWARDS25519SHA512BATCH} keys are supported.`)
-        return serializeKey(key, false)
-      }) || [])
+      .concat(...await Promise.all(parsedArgs.key?.map(
+        async (kf: number | string) => {
+          const descriptor = await importJsonFile(kf)
+          const key = deserializeKey(descriptor.pubkey)
+          if (key.type !== EDWARDS25519SHA512BATCH) {
+            throw new Error(`Invalid key type ${key.type}; only ${EDWARDS25519SHA512BATCH} keys are supported.`)
+          }
+          return serializeKey(key, false)
+        }
+      ) || []))
   ))
   const body: {[key: string]: unknown} = {
     version,

@@ -6,8 +6,9 @@ export function help (args?: string[]) {
       chel
       chel help [command]
       chel version
-      chel keygen [--out <key.json>]
-      chel manifest [-k|--key <pubkey1> [-k|--key <pubkey2> ...]] [--out=<manifest.json>] [-s|--slim <contract-slim.js>] [-v|--version <version>] <key.json> <contract-bundle.js>
+      chel keygen [--out <key.json>] [--pubout <key.pub.json>]
+      chel verifySignature <pubkey.json> <manifest.json>
+      chel manifest [-k|--key <pubkey1.json> [-k|--key <pubkey2.json> ...]] [--out=<manifest.json>] [-s|--slim <contract-slim.js>] [-v|--version <version>] <key.json> <contract-bundle.js>
       chel deploy <url-or-dir-or-sqlitedb> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
       chel upload <url-or-dir-or-sqlitedb> <file1> [<file2> [<file3> ...]]
       chel latestState <url> <contractID>

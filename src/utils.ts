@@ -125,3 +125,11 @@ export async function readRemoteData (src: string, key: string): Promise<Uint8Ar
 export async function revokeNet () {
   await Deno.permissions.revoke({ name: 'net' })
 }
+
+export const importJsonFile = async (file: unknown) => {
+  const data = await import(
+    path.toFileUrl(path.resolve(String(file))).toString(),
+    { with: { type: 'json' }}
+  )
+  return data.default
+}
