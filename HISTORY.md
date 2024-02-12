@@ -1,5 +1,9 @@
 # HISTORY
 
+### v2.1.0
+
+- Implemented signing (`chel manifest`, `chel keygen`) and verified (`chel verifySignature`) contracts. (h/t [@corrideat](https://github.com/okTurtles/chel/pull/27))
+
 ### v2.0.1
 
 (Though breaking change, doesn't affect anyone.)

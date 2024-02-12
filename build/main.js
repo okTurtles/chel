@@ -18,9 +18,10 @@ import * as colors from "https://deno.land/std@0.141.0/fmt/colors.ts";
 import * as fs from "https://deno.land/std@0.141.0/fs/mod.ts";
 import * as path from "https://deno.land/std@0.141.0/path/mod.ts";
 import * as streams from "https://deno.land/std@0.141.0/streams/mod.ts";
+import { default as default2 } from "https://esm.sh/tweetnacl@1.0.3?pin=v120";
 import { base58btc } from "https://esm.sh/multiformats@11.0.2/bases/base58?pin=v120";
 import {} from "https://esm.sh/multiformats@11.0.2?pin=v120";
-import { default as default2 } from "https://esm.sh/@multiformats/blake2@1.0.13?pin=v120";
+import { default as default3 } from "https://esm.sh/@multiformats/blake2@1.0.13?pin=v120";
 import { CID } from "https://esm.sh/multiformats@11.0.2/cid?pin=v120";
 import { miniexec } from "https://deno.land/x/miniexec@1.0.0/mod.ts";
 import * as esbuild from "https://deno.land/x/esbuild@v0.14.47/mod.js";
@@ -178,7 +179,9 @@ function createCID(data, multicode = multicodes.RAW) {
   const digest = multihasher.digest(uint8array);
   return CID.create(1, multicode, digest).toString(multibase.encoder);
 }
-function exit(message) {
+function exit(message, internal = false) {
+  if (internal)
+    throw new Error(message);
   console.error("[chel]", colors.red("Error:"), message);
   Deno.exit(1);
 }
@@ -248,7 +251,7 @@ async function readRemoteData(src, key) {
 async function revokeNet() {
   await Deno.permissions.revoke({ name: "net" });
 }
-var backends, multibase, multicodes, multihasher;
+var backends, multibase, multicodes, multihasher, importJsonFile;
 var init_utils = __esm({
   "src/utils.ts"() {
     "use strict";
@@ -258,7 +261,11 @@ var init_utils = __esm({
     backends = { fs: database_fs_exports, sqlite: database_sqlite_exports };
     multibase = base58btc;
     multicodes = { JSON: 512, RAW: 0 };
-    multihasher = default2.blake2b.blake2b256;
+    multihasher = default3.blake2b.blake2b256;
+    importJsonFile = async (file) => {
+      const data = await import(path.toFileUrl(path.resolve(String(file))).toString(), { with: { type: "json" } });
+      return data.default;
+    };
   }
 });
 
@@ -270,9 +277,11 @@ __export(commands_exports, {
   get: () => get,
   hash: () => hash,
   help: () => help,
+  keygen: () => keygen2,
   manifest: () => manifest,
   migrate: () => migrate,
   upload: () => upload,
+  verifySignature: () => verifySignature2,
   version: () => version
 });
 
@@ -469,8 +478,9 @@ function help(args) {
       chel
       chel help [command]
       chel version
-      chel keygen [--out <key.json>]
-      chel manifest [-k|--key <pubkey1> [-k|--key <pubkey2> ...]] [--out=<manifest.json>] [-s|--slim <contract-slim.js>] [-v|--version <version>] <key.json> <contract-bundle.js>
+      chel keygen [--out <key.json>] [--pubout <key.pub.json>]
+      chel verifySignature [-k <pubkey.json>] <manifest.json>
+      chel manifest [-k|--key <pubkey1.json> [-k|--key <pubkey2.json> ...]] [--out=<manifest.json>] [-s|--slim <contract-slim.js>] [-v|--version <version>] <key.json> <contract-bundle.js>
       chel deploy <url-or-dir-or-sqlitedb> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
       chel upload <url-or-dir-or-sqlitedb> <file1> [<file2> [<file3> ...]]
       chel latestState <url> <contractID>
@@ -548,28 +558,238 @@ var helpDict = {
   `
 };
 
+// src/keygen.ts
+init_deps();
+init_utils();
+
+// src/lib/crypto.ts
+init_deps();
+var EDWARDS25519SHA512BATCH = "edwards25519sha512batch";
+var CURVE25519XSALSA20POLY1305 = "curve25519xsalsa20poly1305";
+var XSALSA20POLY1305 = "xsalsa20poly1305";
+var blake32Hash = (data) => {
+  const uint8array = typeof data === "string" ? new TextEncoder().encode(data) : data;
+  const digest = default3.blake2b.blake2b256.digest(uint8array);
+  return base58btc.encode(digest.bytes);
+};
+var bufToStr = (ary) => {
+  return String.fromCharCode(...Array.from(ary));
+};
+var bytesToB64 = (ary) => {
+  return btoa(bufToStr(ary));
+};
+var strToBuf = (str) => {
+  return new Uint8Array(str.split("").map((c) => c.charCodeAt(0)));
+};
+var b64ToBuf = (str) => {
+  return strToBuf(atob(str));
+};
+var bytesOrObjectToB64 = (ary) => {
+  if (!(ary instanceof Uint8Array)) {
+    throw Error("Unsupported type");
+  }
+  return bytesToB64(ary);
+};
+var keygen = (type) => {
+  if (type === EDWARDS25519SHA512BATCH) {
+    const key = default2.sign.keyPair();
+    const res = {
+      type,
+      publicKey: key.publicKey
+    };
+    Object.defineProperty(res, "secretKey", { value: key.secretKey });
+    return res;
+  } else if (type === CURVE25519XSALSA20POLY1305) {
+    const key = default2.box.keyPair();
+    const res = {
+      type,
+      publicKey: key.publicKey
+    };
+    Object.defineProperty(res, "secretKey", { value: key.secretKey });
+    return res;
+  } else if (type === XSALSA20POLY1305) {
+    const res = {
+      type
+    };
+    Object.defineProperty(res, "secretKey", { value: default2.randomBytes(default2.secretbox.keyLength) });
+    return res;
+  }
+  throw new Error("Unsupported key type");
+};
+var serializeKey = (key, saveSecretKey) => {
+  if (key.type === EDWARDS25519SHA512BATCH || key.type === CURVE25519XSALSA20POLY1305) {
+    if (!saveSecretKey) {
+      if (!key.publicKey) {
+        throw new Error("Unsupported operation: no public key to export");
+      }
+      return JSON.stringify([
+        key.type,
+        bytesOrObjectToB64(key.publicKey),
+        null
+      ], void 0, 0);
+    }
+    if (!key.secretKey) {
+      throw new Error("Unsupported operation: no secret key to export");
+    }
+    return JSON.stringify([
+      key.type,
+      null,
+      bytesOrObjectToB64(key.secretKey)
+    ], void 0, 0);
+  } else if (key.type === XSALSA20POLY1305) {
+    if (!saveSecretKey) {
+      throw new Error("Unsupported operation: no public key to export");
+    }
+    if (!key.secretKey) {
+      throw new Error("Unsupported operation: no secret key to export");
+    }
+    return JSON.stringify([
+      key.type,
+      null,
+      bytesOrObjectToB64(key.secretKey)
+    ], void 0, 0);
+  }
+  throw new Error("Unsupported key type");
+};
+var deserializeKey = (data) => {
+  const keyData = JSON.parse(data);
+  if (!keyData || keyData.length !== 3) {
+    throw new Error("Invalid key object");
+  }
+  if (keyData[0] === EDWARDS25519SHA512BATCH) {
+    if (keyData[2]) {
+      const key = default2.sign.keyPair.fromSecretKey(b64ToBuf(keyData[2]));
+      const res = {
+        type: keyData[0],
+        publicKey: key.publicKey
+      };
+      Object.defineProperty(res, "secretKey", { value: key.secretKey });
+      return res;
+    } else if (keyData[1]) {
+      return {
+        type: keyData[0],
+        publicKey: new Uint8Array(b64ToBuf(keyData[1]))
+      };
+    }
+    throw new Error("Missing secret or public key");
+  } else if (keyData[0] === CURVE25519XSALSA20POLY1305) {
+    if (keyData[2]) {
+      const key = default2.box.keyPair.fromSecretKey(b64ToBuf(keyData[2]));
+      const res = {
+        type: keyData[0],
+        publicKey: key.publicKey
+      };
+      Object.defineProperty(res, "secretKey", { value: key.secretKey });
+      return res;
+    } else if (keyData[1]) {
+      return {
+        type: keyData[0],
+        publicKey: new Uint8Array(b64ToBuf(keyData[1]))
+      };
+    }
+    throw new Error("Missing secret or public key");
+  } else if (keyData[0] === XSALSA20POLY1305) {
+    if (!keyData[2]) {
+      throw new Error("Secret key missing");
+    }
+    const res = {
+      type: keyData[0]
+    };
+    Object.defineProperty(res, "secretKey", { value: new Uint8Array(b64ToBuf(keyData[2])) });
+    return res;
+  }
+  throw new Error("Unsupported key type");
+};
+var keyId = (inKey) => {
+  const key = typeof inKey === "string" ? deserializeKey(inKey) : inKey;
+  const serializedKey = serializeKey(key, !key.publicKey);
+  return blake32Hash(serializedKey);
+};
+var sign = (inKey, data) => {
+  const key = typeof inKey === "string" ? deserializeKey(inKey) : inKey;
+  if (key.type !== EDWARDS25519SHA512BATCH) {
+    throw new Error("Unsupported algorithm");
+  }
+  if (!key.secretKey) {
+    throw new Error("Secret key missing");
+  }
+  const messageUint8 = strToBuf(data);
+  const signature = default2.sign.detached(messageUint8, key.secretKey);
+  const base64Signature = bytesOrObjectToB64(signature);
+  return base64Signature;
+};
+var verifySignature = (inKey, data, signature) => {
+  const key = typeof inKey === "string" ? deserializeKey(inKey) : inKey;
+  if (key.type !== EDWARDS25519SHA512BATCH) {
+    throw new Error("Unsupported algorithm");
+  }
+  if (!key.publicKey) {
+    throw new Error("Public key missing");
+  }
+  const decodedSignature = b64ToBuf(signature);
+  const messageUint8 = strToBuf(data);
+  const result = default2.sign.detached.verify(messageUint8, decodedSignature, key.publicKey);
+  if (!result) {
+    throw new Error("Invalid signature");
+  }
+};
+
+// src/keygen.ts
+var keygen2 = async (args) => {
+  await revokeNet();
+  const parsedArgs = flags.parse(args);
+  const key = keygen(EDWARDS25519SHA512BATCH);
+  const pubKeyData = {
+    version: "1.0.0",
+    pubkey: serializeKey(key, false)
+  };
+  const keyData = {
+    ...pubKeyData,
+    privkey: serializeKey(key, true)
+  };
+  const result = JSON.stringify(keyData);
+  const pubResult = JSON.stringify(pubKeyData);
+  const idx = keyId(key).slice(-12);
+  const outFile = parsedArgs["out"] || `${EDWARDS25519SHA512BATCH}-${idx}.json`;
+  const pubOutFile = parsedArgs["pubout"] || `${EDWARDS25519SHA512BATCH}-${idx}.pub.json`;
+  await Deno.writeTextFile(outFile, result);
+  console.log(colors.green("wrote:"), outFile, colors.blue("(secret)"));
+  await Deno.writeTextFile(pubOutFile, pubResult);
+  console.log(colors.green("wrote:"), pubOutFile, colors.blue("(public)"));
+};
+
 // src/manifest.ts
 init_deps();
 init_utils();
 async function manifest(args) {
   await revokeNet();
-  const parsedArgs = flags.parse(args);
-  const [_keyFile, contractFile] = parsedArgs._;
+  const parsedArgs = flags.parse(args, { collect: ["key"], alias: { "key": "k" } });
+  console.log(parsedArgs);
+  const [keyFile, contractFile] = parsedArgs._;
   const parsedFilepath = path.parse(contractFile);
   const { name: contractName, base: contractBasename, dir: contractDir } = parsedFilepath;
   const version2 = parsedArgs.version || parsedArgs.v || "x";
   const slim = parsedArgs.slim || parsedArgs.s;
   const outFilepath = path.join(contractDir, `${contractName}.${version2}.manifest.json`);
+  if (!keyFile)
+    exit("Missing signing key file");
+  const signingKeyDescriptor = await importJsonFile(keyFile);
+  const signingKey = deserializeKey(signingKeyDescriptor.privkey);
+  const publicKeys = Array.from(new Set([serializeKey(signingKey, false)].concat(...await Promise.all(parsedArgs.key?.map(async (kf) => {
+    const descriptor = await importJsonFile(kf);
+    const key = deserializeKey(descriptor.pubkey);
+    if (key.type !== EDWARDS25519SHA512BATCH) {
+      exit(`Invalid key type ${key.type}; only ${EDWARDS25519SHA512BATCH} keys are supported.`);
+    }
+    return serializeKey(key, false);
+  }) || []))));
   const body = {
     version: version2,
     contract: {
       hash: await hash([contractFile], true),
       file: contractBasename
     },
-    authors: [
-      { cipher: "algo", key: "<pubkey from deploy-key.json>" },
-      { cipher: "algo", key: "<pubkey from alex.json>" }
-    ]
+    signingKeys: publicKeys
   };
   if (slim) {
     body.contractSlim = {
@@ -577,12 +797,15 @@ async function manifest(args) {
       hash: await hash([slim], true)
     };
   }
+  const serializedBody = JSON.stringify(body);
+  const head = { manifestVersion: "1.0.0" };
+  const serializedHead = JSON.stringify(head);
   const manifest2 = JSON.stringify({
-    head: { manifestVersion: "1.0.0" },
-    body: JSON.stringify(body),
+    head: serializedHead,
+    body: serializedBody,
     signature: {
-      key: "<which of the 'authors' keys was used to sign 'body'>",
-      signature: "<signature>"
+      keyId: keyId(signingKey),
+      value: sign(signingKey, serializedBody + serializedHead)
     }
   });
   if (parsedArgs.out === "-") {
@@ -639,9 +862,80 @@ async function migrate(args) {
   numKeys && console.log(`[chel] ${colors.green("Migrated:")} ${numKeys} entries`);
 }
 
+// src/verifySignature.ts
+init_deps();
+init_utils();
+var verifySignature2 = async (args, internal = false) => {
+  await revokeNet();
+  const parsedArgs = flags.parse(args);
+  const [manifestFile] = parsedArgs._;
+  const keyFile = parsedArgs.k;
+  const [externalKeyDescriptor, manifest2] = await Promise.all([
+    keyFile ? importJsonFile(keyFile) : null,
+    importJsonFile(manifestFile)
+  ]);
+  if (keyFile && !externalKeyDescriptor.pubkey) {
+    exit("Public key missing from key file", internal);
+  }
+  if (!manifest2.head) {
+    exit("Invalid manifest: missing head", internal);
+  }
+  if (!manifest2.body) {
+    exit("Invalid manifest: missing body", internal);
+  }
+  if (!manifest2.signature) {
+    exit("Invalid manifest: missing signature", internal);
+  }
+  if (!manifest2.signature.keyId) {
+    exit("Invalid manifest: missing signature key ID", internal);
+  }
+  if (!manifest2.signature.value) {
+    exit("Invalid manifest: missing signature value", internal);
+  }
+  const body = JSON.parse(manifest2.body);
+  const signingKey = body.signingKeys?.find((k) => {
+    return keyId(k) === manifest2.signature.keyId;
+  });
+  if (externalKeyDescriptor) {
+    const id = keyId(externalKeyDescriptor.pubkey);
+    if (manifest2.signature.keyId !== id) {
+      exit(`Invalid manifest signature: key ID doesn't match the provided key file. Expected ${id} but got ${manifest2.signature.keyId}.`, internal);
+    }
+  }
+  const serializedPubKey = signingKey || externalKeyDescriptor?.pubkey;
+  if (!serializedPubKey) {
+    exit("The manifest appears to be signed but verification can't proceed because the key used is unknown.", internal);
+  }
+  const pubKey = deserializeKey(serializedPubKey);
+  try {
+    verifySignature(pubKey, manifest2.body + manifest2.head, manifest2.signature.value);
+  } catch (e) {
+    exit("Error validating signature: " + (e?.message || String(e)), internal);
+  }
+  if (!signingKey) {
+    exit("The signature is valid but the signing key is not listed in signingKeys", internal);
+  }
+  const parsedFilepath = path.parse(manifestFile);
+  if (!body.contract?.file) {
+    exit("Invalid manifest: no contract file", internal);
+  }
+  const computedHash = await hash([path.join(parsedFilepath.dir, body.contract.file)], true);
+  if (computedHash !== body.contract.hash) {
+    exit(`Invalid contract file hash. Expected ${body.contract.hash} but got ${computedHash}`, internal);
+  }
+  if (body.contractSlim) {
+    const computedHash2 = await hash([path.join(parsedFilepath.dir, body.contractSlim.file)], true);
+    if (computedHash2 !== body.contractSlim.hash) {
+      exit(`Invalid slim contract file hash. Expected ${body.contractSlim.hash} but got ${computedHash2}`, internal);
+    }
+  }
+  if (!internal)
+    console.log(colors.green("ok"), "all checks passed");
+};
+
 // src/version.ts
 function version() {
-  console.log("2.0.1");
+  console.log("2.1.0");
 }
 
 // src/main.ts

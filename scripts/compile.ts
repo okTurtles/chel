@@ -6,7 +6,7 @@ function $ (command: string) {
   return sh(command, { printOutput: true })
 }
 
-const { default: { version } } = await import('../package.json', { assert: { type: "json" } })
+const { default: { version } } = await import('../package.json', { with: { type: "json" } })
 
 export async function compile () {
   // NOTE: Apple ARM is slower than x86 on M1!
