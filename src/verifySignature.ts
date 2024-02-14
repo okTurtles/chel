@@ -1,7 +1,7 @@
 import { hash } from './commands.ts'
 import { colors, flags, path } from './deps.ts'
 import { verifySignature as cryptoVerifySignature, deserializeKey, keyId } from './lib/crypto.ts'
-import { exit, importJsonFile, revokeNet } from './utils.ts'
+import { exit, readJsonFile, revokeNet } from './utils.ts'
 
 export const verifySignature = async (args: string[], internal = false) => {
   await revokeNet()
@@ -9,8 +9,8 @@ export const verifySignature = async (args: string[], internal = false) => {
   const [manifestFile] = parsedArgs._
   const keyFile = parsedArgs.k
   const [externalKeyDescriptor, manifest] = await Promise.all([
-    keyFile ? importJsonFile(keyFile) : null,
-    importJsonFile(manifestFile)
+    keyFile ? readJsonFile(keyFile) : null,
+    readJsonFile(manifestFile)
   ])
   if (keyFile && !externalKeyDescriptor.pubkey) {
     exit('Public key missing from key file', internal)
