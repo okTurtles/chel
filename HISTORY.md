@@ -2,8 +2,7 @@
 
 ### v2.1.1
 
-- Change the way signinig key files are read (from `import` to `readFile`) so
-  that the compiled `chel` command works.
+- Change the way signing key files are read (from `import` to `readFile`) so that `chel manifest` works.
 
 ### v2.1.0
 
