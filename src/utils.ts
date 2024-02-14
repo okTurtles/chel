@@ -127,10 +127,7 @@ export async function revokeNet () {
   await Deno.permissions.revoke({ name: 'net' })
 }
 
-export const importJsonFile = async (file: unknown) => {
-  const data = await import(
-    path.toFileUrl(path.resolve(String(file))).toString(),
-    { with: { type: 'json' }}
-  )
-  return data.default
+export const readJsonFile = async (file: unknown) => {
+  const contents = await Deno.readTextFile(path.resolve(String(file)))
+  return JSON.parse(contents)
 }

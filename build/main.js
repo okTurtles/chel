@@ -251,7 +251,7 @@ async function readRemoteData(src, key) {
 async function revokeNet() {
   await Deno.permissions.revoke({ name: "net" });
 }
-var backends, multibase, multicodes, multihasher, importJsonFile;
+var backends, multibase, multicodes, multihasher, readJsonFile;
 var init_utils = __esm({
   "src/utils.ts"() {
     "use strict";
@@ -262,9 +262,9 @@ var init_utils = __esm({
     multibase = base58btc;
     multicodes = { JSON: 512, RAW: 0 };
     multihasher = default3.blake2b.blake2b256;
-    importJsonFile = async (file) => {
-      const data = await import(path.toFileUrl(path.resolve(String(file))).toString(), { with: { type: "json" } });
-      return data.default;
+    readJsonFile = async (file) => {
+      const contents = await Deno.readTextFile(path.resolve(String(file)));
+      return JSON.parse(contents);
     };
   }
 });
@@ -764,7 +764,6 @@ init_utils();
 async function manifest(args) {
   await revokeNet();
   const parsedArgs = flags.parse(args, { collect: ["key"], alias: { "key": "k" } });
-  console.log(parsedArgs);
   const [keyFile, contractFile] = parsedArgs._;
   const parsedFilepath = path.parse(contractFile);
   const { name: contractName, base: contractBasename, dir: contractDir } = parsedFilepath;
@@ -773,10 +772,10 @@ async function manifest(args) {
   const outFilepath = path.join(contractDir, `${contractName}.${version2}.manifest.json`);
   if (!keyFile)
     exit("Missing signing key file");
-  const signingKeyDescriptor = await importJsonFile(keyFile);
+  const signingKeyDescriptor = await readJsonFile(keyFile);
   const signingKey = deserializeKey(signingKeyDescriptor.privkey);
   const publicKeys = Array.from(new Set([serializeKey(signingKey, false)].concat(...await Promise.all(parsedArgs.key?.map(async (kf) => {
-    const descriptor = await importJsonFile(kf);
+    const descriptor = await readJsonFile(kf);
     const key = deserializeKey(descriptor.pubkey);
     if (key.type !== EDWARDS25519SHA512BATCH) {
       exit(`Invalid key type ${key.type}; only ${EDWARDS25519SHA512BATCH} keys are supported.`);
@@ -871,8 +870,8 @@ var verifySignature2 = async (args, internal = false) => {
   const [manifestFile] = parsedArgs._;
   const keyFile = parsedArgs.k;
   const [externalKeyDescriptor, manifest2] = await Promise.all([
-    keyFile ? importJsonFile(keyFile) : null,
-    importJsonFile(manifestFile)
+    keyFile ? readJsonFile(keyFile) : null,
+    readJsonFile(manifestFile)
   ]);
   if (keyFile && !externalKeyDescriptor.pubkey) {
     exit("Public key missing from key file", internal);
@@ -935,7 +934,7 @@ var verifySignature2 = async (args, internal = false) => {
 
 // src/version.ts
 function version() {
-  console.log("2.1.0");
+  console.log("2.1.1");
 }
 
 // src/main.ts

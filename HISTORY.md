@@ -1,5 +1,10 @@
 # HISTORY
 
+### v2.1.1
+
+- Change the way signinig key files are read (from `import` to `readFile`) so
+  that the compiled `chel` command works.
+
 ### v2.1.0
 
 - Implemented signing (`chel manifest`, `chel keygen`) and verified (`chel verifySignature`) contracts. (h/t [@corrideat](https://github.com/okTurtles/chel/pull/27))
