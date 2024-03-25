@@ -14,30 +14,31 @@ export async function eventsAfter (args: string[]): Promise<void> {
 
   const limit = Number(parsedArgs.limit ?? defaultLimit)
   if (!isArrayLength(limit)) exit('argument --limit must be a valid array length')
-  const [urlOrLocalPath, contractID, hash] = parsedArgs._.map(String)
+  const [urlOrLocalPath, contractID] = parsedArgs._.map(String)
+  const height = Number(parsedArgs._[2])
   const src = urlOrLocalPath
 
   try {
     let messages
 
     if (isURL(src)) {
-      messages = await getRemoteMessagesSince(src, contractID, hash, limit)
+      messages = await getRemoteMessagesSince(src, contractID, height, limit)
     } else {
-      messages = await getMessagesSince(src, contractID, hash, limit)
+      messages = await getMessagesSince(src, contractID, height, limit)
     }
-    console.log(JSON.stringify(messages.map(s => JSON.parse(s)), null, 2))
+    console.log(JSON.stringify(messages, null, 2))
   } catch (error) {
     exit(error.message)
   }
 }
 
-async function getMessage (hash: string): Promise<string> {
+async function getMessage (hash: string): Promise<ReturnType<typeof JSON.parse>> {
   const value = await readString(hash)
   if (!value) throw new Error(`no entry for ${hash}!`)
-  return JSON.parse(value).message
+  return JSON.parse(value)
 }
 
-async function getMessagesSince (src: string, contractID: string, since: string, limit: number): Promise<string[]> {
+async function getMessagesSince (src: string, contractID: string, sinceHeight: number, limit: number): Promise<string[]> {
   backend = await getBackend(src)
 
   const contractHEAD: string | void = await readString(`${headPrefix}${contractID}`)
@@ -45,37 +46,36 @@ async function getMessagesSince (src: string, contractID: string, since: string,
     throw new Deno.errors.NotFound(`contract ${contractID} doesn't exist!`)
   }
   const entries = []
-  let currentHEAD = contractHEAD
+  let currentHEAD = JSON.parse(contractHEAD).HEAD
+  let currentHeight: number
   while (true) {
     const entry = await getMessage(currentHEAD)
     if (!entry) {
       throw new Deno.errors.NotFound(`entry ${currentHEAD} no longer exists.`)
     }
+    const head = JSON.parse(entry.head)
+    currentHeight = head.height
     entries.push(entry)
-    if (currentHEAD === since) {
+    if (currentHeight === sinceHeight) {
       break
-    } else {
-      currentHEAD = JSON.parse(entry).previousHEAD
-      if (currentHEAD === null) {
-        throw new Deno.errors.NotFound(`entry ${since} was not found in contract ${contractID}.`)
-      }
     }
+    currentHEAD = head.previousHEAD
   }
   return entries.reverse().slice(0, limit)
 }
 
-async function getRemoteMessagesSince (src: string, contractID: string, since: string, limit: number): Promise<string[]> {
-  const response = await fetch(`${src}/eventsAfter/${contractID}/${since}`)
+async function getRemoteMessagesSince (src: string, contractID: string, sinceHeight: number, limit: number): Promise<string[]> {
+  const response = await fetch(`${src}/eventsAfter/${contractID}/${sinceHeight}`)
   if (!response.ok) {
     // The response body may contain some useful error info if we got a Boom error response.
     const bodyText = await response.text().catch(_ => '') || ``
     throw new Error(`failed network request to ${src}: ${response.status} - ${response.statusText} - '${bodyText}'`)
   }
-  const b64messages: string[] = (await response.json()).reverse()
+  const b64messages: string[] = await response.json()
   if (b64messages.length > limit) {
     b64messages.length = limit
   }
-  return b64messages.map(b64str => JSON.parse(new TextDecoder().decode(base64.decode(b64str))).message)
+  return b64messages.map(b64str => JSON.parse(new TextDecoder().decode(base64.decode(b64str))))
 }
 
 async function readString (key: string): Promise<string|void> {

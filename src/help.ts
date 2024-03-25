@@ -12,7 +12,7 @@ export function help (args?: string[]) {
       chel deploy <url-or-dir-or-sqlitedb> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
       chel upload <url-or-dir-or-sqlitedb> <file1> [<file2> [<file3> ...]]
       chel latestState <url> <contractID>
-      chel eventsAfter [--limit N] <url-or-dir-or-sqlitedb> <contractID> <hash>
+      chel eventsAfter [--limit N] <url-or-dir-or-sqlitedb> <contractID> <height>
       chel eventsBefore [--limit N] <url> <contractID> <hash>
       chel get <url-or-dir-or-sqlitedb> <hash>
       chel hash <file>
