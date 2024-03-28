@@ -1,5 +1,9 @@
 # HISTORY
 
+### v2.1.2
+
+- Add a `name` field to the manifest with the contract's name
+
 ### v2.1.1
 
 - Change the way signing key files are read (from `import` to `readFile`) so that `chel manifest` works.
