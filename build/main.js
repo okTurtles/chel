@@ -936,7 +936,7 @@ var verifySignature2 = async (args, internal = false) => {
 
 // src/version.ts
 function version() {
-  console.log("2.2.0");
+  console.log("2.2.1");
 }
 
 // src/main.ts

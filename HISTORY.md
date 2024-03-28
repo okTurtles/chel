@@ -1,5 +1,9 @@
 # HISTORY
 
+### v2.2.1
+
+- Restore `bin/chel` (fixes broken install). See [issue #37](https://github.com/okTurtles/chel/issues/37) for more details and if you'd like to help with this.
+
 ### v2.2.0
 
 - Add a `name` field to the manifest with the contract's name
