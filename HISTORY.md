@@ -1,8 +1,9 @@
 # HISTORY
 
-### v2.1.2
+### v2.2.0
 
 - Add a `name` field to the manifest with the contract's name
+- Updated `eventsAfter` API to support latest changes related to use of height and streaming
 
 ### v2.1.1
 

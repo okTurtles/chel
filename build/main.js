@@ -371,16 +371,17 @@ async function eventsAfter(args) {
   const limit = Number(parsedArgs.limit ?? defaultLimit);
   if (!isArrayLength(limit))
     exit("argument --limit must be a valid array length");
-  const [urlOrLocalPath, contractID, hash2] = parsedArgs._.map(String);
+  const [urlOrLocalPath, contractID] = parsedArgs._.map(String);
+  const height = Number(parsedArgs._[2]);
   const src = urlOrLocalPath;
   try {
     let messages;
     if (isURL(src)) {
-      messages = await getRemoteMessagesSince(src, contractID, hash2, limit);
+      messages = await getRemoteMessagesSince(src, contractID, height, limit);
     } else {
-      messages = await getMessagesSince(src, contractID, hash2, limit);
+      messages = await getMessagesSince(src, contractID, height, limit);
     }
-    console.log(JSON.stringify(messages.map((s) => JSON.parse(s)), null, 2));
+    console.log(JSON.stringify(messages, null, 2));
   } catch (error) {
     exit(error.message);
   }
@@ -389,44 +390,43 @@ async function getMessage(hash2) {
   const value = await readString(hash2);
   if (!value)
     throw new Error(`no entry for ${hash2}!`);
-  return JSON.parse(value).message;
+  return JSON.parse(value);
 }
-async function getMessagesSince(src, contractID, since, limit) {
+async function getMessagesSince(src, contractID, sinceHeight, limit) {
   backend = await getBackend(src);
   const contractHEAD = await readString(`${headPrefix}${contractID}`);
   if (contractHEAD === void 0) {
     throw new Deno.errors.NotFound(`contract ${contractID} doesn't exist!`);
   }
   const entries = [];
-  let currentHEAD = contractHEAD;
+  let currentHEAD = JSON.parse(contractHEAD).HEAD;
+  let currentHeight;
   while (true) {
     const entry = await getMessage(currentHEAD);
     if (!entry) {
       throw new Deno.errors.NotFound(`entry ${currentHEAD} no longer exists.`);
     }
+    const head = JSON.parse(entry.head);
+    currentHeight = head.height;
     entries.push(entry);
-    if (currentHEAD === since) {
+    if (currentHeight === sinceHeight) {
       break;
-    } else {
-      currentHEAD = JSON.parse(entry).previousHEAD;
-      if (currentHEAD === null) {
-        throw new Deno.errors.NotFound(`entry ${since} was not found in contract ${contractID}.`);
-      }
     }
+    currentHEAD = head.previousHEAD;
   }
   return entries.reverse().slice(0, limit);
 }
-async function getRemoteMessagesSince(src, contractID, since, limit) {
-  const response = await fetch(`${src}/eventsAfter/${contractID}/${since}`);
+async function getRemoteMessagesSince(src, contractID, sinceHeight, limit) {
+  const response = await fetch(`${src}/eventsAfter/${contractID}/${sinceHeight}`);
   if (!response.ok) {
     const bodyText = await response.text().catch((_) => "") || ``;
     throw new Error(`failed network request to ${src}: ${response.status} - ${response.statusText} - '${bodyText}'`);
   }
-  const b64messages = (await response.json()).reverse();
+  const b64messages = await response.json();
   if (b64messages.length > limit) {
     b64messages.length = limit;
   }
-  return b64messages.map((b64str) => JSON.parse(new TextDecoder().decode(base64.decode(b64str))).message);
+  return b64messages.map((b64str) => JSON.parse(new TextDecoder().decode(base64.decode(b64str))));
 }
 async function readString(key) {
   const rv = await backend.readData(key);
@@ -480,11 +480,11 @@ function help(args) {
       chel version
       chel keygen [--out <key.json>] [--pubout <key.pub.json>]
       chel verifySignature [-k <pubkey.json>] <manifest.json>
-      chel manifest [-k|--key <pubkey1.json> [-k|--key <pubkey2.json> ...]] [--out=<manifest.json>] [-s|--slim <contract-slim.js>] [-v|--version <version>] <key.json> <contract-bundle.js>
+      chel manifest [-k|--key <pubkey1.json> [-k|--key <pubkey2.json> ...]] [--out=<manifest.json>] [-s|--slim <contract-slim.js>] [-v|--version <version>] [-n|--name <name>] <key.json> <contract-bundle.js>
       chel deploy <url-or-dir-or-sqlitedb> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
       chel upload <url-or-dir-or-sqlitedb> <file1> [<file2> [<file3> ...]]
       chel latestState <url> <contractID>
-      chel eventsAfter [--limit N] <url-or-dir-or-sqlitedb> <contractID> <hash>
+      chel eventsAfter [--limit N] <url-or-dir-or-sqlitedb> <contractID> <height>
       chel eventsBefore [--limit N] <url> <contractID> <hash>
       chel get <url-or-dir-or-sqlitedb> <hash>
       chel hash <file>
@@ -766,10 +766,11 @@ async function manifest(args) {
   const parsedArgs = flags.parse(args, { collect: ["key"], alias: { "key": "k" } });
   const [keyFile, contractFile] = parsedArgs._;
   const parsedFilepath = path.parse(contractFile);
-  const { name: contractName, base: contractBasename, dir: contractDir } = parsedFilepath;
+  const { name: contractFileName, base: contractBasename, dir: contractDir } = parsedFilepath;
+  const name = parsedArgs.name || parsedArgs.n || contractFileName;
   const version2 = parsedArgs.version || parsedArgs.v || "x";
   const slim = parsedArgs.slim || parsedArgs.s;
-  const outFilepath = path.join(contractDir, `${contractName}.${version2}.manifest.json`);
+  const outFilepath = path.join(contractDir, `${contractFileName}.${version2}.manifest.json`);
   if (!keyFile)
     exit("Missing signing key file");
   const signingKeyDescriptor = await readJsonFile(keyFile);
@@ -783,6 +784,7 @@ async function manifest(args) {
     return serializeKey(key, false);
   }) || []))));
   const body = {
+    name,
     version: version2,
     contract: {
       hash: await hash([contractFile], true),
@@ -934,7 +936,7 @@ var verifySignature2 = async (args, internal = false) => {
 
 // src/version.ts
 function version() {
-  console.log("2.1.1");
+  console.log("2.2.0");
 }
 
 // src/main.ts
