@@ -17,10 +17,11 @@ export async function manifest (args: string[]) {
   const parsedArgs = flags.parse(args, { collect: ['key'], alias: { 'key': 'k' } })
   const [keyFile, contractFile] = parsedArgs._
   const parsedFilepath = path.parse(contractFile as string)
-  const { name: contractName, base: contractBasename, dir: contractDir } = parsedFilepath
+  const { name: contractFileName, base: contractBasename, dir: contractDir } = parsedFilepath
+  const name = parsedArgs.name || parsedArgs.n || contractFileName
   const version = parsedArgs.version || parsedArgs.v || 'x'
   const slim = parsedArgs.slim || parsedArgs.s
-  const outFilepath = path.join(contractDir, `${contractName}.${version}.manifest.json`)
+  const outFilepath = path.join(contractDir, `${contractFileName}.${version}.manifest.json`)
   if (!keyFile) exit('Missing signing key file')
 
   const signingKeyDescriptor = await readJsonFile(keyFile)
@@ -41,6 +42,7 @@ export async function manifest (args: string[]) {
       ) || []))
   ))
   const body: {[key: string]: unknown} = {
+    name,
     version,
     contract: {
       hash: await hash([contractFile as string], true),
