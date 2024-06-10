@@ -9,9 +9,7 @@ function $ (command: string) {
 const { default: { version } } = await import('../package.json', { with: { type: "json" } })
 
 export async function compile () {
-  // NOTE: Apple ARM is slower than x86 on M1!
-  // https://github.com/denoland/deno/issues/14935
-  const archs = ['x86_64-unknown-linux-gnu', 'x86_64-pc-windows-msvc', 'x86_64-apple-darwin', 'aarch64-apple-darwin']
+  const archs = ['x86_64-unknown-linux-gnu', 'aarch64-unknown-linux-gnu', 'x86_64-pc-windows-msvc', 'x86_64-apple-darwin', 'aarch64-apple-darwin']
   for (const arch of archs) {
     const dir = `./dist/tmp/${arch}`
     const bin = arch.includes('windows') ? 'chel.exe' : 'chel'

@@ -13,6 +13,10 @@ const supportedPlatforms = {
     TARGET: 'x86_64-unknown-linux-gnu',
     BINARY_NAME: 'chel'
   },
+  'Linux_arm64': {
+    TARGET: 'aarch64-unknown-linux-gnu',
+    BINARY_NAME: 'chel'
+  },
   'Darwin_x64': {
     TARGET: 'x86_64-apple-darwin',
     BINARY_NAME: 'chel'
