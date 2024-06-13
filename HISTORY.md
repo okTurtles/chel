@@ -1,5 +1,9 @@
 # HISTORY
 
+### v2.2.3
+
+- Use `/dev-file` for file upload to URL endpoint on `deploy`
+
 ### v2.2.2
 
 - Add arm64 support for Linux platforms.

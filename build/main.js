@@ -313,7 +313,7 @@ function uploadEntryToURL([cid, buffer], url) {
   const form = new FormData();
   form.append("hash", cid);
   form.append("data", new Blob([buffer]));
-  return fetch(`${url}/file`, { method: "POST", body: form }).then(handleFetchResult("text")).then((r) => {
+  return fetch(`${url}/dev-file`, { method: "POST", body: form }).then(handleFetchResult("text")).then((r) => {
     if (r !== `/file/${cid}`) {
       throw new Error(`server returned bad URL: ${r}`);
     }
@@ -936,7 +936,7 @@ var verifySignature2 = async (args, internal = false) => {
 
 // src/version.ts
 function version() {
-  console.log("2.2.2");
+  console.log("2.2.3");
 }
 
 // src/main.ts
