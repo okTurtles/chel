@@ -31,7 +31,7 @@ function uploadEntryToURL ([cid, buffer]: Entry, url: string): Promise<string> {
   const form = new FormData()
   form.append('hash', cid)
   form.append('data', new Blob([buffer]))
-  return fetch(`${url}/file`, { method: 'POST', body: form })
+  return fetch(`${url}/dev-file`, { method: 'POST', body: form })
     .then(handleFetchResult('text'))
     .then(r => {
       if (r !== `/file/${cid}`) {
