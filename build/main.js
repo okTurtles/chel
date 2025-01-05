@@ -483,7 +483,7 @@ async function get(args) {
 
 // src/hash.ts
 init_utils();
-async function hash(args, multicode, internal = false) {
+async function hash(args, multicode = multicodes.RAW, internal = false) {
   const [filename] = args;
   if (!filename) {
     console.error("please pass in a file");

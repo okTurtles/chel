@@ -23,13 +23,13 @@ Deno.test({
 
         await t.step('it should create a raw CID for a json file', async () => {
             const filepath = './test/assets/hello.json'
-            const actual = await hash([filepath], multicodes.JSON, true)
-            const expected = 'zyop8PQypgycyyCEcQsEHoc9Z8S9bQt1CuHuRKnXrAXagVBGxQyvH'
+            const actual = await hash([filepath], multicodes.RAW, true)
+            const expected = 'z9brRu3VWh2crTt5nDjmu8dciMkHp1LR3wmDaqEqXHK46RbuTPy3'
             assertEquals(actual, expected)
 
             const cid = CID.parse(actual, base58btc.decoder)
-            assertEquals(cid.code, multicodes.JSON)
-            assertEquals(cid.byteLength, 39)
+            assertEquals(cid.code, multicodes.RAW)
+            assertEquals(cid.byteLength, 38)
             assertEquals(cid.multihash.code, 45600)
             assertEquals(cid.version, 1)
         })
