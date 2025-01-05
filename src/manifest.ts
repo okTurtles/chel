@@ -7,7 +7,7 @@
 
 import { flags, path, colors } from './deps.ts'
 import { hash } from './hash.ts'
-import { exit, readJsonFile, revokeNet } from './utils.ts'
+import { exit, multicodes, readJsonFile, revokeNet } from './utils.ts'
 import { EDWARDS25519SHA512BATCH, deserializeKey, keyId, serializeKey, sign } from './lib/crypto.ts'
 
 // import { writeAllSync } from "https://deno.land/std@0.141.0/streams/mod.ts"
@@ -45,7 +45,7 @@ export async function manifest (args: string[]) {
     name,
     version,
     contract: {
-      hash: await hash([contractFile as string], true),
+      hash: await hash([contractFile as string], multicodes.SHELTER_CONTRACT_TEXT, true),
       file: contractBasename
     },
     signingKeys: publicKeys
@@ -53,7 +53,7 @@ export async function manifest (args: string[]) {
   if (slim) {
     body.contractSlim = {
       file: path.basename(slim),
-      hash: await hash([slim], true)
+      hash: await hash([slim], multicodes.SHELTER_CONTRACT_TEXT, true)
     }
   }
   const serializedBody = JSON.stringify(body)

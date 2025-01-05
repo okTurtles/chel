@@ -13,11 +13,11 @@ export async function deploy (args: string[]) {
     const json = JSON.parse(Deno.readTextFileSync(manifestPath))
     const body = JSON.parse(json.body)
     const dirname = path.dirname(manifestPath)
-    toUpload.push(path.join(dirname, body.contract.file))
+    toUpload.push('t|' + path.join(dirname, body.contract.file))
     if (body.contractSlim) {
-      toUpload.push(path.join(dirname, body.contractSlim.file))
+      toUpload.push('t|' + path.join(dirname, body.contractSlim.file))
     }
-    toUpload.push(manifestPath)
+    toUpload.push('m|' + manifestPath)
   }
   await upload([urlOrDirOrSqliteFile, ...toUpload], true)
 }

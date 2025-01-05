@@ -169,9 +169,9 @@ function checkKey(key) {
     throw new Error(`bad key: ${JSON.stringify(key)}`);
   }
 }
-async function createEntryFromFile(filepath) {
+async function createEntryFromFile(filepath, multicode) {
   const buffer = await Deno.readFile(filepath);
-  const key = createCID(buffer);
+  const key = createCID(buffer, multicode);
   return [key, buffer];
 }
 function createCID(data, multicode = multicodes.RAW) {
@@ -260,7 +260,15 @@ var init_utils = __esm({
     init_database_sqlite();
     backends = { fs: database_fs_exports, sqlite: database_sqlite_exports };
     multibase = base58btc;
-    multicodes = { JSON: 512, RAW: 0 };
+    multicodes = {
+      RAW: 0,
+      JSON: 512,
+      SHELTER_CONTRACT_MANIFEST: 5316096,
+      SHELTER_CONTRACT_TEXT: 5316097,
+      SHELTER_CONTRACT_DATA: 5316098,
+      SHELTER_FILE_MANIFEST: 5316099,
+      SHELTER_FILE_CHUNK: 5316100
+    };
     multihasher = default3.blake2b.blake2b256;
     readJsonFile = async (file) => {
       const contents = await Deno.readTextFile(path.resolve(String(file)));
@@ -297,8 +305,25 @@ async function upload(args, internal = false) {
     throw new Error(`missing files!`);
   const uploaded = [];
   const uploaderFn = await isDir(urlOrDirOrSqliteFile) ? uploadEntryToDir : urlOrDirOrSqliteFile.endsWith(".db") ? uploadEntryToSQLite : uploadEntryToURL;
-  for (const filepath of files) {
-    const entry = await createEntryFromFile(filepath);
+  for (const filepath_ of files) {
+    let type = multicodes.RAW;
+    let filepath = filepath_;
+    if (filepath_[1] === "|") {
+      switch (filepath_[0]) {
+        case "r":
+          break;
+        case "m":
+          type = multicodes.SHELTER_CONTRACT_MANIFEST;
+          break;
+        case "t":
+          type = multicodes.SHELTER_CONTRACT_TEXT;
+          break;
+        default:
+          throw new Error("Unknown file type: " + filepath_[0]);
+      }
+      filepath = filepath_.slice(2);
+    }
+    const entry = await createEntryFromFile(filepath, type);
     const destination = await uploaderFn(entry, urlOrDirOrSqliteFile);
     if (!internal) {
       console.log(colors.green("uploaded:"), destination);
@@ -351,11 +376,11 @@ async function deploy(args) {
     const json = JSON.parse(Deno.readTextFileSync(manifestPath));
     const body = JSON.parse(json.body);
     const dirname = path.dirname(manifestPath);
-    toUpload.push(path.join(dirname, body.contract.file));
+    toUpload.push("t|" + path.join(dirname, body.contract.file));
     if (body.contractSlim) {
-      toUpload.push(path.join(dirname, body.contractSlim.file));
+      toUpload.push("t|" + path.join(dirname, body.contractSlim.file));
     }
-    toUpload.push(manifestPath);
+    toUpload.push("m|" + manifestPath);
   }
   await upload([urlOrDirOrSqliteFile, ...toUpload], true);
 }
@@ -458,13 +483,13 @@ async function get(args) {
 
 // src/hash.ts
 init_utils();
-async function hash(args, internal = false) {
+async function hash(args, multicode, internal = false) {
   const [filename] = args;
   if (!filename) {
     console.error("please pass in a file");
     Deno.exit(1);
   }
-  const [cid] = await createEntryFromFile(filename);
+  const [cid] = await createEntryFromFile(filename, multicode);
   if (!internal) {
     console.log(`CID(${filename}):`, cid);
   }
@@ -787,7 +812,7 @@ async function manifest(args) {
     name,
     version: version2,
     contract: {
-      hash: await hash([contractFile], true),
+      hash: await hash([contractFile], multicodes.SHELTER_CONTRACT_TEXT, true),
       file: contractBasename
     },
     signingKeys: publicKeys
@@ -795,7 +820,7 @@ async function manifest(args) {
   if (slim) {
     body.contractSlim = {
       file: path.basename(slim),
-      hash: await hash([slim], true)
+      hash: await hash([slim], multicodes.SHELTER_CONTRACT_TEXT, true)
     };
   }
   const serializedBody = JSON.stringify(body);
@@ -920,12 +945,12 @@ var verifySignature2 = async (args, internal = false) => {
   if (!body.contract?.file) {
     exit("Invalid manifest: no contract file", internal);
   }
-  const computedHash = await hash([path.join(parsedFilepath.dir, body.contract.file)], true);
+  const computedHash = await hash([path.join(parsedFilepath.dir, body.contract.file)], multicodes.SHELTER_CONTRACT_TEXT, true);
   if (computedHash !== body.contract.hash) {
     exit(`Invalid contract file hash. Expected ${body.contract.hash} but got ${computedHash}`, internal);
   }
   if (body.contractSlim) {
-    const computedHash2 = await hash([path.join(parsedFilepath.dir, body.contractSlim.file)], true);
+    const computedHash2 = await hash([path.join(parsedFilepath.dir, body.contractSlim.file)], multicodes.SHELTER_CONTRACT_TEXT, true);
     if (computedHash2 !== body.contractSlim.hash) {
       exit(`Invalid slim contract file hash. Expected ${body.contractSlim.hash} but got ${computedHash2}`, internal);
     }

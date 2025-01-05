@@ -1,7 +1,7 @@
 import { hash } from './commands.ts'
 import { colors, flags, path } from './deps.ts'
 import { verifySignature as cryptoVerifySignature, deserializeKey, keyId } from './lib/crypto.ts'
-import { exit, readJsonFile, revokeNet } from './utils.ts'
+import { exit, multicodes, readJsonFile, revokeNet } from './utils.ts'
 
 export const verifySignature = async (args: string[], internal = false) => {
   await revokeNet()
@@ -64,13 +64,13 @@ export const verifySignature = async (args: string[], internal = false) => {
   if (!body.contract?.file) {
     exit('Invalid manifest: no contract file', internal)
   }
-  const computedHash = await hash([path.join(parsedFilepath.dir, body.contract.file)], true)
+  const computedHash = await hash([path.join(parsedFilepath.dir, body.contract.file)], multicodes.SHELTER_CONTRACT_TEXT, true)
   if (computedHash !== body.contract.hash) {
     exit(`Invalid contract file hash. Expected ${body.contract.hash} but got ${computedHash}`, internal)
   }
 
   if (body.contractSlim) {
-    const computedHash = await hash([path.join(parsedFilepath.dir, body.contractSlim.file)], true)
+    const computedHash = await hash([path.join(parsedFilepath.dir, body.contractSlim.file)], multicodes.SHELTER_CONTRACT_TEXT, true)
     if (computedHash !== body.contractSlim.hash) {
       exit(`Invalid slim contract file hash. Expected ${body.contractSlim.hash} but got ${computedHash}`, internal)
     }
