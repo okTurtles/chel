@@ -17,7 +17,9 @@ export async function upload (args: string[], internal = false) {
   for (const filepath_ of files) {
     let type = multicodes.RAW
     let filepath = filepath_
-    if (filepath_[1] === '|') {
+    if (internal) {
+      // The `{type}|` prefix is used to determine which kind of CID is needed
+      if (filepath_[1] !== '|') throw new Error('Invalid path format')
       switch (filepath_[0]) {
         case 'r':
           // raw file type
