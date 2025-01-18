@@ -308,7 +308,9 @@ async function upload(args, internal = false) {
   for (const filepath_ of files) {
     let type = multicodes.RAW;
     let filepath = filepath_;
-    if (filepath_[1] === "|") {
+    if (internal) {
+      if (filepath_[1] !== "|")
+        throw new Error("Invalid path format");
       switch (filepath_[0]) {
         case "r":
           break;
@@ -367,6 +369,8 @@ function handleFetchResult(type) {
 }
 
 // src/deploy.ts
+var CONTRACT_TEXT_PREFIX = `t|`;
+var CONTRACT_MANIFEST_PREFIX = `m|`;
 async function deploy(args) {
   const [urlOrDirOrSqliteFile, ...manifests] = args;
   if (manifests.length === 0)
@@ -376,11 +380,11 @@ async function deploy(args) {
     const json = JSON.parse(Deno.readTextFileSync(manifestPath));
     const body = JSON.parse(json.body);
     const dirname = path.dirname(manifestPath);
-    toUpload.push("t|" + path.join(dirname, body.contract.file));
+    toUpload.push(CONTRACT_TEXT_PREFIX + path.join(dirname, body.contract.file));
     if (body.contractSlim) {
-      toUpload.push("t|" + path.join(dirname, body.contractSlim.file));
+      toUpload.push(CONTRACT_TEXT_PREFIX + path.join(dirname, body.contractSlim.file));
     }
-    toUpload.push("m|" + manifestPath);
+    toUpload.push(CONTRACT_MANIFEST_PREFIX + manifestPath);
   }
   await upload([urlOrDirOrSqliteFile, ...toUpload], true);
 }
@@ -961,7 +965,7 @@ var verifySignature2 = async (args, internal = false) => {
 
 // src/version.ts
 function version() {
-  console.log("2.2.3");
+  console.log("3.0.0");
 }
 
 // src/main.ts

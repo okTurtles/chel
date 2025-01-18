@@ -1,5 +1,9 @@
 # HISTORY
 
+### v3.0.0
+
+- Breaking change: sses new Shelter Protocol CIDs to be able to identify hashes for manifests, contracts, events, and files.
+
 ### v2.2.3
 
 - Use `/dev-file` for file upload to URL endpoint on `deploy`
