@@ -21,7 +21,7 @@
     "singleQuote": true
   },
   "lint": {
-    "exclude": ["node_modules/", "test/", "scripts/binary.js", "test/assets/group.js", "test/assets/mailbox.js", "vendor/", "dist/", "build/"]
+    "exclude": ["node_modules/", "test/", "test/assets/group.js", "test/assets/mailbox.js", "vendor/", "dist/", "build/"]
   },
   "importMap": "./vendor/import_map.json"
 }

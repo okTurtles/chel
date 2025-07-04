@@ -3,6 +3,7 @@
 const { Binary } = require('../vendor/binary-install/index.js')
 const os = require('os')
 const { version, repository } = require('../package.json')
+const process = require('node:process')
 
 const supportedPlatforms = {
   'Windows_NT_x64': {
