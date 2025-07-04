@@ -5,7 +5,7 @@
     "vendor": "deno vendor -f src/main.ts scripts/compile.ts",
     "compile": "deno run --import-map=./vendor/import_map.json --no-remote --allow-run --allow-read=. --allow-write=./dist scripts/compile.ts",
     "build": "deno run --import-map=./vendor/import_map.json --no-remote --allow-run --allow-read --allow-env --allow-write=./build --allow-net scripts/build.ts",
-    "dist": "deno lint && deno task build && deno task compile",
+    "dist": "deno lint . && deno task build && deno task compile",
     "test": "deno test --import-map=./vendor/import_map.json --allow-read=. --allow-write=test --no-remote"
   },
   "imports": {
@@ -21,9 +21,7 @@
     "singleQuote": true
   },
   "lint": {
-    "files": {
-      "exclude": ["node_modules/", "test/", "vendor/", "dist/", "build/"]
-    }
+    "exclude": ["node_modules/", "test/", "test/assets/group.js", "test/assets/mailbox.js", "vendor/", "dist/", "build/"]
   },
   "importMap": "./vendor/import_map.json"
 }
