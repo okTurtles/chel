@@ -1,6 +1,5 @@
-'use strict'
+import process from "node:process"
 
 export function version () {
-  // @ts-ignore: "cannot find name 'process'"
   console.log(process.env.VERSION)
 }
