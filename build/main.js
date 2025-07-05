@@ -11,19 +11,20 @@ var __export = (target, all) => {
 };
 
 // src/deps.ts
-import { assert, assertEquals, assertRejects, assertThrows } from "https://deno.land/std@0.141.0/testing/asserts.ts";
-import * as base64 from "https://deno.land/std@0.141.0/encoding/base64.ts";
-import * as flags from "https://deno.land/std@0.141.0/flags/mod.ts";
-import * as colors from "https://deno.land/std@0.141.0/fmt/colors.ts";
-import * as fs from "https://deno.land/std@0.141.0/fs/mod.ts";
-import * as path from "https://deno.land/std@0.141.0/path/mod.ts";
-import * as streams from "https://deno.land/std@0.141.0/streams/mod.ts";
+import { assert, assertEquals, assertRejects, assertThrows } from "jsr:@std/assert";
+import * as base64 from "jsr:@std/encoding/base64";
+import * as flags from "jsr:@std/flags/";
+import * as colors from "jsr:@std/fmt/colors";
+import * as fs from "jsr:@std/fs/";
+import * as path from "jsr:@std/path/";
+import * as streams from "jsr:@std/streams/";
+import * as util from "jsr:@std/io";
+import { copy, readAll } from "jsr:@std/io";
 import { default as default2 } from "https://esm.sh/tweetnacl@1.0.3?pin=v120";
 import { base58btc } from "https://esm.sh/multiformats@11.0.2/bases/base58?pin=v120";
 import {} from "https://esm.sh/multiformats@11.0.2?pin=v120";
 import { default as default3 } from "https://esm.sh/@multiformats/blake2@1.0.13?pin=v120";
 import { CID } from "https://esm.sh/multiformats@11.0.2/cid?pin=v120";
-import { miniexec } from "https://deno.land/x/miniexec@1.0.0/mod.ts";
 import * as esbuild from "https://deno.land/x/esbuild@v0.14.47/mod.js";
 import * as sqlite from "https://deno.land/x/sqlite@v3.7.1/mod.ts";
 import {} from "https://deno.land/x/sqlite@v3.7.1/mod.ts";
@@ -964,8 +965,9 @@ var verifySignature2 = async (args, internal = false) => {
 };
 
 // src/version.ts
+import process from "node:process";
 function version() {
-  console.log("3.0.0");
+  console.log(process.env.VERSION);
 }
 
 // src/main.ts

@@ -12,7 +12,17 @@ const options = {
   define: {
     'process.env.VERSION': `'${version}'`
   },
-  external: ['node:process'],
+  external: [
+    'node:process',
+    'jsr:@std/assert',
+    'jsr:@std/encoding/base64',
+    'jsr:@std/flags/',
+    'jsr:@std/fmt/colors',
+    'jsr:@std/fs/',
+    'jsr:@std/path/',
+    'jsr:@std/streams/',
+    'jsr:@std/io'
+  ],
   format: 'esm',
   outdir: 'build',
   splitting: false,

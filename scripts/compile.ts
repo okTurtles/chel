@@ -1,9 +1,9 @@
 #!/usr/bin/env -S deno run --allow-run --allow-read=. --allow-write=./dist
 
-import { sh } from '../src/deps.ts'
+import { shell } from '~/utils.ts';
 
 function $ (command: string) {
-  return sh(command, { printOutput: true })
+  return shell(command, { printOutput: true })
 }
 
 const { default: { version } } = await import('../package.json', { with: { type: "json" } })
@@ -27,5 +27,5 @@ try {
 } catch (e) {
   console.error('caught:', e.message)
 } finally {
-  await sh(`rm -rf ./dist/tmp`)
+  await shell(`rm -rf ./dist/tmp`)
 }

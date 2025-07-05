@@ -139,3 +139,39 @@ export const readJsonFile = async (file: unknown) => {
   const contents = await Deno.readTextFile(path.resolve(String(file)))
   return JSON.parse(contents)
 }
+
+// Add to src/utils.ts
+export interface ShellOptions {
+  printOutput?: boolean;
+  shell?: string;
+  cwd?: string;
+}
+
+export async function shell(
+  command: string,
+  options: ShellOptions = {}
+): Promise<string> {
+  const { printOutput = false, shell = "/bin/sh", cwd } = options;
+  const cmd = new Deno.Command(shell, {
+    args: ["-c", command],
+    stdout: "piped",
+    stderr: "piped",
+    cwd,
+  });
+
+  const { code, stdout, stderr } = await cmd.output();
+  const decoder = new TextDecoder();
+
+  if (printOutput) {
+    await Deno.stdout.write(stdout);
+    await Deno.stderr.write(stderr);
+  }
+
+  if (code !== 0) {
+    throw new Error(
+      `Command failed with exit code ${code}: ${decoder.decode(stderr)}`
+    );
+  }
+
+  return decoder.decode(stdout).trim();
+}

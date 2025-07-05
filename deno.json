@@ -1,19 +1,24 @@
 {
   "tasks": {
-    "chel": "deno task build && deno run --import-map=./vendor/import_map.json --allow-net --allow-read=. --allow-write=. --no-remote build/main.js",
+    "chel": "deno task build && deno run --allow-net --allow-read=. --allow-write=. build/main.js",
     "lint": "standard ./src",
-    "vendor": "deno vendor -f src/main.ts scripts/compile.ts",
-    "compile": "deno run --import-map=./vendor/import_map.json --no-remote --allow-run --allow-read=. --allow-write=./dist scripts/compile.ts",
-    "build": "deno run --import-map=./vendor/import_map.json --no-remote --allow-run --allow-read --allow-env --allow-write=./build --allow-net scripts/build.ts",
+    "compile": "deno run --allow-run --allow-read=. --allow-write=./dist scripts/compile.ts",
+    "build": "deno run --node-modules-dir --allow-run --allow-read --allow-env --allow-write=./build --allow-net scripts/build.ts",
     "dist": "deno lint . && deno task build && deno task compile",
-    "test": "deno test --import-map=./vendor/import_map.json --allow-read=. --allow-write=test --no-remote"
+    "test": "deno test --allow-read=. --allow-write=test"
   },
   "imports": {
-    "https://deno.land/std/io/util.ts": "https://deno.land/std@0.156.0/io/util.ts"
+    "~/": "./src/",
+    "jsr:@std/": "https://jsr.io/@std/",
+    "https://esm.sh/tweetnacl@1.0.3?pin=v120": "https://esm.sh/tweetnacl@1.0.3?pin=v120",
+    "https://esm.sh/multiformats@11.0.2/bases/base58?pin=v120": "https://esm.sh/multiformats@11.0.2/bases/base58?pin=v120",
+    "https://esm.sh/multiformats@11.0.2?pin=v120": "https://esm.sh/multiformats@11.0.2?pin=v120",
+    "https://esm.sh/@multiformats/blake2@1.0.13?pin=v120": "https://esm.sh/@multiformats/blake2@1.0.13?pin=v120",
+    "https://esm.sh/multiformats@11.0.2/cid?pin=v120": "https://esm.sh/multiformats@11.0.2/cid?pin=v120",
+    "https://deno.land/x/miniild@v0.14.47/mod.js": "https://deno.land/x/esbuild@v0.14.47/mod.js",
+    "https://deno.land/x/sqlite@v3.7.1/mod.ts": "https://deno.land/x/sqlite@v3.7.1/mod.ts"
   },
   "compilerOptions": {
-    "allowJs": true,
-    "strict": true
   },
   "fmt": {
     "lineWidth": 100,
@@ -23,5 +28,5 @@
   "lint": {
     "exclude": ["node_modules/", "vendor/", "dist/", "build/", "test/assets/**/*.js"]
   },
-  "importMap": "./vendor/import_map.json"
+  "vendor": true
 }
