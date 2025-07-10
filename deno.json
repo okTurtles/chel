@@ -10,14 +10,7 @@
   "imports": {
     "~/": "./src/",
     "jsr:@std/": "https://jsr.io/@std/",
-    "npm:@types/node": "npm:@types/node@latest",
-    "https://esm.sh/tweetnacl@1.0.3?pin=v120": "https://esm.sh/tweetnacl@1.0.3?pin=v120",
-    "https://esm.sh/multiformats@11.0.2/bases/base58?pin=v120": "https://esm.sh/multiformats@11.0.2/bases/base58?pin=v120",
-    "https://esm.sh/multiformats@11.0.2?pin=v120": "https://esm.sh/multiformats@11.0.2?pin=v120",
-    "https://esm.sh/@multiformats/blake2@1.0.13?pin=v120": "https://esm.sh/@multiformats/blake2@1.0.13?pin=v120",
-    "https://esm.sh/multiformats@11.0.2/cid?pin=v120": "https://esm.sh/multiformats@11.0.2/cid?pin=v120",
-    "https://deno.land/x/miniild@v0.14.47/mod.js": "https://deno.land/x/esbuild@v0.14.47/mod.js",
-    "https://deno.land/x/sqlite@v3.7.1/mod.ts": "https://deno.land/x/sqlite@v3.7.1/mod.ts"
+    "npm:@types/node": "npm:@types/node@latest"
   },
   "compilerOptions": {
   },
