@@ -78,7 +78,7 @@ export async function getBackend (src: string, { type, create } = { type: '', cr
   try {
     await backend.initStorage(initOptions)
   } catch (error) {
-    throw new Error(`could not init '${from}' storage backend at "${src}": ${error.message}`)
+    throw new Error(`could not init '${from}' storage backend at "${src}": ${(error as Error).message}`)
   }
   return backend
 }

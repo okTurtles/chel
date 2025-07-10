@@ -6,7 +6,7 @@ export * as fs from 'jsr:@std/fs/';
 export * as path from 'jsr:@std/path/';
 export * as streams from 'jsr:@std/streams/';
 export * as util from 'jsr:@std/io';
-export { copy, readAll } from 'jsr:@std/io';
+export { copy, readAll, writeAll } from 'jsr:@std/io';
 export { default as tweetnacl } from 'https://esm.sh/tweetnacl@1.0.3?pin=v120';
 export { base58btc } from 'https://esm.sh/multiformats@11.0.2/bases/base58?pin=v120';
 export { type Multibase } from 'https://esm.sh/multiformats@11.0.2?pin=v120';

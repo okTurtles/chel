@@ -52,8 +52,8 @@ export async function manifest (args: string[]) {
   }
   if (slim) {
     body.contractSlim = {
-      file: path.basename(slim),
-      hash: await hash([slim], multicodes.SHELTER_CONTRACT_TEXT, true)
+      file: path.basename(String(slim)),
+      hash: await hash([String(slim)], multicodes.SHELTER_CONTRACT_TEXT, true)
     }
   }
   const serializedBody = JSON.stringify(body)
@@ -71,7 +71,7 @@ export async function manifest (args: string[]) {
     console.log(manifest)
   } else {
     const outFile = parsedArgs.out || outFilepath
-    Deno.writeTextFileSync(outFile, manifest)
+    Deno.writeTextFileSync(String(outFile), manifest)
     console.log(colors.green('wrote:'), outFile)
   }
 }
