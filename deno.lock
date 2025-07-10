@@ -15,6 +15,7 @@
     "jsr:@std/path@*": "1.1.1",
     "jsr:@std/path@^1.1.1": "1.1.1",
     "jsr:@std/streams@*": "1.0.10",
+    "npm:@types/node@latest": "24.0.12",
     "npm:axios@0.27.2": "0.27.2",
     "npm:rimraf@3.0.2": "3.0.2",
     "npm:tar@6.1.11": "6.1.11"
@@ -74,6 +75,12 @@
     }
   },
   "npm": {
+    "@types/node@24.0.12": {
+      "integrity": "sha512-LtOrbvDf5ndC9Xi+4QZjVL0woFymF/xSTKZKPgrrl7H7XoeDvnD+E2IclKVDyaK9UM756W/3BXqSU+JEHopA9g==",
+      "dependencies": [
+        "undici-types"
+      ]
+    },
     "asynckit@0.4.0": {
       "integrity": "sha512-Oei9OH4tRh0YqU3GxhX79dM/mwVgvbZJaSNaRk+bshkj0S5cfHcgYakreBjrHwatXKbz+IoIdYLxrKim2MjW0Q=="
     },
@@ -296,6 +303,9 @@
         "yallist"
       ]
     },
+    "undici-types@7.8.0": {
+      "integrity": "sha512-9UJ2xGDvQ43tYyVMpuHlsgApydB8ZKfVYTsLDhXkFL/6gfkp+U8xTGdh8pMJv1SpZna0zxG1DwsKZsreLbXBxw=="
+    },
     "wrappy@1.0.2": {
       "integrity": "sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ=="
     },
@@ -344,6 +354,9 @@
     "https://esm.sh/v120/tweetnacl@1.0.3/denonext/tweetnacl.mjs": "b4b0ea92630faa255eef33b2ac85734313cd8930834375bb2527392f1823775e"
   },
   "workspace": {
+    "dependencies": [
+      "npm:@types/node@latest"
+    ],
     "packageJson": {
       "dependencies": [
         "npm:axios@0.27.2",
