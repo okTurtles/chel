@@ -31,8 +31,8 @@ export async function manifest (args: string[]) {
   const publicKeys = Array.from(new Set(
     [serializeKey(signingKey, false)]
       .concat(...await Promise.all(parsedArgs.key?.map(
-        async (kf: number | string) => {
-          const descriptor = await readJsonFile(kf)
+        async (kf: unknown) => {
+          const descriptor = await readJsonFile(String(kf))
           const key = deserializeKey(descriptor.pubkey)
           if (key.type !== EDWARDS25519SHA512BATCH) {
             exit(`Invalid key type ${key.type}; only ${EDWARDS25519SHA512BATCH} keys are supported.`)
