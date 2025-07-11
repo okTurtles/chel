@@ -14,4 +14,4 @@ export { default as blake } from 'https://esm.sh/@multiformats/blake2@1.0.13?pin
 export { CID } from 'https://esm.sh/multiformats@11.0.2/cid?pin=v120';
 export * as sqlite from "jsr:@db/sqlite";
 export { type Database as SQLiteDB } from "jsr:@db/sqlite";
-export * as esbuild from "https://deno.land/x/esbuild@v0.25.5/mod.js";
+export * as esbuild from "https://deno.land/x/esbuild@v0.25.6/mod.js";

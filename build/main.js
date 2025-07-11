@@ -24,7 +24,7 @@ import { base58btc } from "https://esm.sh/multiformats@11.0.2/bases/base58?pin=v
 import { default as default3 } from "https://esm.sh/@multiformats/blake2@1.0.13?pin=v120";
 import { CID } from "https://esm.sh/multiformats@11.0.2/cid?pin=v120";
 import * as sqlite from "jsr:@db/sqlite";
-import * as esbuild from "https://deno.land/x/esbuild@v0.25.5/mod.js";
+import * as esbuild from "https://deno.land/x/esbuild@v0.25.6/mod.js";
 var init_deps = __esm({
   "src/deps.ts"() {
   }
