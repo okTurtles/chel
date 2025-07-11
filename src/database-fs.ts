@@ -60,6 +60,6 @@ export async function writeDataOnce(key: string, value: Uint8Array | string): Pr
       await Deno.writeFile(path.join(dataFolder, key), value, options)
     }
   } catch (err) {
-    if ((err as Error).name !== 'AlreadyExists') throw err
+    if (err instanceof Error && err.name !== 'AlreadyExists') throw err
   }
 }
