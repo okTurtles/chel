@@ -15,4 +15,5 @@ jobs:
     - uses: denoland/setup-deno@v1
       with:
         deno-version: v2.4.0
+    - run: deno cache --lock=deno.lock src/deps.ts
     - run: deno task test --no-check
