@@ -5,7 +5,7 @@
     "compile": "deno run --allow-run --allow-read=. --allow-write=./dist scripts/compile.ts",
     "build": "deno run --node-modules-dir --allow-run --allow-read --allow-env --allow-write=./build --allow-net scripts/build.ts",
     "dist": "deno lint . && deno task build && deno task compile",
-    "test": "deno test --allow-read=. --allow-write=test"
+    "test": "deno test --allow-read=. --allow-write=test --allow-env --allow-ffi"
   },
   "imports": {
     "~/": "./src/",
