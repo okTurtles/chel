@@ -1,3 +1,3 @@
 export function version () {
-  console.log(globalThis.VERSION);
+  console.log(__build__.VERSION)
 }

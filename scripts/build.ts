@@ -10,7 +10,7 @@ const options = {
   entryPoints: ['./src/main.ts'],
   bundle: true,
   define: {
-    "globalThis.VERSION": JSON.stringify(version),
+    "__build__.VERSION": JSON.stringify(version),
   },
   external: [
     'node:process',
