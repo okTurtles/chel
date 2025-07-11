@@ -16,4 +16,4 @@ jobs:
       with:
         deno-version: v2.4.0
     - run: deno cache --lock=deno.lock src/deps.ts
-    - run: deno task test --no-check
+    - run: deno test --allow-read=.,/home/runner/.cache/deno --allow-write=test --allow-env --allow-ffi --no-check
