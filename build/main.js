@@ -19,7 +19,7 @@ import * as fs from "jsr:@std/fs/";
 import * as path from "jsr:@std/path/";
 import * as streams from "jsr:@std/streams/";
 import * as util from "jsr:@std/io";
-import { copy, readAll } from "jsr:@std/io";
+import { copy, readAll, writeAll } from "jsr:@std/io";
 import { default as default2 } from "https://esm.sh/tweetnacl@1.0.3?pin=v120";
 import { base58btc } from "https://esm.sh/multiformats@11.0.2/bases/base58?pin=v120";
 import {} from "https://esm.sh/multiformats@11.0.2?pin=v120";
@@ -456,7 +456,7 @@ async function getRemoteMessagesSince(src, contractID, sinceHeight, limit) {
   if (b64messages.length > limit) {
     b64messages.length = limit;
   }
-  return b64messages.map((b64str) => JSON.parse(new TextDecoder().decode(base64.decode(b64str))));
+  return b64messages.map((b64str) => JSON.parse(new TextDecoder().decode(base64.decodeBase64(b64str))));
 }
 async function readString(key) {
   const rv = await backend.readData(key);
@@ -479,7 +479,7 @@ async function get(args) {
     if (typeof data === "string") {
       console.log(data);
     } else {
-      await streams.writeAll(Deno.stdout, data);
+      await writeAll(Deno.stdout, data);
     }
   } catch (error) {
     exit(error.message);
@@ -824,8 +824,8 @@ async function manifest(args) {
   };
   if (slim) {
     body.contractSlim = {
-      file: path.basename(slim),
-      hash: await hash([slim], multicodes.SHELTER_CONTRACT_TEXT, true)
+      file: path.basename(String(slim)),
+      hash: await hash([String(slim)], multicodes.SHELTER_CONTRACT_TEXT, true)
     };
   }
   const serializedBody = JSON.stringify(body);
@@ -843,7 +843,7 @@ async function manifest(args) {
     console.log(manifest2);
   } else {
     const outFile = parsedArgs.out || outFilepath;
-    Deno.writeTextFileSync(outFile, manifest2);
+    Deno.writeTextFileSync(String(outFile), manifest2);
     console.log(colors.green("wrote:"), outFile);
   }
 }
