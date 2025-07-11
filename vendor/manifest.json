@@ -1,34 +1,5 @@
 {
   "modules": {
-    "https://esm.sh/@multiformats/blake2@1.0.13?pin=v120": {
-      "headers": {
-        "content-type": "application/javascript; charset=utf-8"
-      }
-    },
-    "https://esm.sh/multiformats@11.0.2/bases/base58?pin=v120": {
-      "headers": {
-        "content-type": "application/javascript; charset=utf-8",
-        "x-typescript-types": "https://esm.sh/v120/multiformats@11.0.2/dist/types/src/bases/base58.d.ts"
-      }
-    },
-    "https://esm.sh/multiformats@11.0.2/cid?pin=v120": {
-      "headers": {
-        "content-type": "application/javascript; charset=utf-8",
-        "x-typescript-types": "https://esm.sh/v120/multiformats@11.0.2/dist/types/src/cid.d.ts"
-      }
-    },
-    "https://esm.sh/multiformats@11.0.2?pin=v120": {
-      "headers": {
-        "content-type": "application/javascript; charset=utf-8",
-        "x-typescript-types": "https://esm.sh/v120/multiformats@11.0.2/dist/types/src/index.d.ts"
-      }
-    },
-    "https://esm.sh/tweetnacl@1.0.3?pin=v120": {
-      "headers": {
-        "content-type": "application/javascript; charset=utf-8",
-        "x-typescript-types": "https://esm.sh/v120/tweetnacl@1.0.3/nacl.d.ts"
-      }
-    },
     "https://jsr.io/@std/streams/1.0.10/limited_bytes_transform_stream.ts": {}
   }
 }

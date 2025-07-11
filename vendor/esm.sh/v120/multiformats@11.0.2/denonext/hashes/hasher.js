@@ -1,3 +1,0 @@
-/* esm.sh - esbuild bundle(multiformats@11.0.2/hashes/hasher) denonext production */
-import*as s from"/v120/multiformats@11.0.2/denonext/hashes/digest.js";var i=({name:n,code:e,encode:t})=>new o(n,e,t),o=class{constructor(e,t,r){this.name=e,this.code=t,this.encode=r}digest(e){if(e instanceof Uint8Array){let t=this.encode(e);return t instanceof Uint8Array?s.create(this.code,t):t.then(r=>s.create(this.code,r))}else throw Error("Unknown type, must be binary type")}};export{o as Hasher,i as from};
-//# sourceMappingURL=hasher.js.map

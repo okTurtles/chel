@@ -19,12 +19,12 @@ import * as path from "jsr:@std/path/";
 import * as streams from "jsr:@std/streams/";
 import * as util from "jsr:@std/io";
 import { copy, readAll } from "jsr:@std/io";
-import { default as default2 } from "https://esm.sh/tweetnacl@1.0.3?pin=v120";
-import { base58btc } from "https://esm.sh/multiformats@11.0.2/bases/base58?pin=v120";
-import { default as default3 } from "https://esm.sh/@multiformats/blake2@1.0.13?pin=v120";
-import { CID } from "https://esm.sh/multiformats@11.0.2/cid?pin=v120";
 import * as sqlite from "jsr:@db/sqlite";
 import * as esbuild from "https://deno.land/x/esbuild@v0.25.6/mod.js";
+import { default as default2 } from "npm:tweetnacl@1.0.3";
+import { base58btc } from "npm:multiformats@11.0.2/bases/base58";
+import { default as default3 } from "npm:@multiformats/blake2@1.0.13";
+import { CID } from "npm:multiformats@11.0.2/cid";
 var init_deps = __esm({
   "src/deps.ts"() {
   }
