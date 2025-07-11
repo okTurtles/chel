@@ -10,16 +10,16 @@ var __export = (target, all) => {
 };
 
 // src/deps.ts
-import { assert, assertEquals, assertRejects, assertThrows } from "jsr:@std/assert";
-import * as base64 from "jsr:@std/encoding/base64";
-import * as flags from "jsr:@std/flags/";
-import * as colors from "jsr:@std/fmt/colors";
-import * as fs from "jsr:@std/fs/";
-import * as path from "jsr:@std/path/";
-import * as streams from "jsr:@std/streams/";
-import * as util from "jsr:@std/io";
-import { copy, readAll } from "jsr:@std/io";
-import * as sqlite from "jsr:@db/sqlite";
+import { assert, assertEquals, assertRejects, assertThrows } from "jsr:@std/assert@1.0.13";
+import * as base64 from "jsr:@std/encoding@1.0.10/base64";
+import * as flags from "jsr:@std/flags@0.224.0";
+import * as colors from "jsr:@std/fmt@1.0.8/colors";
+import * as fs from "jsr:@std/fs@1.0.19";
+import * as path from "jsr:@std/path@1.1.1";
+import * as streams from "jsr:@std/streams@1.0.10";
+import * as util from "jsr:@std/io@0.225.2";
+import { copy, readAll } from "jsr:@std/io@0.225.2";
+import * as sqlite from "jsr:@db/sqlite@0.12.0";
 import * as esbuild from "https://deno.land/x/esbuild@v0.25.6/mod.js";
 import { default as default2 } from "npm:tweetnacl@1.0.3";
 import { base58btc } from "npm:multiformats@11.0.2/bases/base58";
