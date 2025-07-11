@@ -28,7 +28,7 @@ export async function eventsAfter (args: string[]): Promise<void> {
     }
     console.log(JSON.stringify(messages, null, 2))
   } catch (error) {
-    exit((error as Error).message)
+    exit(error)
   }
 }
 

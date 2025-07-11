@@ -31,6 +31,6 @@ export async function get (args: string[]): Promise<void> {
       await writeAll(Deno.stdout, data)
     }
   } catch (error) {
-    exit((error as Error).message)
+    exit(error)
   }
 }

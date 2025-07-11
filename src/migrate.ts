@@ -22,7 +22,7 @@ export async function migrate(args: string[]) {
     backendFrom = await getBackend(src, { type: from, create: false })
     backendTo = await getBackend(out, { type: to, create: true })
   } catch (error) {
-    exit((error as Error).message)
+    exit(error)
   }
 
   const numKeys = await backendFrom.count()
