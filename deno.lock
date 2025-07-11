@@ -1,18 +1,26 @@
 {
   "version": "5",
   "specifiers": {
+    "jsr:@db/sqlite@*": "0.12.0",
+    "jsr:@denosaurs/plug@1": "1.1.0",
     "jsr:@std/assert@*": "1.0.13",
+    "jsr:@std/assert@0.217": "0.217.0",
     "jsr:@std/assert@0.224": "0.224.0",
     "jsr:@std/bytes@^1.0.5": "1.0.6",
     "jsr:@std/bytes@^1.0.6": "1.0.6",
     "jsr:@std/encoding@*": "1.0.10",
+    "jsr:@std/encoding@1": "1.0.10",
     "jsr:@std/flags@*": "0.224.0",
     "jsr:@std/fmt@*": "1.0.8",
+    "jsr:@std/fmt@1": "1.0.8",
     "jsr:@std/fs@*": "1.0.19",
+    "jsr:@std/fs@1": "1.0.19",
     "jsr:@std/internal@^1.0.6": "1.0.9",
     "jsr:@std/internal@^1.0.9": "1.0.9",
     "jsr:@std/io@*": "0.225.2",
     "jsr:@std/path@*": "1.1.1",
+    "jsr:@std/path@0.217": "0.217.0",
+    "jsr:@std/path@1": "1.1.1",
     "jsr:@std/path@^1.1.1": "1.1.1",
     "jsr:@std/streams@*": "1.0.10",
     "npm:@types/node@latest": "24.0.12",
@@ -21,6 +29,25 @@
     "npm:tar@6.1.11": "6.1.11"
   },
   "jsr": {
+    "@db/sqlite@0.12.0": {
+      "integrity": "dd1ef7f621ad50fc1e073a1c3609c4470bd51edc0994139c5bf9851de7a6d85f",
+      "dependencies": [
+        "jsr:@denosaurs/plug",
+        "jsr:@std/path@0.217"
+      ]
+    },
+    "@denosaurs/plug@1.1.0": {
+      "integrity": "eb2f0b7546c7bca2000d8b0282c54d50d91cf6d75cb26a80df25a6de8c4bc044",
+      "dependencies": [
+        "jsr:@std/encoding@1",
+        "jsr:@std/fmt@1",
+        "jsr:@std/fs@1",
+        "jsr:@std/path@1"
+      ]
+    },
+    "@std/assert@0.217.0": {
+      "integrity": "c98e279362ca6982d5285c3b89517b757c1e3477ee9f14eb2fdf80a45aaa9642"
+    },
     "@std/assert@0.224.0": {
       "integrity": "8643233ec7aec38a940a8264a6e3eed9bfa44e7a71cc6b3c8874213ff401967f"
     },
@@ -59,6 +86,12 @@
       "integrity": "3c740cd4ee4c082e6cfc86458f47e2ab7cb353dc6234d5e9b1f91a2de5f4d6c7",
       "dependencies": [
         "jsr:@std/bytes@^1.0.5"
+      ]
+    },
+    "@std/path@0.217.0": {
+      "integrity": "1217cc25534bca9a2f672d7fe7c6f356e4027df400c0e85c0ef3e4343bc67d11",
+      "dependencies": [
+        "jsr:@std/assert@0.217"
       ]
     },
     "@std/path@1.1.1": {
@@ -317,16 +350,7 @@
     "https://deno.land/x/denoflate@1.2.1/mod.ts": "f5628e44b80b3d80ed525afa2ba0f12408e3849db817d47a883b801f9ce69dd6",
     "https://deno.land/x/denoflate@1.2.1/pkg/denoflate.js": "b9f9ad9457d3f12f28b1fb35c555f57443427f74decb403113d67364e4f2caf4",
     "https://deno.land/x/denoflate@1.2.1/pkg/denoflate_bg.wasm.js": "d581956245407a2115a3d7e8d85a9641c032940a8e810acbd59ca86afd34d44d",
-    "https://deno.land/x/esbuild@v0.14.47/mod.js": "284b81ff281938856fc21fdbe0a4d7abe0d64bf9b5d5d6cfcc34eb008087bd11",
-    "https://deno.land/x/sqlite@v3.7.1/build/sqlite.js": "c59f109f100c2bae0b9342f04e0d400583e2e3211d08bb71095177a4109ee5bf",
-    "https://deno.land/x/sqlite@v3.7.1/build/vfs.js": "08533cc78fb29b9d9bd62f6bb93e5ef333407013fed185776808f11223ba0e70",
-    "https://deno.land/x/sqlite@v3.7.1/mod.ts": "e09fc79d8065fe222578114b109b1fd60077bff1bb75448532077f784f4d6a83",
-    "https://deno.land/x/sqlite@v3.7.1/src/constants.ts": "90f3be047ec0a89bcb5d6fc30db121685fc82cb00b1c476124ff47a4b0472aa9",
-    "https://deno.land/x/sqlite@v3.7.1/src/db.ts": "59c6c2b5c4127132558bb8c610eadd811822f1a5d7f9c509704179ca192f94e0",
-    "https://deno.land/x/sqlite@v3.7.1/src/error.ts": "f7a15cb00d7c3797da1aefee3cf86d23e0ae92e73f0ba3165496c3816ab9503a",
-    "https://deno.land/x/sqlite@v3.7.1/src/function.ts": "e4c83b8ec64bf88bafad2407376b0c6a3b54e777593c70336fb40d43a79865f2",
-    "https://deno.land/x/sqlite@v3.7.1/src/query.ts": "d58abda928f6582d77bad685ecf551b1be8a15e8e38403e293ec38522e030cad",
-    "https://deno.land/x/sqlite@v3.7.1/src/wasm.ts": "e79d0baa6e42423257fb3c7cc98091c54399254867e0f34a09b5bdef37bd9487",
+    "https://deno.land/x/esbuild@v0.25.5/mod.js": "57b9635116b05e6f214dea72d7f488c13808ee1b8055d96fa5da1c0dffe890cf",
     "https://esm.sh/@multiformats/blake2@1.0.13?pin=v120": "cd83a30acec4a8f449251b314c2f5ac2c573f579a5ceedbf049fc389e373e813",
     "https://esm.sh/multiformats@11.0.2/bases/base58?pin=v120": "56b47cfb7575c0f28044b5340f14a38e1775be6ab2c2fe5f81a882c19260f78a",
     "https://esm.sh/multiformats@11.0.2/cid?pin=v120": "56f33147af16cdb712f1d51858d1d483353ed09d54acde4fa86b379e83e058f9",

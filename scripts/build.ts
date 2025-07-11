@@ -21,12 +21,12 @@ const options = {
     'jsr:@std/fs/',
     'jsr:@std/path/',
     'jsr:@std/streams/',
-    'jsr:@std/io'
+    'jsr:@std/io',
+    'jsr:@db/sqlite',
   ],
   format: 'esm',
   outdir: 'build',
-  splitting: false,
-  watch: false // Not using esbuild's own watch mode since it involves polling.
+  splitting: false
 }
 const result = await esbuild.build(options)
 if (result.errors.length) {

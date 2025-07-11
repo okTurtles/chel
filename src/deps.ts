@@ -12,7 +12,6 @@ export { base58btc } from 'https://esm.sh/multiformats@11.0.2/bases/base58?pin=v
 export { type Multibase } from 'https://esm.sh/multiformats@11.0.2?pin=v120';
 export { default as blake } from 'https://esm.sh/@multiformats/blake2@1.0.13?pin=v120';
 export { CID } from 'https://esm.sh/multiformats@11.0.2/cid?pin=v120';
-// export { miniexec as sh } from "https://deno.land/x/miniexec@1.0.0/mod.ts";
-export * as esbuild from "https://deno.land/x/esbuild@v0.14.47/mod.js";
-export * as sqlite from "https://deno.land/x/sqlite@v3.7.1/mod.ts";
-export { type DB as SQLiteDB, type PreparedQuery } from "https://deno.land/x/sqlite@v3.7.1/mod.ts";
+export * as sqlite from "jsr:@db/sqlite";
+export { type Database as SQLiteDB } from "jsr:@db/sqlite";
+export * as esbuild from "https://deno.land/x/esbuild@v0.25.5/mod.js";

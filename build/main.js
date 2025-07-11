@@ -1,5 +1,4 @@
 #!/usr/bin/env -S deno run --allow-read=./ --allow-write=./  --allow-net --no-remote --import-map=vendor/import_map.json
-"use strict";
 var __defProp = Object.defineProperty;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __esm = (fn, res) => function __init() {
@@ -22,12 +21,10 @@ import * as util from "jsr:@std/io";
 import { copy, readAll } from "jsr:@std/io";
 import { default as default2 } from "https://esm.sh/tweetnacl@1.0.3?pin=v120";
 import { base58btc } from "https://esm.sh/multiformats@11.0.2/bases/base58?pin=v120";
-import {} from "https://esm.sh/multiformats@11.0.2?pin=v120";
 import { default as default3 } from "https://esm.sh/@multiformats/blake2@1.0.13?pin=v120";
 import { CID } from "https://esm.sh/multiformats@11.0.2/cid?pin=v120";
-import * as esbuild from "https://deno.land/x/esbuild@v0.14.47/mod.js";
-import * as sqlite from "https://deno.land/x/sqlite@v3.7.1/mod.ts";
-import {} from "https://deno.land/x/sqlite@v3.7.1/mod.ts";
+import * as sqlite from "jsr:@db/sqlite";
+import * as esbuild from "https://deno.land/x/esbuild@v0.25.5/mod.js";
 var init_deps = __esm({
   "src/deps.ts"() {
   }
@@ -88,8 +85,7 @@ async function writeDataOnce(key, value) {
       await Deno.writeFile(path.join(dataFolder, key), value, options);
     }
   } catch (err) {
-    if (err.name !== "AlreadyExists")
-      throw err;
+    if (err.name !== "AlreadyExists") throw err;
   }
 }
 var dataFolder;
@@ -181,24 +177,19 @@ function createCID(data, multicode = multicodes.RAW) {
   return CID.create(1, multicode, digest).toString(multibase.encoder);
 }
 function exit(message, internal = false) {
-  if (internal)
-    throw new Error(message);
+  if (internal) throw new Error(message);
   console.error("[chel]", colors.red("Error:"), message);
   Deno.exit(1);
 }
 async function getBackend(src, { type, create } = { type: "", create: false }) {
   const fsOptions = { internal: true, dirname: src };
   const sqliteOptions = { internal: true, dirname: path.dirname(src), filename: path.basename(src) };
-  if (!create && !await isDir(src) && !await isFile(src))
-    throw new Error(`not found: "${src}"`);
+  if (!create && !await isDir(src) && !await isFile(src)) throw new Error(`not found: "${src}"`);
   let from = type;
   if (!from) {
-    if (await isDir(src))
-      from = "fs";
-    else if (await isFile(src))
-      from = "sqlite";
-    else
-      throw new Error(`could not infer backend type. Not found: "${src}"`);
+    if (await isDir(src)) from = "fs";
+    else if (await isFile(src)) from = "sqlite";
+    else throw new Error(`could not infer backend type. Not found: "${src}"`);
   }
   let initOptions;
   switch (from) {
@@ -302,16 +293,14 @@ init_deps();
 init_utils();
 async function upload(args, internal = false) {
   const [urlOrDirOrSqliteFile, ...files] = args;
-  if (files.length === 0)
-    throw new Error(`missing files!`);
+  if (files.length === 0) throw new Error(`missing files!`);
   const uploaded = [];
   const uploaderFn = await isDir(urlOrDirOrSqliteFile) ? uploadEntryToDir : urlOrDirOrSqliteFile.endsWith(".db") ? uploadEntryToSQLite : uploadEntryToURL;
   for (const filepath_ of files) {
     let type = multicodes.RAW;
     let filepath = filepath_;
     if (internal) {
-      if (filepath_[1] !== "|")
-        throw new Error("Invalid path format");
+      if (filepath_[1] !== "|") throw new Error("Invalid path format");
       switch (filepath_[0]) {
         case "r":
           break;
@@ -363,8 +352,7 @@ async function uploadEntryToSQLite([cid, buffer], sqlitedb) {
 }
 function handleFetchResult(type) {
   return function(r) {
-    if (!r.ok)
-      throw new Error(`${r.status}: ${r.statusText}`);
+    if (!r.ok) throw new Error(`${r.status}: ${r.statusText}`);
     return r[type]();
   };
 }
@@ -374,8 +362,7 @@ var CONTRACT_TEXT_PREFIX = `t|`;
 var CONTRACT_MANIFEST_PREFIX = `m|`;
 async function deploy(args) {
   const [urlOrDirOrSqliteFile, ...manifests] = args;
-  if (manifests.length === 0)
-    throw new Error("missing url or manifests!");
+  if (manifests.length === 0) throw new Error("missing url or manifests!");
   const toUpload = [];
   for (const manifestPath of manifests) {
     const json = JSON.parse(Deno.readTextFileSync(manifestPath));
@@ -399,8 +386,7 @@ var headPrefix = "head=";
 async function eventsAfter(args) {
   const parsedArgs = flags.parse(args);
   const limit = Number(parsedArgs.limit ?? defaultLimit);
-  if (!isArrayLength(limit))
-    exit("argument --limit must be a valid array length");
+  if (!isArrayLength(limit)) exit("argument --limit must be a valid array length");
   const [urlOrLocalPath, contractID] = parsedArgs._.map(String);
   const height = Number(parsedArgs._[2]);
   const src = urlOrLocalPath;
@@ -418,8 +404,7 @@ async function eventsAfter(args) {
 }
 async function getMessage(hash2) {
   const value = await readString(hash2);
-  if (!value)
-    throw new Error(`no entry for ${hash2}!`);
+  if (!value) throw new Error(`no entry for ${hash2}!`);
   return JSON.parse(value);
 }
 async function getMessagesSince(src, contractID, sinceHeight, limit) {
@@ -460,8 +445,7 @@ async function getRemoteMessagesSince(src, contractID, sinceHeight, limit) {
 }
 async function readString(key) {
   const rv = await backend.readData(key);
-  if (rv === void 0)
-    return void 0;
+  if (rv === void 0) return void 0;
   return typeof rv === "string" ? rv : new TextDecoder().decode(rv);
 }
 
@@ -474,8 +458,7 @@ async function get(args) {
   const src = urlOrLocalPath;
   try {
     const data = isURL(src) ? await readRemoteData(src, key) : await (await getBackend(src)).readData(key);
-    if (data === void 0)
-      exit(`no entry found for ${key}`);
+    if (data === void 0) exit(`no entry found for ${key}`);
     if (typeof data === "string") {
       console.log(data);
     } else {
@@ -801,18 +784,21 @@ async function manifest(args) {
   const version2 = parsedArgs.version || parsedArgs.v || "x";
   const slim = parsedArgs.slim || parsedArgs.s;
   const outFilepath = path.join(contractDir, `${contractFileName}.${version2}.manifest.json`);
-  if (!keyFile)
-    exit("Missing signing key file");
+  if (!keyFile) exit("Missing signing key file");
   const signingKeyDescriptor = await readJsonFile(keyFile);
   const signingKey = deserializeKey(signingKeyDescriptor.privkey);
-  const publicKeys = Array.from(new Set([serializeKey(signingKey, false)].concat(...await Promise.all(parsedArgs.key?.map(async (kf) => {
-    const descriptor = await readJsonFile(kf);
-    const key = deserializeKey(descriptor.pubkey);
-    if (key.type !== EDWARDS25519SHA512BATCH) {
-      exit(`Invalid key type ${key.type}; only ${EDWARDS25519SHA512BATCH} keys are supported.`);
-    }
-    return serializeKey(key, false);
-  }) || []))));
+  const publicKeys = Array.from(new Set(
+    [serializeKey(signingKey, false)].concat(...await Promise.all(parsedArgs.key?.map(
+      async (kf) => {
+        const descriptor = await readJsonFile(kf);
+        const key = deserializeKey(descriptor.pubkey);
+        if (key.type !== EDWARDS25519SHA512BATCH) {
+          exit(`Invalid key type ${key.type}; only ${EDWARDS25519SHA512BATCH} keys are supported.`);
+        }
+        return serializeKey(key, false);
+      }
+    ) || []))
+  ));
   const body = {
     name,
     version: version2,
@@ -856,14 +842,10 @@ async function migrate(args) {
   const parsedArgs = flags.parse(args);
   const { from, to, out } = parsedArgs;
   const src = path.resolve(String(parsedArgs._[0]) ?? ".");
-  if (!from)
-    exit("missing argument: --from");
-  if (!to)
-    exit("missing argument: --to");
-  if (!out)
-    exit("missing argument: --out");
-  if (from === to)
-    exit("arguments --from and --to must be different");
+  if (!from) exit("missing argument: --from");
+  if (!to) exit("missing argument: --to");
+  if (!out) exit("missing argument: --out");
+  if (from === to) exit("arguments --from and --to must be different");
   let backendFrom;
   let backendTo;
   try {
@@ -875,11 +857,9 @@ async function migrate(args) {
   const numKeys = await backendFrom.count();
   let numVisitedKeys = 0;
   for await (const key of backendFrom.iterKeys()) {
-    if (!isValidKey(key))
-      continue;
+    if (!isValidKey(key)) continue;
     const value = await backendFrom.readData(key);
-    if (value === void 0)
-      continue;
+    if (value === void 0) continue;
     if (isNotHashKey(key)) {
       await backendTo.writeData(key, value);
     } else {
@@ -960,8 +940,7 @@ var verifySignature2 = async (args, internal = false) => {
       exit(`Invalid slim contract file hash. Expected ${body.contractSlim.hash} but got ${computedHash2}`, internal);
     }
   }
-  if (!internal)
-    console.log(colors.green("ok"), "all checks passed");
+  if (!internal) console.log(colors.green("ok"), "all checks passed");
 };
 
 // src/version.ts
