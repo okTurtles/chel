@@ -16,5 +16,4 @@ jobs:
       with:
         deno-version: v2.4.0
     - run: deno cache --lock=deno.lock src/deps.ts
-    - run: deno run --allow-net --allow-read --allow-write=/home/runner/.cache/deno https://jsr.io/@db/sqlite/0.12.0/mod.ts
     - run: deno test --allow-read=.,/home/runner/.cache/deno --allow-write=test,/home/runner/.cache/deno --allow-env --allow-ffi --no-chec
