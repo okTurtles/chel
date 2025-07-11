@@ -32,6 +32,9 @@ export async function manifest (args: string[]) {
     [serializeKey(signingKey, false)]
       .concat(...await Promise.all(parsedArgs.key?.map(
         async (kf: unknown) => {
+          if (typeof kf !== 'string' && typeof kf !== 'number') {
+            exit(`Invalid key file reference: ${String(kf)}`)
+          }
           const descriptor = await readJsonFile(String(kf))
           const key = deserializeKey(descriptor.pubkey)
           if (key.type !== EDWARDS25519SHA512BATCH) {
