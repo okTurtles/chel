@@ -944,9 +944,8 @@ var verifySignature2 = async (args, internal = false) => {
 };
 
 // src/version.ts
-import process from "node:process";
 function version() {
-  console.log(process.env.VERSION);
+  console.log("3.0.0");
 }
 
 // src/main.ts
