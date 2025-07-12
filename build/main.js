@@ -120,15 +120,15 @@ async function initStorage2(options = {}) {
     db.close(true);
   }
   db = new DB(filepath);
-  db.execute("CREATE TABLE IF NOT EXISTS Data(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)");
+  db.run("CREATE TABLE IF NOT EXISTS Data(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)");
   dbPath = filepath;
   if (!options.internal) {
     console.log("Connected to the %s SQLite database.", filepath);
   }
-  iterKeysStatement = db.prepareQuery("SELECT key FROM Data");
-  readStatement = db.prepareQuery("SELECT value FROM Data WHERE key = ?");
-  writeOnceStatement = db.prepareQuery("INSERT INTO Data(key, value) VALUES(?, ?) ON CONFLICT (key) DO NOTHING");
-  writeStatement = db.prepareQuery("REPLACE INTO Data(key, value) VALUES(?, ?)");
+  iterKeysStatement = db.prepare("SELECT key FROM Data");
+  readStatement = db.prepare("SELECT value FROM Data WHERE key = ?");
+  writeOnceStatement = db.prepare("INSERT INTO Data(key, value) VALUES(?, ?) ON CONFLICT (key) DO NOTHING");
+  writeStatement = db.prepare("REPLACE INTO Data(key, value) VALUES(?, ?)");
 }
 function count2() {
   return db.query("SELECT COUNT(*) FROM Data")[0][0];
@@ -155,7 +155,7 @@ var init_database_sqlite = __esm({
   "src/database-sqlite.ts"() {
     init_deps();
     init_utils();
-    ({ DB } = sqlite);
+    DB = sqlite.Database;
     dataFolder2 = "";
   }
 });
