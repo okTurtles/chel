@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const { Binary } = require('../vendor/binary-install/index.js')
+const { Binary } = require('./binary-install.js')
 const os = require('os')
 const { version, repository } = require('../package.json')
 const process = require('node:process')
