@@ -19,4 +19,4 @@ jobs:
     - run: deno cache --lock=deno.lock src/deps.ts
     
     - name: Run tests
-      run: deno test --allow-read --allow-write --allow-env --allow-ffi --allow-net --no-check
+      run: deno test --allow-read --allow-write --allow-env --allow-ffi --allow-net
