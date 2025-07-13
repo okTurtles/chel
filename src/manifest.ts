@@ -20,8 +20,8 @@ export async function manifest (args: string[]) {
   const { name: contractFileName, base: contractBasename, dir: contractDir } = parsedFilepath
   const name = parsedArgs.name || parsedArgs.n || contractFileName
   const version = parsedArgs.version || parsedArgs.v || 'x'
-  const slim = parsedArgs.slim || parsedArgs.s
-  const outFilepath = path.join(contractDir, `${contractFileName}.${version}.manifest.json`)
+  const slim: string | undefined = (parsedArgs.slim || parsedArgs.s) as string | undefined
+  const outFile: string = (parsedArgs.out as string) || path.join(contractDir, `${contractFileName}.${version}.manifest.json`)
   if (!keyFile) exit('Missing signing key file')
 
   const signingKeyDescriptor = await readJsonFile(keyFile)
@@ -55,8 +55,8 @@ export async function manifest (args: string[]) {
   }
   if (slim) {
     body.contractSlim = {
-      file: path.basename(String(slim)),
-      hash: await hash([String(slim)], multicodes.SHELTER_CONTRACT_TEXT, true)
+      file: path.basename(slim),
+      hash: await hash([slim], multicodes.SHELTER_CONTRACT_TEXT, true)
     }
   }
   const serializedBody = JSON.stringify(body)
@@ -73,8 +73,7 @@ export async function manifest (args: string[]) {
   if (parsedArgs.out === '-') {
     console.log(manifest)
   } else {
-    const outFile = parsedArgs.out || outFilepath
-    Deno.writeTextFileSync(String(outFile), manifest)
+    Deno.writeTextFileSync(outFile, manifest)
     console.log(colors.green('wrote:'), outFile)
   }
 }
