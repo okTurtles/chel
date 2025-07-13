@@ -1,14 +1,14 @@
-import { path, sqlite, type PreparedQuery, type SQLiteDB } from './deps.ts'
+import { path, sqlite, type SQLiteDB } from './deps.ts'
 import { checkKey } from './utils.ts'
 
-const { DB } = sqlite
+const DB = sqlite.Database
 
 let db: SQLiteDB
 let dbPath: string
-let iterKeysStatement: PreparedQuery<[string]>
-let readStatement: PreparedQuery<[string]>
-let writeOnceStatement: PreparedQuery
-let writeStatement: PreparedQuery
+let iterKeysStatement: sqlite.Statement
+let readStatement: sqlite.Statement
+let writeOnceStatement: sqlite.Statement
+let writeStatement: sqlite.Statement
 
 // Initialized in initStorage().
 export let dataFolder = ''
@@ -29,17 +29,17 @@ export async function initStorage (options: Record<string, unknown> = {}): Promi
   }
   db = new DB(filepath)
   // Important: keep this in sync with the schema used in GroupIncome.
-  db.execute('CREATE TABLE IF NOT EXISTS Data(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)')
+  db.run('CREATE TABLE IF NOT EXISTS Data(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)')
   dbPath = filepath
   if (!options.internal) {
     console.log('Connected to the %s SQLite database.', filepath)
   }
-  iterKeysStatement = db.prepareQuery<[string]>('SELECT key FROM Data')
-  readStatement = db.prepareQuery<[string]>('SELECT value FROM Data WHERE key = ?')
+  iterKeysStatement = db.prepare<[string]>('SELECT key FROM Data')
+  readStatement = db.prepare<[string]>('SELECT value FROM Data WHERE key = ?')
   // Use "upsert" syntax to store an entry only if the key is not already in the DB.
   // https://www.sqlite.org/lang_upsert.html
-  writeOnceStatement = db.prepareQuery('INSERT INTO Data(key, value) VALUES(?, ?) ON CONFLICT (key) DO NOTHING')
-  writeStatement = db.prepareQuery('REPLACE INTO Data(key, value) VALUES(?, ?)')
+  writeOnceStatement = db.prepare('INSERT INTO Data(key, value) VALUES(?, ?) ON CONFLICT (key) DO NOTHING')
+  writeStatement = db.prepare('REPLACE INTO Data(key, value) VALUES(?, ?)')
 }
 
 export function count (): number {

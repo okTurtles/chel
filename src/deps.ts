@@ -1,18 +1,17 @@
-export { assert, assertEquals, assertRejects, assertThrows } from 'jsr:@std/assert';
-export * as base64 from 'jsr:@std/encoding/base64';
-export * as flags from 'jsr:@std/flags/';
-export * as colors from 'jsr:@std/fmt/colors';
-export * as fs from 'jsr:@std/fs/';
-export * as path from 'jsr:@std/path/';
-export * as streams from 'jsr:@std/streams/';
-export * as util from 'jsr:@std/io';
-export { copy, readAll, writeAll } from 'jsr:@std/io';
-export { default as tweetnacl } from 'https://esm.sh/tweetnacl@1.0.3?pin=v120';
-export { base58btc } from 'https://esm.sh/multiformats@11.0.2/bases/base58?pin=v120';
-export { type Multibase } from 'https://esm.sh/multiformats@11.0.2?pin=v120';
-export { default as blake } from 'https://esm.sh/@multiformats/blake2@1.0.13?pin=v120';
-export { CID } from 'https://esm.sh/multiformats@11.0.2/cid?pin=v120';
-// export { miniexec as sh } from "https://deno.land/x/miniexec@1.0.0/mod.ts";
-export * as esbuild from "https://deno.land/x/esbuild@v0.14.47/mod.js";
-export * as sqlite from "https://deno.land/x/sqlite@v3.7.1/mod.ts";
-export { type DB as SQLiteDB, type PreparedQuery } from "https://deno.land/x/sqlite@v3.7.1/mod.ts";
+export { assert, assertEquals, assertRejects, assertThrows } from 'jsr:@std/assert@1.0.13';
+export * as base64 from 'jsr:@std/encoding@1.0.10/base64';
+export * as flags from 'jsr:@std/flags@0.224.0';
+export * as colors from 'jsr:@std/fmt@1.0.8/colors';
+export * as fs from 'jsr:@std/fs@1.0.19';
+export * as path from 'jsr:@std/path@1.1.1';
+export * as streams from 'jsr:@std/streams@1.0.10';
+export * as util from 'jsr:@std/io@0.225.2';
+export { copy, readAll } from 'jsr:@std/io@0.225.2';
+export * as sqlite from "jsr:@db/sqlite@0.12.0";
+export { type Database as SQLiteDB } from "jsr:@db/sqlite@0.12.0";
+export * as esbuild from 'npm:esbuild@0.25.6';
+export { default as tweetnacl } from 'npm:tweetnacl@1.0.3'
+export { base58btc } from 'npm:multiformats@11.0.2/bases/base58'
+export { type Multibase } from 'npm:multiformats@11.0.2'
+export { default as blake } from 'npm:@multiformats/blake2@1.0.13'
+export { CID } from 'npm:multiformats@11.0.2/cid'

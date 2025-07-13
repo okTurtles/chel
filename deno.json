@@ -5,13 +5,20 @@
     "compile": "deno run --allow-run --allow-read=. --allow-write=./dist scripts/compile.ts",
     "build": "deno run --node-modules-dir --allow-run --allow-read --allow-env --allow-write=./build --allow-net scripts/build.ts",
     "dist": "deno lint . && deno task build && deno task compile",
-    "test": "deno test --allow-read=. --allow-write=test"
+    "test": "deno test --allow-read --allow-write=test --allow-env --allow-ffi --allow-net --no-check"
   },
   "imports": {
     "~/": "./src/",
-    "jsr:@std/": "https://jsr.io/@std/",
-    "npm:@types/node": "npm:@types/node@latest"
-  },
+    "jsr:@std/assert": "https://jsr.io/@std/assert@1.0.13",
+    "jsr:@std/encoding/": "https://jsr.io/@std/encoding@1.0.10/",
+    "jsr:@std/flags/": "https://jsr.io/@std/flags@0.224.0/",
+    "jsr:@std/fmt/colors": "https://jsr.io/@std/fmt@1.0.8/colors.ts",
+    "jsr:@std/fs/": "https://jsr.io/@std/fs@1.0.19/",
+    "jsr:@std/path/": "https://jsr.io/@std/path@1.1.1/",
+    "jsr:@std/streams/": "https://jsr.io/@std/streams@1.0.10/",
+    "jsr:@std/io/": "https://jsr.io/@std/io@0.225.2/",
+    "npm:@types/node": "npm:@types/node@24.0.13"
+    },
   "compilerOptions": {
   },
   "nodeModulesDir": "auto",
@@ -21,7 +28,7 @@
     "singleQuote": true
   },
   "lint": {
-    "exclude": ["node_modules/", "vendor/", "dist/", "build/", "test/assets/**/*.js"]
+    "exclude": ["node_modules/", "vendor/", "dist/", "build/", "test/assets/", "scripts/binary-install.js"]
   },
   "vendor": true
 }

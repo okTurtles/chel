@@ -10,23 +10,29 @@ const options = {
   entryPoints: ['./src/main.ts'],
   bundle: true,
   define: {
-    'process.env.VERSION': `'${version}'`
+    "__build__.VERSION": JSON.stringify(version),
   },
   external: [
     'node:process',
-    'jsr:@std/assert',
-    'jsr:@std/encoding/base64',
-    'jsr:@std/flags/',
-    'jsr:@std/fmt/colors',
-    'jsr:@std/fs/',
-    'jsr:@std/path/',
-    'jsr:@std/streams/',
-    'jsr:@std/io'
+    'jsr:@std/assert@1.0.13',
+    'jsr:@std/encoding@1.0.10/base64',
+    'jsr:@std/flags@0.224.0',
+    'jsr:@std/fmt@1.0.8/colors',
+    'jsr:@std/fs@1.0.19',
+    'jsr:@std/path@1.1.1',
+    'jsr:@std/streams@1.0.10',
+    'jsr:@std/io@0.225.2',
+    'jsr:@db/sqlite@0.12.0',
+    'npm:esbuild@0.25.6',
+    'npm:tweetnacl@1.0.3',
+    'npm:multiformats@11.0.2/cid',
+    'npm:multiformats@11.0.2/bases/base58',
+    'npm:multiformats@11.0.2',
+    'npm:@multiformats/blake2@1.0.13',
   ],
   format: 'esm',
   outdir: 'build',
-  splitting: false,
-  watch: false // Not using esbuild's own watch mode since it involves polling.
+  splitting: false
 }
 const result = await esbuild.build(options)
 if (result.errors.length) {
