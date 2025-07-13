@@ -9,7 +9,7 @@ export * as util from 'jsr:@std/io@0.225.2';
 export { copy, readAll } from 'jsr:@std/io@0.225.2';
 export * as sqlite from "jsr:@db/sqlite@0.12.0";
 export { type Database as SQLiteDB } from "jsr:@db/sqlite@0.12.0";
-export * as esbuild from "https://deno.land/x/esbuild@v0.25.6/mod.js";
+export * as esbuild from 'npm:esbuild@0.25.6';
 export { default as tweetnacl } from 'npm:tweetnacl@1.0.3'
 export { base58btc } from 'npm:multiformats@11.0.2/bases/base58'
 export { type Multibase } from 'npm:multiformats@11.0.2'

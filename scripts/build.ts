@@ -23,6 +23,7 @@ const options = {
     'jsr:@std/streams@1.0.10',
     'jsr:@std/io@0.225.2',
     'jsr:@db/sqlite@0.12.0',
+    'npm:esbuild@0.25.6',
     'npm:tweetnacl@1.0.3',
     'npm:multiformats@11.0.2/cid',
     'npm:multiformats@11.0.2/bases/base58',

@@ -20,7 +20,7 @@ import * as streams from "jsr:@std/streams@1.0.10";
 import * as util from "jsr:@std/io@0.225.2";
 import { copy, readAll } from "jsr:@std/io@0.225.2";
 import * as sqlite from "jsr:@db/sqlite@0.12.0";
-import * as esbuild from "https://deno.land/x/esbuild@v0.25.6/mod.js";
+import * as esbuild from "npm:esbuild@0.25.6";
 import { default as default2 } from "npm:tweetnacl@1.0.3";
 import { base58btc } from "npm:multiformats@11.0.2/bases/base58";
 import { default as default3 } from "npm:@multiformats/blake2@1.0.13";
