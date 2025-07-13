@@ -28,7 +28,7 @@
     "singleQuote": true
   },
   "lint": {
-    "exclude": ["node_modules/", "vendor/", "dist/", "build/", "test/assets/", "scripts/binary-install.js"]
+    "exclude": ["node_modules/", "vendor/", "dist/", "build/", "test/assets/"]
   },
   "vendor": true
 }

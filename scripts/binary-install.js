@@ -3,6 +3,7 @@
 // nodejs as a wrapper executable to run our binary, greatly speeding up performance
 // see: https://github.com/EverlastingBugstopper/binary-install/tree/main/packages/binary-install
 
+const process = require("node:process")
 const { existsSync, mkdirSync } = require("fs")
 const { join, resolve } = require("path")
 const { spawnSync } = require("child_process")
@@ -18,7 +19,7 @@ const error = msg => {
 
 class Binary {
   constructor(name, url) {
-    let errors = []
+    const errors = [];
     if (typeof url !== "string") {
       errors.push("url must be a string")
     } else {
