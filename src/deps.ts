@@ -6,7 +6,7 @@ export * as fs from 'jsr:@std/fs@1.0.19';
 export * as path from 'jsr:@std/path@1.1.1';
 export * as streams from 'jsr:@std/streams@1.0.10';
 export * as util from 'jsr:@std/io@0.225.2';
-export { copy, readAll } from 'jsr:@std/io@0.225.2';
+export { copy, readAll, writeAll } from 'jsr:@std/io@0.225.2';
 export * as sqlite from "jsr:@db/sqlite@0.12.0";
 export { type Database as SQLiteDB } from "jsr:@db/sqlite@0.12.0";
 export * as esbuild from 'npm:esbuild@0.25.6';

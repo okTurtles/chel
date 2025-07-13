@@ -25,7 +25,7 @@ export async function initStorage (options: Record<string, unknown> = {}): Promi
       return
     }
     // Close the old DB object since we're going to open a new one.
-    db.close(true)
+    db.close()
   }
   db = new DB(filepath)
   // Important: keep this in sync with the schema used in GroupIncome.
@@ -34,8 +34,8 @@ export async function initStorage (options: Record<string, unknown> = {}): Promi
   if (!options.internal) {
     console.log('Connected to the %s SQLite database.', filepath)
   }
-  iterKeysStatement = db.prepare<[string]>('SELECT key FROM Data')
-  readStatement = db.prepare<[string]>('SELECT value FROM Data WHERE key = ?')
+  iterKeysStatement = db.prepare('SELECT key FROM Data')
+  readStatement = db.prepare('SELECT value FROM Data WHERE key = ?')
   // Use "upsert" syntax to store an entry only if the key is not already in the DB.
   // https://www.sqlite.org/lang_upsert.html
   writeOnceStatement = db.prepare('INSERT INTO Data(key, value) VALUES(?, ?) ON CONFLICT (key) DO NOTHING')
@@ -43,13 +43,13 @@ export async function initStorage (options: Record<string, unknown> = {}): Promi
 }
 
 export function count (): number {
-  return db.query<[number]>('SELECT COUNT(*) FROM Data')[0][0]
+  return db.prepare('SELECT COUNT(*) FROM Data').all()[0][0]
 }
 
 // deno-lint-ignore require-await
 export async function readData (key: string): Promise<Uint8Array | string | void> {
   // For some reason `[null]` is returned when the value is an empty Uint8Array.
-  const maybeRow = readStatement.first([key])
+  const maybeRow = readStatement.all([key])[0]
   return maybeRow === undefined ? undefined : maybeRow[0] ?? new Uint8Array()
 }
 
@@ -62,11 +62,11 @@ export async function* iterKeys (): AsyncGenerator<string> {
 // deno-lint-ignore require-await
 export async function writeData (key: string, value: Uint8Array | string): Promise<void> {
   checkKey(key)
-  writeStatement.execute([key, value])
+  writeStatement.run([key, value])
 }
 
 // deno-lint-ignore require-await
 export async function writeDataOnce (key: string, value: Uint8Array | string): Promise<void> {
   checkKey(key)
-  writeOnceStatement.execute([key, value])
+  writeOnceStatement.run([key, value])
 }

@@ -18,7 +18,7 @@ import * as fs from "jsr:@std/fs@1.0.19";
 import * as path from "jsr:@std/path@1.1.1";
 import * as streams from "jsr:@std/streams@1.0.10";
 import * as util from "jsr:@std/io@0.225.2";
-import { copy, readAll } from "jsr:@std/io@0.225.2";
+import { copy, readAll, writeAll } from "jsr:@std/io@0.225.2";
 import * as sqlite from "jsr:@db/sqlite@0.12.0";
 import * as esbuild from "npm:esbuild@0.25.6";
 import { default as default2 } from "npm:tweetnacl@1.0.3";
@@ -85,8 +85,7 @@ async function writeDataOnce(key, value) {
       await Deno.writeFile(path.join(dataFolder, key), value, options);
     }
   } catch (err) {
-
-    if (err.name !== "AlreadyExists") throw err;
+    if (err instanceof Error && err.name !== "AlreadyExists") throw err;
   }
 }
 var dataFolder;
@@ -118,7 +117,7 @@ async function initStorage2(options = {}) {
     if (filepath === dbPath) {
       return;
     }
-    db.close(true);
+    db.close();
   }
   db = new DB(filepath);
   db.run("CREATE TABLE IF NOT EXISTS Data(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)");
@@ -132,10 +131,10 @@ async function initStorage2(options = {}) {
   writeStatement = db.prepare("REPLACE INTO Data(key, value) VALUES(?, ?)");
 }
 function count2() {
-  return db.query("SELECT COUNT(*) FROM Data")[0][0];
+  return db.prepare("SELECT COUNT(*) FROM Data").all()[0][0];
 }
 async function readData2(key) {
-  const maybeRow = readStatement.first([key]);
+  const maybeRow = readStatement.all([key])[0];
   return maybeRow === void 0 ? void 0 : maybeRow[0] ?? new Uint8Array();
 }
 async function* iterKeys2() {
@@ -145,11 +144,11 @@ async function* iterKeys2() {
 }
 async function writeData2(key, value) {
   checkKey(key);
-  writeStatement.execute([key, value]);
+  writeStatement.run([key, value]);
 }
 async function writeDataOnce2(key, value) {
   checkKey(key);
-  writeOnceStatement.execute([key, value]);
+  writeOnceStatement.run([key, value]);
 }
 var DB, db, dbPath, iterKeysStatement, readStatement, writeOnceStatement, writeStatement, dataFolder2;
 var init_database_sqlite = __esm({
@@ -177,10 +176,10 @@ function createCID(data, multicode = multicodes.RAW) {
   const digest = multihasher.digest(uint8array);
   return CID.create(1, multicode, digest).toString(multibase.encoder);
 }
-
-function exit(message, internal = false) {
-  if (internal) throw new Error(message);
-  console.error("[chel]", colors.red("Error:"), message);
+function exit(x, internal = false) {
+  const msg = x instanceof Error ? x.message : String(x);
+  if (internal) throw new Error(msg);
+  console.error("[chel]", colors.red("Error:"), msg);
   Deno.exit(1);
 }
 async function getBackend(src, { type, create } = { type: "", create: false }) {
@@ -785,15 +784,17 @@ async function manifest(args) {
   const name = parsedArgs.name || parsedArgs.n || contractFileName;
   const version2 = parsedArgs.version || parsedArgs.v || "x";
   const slim = parsedArgs.slim || parsedArgs.s;
-
-  const outFilepath = path.join(contractDir, `${contractFileName}.${version2}.manifest.json`);
+  const outFile = parsedArgs.out || path.join(contractDir, `${contractFileName}.${version2}.manifest.json`);
   if (!keyFile) exit("Missing signing key file");
   const signingKeyDescriptor = await readJsonFile(keyFile);
   const signingKey = deserializeKey(signingKeyDescriptor.privkey);
   const publicKeys = Array.from(new Set(
     [serializeKey(signingKey, false)].concat(...await Promise.all(parsedArgs.key?.map(
       async (kf) => {
-        const descriptor = await readJsonFile(kf);
+        if (typeof kf !== "string" && typeof kf !== "number") {
+          exit(`Invalid key file reference: ${String(kf)}`);
+        }
+        const descriptor = await readJsonFile(String(kf));
         const key = deserializeKey(descriptor.pubkey);
         if (key.type !== EDWARDS25519SHA512BATCH) {
           exit(`Invalid key type ${key.type}; only ${EDWARDS25519SHA512BATCH} keys are supported.`);
