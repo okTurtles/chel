@@ -53,7 +53,7 @@ export const verifySignature = async (args: string[], internal = false) => {
   try {
     cryptoVerifySignature(pubKey, manifest.body + manifest.head, manifest.signature.value)
   } catch(e) {
-    exit('Error validating signature: ' + (e?.message || String(e)), internal)
+    exit('Error validating signature: ' + ((e as Error)?.message || String(e)), internal)
   }
 
   if (!signingKey) {

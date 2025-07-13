@@ -44,9 +44,12 @@ export function createCID (data: string | Uint8Array, multicode = multicodes.RAW
   return CID.create(1, multicode, digest).toString(multibase.encoder)
 }
 
-export function exit (message: string, internal = false): never {
-  if (internal) throw new Error(message)
-  console.error('[chel]', colors.red('Error:'), message)
+export function exit(x: unknown, internal = false): never {
+  const msg = x instanceof Error ? x.message : String(x)
+
+  if (internal) throw new Error(msg)
+
+  console.error('[chel]', colors.red('Error:'), msg)
   Deno.exit(1)
 }
 
@@ -78,7 +81,7 @@ export async function getBackend (src: string, { type, create } = { type: '', cr
   try {
     await backend.initStorage(initOptions)
   } catch (error) {
-    throw new Error(`could not init '${from}' storage backend at "${src}": ${error.message}`)
+    throw new Error(`could not init '${from}' storage backend at "${src}": ${(error as Error).message}`)
   }
   return backend
 }

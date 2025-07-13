@@ -85,6 +85,7 @@ async function writeDataOnce(key, value) {
       await Deno.writeFile(path.join(dataFolder, key), value, options);
     }
   } catch (err) {
+
     if (err.name !== "AlreadyExists") throw err;
   }
 }
@@ -176,6 +177,7 @@ function createCID(data, multicode = multicodes.RAW) {
   const digest = multihasher.digest(uint8array);
   return CID.create(1, multicode, digest).toString(multibase.encoder);
 }
+
 function exit(message, internal = false) {
   if (internal) throw new Error(message);
   console.error("[chel]", colors.red("Error:"), message);
@@ -399,7 +401,7 @@ async function eventsAfter(args) {
     }
     console.log(JSON.stringify(messages, null, 2));
   } catch (error) {
-    exit(error.message);
+    exit(error);
   }
 }
 async function getMessage(hash2) {
@@ -441,7 +443,7 @@ async function getRemoteMessagesSince(src, contractID, sinceHeight, limit) {
   if (b64messages.length > limit) {
     b64messages.length = limit;
   }
-  return b64messages.map((b64str) => JSON.parse(new TextDecoder().decode(base64.decode(b64str))));
+  return b64messages.map((b64str) => JSON.parse(new TextDecoder().decode(base64.decodeBase64(b64str))));
 }
 async function readString(key) {
   const rv = await backend.readData(key);
@@ -462,10 +464,10 @@ async function get(args) {
     if (typeof data === "string") {
       console.log(data);
     } else {
-      await streams.writeAll(Deno.stdout, data);
+      await writeAll(Deno.stdout, data);
     }
   } catch (error) {
-    exit(error.message);
+    exit(error);
   }
 }
 
@@ -783,6 +785,7 @@ async function manifest(args) {
   const name = parsedArgs.name || parsedArgs.n || contractFileName;
   const version2 = parsedArgs.version || parsedArgs.v || "x";
   const slim = parsedArgs.slim || parsedArgs.s;
+
   const outFilepath = path.join(contractDir, `${contractFileName}.${version2}.manifest.json`);
   if (!keyFile) exit("Missing signing key file");
   const signingKeyDescriptor = await readJsonFile(keyFile);
@@ -828,7 +831,6 @@ async function manifest(args) {
   if (parsedArgs.out === "-") {
     console.log(manifest2);
   } else {
-    const outFile = parsedArgs.out || outFilepath;
     Deno.writeTextFileSync(outFile, manifest2);
     console.log(colors.green("wrote:"), outFile);
   }
@@ -852,7 +854,7 @@ async function migrate(args) {
     backendFrom = await getBackend(src, { type: from, create: false });
     backendTo = await getBackend(out, { type: to, create: true });
   } catch (error) {
-    exit(error.message);
+    exit(error);
   }
   const numKeys = await backendFrom.count();
   let numVisitedKeys = 0;
