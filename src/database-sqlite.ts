@@ -1,14 +1,14 @@
-import { path, sqlite, type SQLiteDB } from './deps.ts';
-import { checkKey } from './utils.ts';
+import { path, sqlite, type SQLiteDB } from './deps.ts'
+import { checkKey } from './utils.ts'
 
-const DB = sqlite.Database;
+const DB = sqlite.Database
 
 let db: SQLiteDB
 let dbPath: string
-let iterKeysStatement: sqlite.Statement;
-let readStatement: sqlite.Statement;
-let writeOnceStatement: sqlite.Statement;
-let writeStatement: sqlite.Statement;
+let iterKeysStatement: sqlite.Statement
+let readStatement: sqlite.Statement
+let writeOnceStatement: sqlite.Statement
+let writeStatement: sqlite.Statement
 
 // Initialized in initStorage().
 export let dataFolder = ''
