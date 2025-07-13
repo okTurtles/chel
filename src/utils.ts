@@ -45,10 +45,7 @@ export function createCID (data: string | Uint8Array, multicode = multicodes.RAW
 }
 
 export function exit(x: unknown, internal = false): never {
-  let msg: string
-  if (typeof x === 'string') msg = x
-  else if (x instanceof Error) msg = x.message
-  else msg = String(x)
+  const msg = x instanceof Error ? x.message : String(x)
 
   if (internal) throw new Error(msg)
 

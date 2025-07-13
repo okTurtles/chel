@@ -88,7 +88,7 @@ async function writeDataOnce(key, value) {
       await Deno.writeFile(path.join(dataFolder, key), value, options);
     }
   } catch (err) {
-    if (err.name !== "AlreadyExists")
+    if (err instanceof Error && err.name !== "AlreadyExists")
       throw err;
   }
 }
@@ -180,10 +180,11 @@ function createCID(data, multicode = multicodes.RAW) {
   const digest = multihasher.digest(uint8array);
   return CID.create(1, multicode, digest).toString(multibase.encoder);
 }
-function exit(message, internal = false) {
+function exit(x, internal = false) {
+  const msg = x instanceof Error ? x.message : String(x);
   if (internal)
-    throw new Error(message);
-  console.error("[chel]", colors.red("Error:"), message);
+    throw new Error(msg);
+  console.error("[chel]", colors.red("Error:"), msg);
   Deno.exit(1);
 }
 async function getBackend(src, { type, create } = { type: "", create: false }) {
@@ -413,7 +414,7 @@ async function eventsAfter(args) {
     }
     console.log(JSON.stringify(messages, null, 2));
   } catch (error) {
-    exit(error.message);
+    exit(error);
   }
 }
 async function getMessage(hash2) {
@@ -482,7 +483,7 @@ async function get(args) {
       await writeAll(Deno.stdout, data);
     }
   } catch (error) {
-    exit(error.message);
+    exit(error);
   }
 }
 
@@ -800,13 +801,16 @@ async function manifest(args) {
   const name = parsedArgs.name || parsedArgs.n || contractFileName;
   const version2 = parsedArgs.version || parsedArgs.v || "x";
   const slim = parsedArgs.slim || parsedArgs.s;
-  const outFilepath = path.join(contractDir, `${contractFileName}.${version2}.manifest.json`);
+  const outFile = parsedArgs.out || path.join(contractDir, `${contractFileName}.${version2}.manifest.json`);
   if (!keyFile)
     exit("Missing signing key file");
   const signingKeyDescriptor = await readJsonFile(keyFile);
   const signingKey = deserializeKey(signingKeyDescriptor.privkey);
   const publicKeys = Array.from(new Set([serializeKey(signingKey, false)].concat(...await Promise.all(parsedArgs.key?.map(async (kf) => {
-    const descriptor = await readJsonFile(kf);
+    if (typeof kf !== "string" && typeof kf !== "number") {
+      exit(`Invalid key file reference: ${String(kf)}`);
+    }
+    const descriptor = await readJsonFile(String(kf));
     const key = deserializeKey(descriptor.pubkey);
     if (key.type !== EDWARDS25519SHA512BATCH) {
       exit(`Invalid key type ${key.type}; only ${EDWARDS25519SHA512BATCH} keys are supported.`);
@@ -824,8 +828,8 @@ async function manifest(args) {
   };
   if (slim) {
     body.contractSlim = {
-      file: path.basename(String(slim)),
-      hash: await hash([String(slim)], multicodes.SHELTER_CONTRACT_TEXT, true)
+      file: path.basename(slim),
+      hash: await hash([slim], multicodes.SHELTER_CONTRACT_TEXT, true)
     };
   }
   const serializedBody = JSON.stringify(body);
@@ -842,8 +846,7 @@ async function manifest(args) {
   if (parsedArgs.out === "-") {
     console.log(manifest2);
   } else {
-    const outFile = parsedArgs.out || outFilepath;
-    Deno.writeTextFileSync(String(outFile), manifest2);
+    Deno.writeTextFileSync(outFile, manifest2);
     console.log(colors.green("wrote:"), outFile);
   }
 }
@@ -870,7 +873,7 @@ async function migrate(args) {
     backendFrom = await getBackend(src, { type: from, create: false });
     backendTo = await getBackend(out, { type: to, create: true });
   } catch (error) {
-    exit(error.message);
+    exit(error);
   }
   const numKeys = await backendFrom.count();
   let numVisitedKeys = 0;
