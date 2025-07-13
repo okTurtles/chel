@@ -134,8 +134,7 @@ function count2() {
   return db.prepare("SELECT COUNT(*) FROM Data").all()[0][0];
 }
 async function readData2(key) {
-  const rows = readStatement.all([key]);
-  const maybeRow = rows.length > 0 ? rows[0] : void 0;
+  const maybeRow = readStatement.all([key])[0];
   return maybeRow === void 0 ? void 0 : maybeRow[0] ?? new Uint8Array();
 }
 async function* iterKeys2() {
