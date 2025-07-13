@@ -49,7 +49,8 @@ export function count (): number {
 // deno-lint-ignore require-await
 export async function readData (key: string): Promise<Uint8Array | string | void> {
   // For some reason `[null]` is returned when the value is an empty Uint8Array.
-  const maybeRow = readStatement.all([key])[0]
+  const rows = readStatement.all([key])
+  const maybeRow = rows.length > 0 ? rows[0] : undefined
   return maybeRow === undefined ? undefined : maybeRow[0] ?? new Uint8Array()
 }
 
