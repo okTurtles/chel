@@ -17,7 +17,6 @@ export const multicodes = {
   SHELTER_FILE_MANIFEST: 0x511e03,
   SHELTER_FILE_CHUNK: 0x511e04
 }
-// @ts-expect-error Property 'blake2b256' does not exist on type '{}'.
 const multihasher = blake.blake2b.blake2b256
 
 export type Backend = typeof backends.sqlite | typeof backends.fs
