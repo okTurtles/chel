@@ -1,3 +1,3 @@
 #!/usr/bin/env node
 
-require("./binary.js").install()
+require('./binary.js').install()

@@ -17,7 +17,7 @@ export const multicodes = {
   SHELTER_FILE_MANIFEST: 0x511e03,
   SHELTER_FILE_CHUNK: 0x511e04
 }
-// @ts-ignore Property 'blake2b256' does not exist on type '{}'.
+// @ts-expect-error Property 'blake2b256' does not exist on type '{}'.
 const multihasher = blake.blake2b.blake2b256
 
 export type Backend = typeof backends.sqlite | typeof backends.fs
@@ -44,7 +44,7 @@ export function createCID (data: string | Uint8Array, multicode = multicodes.RAW
   return CID.create(1, multicode, digest).toString(multibase.encoder)
 }
 
-export function exit(x: unknown, internal = false): never {
+export function exit (x: unknown, internal = false): never {
   const msg = x instanceof Error ? x.message : String(x)
 
   if (internal) throw new Error(msg)
@@ -77,7 +77,7 @@ export async function getBackend (src: string, { type, create } = { type: '', cr
     default: throw new Error(`unknown backend type: "${from}"`)
   }
 
-  const backend: Backend = backends[from as keyof typeof backends]
+  const backend: Backend = backends[from]
   try {
     await backend.initStorage(initOptions)
   } catch (error) {
@@ -87,8 +87,8 @@ export async function getBackend (src: string, { type, create } = { type: '', cr
 }
 
 export function getPathExtension (path: string): string {
-  const index = path.lastIndexOf(".")
-  if (index === -1 || index === 0) return ""
+  const index = path.lastIndexOf('.')
+  if (index === -1 || index === 0) return ''
   return path.slice(index).toLowerCase()
 }
 
@@ -130,7 +130,7 @@ export function isValidKey (key: string): boolean {
 
 export async function readRemoteData (src: string, key: string): Promise<Uint8Array> {
   const buffer = await fetch(`${src}/file/${key}`)
-    .then(r => r.ok ? r.arrayBuffer() : Promise.reject(new Error(`failed network request to ${src}: ${r.status} - ${r.statusText}`)))
+    .then(async r => r.ok ? await r.arrayBuffer() : await Promise.reject(new Error(`failed network request to ${src}: ${r.status} - ${r.statusText}`)))
   return new Uint8Array(buffer)
 }
 
@@ -145,36 +145,36 @@ export const readJsonFile = async (file: unknown) => {
 
 // Add to src/utils.ts
 export interface ShellOptions {
-  printOutput?: boolean;
-  shell?: string;
-  cwd?: string;
+  printOutput?: boolean
+  shell?: string
+  cwd?: string
 }
 
-export async function shell(
+export async function shell (
   command: string,
   options: ShellOptions = {}
 ): Promise<string> {
-  const { printOutput = false, shell = "/bin/sh", cwd } = options;
+  const { printOutput = false, shell = '/bin/sh', cwd } = options
   const cmd = new Deno.Command(shell, {
-    args: ["-c", command],
-    stdout: "piped",
-    stderr: "piped",
-    cwd,
-  });
+    args: ['-c', command],
+    stdout: 'piped',
+    stderr: 'piped',
+    cwd
+  })
 
-  const { code, stdout, stderr } = await cmd.output();
-  const decoder = new TextDecoder();
+  const { code, stdout, stderr } = await cmd.output()
+  const decoder = new TextDecoder()
 
   if (printOutput) {
-    await Deno.stdout.write(stdout);
-    await Deno.stderr.write(stderr);
+    await Deno.stdout.write(stdout)
+    await Deno.stderr.write(stderr)
   }
 
   if (code !== 0) {
     throw new Error(
       `Command failed with exit code ${code}: ${decoder.decode(stderr)}`
-    );
+    )
   }
 
-  return decoder.decode(stdout).trim();
+  return decoder.decode(stdout).trim()
 }

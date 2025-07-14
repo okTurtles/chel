@@ -1,10 +1,10 @@
-"use strict"
+'use strict'
 // chel migrate --from fs --to sqlite --out ./database.db ./data
 
 import { colors, flags, path } from './deps.ts'
 import { exit, getBackend, isNotHashKey, isValidKey, revokeNet } from './utils.ts'
 
-export async function migrate(args: string[]) {
+export async function migrate (args: string[]) {
   await revokeNet()
   const parsedArgs = flags.parse(args)
 

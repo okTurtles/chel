@@ -4,13 +4,13 @@
 
 import { colors, esbuild } from '../src/deps.ts'
 
-const { default: { version } } = await import('../package.json', { with: { type: "json" } })
+const { default: { version } } = await import('../package.json', { with: { type: 'json' } })
 
 const options = {
   entryPoints: ['./src/main.ts'],
   bundle: true,
   define: {
-    "__build__.VERSION": JSON.stringify(version),
+    '__build__.VERSION': JSON.stringify(version)
   },
   external: [
     'node:process',
@@ -28,7 +28,7 @@ const options = {
     'npm:multiformats@11.0.2/cid',
     'npm:multiformats@11.0.2/bases/base58',
     'npm:multiformats@11.0.2',
-    'npm:@multiformats/blake2@1.0.13',
+    'npm:@multiformats/blake2@1.0.13'
   ],
   format: 'esm',
   outdir: 'build',

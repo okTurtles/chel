@@ -44,15 +44,15 @@ export const verifySignature = async (args: string[], internal = false) => {
 
   // If an external public key is provided, we use that one for verification,
   // even if it is missing in body.signingKeys
-  const serializedPubKey =  signingKey || externalKeyDescriptor?.pubkey
+  const serializedPubKey = signingKey || externalKeyDescriptor?.pubkey
   if (!serializedPubKey) {
-    exit('The manifest appears to be signed but verification can\'t proceed because the key used is unknown.', internal);
+    exit('The manifest appears to be signed but verification can\'t proceed because the key used is unknown.', internal)
   }
 
   const pubKey = deserializeKey(serializedPubKey)
   try {
     cryptoVerifySignature(pubKey, manifest.body + manifest.head, manifest.signature.value)
-  } catch(e) {
+  } catch (e) {
     exit('Error validating signature: ' + ((e as Error)?.message || String(e)), internal)
   }
 

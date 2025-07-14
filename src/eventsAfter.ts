@@ -68,7 +68,7 @@ async function getRemoteMessagesSince (src: string, contractID: string, sinceHei
   const response = await fetch(`${src}/eventsAfter/${contractID}/${sinceHeight}`)
   if (!response.ok) {
     // The response body may contain some useful error info if we got a Boom error response.
-    const bodyText = await response.text().catch(_ => '') || ``
+    const bodyText = await response.text().catch(_ => '') || ''
     throw new Error(`failed network request to ${src}: ${response.status} - ${response.statusText} - '${bodyText}'`)
   }
   const b64messages: string[] = await response.json()
@@ -78,7 +78,7 @@ async function getRemoteMessagesSince (src: string, contractID: string, sinceHei
   return b64messages.map(b64str => JSON.parse(new TextDecoder().decode(base64.decodeBase64(b64str))))
 }
 
-async function readString (key: string): Promise<string|void> {
+async function readString (key: string): Promise<string | void> {
   const rv = await backend.readData(key)
   if (rv === undefined) return undefined
   return typeof rv === 'string' ? rv : new TextDecoder().decode(rv)

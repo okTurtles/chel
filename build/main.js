@@ -27,6 +27,7 @@ import { default as default3 } from "npm:@multiformats/blake2@1.0.13";
 import { CID } from "npm:multiformats@11.0.2/cid";
 var init_deps = __esm({
   "src/deps.ts"() {
+    "use strict";
   }
 });
 
@@ -153,6 +154,7 @@ async function writeDataOnce2(key, value) {
 var DB, db, dbPath, iterKeysStatement, readStatement, writeOnceStatement, writeStatement, dataFolder2;
 var init_database_sqlite = __esm({
   "src/database-sqlite.ts"() {
+    "use strict";
     init_deps();
     init_utils();
     DB = sqlite.Database;
@@ -238,7 +240,7 @@ function isValidKey(key) {
   return !/[\x00-\x1f\x7f\t\\/]/.test(key);
 }
 async function readRemoteData(src, key) {
-  const buffer = await fetch(`${src}/file/${key}`).then((r) => r.ok ? r.arrayBuffer() : Promise.reject(new Error(`failed network request to ${src}: ${r.status} - ${r.statusText}`)));
+  const buffer = await fetch(`${src}/file/${key}`).then(async (r) => r.ok ? await r.arrayBuffer() : await Promise.reject(new Error(`failed network request to ${src}: ${r.status} - ${r.statusText}`)));
   return new Uint8Array(buffer);
 }
 async function revokeNet() {
@@ -294,7 +296,7 @@ init_deps();
 init_utils();
 async function upload(args, internal = false) {
   const [urlOrDirOrSqliteFile, ...files] = args;
-  if (files.length === 0) throw new Error(`missing files!`);
+  if (files.length === 0) throw new Error("missing files!");
   const uploaded = [];
   const uploaderFn = await isDir(urlOrDirOrSqliteFile) ? uploadEntryToDir : urlOrDirOrSqliteFile.endsWith(".db") ? uploadEntryToSQLite : uploadEntryToURL;
   for (const filepath_ of files) {
@@ -327,11 +329,11 @@ async function upload(args, internal = false) {
   }
   return uploaded;
 }
-function uploadEntryToURL([cid, buffer], url) {
+async function uploadEntryToURL([cid, buffer], url) {
   const form = new FormData();
   form.append("hash", cid);
   form.append("data", new Blob([buffer]));
-  return fetch(`${url}/dev-file`, { method: "POST", body: form }).then(handleFetchResult("text")).then((r) => {
+  return await fetch(`${url}/dev-file`, { method: "POST", body: form }).then(handleFetchResult("text")).then((r) => {
     if (r !== `/file/${cid}`) {
       throw new Error(`server returned bad URL: ${r}`);
     }
@@ -352,15 +354,15 @@ async function uploadEntryToSQLite([cid, buffer], sqlitedb) {
   return cid;
 }
 function handleFetchResult(type) {
-  return function(r) {
+  return async function(r) {
     if (!r.ok) throw new Error(`${r.status}: ${r.statusText}`);
-    return r[type]();
+    return await r[type]();
   };
 }
 
 // src/deploy.ts
-var CONTRACT_TEXT_PREFIX = `t|`;
-var CONTRACT_MANIFEST_PREFIX = `m|`;
+var CONTRACT_TEXT_PREFIX = "t|";
+var CONTRACT_MANIFEST_PREFIX = "m|";
 async function deploy(args) {
   const [urlOrDirOrSqliteFile, ...manifests] = args;
   if (manifests.length === 0) throw new Error("missing url or manifests!");
@@ -435,7 +437,7 @@ async function getMessagesSince(src, contractID, sinceHeight, limit) {
 async function getRemoteMessagesSince(src, contractID, sinceHeight, limit) {
   const response = await fetch(`${src}/eventsAfter/${contractID}/${sinceHeight}`);
   if (!response.ok) {
-    const bodyText = await response.text().catch((_) => "") || ``;
+    const bodyText = await response.text().catch((_) => "") || "";
     throw new Error(`failed network request to ${src}: ${response.status} - ${response.statusText} - '${bodyText}'`);
   }
   const b64messages = await response.json();
@@ -487,7 +489,7 @@ async function hash(args, multicode = multicodes.RAW, internal = false) {
 
 // src/help.ts
 function help(args) {
-  if (!args || args.length === 0) {
+  if (args == null || args.length === 0) {
     console.log(`
       chel
       chel help [command]
@@ -633,7 +635,7 @@ var keygen = (type) => {
 var serializeKey = (key, saveSecretKey) => {
   if (key.type === EDWARDS25519SHA512BATCH || key.type === CURVE25519XSALSA20POLY1305) {
     if (!saveSecretKey) {
-      if (!key.publicKey) {
+      if (key.publicKey == null) {
         throw new Error("Unsupported operation: no public key to export");
       }
       return JSON.stringify([
@@ -642,7 +644,7 @@ var serializeKey = (key, saveSecretKey) => {
         null
       ], void 0, 0);
     }
-    if (!key.secretKey) {
+    if (key.secretKey == null) {
       throw new Error("Unsupported operation: no secret key to export");
     }
     return JSON.stringify([
@@ -654,7 +656,7 @@ var serializeKey = (key, saveSecretKey) => {
     if (!saveSecretKey) {
       throw new Error("Unsupported operation: no public key to export");
     }
-    if (!key.secretKey) {
+    if (key.secretKey == null) {
       throw new Error("Unsupported operation: no secret key to export");
     }
     return JSON.stringify([
@@ -716,7 +718,7 @@ var deserializeKey = (data) => {
 };
 var keyId = (inKey) => {
   const key = typeof inKey === "string" ? deserializeKey(inKey) : inKey;
-  const serializedKey = serializeKey(key, !key.publicKey);
+  const serializedKey = serializeKey(key, key.publicKey == null);
   return blake32Hash(serializedKey);
 };
 var sign = (inKey, data) => {
@@ -724,7 +726,7 @@ var sign = (inKey, data) => {
   if (key.type !== EDWARDS25519SHA512BATCH) {
     throw new Error("Unsupported algorithm");
   }
-  if (!key.secretKey) {
+  if (key.secretKey == null) {
     throw new Error("Secret key missing");
   }
   const messageUint8 = strToBuf(data);
@@ -737,7 +739,7 @@ var verifySignature = (inKey, data, signature) => {
   if (key.type !== EDWARDS25519SHA512BATCH) {
     throw new Error("Unsupported algorithm");
   }
-  if (!key.publicKey) {
+  if (key.publicKey == null) {
     throw new Error("Public key missing");
   }
   const decodedSignature = b64ToBuf(signature);
@@ -764,8 +766,8 @@ var keygen2 = async (args) => {
   const result = JSON.stringify(keyData);
   const pubResult = JSON.stringify(pubKeyData);
   const idx = keyId(key).slice(-12);
-  const outFile = parsedArgs["out"] || `${EDWARDS25519SHA512BATCH}-${idx}.json`;
-  const pubOutFile = parsedArgs["pubout"] || `${EDWARDS25519SHA512BATCH}-${idx}.pub.json`;
+  const outFile = parsedArgs.out || `${EDWARDS25519SHA512BATCH}-${idx}.json`;
+  const pubOutFile = parsedArgs.pubout || `${EDWARDS25519SHA512BATCH}-${idx}.pub.json`;
   await Deno.writeTextFile(outFile, result);
   console.log(colors.green("wrote:"), outFile, colors.blue("(secret)"));
   await Deno.writeTextFile(pubOutFile, pubResult);
@@ -777,7 +779,7 @@ init_deps();
 init_utils();
 async function manifest(args) {
   await revokeNet();
-  const parsedArgs = flags.parse(args, { collect: ["key"], alias: { "key": "k" } });
+  const parsedArgs = flags.parse(args, { collect: ["key"], alias: { key: "k" } });
   const [keyFile, contractFile] = parsedArgs._;
   const parsedFilepath = path.parse(contractFile);
   const { name: contractFileName, base: contractBasename, dir: contractDir } = parsedFilepath;

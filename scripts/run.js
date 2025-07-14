@@ -2,4 +2,4 @@
 
 // I'm pretty sure this file is unused...
 
-require("./binary.js").run()
+require('./binary.js').run()
