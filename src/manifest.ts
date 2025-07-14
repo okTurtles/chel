@@ -20,8 +20,8 @@ export async function manifest (args: string[]) {
   const { name: contractFileName, base: contractBasename, dir: contractDir } = parsedFilepath
   const name = parsedArgs.name || parsedArgs.n || contractFileName
   const version = parsedArgs.version || parsedArgs.v || 'x'
-  const slim = parsedArgs.slim || parsedArgs.s
-  const outFilepath = path.join(contractDir, `${contractFileName}.${version}.manifest.json`)
+  const slim: string | undefined = (parsedArgs.slim || parsedArgs.s) as string | undefined
+  const outFile: string = (parsedArgs.out as string) || path.join(contractDir, `${contractFileName}.${version}.manifest.json`)
   if (!keyFile) exit('Missing signing key file')
 
   const signingKeyDescriptor = await readJsonFile(keyFile)
@@ -31,8 +31,11 @@ export async function manifest (args: string[]) {
   const publicKeys = Array.from(new Set(
     [serializeKey(signingKey, false)]
       .concat(...await Promise.all(parsedArgs.key?.map(
-        async (kf: number | string) => {
-          const descriptor = await readJsonFile(kf)
+        async (kf: unknown) => {
+          if (typeof kf !== 'string' && typeof kf !== 'number') {
+            exit(`Invalid key file reference: ${String(kf)}`)
+          }
+          const descriptor = await readJsonFile(String(kf))
           const key = deserializeKey(descriptor.pubkey)
           if (key.type !== EDWARDS25519SHA512BATCH) {
             exit(`Invalid key type ${key.type}; only ${EDWARDS25519SHA512BATCH} keys are supported.`)
@@ -70,7 +73,6 @@ export async function manifest (args: string[]) {
   if (parsedArgs.out === '-') {
     console.log(manifest)
   } else {
-    const outFile = parsedArgs.out || outFilepath
     Deno.writeTextFileSync(outFile, manifest)
     console.log(colors.green('wrote:'), outFile)
   }

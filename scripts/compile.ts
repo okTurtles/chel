@@ -1,9 +1,9 @@
 #!/usr/bin/env -S deno run --allow-run --allow-read=. --allow-write=./dist
 
-import { sh } from '../src/deps.ts'
+import { shell } from '~/utils.ts';
 
 function $ (command: string) {
-  return sh(command, { printOutput: true })
+  return shell(command, { printOutput: true })
 }
 
 const { default: { version } } = await import('../package.json', { with: { type: "json" } })
@@ -15,7 +15,7 @@ export async function compile () {
     const bin = arch.includes('windows') ? 'chel.exe' : 'chel'
     // note: could also use https://examples.deno.land/temporary-files
     await $(`mkdir -vp ${dir}`)
-    await $(`deno compile --allow-read=./ --allow-write=./  --allow-net --no-remote --import-map=vendor/import_map.json -o ${dir}/${bin} --target ${arch} ./build/main.js`)
+    await $(`deno compile --allow-read=./ --allow-write=./  --allow-net -o ${dir}/${bin} --target ${arch} ./build/main.js`)
     await $(`tar -C ./dist/tmp -czvf ./dist/chel-v${version}-${arch}.tar.gz ${arch}`)
   }
   await $(`sha256sum dist/chel-v${version}-*`)
@@ -27,5 +27,5 @@ try {
 } catch (e) {
   console.error('caught:', e.message)
 } finally {
-  await sh(`rm -rf ./dist/tmp`)
+  await shell(`rm -rf ./dist/tmp`)
 }

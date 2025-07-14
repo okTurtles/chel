@@ -28,7 +28,7 @@ export async function eventsAfter (args: string[]): Promise<void> {
     }
     console.log(JSON.stringify(messages, null, 2))
   } catch (error) {
-    exit(error.message)
+    exit(error)
   }
 }
 
@@ -75,7 +75,7 @@ async function getRemoteMessagesSince (src: string, contractID: string, sinceHei
   if (b64messages.length > limit) {
     b64messages.length = limit
   }
-  return b64messages.map(b64str => JSON.parse(new TextDecoder().decode(base64.decode(b64str))))
+  return b64messages.map(b64str => JSON.parse(new TextDecoder().decode(base64.decodeBase64(b64str))))
 }
 
 async function readString (key: string): Promise<string|void> {

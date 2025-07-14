@@ -1,0 +1,1 @@
+{"manifest":{"/mod.ts":{"size":23011,"checksum":"sha256-cd97b83d57378b01792a662edcb3a9f8d8bac6de65d0773a49daf367e17b2199"},"/deno.json":{"size":76,"checksum":"sha256-d72c1ba95bdda737170715801a58de06bfda6e7056fcdd02c315af72a12dcc6b"}},"exports":{".":"./mod.ts"},"lockfileChecksum":"d40eaf58c356b2e1313c6d4e62dc28b614aad2ddae6f5ff72a969e0b1f5ad689"}

@@ -8,7 +8,7 @@ If it's a binary file, for example an image, the command will be used like this:
 chel get https://url.com mygreatlongkey > file.png
 */
 
-import { flags, streams } from './deps.ts'
+import { flags, writeAll } from './deps.ts'
 import { exit, getBackend, isURL, readRemoteData } from './utils.ts'
 
 export async function get (args: string[]): Promise<void> {
@@ -28,9 +28,9 @@ export async function get (args: string[]): Promise<void> {
       console.log(data)
     } else {
       // In this case there is no trailing newline.
-      await streams.writeAll(Deno.stdout, data)
+      await writeAll(Deno.stdout, data)
     }
   } catch (error) {
-    exit(error.message)
+    exit(error)
   }
 }
