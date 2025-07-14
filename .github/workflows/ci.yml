@@ -17,6 +17,9 @@ jobs:
       with:
         deno-version: v2.4.0
     - run: deno cache --lock=deno.lock src/deps.ts
+
+    - name: Run ts-standard linter
+      run: npx ts-standard ./src ./scripts
     
     - name: Run tests
       run: deno test --allow-read --allow-write --allow-env --allow-ffi --allow-net
