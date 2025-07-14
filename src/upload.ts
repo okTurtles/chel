@@ -7,7 +7,7 @@ import { type Entry, createEntryFromFile, isDir, multicodes, revokeNet } from '.
 
 export async function upload (args: string[], internal = false) {
   const [urlOrDirOrSqliteFile, ...files] = args
-  if (files.length === 0) throw new Error(`missing files!`)
+  if (files.length === 0) throw new Error('missing files!')
   const uploaded = []
   const uploaderFn = await isDir(urlOrDirOrSqliteFile)
     ? uploadEntryToDir
@@ -47,11 +47,11 @@ export async function upload (args: string[], internal = false) {
   return uploaded
 }
 
-function uploadEntryToURL ([cid, buffer]: Entry, url: string): Promise<string> {
+async function uploadEntryToURL ([cid, buffer]: Entry, url: string): Promise<string> {
   const form = new FormData()
   form.append('hash', cid)
   form.append('data', new Blob([buffer]))
-  return fetch(`${url}/dev-file`, { method: 'POST', body: form })
+  return await fetch(`${url}/dev-file`, { method: 'POST', body: form })
     .then(handleFetchResult('text'))
     .then(r => {
       if (r !== `/file/${cid}`) {
@@ -71,7 +71,7 @@ async function uploadEntryToDir ([cid, buffer]: Entry, dir: string): Promise<str
 async function uploadEntryToSQLite ([cid, buffer]: Entry, sqlitedb: string): Promise<string> {
   await revokeNet()
   const { initStorage, writeData } = await import('./database-sqlite.ts')
-  initStorage({dirname: path.dirname(sqlitedb), filename: path.basename(sqlitedb)})
+  initStorage({ dirname: path.dirname(sqlitedb), filename: path.basename(sqlitedb) })
   writeData(cid, buffer)
   return cid
 }
@@ -79,8 +79,8 @@ async function uploadEntryToSQLite ([cid, buffer]: Entry, sqlitedb: string): Pro
 type ResponseTypeFn = 'arrayBuffer' | 'blob' | 'clone' | 'formData' | 'json' | 'text'
 
 export function handleFetchResult (type: ResponseTypeFn): ((r: Response) => unknown) {
-  return function (r: Response) {
+  return async function (r: Response) {
     if (!r.ok) throw new Error(`${r.status}: ${r.statusText}`)
-    return r[type]()
+    return await r[type]()
   }
 }

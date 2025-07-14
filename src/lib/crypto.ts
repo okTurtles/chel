@@ -37,10 +37,10 @@ const bytesOrObjectToB64 = (ary: Uint8Array) => {
   return bytesToB64(ary)
 }
 
-export type Key = {
-  type: string;
-  secretKey?: Uint8Array;
-  publicKey?: Uint8Array;
+export interface Key {
+  type: string
+  secretKey?: Uint8Array
+  publicKey?: Uint8Array
 }
 
 export const keygen = (type: string): Key => {
@@ -48,7 +48,7 @@ export const keygen = (type: string): Key => {
     const key = nacl.sign.keyPair()
 
     const res: Key = {
-      type: type,
+      type,
       publicKey: key.publicKey
     }
     // prevents 'secretKey' from being enumerated or appearing in JSON
@@ -59,7 +59,7 @@ export const keygen = (type: string): Key => {
     const key = nacl.box.keyPair()
 
     const res: Key = {
-      type: type,
+      type,
       publicKey: key.publicKey
     }
 
@@ -68,7 +68,7 @@ export const keygen = (type: string): Key => {
     return res
   } else if (type === XSALSA20POLY1305) {
     const res: Key = {
-      type: type
+      type
     }
 
     Object.defineProperty(res, 'secretKey', { value: nacl.randomBytes(nacl.secretbox.keyLength) })
@@ -88,7 +88,7 @@ export const generateSalt = (): string => {
 export const serializeKey = (key: Key, saveSecretKey: boolean): string => {
   if (key.type === EDWARDS25519SHA512BATCH || key.type === CURVE25519XSALSA20POLY1305) {
     if (!saveSecretKey) {
-      if (!key.publicKey) {
+      if (key.publicKey == null) {
         throw new Error('Unsupported operation: no public key to export')
       }
 
@@ -99,7 +99,7 @@ export const serializeKey = (key: Key, saveSecretKey: boolean): string => {
       ], undefined, 0)
     }
 
-    if (!key.secretKey) {
+    if (key.secretKey == null) {
       throw new Error('Unsupported operation: no secret key to export')
     }
 
@@ -113,7 +113,7 @@ export const serializeKey = (key: Key, saveSecretKey: boolean): string => {
       throw new Error('Unsupported operation: no public key to export')
     }
 
-    if (!key.secretKey) {
+    if (key.secretKey == null) {
       throw new Error('Unsupported operation: no secret key to export')
     }
 
@@ -197,7 +197,7 @@ export const keygenOfSameType = (inKey: Key | string): Key => {
 export const keyId = (inKey: Key | string): string => {
   const key = typeof inKey === 'string' ? deserializeKey(inKey) : inKey
 
-  const serializedKey = serializeKey(key, !key.publicKey)
+  const serializedKey = serializeKey(key, key.publicKey == null)
   return blake32Hash(serializedKey)
 }
 export const sign = (inKey: Key | string, data: string): string => {
@@ -207,7 +207,7 @@ export const sign = (inKey: Key | string, data: string): string => {
     throw new Error('Unsupported algorithm')
   }
 
-  if (!key.secretKey) {
+  if (key.secretKey == null) {
     throw new Error('Secret key missing')
   }
 
@@ -224,7 +224,7 @@ export const verifySignature = (inKey: Key | string, data: string, signature: st
     throw new Error('Unsupported algorithm')
   }
 
-  if (!key.publicKey) {
+  if (key.publicKey == null) {
     throw new Error('Public key missing')
   }
 
@@ -247,7 +247,7 @@ export const encrypt = (inKey: Key | string, data: string, ad?: string): string 
   const key = typeof inKey === 'string' ? deserializeKey(inKey) : inKey
 
   if (key.type === XSALSA20POLY1305) {
-    if (!key.secretKey) {
+    if (key.secretKey == null) {
       throw new Error('Secret key missing')
     }
 
@@ -277,7 +277,7 @@ export const encrypt = (inKey: Key | string, data: string, ad?: string): string 
 
     return base64FullMessage
   } else if (key.type === CURVE25519XSALSA20POLY1305) {
-    if (!key.publicKey) {
+    if (key.publicKey == null) {
       throw new Error('Public key missing')
     }
 
@@ -318,7 +318,7 @@ export const decrypt = (inKey: Key | string, data: string, ad?: string): string 
   const key = typeof inKey === 'string' ? deserializeKey(inKey) : inKey
 
   if (key.type === XSALSA20POLY1305) {
-    if (!key.secretKey) {
+    if (key.secretKey == null) {
       throw new Error('Secret key missing')
     }
 
@@ -346,7 +346,7 @@ export const decrypt = (inKey: Key | string, data: string, ad?: string): string 
 
     return bufToStr(decrypted)
   } else if (key.type === CURVE25519XSALSA20POLY1305) {
-    if (!key.secretKey) {
+    if (key.secretKey == null) {
       throw new Error('Secret key missing')
     }
 

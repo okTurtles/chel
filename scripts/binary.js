@@ -6,23 +6,23 @@ const { version, repository } = require('../package.json')
 const process = require('node:process')
 
 const supportedPlatforms = {
-  'Windows_NT_x64': {
+  Windows_NT_x64: {
     TARGET: 'x86_64-pc-windows-msvc',
     BINARY_NAME: 'chel.exe'
   },
-  'Linux_x64': {
+  Linux_x64: {
     TARGET: 'x86_64-unknown-linux-gnu',
     BINARY_NAME: 'chel'
   },
-  'Linux_arm64': {
+  Linux_arm64: {
     TARGET: 'aarch64-unknown-linux-gnu',
     BINARY_NAME: 'chel'
   },
-  'Darwin_x64': {
+  Darwin_x64: {
     TARGET: 'x86_64-apple-darwin',
     BINARY_NAME: 'chel'
   },
-  'Darwin_arm64': {
+  Darwin_arm64: {
     TARGET: 'aarch64-apple-darwin',
     BINARY_NAME: 'chel'
   }

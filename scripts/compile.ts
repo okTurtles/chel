@@ -1,12 +1,12 @@
 #!/usr/bin/env -S deno run --allow-run --allow-read=. --allow-write=./dist
 
-import { shell } from '~/utils.ts';
+import { shell } from '~/utils.ts'
 
 function $ (command: string) {
   return shell(command, { printOutput: true })
 }
 
-const { default: { version } } = await import('../package.json', { with: { type: "json" } })
+const { default: { version } } = await import('../package.json', { with: { type: 'json' } })
 
 export async function compile () {
   const archs = ['x86_64-unknown-linux-gnu', 'aarch64-unknown-linux-gnu', 'x86_64-pc-windows-msvc', 'x86_64-apple-darwin', 'aarch64-apple-darwin']
@@ -27,5 +27,5 @@ try {
 } catch (e) {
   console.error('caught:', e.message)
 } finally {
-  await shell(`rm -rf ./dist/tmp`)
+  await shell('rm -rf ./dist/tmp')
 }

@@ -18,8 +18,8 @@ export const keygen = async (args: string[]) => {
   const pubResult = JSON.stringify(pubKeyData)
 
   const idx = keyId(key).slice(-12)
-  const outFile = parsedArgs['out'] || `${EDWARDS25519SHA512BATCH}-${idx}.json`
-  const pubOutFile = parsedArgs['pubout'] || `${EDWARDS25519SHA512BATCH}-${idx}.pub.json`
+  const outFile = parsedArgs.out || `${EDWARDS25519SHA512BATCH}-${idx}.json`
+  const pubOutFile = parsedArgs.pubout || `${EDWARDS25519SHA512BATCH}-${idx}.pub.json`
 
   await Deno.writeTextFile(outFile, result)
   console.log(colors.green('wrote:'), outFile, colors.blue('(secret)'))

@@ -1,7 +1,7 @@
 {
   "tasks": {
     "chel": "deno task build && deno run --allow-net --allow-read=. --allow-write=. build/main.js",
-    "lint": "standard ./src",
+    "lint": "npx ts-standard ./src ./scripts",
     "compile": "deno run --allow-run --allow-read=. --allow-write=./dist scripts/compile.ts",
     "build": "deno run --node-modules-dir --allow-run --allow-read --allow-env --allow-write=./build --allow-net scripts/build.ts",
     "dist": "deno lint . && deno task build && deno task compile",

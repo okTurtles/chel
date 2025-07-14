@@ -53,7 +53,7 @@ export async function readData (key: string): Promise<Uint8Array | string | void
   return maybeRow === undefined ? undefined : maybeRow[0] ?? new Uint8Array()
 }
 
-export async function* iterKeys (): AsyncGenerator<string> {
+export async function * iterKeys (): AsyncGenerator<string> {
   for (const row of iterKeysStatement.iter()) {
     yield row[0]
   }

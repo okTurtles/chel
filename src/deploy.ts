@@ -6,8 +6,8 @@ import { path } from './deps.ts'
 import { upload } from './upload.ts'
 
 // Prefixes to use to select the correct CID to use
-const CONTRACT_TEXT_PREFIX = `t|`
-const CONTRACT_MANIFEST_PREFIX = `m|`
+const CONTRACT_TEXT_PREFIX = 't|'
+const CONTRACT_MANIFEST_PREFIX = 'm|'
 
 export async function deploy (args: string[]) {
   const [urlOrDirOrSqliteFile, ...manifests] = args

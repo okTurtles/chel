@@ -14,7 +14,7 @@ import { EDWARDS25519SHA512BATCH, deserializeKey, keyId, serializeKey, sign } fr
 
 export async function manifest (args: string[]) {
   await revokeNet()
-  const parsedArgs = flags.parse(args, { collect: ['key'], alias: { 'key': 'k' } })
+  const parsedArgs = flags.parse(args, { collect: ['key'], alias: { key: 'k' } })
   const [keyFile, contractFile] = parsedArgs._
   const parsedFilepath = path.parse(contractFile as string)
   const { name: contractFileName, base: contractBasename, dir: contractDir } = parsedFilepath
@@ -44,7 +44,7 @@ export async function manifest (args: string[]) {
         }
       ) || []))
   ))
-  const body: {[key: string]: unknown} = {
+  const body: { [key: string]: unknown } = {
     name,
     version,
     contract: {
@@ -60,7 +60,7 @@ export async function manifest (args: string[]) {
     }
   }
   const serializedBody = JSON.stringify(body)
-  const head = { manifestVersion: "1.0.0" }
+  const head = { manifestVersion: '1.0.0' }
   const serializedHead = JSON.stringify(head)
   const manifest = JSON.stringify({
     head: serializedHead,

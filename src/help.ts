@@ -1,7 +1,7 @@
 'use strict'
 
 export function help (args?: string[]) {
-  if (!args || args.length === 0) {
+  if ((args == null) || args.length === 0) {
     console.log(`
       chel
       chel help [command]
@@ -25,7 +25,7 @@ export function help (args?: string[]) {
   }
 }
 
-const helpDict: {[key:string]: string} = {
+const helpDict: { [key: string]: string } = {
   help: `
     chel help [command]
   `,
