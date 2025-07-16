@@ -61,7 +61,7 @@ async function count() {
 }
 async function* iterKeys() {
   for await (const entry of Deno.readDir(dataFolder)) {
-    if (entry.isFile) {
+    if (entry.isFile === true) {
       yield entry.name;
     }
   }
@@ -189,7 +189,7 @@ async function getBackend(src, { type, create } = { type: "", create: false }) {
   const sqliteOptions = { internal: true, dirname: path.dirname(src), filename: path.basename(src) };
   if (!create && !await isDir(src) && !await isFile(src)) throw new Error(`not found: "${src}"`);
   let from = type;
-  if (!from) {
+  if (typeof from !== "string" || from.trim() === "") {
     if (await isDir(src)) from = "fs";
     else if (await isFile(src)) from = "sqlite";
     else throw new Error(`could not infer backend type. Not found: "${src}"`);
@@ -372,7 +372,7 @@ async function deploy(args) {
     const body = JSON.parse(json.body);
     const dirname = path.dirname(manifestPath);
     toUpload.push(CONTRACT_TEXT_PREFIX + path.join(dirname, body.contract.file));
-    if (body.contractSlim) {
+    if (body.contractSlim !== void 0 && body.contractSlim !== null) {
       toUpload.push(CONTRACT_TEXT_PREFIX + path.join(dirname, body.contractSlim.file));
     }
     toUpload.push(CONTRACT_MANIFEST_PREFIX + manifestPath);
@@ -407,7 +407,7 @@ async function eventsAfter(args) {
 }
 async function getMessage(hash2) {
   const value = await readString(hash2);
-  if (!value) throw new Error(`no entry for ${hash2}!`);
+  if (value === void 0 || value === null) throw new Error(`no entry for ${hash2}!`);
   return JSON.parse(value);
 }
 async function getMessagesSince(src, contractID, sinceHeight, limit) {
@@ -421,7 +421,7 @@ async function getMessagesSince(src, contractID, sinceHeight, limit) {
   let currentHeight;
   while (true) {
     const entry = await getMessage(currentHEAD);
-    if (!entry) {
+    if (entry === void 0) {
       throw new Deno.errors.NotFound(`entry ${currentHEAD} no longer exists.`);
     }
     const head = JSON.parse(entry.head);
@@ -437,14 +437,14 @@ async function getMessagesSince(src, contractID, sinceHeight, limit) {
 async function getRemoteMessagesSince(src, contractID, sinceHeight, limit) {
   const response = await fetch(`${src}/eventsAfter/${contractID}/${sinceHeight}`);
   if (!response.ok) {
-    const bodyText = await response.text().catch((_) => "") || "";
+    const bodyText = await response.text().catch((_) => "") !== void 0 ? await response.text().catch((_) => "") : "";
     throw new Error(`failed network request to ${src}: ${response.status} - ${response.statusText} - '${bodyText}'`);
   }
   const b64messages = await response.json();
   if (b64messages.length > limit) {
     b64messages.length = limit;
   }
-  return b64messages.map((b64str) => JSON.parse(new TextDecoder().decode(base64.decodeBase64(b64str))));
+  return b64messages.map((b64str) => b64str !== "" ? JSON.parse(new TextDecoder().decode(base64.decodeBase64(b64str))) : null);
 }
 async function readString(key) {
   const rv = await backend.readData(key);
@@ -476,7 +476,7 @@ async function get(args) {
 init_utils();
 async function hash(args, multicode = multicodes.RAW, internal = false) {
   const [filename] = args;
-  if (!filename) {
+  if (filename === void 0 || filename === "") {
     console.error("please pass in a file");
     Deno.exit(1);
   }
@@ -506,7 +506,7 @@ function help(args) {
       chel hash <file>
       chel migrate --from <backend> --to <backend> --out <dir-or-sqlitedb> <dir-or-sqlitedb>
     `);
-  } else if (helpDict[args[0]]) {
+  } else if (typeof args[0] === "string" && args[0].trim() !== "" && Object.prototype.hasOwnProperty.call(helpDict, args[0])) {
     console.log(helpDict[args[0]]);
   } else {
     console.error(`Unknown command: ${args[0]}`);
@@ -766,8 +766,8 @@ var keygen2 = async (args) => {
   const result = JSON.stringify(keyData);
   const pubResult = JSON.stringify(pubKeyData);
   const idx = keyId(key).slice(-12);
-  const outFile = parsedArgs.out || `${EDWARDS25519SHA512BATCH}-${idx}.json`;
-  const pubOutFile = parsedArgs.pubout || `${EDWARDS25519SHA512BATCH}-${idx}.pub.json`;
+  const outFile = typeof parsedArgs.out === "string" && parsedArgs.out.trim() !== "" ? parsedArgs.out : `${EDWARDS25519SHA512BATCH}-${idx}.json`;
+  const pubOutFile = typeof parsedArgs.pubout === "string" && parsedArgs.pubout.trim() !== "" ? parsedArgs.pubout : `${EDWARDS25519SHA512BATCH}-${idx}.pub.json`;
   await Deno.writeTextFile(outFile, result);
   console.log(colors.green("wrote:"), outFile, colors.blue("(secret)"));
   await Deno.writeTextFile(pubOutFile, pubResult);
@@ -780,19 +780,32 @@ init_utils();
 async function manifest(args) {
   await revokeNet();
   const parsedArgs = flags.parse(args, { collect: ["key"], alias: { key: "k" } });
-  const [keyFile, contractFile] = parsedArgs._;
+  const [keyFileRaw, contractFileRaw] = parsedArgs._;
+  if (typeof keyFileRaw !== "string" || typeof contractFileRaw !== "string") {
+    exit("Missing or invalid key or contract file");
+  }
+  const keyFile = keyFileRaw;
+  const contractFile = contractFileRaw;
   const parsedFilepath = path.parse(contractFile);
   const { name: contractFileName, base: contractBasename, dir: contractDir } = parsedFilepath;
-  const name = parsedArgs.name || parsedArgs.n || contractFileName;
-  const version2 = parsedArgs.version || parsedArgs.v || "x";
-  const slim = parsedArgs.slim || parsedArgs.s;
-  const outFile = parsedArgs.out || path.join(contractDir, `${contractFileName}.${version2}.manifest.json`);
-  if (!keyFile) exit("Missing signing key file");
+  const name = parsedArgs.name ?? parsedArgs.n ?? contractFileName;
+  const version2 = parsedArgs.version ?? parsedArgs.v ?? "x";
+  let slim;
+  if (typeof parsedArgs.slim === "string") {
+    slim = parsedArgs.slim;
+  } else if (typeof parsedArgs.s === "string") {
+    slim = parsedArgs.s;
+  }
+  const outFile = typeof parsedArgs.out === "string" ? parsedArgs.out : path.join(contractDir, `${String(contractFileName)}.${String(version2)}.manifest.json`);
+  if (typeof keyFileRaw !== "string" || typeof contractFileRaw !== "string") {
+    exit("Missing or invalid key or contract file");
+  }
   const signingKeyDescriptor = await readJsonFile(keyFile);
   const signingKey = deserializeKey(signingKeyDescriptor.privkey);
+  const additionalKeys = parsedArgs.key;
   const publicKeys = Array.from(new Set(
-    [serializeKey(signingKey, false)].concat(...await Promise.all(parsedArgs.key?.map(
-      async (kf) => {
+    [serializeKey(signingKey, false)].concat(...await Promise.all(
+      (additionalKeys ?? []).map(async (kf) => {
         if (typeof kf !== "string" && typeof kf !== "number") {
           exit(`Invalid key file reference: ${String(kf)}`);
         }
@@ -802,8 +815,8 @@ async function manifest(args) {
           exit(`Invalid key type ${key.type}; only ${EDWARDS25519SHA512BATCH} keys are supported.`);
         }
         return serializeKey(key, false);
-      }
-    ) || []))
+      })
+    ))
   ));
   const body = {
     name,
@@ -814,7 +827,7 @@ async function manifest(args) {
     },
     signingKeys: publicKeys
   };
-  if (slim) {
+  if (typeof slim === "string" && slim !== "") {
     body.contractSlim = {
       file: path.basename(slim),
       hash: await hash([slim], multicodes.SHELTER_CONTRACT_TEXT, true)
@@ -847,9 +860,9 @@ async function migrate(args) {
   const parsedArgs = flags.parse(args);
   const { from, to, out } = parsedArgs;
   const src = path.resolve(String(parsedArgs._[0]) ?? ".");
-  if (!from) exit("missing argument: --from");
-  if (!to) exit("missing argument: --to");
-  if (!out) exit("missing argument: --out");
+  if (from === void 0) exit("missing argument: --from");
+  if (to === void 0) exit("missing argument: --to");
+  if (out === void 0) exit("missing argument: --out");
   if (from === to) exit("arguments --from and --to must be different");
   let backendFrom;
   let backendTo;
@@ -875,7 +888,7 @@ async function migrate(args) {
       console.log(`[chel] Migrating... ${Math.round(numVisitedKeys / (numKeys / 10))}0% done`);
     }
   }
-  numKeys && console.log(`[chel] ${colors.green("Migrated:")} ${numKeys} entries`);
+  if (numKeys > 0) console.log(`[chel] ${colors.green("Migrated:")} ${numKeys} entries`);
 }
 
 // src/verifySignature.ts
@@ -884,68 +897,96 @@ init_utils();
 var verifySignature2 = async (args, internal = false) => {
   await revokeNet();
   const parsedArgs = flags.parse(args);
-  const [manifestFile] = parsedArgs._;
+  const [manifestFileRaw] = parsedArgs._;
   const keyFile = parsedArgs.k;
+  const manifestFile = String(manifestFileRaw);
   const [externalKeyDescriptor, manifest2] = await Promise.all([
-    keyFile ? readJsonFile(keyFile) : null,
+    typeof keyFile === "string" ? readJsonFile(keyFile) : null,
     readJsonFile(manifestFile)
   ]);
-  if (keyFile && !externalKeyDescriptor.pubkey) {
+  if (typeof keyFile === "string" && (externalKeyDescriptor === null || typeof externalKeyDescriptor.pubkey !== "string" || externalKeyDescriptor.pubkey.trim() === "")) {
     exit("Public key missing from key file", internal);
   }
-  if (!manifest2.head) {
+  if (typeof manifest2.head !== "object" || manifest2.head === null) {
     exit("Invalid manifest: missing head", internal);
   }
-  if (!manifest2.body) {
+  if (typeof manifest2.body !== "string" || manifest2.body.trim() === "") {
     exit("Invalid manifest: missing body", internal);
   }
-  if (!manifest2.signature) {
-    exit("Invalid manifest: missing signature", internal);
-  }
-  if (!manifest2.signature.keyId) {
-    exit("Invalid manifest: missing signature key ID", internal);
-  }
-  if (!manifest2.signature.value) {
-    exit("Invalid manifest: missing signature value", internal);
+  if (typeof manifest2.signature !== "object" || manifest2.signature === null || typeof manifest2.signature.keyId !== "string" || manifest2.signature.keyId.trim() === "" || typeof manifest2.signature.value !== "string" || manifest2.signature.value.trim() === "") {
+    exit("Invalid manifest: missing signature, key ID, or value", internal);
   }
   const body = JSON.parse(manifest2.body);
-  const signingKey = body.signingKeys?.find((k) => {
-    return keyId(k) === manifest2.signature.keyId;
-  });
-  if (externalKeyDescriptor) {
+  const signingKey = Array.isArray(body.signingKeys) ? body.signingKeys.find(
+    (k) => typeof k === "string" && keyId(k) === manifest2.signature.keyId
+  ) : void 0;
+  if (externalKeyDescriptor !== null && externalKeyDescriptor !== void 0 && typeof externalKeyDescriptor.pubkey === "string") {
     const id = keyId(externalKeyDescriptor.pubkey);
     if (manifest2.signature.keyId !== id) {
-      exit(`Invalid manifest signature: key ID doesn't match the provided key file. Expected ${id} but got ${manifest2.signature.keyId}.`, internal);
+      exit(
+        `Invalid manifest signature: key ID doesn't match the provided key file. Expected ${String(
+          id
+        )} but got ${String(manifest2.signature.keyId)}.`,
+        internal
+      );
     }
   }
-  const serializedPubKey = signingKey || externalKeyDescriptor?.pubkey;
-  if (!serializedPubKey) {
-    exit("The manifest appears to be signed but verification can't proceed because the key used is unknown.", internal);
+  const serializedPubKey = typeof signingKey === "string" ? signingKey : typeof externalKeyDescriptor?.pubkey === "string" ? externalKeyDescriptor.pubkey : null;
+  const isSerializedPubKeyInvalid = serializedPubKey === null || serializedPubKey.trim() === "";
+  if (isSerializedPubKeyInvalid) {
+    exit(
+      "The manifest appears to be signed but verification can't proceed because the key used is unknown.",
+      internal
+    );
   }
   const pubKey = deserializeKey(serializedPubKey);
   try {
-    verifySignature(pubKey, manifest2.body + manifest2.head, manifest2.signature.value);
+    verifySignature(
+      pubKey,
+      String(manifest2.body) + JSON.stringify(manifest2.head),
+      manifest2.signature.value
+    );
   } catch (e) {
-    exit("Error validating signature: " + (e?.message || String(e)), internal);
+    const message = typeof e?.message === "string" ? e.message : String(e);
+    exit(`Error validating signature: ${message}`, internal);
   }
-  if (!signingKey) {
-    exit("The signature is valid but the signing key is not listed in signingKeys", internal);
+  if (typeof signingKey !== "string" || signingKey.trim() === "") {
+    exit(
+      "The signature is valid but the signing key is not listed in signingKeys",
+      internal
+    );
   }
   const parsedFilepath = path.parse(manifestFile);
-  if (!body.contract?.file) {
+  if (typeof body.contract !== "object" || body.contract === null || typeof body.contract.file !== "string" || body.contract.file.trim() === "") {
     exit("Invalid manifest: no contract file", internal);
   }
-  const computedHash = await hash([path.join(parsedFilepath.dir, body.contract.file)], multicodes.SHELTER_CONTRACT_TEXT, true);
-  if (computedHash !== body.contract.hash) {
-    exit(`Invalid contract file hash. Expected ${body.contract.hash} but got ${computedHash}`, internal);
+  const computedHash = await hash(
+    [path.join(parsedFilepath.dir, body.contract.file)],
+    multicodes.SHELTER_CONTRACT_TEXT,
+    true
+  );
+  if (typeof body.contract.hash !== "string" || computedHash !== body.contract.hash) {
+    exit(
+      `Invalid contract file hash. Expected ${String(body.contract.hash)} but got ${computedHash}`,
+      internal
+    );
   }
-  if (body.contractSlim) {
-    const computedHash2 = await hash([path.join(parsedFilepath.dir, body.contractSlim.file)], multicodes.SHELTER_CONTRACT_TEXT, true);
-    if (computedHash2 !== body.contractSlim.hash) {
-      exit(`Invalid slim contract file hash. Expected ${body.contractSlim.hash} but got ${computedHash2}`, internal);
+  if (typeof body.contractSlim === "object" && body.contractSlim !== null && typeof body.contractSlim.file === "string" && body.contractSlim.file.trim() !== "" && typeof body.contractSlim.hash === "string" && body.contractSlim.hash.trim() !== "") {
+    const slimHash = await hash(
+      [path.join(parsedFilepath.dir, body.contractSlim.file)],
+      multicodes.SHELTER_CONTRACT_TEXT,
+      true
+    );
+    if (slimHash !== body.contractSlim.hash) {
+      exit(
+        `Invalid slim contract file hash. Expected ${String(body.contractSlim.hash ?? "undefined")} but got ${String(slimHash ?? "undefined")}`,
+        internal
+      );
     }
   }
-  if (!internal) console.log(colors.green("ok"), "all checks passed");
+  if (!internal) {
+    console.log(colors.green("ok"), "all checks passed");
+  }
 };
 
 // src/version.ts
@@ -955,12 +996,18 @@ function version() {
 
 // src/main.ts
 var [command, ...rest] = Deno.args;
-if (!command) {
+if (typeof command !== "string" || command.trim() === "") {
   help();
-} else if (commands_exports[command]) {
-  await commands_exports[command](rest);
+} else if (typeof command === "string" && Object.prototype.hasOwnProperty.call(commands_exports, command)) {
+  const cmdFn = commands_exports[command];
+  if (typeof cmdFn === "function") {
+    await cmdFn(rest);
+  } else {
+    console.error(`Command exists but is not callable: ${String(command)}`);
+    Deno.exit(1);
+  }
 } else {
-  console.error(`Unknown command: ${command}`);
+  console.error(`Unknown command: ${String(command)}`);
   Deno.exit(1);
 }
 Deno.exit(0);

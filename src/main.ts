@@ -15,12 +15,21 @@ import * as commands from './commands.ts'
 
 const [command, ...rest] = Deno.args
 
-if (!command) {
+if (typeof command !== 'string' || command.trim() === '') {
   commands.help()
-} else if (commands[command as keyof typeof commands]) {
-  await commands[command as keyof typeof commands](rest)
+} else if (
+  typeof command === 'string' &&
+  Object.prototype.hasOwnProperty.call(commands, command)
+) {
+  const cmdFn = commands[command as keyof typeof commands]
+  if (typeof cmdFn === 'function') {
+    await cmdFn(rest)
+  } else {
+    console.error(`Command exists but is not callable: ${String(command)}`)
+    Deno.exit(1)
+  }
 } else {
-  console.error(`Unknown command: ${command}`)
+  console.error(`Unknown command: ${String(command)}`)
   Deno.exit(1)
 }
 

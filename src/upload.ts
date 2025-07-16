@@ -5,10 +5,10 @@ import { type Entry, createEntryFromFile, isDir, multicodes, revokeNet } from '.
 
 // chel upload <url-or-dir-or-sqlitedb> <file1> [<file2> [<file3> ...]]
 
-export async function upload (args: string[], internal = false) {
+export async function upload (args: string[], internal = false): Promise<Array<[string, string]>> {
   const [urlOrDirOrSqliteFile, ...files] = args
   if (files.length === 0) throw new Error('missing files!')
-  const uploaded = []
+  const uploaded: Array<[string, string]> = []
   const uploaderFn = await isDir(urlOrDirOrSqliteFile)
     ? uploadEntryToDir
     : urlOrDirOrSqliteFile.endsWith('.db')
@@ -40,7 +40,7 @@ export async function upload (args: string[], internal = false) {
     if (!internal) {
       console.log(colors.green('uploaded:'), destination)
     } else {
-      console.log(colors.green(`${path.relative('.', filepath)}:`), destination)
+      console.log(colors.green(`${String(path.relative('.', filepath))}:`), destination)
     }
     uploaded.push([filepath, destination])
   }
@@ -55,7 +55,7 @@ async function uploadEntryToURL ([cid, buffer]: Entry, url: string): Promise<str
     .then(handleFetchResult('text'))
     .then(r => {
       if (r !== `/file/${cid}`) {
-        throw new Error(`server returned bad URL: ${r}`)
+        throw new Error(`server returned bad URL: ${String(r)}`)
       }
       return `${url}${r}`
     })
@@ -71,8 +71,8 @@ async function uploadEntryToDir ([cid, buffer]: Entry, dir: string): Promise<str
 async function uploadEntryToSQLite ([cid, buffer]: Entry, sqlitedb: string): Promise<string> {
   await revokeNet()
   const { initStorage, writeData } = await import('./database-sqlite.ts')
-  initStorage({ dirname: path.dirname(sqlitedb), filename: path.basename(sqlitedb) })
-  writeData(cid, buffer)
+  await initStorage({ dirname: path.dirname(sqlitedb), filename: path.basename(sqlitedb) })
+  await writeData(cid, buffer)
   return cid
 }
 
@@ -81,6 +81,6 @@ type ResponseTypeFn = 'arrayBuffer' | 'blob' | 'clone' | 'formData' | 'json' | '
 export function handleFetchResult (type: ResponseTypeFn): ((r: Response) => unknown) {
   return async function (r: Response) {
     if (!r.ok) throw new Error(`${r.status}: ${r.statusText}`)
-    return await r[type]()
+    return await r[type]() as unknown
   }
 }

@@ -4,16 +4,16 @@
 import { colors, flags, path } from './deps.ts'
 import { exit, getBackend, isNotHashKey, isValidKey, revokeNet } from './utils.ts'
 
-export async function migrate (args: string[]) {
+export async function migrate (args: string[]): Promise<void> {
   await revokeNet()
   const parsedArgs = flags.parse(args)
 
   const { from, to, out } = parsedArgs
   const src = path.resolve(String(parsedArgs._[0]) ?? '.')
 
-  if (!from) exit('missing argument: --from')
-  if (!to) exit('missing argument: --to')
-  if (!out) exit('missing argument: --out')
+  if (from === undefined) exit('missing argument: --from')
+  if (to === undefined) exit('missing argument: --to')
+  if (out === undefined) exit('missing argument: --out')
   if (from === to) exit('arguments --from and --to must be different')
 
   let backendFrom
@@ -46,5 +46,5 @@ export async function migrate (args: string[]) {
       console.log(`[chel] Migrating... ${Math.round(numVisitedKeys / (numKeys / 10))}0% done`)
     }
   }
-  numKeys && console.log(`[chel] ${colors.green('Migrated:')} ${numKeys} entries`)
+  if (numKeys > 0) console.log(`[chel] ${(colors.green as (text: string) => string)('Migrated:')} ${numKeys} entries`)
 }

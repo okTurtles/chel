@@ -1,6 +1,6 @@
 'use strict'
 
-export function help (args?: string[]) {
+export function help (args?: string[]): void {
   if ((args == null) || args.length === 0) {
     console.log(`
       chel
@@ -18,7 +18,11 @@ export function help (args?: string[]) {
       chel hash <file>
       chel migrate --from <backend> --to <backend> --out <dir-or-sqlitedb> <dir-or-sqlitedb>
     `)
-  } else if (helpDict[args[0]]) {
+  } else if (
+    typeof args[0] === 'string' &&
+    args[0].trim() !== '' &&
+    Object.prototype.hasOwnProperty.call(helpDict, args[0])
+  ) {
     console.log(helpDict[args[0]])
   } else {
     console.error(`Unknown command: ${args[0]}`)

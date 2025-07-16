@@ -34,14 +34,14 @@ export async function eventsAfter (args: string[]): Promise<void> {
 
 async function getMessage (hash: string): Promise<ReturnType<typeof JSON.parse>> {
   const value = await readString(hash)
-  if (!value) throw new Error(`no entry for ${hash}!`)
+  if (value === undefined || value === null) throw new Error(`no entry for ${hash}!`)
   return JSON.parse(value)
 }
 
 async function getMessagesSince (src: string, contractID: string, sinceHeight: number, limit: number): Promise<string[]> {
   backend = await getBackend(src)
 
-  const contractHEAD: string | void = await readString(`${headPrefix}${contractID}`)
+  const contractHEAD: string | undefined = await readString(`${headPrefix}${contractID}`)
   if (contractHEAD === undefined) {
     throw new Deno.errors.NotFound(`contract ${contractID} doesn't exist!`)
   }
@@ -50,8 +50,8 @@ async function getMessagesSince (src: string, contractID: string, sinceHeight: n
   let currentHeight: number
   while (true) {
     const entry = await getMessage(currentHEAD)
-    if (!entry) {
-      throw new Deno.errors.NotFound(`entry ${currentHEAD} no longer exists.`)
+    if (entry === undefined) {
+      throw new Deno.errors.NotFound(`entry ${currentHEAD as string} no longer exists.`)
     }
     const head = JSON.parse(entry.head)
     currentHeight = head.height
@@ -68,17 +68,17 @@ async function getRemoteMessagesSince (src: string, contractID: string, sinceHei
   const response = await fetch(`${src}/eventsAfter/${contractID}/${sinceHeight}`)
   if (!response.ok) {
     // The response body may contain some useful error info if we got a Boom error response.
-    const bodyText = await response.text().catch(_ => '') || ''
+    const bodyText = await response.text().catch(_ => '') !== undefined ? await response.text().catch(_ => '') : ''
     throw new Error(`failed network request to ${src}: ${response.status} - ${response.statusText} - '${bodyText}'`)
   }
   const b64messages: string[] = await response.json()
   if (b64messages.length > limit) {
     b64messages.length = limit
   }
-  return b64messages.map(b64str => JSON.parse(new TextDecoder().decode(base64.decodeBase64(b64str))))
+  return b64messages.map(b64str => b64str !== '' ? JSON.parse(new TextDecoder().decode(base64.decodeBase64(b64str))) : null)
 }
 
-async function readString (key: string): Promise<string | void> {
+async function readString (key: string): Promise<string | undefined> {
   const rv = await backend.readData(key)
   if (rv === undefined) return undefined
   return typeof rv === 'string' ? rv : new TextDecoder().decode(rv)

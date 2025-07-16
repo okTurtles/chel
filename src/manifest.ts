@@ -12,48 +12,64 @@ import { EDWARDS25519SHA512BATCH, deserializeKey, keyId, serializeKey, sign } fr
 
 // import { writeAllSync } from "https://deno.land/std@0.141.0/streams/mod.ts"
 
-export async function manifest (args: string[]) {
+export async function manifest (args: string[]): Promise<void> {
   await revokeNet()
   const parsedArgs = flags.parse(args, { collect: ['key'], alias: { key: 'k' } })
-  const [keyFile, contractFile] = parsedArgs._
-  const parsedFilepath = path.parse(contractFile as string)
+  const [keyFileRaw, contractFileRaw] = parsedArgs._
+  if (typeof keyFileRaw !== 'string' || typeof contractFileRaw !== 'string') {
+    exit('Missing or invalid key or contract file')
+  }
+  const keyFile = keyFileRaw
+  const contractFile = contractFileRaw
+  const parsedFilepath = path.parse(contractFile)
   const { name: contractFileName, base: contractBasename, dir: contractDir } = parsedFilepath
-  const name = parsedArgs.name || parsedArgs.n || contractFileName
-  const version = parsedArgs.version || parsedArgs.v || 'x'
-  const slim: string | undefined = (parsedArgs.slim || parsedArgs.s) as string | undefined
-  const outFile: string = (parsedArgs.out as string) || path.join(contractDir, `${contractFileName}.${version}.manifest.json`)
-  if (!keyFile) exit('Missing signing key file')
+  const name = (parsedArgs.name ?? parsedArgs.n ?? contractFileName) as string
+  const version = (parsedArgs.version ?? parsedArgs.v ?? 'x') as string
+  let slim: string | undefined
+  if (typeof parsedArgs.slim === 'string') {
+    slim = parsedArgs.slim
+  } else if (typeof parsedArgs.s === 'string') {
+    slim = parsedArgs.s
+  }
+  const outFile: string =
+  typeof parsedArgs.out === 'string'
+    ? parsedArgs.out
+    : path.join(contractDir, `${String(contractFileName)}.${String(version)}.manifest.json`)
+  if (typeof keyFileRaw !== 'string' || typeof contractFileRaw !== 'string') {
+    exit('Missing or invalid key or contract file')
+  }
 
-  const signingKeyDescriptor = await readJsonFile(keyFile)
+  const signingKeyDescriptor = await readJsonFile(keyFile) as { privkey: string }
   const signingKey = deserializeKey(signingKeyDescriptor.privkey)
 
   // Add all additional public keys in addition to the signing key
+  const additionalKeys = parsedArgs.key as Array<string | number> | undefined
+
   const publicKeys = Array.from(new Set(
-    [serializeKey(signingKey, false)]
-      .concat(...await Promise.all(parsedArgs.key?.map(
-        async (kf: unknown) => {
-          if (typeof kf !== 'string' && typeof kf !== 'number') {
-            exit(`Invalid key file reference: ${String(kf)}`)
-          }
-          const descriptor = await readJsonFile(String(kf))
-          const key = deserializeKey(descriptor.pubkey)
-          if (key.type !== EDWARDS25519SHA512BATCH) {
-            exit(`Invalid key type ${key.type}; only ${EDWARDS25519SHA512BATCH} keys are supported.`)
-          }
-          return serializeKey(key, false)
+    [serializeKey(signingKey, false)].concat(...await Promise.all(
+      (additionalKeys ?? []).map(async (kf) => {
+        if (typeof kf !== 'string' && typeof kf !== 'number') {
+          exit(`Invalid key file reference: ${String(kf)}`)
         }
-      ) || []))
+        const descriptor = await readJsonFile(String(kf)) as { pubkey: string }
+        const key = deserializeKey(descriptor.pubkey)
+        if (key.type !== EDWARDS25519SHA512BATCH) {
+          exit(`Invalid key type ${key.type}; only ${EDWARDS25519SHA512BATCH} keys are supported.`)
+        }
+        return serializeKey(key, false)
+      })
+    ))
   ))
   const body: { [key: string]: unknown } = {
     name,
     version,
     contract: {
-      hash: await hash([contractFile as string], multicodes.SHELTER_CONTRACT_TEXT, true),
+      hash: await hash([contractFile], multicodes.SHELTER_CONTRACT_TEXT, true),
       file: contractBasename
     },
     signingKeys: publicKeys
   }
-  if (slim) {
+  if (typeof slim === 'string' && slim !== '') {
     body.contractSlim = {
       file: path.basename(slim),
       hash: await hash([slim], multicodes.SHELTER_CONTRACT_TEXT, true)
