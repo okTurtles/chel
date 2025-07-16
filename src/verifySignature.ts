@@ -3,17 +3,52 @@ import { colors, flags, path } from './deps.ts'
 import { verifySignature as cryptoVerifySignature, deserializeKey, keyId } from './lib/crypto.ts'
 import { exit, multicodes, readJsonFile, revokeNet } from './utils.ts'
 
+interface ExternalKeyDescriptor {
+  pubkey: string
+}
+
+interface ManifestSignature {
+  keyId: string
+  value: string
+}
+
+interface Manifest {
+  head: string
+  body: string
+  signature: ManifestSignature
+}
+
+function isExternalKeyDescriptor(obj: any): obj is ExternalKeyDescriptor {
+  return obj && typeof obj.pubkey === 'string'
+}
+
+function isManifestSignature(obj: any): obj is ManifestSignature {
+  return obj && typeof obj.keyId === 'string' && typeof obj.value === 'string'
+}
+
+function isManifest(obj: any): obj is Manifest {
+  return obj
+    && typeof obj.head === 'string'
+    && typeof obj.body === 'string'
+    && typeof obj.signature === 'object' && obj.signature !== null
+}
+
 export const verifySignature = async (args: string[], internal = false) => {
   await revokeNet()
   const parsedArgs = flags.parse(args)
   const [manifestFile] = parsedArgs._
   const keyFile = parsedArgs.k
-  const [externalKeyDescriptor, manifest] = await Promise.all([
+  const [externalKeyDescriptorRaw, manifestRaw] = await Promise.all([
     keyFile ? readJsonFile(keyFile) : null,
     readJsonFile(manifestFile)
   ])
-  if (keyFile && !externalKeyDescriptor.pubkey) {
+  const externalKeyDescriptor = externalKeyDescriptorRaw as ExternalKeyDescriptor | null
+  const manifest = manifestRaw as Manifest
+  if (keyFile && (!externalKeyDescriptorRaw || !isExternalKeyDescriptor(externalKeyDescriptorRaw))) {
     exit('Public key missing from key file', internal)
+  }
+  if (!isManifest(manifestRaw)) {
+    exit('Invalid manifest: missing signature key ID', internal)
   }
   if (!manifest.head) {
     exit('Invalid manifest: missing head', internal)
