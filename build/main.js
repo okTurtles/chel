@@ -25,6 +25,9 @@ import { default as default2 } from "npm:tweetnacl@1.0.3";
 import { base58btc } from "npm:multiformats@11.0.2/bases/base58";
 import { default as default3 } from "npm:@multiformats/blake2@1.0.13";
 import { CID } from "npm:multiformats@11.0.2/cid";
+import { EDWARDS25519SHA512BATCH, CURVE25519XSALSA20POLY1305, XSALSA20POLY1305 } from "npm:@chelonia/crypto@1.0.1";
+import { keygen, serializeKey, deserializeKey, keygenOfSameType, keyId, generateSalt, deriveKeyFromPassword } from "npm:@chelonia/crypto@1.0.1";
+import { sign, verifySignature, encrypt, decrypt } from "npm:@chelonia/crypto@1.0.1";
 var init_deps = __esm({
   "src/deps.ts"() {
     "use strict";
@@ -584,180 +587,6 @@ var helpDict = {
 // src/keygen.ts
 init_deps();
 init_utils();
-
-// src/lib/crypto.ts
-init_deps();
-var EDWARDS25519SHA512BATCH = "edwards25519sha512batch";
-var CURVE25519XSALSA20POLY1305 = "curve25519xsalsa20poly1305";
-var XSALSA20POLY1305 = "xsalsa20poly1305";
-var blake32Hash = (data) => {
-  const uint8array = typeof data === "string" ? new TextEncoder().encode(data) : data;
-  const digest = default3.blake2b.blake2b256.digest(uint8array);
-  return base58btc.encode(digest.bytes);
-};
-var bufToStr = (ary) => {
-  return String.fromCharCode(...Array.from(ary));
-};
-var bytesToB64 = (ary) => {
-  return btoa(bufToStr(ary));
-};
-var strToBuf = (str) => {
-  return new Uint8Array(str.split("").map((c) => c.charCodeAt(0)));
-};
-var b64ToBuf = (str) => {
-  return strToBuf(atob(str));
-};
-var bytesOrObjectToB64 = (ary) => {
-  if (!(ary instanceof Uint8Array)) {
-    throw Error("Unsupported type");
-  }
-  return bytesToB64(ary);
-};
-var keygen = (type) => {
-  if (type === EDWARDS25519SHA512BATCH) {
-    const key = default2.sign.keyPair();
-    const res = {
-      type,
-      publicKey: key.publicKey
-    };
-    Object.defineProperty(res, "secretKey", { value: key.secretKey });
-    return res;
-  } else if (type === CURVE25519XSALSA20POLY1305) {
-    const key = default2.box.keyPair();
-    const res = {
-      type,
-      publicKey: key.publicKey
-    };
-    Object.defineProperty(res, "secretKey", { value: key.secretKey });
-    return res;
-  } else if (type === XSALSA20POLY1305) {
-    const res = {
-      type
-    };
-    Object.defineProperty(res, "secretKey", { value: default2.randomBytes(default2.secretbox.keyLength) });
-    return res;
-  }
-  throw new Error("Unsupported key type");
-};
-var serializeKey = (key, saveSecretKey) => {
-  if (key.type === EDWARDS25519SHA512BATCH || key.type === CURVE25519XSALSA20POLY1305) {
-    if (!saveSecretKey) {
-      if (key.publicKey == null) {
-        throw new Error("Unsupported operation: no public key to export");
-      }
-      return JSON.stringify([
-        key.type,
-        bytesOrObjectToB64(key.publicKey),
-        null
-      ], void 0, 0);
-    }
-    if (key.secretKey == null) {
-      throw new Error("Unsupported operation: no secret key to export");
-    }
-    return JSON.stringify([
-      key.type,
-      null,
-      bytesOrObjectToB64(key.secretKey)
-    ], void 0, 0);
-  } else if (key.type === XSALSA20POLY1305) {
-    if (!saveSecretKey) {
-      throw new Error("Unsupported operation: no public key to export");
-    }
-    if (key.secretKey == null) {
-      throw new Error("Unsupported operation: no secret key to export");
-    }
-    return JSON.stringify([
-      key.type,
-      null,
-      bytesOrObjectToB64(key.secretKey)
-    ], void 0, 0);
-  }
-  throw new Error("Unsupported key type");
-};
-var deserializeKey = (data) => {
-  const keyData = JSON.parse(data);
-  if (!keyData || keyData.length !== 3) {
-    throw new Error("Invalid key object");
-  }
-  if (keyData[0] === EDWARDS25519SHA512BATCH) {
-    if (keyData[2]) {
-      const key = default2.sign.keyPair.fromSecretKey(b64ToBuf(keyData[2]));
-      const res = {
-        type: keyData[0],
-        publicKey: key.publicKey
-      };
-      Object.defineProperty(res, "secretKey", { value: key.secretKey });
-      return res;
-    } else if (keyData[1]) {
-      return {
-        type: keyData[0],
-        publicKey: new Uint8Array(b64ToBuf(keyData[1]))
-      };
-    }
-    throw new Error("Missing secret or public key");
-  } else if (keyData[0] === CURVE25519XSALSA20POLY1305) {
-    if (keyData[2]) {
-      const key = default2.box.keyPair.fromSecretKey(b64ToBuf(keyData[2]));
-      const res = {
-        type: keyData[0],
-        publicKey: key.publicKey
-      };
-      Object.defineProperty(res, "secretKey", { value: key.secretKey });
-      return res;
-    } else if (keyData[1]) {
-      return {
-        type: keyData[0],
-        publicKey: new Uint8Array(b64ToBuf(keyData[1]))
-      };
-    }
-    throw new Error("Missing secret or public key");
-  } else if (keyData[0] === XSALSA20POLY1305) {
-    if (!keyData[2]) {
-      throw new Error("Secret key missing");
-    }
-    const res = {
-      type: keyData[0]
-    };
-    Object.defineProperty(res, "secretKey", { value: new Uint8Array(b64ToBuf(keyData[2])) });
-    return res;
-  }
-  throw new Error("Unsupported key type");
-};
-var keyId = (inKey) => {
-  const key = typeof inKey === "string" ? deserializeKey(inKey) : inKey;
-  const serializedKey = serializeKey(key, key.publicKey == null);
-  return blake32Hash(serializedKey);
-};
-var sign = (inKey, data) => {
-  const key = typeof inKey === "string" ? deserializeKey(inKey) : inKey;
-  if (key.type !== EDWARDS25519SHA512BATCH) {
-    throw new Error("Unsupported algorithm");
-  }
-  if (key.secretKey == null) {
-    throw new Error("Secret key missing");
-  }
-  const messageUint8 = strToBuf(data);
-  const signature = default2.sign.detached(messageUint8, key.secretKey);
-  const base64Signature = bytesOrObjectToB64(signature);
-  return base64Signature;
-};
-var verifySignature = (inKey, data, signature) => {
-  const key = typeof inKey === "string" ? deserializeKey(inKey) : inKey;
-  if (key.type !== EDWARDS25519SHA512BATCH) {
-    throw new Error("Unsupported algorithm");
-  }
-  if (key.publicKey == null) {
-    throw new Error("Public key missing");
-  }
-  const decodedSignature = b64ToBuf(signature);
-  const messageUint8 = strToBuf(data);
-  const result = default2.sign.detached.verify(messageUint8, decodedSignature, key.publicKey);
-  if (!result) {
-    throw new Error("Invalid signature");
-  }
-};
-
-// src/keygen.ts
 var keygen2 = async (args) => {
   await revokeNet();
   const parsedArgs = flags.parse(args);
@@ -773,8 +602,8 @@ var keygen2 = async (args) => {
   const result = JSON.stringify(keyData);
   const pubResult = JSON.stringify(pubKeyData);
   const idx = keyId(key).slice(-12);
-  const outFile = typeof parsedArgs.out === "string" && parsedArgs.out.trim() !== "" ? parsedArgs.out : `${EDWARDS25519SHA512BATCH}-${idx}.json`;
-  const pubOutFile = typeof parsedArgs.pubout === "string" && parsedArgs.pubout.trim() !== "" ? parsedArgs.pubout : `${EDWARDS25519SHA512BATCH}-${idx}.pub.json`;
+  const outFile = typeof parsedArgs.out === "string" && parsedArgs.out.trim() !== "" ? parsedArgs.out : `${String(EDWARDS25519SHA512BATCH)}-${String(idx)}.json`;
+  const pubOutFile = typeof parsedArgs.pubout === "string" && parsedArgs.pubout.trim() !== "" ? parsedArgs.pubout : `${String(EDWARDS25519SHA512BATCH)}-${String(idx)}.pub.json`;
   await Deno.writeTextFile(outFile, result);
   console.log(colors.green("wrote:"), outFile, colors.blue("(secret)"));
   await Deno.writeTextFile(pubOutFile, pubResult);
@@ -819,7 +648,7 @@ async function manifest(args) {
         const descriptor = await readJsonFile(String(kf));
         const key = deserializeKey(descriptor.pubkey);
         if (key.type !== EDWARDS25519SHA512BATCH) {
-          exit(`Invalid key type ${key.type}; only ${EDWARDS25519SHA512BATCH} keys are supported.`);
+          exit(`Invalid key type ${String(key.type)}; only ${String(EDWARDS25519SHA512BATCH)} keys are supported.`);
         }
         return serializeKey(key, false);
       })
@@ -902,11 +731,11 @@ async function migrate(args) {
 init_deps();
 init_utils();
 function isExternalKeyDescriptor(obj) {
-  return !!obj && typeof obj.pubkey === "string";
+  return obj !== null && typeof obj === "object" && typeof obj.pubkey === "string";
 }
 function isManifest(obj) {
   const maybe = obj;
-  return !!obj && typeof maybe.head === "string" && typeof maybe.body === "string" && typeof maybe.signature === "object" && maybe.signature !== null;
+  return obj !== null && typeof maybe.head === "string" && typeof maybe.body === "string" && typeof maybe.signature === "object" && maybe.signature !== null;
 }
 var verifySignature2 = async (args, internal = false) => {
   await revokeNet();
@@ -947,7 +776,7 @@ var verifySignature2 = async (args, internal = false) => {
   if (externalKeyDescriptor !== null) {
     const id = keyId(externalKeyDescriptor.pubkey);
     if (manifest2.signature.keyId !== id) {
-      exit(`Invalid manifest signature: key ID doesn't match the provided key file. Expected ${id} but got ${manifest2.signature.keyId}.`, internal);
+      exit(`Invalid manifest signature: key ID doesn't match the provided key file. Expected ${String(id)} but got ${String(manifest2.signature.keyId)}.`, internal);
     }
   }
   const serializedPubKey = signingKey ?? externalKeyDescriptor?.pubkey;
@@ -958,7 +787,8 @@ var verifySignature2 = async (args, internal = false) => {
   try {
     verifySignature(pubKey, manifest2.body + manifest2.head, manifest2.signature.value);
   } catch (e) {
-    exit("Error validating signature: " + (e?.message || String(e)), internal);
+    const errMessage = typeof e?.message === "string" && e.message !== "" ? e.message : String(e);
+    exit("Error validating signature: " + errMessage, internal);
   }
   if (typeof signingKey !== "string" || signingKey === "") {
     exit("The signature is valid but the signing key is not listed in signingKeys", internal);

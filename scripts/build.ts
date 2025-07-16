@@ -28,7 +28,8 @@ const options = {
     'npm:multiformats@11.0.2/cid',
     'npm:multiformats@11.0.2/bases/base58',
     'npm:multiformats@11.0.2',
-    'npm:@multiformats/blake2@1.0.13'
+    'npm:@multiformats/blake2@1.0.13',
+    'npm:@chelonia/crypto@1.0.1'
   ],
   format: 'esm',
   outdir: 'build',

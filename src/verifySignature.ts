@@ -1,6 +1,5 @@
 import { hash } from './commands.ts'
-import { colors, flags, path } from './deps.ts'
-import { verifySignature as cryptoVerifySignature, deserializeKey, keyId } from './lib/crypto.ts'
+import { colors, flags, path, verifySignature as cryptoVerifySignature, deserializeKey, keyId } from './deps.ts'
 import { exit, multicodes, readJsonFile, revokeNet } from './utils.ts'
 
 interface ExternalKeyDescriptor {
@@ -73,7 +72,7 @@ export const verifySignature = async (args: string[], internal = false): Promise
   if (externalKeyDescriptor !== null) {
     const id = keyId(externalKeyDescriptor.pubkey)
     if (manifest.signature.keyId !== id) {
-      exit(`Invalid manifest signature: key ID doesn't match the provided key file. Expected ${id} but got ${manifest.signature.keyId}.`, internal)
+      exit(`Invalid manifest signature: key ID doesn't match the provided key file. Expected ${String(id)} but got ${String(manifest.signature.keyId)}.`, internal)
     }
   }
 

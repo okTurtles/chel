@@ -23,6 +23,7 @@
     "jsr:@std/path@1.1.1": "1.1.1",
     "jsr:@std/path@^1.1.1": "1.1.1",
     "jsr:@std/streams@1.0.10": "1.0.10",
+    "npm:@chelonia/crypto@1.0.1": "1.0.1",
     "npm:@multiformats/blake2@1.0.13": "1.0.13",
     "npm:@types/node@24.0.13": "24.0.13",
     "npm:axios@0.27.2": "0.27.2",
@@ -113,6 +114,20 @@
     }
   },
   "npm": {
+    "@chelonia/crypto@1.0.1": {
+      "integrity": "sha512-NfH/WAwNs7X/GFGceckWwTSJ9D72WUUWb6gFUQkqBMjqZh7X33zyArCuiN2EfYCcmERjFqUTDMN8Ga1jqbbi8g==",
+      "dependencies": [
+        "@chelonia/multiformats",
+        "scrypt-async",
+        "tweetnacl"
+      ]
+    },
+    "@chelonia/multiformats@1.0.0": {
+      "integrity": "sha512-3Kkw8IoXI8x5ML2GNXqnDYnlFf92CZt56cHOU/iBx6FFVqd4vqdZfTEAg4bxkseNilIBda9Ex04Vt+uF3NPQhQ==",
+      "dependencies": [
+        "blakejs"
+      ]
+    },
     "@esbuild/aix-ppc64@0.25.6": {
       "integrity": "sha512-ShbM/3XxwuxjFiuVBHA+d3j5dyac0aEVVq1oluIDf71hUw0aRF59dV/efUsIwFnR6m8JNM2FjZOzmaZ8yG61kw==",
       "os": ["aix"],
@@ -1988,6 +2003,9 @@
         "es-errors",
         "is-regex"
       ]
+    },
+    "scrypt-async@2.0.1": {
+      "integrity": "sha512-wHR032jldwZNy7Tzrfu7RccOgGf8r5hyDMSP2uV6DpLiBUsR8JsDcx/in73o2UGVVrH5ivRFdNsFPcjtl3LErQ=="
     },
     "semver@6.3.1": {
       "integrity": "sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==",

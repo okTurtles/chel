@@ -1,6 +1,5 @@
-import { colors, flags } from './deps.ts'
+import { colors, flags, EDWARDS25519SHA512BATCH, keygen as cryptoKeygen, keyId, serializeKey } from './deps.ts'
 import { revokeNet } from './utils.ts'
-import { EDWARDS25519SHA512BATCH, keygen as cryptoKeygen, keyId, serializeKey } from './lib/crypto.ts'
 
 export const keygen = async (args: string[]): Promise<void> => {
   await revokeNet()
@@ -20,10 +19,10 @@ export const keygen = async (args: string[]): Promise<void> => {
   const idx = keyId(key).slice(-12)
   const outFile: string = typeof parsedArgs.out === 'string' && parsedArgs.out.trim() !== ''
     ? parsedArgs.out
-    : `${EDWARDS25519SHA512BATCH}-${idx}.json`
+    : `${String(EDWARDS25519SHA512BATCH)}-${String(idx)}.json`
   const pubOutFile: string = typeof parsedArgs.pubout === 'string' && parsedArgs.pubout.trim() !== ''
     ? parsedArgs.pubout
-    : `${EDWARDS25519SHA512BATCH}-${idx}.pub.json`
+    : `${String(EDWARDS25519SHA512BATCH)}-${String(idx)}.pub.json`
 
   await Deno.writeTextFile(outFile, result)
   console.log(colors.green('wrote:'), outFile, colors.blue('(secret)'))

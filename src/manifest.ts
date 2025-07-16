@@ -5,10 +5,9 @@
 // TODO: consider a --copy-files option that works with --out which copies version-stamped
 //       contracts to the same folder as --out.
 
-import { flags, path, colors } from './deps.ts'
+import { flags, path, colors, EDWARDS25519SHA512BATCH, deserializeKey, keyId, serializeKey, sign } from './deps.ts'
 import { hash } from './hash.ts'
 import { exit, multicodes, readJsonFile, revokeNet } from './utils.ts'
-import { EDWARDS25519SHA512BATCH, deserializeKey, keyId, serializeKey, sign } from './lib/crypto.ts'
 
 // import { writeAllSync } from "https://deno.land/std@0.141.0/streams/mod.ts"
 
@@ -54,7 +53,7 @@ export async function manifest (args: string[]): Promise<void> {
         const descriptor = await readJsonFile(String(kf)) as { pubkey: string }
         const key = deserializeKey(descriptor.pubkey)
         if (key.type !== EDWARDS25519SHA512BATCH) {
-          exit(`Invalid key type ${key.type}; only ${EDWARDS25519SHA512BATCH} keys are supported.`)
+          exit(`Invalid key type ${String(key.type)}; only ${String(EDWARDS25519SHA512BATCH)} keys are supported.`)
         }
         return serializeKey(key, false)
       })
