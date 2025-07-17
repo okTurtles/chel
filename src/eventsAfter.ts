@@ -69,7 +69,8 @@ async function getRemoteMessagesSince (src: string, contractID: string, sinceHei
   const response = await fetch(`${src}/eventsAfter/${contractID}/${sinceHeight}`)
   if (!response.ok) {
     // The response body may contain some useful error info if we got a Boom error response.
-    const bodyText = await response.text().catch(_ => '') !== undefined ? await response.text().catch(_ => '') : ''
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+    const bodyText = await response.text().catch(_ => '') || ''
     throw new Error(`failed network request to ${src}: ${response.status} - ${response.statusText} - '${bodyText}'`)
   }
   const b64messages: string[] = await response.json()
