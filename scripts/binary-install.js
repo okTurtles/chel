@@ -23,7 +23,7 @@ class Binary {
     if (typeof url !== 'string') {
       errors.push('url must be a string')
     } else {
-      if (!url || typeof url !== 'string' || !URL.canParse(url)) {
+      if (!URL.canParse(url)) {
         errors.push(new Error('Invalid URL format'))
       }
     }
