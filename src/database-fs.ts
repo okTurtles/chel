@@ -38,15 +38,10 @@ export async function * iterKeys (): AsyncGenerator<string> {
   }
 }
 
-export async function readData (key: string): Promise<Uint8Array | string | undefined> {
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+export function readData (key: string) {
   checkKey(key)
-  try {
-    // assign to a variable before returning to satisfy no-return-await
-    const file = await Deno.readFile(path.join(dataFolder, key))
-    return file
-  } catch {
-    return undefined
-  }
+  return Deno.readFile(path.join(dataFolder, key)).catch(() => undefined)
 }
 
 export async function writeData (key: string, value: Uint8Array | string): Promise<void> {
