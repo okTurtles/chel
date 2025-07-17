@@ -22,9 +22,12 @@ export async function deploy (args: string[]): Promise<void> {
     const json = JSON.parse(Deno.readTextFileSync(manifestPath)) as { body: string }
     const body = JSON.parse(json.body) as ContractBody
     const dirname = path.dirname(manifestPath)
-    toUpload.push(CONTRACT_TEXT_PREFIX + String(path.join(dirname, body.contract.file)))
+    // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
+    toUpload.push(CONTRACT_TEXT_PREFIX + path.join(dirname, body.contract.file))
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     if (body.contractSlim !== undefined && body.contractSlim !== null) {
-      toUpload.push(CONTRACT_TEXT_PREFIX + String(path.join(dirname, body.contractSlim.file)))
+      // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
+      toUpload.push(CONTRACT_TEXT_PREFIX + path.join(dirname, body.contractSlim.file))
     }
     toUpload.push(CONTRACT_MANIFEST_PREFIX + manifestPath)
   }
