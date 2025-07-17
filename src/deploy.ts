@@ -25,7 +25,7 @@ export async function deploy (args: string[]): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
     toUpload.push(CONTRACT_TEXT_PREFIX + path.join(dirname, body.contract.file))
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-    if (body.contractSlim !== undefined && body.contractSlim !== null) {
+    if (body.contractSlim) {
       // eslint-disable-next-line @typescript-eslint/restrict-plus-operands
       toUpload.push(CONTRACT_TEXT_PREFIX + path.join(dirname, body.contractSlim.file))
     }
