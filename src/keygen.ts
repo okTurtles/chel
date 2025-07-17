@@ -17,12 +17,10 @@ export const keygen = async (args: string[]): Promise<void> => {
   const pubResult = JSON.stringify(pubKeyData)
 
   const idx = keyId(key).slice(-12)
-  const outFile: string = typeof parsedArgs.out === 'string' && parsedArgs.out.trim() !== ''
-    ? parsedArgs.out
-    : `${String(EDWARDS25519SHA512BATCH)}-${String(idx)}.json`
-  const pubOutFile: string = typeof parsedArgs.pubout === 'string' && parsedArgs.pubout.trim() !== ''
-    ? parsedArgs.pubout
-    : `${String(EDWARDS25519SHA512BATCH)}-${String(idx)}.pub.json`
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/restrict-template-expressions
+  const outFile = parsedArgs.out || `${EDWARDS25519SHA512BATCH}-${idx}.json`
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/restrict-template-expressions
+  const pubOutFile = parsedArgs.pubout || `${EDWARDS25519SHA512BATCH}-${idx}.pub.json`
 
   await Deno.writeTextFile(outFile, result)
   console.log(colors.green('wrote:'), outFile, colors.blue('(secret)'))
