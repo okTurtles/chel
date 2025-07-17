@@ -34,7 +34,8 @@ export async function eventsAfter (args: string[]): Promise<void> {
 
 async function getMessage (hash: string): Promise<ReturnType<typeof JSON.parse>> {
   const value = await readString(hash)
-  if (value === undefined || value === null) throw new Error(`no entry for ${hash}!`)
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+  if (!value) throw new Error(`no entry for ${hash}!`)
   return JSON.parse(value)
 }
 
