@@ -77,7 +77,7 @@ async function getRemoteMessagesSince (src: string, contractID: string, sinceHei
   if (b64messages.length > limit) {
     b64messages.length = limit
   }
-  return b64messages.map(b64str => b64str !== '' ? JSON.parse(new TextDecoder().decode(base64.decodeBase64(b64str))) : null)
+  return b64messages.map(b64str => JSON.parse(new TextDecoder().decode(base64.decodeBase64(b64str))))
 }
 
 async function readString (key: string): Promise<string | undefined> {
