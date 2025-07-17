@@ -2,8 +2,9 @@
 
 import { shell } from '~/utils.ts'
 
-async function $ (command: string): Promise<void> {
-  await shell(command, { printOutput: true })
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
+function $ (command: string) {
+  return shell(command, { printOutput: true })
 }
 
 const { default: { version } } = await import('../package.json', { with: { type: 'json' } })
