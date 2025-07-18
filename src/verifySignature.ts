@@ -84,8 +84,10 @@ export const verifySignature = async (args: string[], internal = false): Promise
 
   // If an external public key is provided, we use that one for verification,
   // even if it is missing in body.signingKeys
-  const serializedPubKey = signingKey ?? externalKeyDescriptor?.pubkey
-  if (typeof serializedPubKey !== 'string' || serializedPubKey === '') {
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+  const serializedPubKey = signingKey || externalKeyDescriptor?.pubkey
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+  if (!serializedPubKey) {
     exit('The manifest appears to be signed but verification can\'t proceed because the key used is unknown.', internal)
   }
 
@@ -93,29 +95,33 @@ export const verifySignature = async (args: string[], internal = false): Promise
   try {
     cryptoVerifySignature(pubKey, manifest.body + manifest.head, manifest.signature.value)
   } catch (e) {
-    const errMessage = typeof (e as Error)?.message === 'string' && (e as Error).message !== ''
-      ? (e as Error).message
-      : String(e)
-    exit('Error validating signature: ' + errMessage, internal)
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+    exit('Error validating signature: ' + ((e as Error)?.message || String(e)), internal)
   }
 
-  if (typeof signingKey !== 'string' || signingKey === '') {
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+  if (!signingKey) {
     exit('The signature is valid but the signing key is not listed in signingKeys', internal)
   }
 
-  const parsedFilepath = path.parse(String(manifestFile))
-  if (typeof body.contract?.file !== 'string' || body.contract.file === '') {
+  const parsedFilepath = path.parse(manifestFile as string)
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+  if (!body.contract?.file) {
     exit('Invalid manifest: no contract file', internal)
   }
   const computedHash = await hash([path.join(parsedFilepath.dir, body.contract.file)], multicodes.SHELTER_CONTRACT_TEXT, true)
-  if (typeof body.contract.hash !== 'string' || computedHash !== body.contract.hash) {
-    exit(`Invalid contract file hash. Expected ${String(body.contract.hash)} but got ${computedHash}`, internal)
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+  if (computedHash !== body.contract.hash) {
+    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+    exit(`Invalid contract file hash. Expected ${body.contract.hash} but got ${computedHash}`, internal)
   }
 
-  if (typeof body.contractSlim === 'object' && body.contractSlim !== null) {
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+  if (body.contractSlim) {
     const computedHash = await hash([path.join(parsedFilepath.dir, body.contractSlim.file)], multicodes.SHELTER_CONTRACT_TEXT, true)
     if (computedHash !== body.contractSlim.hash) {
-      exit(`Invalid slim contract file hash. Expected ${String(body.contractSlim.hash)} but got ${computedHash}`, internal)
+      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+      exit(`Invalid slim contract file hash. Expected ${body.contractSlim.hash} but got ${computedHash}`, internal)
     }
   }
 
