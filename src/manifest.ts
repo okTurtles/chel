@@ -22,21 +22,16 @@ export async function manifest (args: string[]): Promise<void> {
   const contractFile = contractFileRaw
   const parsedFilepath = path.parse(contractFile)
   const { name: contractFileName, base: contractBasename, dir: contractDir } = parsedFilepath
-  const name = (parsedArgs.name ?? parsedArgs.n ?? contractFileName) as string
-  const version = (parsedArgs.version ?? parsedArgs.v ?? 'x') as string
-  let slim: string | undefined
-  if (typeof parsedArgs.slim === 'string') {
-    slim = parsedArgs.slim
-  } else if (typeof parsedArgs.s === 'string') {
-    slim = parsedArgs.s
-  }
-  const outFile: string =
-  typeof parsedArgs.out === 'string'
-    ? parsedArgs.out
-    : path.join(contractDir, `${String(contractFileName)}.${String(version)}.manifest.json`)
-  if (typeof keyFileRaw !== 'string' || typeof contractFileRaw !== 'string') {
-    exit('Missing or invalid key or contract file')
-  }
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+  const name = parsedArgs.name || parsedArgs.n || contractFileName
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+  const version = parsedArgs.version || parsedArgs.v || 'x'
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+  const slim: string | undefined = (parsedArgs.slim || parsedArgs.s) as string | undefined
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/restrict-template-expressions
+  const outFile: string = (parsedArgs.out as string) || path.join(contractDir, `${contractFileName}.${version}.manifest.json`)
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+  if (!keyFile) exit('Missing signing key file')
 
   const signingKeyDescriptor = await readJsonFile(keyFile) as { privkey: string }
   const signingKey = deserializeKey(signingKeyDescriptor.privkey)
