@@ -46,5 +46,6 @@ export async function migrate (args: string[]): Promise<void> {
       console.log(`[chel] Migrating... ${Math.round(numVisitedKeys / (numKeys / 10))}0% done`)
     }
   }
-  if (numKeys > 0) console.log(`[chel] ${(colors.green as (text: string) => string)('Migrated:')} ${numKeys} entries`)
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/restrict-template-expressions
+  numKeys && console.log(`[chel] ${colors.green('Migrated:')} ${numKeys} entries`)
 }
