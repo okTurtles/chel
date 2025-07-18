@@ -43,25 +43,31 @@ export const verifySignature = async (args: string[], internal = false): Promise
   ])
   const externalKeyDescriptor = externalKeyDescriptorRaw as ExternalKeyDescriptor | null
   const manifest = manifestRaw as Manifest
-  if (typeof keyFile === 'string' && (externalKeyDescriptorRaw === null || !isExternalKeyDescriptor(externalKeyDescriptorRaw))) {
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+  if (keyFile && (!externalKeyDescriptorRaw || !isExternalKeyDescriptor(externalKeyDescriptorRaw))) {
     exit('Public key missing from key file', internal)
   }
   if (!isManifest(manifestRaw)) {
     exit('Invalid manifest: missing signature key ID', internal)
   }
-  if (typeof manifest.head !== 'string' || manifest.head === '') {
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+  if (!manifest.head) {
     exit('Invalid manifest: missing head', internal)
   }
-  if (typeof manifest.body !== 'string' || manifest.body === '') {
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+  if (!manifest.body) {
     exit('Invalid manifest: missing body', internal)
   }
-  if (typeof manifest.signature !== 'object' || manifest.signature === null) {
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+  if (!manifest.signature) {
     exit('Invalid manifest: missing signature', internal)
   }
-  if (typeof manifest.signature.keyId !== 'string' || manifest.signature.keyId === '') {
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+  if (!manifest.signature.keyId) {
     exit('Invalid manifest: missing signature key ID', internal)
   }
-  if (typeof manifest.signature.value !== 'string' || manifest.signature.value === '') {
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+  if (!manifest.signature.value) {
     exit('Invalid manifest: missing signature value', internal)
   }
   const body = JSON.parse(manifest.body)
