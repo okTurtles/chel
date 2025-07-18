@@ -28,18 +28,19 @@ const options = {
     'npm:multiformats@11.0.2/cid',
     'npm:multiformats@11.0.2/bases/base58',
     'npm:multiformats@11.0.2',
-    'npm:@multiformats/blake2@1.0.13'
+    'npm:@multiformats/blake2@1.0.13',
+    'npm:@chelonia/crypto@1.0.1'
   ],
   format: 'esm',
   outdir: 'build',
   splitting: false
 }
 const result = await esbuild.build(options)
-if (result.errors.length) {
+if ((result.errors as esbuild.Message[]).length > 0) {
   console.error(colors.red('build error:'), result.errors)
   esbuild.stop()
   Deno.exit(1)
-} else if (result.warnings.length) {
+} else if ((result.warnings as esbuild.Message[]).length > 0) {
   console.warn(colors.yellow('build warnings:'), result.warnings)
 }
 console.log(colors.green('built:'), options.outdir)

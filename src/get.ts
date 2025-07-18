@@ -22,7 +22,7 @@ export async function get (args: string[]): Promise<void> {
       ? await readRemoteData(src, key)
       : await (await getBackend(src)).readData(key)
 
-    if (data === undefined) exit(`no entry found for ${key}`)
+    if (data === undefined) exit(`no entry found for ${key as string}`)
 
     if (typeof data === 'string') {
       console.log(data)
