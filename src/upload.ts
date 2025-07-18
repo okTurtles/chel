@@ -40,7 +40,8 @@ export async function upload (args: string[], internal = false): Promise<Array<[
     if (!internal) {
       console.log(colors.green('uploaded:'), destination)
     } else {
-      console.log(colors.green(`${String(path.relative('.', filepath))}:`), destination)
+      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+      console.log(colors.green(`${path.relative('.', filepath)}:`), destination)
     }
     uploaded.push([filepath, destination])
   }
