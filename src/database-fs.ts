@@ -21,7 +21,6 @@ export async function clear (): Promise<void> {
 export async function count (): Promise<number> {
   let n = 0
   for await (const entry of Deno.readDir(dataFolder)) {
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     if (entry.isFile) {
       n++
     }
@@ -31,15 +30,15 @@ export async function count (): Promise<number> {
 
 export async function * iterKeys (): AsyncGenerator<string> {
   for await (const entry of Deno.readDir(dataFolder)) {
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+    // Skip subfolders and symlinks.
     if (entry.isFile) {
       yield entry.name
     }
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-export function readData (key: string) {
+// deno-lint-ignore require-await
+export async function readData (key: string): Promise<Uint8Array | string | void> {
   checkKey(key)
   return Deno.readFile(path.join(dataFolder, key)).catch(() => undefined)
 }

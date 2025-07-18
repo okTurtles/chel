@@ -43,30 +43,24 @@ export const verifySignature = async (args: string[], internal = false): Promise
   ])
   const externalKeyDescriptor = externalKeyDescriptorRaw as ExternalKeyDescriptor | null
   const manifest = manifestRaw as Manifest
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   if (keyFile && (!externalKeyDescriptorRaw || !isExternalKeyDescriptor(externalKeyDescriptorRaw))) {
     exit('Public key missing from key file', internal)
   }
   if (!isManifest(manifestRaw)) {
     exit('Invalid manifest: missing signature key ID', internal)
   }
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   if (!manifest.head) {
     exit('Invalid manifest: missing head', internal)
   }
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   if (!manifest.body) {
     exit('Invalid manifest: missing body', internal)
   }
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   if (!manifest.signature) {
     exit('Invalid manifest: missing signature', internal)
   }
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   if (!manifest.signature.keyId) {
     exit('Invalid manifest: missing signature key ID', internal)
   }
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   if (!manifest.signature.value) {
     exit('Invalid manifest: missing signature value', internal)
   }
@@ -84,9 +78,7 @@ export const verifySignature = async (args: string[], internal = false): Promise
 
   // If an external public key is provided, we use that one for verification,
   // even if it is missing in body.signingKeys
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   const serializedPubKey = signingKey || externalKeyDescriptor?.pubkey
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   if (!serializedPubKey) {
     exit('The manifest appears to be signed but verification can\'t proceed because the key used is unknown.', internal)
   }
@@ -95,32 +87,25 @@ export const verifySignature = async (args: string[], internal = false): Promise
   try {
     cryptoVerifySignature(pubKey, manifest.body + manifest.head, manifest.signature.value)
   } catch (e) {
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     exit('Error validating signature: ' + ((e as Error)?.message || String(e)), internal)
   }
 
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   if (!signingKey) {
     exit('The signature is valid but the signing key is not listed in signingKeys', internal)
   }
 
   const parsedFilepath = path.parse(manifestFile as string)
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   if (!body.contract?.file) {
     exit('Invalid manifest: no contract file', internal)
   }
   const computedHash = await hash([path.join(parsedFilepath.dir, body.contract.file)], multicodes.SHELTER_CONTRACT_TEXT, true)
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   if (computedHash !== body.contract.hash) {
-    // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
     exit(`Invalid contract file hash. Expected ${body.contract.hash} but got ${computedHash}`, internal)
   }
 
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   if (body.contractSlim) {
     const computedHash = await hash([path.join(parsedFilepath.dir, body.contractSlim.file)], multicodes.SHELTER_CONTRACT_TEXT, true)
     if (computedHash !== body.contractSlim.hash) {
-      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
       exit(`Invalid slim contract file hash. Expected ${body.contractSlim.hash} but got ${computedHash}`, internal)
     }
   }

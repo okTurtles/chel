@@ -2,7 +2,6 @@
 
 import { shell } from '~/utils.ts'
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 function $ (command: string) {
   return shell(command, { printOutput: true })
 }

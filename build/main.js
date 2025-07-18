@@ -71,7 +71,7 @@ async function* iterKeys() {
     }
   }
 }
-function readData(key) {
+async function readData(key) {
   checkKey(key);
   return Deno.readFile(path.join(dataFolder, key)).catch(() => void 0);
 }
@@ -194,7 +194,7 @@ async function getBackend(src, { type, create } = { type: "", create: false }) {
   const sqliteOptions = { internal: true, dirname: path.dirname(src), filename: path.basename(src) };
   if (!create && !await isDir(src) && !await isFile(src)) throw new Error(`not found: "${src}"`);
   let from = type;
-  if (typeof from !== "string" || from.trim() === "") {
+  if (!from) {
     if (await isDir(src)) from = "fs";
     else if (await isFile(src)) from = "sqlite";
     else throw new Error(`could not infer backend type. Not found: "${src}"`);
@@ -242,7 +242,7 @@ function isURL(arg) {
   return URL.canParse(arg) && Boolean(new URL(arg).host);
 }
 function isValidKey(key) {
-  return /^[\x20-\x7E]*$/.test(key) && !/[\\/]/.test(key);
+  return !/[\x00-\x1f\x7f\t\\/]/.test(key);
 }
 async function readRemoteData(src, key) {
   const buffer = await fetch(`${src}/file/${key}`).then(async (r) => r.ok ? await r.arrayBuffer() : await Promise.reject(new Error(`failed network request to ${src}: ${r.status} - ${r.statusText}`)));
@@ -481,7 +481,7 @@ async function get(args) {
 init_utils();
 async function hash(args, multicode = multicodes.RAW, internal = false) {
   const [filename] = args;
-  if (filename === void 0 || filename === "") {
+  if (!filename) {
     console.error("please pass in a file");
     Deno.exit(1);
   }
@@ -683,9 +683,9 @@ async function migrate(args) {
   const parsedArgs = flags.parse(args);
   const { from, to, out } = parsedArgs;
   const src = path.resolve(String(parsedArgs._[0]) ?? ".");
-  if (from === void 0) exit("missing argument: --from");
-  if (to === void 0) exit("missing argument: --to");
-  if (out === void 0) exit("missing argument: --out");
+  if (!from) exit("missing argument: --from");
+  if (!to) exit("missing argument: --to");
+  if (!out) exit("missing argument: --out");
   if (from === to) exit("arguments --from and --to must be different");
   let backendFrom;
   let backendTo;

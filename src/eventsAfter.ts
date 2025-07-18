@@ -34,7 +34,6 @@ export async function eventsAfter (args: string[]): Promise<void> {
 
 async function getMessage (hash: string): Promise<ReturnType<typeof JSON.parse>> {
   const value = await readString(hash)
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   if (!value) throw new Error(`no entry for ${hash}!`)
   return JSON.parse(value)
 }
@@ -69,7 +68,6 @@ async function getRemoteMessagesSince (src: string, contractID: string, sinceHei
   const response = await fetch(`${src}/eventsAfter/${contractID}/${sinceHeight}`)
   if (!response.ok) {
     // The response body may contain some useful error info if we got a Boom error response.
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     const bodyText = await response.text().catch(_ => '') || ''
     throw new Error(`failed network request to ${src}: ${response.status} - ${response.statusText} - '${bodyText}'`)
   }

@@ -7,7 +7,7 @@ import { createEntryFromFile, multicodes } from './utils.ts'
 
 export async function hash (args: string[], multicode: number = multicodes.RAW, internal = false): Promise<string> {
   const [filename] = args
-  if (filename === undefined || filename === '') {
+  if (!filename) {
     console.error('please pass in a file')
     Deno.exit(1)
   }

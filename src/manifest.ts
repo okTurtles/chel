@@ -22,15 +22,10 @@ export async function manifest (args: string[]): Promise<void> {
   const contractFile = contractFileRaw
   const parsedFilepath = path.parse(contractFile)
   const { name: contractFileName, base: contractBasename, dir: contractDir } = parsedFilepath
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   const name = parsedArgs.name || parsedArgs.n || contractFileName
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   const version = parsedArgs.version || parsedArgs.v || 'x'
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   const slim: string | undefined = (parsedArgs.slim || parsedArgs.s) as string | undefined
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/restrict-template-expressions
   const outFile: string = (parsedArgs.out as string) || path.join(contractDir, `${contractFileName}.${version}.manifest.json`)
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   if (!keyFile) exit('Missing signing key file')
 
   const signingKeyDescriptor = await readJsonFile(keyFile) as { privkey: string }
@@ -39,7 +34,6 @@ export async function manifest (args: string[]): Promise<void> {
   // Add all additional public keys in addition to the signing key
   const publicKeys = Array.from(new Set(
     [serializeKey(signingKey, false)]
-      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
       .concat(...await Promise.all(parsedArgs.key?.map(
         async (kf: unknown) => {
           if (typeof kf !== 'string' && typeof kf !== 'number') {
@@ -49,7 +43,6 @@ export async function manifest (args: string[]): Promise<void> {
           // @ts-expect-error: descriptor is unknown, ignoring type error
           const key = deserializeKey(descriptor.pubkey)
           if (key.type !== EDWARDS25519SHA512BATCH) {
-            // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
             exit(`Invalid key type ${key.type}; only ${EDWARDS25519SHA512BATCH} keys are supported.`)
           }
           return serializeKey(key, false)

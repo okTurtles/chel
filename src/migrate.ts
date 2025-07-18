@@ -11,10 +11,10 @@ export async function migrate (args: string[]): Promise<void> {
   const { from, to, out } = parsedArgs
   const src = path.resolve(String(parsedArgs._[0]) ?? '.')
 
-  if (from === undefined) exit('missing argument: --from')
-  if (to === undefined) exit('missing argument: --to')
-  if (out === undefined) exit('missing argument: --out')
-  if (from === to) exit('arguments --from and --to must be different')
+  if (!from) exit('missing argument: --from')
+  if (!to) exit('missing argument: --to')
+  if (!out) exit('missing argument: --out')
+  if (from === to) exit('arguments --from and --to must be different')  
 
   let backendFrom
   let backendTo
@@ -46,6 +46,5 @@ export async function migrate (args: string[]): Promise<void> {
       console.log(`[chel] Migrating... ${Math.round(numVisitedKeys / (numKeys / 10))}0% done`)
     }
   }
-  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/restrict-template-expressions
   numKeys && console.log(`[chel] ${colors.green('Migrated:')} ${numKeys} entries`)
 }

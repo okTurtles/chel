@@ -62,7 +62,7 @@ export async function getBackend (src: string, { type, create } = { type: '', cr
 
   // We first need to know the backend type and init options.
   let from = type
-  if (typeof from !== 'string' || from.trim() === '') {
+  if (!from) {
     // Attempt to auto-detect the backend type.
     if (await isDir(src)) from = 'fs'
     else if (await isFile(src)) from = 'sqlite'
@@ -122,8 +122,9 @@ export function isURL (arg: string): boolean {
 }
 
 export function isValidKey (key: string): boolean {
-  // Accept only printable ASCII except slash/backslash
-  return /^[\x20-\x7E]*$/.test(key) && !/[\\/]/.test(key)
+  // Disallow unprintable characters, slashes, and TAB.
+  // deno-lint-ignore no-control-regex
+  return !/[\x00-\x1f\x7f\t\\/]/.test(key)
 }
 
 export async function readRemoteData (src: string, key: string): Promise<Uint8Array> {
@@ -169,8 +170,9 @@ export async function shell (
   }
 
   if (code !== 0) {
-    const errMsg = decoder.decode(stderr).trim()
-    throw new Error('Command failed with exit code ' + String(code) + ': ' + String(errMsg))
+    throw new Error(
+      `Command failed with exit code ${code}: ${decoder.decode(stderr)}`
+    )
   }
 
   return decoder.decode(stdout).trim()
