@@ -37,23 +37,26 @@ export async function manifest (args: string[]): Promise<void> {
   const signingKey = deserializeKey(signingKeyDescriptor.privkey)
 
   // Add all additional public keys in addition to the signing key
-  const additionalKeys = parsedArgs.key as Array<string | number> | undefined
-
   const publicKeys = Array.from(new Set(
-    [serializeKey(signingKey, false)].concat(...await Promise.all(
-      (additionalKeys ?? []).map(async (kf) => {
-        if (typeof kf !== 'string' && typeof kf !== 'number') {
-          exit(`Invalid key file reference: ${String(kf)}`)
+    [serializeKey(signingKey, false)]
+      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+      .concat(...await Promise.all(parsedArgs.key?.map(
+        async (kf: unknown) => {
+          if (typeof kf !== 'string' && typeof kf !== 'number') {
+            exit(`Invalid key file reference: ${String(kf)}`)
+          }
+          const descriptor = await readJsonFile(String(kf))
+          // @ts-expect-error: descriptor is unknown, ignoring type error
+          const key = deserializeKey(descriptor.pubkey)
+          if (key.type !== EDWARDS25519SHA512BATCH) {
+            // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+            exit(`Invalid key type ${key.type}; only ${EDWARDS25519SHA512BATCH} keys are supported.`)
+          }
+          return serializeKey(key, false)
         }
-        const descriptor = await readJsonFile(String(kf)) as { pubkey: string }
-        const key = deserializeKey(descriptor.pubkey)
-        if (key.type !== EDWARDS25519SHA512BATCH) {
-          exit(`Invalid key type ${String(key.type)}; only ${String(EDWARDS25519SHA512BATCH)} keys are supported.`)
-        }
-        return serializeKey(key, false)
-      })
-    ))
+      ) || []))
   ))
+
   const body: { [key: string]: unknown } = {
     name,
     version,
