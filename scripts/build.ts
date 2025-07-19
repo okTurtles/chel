@@ -36,11 +36,11 @@ const options = {
   splitting: false
 }
 const result = await esbuild.build(options)
-if ((result.errors as esbuild.Message[]).length > 0) {
+if (result.errors.length) {
   console.error(colors.red('build error:'), result.errors)
   esbuild.stop()
   Deno.exit(1)
-} else if ((result.warnings as esbuild.Message[]).length > 0) {
+} else if (result.warnings.length) {
   console.warn(colors.yellow('build warnings:'), result.warnings)
 }
 console.log(colors.green('built:'), options.outdir)

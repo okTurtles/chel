@@ -31,7 +31,7 @@ export async function initStorage (options: Record<string, unknown> = {}): Promi
   // Important: keep this in sync with the schema used in GroupIncome.
   db.run('CREATE TABLE IF NOT EXISTS Data(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)')
   dbPath = filepath
-  if (options.internal !== true) {
+  if (!options.internal) {
     console.log('Connected to the %s SQLite database.', filepath)
   }
   iterKeysStatement = db.prepare('SELECT key FROM Data')
