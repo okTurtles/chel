@@ -14,7 +14,7 @@ let writeStatement: sqlite.Statement
 export let dataFolder = ''
 
 // deno-lint-ignore require-await
-export async function initStorage (options: Record<string, unknown> = {}): Promise<void> {
+export async function initStorage(options: Record<string, unknown> = {}): Promise<void> {
   const { dirname, filename } = options
   dataFolder = path.resolve(dirname as string)
   const filepath = path.join(dataFolder, filename as string)
@@ -42,31 +42,31 @@ export async function initStorage (options: Record<string, unknown> = {}): Promi
   writeStatement = db.prepare('REPLACE INTO Data(key, value) VALUES(?, ?)')
 }
 
-export function count (): number {
+export function count(): number {
   return db.prepare('SELECT COUNT(*) FROM Data').all()[0][0]
 }
 
 // deno-lint-ignore require-await
-export async function readData (key: string): Promise<Uint8Array | string | undefined> {
+export async function readData(key: string): Promise<Uint8Array | string | undefined> {
   // For some reason `[null]` is returned when the value is an empty Uint8Array.
   const maybeRow = readStatement.all([key])[0]
   return maybeRow === undefined ? undefined : maybeRow[0] ?? new Uint8Array()
 }
 
-export async function * iterKeys (): AsyncGenerator<string> {
+export async function * iterKeys(): AsyncGenerator<string> {
   for (const row of iterKeysStatement.iter()) {
     yield row[0]
   }
 }
 
 // deno-lint-ignore require-await
-export async function writeData (key: string, value: Uint8Array | string): Promise<void> {
+export async function writeData(key: string, value: Uint8Array | string): Promise<void> {
   checkKey(key)
   writeStatement.run([key, value])
 }
 
 // deno-lint-ignore require-await
-export async function writeDataOnce (key: string, value: Uint8Array | string): Promise<void> {
+export async function writeDataOnce(key: string, value: Uint8Array | string): Promise<void> {
   checkKey(key)
   writeOnceStatement.run([key, value])
 }

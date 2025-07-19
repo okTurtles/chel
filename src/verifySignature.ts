@@ -17,11 +17,11 @@ interface Manifest {
   signature: ManifestSignature
 }
 
-function isExternalKeyDescriptor (obj: unknown): obj is ExternalKeyDescriptor {
+function isExternalKeyDescriptor(obj: unknown): obj is ExternalKeyDescriptor {
   return obj !== null && typeof obj === 'object' && typeof (obj as Record<string, unknown>).pubkey === 'string'
 }
 
-function isManifest (obj: unknown): obj is Manifest {
+function isManifest(obj: unknown): obj is Manifest {
   const maybe = obj as Record<string, unknown>
   return (
     obj !== null &&
@@ -32,7 +32,7 @@ function isManifest (obj: unknown): obj is Manifest {
   )
 }
 
-export const verifySignature = async (args: string[], internal = false): Promise<void> => {
+export const verifySignature = async(args: string[], internal = false): Promise<void> => {
   await revokeNet()
   const parsedArgs = flags.parse(args)
   const [manifestFile] = parsedArgs._

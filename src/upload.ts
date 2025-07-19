@@ -5,7 +5,7 @@ import { type Entry, createEntryFromFile, isDir, multicodes, revokeNet } from '.
 
 // chel upload <url-or-dir-or-sqlitedb> <file1> [<file2> [<file3> ...]]
 
-export async function upload (args: string[], internal = false): Promise<Array<[string, string]>> {
+export async function upload(args: string[], internal = false): Promise<Array<[string, string]>> {
   const [urlOrDirOrSqliteFile, ...files] = args
   if (files.length === 0) throw new Error('missing files!')
   const uploaded: Array<[string, string]> = []
@@ -21,17 +21,17 @@ export async function upload (args: string[], internal = false): Promise<Array<[
       // The `{type}|` prefix is used to determine which kind of CID is needed
       if (filepath_[1] !== '|') throw new Error('Invalid path format')
       switch (filepath_[0]) {
-        case 'r':
-          // raw file type
-          break
-        case 'm':
-          type = multicodes.SHELTER_CONTRACT_MANIFEST
-          break
-        case 't':
-          type = multicodes.SHELTER_CONTRACT_TEXT
-          break
-        default:
-          throw new Error('Unknown file type: ' + filepath_[0])
+      case 'r':
+        // raw file type
+        break
+      case 'm':
+        type = multicodes.SHELTER_CONTRACT_MANIFEST
+        break
+      case 't':
+        type = multicodes.SHELTER_CONTRACT_TEXT
+        break
+      default:
+        throw new Error('Unknown file type: ' + filepath_[0])
       }
       filepath = filepath_.slice(2)
     }
@@ -47,7 +47,7 @@ export async function upload (args: string[], internal = false): Promise<Array<[
   return uploaded
 }
 
-async function uploadEntryToURL ([cid, buffer]: Entry, url: string): Promise<string> {
+async function uploadEntryToURL([cid, buffer]: Entry, url: string): Promise<string> {
   const form = new FormData()
   form.append('hash', cid)
   form.append('data', new Blob([buffer]))
@@ -61,14 +61,14 @@ async function uploadEntryToURL ([cid, buffer]: Entry, url: string): Promise<str
     })
 }
 
-async function uploadEntryToDir ([cid, buffer]: Entry, dir: string): Promise<string> {
+async function uploadEntryToDir([cid, buffer]: Entry, dir: string): Promise<string> {
   await revokeNet()
   const destination = path.join(dir, cid)
   await Deno.writeFile(destination, buffer)
   return destination
 }
 
-async function uploadEntryToSQLite ([cid, buffer]: Entry, sqlitedb: string): Promise<string> {
+async function uploadEntryToSQLite([cid, buffer]: Entry, sqlitedb: string): Promise<string> {
   await revokeNet()
   const { initStorage, writeData } = await import('./database-sqlite.ts')
   await initStorage({ dirname: path.dirname(sqlitedb), filename: path.basename(sqlitedb) })
@@ -78,8 +78,8 @@ async function uploadEntryToSQLite ([cid, buffer]: Entry, sqlitedb: string): Pro
 
 type ResponseTypeFn = 'arrayBuffer' | 'blob' | 'clone' | 'formData' | 'json' | 'text'
 
-export function handleFetchResult (type: ResponseTypeFn): ((r: Response) => unknown) {
-  return async function (r: Response) {
+export function handleFetchResult(type: ResponseTypeFn): ((r: Response) => unknown) {
+  return async function(r: Response) {
     if (!r.ok) throw new Error(`${r.status}: ${r.statusText}`)
     return await r[type]() as unknown
   }

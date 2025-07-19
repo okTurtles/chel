@@ -2,13 +2,13 @@
 
 import { shell } from '~/utils.ts'
 
-function $ (command: string) {
+function $(command: string) {
   return shell(command, { printOutput: true })
 }
 
 const { default: { version } } = await import('../package.json', { with: { type: 'json' } }) as { default: { version: string } }
 
-export async function compile (): Promise<void> {
+export async function compile(): Promise<void> {
   const archs = ['x86_64-unknown-linux-gnu', 'aarch64-unknown-linux-gnu', 'x86_64-pc-windows-msvc', 'x86_64-apple-darwin', 'aarch64-apple-darwin']
   for (const arch of archs) {
     const dir = `./dist/tmp/${arch}`

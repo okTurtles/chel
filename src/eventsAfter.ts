@@ -9,7 +9,7 @@ let backend: Backend
 const defaultLimit = 50
 const headPrefix = 'head='
 
-export async function eventsAfter (args: string[]): Promise<void> {
+export async function eventsAfter(args: string[]): Promise<void> {
   const parsedArgs = flags.parse(args)
 
   const limit = Number(parsedArgs.limit ?? defaultLimit)
@@ -32,13 +32,13 @@ export async function eventsAfter (args: string[]): Promise<void> {
   }
 }
 
-async function getMessage (hash: string): Promise<ReturnType<typeof JSON.parse>> {
+async function getMessage(hash: string): Promise<ReturnType<typeof JSON.parse>> {
   const value = await readString(hash)
   if (!value) throw new Error(`no entry for ${hash}!`)
   return JSON.parse(value)
 }
 
-async function getMessagesSince (src: string, contractID: string, sinceHeight: number, limit: number): Promise<string[]> {
+async function getMessagesSince(src: string, contractID: string, sinceHeight: number, limit: number): Promise<string[]> {
   backend = await getBackend(src)
 
   const contractHEAD: string | undefined = await readString(`${headPrefix}${contractID}`)
@@ -64,7 +64,7 @@ async function getMessagesSince (src: string, contractID: string, sinceHeight: n
   return entries.reverse().slice(0, limit)
 }
 
-async function getRemoteMessagesSince (src: string, contractID: string, sinceHeight: number, limit: number): Promise<string[]> {
+async function getRemoteMessagesSince(src: string, contractID: string, sinceHeight: number, limit: number): Promise<string[]> {
   const response = await fetch(`${src}/eventsAfter/${contractID}/${sinceHeight}`)
   if (!response.ok) {
     // The response body may contain some useful error info if we got a Boom error response.
@@ -78,7 +78,7 @@ async function getRemoteMessagesSince (src: string, contractID: string, sinceHei
   return b64messages.map(b64str => JSON.parse(new TextDecoder().decode(base64.decodeBase64(b64str))))
 }
 
-async function readString (key: string): Promise<string | undefined> {
+async function readString(key: string): Promise<string | undefined> {
   const rv = await backend.readData(key)
   if (rv === undefined) return undefined
   return typeof rv === 'string' ? rv : new TextDecoder().decode(rv)
