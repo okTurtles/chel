@@ -36,7 +36,7 @@ export default [
       'arrow-spacing': ['error', { before: true, after: true }],
       'no-trailing-spaces': ['error'],
       'space-unary-ops': ['error', { words: true, nonwords: false }],
-      'indent': ['error', 2],
+      'indent': ['error', 2, { SwitchCase: 1 }],
       'eol-last': ['error', 'always'],
       'no-multiple-empty-lines': ['error', { max: 1 }],
       // Disable all other noisy rules:

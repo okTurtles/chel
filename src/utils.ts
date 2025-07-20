@@ -71,9 +71,9 @@ export async function getBackend (src: string, { type, create } = { type: '', cr
 
   let initOptions
   switch (from) {
-  case 'fs': initOptions = fsOptions; break
-  case 'sqlite': initOptions = sqliteOptions; break
-  default: throw new Error(`unknown backend type: "${from}"`)
+    case 'fs': initOptions = fsOptions; break
+    case 'sqlite': initOptions = sqliteOptions; break
+    default: throw new Error(`unknown backend type: "${from}"`)
   }
 
   const backend: Backend = backends[from]

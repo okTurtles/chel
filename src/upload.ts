@@ -21,17 +21,17 @@ export async function upload (args: string[], internal = false): Promise<Array<[
       // The `{type}|` prefix is used to determine which kind of CID is needed
       if (filepath_[1] !== '|') throw new Error('Invalid path format')
       switch (filepath_[0]) {
-      case 'r':
+        case 'r':
         // raw file type
-        break
-      case 'm':
-        type = multicodes.SHELTER_CONTRACT_MANIFEST
-        break
-      case 't':
-        type = multicodes.SHELTER_CONTRACT_TEXT
-        break
-      default:
-        throw new Error('Unknown file type: ' + filepath_[0])
+          break
+        case 'm':
+          type = multicodes.SHELTER_CONTRACT_MANIFEST
+          break
+        case 't':
+          type = multicodes.SHELTER_CONTRACT_TEXT
+          break
+        default:
+          throw new Error('Unknown file type: ' + filepath_[0])
       }
       filepath = filepath_.slice(2)
     }
@@ -55,7 +55,7 @@ async function uploadEntryToURL ([cid, buffer]: Entry, url: string): Promise<str
     .then(handleFetchResult('text'))
     .then(r => {
       if (r !== `/file/${cid}`) {
-        throw new Error(`server returned bad URL: ${String(r)}`)
+        throw new Error(`server returned bad URL: ${r}`)
       }
       return `${url}${r}`
     })

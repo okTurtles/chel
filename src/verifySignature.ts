@@ -69,7 +69,7 @@ export const verifySignature = async (args: string[], internal = false): Promise
     return keyId(k) === manifest.signature.keyId
   })
 
-  if (externalKeyDescriptor !== null) {
+  if (externalKeyDescriptor) {
     const id = keyId(externalKeyDescriptor.pubkey)
     if (manifest.signature.keyId !== id) {
       exit(`Invalid manifest signature: key ID doesn't match the provided key file. Expected ${String(id)} but got ${String(manifest.signature.keyId)}.`, internal)
