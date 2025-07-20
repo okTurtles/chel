@@ -57,10 +57,10 @@ export default [
       '@typescript-eslint/init-declarations': 'off',
       '@typescript-eslint/prefer-destructuring': 'off',
       '@typescript-eslint/prefer-nullish-coalescing': 'off',
-      '@typescript-eslint/no-unnecessary-type-assertion': 'off',
       '@typescript-eslint/no-unnecessary-condition': 'off', 
       '@typescript-eslint/no-unnecessary-type-conversion': 'off',
       '@typescript-eslint/require-await': 'off',
+      // TODO: figure out how to enable this while allowing throw new Deno.errors.*
       '@typescript-eslint/only-throw-error': 'off',
       '@typescript-eslint/consistent-indexed-object-style': 'off',
       '@typescript-eslint/use-unknown-in-catch-callback-variable': 'off',
