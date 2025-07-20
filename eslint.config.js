@@ -26,7 +26,7 @@ export default [
       // ts-standard relevant rules:
       'semi': ['error', 'never'],
       'quotes': ['error', 'single'],
-      'space-before-function-paren': ['error', 'never'],
+      'space-before-function-paren': ['error', 'always'],
       'space-in-parens': ['error', 'never'],
       'space-before-blocks': ['error', 'always'],
       'keyword-spacing': ['error', { before: true, after: true }],

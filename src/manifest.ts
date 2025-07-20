@@ -11,7 +11,7 @@ import { exit, multicodes, readJsonFile, revokeNet } from './utils.ts'
 
 // import { writeAllSync } from "https://deno.land/std@0.141.0/streams/mod.ts"
 
-export async function manifest(args: string[]): Promise<void> {
+export async function manifest (args: string[]): Promise<void> {
   await revokeNet()
   const parsedArgs = flags.parse(args, { collect: ['key'], alias: { key: 'k' } })
   const [keyFileRaw, contractFileRaw] = parsedArgs._
@@ -35,7 +35,7 @@ export async function manifest(args: string[]): Promise<void> {
   const publicKeys = Array.from(new Set(
     [serializeKey(signingKey, false)]
       .concat(...await Promise.all(parsedArgs.key?.map(
-        async(kf: unknown) => {
+        async (kf: unknown) => {
           if (typeof kf !== 'string' && typeof kf !== 'number') {
             exit(`Invalid key file reference: ${String(kf)}`)
           }

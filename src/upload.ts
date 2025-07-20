@@ -5,7 +5,7 @@ import { type Entry, createEntryFromFile, isDir, multicodes, revokeNet } from '.
 
 // chel upload <url-or-dir-or-sqlitedb> <file1> [<file2> [<file3> ...]]
 
-export async function upload(args: string[], internal = false): Promise<Array<[string, string]>> {
+export async function upload (args: string[], internal = false): Promise<Array<[string, string]>> {
   const [urlOrDirOrSqliteFile, ...files] = args
   if (files.length === 0) throw new Error('missing files!')
   const uploaded: Array<[string, string]> = []
@@ -47,7 +47,7 @@ export async function upload(args: string[], internal = false): Promise<Array<[s
   return uploaded
 }
 
-async function uploadEntryToURL([cid, buffer]: Entry, url: string): Promise<string> {
+async function uploadEntryToURL ([cid, buffer]: Entry, url: string): Promise<string> {
   const form = new FormData()
   form.append('hash', cid)
   form.append('data', new Blob([buffer]))
@@ -61,14 +61,14 @@ async function uploadEntryToURL([cid, buffer]: Entry, url: string): Promise<stri
     })
 }
 
-async function uploadEntryToDir([cid, buffer]: Entry, dir: string): Promise<string> {
+async function uploadEntryToDir ([cid, buffer]: Entry, dir: string): Promise<string> {
   await revokeNet()
   const destination = path.join(dir, cid)
   await Deno.writeFile(destination, buffer)
   return destination
 }
 
-async function uploadEntryToSQLite([cid, buffer]: Entry, sqlitedb: string): Promise<string> {
+async function uploadEntryToSQLite ([cid, buffer]: Entry, sqlitedb: string): Promise<string> {
   await revokeNet()
   const { initStorage, writeData } = await import('./database-sqlite.ts')
   await initStorage({ dirname: path.dirname(sqlitedb), filename: path.basename(sqlitedb) })
@@ -78,8 +78,8 @@ async function uploadEntryToSQLite([cid, buffer]: Entry, sqlitedb: string): Prom
 
 type ResponseTypeFn = 'arrayBuffer' | 'blob' | 'clone' | 'formData' | 'json' | 'text'
 
-export function handleFetchResult(type: ResponseTypeFn): ((r: Response) => unknown) {
-  return async function(r: Response) {
+export function handleFetchResult (type: ResponseTypeFn): ((r: Response) => unknown) {
+  return async function (r: Response) {
     if (!r.ok) throw new Error(`${r.status}: ${r.statusText}`)
     return await r[type]() as unknown
   }

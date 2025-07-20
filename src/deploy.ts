@@ -14,7 +14,7 @@ interface ContractBody {
   contractSlim?: { file: string }
 }
 
-export async function deploy(args: string[]): Promise<void> {
+export async function deploy (args: string[]): Promise<void> {
   const [urlOrDirOrSqliteFile, ...manifests] = args
   if (manifests.length === 0) throw new Error('missing url or manifests!')
   const toUpload = []

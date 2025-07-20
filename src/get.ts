@@ -11,7 +11,7 @@ chel get https://url.com mygreatlongkey > file.png
 import { flags, writeAll } from './deps.ts'
 import { exit, getBackend, isURL, readRemoteData } from './utils.ts'
 
-export async function get(args: string[]): Promise<void> {
+export async function get (args: string[]): Promise<void> {
   const parsedArgs = flags.parse(args)
 
   const [urlOrLocalPath, key] = parsedArgs._.map(String)
