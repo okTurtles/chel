@@ -32,7 +32,7 @@ export async function * iterKeys (): AsyncGenerator<string> {
   for await (const entry of Deno.readDir(dataFolder)) {
     // Skip subfolders and symlinks.
     if (entry.isFile) {
-      yield entry.name;
+      yield entry.name
     }
   }
 }
