@@ -340,7 +340,7 @@ async function uploadEntryToURL([cid, buffer], url) {
   form.append("data", new Blob([buffer]));
   return await fetch(`${url}/dev-file`, { method: "POST", body: form }).then(handleFetchResult("text")).then((r) => {
     if (r !== `/file/${cid}`) {
-      throw new Error(`server returned bad URL: ${String(r)}`);
+      throw new Error(`server returned bad URL: ${r}`);
     }
     return `${url}${r}`;
   });
@@ -760,7 +760,7 @@ var verifySignature2 = async (args, internal = false) => {
   const signingKey = body.signingKeys?.find((k) => {
     return keyId(k) === manifest2.signature.keyId;
   });
-  if (externalKeyDescriptor !== null) {
+  if (externalKeyDescriptor) {
     const id = keyId(externalKeyDescriptor.pubkey);
     if (manifest2.signature.keyId !== id) {
       exit(`Invalid manifest signature: key ID doesn't match the provided key file. Expected ${String(id)} but got ${String(manifest2.signature.keyId)}.`, internal);
