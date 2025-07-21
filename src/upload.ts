@@ -5,7 +5,7 @@ import { type Entry, createEntryFromFile, isDir, multicodes, revokeNet } from '.
 
 // chel upload <url-or-dir-or-sqlitedb> <file1> [<file2> [<file3> ...]]
 
-export async function upload (args: string[], internal = false): Promise<Array<[string, string]>> {
+export async function upload (args: string[], internal = false): Promise<[string, string][]> {
   const [urlOrDirOrSqliteFile, ...files] = args
   if (files.length === 0) throw new Error('missing files!')
   const uploaded: Array<[string, string]> = []
@@ -81,6 +81,6 @@ type ResponseTypeFn = 'arrayBuffer' | 'blob' | 'clone' | 'formData' | 'json' | '
 export function handleFetchResult (type: ResponseTypeFn): ((r: Response) => unknown) {
   return async function (r: Response) {
     if (!r.ok) throw new Error(`${r.status}: ${r.statusText}`)
-    return await r[type]() as unknown
+    return await r[type]()
   }
 }

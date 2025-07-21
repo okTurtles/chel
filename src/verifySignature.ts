@@ -24,6 +24,7 @@ function isExternalKeyDescriptor (obj: unknown): obj is ExternalKeyDescriptor {
 function isManifest (obj: unknown): obj is Manifest {
   const maybe = obj as Record<string, unknown>
   return (
+    typeof obj === 'object' &&
     obj !== null &&
     typeof maybe.head === 'string' &&
     typeof maybe.body === 'string' &&
@@ -41,14 +42,20 @@ export const verifySignature = async (args: string[], internal = false): Promise
     typeof keyFile === 'string' ? readJsonFile(keyFile) : null,
     readJsonFile(manifestFile)
   ])
-  const externalKeyDescriptor = externalKeyDescriptorRaw as ExternalKeyDescriptor | null
-  const manifest = manifestRaw as Manifest
-  if (keyFile && (!externalKeyDescriptorRaw || !isExternalKeyDescriptor(externalKeyDescriptorRaw))) {
-    exit('Public key missing from key file', internal)
+
+  let externalKeyDescriptor: ExternalKeyDescriptor | undefined
+  if (keyFile && externalKeyDescriptorRaw) {
+    if (!isExternalKeyDescriptor(externalKeyDescriptorRaw)) {
+      return exit('Public key missing from key file', internal)
+    }
+    externalKeyDescriptor = externalKeyDescriptorRaw
   }
+
   if (!isManifest(manifestRaw)) {
-    exit('Invalid manifest: missing signature key ID', internal)
+    return exit('Invalid manifest: missing signature key ID', internal)
   }
+  const manifest = manifestRaw
+
   if (!manifest.head) {
     exit('Invalid manifest: missing head', internal)
   }
@@ -72,7 +79,7 @@ export const verifySignature = async (args: string[], internal = false): Promise
   if (externalKeyDescriptor) {
     const id = keyId(externalKeyDescriptor.pubkey)
     if (manifest.signature.keyId !== id) {
-      exit(`Invalid manifest signature: key ID doesn't match the provided key file. Expected ${String(id)} but got ${String(manifest.signature.keyId)}.`, internal)
+      exit(`Invalid manifest signature: key ID doesn't match the provided key file. Expected ${id} but got ${manifest.signature.keyId}.`, internal)
     }
   }
 

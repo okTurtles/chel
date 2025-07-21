@@ -11,6 +11,14 @@ import { exit, multicodes, readJsonFile, revokeNet } from './utils.ts'
 
 // import { writeAllSync } from "https://deno.land/std@0.141.0/streams/mod.ts"
 
+interface SigningKeyDescriptor {
+  privkey: string
+}
+
+function isSigningKeyDescriptor (obj: unknown): obj is SigningKeyDescriptor {
+  return obj !== null && typeof obj === 'object' && typeof (obj as Record<string, unknown>).privkey === 'string'
+}
+
 export async function manifest (args: string[]): Promise<void> {
   await revokeNet()
   const parsedArgs = flags.parse(args, { collect: ['key'], alias: { key: 'k' } })
@@ -28,7 +36,11 @@ export async function manifest (args: string[]): Promise<void> {
   const outFile: string = (parsedArgs.out as string) || path.join(contractDir, `${contractFileName}.${version}.manifest.json`)
   if (!keyFile) exit('Missing signing key file')
 
-  const signingKeyDescriptor = await readJsonFile(keyFile) as { privkey: string }
+  const signingKeyDescriptorRaw = await readJsonFile(keyFile)
+  if (!isSigningKeyDescriptor(signingKeyDescriptorRaw)) {
+    exit('Invalid signing key file: missing or invalid privkey', true)
+  }
+  const signingKeyDescriptor = signingKeyDescriptorRaw
   const signingKey = deserializeKey(signingKeyDescriptor.privkey)
 
   // Add all additional public keys in addition to the signing key

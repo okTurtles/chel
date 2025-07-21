@@ -1,3 +1,3 @@
-declare namespace __build__ {
-  const VERSION: string
+declare const __build__: {
+  VERSION: string
 }

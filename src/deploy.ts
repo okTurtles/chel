@@ -4,15 +4,16 @@
 
 import { path } from './deps.ts'
 import { upload } from './upload.ts'
+import { z } from 'zod'
 
 // Prefixes to use to select the correct CID to use
 const CONTRACT_TEXT_PREFIX = 't|'
 const CONTRACT_MANIFEST_PREFIX = 'm|'
 
-interface ContractBody {
-  contract: { file: string }
-  contractSlim?: { file: string }
-}
+const ContractBodySchema = z.object({
+  contract: z.object({ file: z.string() }),
+  contractSlim: z.object({ file: z.string() }).optional(),
+})
 
 export async function deploy (args: string[]): Promise<void> {
   const [urlOrDirOrSqliteFile, ...manifests] = args
@@ -20,7 +21,7 @@ export async function deploy (args: string[]): Promise<void> {
   const toUpload = []
   for (const manifestPath of manifests) {
     const json = JSON.parse(Deno.readTextFileSync(manifestPath)) as { body: string }
-    const body = JSON.parse(json.body) as ContractBody
+    const body = ContractBodySchema.parse(JSON.parse(json.body))
     const dirname = path.dirname(manifestPath)
     toUpload.push(CONTRACT_TEXT_PREFIX + path.join(dirname, body.contract.file))
     if (body.contractSlim) {
