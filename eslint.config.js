@@ -40,6 +40,7 @@ export default [
       'eol-last': ['error', 'always'],
       'no-multiple-empty-lines': ['error', { max: 1 }],
       // Disable all other noisy rules:
+      '@typescript-eslint/promise-function-async': 'off',
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/strict-boolean-expressions': 'off',
       '@typescript-eslint/restrict-template-expressions': 'off',
@@ -57,7 +58,7 @@ export default [
       '@typescript-eslint/init-declarations': 'off',
       '@typescript-eslint/prefer-destructuring': 'off',
       '@typescript-eslint/prefer-nullish-coalescing': 'off',
-      '@typescript-eslint/no-unnecessary-condition': 'off', 
+      '@typescript-eslint/no-unnecessary-condition': 'off',
       '@typescript-eslint/no-unnecessary-type-conversion': 'off',
       '@typescript-eslint/require-await': 'off',
       // TODO: figure out how to enable this while allowing throw new Deno.errors.*

@@ -50,7 +50,7 @@ async function getMessagesSince (src: string, contractID: string, sinceHeight: n
   let currentHeight: number
   while (true) {
     const entry = await getMessage(currentHEAD)
-    if (entry === undefined) {
+    if (!entry) {
       throw new Deno.errors.NotFound(`entry ${currentHEAD as string} no longer exists.`)
     }
     const head = JSON.parse(entry.head)

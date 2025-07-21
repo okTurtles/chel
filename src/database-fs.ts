@@ -37,8 +37,7 @@ export async function * iterKeys (): AsyncGenerator<string> {
   }
 }
 
-// deno-lint-ignore require-await
-export async function readData (key: string): Promise<Uint8Array | string | void> {
+export function readData (key: string): Promise<Uint8Array | string | void> {
   checkKey(key)
   return Deno.readFile(path.join(dataFolder, key)).catch(() => undefined)
 }
