@@ -1,11 +1,11 @@
 {
   "tasks": {
-    "chel": "deno task build && deno run --allow-net --allow-read=. --allow-write=. build/main.js",
+    "chel": "deno task lint && deno task build && deno run --allow-net --allow-read=. --allow-write=. build/main.js",
     "lint": "npx eslint ./src ./scripts",
     "compile": "deno run --allow-run --allow-read=. --allow-write=./dist scripts/compile.ts",
     "build": "deno run --node-modules-dir --allow-run --allow-read --allow-env --allow-write=./build --allow-net scripts/build.ts",
-    "dist": "deno lint . && deno task build && deno task compile",
-    "test": "deno test --allow-read --allow-write --allow-env --allow-ffi --allow-net"
+    "dist": "deno lint . && deno task lint && deno task build && deno task compile",
+    "test": "deno task lint && deno test --allow-read --allow-write --allow-env --allow-ffi --allow-net"
   },
   "imports": {
     "~/": "./src/",
