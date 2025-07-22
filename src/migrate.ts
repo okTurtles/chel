@@ -4,7 +4,7 @@
 import { colors, flags, path } from './deps.ts'
 import { exit, getBackend, isNotHashKey, isValidKey, revokeNet } from './utils.ts'
 
-export async function migrate (args: string[]) {
+export async function migrate (args: string[]): Promise<void> {
   await revokeNet()
   const parsedArgs = flags.parse(args)
 

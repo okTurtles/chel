@@ -41,7 +41,7 @@ async function getMessage (hash: string): Promise<ReturnType<typeof JSON.parse>>
 async function getMessagesSince (src: string, contractID: string, sinceHeight: number, limit: number): Promise<string[]> {
   backend = await getBackend(src)
 
-  const contractHEAD: string | void = await readString(`${headPrefix}${contractID}`)
+  const contractHEAD: string | undefined = await readString(`${headPrefix}${contractID}`)
   if (contractHEAD === undefined) {
     throw new Deno.errors.NotFound(`contract ${contractID} doesn't exist!`)
   }
@@ -78,7 +78,7 @@ async function getRemoteMessagesSince (src: string, contractID: string, sinceHei
   return b64messages.map(b64str => JSON.parse(new TextDecoder().decode(base64.decodeBase64(b64str))))
 }
 
-async function readString (key: string): Promise<string | void> {
+async function readString (key: string): Promise<string | undefined> {
   const rv = await backend.readData(key)
   if (rv === undefined) return undefined
   return typeof rv === 'string' ? rv : new TextDecoder().decode(rv)

@@ -1,8 +1,7 @@
-import { colors, flags } from './deps.ts'
+import { colors, flags, EDWARDS25519SHA512BATCH, keygen as cryptoKeygen, keyId, serializeKey } from './deps.ts'
 import { revokeNet } from './utils.ts'
-import { EDWARDS25519SHA512BATCH, keygen as cryptoKeygen, keyId, serializeKey } from './lib/crypto.ts'
 
-export const keygen = async (args: string[]) => {
+export const keygen = async (args: string[]): Promise<void> => {
   await revokeNet()
   const parsedArgs = flags.parse(args)
   const key = cryptoKeygen(EDWARDS25519SHA512BATCH)

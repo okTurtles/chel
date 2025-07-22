@@ -133,11 +133,11 @@ export async function readRemoteData (src: string, key: string): Promise<Uint8Ar
   return new Uint8Array(buffer)
 }
 
-export async function revokeNet () {
+export async function revokeNet (): Promise<void> {
   await Deno.permissions.revoke({ name: 'net' })
 }
 
-export const readJsonFile = async (file: unknown) => {
+export const readJsonFile = async (file: unknown): Promise<unknown> => {
   const contents = await Deno.readTextFile(path.resolve(String(file)))
   return JSON.parse(contents)
 }

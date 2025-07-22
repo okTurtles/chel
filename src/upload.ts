@@ -5,10 +5,10 @@ import { type Entry, createEntryFromFile, isDir, multicodes, revokeNet } from '.
 
 // chel upload <url-or-dir-or-sqlitedb> <file1> [<file2> [<file3> ...]]
 
-export async function upload (args: string[], internal = false) {
+export async function upload (args: string[], internal = false): Promise<[string, string][]> {
   const [urlOrDirOrSqliteFile, ...files] = args
   if (files.length === 0) throw new Error('missing files!')
-  const uploaded = []
+  const uploaded: Array<[string, string]> = []
   const uploaderFn = await isDir(urlOrDirOrSqliteFile)
     ? uploadEntryToDir
     : urlOrDirOrSqliteFile.endsWith('.db')
@@ -22,7 +22,7 @@ export async function upload (args: string[], internal = false) {
       if (filepath_[1] !== '|') throw new Error('Invalid path format')
       switch (filepath_[0]) {
         case 'r':
-          // raw file type
+        // raw file type
           break
         case 'm':
           type = multicodes.SHELTER_CONTRACT_MANIFEST
@@ -71,8 +71,8 @@ async function uploadEntryToDir ([cid, buffer]: Entry, dir: string): Promise<str
 async function uploadEntryToSQLite ([cid, buffer]: Entry, sqlitedb: string): Promise<string> {
   await revokeNet()
   const { initStorage, writeData } = await import('./database-sqlite.ts')
-  initStorage({ dirname: path.dirname(sqlitedb), filename: path.basename(sqlitedb) })
-  writeData(cid, buffer)
+  await initStorage({ dirname: path.dirname(sqlitedb), filename: path.basename(sqlitedb) })
+  await writeData(cid, buffer)
   return cid
 }
 

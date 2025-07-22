@@ -5,7 +5,9 @@
       "strict": true,
       "esModuleInterop": true,
       "skipLibCheck": true,
-      "forceConsistentCasingInFileNames": true
+      "forceConsistentCasingInFileNames": true,
+      "allowImportingTsExtensions": true,
+      "noEmit": true
     },
     "include": ["./src/**/*", "./scripts/*"],
     "exclude": ["node_modules", "vendor/", "dist/", "build/", "test/assets/"]

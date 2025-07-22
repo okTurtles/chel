@@ -20,8 +20,10 @@ export async function clear (): Promise<void> {
 
 export async function count (): Promise<number> {
   let n = 0
-  for await (const _entry of Deno.readDir(dataFolder)) {
-    n++
+  for await (const entry of Deno.readDir(dataFolder)) {
+    if (entry.isFile) {
+      n++
+    }
   }
   return n
 }
@@ -35,11 +37,9 @@ export async function * iterKeys (): AsyncGenerator<string> {
   }
 }
 
-export async function readData (key: string): Promise<Uint8Array | string | void> {
-  // Necessary here to thwart path traversal attacks.
+export function readData (key: string): Promise<Uint8Array | string | void> {
   checkKey(key)
-  return await Deno.readFile(path.join(dataFolder, key))
-    .catch(_err => undefined)
+  return Deno.readFile(path.join(dataFolder, key)).catch(() => undefined)
 }
 
 export async function writeData (key: string, value: Uint8Array | string): Promise<void> {
