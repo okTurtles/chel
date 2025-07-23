@@ -1,7 +1,7 @@
 {
   "tasks": {
     "chel": "deno task lint && deno task build && deno run --allow-net --allow-read=. --allow-write=. build/main.js",
-    "lint": "npx eslint ./src ./scripts",
+    "lint": "deno run --allow-env --allow-read --allow-sys --deny-sys=\"networkInterfaces\" npm:eslint@9.31.0 ./src ./scripts",
     "compile": "deno run --allow-run --allow-read=. --allow-write=./dist scripts/compile.ts",
     "build": "deno run --node-modules-dir --allow-run --allow-read --allow-env --allow-write=./build --allow-net scripts/build.ts",
     "dist": "deno lint . && deno task lint && deno task build && deno task compile",
