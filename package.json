@@ -20,7 +20,7 @@
     "scripts/**/*"
   ],
   "dependencies": {
-    "axios": "0.27.2",
+    "axios": "0.30.0",
     "rimraf": "3.0.2",
     "tar": "6.1.11",
     "zod": "4.0.5"
