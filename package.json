@@ -22,7 +22,7 @@
   "dependencies": {
     "axios": "0.27.2",
     "rimraf": "3.0.2",
-    "tar": "6.1.11",
+    "tar": "6.2.1",
     "zod": "4.0.5"
   },
   "devDependencies": {
