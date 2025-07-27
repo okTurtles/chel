@@ -7,8 +7,18 @@
       "skipLibCheck": true,
       "forceConsistentCasingInFileNames": true,
       "allowImportingTsExtensions": true,
-      "noEmit": true
+      "noEmit": true,
+      "moduleResolution": "node",
+      "baseUrl": ".",
+      "paths": {
+        "@/*": ["./src/*"],
+        "@components/*": ["./src/serve/dashboard/views/components/*"],
+        "@containers/*": ["./src/serve/dashboard/views/containers/*"],
+        "@common/*": ["./src/common/*"],
+        "~/*": ["./src/*"]
+      },
+      "types": ["node"]
     },
-    "include": ["./src/**/*", "./scripts/*"],
+    "include": ["./src/**/*", "./scripts/*", "./src/**/*.vue", "src/types/vue-shims.d.ts"],
     "exclude": ["node_modules", "vendor/", "dist/", "build/", "test/assets/"]
 }
