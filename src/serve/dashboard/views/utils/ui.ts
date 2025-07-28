@@ -12,14 +12,14 @@ export type PromptParams = {
 }
 
 sbp('sbp/selectors/register', {
-  'dashboard.ui/prompt' (params: PromptParams): Promise<any> {
+  'dashboard.ui/prompt' (params: PromptParams): Promise<unknown> {
     const { title, content } = params
     if (!title && !content) { throw Error('Missing parameters') }
 
     sbp('okTurtles.events/emit', OPEN_PROMPT, params)
 
     return new Promise((resolve) => {
-      sbp('okTurtles.events/once', PROMPT_RESPONSE, (response: any) => {
+      sbp('okTurtles.events/once', PROMPT_RESPONSE, (response: unknown) => {
         resolve(response)
       })
     })

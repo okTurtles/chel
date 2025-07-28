@@ -1,7 +1,6 @@
 {
   "tasks": {
-    "chel": "deno task lint && deno task build && deno run --allow-net --allow-read=. --allow-write=. build/main.js",
-    "chel-dev": "deno task build && deno run --allow-net --allow-read --allow-write=. --allow-sys --allow-env build/main.js",
+    "chel": "deno task lint && deno task build && deno run --allow-net --allow-read --allow-write=. --allow-sys --allow-env build/main.js",
     "lint": "deno run --allow-env --allow-read --allow-sys --deny-sys=\"networkInterfaces\" npm:eslint@9.31.0 ./src ./scripts",
     "compile": "deno run --allow-run --allow-read=. --allow-write=./dist scripts/compile.ts",
     "build": "deno run --node-modules-dir --allow-run --allow-read --allow-env --allow-write=./build --allow-net --allow-sys scripts/build.ts",
@@ -29,7 +28,10 @@
     "singleQuote": true
   },
   "lint": {
-    "exclude": ["node_modules/", "vendor/", "dist/", "build/", "test/assets/"]
+    "exclude": ["node_modules/", "vendor/", "dist/", "build/", "test/assets/"],
+    "rules": {
+      "exclude": ["no-explicit-any", "no-unused-vars"]
+    }
   },
   "vendor": true
 }

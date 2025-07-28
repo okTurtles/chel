@@ -10,7 +10,7 @@ interface ParsedCID {
     code: number
     digest: Uint8Array
   }
-  toString(encoder?: any): string
+  toString(encoder?: unknown): string
 }
 
 interface PushSubscriptionInfo {

@@ -3,6 +3,7 @@
 import { sbp, chalk, okturtlesData, okturtlesEvents } from '../deps.ts'
 import { SERVER_RUNNING } from './events.ts'
 import { PUBSUB_INSTANCE } from './instance-keys.ts'
+import process from 'node:process'
 import './logger.ts'
 
 console.info('NODE_ENV =', process.env.NODE_ENV)
@@ -13,10 +14,10 @@ const dontLog: Record<string, boolean> = {
   'backend/server/broadcastKV': true
 }
 
-function logSBP (domain: string, selector: string, data: Array<any>) {
+function logSBP (domain: string, selector: string, data: Array<unknown>) {
   if (!dontLog[selector]) {
     if (selector === 'backend/server/handleEntry') {
-      console.debug(chalk.bold(`[sbp] ${selector}`), data[0].description())
+      console.debug(chalk.bold(`[sbp] ${selector}`), (data[0] as { description: () => string }).description())
     } else {
       console.debug(chalk.bold(`[sbp] ${selector}`), data)
     }
@@ -27,18 +28,17 @@ function logSBP (domain: string, selector: string, data: Array<any>) {
 // any specific selectors outside of backend namespace to log
 ;[].forEach(sel => sbp('sbp/filters/selector/add', sel, logSBP))
 
-// eslint-disable-next-line no-async-promise-executor
-export default (new Promise<void>(async (resolve, reject) => {
+export default (new Promise<void>((resolve, reject) => {
   sbp('okTurtles.events/on', SERVER_RUNNING, function () {
     console.info(chalk.bold('backend startup sequence complete.'))
     resolve()
   })
   // call this after we've registered listener for SERVER_RUNNING
-  await import('./server.ts')
+  import('./server.ts').catch(reject)
 }))
 
-const shutdownFn = function (message: any): void {
-  sbp('okTurtles.data/apply', PUBSUB_INSTANCE, function (pubsub: any) {
+const shutdownFn = function (message: unknown): void {
+  sbp('okTurtles.data/apply', PUBSUB_INSTANCE, function (pubsub: { on: (event: string, callback: () => void) => void; close: () => void; clients: { forEach: (callback: (client: { terminate: () => void }) => void) => void } }) {
     console.info('message received in child, shutting down...', message)
     pubsub.on('close', async function () {
       try {
@@ -48,7 +48,7 @@ const shutdownFn = function (message: any): void {
         // console.info('database stopped')
         process.send?.({}) // tell grunt we've successfully shutdown the server
         process.nextTick(() => process.exit(0)) // triple-check we quit :P
-      } catch (err: any) {
+      } catch (err: unknown) {
         console.error(err, 'Error during shutdown')
         process.exit(1)
       }
@@ -56,7 +56,7 @@ const shutdownFn = function (message: any): void {
     pubsub.close()
     // Since `ws` v8.0, `WebSocketServer.close()` no longer closes remaining connections.
     // See https://github.com/websockets/ws/commit/df7de574a07115e2321fdb5fc9b2d0fea55d27e8
-    pubsub.clients.forEach((client: any) => client.terminate())
+    pubsub.clients.forEach((client: { terminate: () => void }) => client.terminate())
   })
 }
 
@@ -71,7 +71,7 @@ process.on('uncaughtException', (err: Error) => {
   process.exit(1)
 })
 
-process.on('unhandledRejection', (reason: any, p: Promise<any>) => {
+process.on('unhandledRejection', (reason: unknown, p: Promise<unknown>) => {
   console.error(reason, '[server] Unhandled promise rejection:', reason)
   process.exit(1)
 })

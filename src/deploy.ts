@@ -2,9 +2,8 @@
 
 // chel deploy <url-or-dir-or-sqlitedb> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
 
-import { path } from './deps.ts'
+import { path, z } from './deps.ts'
 import { upload } from './upload.ts'
-import { z } from 'zod'
 
 // Prefixes to use to select the correct CID to use
 const CONTRACT_TEXT_PREFIX = 't|'

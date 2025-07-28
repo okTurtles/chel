@@ -3,10 +3,11 @@
 import { Buffer } from 'node:buffer'
 import { resolve } from 'node:path'
 import { readFile } from 'node:fs/promises'
+import process from 'node:process'
 import DatabaseBackend from './DatabaseBackend.ts'
 import type { IDatabaseBackend } from './DatabaseBackend.ts'
 
-type ConfigEntry = { name: string; options: Record<string, any> }
+type ConfigEntry = { name: string; options: Record<string, unknown> }
 type Config = {
   [key: string]: ConfigEntry
 }
@@ -59,11 +60,11 @@ export default class RouterBackend extends DatabaseBackend implements IDatabaseB
     }
     for (const [key, value] of Object.entries(config)) {
       if (typeof value?.name !== 'string' || typeof value?.options !== 'object') {
-        errors.push({ msg: 'entry value must be of type { name: string, options: Record<string, any> }', entry: [key, value] as any })
+        errors.push({ msg: 'entry value must be of type { name: string, options: Record<string, unknown> }', entry: value as ConfigEntry })
         continue
       }
       if (value.name === 'router') {
-        errors.push({ msg: 'Router backends cannot be nested.', entry: [key, value] as any })
+        errors.push({ msg: 'Router backends cannot be nested.', entry: value as ConfigEntry })
         continue
       }
     }

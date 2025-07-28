@@ -15,7 +15,7 @@ export default class CurveGraph extends Group {
     sphereRadius = 1,
     isDarkTheme = false
   }: {
-    points?: any[],
+    points?: Three.Vector3[],
     tubeColor?: string,
     sphereColor?: string,
     edgeColor?: string,

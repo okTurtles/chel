@@ -2,9 +2,15 @@
 'use strict'
 
 import { Buffer } from 'node:buffer'
+import process from 'node:process'
 
 // Declare logger as a global variable for TypeScript
-declare const logger: any
+declare const logger: {
+  debug: (...args: unknown[]) => void;
+  info: (...args: unknown[]) => void;
+  warn: (...args: unknown[]) => void;
+  error: (...args: unknown[]) => void;
+}
 /*
  * Pub/Sub server implementation using the `ws` library.
  * See https://github.com/websockets/ws#api-docs
@@ -53,10 +59,15 @@ const generateSocketID = (() => {
   return (debugID?: string) => String(counter++) + (debugID ? '-' + debugID : '')
 })()
 
-const log = logger.info.bind(logger, tag) as any
-log.bold = (...args: any[]) => logger.debug(bold(tag, ...args))
+const log = logger.info.bind(logger, tag) as unknown as {
+  (...args: unknown[]): void;
+  bold: (...args: unknown[]) => void;
+  debug: (...args: unknown[]) => void;
+  error: (error: unknown, ...args: unknown[]) => void;
+}
+log.bold = (...args: unknown[]) => logger.debug(bold(tag, ...args))
 log.debug = logger.debug.bind(logger, tag)
-log.error = (error: any, ...args: any[]) => logger.error(error, bold.red(tag, ...args))
+log.error = (error: unknown, ...args: unknown[]) => logger.error(error, bold.red(tag, ...args))
 
 // ====== API ====== //
 
@@ -106,18 +117,18 @@ export function createOkResponse (data: JSONType): string {
 interface ServerOptions {
   logPingRounds?: boolean;
   logPongMessages?: boolean;
-  messageHandlers?: Record<string, (...args: any[]) => any>;
-  serverHandlers?: Record<string, (...args: any[]) => any>;
-  socketHandlers?: Record<string, (...args: any[]) => any>;
+  messageHandlers?: Record<string, (...args: unknown[]) => unknown>;
+  serverHandlers?: Record<string, (...args: unknown[]) => unknown>;
+  socketHandlers?: Record<string, (...args: unknown[]) => unknown>;
   backlog?: number;
-  handleProtocols?: (...args: any[]) => any;
+  handleProtocols?: (...args: unknown[]) => unknown;
   maxPayload?: number;
   path?: string;
   perMessageDeflate?: boolean | object;
   pingInterval?: number;
 }
 
-export function createServer (httpServer: any, options: ServerOptions = {}): any {
+export function createServer (httpServer: unknown, options: ServerOptions = {}): unknown {
   const server = new WebSocketServer({
     ...defaultOptions,
     ...options,
@@ -129,8 +140,8 @@ export function createServer (httpServer: any, options: ServerOptions = {}): any
   server.customSocketEventHandlers = { ...options.socketHandlers }
   server.customMessageHandlers = { ...options.messageHandlers }
   server.pingIntervalID = undefined
-  server.subscribersByChannelID = Object.create(null) as Record<string, Set<any>>
-  server.pushSubscriptions = Object.create(null) as Record<string, any>
+  server.subscribersByChannelID = Object.create(null) as Record<string, Set<unknown>>
+  server.pushSubscriptions = Object.create(null) as Record<string, unknown>
 
   // Add listeners for server events, i.e. events emitted on the server object.
   Object.keys(defaultServerHandlers).forEach((name: string) => {
@@ -181,7 +192,7 @@ const defaultServerHandlers = {
    * @param {http.IncomingMessage} request - The underlying Node http GET request.
    */
   connection (socket: any, request: any) {
-    const server = this as any
+    const server = this as unknown
     const url = request.url
     const urlSearch = url.includes('?') ? url.slice(url.lastIndexOf('?')) : ''
     const debugID = new URLSearchParams(urlSearch).get('debugID') || ''
@@ -218,7 +229,7 @@ const defaultServerHandlers = {
         try {
           (defaultSocketEventHandlers as any)[eventName]?.call(socket, ...args)
           socket.server.customSocketEventHandlers[eventName]?.call(socket, ...args)
-        } catch (error: any) {
+        } catch (error: unknown) {
           socket.server.emit('error', error)
           socket.terminate()
         }
@@ -257,8 +268,8 @@ const defaultSocketEventHandlers = {
 
     try {
       msg = messageParser(text)
-    } catch (error: any) {
-      log.error(error, `Malformed message: ${error.message}`)
+    } catch (error: unknown) {
+      log.error(error, `Malformed message: ${(error as Error).message}`)
       server.rejectMessageAndTerminateSocket(msg, socket)
       return
     }
@@ -275,7 +286,7 @@ const defaultSocketEventHandlers = {
       try {
         defaultHandler?.call(socket, msg)
         customHandler?.call(socket, msg)
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Log the error message and stack trace but do not send it to the client.
         log.error(error, 'onMessage')
         server.rejectMessageAndTerminateSocket(msg, socket)
@@ -420,16 +431,16 @@ const publicMethods = {
             continue
           }
         }
-        postEvent(client, shortMsg || msg).catch((e: any) => {
+        postEvent(client, shortMsg || msg).catch((e: unknown) => {
           // If we have an error posting due to too large of a payload and the
           // message wasn't already shortened, try again
-          if (e?.message === 'Payload too large') {
+          if ((e as Error)?.message === 'Payload too large') {
             if (shortMsg || !shortenPayload()) {
               // The max length for push notifications in many providers is 4 KiB.
               console.info('Skipping too large of a payload for', client.id)
               return
             }
-            postEvent(client, shortMsg!).catch((e: any) => {
+            postEvent(client, shortMsg!).catch((e: unknown) => {
               console.error(e, 'Error posting push notification')
             })
             return

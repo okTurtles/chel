@@ -1,6 +1,5 @@
-import { sbp, tweetnacl } from '../deps.ts'
+import { sbp, tweetnacl, Buffer } from '../deps.ts'
 import { randomBytes, timingSafeEqual } from 'node:crypto'
-import { Buffer } from 'node:buffer'
 import { base64ToBase64url, base64urlToBase64, boxKeyPair, computeCAndHc, decryptSaltUpdate, encryptContractSalt, encryptSaltUpdate, hash, hashRawStringArray, hashStringArray, parseRegisterSalt, randomNonce } from './shared/zkpp.ts'
 import { AUTHSALT, CONTRACTSALT, SALT_LENGTH_IN_OCTETS, SU } from './shared/zkppConstants.ts'
 
@@ -52,7 +51,7 @@ let hashUpdateSecret: string
 //         records. This requires user interaction to create new salt records
 //         on the new server.
 export const initZkpp = async () => {
-  const IKM = await sbp('chelonia.db/get', '_private_immutable_zkpp_ikm').then((IKM: any) => {
+  const IKM = await sbp('chelonia.db/get', '_private_immutable_zkpp_ikm').then((IKM: unknown) => {
     if (!IKM) {
       const secret = randomBytes(33).toString('base64')
       return sbp('chelonia.db/set', '_private_immutable_zkpp_ikm', secret).then(() => {
@@ -79,7 +78,7 @@ const computeZkppSaltRecordId = async (contractID: string) => {
   }
 
   const recordBuf = Buffer.concat([Buffer.from(contractID), Buffer.from(record)])
-  return hash(recordBuf as any)
+  return hash(recordBuf)
 }
 
 const getZkppSaltRecord = async (contractID: string) => {

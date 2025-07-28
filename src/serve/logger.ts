@@ -1,11 +1,12 @@
 import { pino } from '../deps.ts'
+import process from 'node:process'
 
 // NOTE: enabling pretty print does add a slight bit of overhead to logging and therefore is not recommended in production
 // Learn more about the Pino API here: https://github.com/pinojs/pino/blob/master/docs/api.md
 const prettyPrint = process.env.NODE_ENV === 'development' || process.env.CI || process.env.CYPRESS_RECORD_KEY || process.env.PRETTY
 // support regular console.log('asdf', 'adsf', 'adsf') style logging that might be used by libraries
 // https://github.com/pinojs/pino/blob/master/docs/api.md#interpolationvalues-any
-function logMethod (args: any[], method: any) {
+function logMethod (args: unknown[], method: (...args: unknown[]) => void) {
   if (!method || typeof method !== 'function') {
     console.error('logMethod called with invalid method:', method)
     return
@@ -18,7 +19,14 @@ function logMethod (args: any[], method: any) {
   }
   method(...args)
 }
-const logger = (pino as any)({
+const logger = (pino as unknown as (config: unknown) => {
+  level: string;
+  levels: { values: Record<string, unknown> };
+  debug: (...args: unknown[]) => void;
+  info: (...args: unknown[]) => void;
+  warn: (...args: unknown[]) => void;
+  error: (...args: unknown[]) => void;
+})({
   level: 'debug'
 })
 
@@ -29,7 +37,7 @@ if (Object.keys(logger.levels.values).includes(logLevel)) {
   logger.warn(`Unknown log level: ${logLevel}`)
 }
 
-(global as any).logger = logger // TypeScript global assignment
+(globalThis as { logger?: unknown }).logger = logger // TypeScript global assignment
 console.debug = logger.debug.bind(logger) // $FlowExpectedError
 console.info = logger.info.bind(logger) // $FlowExpectedError
 console.log = logger.info.bind(logger) // $FlowExpectedError

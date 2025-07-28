@@ -6,6 +6,7 @@ import { Readable } from 'node:stream'
 import fs from 'node:fs'
 import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
+import process from 'node:process'
 import { initVapid } from './vapid.ts'
 import { initZkpp } from './zkppSalt.ts'
 
@@ -18,7 +19,7 @@ const dbRootPath = process.env.DB_PATH || './data'
 const options: {
   fs: { depth: number; dirname: string; keyChunkLength: number }
   sqlite: { filepath: string }
-  [key: string]: any
+  [key: string]: unknown
 } = {
   fs: {
     depth: 0,
@@ -69,7 +70,7 @@ export const updateSize = async (resourceID: string, sizeKey: string, size: numb
 
 // Streams stored contract log entries since the given entry hash (inclusive!).
 export default sbp('sbp/selectors/register', {
-  'backend/db/streamEntriesAfter': async function (contractID: string, height: number, requestedLimit?: number, options: { keyOps?: boolean } = {}): Promise<any> {
+  'backend/db/streamEntriesAfter': async function (contractID: string, height: number, requestedLimit?: number, options: { keyOps?: boolean } = {}): Promise<unknown> {
     const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, Number(process.env.MAX_EVENTS_BATCH_SIZE ?? '500'))
     const latestHEADinfo = await sbp('chelonia/db/latestHEADinfo', contractID)
     if (latestHEADinfo === '') {
@@ -188,8 +189,9 @@ export default sbp('sbp/selectors/register', {
             while ((await nextKeyOp()) === null);
           }
           await fetchMeta()
-        } catch (e: any) {
-          console.error(`[backend] streamEntriesAfter: read(): ${e.message}:`, e.stack)
+        } catch (e: unknown) {
+          const error = e as Error
+          console.error(`[backend] streamEntriesAfter: read(): ${error.message}:`, error.stack)
           break
         }
       }
@@ -197,7 +199,7 @@ export default sbp('sbp/selectors/register', {
     })(), { encoding: 'utf8', objectMode: false })
 
     // Add headers to stream (TypeScript workaround)
-    ;(stream as any).headers = {
+    ;(stream as { headers?: Record<string, string> }).headers = {
       'shelter-headinfo-head': latestHEADinfo.HEAD,
       'shelter-headinfo-height': latestHEADinfo.height
     }
@@ -206,7 +208,7 @@ export default sbp('sbp/selectors/register', {
   // =======================
   // wrapper methods to add / lookup names
   // =======================
-  'backend/db/registerName': async function (name: string, value: string): Promise<any> {
+  'backend/db/registerName': async function (name: string, value: string): Promise<unknown> {
     const exists = await sbp('backend/db/lookupName', name)
     if (exists) {
       throw Boom.conflict('exists')

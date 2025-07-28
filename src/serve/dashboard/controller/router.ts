@@ -1,4 +1,5 @@
 import { Vue } from '../../../deps.ts'
+import process from 'node:process'
 // @ts-expect-error - vue-router types not available in current setup
 import Router from 'vue-router'
 
@@ -15,10 +16,10 @@ const lazyDesignSystem = lazyPage(() => import('@pages/design-system/CheloniaDes
 
 Vue.use(Router)
 
-const router: any = new Router({
+const router = new Router({
   mode: 'history',
   base: process.env.NODE_ENV === 'production' ? '' : '/dashboard',
-  scrollBehavior (to: any, from: any, savedPosition: any) {
+  scrollBehavior (to: unknown, from: unknown, savedPosition: unknown) {
     return { x: 0, y: 0 }
   },
   routes: [
@@ -73,7 +74,7 @@ const router: any = new Router({
   ]
 })
 
-router.beforeEach((to: any, from: any, next: any) => {
+router.beforeEach((to: { meta: { title: string } }, from: unknown, next: (path?: string | false | void) => void) => {
   document.title = to.meta.title
   next()
 })

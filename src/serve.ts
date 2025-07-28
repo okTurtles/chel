@@ -1,4 +1,5 @@
 import { flags, colors } from './deps.ts'
+import process from 'node:process'
 
 interface ServeOptions {
   dp?: number

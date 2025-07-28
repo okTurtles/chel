@@ -19,23 +19,23 @@ import {
 const addSubscriptionToIndex = appendToIndexFactory('_private_webpush_index')
 const deleteSubscriptionFromIndex = removeFromIndexFactory('_private_webpush_index')
 
-const saveSubscription = (server: any, subscriptionId: string): Promise<void> => {
+const saveSubscription = (server: { pushSubscriptions: Record<string, { settings?: unknown; subscriptions: Set<string> }> }, subscriptionId: string): Promise<void> => {
   return sbp('chelonia.db/set', `_private_webpush_${subscriptionId}`, JSON.stringify({
     settings: server.pushSubscriptions[subscriptionId].settings,
     subscriptionInfo: server.pushSubscriptions[subscriptionId],
     channelIDs: [...server.pushSubscriptions[subscriptionId].subscriptions]
-  })).catch((e: any) => {
+  })).catch((e: unknown) => {
     console.error(e, 'Error saving subscription', subscriptionId)
     throw e // rethrow
   })
 }
 
-export const addChannelToSubscription = (server: any, subscriptionId: string, channelID: string): Promise<void> => {
+export const addChannelToSubscription = (server: { pushSubscriptions: Record<string, { settings?: unknown; subscriptions: Set<string> }> }, subscriptionId: string, channelID: string): Promise<void> => {
   server.pushSubscriptions[subscriptionId].subscriptions.add(channelID)
   return saveSubscription(server, subscriptionId)
 }
 
-export const deleteChannelFromSubscription = (server: any, subscriptionId: string, channelID: string): Promise<void> => {
+export const deleteChannelFromSubscription = (server: { pushSubscriptions: Record<string, { settings?: unknown; subscriptions: Set<string> }> }, subscriptionId: string, channelID: string): Promise<void> => {
   server.pushSubscriptions[subscriptionId].subscriptions.delete(channelID)
   return saveSubscription(server, subscriptionId)
 }
@@ -60,7 +60,7 @@ const removeSubscription = async (subscriptionId: string): Promise<void> => {
     }
     await sbp('chelonia.db/delete', `_private_webpush_${subscriptionId}`)
     await deleteSubscriptionFromIndex(subscriptionId)
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error(e, 'Error removing subscription', subscriptionId)
     // swallow error
   }
@@ -195,7 +195,7 @@ export const postEvent = async (subscription: any, event: string | null): Promis
   if (!req.ok) {
     const endpointHost = new URL(subscription.endpoint).host
     console.info(
-      await req.text().then(response => ({ response })).catch((e: any) => `ERR: ${e?.message}`),
+      await req.text().then(response => ({ response })).catch((e: unknown) => `ERR: ${(e as Error)?.message}`),
       `Error ${req.status} sending push notification to '${subscription.id}' via ${endpointHost}`
     )
     // If the response was 401 (Unauthorized), 404 (Not found) or 410 (Gone),
@@ -318,7 +318,7 @@ export const pushServerActionhandlers: any = {
         subscriptionWrapper!.subscriptions.add(channelID)
       })
       await saveSubscription(server, subscriptionId!)
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e, `[${socket.ip}] Failed to store subscription '${subscriptionId || '??'}' (${host}), removing it!`)
       subscriptionId && removeSubscription(subscriptionId)
       throw e // rethrow

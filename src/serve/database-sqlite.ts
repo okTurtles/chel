@@ -11,9 +11,9 @@ export default class SqliteBackend extends DatabaseBackend implements IDatabaseB
   dataFolder: string = ''
   db: SQLiteDB | null = null
   filename: string = ''
-  readStatement: any = null
-  writeStatement: any = null
-  deleteStatement: any = null
+  readStatement: { get: (key: string) => { value?: Buffer | string } | undefined } | null = null
+  writeStatement: { run: (key: string, value: Buffer | string) => unknown } | null = null
+  deleteStatement: { run: (key: string) => unknown } | null = null
 
   constructor (options: { filepath?: string } = {}) {
     super()
@@ -46,21 +46,24 @@ export default class SqliteBackend extends DatabaseBackend implements IDatabaseB
   // Useful in test hooks.
   async clear (): Promise<void> {
     this.run('DELETE FROM Data')
+    return await Promise.resolve()
   }
 
   async readData (key: string): Promise<Buffer | string | void> {
     const row = this.readStatement?.get(key)
     // 'row' will be undefined if the key was not found.
     // Note: sqlite remembers the type of every stored value, therefore we
-    // automatically get back the same JS value that has been inserted.
-    return row?.value
+    // can return the value as-is.
+    return await Promise.resolve(row?.value)
   }
 
   async writeData (key: string, value: Buffer | string): Promise<void> {
     this.writeStatement?.run(key, value)
+    return await Promise.resolve()
   }
 
   async deleteData (key: string): Promise<void> {
     this.deleteStatement?.run(key)
+    return await Promise.resolve()
   }
 }

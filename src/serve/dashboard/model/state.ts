@@ -10,14 +10,14 @@ const initialState = {
 }
 
 const mutations = {
-  setTheme (state: any, theme: any) {
+  setTheme (state: { theme: string }, theme: string) {
     state.theme = theme
   }
 }
 
 const getters = {
-  colors (state: any) {
-    return (Colors as any)[state.theme]
+  colors (state: { theme: string }) {
+    return (Colors as Record<string, unknown>)[state.theme]
   }
 }
 
@@ -32,8 +32,8 @@ const store = new Vuex.Store({
 
 // watchers
 store.watch(
-  (state: any) => state.theme,
-  (theme: any) => {
+  (state: { theme: string }) => state.theme,
+  (theme: string) => {
     document.documentElement.dataset.theme = theme
     storeThemeToLocalStorage(theme)
   }
@@ -41,7 +41,7 @@ store.watch(
 
 sbp('sbp/selectors/register', {
   'state/vuex/state': () => store.state,
-  'state/vuex/commit': (id: any, payload: any) => store.commit(id, payload),
+  'state/vuex/commit': (id: string, payload: unknown) => store.commit(id, payload),
   'state/vuex/getters': () => store.getters
 })
 

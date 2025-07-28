@@ -1,30 +1,31 @@
-export function cloneDeep (obj: object): any {
+export function cloneDeep<T> (obj: T): T {
   return JSON.parse(JSON.stringify(obj))
 }
 
-function isMergeableObject (val: any): boolean {
+function isMergeableObject (val: unknown): val is Record<string, unknown> {
   const nonNullObject = val && typeof val === 'object'
-  return nonNullObject && Object.prototype.toString.call(val) !== '[object RegExp]' && Object.prototype.toString.call(val) !== '[object Date]'
+  return !!nonNullObject && Object.prototype.toString.call(val) !== '[object RegExp]' && Object.prototype.toString.call(val) !== '[object Date]'
 }
 
-export function merge (obj: any, src: any): any {
+export function merge<T extends Record<string, unknown>> (obj: T, src: Record<string, unknown>): T {
   for (const key in src) {
-    const clone = isMergeableObject(src[key]) ? cloneDeep(src[key]) : undefined
+    const srcValue = src[key]
+    const clone = isMergeableObject(srcValue) ? cloneDeep(srcValue) : undefined
     if (clone && isMergeableObject(obj[key])) {
-      merge(obj[key], clone)
+      merge(obj[key] as Record<string, unknown>, clone)
       continue
     }
-    obj[key] = clone || src[key]
+    (obj as Record<string, unknown>)[key] = clone || srcValue
   }
   return obj
 }
 
-export function throttle (func: (...args: any[]) => any, delay: number): (...args: any[]) => any {
+export function throttle<T extends unknown[], R> (func: (...args: T) => R, delay: number): (...args: T) => R | undefined {
   // reference: https://www.geeksforgeeks.org/javascript-throttling/
 
   // Previously called time of the function
   let prev = 0
-  return (...args: any[]) => {
+  return (...args: T) => {
     // Current called time of the function
     const now = new Date().getTime()
 
@@ -37,8 +38,8 @@ export function throttle (func: (...args: any[]) => any, delay: number): (...arg
   }
 }
 
-export function debounce (func: (...args: any[]) => any, wait: number, immediate: boolean | null | undefined): ((...args: any[]) => any) & { clear: () => void; flush: () => void } {
-  let timeout: any, args: any, context: any, timestamp: any, result: any
+export function debounce<T extends unknown[], R> (func: (...args: T) => R, wait: number, immediate: boolean | null | undefined): ((...args: T) => R | undefined) & { clear: () => void; flush: () => void } {
+  let timeout: ReturnType<typeof setTimeout> | null, args: T | null, context: unknown, timestamp: number, result: R | undefined
   if (wait == null) wait = 100
 
   function later () {
@@ -49,13 +50,13 @@ export function debounce (func: (...args: any[]) => any, wait: number, immediate
     } else {
       timeout = null
       if (!immediate) {
-        result = func.apply(context, args)
+        result = func.apply(context, args!)
         context = args = null
       }
     }
   }
 
-  const debounced = function (this: any, ...funcArgs: any[]) {
+  const debounced = function (this: unknown, ...funcArgs: T) {
     // eslint-disable-next-line @typescript-eslint/no-this-alias
     context = this
     args = funcArgs
@@ -63,7 +64,7 @@ export function debounce (func: (...args: any[]) => any, wait: number, immediate
     const callNow = immediate && !timeout
     if (!timeout) timeout = setTimeout(later, wait)
     if (callNow) {
-      result = func.apply(context, args)
+      result = func.apply(context, args!)
       context = args = null
     }
 
@@ -79,7 +80,7 @@ export function debounce (func: (...args: any[]) => any, wait: number, immediate
 
   debounced.flush = function () {
     if (timeout) {
-      result = func.apply(context, args)
+      result = func.apply(context, args!)
       context = args = null
       clearTimeout(timeout)
       timeout = null

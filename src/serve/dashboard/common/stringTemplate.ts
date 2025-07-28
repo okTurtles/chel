@@ -1,6 +1,6 @@
 const nargs = /\{([0-9a-zA-Z_]+)\}/g
 
-export default function template (string: string, ...args: any[]): string {
+export default function template (string: string, ...args: unknown[]): string {
   const firstArg = args[0]
   // If the first rest argument is a plain object or array, use it as replacement table.
   // Otherwise, use the whole rest array as replacement table.
@@ -19,7 +19,7 @@ export default function template (string: string, ...args: any[]): string {
     const maybeReplacement = (
       // Avoid accessing inherited properties of the replacement table.
       Object.prototype.hasOwnProperty.call(replacementsByKey, capture)
-        ? (replacementsByKey as any)[capture]
+        ? (replacementsByKey as Record<string, unknown>)[capture]
         : undefined
     )
 

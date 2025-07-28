@@ -5,7 +5,7 @@ const {
 } = Three
 
 class LineMesh extends Line {
-  data: any
+  data: { geometry: Three.BufferGeometry, material: Three.Material }
 
   constructor ({
     color = '#000',
@@ -15,8 +15,8 @@ class LineMesh extends Line {
   }: {
     color?: string,
     dashed?: boolean,
-    dashOpts?: any,
-    points?: any[]
+    dashOpts?: Record<string, unknown>,
+    points?: Array<{ x: number, y: number, z: number }>
   }) {
     const geometry = new BufferGeometry().setFromPoints(
       points.map(({ x, y, z }) => new Vector3(x, y, z))
@@ -28,7 +28,7 @@ class LineMesh extends Line {
     super(geometry, material)
     this.data = { geometry, material }
 
-    if (dashed) { (this as any).computeLineDistances() }
+    if (dashed) { (this as Three.Line).computeLineDistances() }
   }
 }
 
@@ -37,7 +37,7 @@ class Axes extends Group {
     length?: number,
     color?: string,
     dashed?: boolean,
-    dashOpts?: any
+    dashOpts?: Record<string, unknown>
   }) {
     const xAxis = new LineMesh({
       color, dashed, dashOpts, points: [{ x: 0, y: 0, z: 0 }, { x: length, y: 0, z: 0 }]
@@ -55,23 +55,23 @@ class Axes extends Group {
 }
 
 class CombineWithEdge extends Group {
-  data: any
+  data: { geometry: Three.BufferGeometry | null, material: Three.Material | null }
 
   constructor ({
     mesh = null, geometry = null, material = null,
     edgeColor = '#000000', shadow = false, edgeOpacity = 1
   }: {
-    mesh?: any,
-    geometry?: any,
-    material?: any,
+    mesh?: Three.Mesh | null,
+    geometry?: Three.BufferGeometry | null,
+    material?: Three.Material | null,
     edgeColor?: string,
     shadow?: boolean,
     edgeOpacity?: number
   }) {
-    const originalMesh: any = mesh || new Mesh(geometry, material)
+    const originalMesh = mesh || new Mesh(geometry!, material!)
     if (mesh) {
-      geometry = (mesh as any).geometry
-      material = (mesh as any).material
+      geometry = mesh.geometry
+      material = mesh.material
     }
     originalMesh.castShadow = shadow
 
@@ -80,20 +80,20 @@ class CombineWithEdge extends Group {
     const edgesMesh = new LineSegments(edges, new LineBasicMaterial({ color: edgeColor, transparent: true, opacity: edgeOpacity }))
 
     super()
-    ;(this as any).add(originalMesh)
-    ;(this as any).add(edgesMesh)
+    ;(this as Three.Group).add(originalMesh)
+    ;(this as Three.Group).add(edgesMesh)
     this.data = { geometry, material }
   }
 }
 
 class Edgify extends LineSegments {
-  data: any
+  data: { geometry: Three.EdgesGeometry, material: Three.LineBasicMaterial }
 
   constructor ({
     color = '#000000', geometry = null
   }: {
     color?: string,
-    geometry?: any
+    geometry?: Three.BufferGeometry | null
   }) {
     const edgeGeometry = new EdgesGeometry(geometry)
     const material = new LineBasicMaterial({ color })
@@ -123,9 +123,9 @@ class Column extends Group {
     const faceTop = new CombineWithEdge({ geometry: faceGeometry, material: faceMaterial, edgeColor })
     const faceBottom = new CombineWithEdge({ geometry: faceGeometry, material: faceMaterial })
 
-    ;(faceTop as any).rotation.x = Math.PI / 2 * -1
-    ;(faceTop as any).position.set(0, height, 0)
-    ;(faceBottom as any).rotation.x = Math.PI / 2 * -1
+    ;(faceTop as Three.Group).rotation.x = Math.PI / 2 * -1
+    ;(faceTop as Three.Group).position.set(0, height, 0)
+    ;(faceBottom as Three.Group).rotation.x = Math.PI / 2 * -1
 
     const cylinder = new Mesh(
       new CylinderGeometry(radius, radius, height, 64, 1, true),
@@ -138,8 +138,8 @@ class Column extends Group {
   }
 }
 
-function resizeRendererToDisplaySize (renderer: any): boolean {
-  const pixelRatio = window.devicePixelRatio || 1
+function resizeRendererToDisplaySize (renderer: Three.WebGLRenderer): boolean {
+  const pixelRatio = globalThis.devicePixelRatio || 1
   const canvasEl = renderer.domElement
   const [desiredWidth, desiredHeight] = [canvasEl.clientWidth * pixelRatio, canvasEl.clientHeight * pixelRatio]
   const needResize = canvasEl.width !== desiredWidth || canvasEl.height !== desiredHeight
@@ -151,7 +151,7 @@ function resizeRendererToDisplaySize (renderer: any): boolean {
   return needResize
 }
 
-function adjustCameraAspect (canvasEl: any, camera: any): void {
+function adjustCameraAspect (canvasEl: HTMLCanvasElement, camera: Three.PerspectiveCamera): void {
   camera.aspect = canvasEl.clientWidth / canvasEl.clientHeight
   camera.updateProjectionMatrix()
 }

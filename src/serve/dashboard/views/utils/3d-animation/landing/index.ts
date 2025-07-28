@@ -57,15 +57,15 @@ function initAnimation (canvasEl: HTMLCanvasElement, theme: string = 'light') {
 
   // box
   const boxDepth = 20
-  const box: any = new Edgify({
+  const box = new Edgify({
     geometry: new BoxGeometry(18, boxDepth, 38),
     color: isDarkTheme ? COLORS.primary_blue : COLORS.grey_0
-  })
+  }) as Three.Group
   box.position.y = boxDepth / 2 + PLANE_HEIGHT + 0.15
   scene.root.add(box)
 
   // curve-graph
-  const curveGraph: any = new CurveGraph({
+  const curveGraph = new CurveGraph({
     points: [
       new Vector3(0, 12.25, 12.25),
       new Vector3(0, 8.5, 8.25),
@@ -80,16 +80,16 @@ function initAnimation (canvasEl: HTMLCanvasElement, theme: string = 'light') {
     tubeColor: COLORS.tube,
     sphereColor: COLORS.sphere,
     isDarkTheme
-  })
+  }) as Three.Group
   curveGraph.position.x = -2.5
   scene.root.add(curveGraph)
 
   // bar-graphs
-  const barGraphs: any = new BarGraphs({
+  const barGraphs = new BarGraphs({
     pairColors: [COLORS.bar_1, COLORS.bar_2],
     pairCount: 8,
     isDarkTheme
-  })
+  }) as Three.Group
   barGraphs.position.set(2.5, PLANE_HEIGHT, 0)
   scene.root.add(barGraphs)
 
@@ -123,11 +123,11 @@ const onPointerMove = throttle((e: PointerEvent) => {
 
 function terminateAnimation () {
   cancelAnimationFrame(animationId)
-  window.removeEventListener('pointermove', onPointerMove as any)
+  globalThis.removeEventListener('pointermove', onPointerMove as EventListener)
 }
 
 function addPointerMoveListener () {
-  window.addEventListener('pointermove', onPointerMove as any)
+  globalThis.addEventListener('pointermove', onPointerMove as EventListener)
 }
 
 export {

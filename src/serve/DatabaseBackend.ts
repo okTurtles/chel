@@ -17,9 +17,9 @@ export default class DatabaseBackend {
     }
     // Also rebind them to the instance so as to make them usable with destructuring.
     for (const name of requiredMethodNames) {
-      const method = (this as any)[name]
+      const method = (this as Record<string, unknown>)[name]
       if (typeof method === 'function') {
-        (this as any)[name] = method.bind(this)
+        (this as Record<string, unknown>)[name] = method.bind(this)
       }
     }
   }

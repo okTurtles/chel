@@ -61,7 +61,6 @@
     "npm:vuelidate@0.7.6": "0.7.6",
     "npm:vuex@3.6.0": "3.6.0_vue@2.6.12",
     "npm:ws@8.5.0": "8.5.0",
-    "npm:zod@4.0.10": "4.0.10",
     "npm:zod@4.0.5": "4.0.5"
   },
   "jsr": {
@@ -1971,9 +1970,6 @@
     "yocto-queue@0.1.0": {
       "integrity": "sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q=="
     },
-    "zod@4.0.10": {
-      "integrity": "sha512-3vB+UU3/VmLL2lvwcY/4RV2i9z/YU0DTV/tDuYjrwmx5WeJ7hwy+rGEEx8glHp6Yxw7ibRbKSaIFBgReRPe5KA=="
-    },
     "zod@4.0.5": {
       "integrity": "sha512-/5UuuRPStvHXu7RS+gmvRf4NXrNxpSllGwDnCBcJZtQsKrviYXm54yDGV2KYNLT5kq0lHGcl7lqWJLgSaG+tgA=="
     }
@@ -1988,8 +1984,7 @@
         "npm:axios@0.27.2",
         "npm:rimraf@3.0.2",
         "npm:tar@6.1.11",
-        "npm:typescript-eslint@8.37.0",
-        "npm:zod@4.0.10"
+        "npm:typescript-eslint@8.37.0"
       ]
     }
   }

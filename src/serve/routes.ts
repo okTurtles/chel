@@ -5,6 +5,7 @@
 import { sbp, chalk, SPMessage, maybeParseCID, multicodes, createCID, Buffer, Boom, Joi, Bottleneck, blake32Hash, Request, ResponseToolkit } from '../deps.ts'
 import { isIP } from 'node:net'
 import path from 'node:path'
+import process from 'node:process'
 const logger: any = {
   info: console.log,
   warn: console.warn,
@@ -20,6 +21,7 @@ const SECOND = 1000
 
 // Regexes validated as safe with <https://devina.io/redos-checker>
 const CID_REGEX = /^z[1-9A-HJ-NP-Za-km-z]{8,72}$/
+// deno-lint-ignore no-control-regex
 const KV_KEY_REGEX = /^(?!_private)[^\x00]{1,256}$/
 // Rules from validateUsername:
 //   - Length: 1-80
@@ -283,19 +285,19 @@ route.POST('/event', {
       }
       // Store size information
       await sbp('backend/server/updateSize', deserializedHEAD.contractID, Buffer.byteLength(request.payload), deserializedHEAD.isFirstMessage && !credentials?.billableContractID ? deserializedHEAD.contractID : undefined)
-    } catch (err: any) {
-      console.error(err, chalk.bold.yellow(err.name))
-      if (err.name === 'ChelErrorDBBadPreviousHEAD' || err.name === 'ChelErrorAlreadyProcessed') {
+    } catch (err: unknown) {
+      console.error(err, chalk.bold.yellow((err as Error).name))
+      if ((err as Error).name === 'ChelErrorDBBadPreviousHEAD' || (err as Error).name === 'ChelErrorAlreadyProcessed') {
         const HEADinfo = await sbp('chelonia/db/latestHEADinfo', deserializedHEAD.contractID) ?? { HEAD: null, height: 0 }
-        const r = Boom.conflict(err.message, { HEADinfo })
+        const r = Boom.conflict((err as Error).message, { HEADinfo })
         Object.assign(r.output.headers, {
           'shelter-headinfo-head': HEADinfo.HEAD,
           'shelter-headinfo-height': HEADinfo.height
         })
         return r
-      } else if (err.name === 'ChelErrorSignatureError') {
+      } else if ((err as Error).name === 'ChelErrorSignatureError') {
         return Boom.badData('Invalid signature')
-      } else if (err.name === 'ChelErrorSignatureKeyUnauthorized') {
+      } else if ((err as Error).name === 'ChelErrorSignatureKeyUnauthorized') {
         return Boom.forbidden('Unauthorized signing key')
       }
       throw err // rethrow error

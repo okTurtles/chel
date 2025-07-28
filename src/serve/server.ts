@@ -4,6 +4,7 @@ import { Hapi, Inert, sbp, chalk, SPMessage, SERVER, multicodes, parseCID, SubMe
 import { basename, join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Worker } from 'node:worker_threads'
+import process from 'node:process'
 import authPlugin from './auth.ts'
 import '@chelonia/lib'
 
@@ -109,13 +110,13 @@ const creditsWorker = undefined as WorkerType | undefined
 // Node.js version 18 and lower don't have global.crypto defined
 // by default
 if (
-  !('crypto' in global) &&
+  !('crypto' in globalThis) &&
   typeof require === 'function'
 ) {
   const crypto = await import('node:crypto')
   const { webcrypto } = crypto
   if (webcrypto) {
-    Object.defineProperty(global, 'crypto', {
+    Object.defineProperty(globalThis, 'crypto', {
       enumerable: true,
       configurable: true,
       get: () => webcrypto
@@ -373,7 +374,7 @@ sbp('sbp/selectors/register', {
     }
     contractsPendingDeletion.add(cid)
 
-    return sbp('chelonia/queueInvocation', cid, async () => {
+    return await sbp('chelonia/queueInvocation', cid, async () => {
       const owner = await sbp('chelonia.db/get', `_private_owner_${cid}`)
       if (!ultimateOwnerID) ultimateOwnerID = await lookupUltimateOwner(cid)
       const rawManifest = await sbp('chelonia.db/get', cid)
@@ -530,7 +531,8 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
     }
   },
   messageHandlers: {
-    [REQUEST_TYPE.PUSH_ACTION]: async function ({ data }: { data: any }) {
+    [REQUEST_TYPE.PUSH_ACTION]: async function (...args: unknown[]) {
+      const { data } = args[0] as { data: any }
       const socket = this as any
       const { action, payload } = data
 
@@ -555,7 +557,8 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
     // This handler adds subscribed channels to the web push subscription
     // associated with the WS, so that when the WS is closed we can continue
     // sending messages as web push notifications.
-    [NOTIFICATION_TYPE.SUB] ({ channelID }: SubMessage) {
+    [NOTIFICATION_TYPE.SUB] (...args: unknown[]) {
+      const { channelID } = args[0] as SubMessage
       const socket = this as any
       const server = (this as any).server
 
@@ -573,7 +576,8 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
     // This handler removes subscribed channels from the web push subscription
     // associated with the WS, so that when the WS is closed we don't send
     // messages as web push notifications.
-    [NOTIFICATION_TYPE.UNSUB] ({ channelID }: UnsubMessage) {
+    [NOTIFICATION_TYPE.UNSUB] (...args: unknown[]) {
+      const { channelID } = args[0] as UnsubMessage
       const socket = this as any
       const server = (this as any).server
 

@@ -22,12 +22,12 @@ import Toolbar from '@containers/toolbar/Toolbar.vue'
 import Navigation from '@containers/navigation/Navigation.vue'
 import AppStyles from '@components/AppStyles.vue'
 
-Vue.config.errorHandler = function (err: any, vm: any, info: any) {
+Vue.config.errorHandler = function (err: Error, vm: unknown, info: string) {
   console.error(`uncaught Vue error in ${info}: `, err)
 }
 
 async function startApp () {
-  sbp('okTurtles.data/set', 'API_URL', window.location.origin)
+  sbp('okTurtles.data/set', 'API_URL', globalThis.location.origin)
   await sbp('translations/init', 'en-US' /* TODO!: switch back to navigator.language once the development is complete..! */)
 
   new Vue({
@@ -39,22 +39,22 @@ async function startApp () {
       AppStyles,
       Modal
     },
-    data (): any {
+    data (): Record<string, unknown> {
       return {
         isNavOpen: false
       }
     },
     computed: {
       hideNavigation (): boolean {
-        return ['DesignSystem', 'Landing'].includes((this as any).$route.name)
+        return ['DesignSystem', 'Landing'].includes((this as unknown as { $route: { name: string } }).$route.name)
       },
       hideToolbar (): boolean {
-        return (this as any).$route.name === 'Landing'
+        return (this as unknown as { $route: { name: string } }).$route.name === 'Landing'
       }
     },
     methods: {
       openNav (): void {
-        (this as any).$refs.navigation.open()
+        ((this as unknown as { $refs: { navigation: { open: () => void } } }).$refs.navigation.open())
       }
     },
     created (): void {

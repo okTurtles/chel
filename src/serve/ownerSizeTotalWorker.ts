@@ -123,7 +123,7 @@ sbp('sbp/selectors/register', {
         await addToTempIndex(ultimateOwnerID || resourceID)
         // Store the initial delta size.
         updatedSizeMap.set(resourceID, size)
-      } catch (e: any) {
+      } catch (e: unknown) {
         console.error(e, `[ownerSizeTotalWorker] Error adding ${resourceID} to temp index:`)
       }
     } else {

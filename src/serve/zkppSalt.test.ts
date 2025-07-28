@@ -14,15 +14,16 @@ const should = {
   be: {
     of: {
       type: (expectedType: string) => ({
-        equal: (actual: any, message?: string) => {
-          if (typeof actual !== expectedType) {
-            throw new Error(message || `Expected type ${expectedType}, got ${typeof actual}`)
+        equal: (actual: unknown, message?: string) => {
+          const actualType = typeof actual
+          if (actualType !== expectedType) {
+            throw new Error(message || `Expected type ${expectedType}, got ${actualType}`)
           }
         }
       })
     }
   },
-  equal: (expected: any, message?: string) => (actual: any) => {
+  equal: (expected: unknown, message?: string) => (actual: unknown) => {
     if (actual !== expected) {
       throw new Error(message || `Expected ${expected}, got ${actual}`)
     }
@@ -30,17 +31,18 @@ const should = {
 }
 
 // Helper function to replace should() calls
-const shouldAssert = (value: any) => ({
+const shouldAssert = (value: unknown) => ({
   be: {
     of: {
       type: (expectedType: string) => {
-        if (typeof value !== expectedType) {
-          throw new Error(`Expected type ${expectedType}, got ${typeof value}`)
+        const actualType = typeof value
+        if (actualType !== expectedType) {
+          throw new Error(`Expected type ${expectedType}, got ${actualType}`)
         }
       }
     }
   },
-  equal: (expected: any, message?: string) => {
+  equal: (expected: unknown, message?: string) => {
     if (value !== expected) {
       throw new Error(message || `Expected ${expected}, got ${value}`)
     }

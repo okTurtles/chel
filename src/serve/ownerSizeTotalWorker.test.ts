@@ -26,7 +26,7 @@ const updateSize = (resourceID: string, sizeKey: string, size: number) => {
     return new Promise<void>((resolve, reject) => {
       const mc = new MessageChannel()
       mc.port2.onmessage = (event: MessageEvent) => {
-        const [success, result]: [boolean, any] = event.data
+        const [success, result]: [boolean, unknown] = event.data
         // Ensure ports are closed to prevent resource leaks
         mc.port1.close()
         mc.port2.close()
@@ -39,7 +39,7 @@ const updateSize = (resourceID: string, sizeKey: string, size: number) => {
         mc.port2.close()
         reject(Error('Message error'))
       }
-      worker.postMessage([mc.port1, 'worker/updateSizeSideEffects', { resourceID, sizeKey, size }], [mc.port1 as any])
+      worker.postMessage([mc.port1, 'worker/updateSizeSideEffects', { resourceID, sizeKey, size }], [mc.port1 as MessagePort])
     })
   })
 }
@@ -233,7 +233,7 @@ async function * randomOp (iterations: number): AsyncGenerator<void, Contract[],
         await new Promise<void>((resolve, reject) => {
           const mc = new MessageChannel()
           mc.port2.onmessage = (event: MessageEvent) => {
-            const [success, result]: [boolean, any] = event.data
+            const [success, result]: [boolean, unknown] = event.data
             mc.port1.close()
             mc.port2.close()
             if (success) return resolve()
@@ -244,7 +244,7 @@ async function * randomOp (iterations: number): AsyncGenerator<void, Contract[],
             mc.port2.close()
             reject(Error('Message error'))
           }
-          worker.postMessage([mc.port1, 'backend/server/computeSizeTaskDeltas'], [mc.port1 as any])
+          worker.postMessage([mc.port1, 'backend/server/computeSizeTaskDeltas'], [mc.port1 as MessagePort])
         })
         break
       }
@@ -272,7 +272,7 @@ async function * randomOp (iterations: number): AsyncGenerator<void, Contract[],
   await new Promise<void>((resolve, reject) => {
     const mc = new MessageChannel()
     mc.port2.onmessage = (event: MessageEvent) => {
-      const [success, result]: [boolean, any] = event.data
+      const [success, result]: [boolean, unknown] = event.data
       mc.port1.close()
       mc.port2.close()
       if (success) return resolve()
@@ -283,7 +283,7 @@ async function * randomOp (iterations: number): AsyncGenerator<void, Contract[],
       mc.port2.close()
       reject(Error('Message error'))
     }
-    worker.postMessage([mc.port1, 'backend/server/computeSizeTaskDeltas'], [mc.port1 as any])
+    worker.postMessage([mc.port1, 'backend/server/computeSizeTaskDeltas'], [mc.port1 as MessagePort])
   })
   return mainContracts
 }

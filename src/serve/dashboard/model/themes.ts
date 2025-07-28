@@ -52,18 +52,18 @@ const THEME_STORAGE_KEY = 'chelonia-dashboard-theme'
 export const THEME_LIGHT = 'light'
 export const THEME_DARK = 'dark'
 export const checkSystemTheme = () => {
-  return window.matchMedia('(prefers-color-scheme: dark)').matches
+  return globalThis.matchMedia('(prefers-color-scheme: dark)').matches
     ? THEME_DARK
     : THEME_LIGHT
 }
 export const initTheme = () => {
   // check if there is a value in local-storage that was stored from user previously toggling the theme in the app.
   // if not, fallback to system preference, and lastly default to light-theme in case of no system preference in the browser.
-  const fromStorage = window.localStorage.getItem(THEME_STORAGE_KEY)
+  const fromStorage = globalThis.localStorage.getItem(THEME_STORAGE_KEY)
   sbp('state/vuex/commit', 'setTheme', fromStorage || checkSystemTheme())
 }
 export const storeThemeToLocalStorage = (theme: string) => {
-  window.localStorage.setItem(THEME_STORAGE_KEY, theme)
+  globalThis.localStorage.setItem(THEME_STORAGE_KEY, theme)
 }
 
 export default {

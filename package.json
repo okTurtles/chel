@@ -26,7 +26,6 @@
   },
   "devDependencies": {
     "@eslint/js": "9.31.0",
-    "typescript-eslint": "8.37.0",
-    "zod": "4.0.10"
+    "typescript-eslint": "8.37.0"
   }
 }

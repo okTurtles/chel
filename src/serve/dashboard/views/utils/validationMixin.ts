@@ -16,9 +16,9 @@ interface ValidationMixinContext {
   $v: {
     form: VuelidateForm
   }
-  form: { [key: string]: any }
-  debounceValidation(fieldName: string, value: any): void
-  updateField(fieldName: string, value: any): void
+  form: { [key: string]: unknown }
+  debounceValidation(fieldName: string, value: unknown): void
+  updateField(fieldName: string, value: unknown): void
 }
 
 /**
@@ -59,7 +59,7 @@ input.input(
 export default {
   mixins: [vuelidateSetup],
   methods: {
-    debounceField (this: ValidationMixinContext, fieldName: string, value: any) {
+    debounceField (this: ValidationMixinContext, fieldName: string, value: unknown) {
       // Do a field validation, but don't show $error immediately
       this.$v.form[fieldName].$reset()
       // Wait a little to make sure the user stopped typing..
@@ -70,7 +70,7 @@ export default {
      * Validate the field and update it immediately.
      * - Usually used on @blur.
      */
-    updateField (this: ValidationMixinContext, fieldName: string, value: any) {
+    updateField (this: ValidationMixinContext, fieldName: string, value: unknown) {
       if (value) {
         // it means it needs to be manually binded
         this.form[fieldName] = value
@@ -82,7 +82,7 @@ export default {
      * Debounce field validations
      * - You can call it when you want to debounce expensive validations.
      */
-    debounceValidation: debounce(function (this: ValidationMixinContext, fieldName: string, value: any) {
+    debounceValidation: debounce(function (this: ValidationMixinContext, fieldName: string, value: unknown) {
       this.updateField(fieldName, value)
     }, 800, false),
 

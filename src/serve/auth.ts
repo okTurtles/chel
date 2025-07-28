@@ -3,7 +3,7 @@ import { Hapi, Request, ResponseToolkit, Boom, verifyShelterAuthorizationHeader 
 const plugin = {
   name: 'chel-auth',
   register (server: Hapi, opts: unknown) {
-    server.auth.scheme('chel-bearer', (server: Hapi, options: any) => {
+    server.auth.scheme('chel-bearer', (server: Hapi, options: Record<string, unknown>) => {
       return {
         authenticate (request: Request, h: ResponseToolkit) {
           const { authorization } = request.headers
@@ -20,7 +20,7 @@ const plugin = {
       }
     })
 
-    server.auth.scheme ('chel-shelter', (server: Hapi, options: any) => {
+    server.auth.scheme ('chel-shelter', (server: Hapi, options: Record<string, unknown>) => {
       return {
         authenticate (request: Request, h: ResponseToolkit) {
           const { authorization } = request.headers
@@ -34,7 +34,7 @@ const plugin = {
           try {
             const billableContractID = verifyShelterAuthorizationHeader(authorization)
             return h.authenticated({ credentials: { billableContractID } })
-          } catch (e: any) {
+          } catch (e: unknown) {
             console.warn(e, 'Shelter authorization failed')
             return h.unauthenticated(Boom.unauthorized('Authentication failed', 'shelter'))
           }

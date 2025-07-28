@@ -2,6 +2,8 @@
 
 import { mkdir, readdir, readFile, rm, unlink, writeFile } from 'node:fs/promises'
 import { basename, dirname, join, normalize, resolve } from 'node:path'
+import process from 'node:process'
+import { Buffer } from 'node:buffer'
 import { checkKey } from '../deps.ts'
 import DatabaseBackend from './DatabaseBackend.ts'
 import type { IDatabaseBackend } from './DatabaseBackend.ts'
@@ -87,9 +89,10 @@ export default class FsBackend extends DatabaseBackend implements IDatabaseBacke
     // Necessary here to thwart path traversal attacks.
     checkKey(key)
     return await readFile(this.mapKey(key))
-      .catch((err: any) => {
+      .catch((err: unknown) => {
         // If the key was not found (ENOENT), ignore the error since in that case we want to return undefined.
-        if (err.code !== 'ENOENT') throw err
+        const error = err as { code?: string }
+        if (error.code !== 'ENOENT') throw err
       })
   }
 
@@ -100,9 +103,10 @@ export default class FsBackend extends DatabaseBackend implements IDatabaseBacke
   }
 
   async deleteData (key: string) {
-    await unlink(this.mapKey(key)).catch((e: any) => {
+    await unlink(this.mapKey(key)).catch((e: unknown) => {
       // Ignore 'not found' errors
-      if (e?.code === 'ENOENT') {
+      const error = e as { code?: string }
+      if (error?.code === 'ENOENT') {
         return
       }
       throw e

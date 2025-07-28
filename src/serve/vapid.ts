@@ -1,5 +1,6 @@
 import { sbp } from '../deps.ts'
 import { Buffer } from 'node:buffer'
+import process from 'node:process'
 
 let vapidPublicKey: string
 let vapidPrivateKey: CryptoKey

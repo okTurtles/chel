@@ -7,11 +7,11 @@ export const base64ToBase64url = (s: string): string => s.replace(/\//g, '_').re
 export const base64urlToBase64 = (s: string): string => s.replace(/_/g, '/').replace(/-/g, '+') + '='.repeat((4 - s.length % 4) % 4)
 
 export const hashStringArray = (...args: Array<Uint8Array | string>): Uint8Array => {
-  return nacl.hash(Buffer.concat(args.map((s) => nacl.hash(Buffer.from(s as any)))))
+  return nacl.hash(Buffer.concat(args.map((s) => nacl.hash(Buffer.from(s as string)))))
 }
 
 export const hashRawStringArray = (...args: Array<Uint8Array | string>): Uint8Array => {
-  return nacl.hash(Buffer.concat(args.map((s) => Buffer.from(s as any))))
+  return nacl.hash(Buffer.concat(args.map((s) => Buffer.from(s as string))))
 }
 
 export const randomNonce = (): string => {
@@ -19,11 +19,11 @@ export const randomNonce = (): string => {
 }
 
 export const hashRawB64url = (v: string | Buffer): string => {
-  return base64ToBase64url(Buffer.from(nacl.hash(Buffer.from(v as any))).toString('base64'))
+  return base64ToBase64url(Buffer.from(nacl.hash(Buffer.from(v as string))).toString('base64'))
 }
 
 export const hash = (v: string | Buffer): string => {
-  return base64ToBase64url(Buffer.from(nacl.hash(Buffer.from(v as any))).toString('base64'))
+  return base64ToBase64url(Buffer.from(nacl.hash(Buffer.from(v as string))).toString('base64'))
 }
 
 export const computeCAndHc = (r: string, s: string, h: string): [Uint8Array, Uint8Array] => {
@@ -88,7 +88,7 @@ export const hashPassword = (password: string, salt: string): Promise<string> =>
   }, resolve))
 }
 
-export const boxKeyPair = (): any => {
+export const boxKeyPair = (): { publicKey: Uint8Array; secretKey: Uint8Array } => {
   return nacl.box.keyPair()
 }
 

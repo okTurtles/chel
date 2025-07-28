@@ -60,7 +60,7 @@ export function LTags (...tags: string[]): {[key: string]: string} {
 
 export default function L (
   key: string,
-  args: any[] | object | void
+  args: unknown[] | object | void
 ): string {
   return template(currentTranslationTable[key] || key, args)
     // Avoid inopportune linebreaks before certain punctuations.

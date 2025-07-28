@@ -15,8 +15,8 @@ interface VNode {
       form: {
         [key: string]: {
           $error: boolean
-          $params: { [key: string]: any }
-          [key: string]: any
+          $params: { [key: string]: unknown }
+          [key: string]: unknown
         }
       }
     }
