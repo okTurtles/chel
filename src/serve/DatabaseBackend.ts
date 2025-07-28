@@ -1,3 +1,5 @@
+import { Buffer } from 'node:buffer'
+
 export interface IDatabaseBackend {
   init (): Promise<void>;
   clear (): Promise<void>;

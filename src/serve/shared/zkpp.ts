@@ -7,19 +7,23 @@ export const base64ToBase64url = (s: string): string => s.replace(/\//g, '_').re
 export const base64urlToBase64 = (s: string): string => s.replace(/_/g, '/').replace(/-/g, '+') + '='.repeat((4 - s.length % 4) % 4)
 
 export const hashStringArray = (...args: Array<Uint8Array | string>): Uint8Array => {
-  return nacl.hash(Buffer.concat(args.map((s) => nacl.hash(Buffer.from(s)))))
+  return nacl.hash(Buffer.concat(args.map((s) => nacl.hash(Buffer.from(s as any)))))
 }
 
 export const hashRawStringArray = (...args: Array<Uint8Array | string>): Uint8Array => {
-  return nacl.hash(Buffer.concat(args.map((s) => Buffer.from(s))))
+  return nacl.hash(Buffer.concat(args.map((s) => Buffer.from(s as any))))
 }
 
 export const randomNonce = (): string => {
   return base64ToBase64url(Buffer.from(nacl.randomBytes(12)).toString('base64'))
 }
 
+export const hashRawB64url = (v: string | Buffer): string => {
+  return base64ToBase64url(Buffer.from(nacl.hash(Buffer.from(v as any))).toString('base64'))
+}
+
 export const hash = (v: string | Buffer): string => {
-  return base64ToBase64url(Buffer.from(nacl.hash(Buffer.from(v))).toString('base64'))
+  return base64ToBase64url(Buffer.from(nacl.hash(Buffer.from(v as any))).toString('base64'))
 }
 
 export const computeCAndHc = (r: string, s: string, h: string): [Uint8Array, Uint8Array] => {
@@ -46,7 +50,9 @@ export const decryptContractSalt = (c: Uint8Array, encryptedContractSaltBox: str
   const nonce = encryptedContractSaltBoxBuf.slice(0, nacl.secretbox.nonceLength)
   const encryptedContractSalt = encryptedContractSaltBoxBuf.slice(nacl.secretbox.nonceLength)
 
-  return Buffer.from(nacl.secretbox.open(encryptedContractSalt, nonce, encryptionKey)).toString()
+  const decrypted = nacl.secretbox.open(encryptedContractSalt, nonce, encryptionKey)
+  if (!decrypted) throw new Error('Failed to decrypt contract salt')
+  return Buffer.from(decrypted).toString()
 }
 
 export const encryptSaltUpdate = (secret: string, recordId: string, record: string): string => {
@@ -67,7 +73,9 @@ export const decryptSaltUpdate = (secret: string, recordId: string, encryptedRec
 
   const encryptedRecord = encryptedRecordBoxBuf.slice(nacl.secretbox.nonceLength)
 
-  return Buffer.from(nacl.secretbox.open(encryptedRecord, nonce, encryptionKey)).toString()
+  const decrypted = nacl.secretbox.open(encryptedRecord, nonce, encryptionKey)
+  if (!decrypted) throw new Error('Failed to decrypt salt update')
+  return Buffer.from(decrypted).toString()
 }
 
 export const hashPassword = (password: string, salt: string): Promise<string> => {

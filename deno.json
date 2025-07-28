@@ -6,7 +6,7 @@
     "compile": "deno run --allow-run --allow-read=. --allow-write=./dist scripts/compile.ts",
     "build": "deno run --node-modules-dir --allow-run --allow-read --allow-env --allow-write=./build --allow-net --allow-sys scripts/build.ts",
     "dist": "deno lint . && deno task lint && deno task build && deno task compile",
-    "test": "deno task lint && deno test --allow-read=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-write=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-env --allow-ffi --allow-net"
+    "test": "SKIP_DB_FS_CASE_SENSITIVITY_CHECK=true deno task lint && SKIP_DB_FS_CASE_SENSITIVITY_CHECK=true deno test --unstable-worker-options --allow-read=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-write=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-env --allow-ffi --allow-net --allow-sys"
   },
   "imports": {
     "~/": "./src/",

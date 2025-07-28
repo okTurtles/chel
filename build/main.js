@@ -6305,22 +6305,22 @@ var require_nacl_fast = __commonJS({
         randombytes = fn;
       };
       (function() {
-        var crypto3 = typeof self !== "undefined" ? self.crypto || self.msCrypto : null;
-        if (crypto3 && crypto3.getRandomValues) {
+        var crypto2 = typeof self !== "undefined" ? self.crypto || self.msCrypto : null;
+        if (crypto2 && crypto2.getRandomValues) {
           var QUOTA = 65536;
           nacl3.setPRNG(function(x2, n) {
             var i2, v2 = new Uint8Array(n);
             for (i2 = 0; i2 < n; i2 += QUOTA) {
-              crypto3.getRandomValues(v2.subarray(i2, i2 + Math.min(n - i2, QUOTA)));
+              crypto2.getRandomValues(v2.subarray(i2, i2 + Math.min(n - i2, QUOTA)));
             }
             for (i2 = 0; i2 < n; i2++) x2[i2] = v2[i2];
             cleanup(v2);
           });
         } else if (typeof __require !== "undefined") {
-          crypto3 = __require("node:crypto");
-          if (crypto3 && crypto3.randomBytes) {
+          crypto2 = __require("node:crypto");
+          if (crypto2 && crypto2.randomBytes) {
             nacl3.setPRNG(function(x2, n) {
-              var i2, v2 = crypto3.randomBytes(n);
+              var i2, v2 = crypto2.randomBytes(n);
               for (i2 = 0; i2 < n; i2++) x2[i2] = v2[i2];
               cleanup(v2);
             });
@@ -13095,7 +13095,9 @@ var init_zkpp = __esm({
       const nonce = encryptedRecordBoxBuf.slice(0, default2.secretbox.nonceLength);
       const encryptionKey = hashRawStringArray(SU, secret, nonce, recordId).slice(0, default2.secretbox.keyLength);
       const encryptedRecord = encryptedRecordBoxBuf.slice(default2.secretbox.nonceLength);
-      return Buffer2.from(default2.secretbox.open(encryptedRecord, nonce, encryptionKey)).toString();
+      const decrypted = default2.secretbox.open(encryptedRecord, nonce, encryptionKey);
+      if (!decrypted) throw new Error("Failed to decrypt salt update");
+      return Buffer2.from(decrypted).toString();
     };
     boxKeyPair = () => {
       return default2.box.keyPair();
@@ -13673,8 +13675,6 @@ var init_database_router = __esm({
 
 // src/serve/database-router.test.ts
 var database_router_test_exports = {};
-import assert3 from "node:assert";
-import crypto2 from "node:crypto";
 var CID3, randomKeyWithPrefix, validConfig, db2;
 var init_database_router_test = __esm({
   "src/serve/database-router.test.ts"() {
@@ -13682,7 +13682,7 @@ var init_database_router_test = __esm({
     init_database_router();
     init_deps();
     CID3 = "Q";
-    randomKeyWithPrefix = (prefix) => `${prefix}${crypto2.randomUUID().replaceAll("-", "")}`;
+    randomKeyWithPrefix = (prefix) => `${prefix}${globalThis.crypto.randomUUID().replaceAll("-", "")}`;
     validConfig = {
       [CID3]: {
         name: "sqlite",
@@ -13698,53 +13698,58 @@ var init_database_router_test = __esm({
       }
     };
     db2 = new RouterBackend({ config: validConfig });
-    describe("DatabaseRouter::validateConfig", () => {
-      it("should accept a valid config", () => {
-        const errors = db2.validateConfig(validConfig);
-        assert3.equal(errors.length, 0);
-      });
-      it("should reject configs missing a * key", () => {
-        const config2 = omit(validConfig, "*");
-        const errors = db2.validateConfig(config2);
-        assert3.equal(errors.length, 1);
-      });
-      it("should reject config entries missing a name", () => {
-        const config2 = cloneDeep(validConfig);
-        delete config2["*"].name;
-        const errors = db2.validateConfig(config2);
-        assert3.equal(errors.length, 1);
-      });
+    Deno.test({
+      name: "DatabaseRouter::validateConfig",
+      async fn(t) {
+        await t.step("should accept a valid config", () => {
+          const errors = db2.validateConfig(validConfig);
+          if (errors.length !== 0) throw new Error(`Expected 0 errors but got ${errors.length}`);
+        });
+        await t.step("should reject configs missing a * key", () => {
+          const config2 = omit(validConfig, ["*"]);
+          const errors = db2.validateConfig(config2);
+          if (errors.length !== 1) throw new Error(`Expected 1 error but got ${errors.length}`);
+        });
+        await t.step("should reject config entries missing a name", () => {
+          const config2 = cloneDeep(validConfig);
+          delete config2["*"].name;
+          const errors = db2.validateConfig(config2);
+          if (errors.length !== 1) throw new Error(`Expected 1 error but got ${errors.length}`);
+        });
+      }
     });
-    describe("DatabaseRouter::lookupBackend", () => {
-      before("initialization", async function() {
+    Deno.test({
+      name: "DatabaseRouter::lookupBackend",
+      async fn(t) {
         await db2.init();
-      });
-      after("temp storage clear", async function() {
-        await db2.clear();
-      });
-      it("should find the right backend for keys starting with configured prefixes", () => {
-        for (const keyPrefix of Object.keys(db2.config)) {
-          if (keyPrefix === "*") continue;
-          const key = randomKeyWithPrefix(keyPrefix);
-          const actual = db2.lookupBackend(key);
-          const expected = db2.backends[keyPrefix];
-          assert3.equal(actual, expected);
+        try {
+          await t.step("should find the right backend for keys starting with configured prefixes", () => {
+            for (const keyPrefix of Object.keys(db2.config)) {
+              if (keyPrefix === "*") continue;
+              const key = randomKeyWithPrefix(keyPrefix);
+              const actual = db2.lookupBackend(key);
+              const expected = db2.backends[keyPrefix];
+              if (actual !== expected) throw new Error(`Expected ${expected} but got ${actual}`);
+            }
+          });
+          await t.step("should find the right backend for keys equal to configured prefixes", () => {
+            for (const keyPrefix of Object.keys(db2.config)) {
+              const key = keyPrefix;
+              const actual = db2.lookupBackend(key);
+              const expected = db2.backends[keyPrefix];
+              if (actual !== expected) throw new Error(`Expected ${expected} but got ${actual}`);
+            }
+          });
+          await t.step("should return the fallback backend for keys not matching any configured prefix", () => {
+            const key = "foo";
+            const actual = db2.lookupBackend(key);
+            const expected = db2.backends["*"];
+            if (actual !== expected) throw new Error(`Expected ${expected} but got ${actual}`);
+          });
+        } finally {
+          await db2.clear();
         }
-      });
-      it("should find the right backend for keys equal to configured prefixes", () => {
-        for (const keyPrefix of Object.keys(db2.config)) {
-          const key = keyPrefix;
-          const actual = db2.lookupBackend(key);
-          const expected = db2.backends[keyPrefix];
-          assert3.equal(actual, expected);
-        }
-      });
-      it("should return the fallback backend for keys not matching any configured prefix", () => {
-        const key = "foo";
-        const actual = db2.lookupBackend(key);
-        const expected = db2.backends["*"];
-        assert3.equal(actual, expected);
-      });
+      }
     });
   }
 });
@@ -13934,7 +13939,7 @@ var init_database = __esm({
           "chelonia.db/get": async function(prefixableKey, { bypassCache } = {}) {
             if (!bypassCache) {
               const lookupValue = cache2.get(prefixableKey);
-              if (lookupValue !== void 0) {
+              if (lookupValue !== void 0 && lookupValue !== null) {
                 return lookupValue;
               }
             }
@@ -13984,7 +13989,7 @@ var init_database = __esm({
           return [
             multicodes.SHELTER_CONTRACT_MANIFEST,
             multicodes.SHELTER_CONTRACT_TEXT
-          ].includes(parsed?.code);
+          ].includes(parsed?.code ?? -1);
         });
         const numKeys2 = keys.length;
         let numVisitedKeys = 0;
@@ -14268,6 +14273,7 @@ var init_push = __esm({
     };
     encryptPayload = async (subscription, data) => {
       const readableStream = new Response(data).body;
+      if (!readableStream) throw new Error("Failed to create readable stream");
       const [asPublic, IKM] = await subscription.encryptionKeys;
       return default19(aes128gcm, readableStream, 32768, asPublic, IKM).then(async (bodyStream) => {
         const chunks = [];
@@ -15594,8 +15600,8 @@ var init_server = __esm({
     ownerSizeTotalWorker = void 0;
     creditsWorker = void 0;
     if (!("crypto" in global) && typeof __require === "function") {
-      const crypto3 = await import("node:crypto");
-      const { webcrypto } = crypto3;
+      const crypto2 = await import("node:crypto");
+      const { webcrypto } = crypto2;
       if (webcrypto) {
         Object.defineProperty(global, "crypto", {
           enumerable: true,
@@ -15882,7 +15888,10 @@ var init_server = __esm({
     default4("okTurtles.data/set", PUBSUB_INSTANCE, createServer(hapi.listener, {
       serverHandlers: {
         connection(socket, request) {
-          const versionInfo = { GI_VERSION, CONTRACTS_VERSION };
+          const versionInfo = {
+            GI_VERSION: GI_VERSION || null,
+            CONTRACTS_VERSION: CONTRACTS_VERSION || null
+          };
           socket.send(createNotification(NOTIFICATION_TYPE.VERSION_INFO, versionInfo));
         }
       },

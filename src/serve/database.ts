@@ -1,8 +1,9 @@
 'use strict'
 
+import { Buffer } from 'node:buffer'
 import { sbp, maybeParseCID, multicodes, strToB64, checkKey, parsePrefixableKey, prefixHandlers, LRU, Boom, okturtlesData } from '../deps.ts'
-import { Readable } from 'stream'
-import fs from 'fs'
+import { Readable } from 'node:stream'
+import fs from 'node:fs'
 import { readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { initVapid } from './vapid.ts'
@@ -246,8 +247,8 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
       'chelonia.db/get': async function (prefixableKey: string, { bypassCache }: { bypassCache?: boolean } = {}): Promise<Buffer | string | void> {
         if (!bypassCache) {
           const lookupValue = cache.get(prefixableKey)
-          if (lookupValue !== undefined) {
-            return lookupValue
+          if (lookupValue !== undefined && lookupValue !== null) {
+            return lookupValue as Buffer | string | void
           }
         }
         const [prefix, key] = parsePrefixableKey(prefixableKey)
@@ -318,7 +319,7 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
         const parsed = maybeParseCID(k)
         return ([
           multicodes.SHELTER_CONTRACT_MANIFEST,
-          multicodes.SHELTER_CONTRACT_TEXT].includes(parsed?.code)
+          multicodes.SHELTER_CONTRACT_TEXT].includes(parsed?.code ?? -1)
         )
       })
     const numKeys = keys.length

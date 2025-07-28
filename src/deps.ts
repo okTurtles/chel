@@ -50,7 +50,7 @@ export { checkKey, parsePrefixableKey, prefixHandlers } from 'npm:@chelonia/lib@
 export { SPMessage } from 'npm:@chelonia/lib@1.1.0/SPMessage'
 export { SERVER } from 'npm:@chelonia/lib@1.1.0/presets'
 export { ChelErrorGenerator } from 'npm:@chelonia/lib@1.1.0'
-export type { SubMessage, UnsubMessage, Message, PubMessage, NotificationTypeEnum, JSONType, JSONObject } from 'npm:@chelonia/lib@1.1.0/pubsub'
+export type { SubMessage, UnsubMessage, Message, PubMessage, NotificationTypeEnum } from 'npm:@chelonia/lib@1.1.0/pubsub'
 export { PUSH_SERVER_ACTION_TYPE, REQUEST_TYPE, RESPONSE_TYPE, NOTIFICATION_TYPE, createMessage, createClient, createKvMessage, messageParser } from 'npm:@chelonia/lib@1.1.0/pubsub'
 export { verifyShelterAuthorizationHeader } from 'npm:@chelonia/lib@1.1.0/utils'
 export { EDWARDS25519SHA512BATCH, CURVE25519XSALSA20POLY1305, XSALSA20POLY1305 } from 'npm:@chelonia/crypto@1.0.1'

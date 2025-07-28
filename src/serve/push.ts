@@ -149,9 +149,10 @@ export const subscriptionInfoWrapper = (subscriptionId: string, subscriptionInfo
 // the ability to infer which channels a client is subscribed to.
 const encryptPayload = async (subscription: any, data: string): Promise<Buffer> => {
   const readableStream = new Response(data).body
+  if (!readableStream) throw new Error('Failed to create readable stream')
   const [asPublic, IKM] = await subscription.encryptionKeys
 
-  return rfc8188Encrypt(aes128gcm, readableStream, 32768, asPublic, IKM).then(async (bodyStream: any) => {
+  return rfc8188Encrypt(aes128gcm, readableStream as any, 32768, asPublic, IKM).then(async (bodyStream: any) => {
     const chunks: Uint8Array[] = []
     const reader = bodyStream.getReader()
     for (;;) {

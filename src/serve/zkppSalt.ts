@@ -1,5 +1,5 @@
 import { sbp, tweetnacl } from '../deps.ts'
-import { randomBytes, timingSafeEqual } from 'crypto'
+import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { Buffer } from 'node:buffer'
 import { base64ToBase64url, base64urlToBase64, boxKeyPair, computeCAndHc, decryptSaltUpdate, encryptContractSalt, encryptSaltUpdate, hash, hashRawStringArray, hashStringArray, parseRegisterSalt, randomNonce } from './shared/zkpp.ts'
 import { AUTHSALT, CONTRACTSALT, SALT_LENGTH_IN_OCTETS, SU } from './shared/zkppConstants.ts'
@@ -79,7 +79,7 @@ const computeZkppSaltRecordId = async (contractID: string) => {
   }
 
   const recordBuf = Buffer.concat([Buffer.from(contractID), Buffer.from(record)])
-  return hash(recordBuf)
+  return hash(recordBuf as any)
 }
 
 const getZkppSaltRecord = async (contractID: string) => {

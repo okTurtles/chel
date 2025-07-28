@@ -1,6 +1,8 @@
 /* globals logger */
 'use strict'
 
+import { Buffer } from 'node:buffer'
+
 // Declare logger as a global variable for TypeScript
 declare const logger: any
 /*
@@ -23,7 +25,9 @@ import type {
   NotificationTypeEnum
 } from '../deps.ts'
 
-import type { JSONType, JSONObject } from '../deps.ts'
+// Define JSON types locally since they're not exported from the module
+type JSONType = string | number | boolean | null | JSONObject | JSONType[]
+type JSONObject = { [key: string]: JSONType }
 import { postEvent } from './push.ts'
 import { chalk, WebSocket, WebSocketServer } from '../deps.ts'
 
@@ -264,7 +268,7 @@ const defaultSocketEventHandlers = {
     }
     // The socket can be marked as active since it just received a message.
     socket.activeSinceLastPing = true
-    const defaultHandler = defaultMessageHandlers[msg.type]
+    const defaultHandler = (defaultMessageHandlers as any)[msg.type]
     const customHandler = server.customMessageHandlers[msg.type]
 
     if (defaultHandler || customHandler) {

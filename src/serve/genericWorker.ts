@@ -1,7 +1,6 @@
 'use strict'
 
-import '@sbp/okturtles.eventqueue'
-import { sbp } from '../deps.ts'
+import { sbp, okturtlesEventQueue } from '../deps.ts'
 import { parentPort } from 'node:worker_threads'
 import { initDB } from './database.ts'
 import './logger.ts'
@@ -15,7 +14,7 @@ if (parentPort) {
         try {
           // The `any` cast is not ideal, but sbp's dynamic nature makes
           // this hard to type statically without more complex infrastructure.
-          port?.postMessage([true, await sbp(...(msg as any[]))])
+          port?.postMessage([true, await sbp(...(msg as [string, ...any[]]))])
         } catch (e) {
           const err = e as Error
           port?.postMessage([false, { message: err.message, stack: err.stack }])

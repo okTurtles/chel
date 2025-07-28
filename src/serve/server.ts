@@ -496,7 +496,10 @@ if (process.env.NODE_ENV === 'development' && !process.env.CI) {
 sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
   serverHandlers: {
     connection (socket: any, request: any) {
-      const versionInfo = { GI_VERSION, CONTRACTS_VERSION }
+      const versionInfo = {
+        GI_VERSION: GI_VERSION || null,
+        CONTRACTS_VERSION: CONTRACTS_VERSION || null
+      }
       socket.send(createNotification(NOTIFICATION_TYPE.VERSION_INFO, versionInfo))
     }
   },

@@ -18,7 +18,7 @@ function logMethod (args: any[], method: any) {
   }
   method(...args)
 }
-const logger = pino({
+const logger = (pino as any)({
   level: 'debug'
 })
 
