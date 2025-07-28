@@ -112,12 +112,13 @@ if (
   !('crypto' in global) &&
   typeof require === 'function'
 ) {
-  const { webcrypto } = require('crypto')
+  const crypto = await import('node:crypto')
+  const { webcrypto } = crypto
   if (webcrypto) {
     Object.defineProperty(global, 'crypto', {
-      'enumerable': true,
-      'configurable': true,
-      'get': () => webcrypto
+      enumerable: true,
+      configurable: true,
+      get: () => webcrypto
     })
   }
 }
@@ -360,7 +361,6 @@ sbp('sbp/selectors/register', {
       await ownerSizeTotalWorker.rpcSbp('worker/updateSizeSideEffects', { resourceID: cid, size: -parseInt(size), ultimateOwnerID })
     }
   },
-  // eslint-disable-next-line require-await
   async 'backend/deleteContract' (cid: string, ultimateOwnerID?: string | null, skipIfDeleted?: boolean | null): Promise<void> {
     let contractsPendingDeletion = sbp('okTurtles.data/get', 'contractsPendingDeletion')
     if (!contractsPendingDeletion) {
@@ -528,11 +528,11 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
   },
   messageHandlers: {
     [REQUEST_TYPE.PUSH_ACTION]: async function ({ data }: { data: any }) {
-      const socket = this
+      const socket = this as any
       const { action, payload } = data
 
       if (!action) {
-        (socket as any).send(createPushErrorResponse({ message: "'action' field is required" }))
+        (socket as any).send(createPushErrorResponse({ message: '\'action\' field is required' }))
       }
 
       const handler = pushServerActionhandlers[action]

@@ -20,7 +20,6 @@ const SECOND = 1000
 
 // Regexes validated as safe with <https://devina.io/redos-checker>
 const CID_REGEX = /^z[1-9A-HJ-NP-Za-km-z]{8,72}$/
-// eslint-disable-next-line no-control-regex
 const KV_KEY_REGEX = /^(?!_private)[^\x00]{1,256}$/
 // Rules from validateUsername:
 //   - Length: 1-80
@@ -166,7 +165,7 @@ const errorMapper = (e: Error): any => {
 // defined in `server.js`.
 const route = new Proxy({} as any, {
   get: function (obj: any, prop: any): any {
-    return function (path: string, options: any, handler: Function | any): void {
+    return function (path: string, options: any, handler: ((...args: any[]) => any) | any): void {
       sbp('okTurtles.data/apply', SERVER_INSTANCE, function (server: any) {
         server.route({ path, method: prop, options, handler })
       })
@@ -677,7 +676,7 @@ route.GET('/file/{hash}', {
     // The CSP below prevents any sort of resource loading or script execution
     // on direct navigation. The `nosniff` header instructs the browser to
     // honour the provided content-type.
-    .header('content-security-policy', "default-src 'none'; frame-ancestors 'none'; form-action 'none'; upgrade-insecure-requests; sandbox")
+    .header('content-security-policy', 'default-src \'none\'; frame-ancestors \'none\'; form-action \'none\'; upgrade-insecure-requests; sandbox')
     .header('x-content-type-options', 'nosniff')
     .type(type)
 })

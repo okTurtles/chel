@@ -27,6 +27,7 @@ function logSBP (domain: string, selector: string, data: Array<any>) {
 // any specific selectors outside of backend namespace to log
 ;[].forEach(sel => sbp('sbp/filters/selector/add', sel, logSBP))
 
+// eslint-disable-next-line no-async-promise-executor
 export default (new Promise<void>(async (resolve, reject) => {
   sbp('okTurtles.events/on', SERVER_RUNNING, function () {
     console.info(chalk.bold('backend startup sequence complete.'))

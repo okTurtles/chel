@@ -179,11 +179,11 @@ export const postEvent = async (subscription: any, event: string | null): Promis
       ['authorization', authorization],
       ...(body
         ? [['content-encoding', 'aes128gcm'] as [string, string],
-            [
-              'content-type',
-              'application/octet-stream'
-            ] as [string, string]
-          ]
+          [
+            'content-type',
+            'application/octet-stream'
+          ] as [string, string]
+        ]
         : []),
       // ['push-receipt', ''],
       ['ttl', '60'] as [string, string]
@@ -211,12 +211,10 @@ export const postEvent = async (subscription: any, event: string | null): Promis
 }
 
 export const pushServerActionhandlers: any = {
-  [PUSH_SERVER_ACTION_TYPE.SEND_PUBLIC_KEY] (this: any) {
-    const socket = this
+  [PUSH_SERVER_ACTION_TYPE.SEND_PUBLIC_KEY] (socket: any) {
     socket.send(createMessage(REQUEST_TYPE.PUSH_ACTION, { type: PUSH_SERVER_ACTION_TYPE.SEND_PUBLIC_KEY, data: getVapidPublicKey() }))
   },
-  async [PUSH_SERVER_ACTION_TYPE.STORE_SUBSCRIPTION] (this: any, payload: any) {
-    const socket = this
+  async [PUSH_SERVER_ACTION_TYPE.STORE_SUBSCRIPTION] (socket: any, payload: any) {
     const { server } = socket
     const { applicationServerKey, settings, subscriptionInfo } = payload
     if (applicationServerKey) {
@@ -325,8 +323,7 @@ export const pushServerActionhandlers: any = {
       throw e // rethrow
     }
   },
-  [PUSH_SERVER_ACTION_TYPE.DELETE_SUBSCRIPTION] (this: any) {
-    const socket = this
+  [PUSH_SERVER_ACTION_TYPE.DELETE_SUBSCRIPTION] (socket: any) {
     const { pushSubscriptionId: subscriptionId } = socket
 
     if (subscriptionId) {

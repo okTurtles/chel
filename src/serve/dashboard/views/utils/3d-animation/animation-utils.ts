@@ -56,7 +56,7 @@ class Axes extends Group {
 
 class CombineWithEdge extends Group {
   data: any
-  
+
   constructor ({
     mesh = null, geometry = null, material = null,
     edgeColor = '#000000', shadow = false, edgeOpacity = 1

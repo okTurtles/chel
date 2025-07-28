@@ -102,11 +102,11 @@ export function createOkResponse (data: JSONType): string {
 interface ServerOptions {
   logPingRounds?: boolean;
   logPongMessages?: boolean;
-  messageHandlers?: Record<string, Function>;
-  serverHandlers?: Record<string, Function>;
-  socketHandlers?: Record<string, Function>;
+  messageHandlers?: Record<string, (...args: any[]) => any>;
+  serverHandlers?: Record<string, (...args: any[]) => any>;
+  socketHandlers?: Record<string, (...args: any[]) => any>;
   backlog?: number;
-  handleProtocols?: Function;
+  handleProtocols?: (...args: any[]) => any;
   maxPayload?: number;
   path?: string;
   perMessageDeflate?: boolean | object;

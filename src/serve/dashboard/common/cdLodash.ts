@@ -1,4 +1,4 @@
-export function cloneDeep (obj: Object): any {
+export function cloneDeep (obj: object): any {
   return JSON.parse(JSON.stringify(obj))
 }
 
@@ -19,7 +19,7 @@ export function merge (obj: any, src: any): any {
   return obj
 }
 
-export function throttle (func: Function, delay: number): Function {
+export function throttle (func: (...args: any[]) => any, delay: number): (...args: any[]) => any {
   // reference: https://www.geeksforgeeks.org/javascript-throttling/
 
   // Previously called time of the function
@@ -37,7 +37,7 @@ export function throttle (func: Function, delay: number): Function {
   }
 }
 
-export function debounce (func: Function, wait: number, immediate: boolean | null | undefined): Function {
+export function debounce (func: (...args: any[]) => any, wait: number, immediate: boolean | null | undefined): ((...args: any[]) => any) & { clear: () => void; flush: () => void } {
   let timeout: any, args: any, context: any, timestamp: any, result: any
   if (wait == null) wait = 100
 
@@ -56,6 +56,7 @@ export function debounce (func: Function, wait: number, immediate: boolean | nul
   }
 
   const debounced = function (this: any, ...funcArgs: any[]) {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     context = this
     args = funcArgs
     timestamp = Date.now()

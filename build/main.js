@@ -14315,12 +14315,10 @@ var init_push = __esm({
       }
     };
     pushServerActionhandlers = {
-      [PUSH_SERVER_ACTION_TYPE.SEND_PUBLIC_KEY]() {
-        const socket = this;
+      [PUSH_SERVER_ACTION_TYPE.SEND_PUBLIC_KEY](socket) {
         socket.send(createMessage(REQUEST_TYPE.PUSH_ACTION, { type: PUSH_SERVER_ACTION_TYPE.SEND_PUBLIC_KEY, data: getVapidPublicKey() }));
       },
-      async [PUSH_SERVER_ACTION_TYPE.STORE_SUBSCRIPTION](payload) {
-        const socket = this;
+      async [PUSH_SERVER_ACTION_TYPE.STORE_SUBSCRIPTION](socket, payload) {
         const { server } = socket;
         const { applicationServerKey, settings, subscriptionInfo } = payload;
         if (applicationServerKey) {
@@ -14377,8 +14375,7 @@ var init_push = __esm({
           throw e2;
         }
       },
-      [PUSH_SERVER_ACTION_TYPE.DELETE_SUBSCRIPTION]() {
-        const socket = this;
+      [PUSH_SERVER_ACTION_TYPE.DELETE_SUBSCRIPTION](socket) {
         const { pushSubscriptionId: subscriptionId } = socket;
         if (subscriptionId) {
           return removeSubscription(subscriptionId);
@@ -15575,7 +15572,7 @@ import { basename as basename3, dirname as dirname3 } from "node:path";
 import { fileURLToPath } from "node:url";
 var __filename, __dirname, ownerSizeTotalWorker, creditsWorker, CONTRACTS_VERSION, GI_VERSION, hapi, appendToOrphanedNamesIndex;
 var init_server = __esm({
-  "src/serve/server.ts"() {
+  async "src/serve/server.ts"() {
     "use strict";
     init_deps();
     init_auth();
@@ -15597,12 +15594,13 @@ var init_server = __esm({
     ownerSizeTotalWorker = void 0;
     creditsWorker = void 0;
     if (!("crypto" in global) && typeof __require === "function") {
-      const { webcrypto } = __require("node:crypto");
+      const crypto3 = await import("node:crypto");
+      const { webcrypto } = crypto3;
       if (webcrypto) {
         Object.defineProperty(global, "crypto", {
-          "enumerable": true,
-          "configurable": true,
-          "get": () => webcrypto
+          enumerable: true,
+          configurable: true,
+          get: () => webcrypto
         });
       }
     }
@@ -15778,7 +15776,6 @@ var init_server = __esm({
           await ownerSizeTotalWorker.rpcSbp("worker/updateSizeSideEffects", { resourceID: cid, size: -parseInt(size), ultimateOwnerID });
         }
       },
-      // eslint-disable-next-line require-await
       async "backend/deleteContract"(cid, ultimateOwnerID, skipIfDeleted) {
         let contractsPendingDeletion = default4("okTurtles.data/get", "contractsPendingDeletion");
         if (!contractsPendingDeletion) {
@@ -16078,7 +16075,7 @@ var init_serve = __esm({
         console.info(default8.bold("backend startup sequence complete."));
         resolve4();
       });
-      await Promise.resolve().then(() => (init_server(), server_exports));
+      await init_server().then(() => server_exports);
     });
     shutdownFn = function(message) {
       default4("okTurtles.data/apply", PUBSUB_INSTANCE, function(pubsub) {

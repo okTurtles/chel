@@ -16,7 +16,7 @@ function logMethod (args: any[], method: any) {
       args[stringIdx] += typeof args[i] === 'string' ? ' %s' : ' %o'
     }
   }
-  method.apply(null, args)
+  method(...args)
 }
 const logger = pino({
   level: 'debug'
