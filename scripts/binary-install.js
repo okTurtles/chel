@@ -7,8 +7,9 @@ const process = require('node:process')
 const { existsSync, mkdirSync } = require('fs')
 const { join, resolve } = require('path')
 const { spawnSync } = require('child_process')
+const { Readable } = require('node:stream') // Required for stream conversion
+const { fetch } = require('undici') // Keep undici for fetch
 
-const axios = require('axios')
 const tar = require('tar')
 const rimraf = require('rimraf')
 
@@ -55,7 +56,7 @@ class Binary {
     this.binaryPath = join(this.installDirectory, this.name)
   }
 
-  install (fetchOptions) {
+  async install (fetchOptions) {
     if (existsSync(this.installDirectory)) {
       rimraf.sync(this.installDirectory)
     }
@@ -64,23 +65,28 @@ class Binary {
 
     console.log(`Downloading release from ${this.url}`)
 
-    return axios({ ...fetchOptions, url: this.url, responseType: 'stream' })
-      .then(res => {
-        return new Promise((resolve, reject) => {
-          const sink = res.data.pipe(
-            tar.x({ strip: 1, C: this.installDirectory })
-          )
-          sink.on('finish', () => resolve())
-          sink.on('error', err => reject(err))
-        })
+    try {
+      const response = await fetch(this.url, fetchOptions)
+
+      if (!response.ok) {
+        throw new Error(`Failed to download: ${response.status} ${response.statusText}`)
+      }
+
+      // Convert web stream to Node.js stream (CRITICAL FIX)
+      const nodeStream = Readable.fromWeb(response.body)
+      
+      await new Promise((resolve, reject) => {
+        const sink = nodeStream.pipe(
+          tar.x({ strip: 1, C: this.installDirectory })
+        )
+        sink.on('finish', resolve)
+        sink.on('error', reject)
       })
-      .then(() => {
-        // TODO: verify the blake32hash of the downloaded binary upon install
-        console.log(`${this.name} has been installed!`)
-      })
-      .catch(e => {
-        error(`Error fetching release: ${e.message}`)
-      })
+
+      console.log(`${this.name} has been installed!`)
+    } catch (e) {
+      error(`Error fetching release: ${e.message}`)
+    }
   }
 
   run () {
