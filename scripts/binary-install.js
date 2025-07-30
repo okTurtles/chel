@@ -8,7 +8,7 @@ const { existsSync, mkdirSync } = require('fs')
 const { join, resolve } = require('path')
 const { spawnSync } = require('child_process')
 const { Readable } = require('node:stream') // Required for stream conversion
-const { fetch } = require('undici') // Keep undici for fetch
+
 
 const tar = require('tar')
 const rimraf = require('rimraf')
