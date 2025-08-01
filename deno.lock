@@ -25,7 +25,7 @@
     "jsr:@std/streams@1.0.10": "1.0.10",
     "npm:@apeleghq/rfc8188@1.0.7": "1.0.7",
     "npm:@chelonia/crypto@1.0.1": "1.0.1",
-    "npm:@chelonia/lib@1.1.0": "1.1.0_@sbp+sbp@2.4.1",
+    "npm:@chelonia/lib@1.2.0": "1.2.0_@sbp+sbp@2.4.1",
     "npm:@eslint/js@9.31.0": "9.31.0",
     "npm:@hapi/boom@9.1.0": "9.1.0",
     "npm:@hapi/hapi@20.1.2": "20.1.2",
@@ -160,8 +160,8 @@
         "tweetnacl"
       ]
     },
-    "@chelonia/lib@1.1.0_@sbp+sbp@2.4.1": {
-      "integrity": "sha512-jAh9TFwxQxO722NmYhpaozw4+ORm+bvmP2y/HaHNsJqmF9RUFRTm2qiicuHiIL1Y78ZDqjInSof45uzCKpqedg==",
+    "@chelonia/lib@1.2.0_@sbp+sbp@2.4.1": {
+      "integrity": "sha512-Wt8L0Qvq8wpkh7iTbBm9sKQnDQAciNS50u69KOeR/Qg6MDjvqKPpHEx2TJRdfPGPg3Z7qyUj9Cf+5VPi1zKxSQ==",
       "dependencies": [
         "@apeleghq/multipart-parser",
         "@apeleghq/rfc8188@1.0.8",
@@ -171,6 +171,7 @@
         "@sbp/okturtles.eventqueue@1.2.1_@sbp+sbp@2.4.1",
         "@sbp/okturtles.events@1.0.1_@sbp+sbp@2.4.1",
         "@sbp/sbp",
+        "scrypt-async",
         "turtledash@1.0.2"
       ]
     },
@@ -1285,8 +1286,8 @@
     "flatted@3.3.3": {
       "integrity": "sha512-GX+ysw4PBCz0PzosHDepZGANEuFCMLrnRTiEy9McGjmkCQYwRq4A/X786G/fjM/+OjsWSU1ZrY5qyARZmO/uwg=="
     },
-    "follow-redirects@1.15.9": {
-      "integrity": "sha512-gew4GsXizNgdoRyqmyfMHyAmXsZDk6mHkSxZFCzW9gwlbtOW44CDtYavM+y+72qD/Vq2l550kMF52DT8fOLJqQ=="
+    "follow-redirects@1.15.11": {
+      "integrity": "sha512-deG2P0JfjrTxl50XGCDyfI97ZGVCxIpfKYmfyrQ54n5FO/0gfIES8C/Psl6kWVDolizcaaxZJnTS0QSMxvnsBQ=="
     },
     "form-data@4.0.4": {
       "integrity": "sha512-KrGhL9Q4zjj0kiUt5OO4Mr/A/jlI2jDYs5eHBpYHPcBEVSiipAvn2Ko2HnPe20rmcuuvMHNdZFp+4IlGTMF0Ow==",

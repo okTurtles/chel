@@ -82,13 +82,15 @@ import { default as default17 } from "npm:bottleneck@2.19.5";
 import { default as default18 } from "npm:scrypt-async@2.0.1";
 import { aes128gcm } from "npm:@apeleghq/rfc8188@1.0.7/encodings";
 import { default as default19 } from "npm:@apeleghq/rfc8188@1.0.7/encrypt";
-import { blake32Hash, createCID, maybeParseCID, multicodes, strToB64, getSubscriptionId, parseCID } from "npm:@chelonia/lib@1.1.0/functions";
-import { checkKey, parsePrefixableKey, prefixHandlers } from "npm:@chelonia/lib@1.1.0/db";
-import { SPMessage } from "npm:@chelonia/lib@1.1.0/SPMessage";
-import { SERVER } from "npm:@chelonia/lib@1.1.0/presets";
-import { ChelErrorGenerator } from "npm:@chelonia/lib@1.1.0";
-import { PUSH_SERVER_ACTION_TYPE, REQUEST_TYPE, RESPONSE_TYPE, NOTIFICATION_TYPE, createMessage, createClient, createKvMessage, messageParser } from "npm:@chelonia/lib@1.1.0/pubsub";
-import { verifyShelterAuthorizationHeader } from "npm:@chelonia/lib@1.1.0/utils";
+import { blake32Hash, createCID, maybeParseCID, multicodes, strToB64, getSubscriptionId, parseCID } from "npm:@chelonia/lib@1.2.0/functions";
+import { checkKey, parsePrefixableKey, prefixHandlers } from "npm:@chelonia/lib@1.2.0/db";
+import { SPMessage } from "npm:@chelonia/lib@1.2.0/SPMessage";
+import { SERVER } from "npm:@chelonia/lib@1.2.0/presets";
+import { ChelErrorGenerator } from "npm:@chelonia/lib@1.2.0";
+import { PUSH_SERVER_ACTION_TYPE, REQUEST_TYPE, RESPONSE_TYPE, NOTIFICATION_TYPE, createMessage, createClient, createKvMessage, messageParser } from "npm:@chelonia/lib@1.2.0/pubsub";
+import { verifyShelterAuthorizationHeader } from "npm:@chelonia/lib@1.2.0/utils";
+import { base64ToBase64url, base64urlToBase64, boxKeyPair, computeCAndHc, decryptSaltUpdate, encryptContractSalt, encryptSaltUpdate, hash, hashRawStringArray, hashStringArray, parseRegisterSalt, randomNonce } from "npm:@chelonia/lib@1.2.0/zkpp";
+import { AUTHSALT, CONTRACTSALT, CS, SALT_LENGTH_IN_OCTETS, SU } from "npm:@chelonia/lib@1.2.0/zkppConstants";
 import { EDWARDS25519SHA512BATCH, CURVE25519XSALSA20POLY1305, XSALSA20POLY1305 } from "npm:@chelonia/crypto@1.0.1";
 import { keygen, serializeKey, deserializeKey, keygenOfSameType, keyId, generateSalt, deriveKeyFromPassword } from "npm:@chelonia/crypto@1.0.1";
 import { sign, verifySignature, encrypt, decrypt } from "npm:@chelonia/crypto@1.0.1";
@@ -3019,7 +3021,7 @@ var init_cid = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/functions.mjs
+// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/functions.mjs
 import { Buffer as Buffer3 } from "node:buffer";
 async function createCIDfromStream(data, multicode = multicodes3.RAW) {
   const uint8array = typeof data === "string" ? new TextEncoder().encode(data) : data;
@@ -3038,7 +3040,7 @@ function blake32Hash2(data) {
 }
 var multicodes3, parseCID2, b64ToBuf, b64ToStr;
 var init_functions = __esm({
-  "node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/functions.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/functions.mjs"() {
     init_base58();
     init_blake2b();
     init_blake2bstream();
@@ -3067,7 +3069,7 @@ var init_functions = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/pubsub/index.mjs
+// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/pubsub/index.mjs
 function createClient2(url, options2 = {}) {
   const client = {
     customEventHandlers: options2.handlers || {},
@@ -3140,7 +3142,7 @@ function createRequest(type, data) {
 }
 var NOTIFICATION_TYPE2, REQUEST_TYPE2, RESPONSE_TYPE2, PUSH_SERVER_ACTION_TYPE2, defaultOptions, PUBSUB_ERROR, PUBSUB_RECONNECTION_ATTEMPT, PUBSUB_RECONNECTION_FAILED, PUBSUB_RECONNECTION_SCHEDULED, PUBSUB_RECONNECTION_SUCCEEDED, PUBSUB_SUBSCRIPTION_SUCCEEDED, defaultClientEventHandlers, defaultMessageHandlers, globalEventNames, socketEventNames, globalEventMap, isDefinetelyOffline, messageParser2, publicMethods;
 var init_pubsub = __esm({
-  "node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/pubsub/index.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/pubsub/index.mjs"() {
     init_esm4();
     init_esm();
     NOTIFICATION_TYPE2 = Object.freeze({
@@ -3618,7 +3620,7 @@ var init_esm6 = __esm({
 // node_modules/.deno/scrypt-async@2.0.1/node_modules/scrypt-async/scrypt-async.js
 var require_scrypt_async = __commonJS({
   "node_modules/.deno/scrypt-async@2.0.1/node_modules/scrypt-async/scrypt-async.js"(exports, module) {
-    function scrypt2(password, salt, logN, r, dkLen, interruptStep, callback, encoding) {
+    function scrypt3(password, salt, logN, r, dkLen, interruptStep, callback, encoding) {
       "use strict";
       function SHA256(m3) {
         var K2 = [
@@ -4104,14 +4106,14 @@ var require_scrypt_async = __commonJS({
         calculateAsync(0);
       }
     }
-    if (typeof module !== "undefined") module.exports = scrypt2;
+    if (typeof module !== "undefined") module.exports = scrypt3;
   }
 });
 
 // node_modules/.deno/tweetnacl@1.0.3/node_modules/tweetnacl/nacl-fast.js
 var require_nacl_fast = __commonJS({
   "node_modules/.deno/tweetnacl@1.0.3/node_modules/tweetnacl/nacl-fast.js"(exports, module) {
-    (function(nacl3) {
+    (function(nacl4) {
       "use strict";
       var gf = function(init) {
         var i2, r = new Float64Array(16);
@@ -6070,7 +6072,7 @@ var require_nacl_fast = __commonJS({
         return n;
       }
       var crypto_secretbox_KEYBYTES = 32, crypto_secretbox_NONCEBYTES = 24, crypto_secretbox_ZEROBYTES = 32, crypto_secretbox_BOXZEROBYTES = 16, crypto_scalarmult_BYTES = 32, crypto_scalarmult_SCALARBYTES = 32, crypto_box_PUBLICKEYBYTES = 32, crypto_box_SECRETKEYBYTES = 32, crypto_box_BEFORENMBYTES = 32, crypto_box_NONCEBYTES = crypto_secretbox_NONCEBYTES, crypto_box_ZEROBYTES = crypto_secretbox_ZEROBYTES, crypto_box_BOXZEROBYTES = crypto_secretbox_BOXZEROBYTES, crypto_sign_BYTES = 64, crypto_sign_PUBLICKEYBYTES = 32, crypto_sign_SECRETKEYBYTES = 64, crypto_sign_SEEDBYTES = 32, crypto_hash_BYTES = 64;
-      nacl3.lowlevel = {
+      nacl4.lowlevel = {
         crypto_core_hsalsa20,
         crypto_stream_xor,
         crypto_stream,
@@ -6143,12 +6145,12 @@ var require_nacl_fast = __commonJS({
       function cleanup(arr) {
         for (var i2 = 0; i2 < arr.length; i2++) arr[i2] = 0;
       }
-      nacl3.randomBytes = function(n) {
+      nacl4.randomBytes = function(n) {
         var b = new Uint8Array(n);
         randombytes(b, n);
         return b;
       };
-      nacl3.secretbox = function(msg, nonce, key) {
+      nacl4.secretbox = function(msg, nonce, key) {
         checkArrayTypes(msg, nonce, key);
         checkLengths(key, nonce);
         var m3 = new Uint8Array(crypto_secretbox_ZEROBYTES + msg.length);
@@ -6157,7 +6159,7 @@ var require_nacl_fast = __commonJS({
         crypto_secretbox(c, m3, m3.length, nonce, key);
         return c.subarray(crypto_secretbox_BOXZEROBYTES);
       };
-      nacl3.secretbox.open = function(box, nonce, key) {
+      nacl4.secretbox.open = function(box, nonce, key) {
         checkArrayTypes(box, nonce, key);
         checkLengths(key, nonce);
         var c = new Uint8Array(crypto_secretbox_BOXZEROBYTES + box.length);
@@ -6167,10 +6169,10 @@ var require_nacl_fast = __commonJS({
         if (crypto_secretbox_open(m3, c, c.length, nonce, key) !== 0) return null;
         return m3.subarray(crypto_secretbox_ZEROBYTES);
       };
-      nacl3.secretbox.keyLength = crypto_secretbox_KEYBYTES;
-      nacl3.secretbox.nonceLength = crypto_secretbox_NONCEBYTES;
-      nacl3.secretbox.overheadLength = crypto_secretbox_BOXZEROBYTES;
-      nacl3.scalarMult = function(n, p) {
+      nacl4.secretbox.keyLength = crypto_secretbox_KEYBYTES;
+      nacl4.secretbox.nonceLength = crypto_secretbox_NONCEBYTES;
+      nacl4.secretbox.overheadLength = crypto_secretbox_BOXZEROBYTES;
+      nacl4.scalarMult = function(n, p) {
         checkArrayTypes(n, p);
         if (n.length !== crypto_scalarmult_SCALARBYTES) throw new Error("bad n size");
         if (p.length !== crypto_scalarmult_BYTES) throw new Error("bad p size");
@@ -6178,39 +6180,39 @@ var require_nacl_fast = __commonJS({
         crypto_scalarmult(q, n, p);
         return q;
       };
-      nacl3.scalarMult.base = function(n) {
+      nacl4.scalarMult.base = function(n) {
         checkArrayTypes(n);
         if (n.length !== crypto_scalarmult_SCALARBYTES) throw new Error("bad n size");
         var q = new Uint8Array(crypto_scalarmult_BYTES);
         crypto_scalarmult_base(q, n);
         return q;
       };
-      nacl3.scalarMult.scalarLength = crypto_scalarmult_SCALARBYTES;
-      nacl3.scalarMult.groupElementLength = crypto_scalarmult_BYTES;
-      nacl3.box = function(msg, nonce, publicKey, secretKey) {
-        var k = nacl3.box.before(publicKey, secretKey);
-        return nacl3.secretbox(msg, nonce, k);
+      nacl4.scalarMult.scalarLength = crypto_scalarmult_SCALARBYTES;
+      nacl4.scalarMult.groupElementLength = crypto_scalarmult_BYTES;
+      nacl4.box = function(msg, nonce, publicKey, secretKey) {
+        var k = nacl4.box.before(publicKey, secretKey);
+        return nacl4.secretbox(msg, nonce, k);
       };
-      nacl3.box.before = function(publicKey, secretKey) {
+      nacl4.box.before = function(publicKey, secretKey) {
         checkArrayTypes(publicKey, secretKey);
         checkBoxLengths(publicKey, secretKey);
         var k = new Uint8Array(crypto_box_BEFORENMBYTES);
         crypto_box_beforenm(k, publicKey, secretKey);
         return k;
       };
-      nacl3.box.after = nacl3.secretbox;
-      nacl3.box.open = function(msg, nonce, publicKey, secretKey) {
-        var k = nacl3.box.before(publicKey, secretKey);
-        return nacl3.secretbox.open(msg, nonce, k);
+      nacl4.box.after = nacl4.secretbox;
+      nacl4.box.open = function(msg, nonce, publicKey, secretKey) {
+        var k = nacl4.box.before(publicKey, secretKey);
+        return nacl4.secretbox.open(msg, nonce, k);
       };
-      nacl3.box.open.after = nacl3.secretbox.open;
-      nacl3.box.keyPair = function() {
+      nacl4.box.open.after = nacl4.secretbox.open;
+      nacl4.box.keyPair = function() {
         var pk = new Uint8Array(crypto_box_PUBLICKEYBYTES);
         var sk = new Uint8Array(crypto_box_SECRETKEYBYTES);
         crypto_box_keypair(pk, sk);
         return { publicKey: pk, secretKey: sk };
       };
-      nacl3.box.keyPair.fromSecretKey = function(secretKey) {
+      nacl4.box.keyPair.fromSecretKey = function(secretKey) {
         checkArrayTypes(secretKey);
         if (secretKey.length !== crypto_box_SECRETKEYBYTES)
           throw new Error("bad secret key size");
@@ -6218,12 +6220,12 @@ var require_nacl_fast = __commonJS({
         crypto_scalarmult_base(pk, secretKey);
         return { publicKey: pk, secretKey: new Uint8Array(secretKey) };
       };
-      nacl3.box.publicKeyLength = crypto_box_PUBLICKEYBYTES;
-      nacl3.box.secretKeyLength = crypto_box_SECRETKEYBYTES;
-      nacl3.box.sharedKeyLength = crypto_box_BEFORENMBYTES;
-      nacl3.box.nonceLength = crypto_box_NONCEBYTES;
-      nacl3.box.overheadLength = nacl3.secretbox.overheadLength;
-      nacl3.sign = function(msg, secretKey) {
+      nacl4.box.publicKeyLength = crypto_box_PUBLICKEYBYTES;
+      nacl4.box.secretKeyLength = crypto_box_SECRETKEYBYTES;
+      nacl4.box.sharedKeyLength = crypto_box_BEFORENMBYTES;
+      nacl4.box.nonceLength = crypto_box_NONCEBYTES;
+      nacl4.box.overheadLength = nacl4.secretbox.overheadLength;
+      nacl4.sign = function(msg, secretKey) {
         checkArrayTypes(msg, secretKey);
         if (secretKey.length !== crypto_sign_SECRETKEYBYTES)
           throw new Error("bad secret key size");
@@ -6231,7 +6233,7 @@ var require_nacl_fast = __commonJS({
         crypto_sign(signedMsg, msg, msg.length, secretKey);
         return signedMsg;
       };
-      nacl3.sign.open = function(signedMsg, publicKey) {
+      nacl4.sign.open = function(signedMsg, publicKey) {
         checkArrayTypes(signedMsg, publicKey);
         if (publicKey.length !== crypto_sign_PUBLICKEYBYTES)
           throw new Error("bad public key size");
@@ -6242,13 +6244,13 @@ var require_nacl_fast = __commonJS({
         for (var i2 = 0; i2 < m3.length; i2++) m3[i2] = tmp[i2];
         return m3;
       };
-      nacl3.sign.detached = function(msg, secretKey) {
-        var signedMsg = nacl3.sign(msg, secretKey);
+      nacl4.sign.detached = function(msg, secretKey) {
+        var signedMsg = nacl4.sign(msg, secretKey);
         var sig = new Uint8Array(crypto_sign_BYTES);
         for (var i2 = 0; i2 < sig.length; i2++) sig[i2] = signedMsg[i2];
         return sig;
       };
-      nacl3.sign.detached.verify = function(msg, sig, publicKey) {
+      nacl4.sign.detached.verify = function(msg, sig, publicKey) {
         checkArrayTypes(msg, sig, publicKey);
         if (sig.length !== crypto_sign_BYTES)
           throw new Error("bad signature size");
@@ -6261,13 +6263,13 @@ var require_nacl_fast = __commonJS({
         for (i2 = 0; i2 < msg.length; i2++) sm[i2 + crypto_sign_BYTES] = msg[i2];
         return crypto_sign_open(m3, sm, sm.length, publicKey) >= 0;
       };
-      nacl3.sign.keyPair = function() {
+      nacl4.sign.keyPair = function() {
         var pk = new Uint8Array(crypto_sign_PUBLICKEYBYTES);
         var sk = new Uint8Array(crypto_sign_SECRETKEYBYTES);
         crypto_sign_keypair(pk, sk);
         return { publicKey: pk, secretKey: sk };
       };
-      nacl3.sign.keyPair.fromSecretKey = function(secretKey) {
+      nacl4.sign.keyPair.fromSecretKey = function(secretKey) {
         checkArrayTypes(secretKey);
         if (secretKey.length !== crypto_sign_SECRETKEYBYTES)
           throw new Error("bad secret key size");
@@ -6275,7 +6277,7 @@ var require_nacl_fast = __commonJS({
         for (var i2 = 0; i2 < pk.length; i2++) pk[i2] = secretKey[32 + i2];
         return { publicKey: pk, secretKey: new Uint8Array(secretKey) };
       };
-      nacl3.sign.keyPair.fromSeed = function(seed) {
+      nacl4.sign.keyPair.fromSeed = function(seed) {
         checkArrayTypes(seed);
         if (seed.length !== crypto_sign_SEEDBYTES)
           throw new Error("bad seed size");
@@ -6285,31 +6287,31 @@ var require_nacl_fast = __commonJS({
         crypto_sign_keypair(pk, sk, true);
         return { publicKey: pk, secretKey: sk };
       };
-      nacl3.sign.publicKeyLength = crypto_sign_PUBLICKEYBYTES;
-      nacl3.sign.secretKeyLength = crypto_sign_SECRETKEYBYTES;
-      nacl3.sign.seedLength = crypto_sign_SEEDBYTES;
-      nacl3.sign.signatureLength = crypto_sign_BYTES;
-      nacl3.hash = function(msg) {
+      nacl4.sign.publicKeyLength = crypto_sign_PUBLICKEYBYTES;
+      nacl4.sign.secretKeyLength = crypto_sign_SECRETKEYBYTES;
+      nacl4.sign.seedLength = crypto_sign_SEEDBYTES;
+      nacl4.sign.signatureLength = crypto_sign_BYTES;
+      nacl4.hash = function(msg) {
         checkArrayTypes(msg);
         var h2 = new Uint8Array(crypto_hash_BYTES);
         crypto_hash(h2, msg, msg.length);
         return h2;
       };
-      nacl3.hash.hashLength = crypto_hash_BYTES;
-      nacl3.verify = function(x2, y) {
+      nacl4.hash.hashLength = crypto_hash_BYTES;
+      nacl4.verify = function(x2, y) {
         checkArrayTypes(x2, y);
         if (x2.length === 0 || y.length === 0) return false;
         if (x2.length !== y.length) return false;
         return vn(x2, 0, y, 0, x2.length) === 0 ? true : false;
       };
-      nacl3.setPRNG = function(fn) {
+      nacl4.setPRNG = function(fn) {
         randombytes = fn;
       };
       (function() {
         var crypto2 = typeof self !== "undefined" ? self.crypto || self.msCrypto : null;
         if (crypto2 && crypto2.getRandomValues) {
           var QUOTA = 65536;
-          nacl3.setPRNG(function(x2, n) {
+          nacl4.setPRNG(function(x2, n) {
             var i2, v2 = new Uint8Array(n);
             for (i2 = 0; i2 < n; i2 += QUOTA) {
               crypto2.getRandomValues(v2.subarray(i2, i2 + Math.min(n - i2, QUOTA)));
@@ -6320,7 +6322,7 @@ var require_nacl_fast = __commonJS({
         } else if (typeof __require !== "undefined") {
           crypto2 = __require("node:crypto");
           if (crypto2 && crypto2.randomBytes) {
-            nacl3.setPRNG(function(x2, n) {
+            nacl4.setPRNG(function(x2, n) {
               var i2, v2 = crypto2.randomBytes(n);
               for (i2 = 0; i2 < n; i2++) x2[i2] = v2[i2];
               cleanup(v2);
@@ -6683,10 +6685,10 @@ var init_esm7 = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/errors.mjs
+// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/errors.mjs
 var ChelErrorGenerator2, ChelErrorWarning, ChelErrorAlreadyProcessed, ChelErrorDBBadPreviousHEAD, ChelErrorDBConnection, ChelErrorUnexpected, ChelErrorKeyAlreadyExists, ChelErrorUnrecoverable, ChelErrorForkedChain, ChelErrorDecryptionError, ChelErrorDecryptionKeyNotFound, ChelErrorSignatureError, ChelErrorSignatureKeyUnauthorized, ChelErrorSignatureKeyNotFound, ChelErrorFetchServerTimeFailed, ChelErrorUnexpectedHttpResponseCode, ChelErrorResourceGone;
 var init_errors = __esm({
-  "node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/errors.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/errors.mjs"() {
     ChelErrorGenerator2 = (name, base2 = Error) => class extends base2 {
       constructor(...params) {
         super(...params);
@@ -6718,10 +6720,10 @@ var init_errors = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/events.mjs
+// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/events.mjs
 var CHELONIA_RESET, CONTRACT_IS_SYNCING, CONTRACTS_MODIFIED, EVENT_HANDLED, EVENT_PUBLISHED, EVENT_PUBLISHING_ERROR, CONTRACT_REGISTERED, CONTRACT_IS_PENDING_KEY_REQUESTS, CONTRACT_HAS_RECEIVED_KEYS, PERSISTENT_ACTION_FAILURE, PERSISTENT_ACTION_SUCCESS, PERSISTENT_ACTION_TOTAL_FAILURE;
 var init_events2 = __esm({
-  "node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/events.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/events.mjs"() {
     CHELONIA_RESET = "chelonia-reset";
     CONTRACT_IS_SYNCING = "contract-is-syncing";
     CONTRACTS_MODIFIED = "contracts-modified";
@@ -6907,10 +6909,10 @@ var init_esm8 = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/signedData.mjs
+// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/signedData.mjs
 var rootStateFn, proto, wrapper, isSignedData, signData, verifySignatureData, signedOutgoingData, signedOutgoingDataWithRawKey, signedIncomingData, signedDataKeyId, isRawSignedData, rawSignedIncomingData;
 var init_signedData = __esm({
-  "node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/signedData.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/signedData.mjs"() {
     init_esm7();
     init_esm();
     init_esm5();
@@ -7166,10 +7168,10 @@ var init_signedData = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/encryptedData.mjs
+// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/encryptedData.mjs
 var rootStateFn2, proto2, wrapper2, isEncryptedData, encryptData, decryptData, encryptedOutgoingData, encryptedOutgoingDataWithRawKey, encryptedIncomingData, encryptedIncomingForeignData, encryptedDataKeyId, isRawEncryptedData, unwrapMaybeEncryptedData, maybeEncryptedIncomingData;
 var init_encryptedData = __esm({
-  "node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/encryptedData.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/encryptedData.mjs"() {
     init_esm7();
     init_esm();
     init_esm5();
@@ -7408,7 +7410,7 @@ var init_encryptedData = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/SPMessage.mjs
+// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/SPMessage.mjs
 function messageToParams(head, message) {
   let mapping;
   return {
@@ -7433,7 +7435,7 @@ function messageToParams(head, message) {
 }
 var decryptedAndVerifiedDeserializedMessage, SPMessage2, keyOps;
 var init_SPMessage = __esm({
-  "node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/SPMessage.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/SPMessage.mjs"() {
     init_esm7();
     init_esm8();
     init_esm5();
@@ -7823,10 +7825,10 @@ var init_SPMessage = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/chelonia-utils.mjs
+// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/chelonia-utils.mjs
 var chelonia_utils_default;
 var init_chelonia_utils = __esm({
-  "node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/chelonia-utils.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/chelonia-utils.mjs"() {
     init_esm();
     chelonia_utils_default = esm_default("sbp/selectors/register", {
       // This selector is a wrapper for the `chelonia/kv/set` selector that uses
@@ -8135,10 +8137,10 @@ var init_encrypt = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/Secret.mjs
+// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/Secret.mjs
 var wm, Secret;
 var init_Secret = __esm({
-  "node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/Secret.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/Secret.mjs"() {
     init_esm8();
     wm = /* @__PURE__ */ new WeakMap();
     Secret = class {
@@ -8161,10 +8163,10 @@ var init_Secret = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/constants.mjs
+// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/constants.mjs
 var INVITE_STATUS;
 var init_constants = __esm({
-  "node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/constants.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/constants.mjs"() {
     INVITE_STATUS = {
       REVOKED: "revoked",
       VALID: "valid",
@@ -8173,7 +8175,7 @@ var init_constants = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/utils.mjs
+// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/utils.mjs
 import { Buffer as Buffer4 } from "node:buffer";
 function eventsAfter2(contractID, { sinceHeight, limit, sinceHash, stream = true }) {
   if (!contractID) {
@@ -8357,7 +8359,7 @@ function buildShelterAuthorizationHeader(contractID, state) {
 }
 var MAX_EVENTS_AFTER, findKeyIdByName, findForeignKeysByContractID, findRevokedKeyIdsByName, findSuitableSecretKeyId, findSuitablePublicKeyIds, validateActionPermissions, validateKeyPermissions, validateKeyAddPermissions, validateKeyDelPermissions, validateKeyUpdatePermissions, keyAdditionProcessor, subscribeToForeignKeyContracts, recreateEvent, getContractIDfromKeyId, clearObject, reactiveClearObject, checkCanBeGarbageCollected, collectEventStream, logEvtError, handleFetchResult2;
 var init_utils2 = __esm({
-  "node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/utils.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/utils.mjs"() {
     init_esm7();
     init_esm();
     init_esm5();
@@ -8789,11 +8791,11 @@ var init_utils2 = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/files.mjs
+// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/files.mjs
 import { Buffer as Buffer5 } from "node:buffer";
 var supportsRequestStreams, streamToUint8Array, ArrayBufferToUint8ArrayStream, computeChunkDescriptors, fileStream, aes256gcmHandlers, noneHandlers, cipherHandlers, files_default;
 var init_files = __esm({
-  "node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/files.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/files.mjs"() {
     init_encodeMultipartMessage();
     init_decrypt();
     init_encodings();
@@ -9135,11 +9137,11 @@ var init_files = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/db.mjs
+// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/db.mjs
 import { Buffer as Buffer6 } from "node:buffer";
 var headPrefix2, getContractIdFromLogHead, getLogHead, checkKey3, parsePrefixableKey2, prefixHandlers2, dbPrimitiveSelectors, db_default;
 var init_db = __esm({
-  "node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/db.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/db.mjs"() {
     init_esm3();
     init_esm2();
     init_esm();
@@ -9333,10 +9335,10 @@ var init_db = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/internals.mjs
+// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/internals.mjs
 var missingDecryptionKeyIdsMap, getMsgMeta, keysToMap, keyRotationHelper, internals_default, eventsToReingest, reprocessDebounced, handleEvent, notImplemented;
 var init_internals = __esm({
-  "node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/internals.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/internals.mjs"() {
     init_esm();
     init_functions();
     init_esm5();
@@ -10998,10 +11000,10 @@ var init_internals = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/time-sync.mjs
+// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/time-sync.mjs
 var wallBase, monotonicBase, resyncTimeout, watchdog, syncServerTime, time_sync_default;
 var init_time_sync = __esm({
-  "node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/time-sync.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/time-sync.mjs"() {
     init_esm();
     wallBase = Date.now();
     monotonicBase = performance.now();
@@ -11089,7 +11091,7 @@ var init_time_sync = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/chelonia.mjs
+// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/chelonia.mjs
 import { Buffer as Buffer7 } from "node:buffer";
 function contractNameFromAction(action) {
   const regexResult = ACTION_REGEX.exec(action);
@@ -11234,7 +11236,7 @@ function gettersProxy(state, getters) {
 }
 var ACTION_REGEX, chelonia_default;
 var init_chelonia = __esm({
-  "node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/chelonia.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/chelonia.mjs"() {
     init_esm2();
     init_esm4();
     init_esm();
@@ -12697,10 +12699,10 @@ var init_chelonia = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/persistent-actions.mjs
+// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/persistent-actions.mjs
 var timer, coerceToError, defaultOptions2, tag, PersistentAction, persistent_actions_default;
 var init_persistent_actions = __esm({
-  "node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/persistent-actions.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/persistent-actions.mjs"() {
     init_esm4();
     init_esm();
     init_events2();
@@ -12892,22 +12894,38 @@ var init_persistent_actions = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/presets.mjs
+// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/presets.mjs
 var init_presets = __esm({
-  "node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/presets.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/presets.mjs"() {
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/types.mjs
+// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/types.mjs
 var init_types = __esm({
-  "node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/types.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/types.mjs"() {
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/index.mjs
+// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/zkppConstants.mjs
+var init_zkppConstants = __esm({
+  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/zkppConstants.mjs"() {
+  }
+});
+
+// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/zkpp.mjs
+var import_scrypt_async2, import_tweetnacl2;
+var init_zkpp = __esm({
+  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/zkpp.mjs"() {
+    import_scrypt_async2 = __toESM(require_scrypt_async(), 1);
+    import_tweetnacl2 = __toESM(require_nacl_fast(), 1);
+    init_zkppConstants();
+  }
+});
+
+// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/index.mjs
 var esm_default5;
 var init_esm9 = __esm({
-  "node_modules/.deno/@chelonia+lib@1.1.0/node_modules/@chelonia/lib/dist/esm/index.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/index.mjs"() {
     init_chelonia();
     init_db();
     init_files();
@@ -12927,6 +12945,8 @@ var init_esm9 = __esm({
     init_signedData();
     init_types();
     init_utils2();
+    init_zkpp();
+    init_zkppConstants();
     esm_default5 = [...chelonia_default, ...db_default, ...files_default, ...persistent_actions_default];
   }
 });
@@ -13040,107 +13060,15 @@ var init_vapid = __esm({
   }
 });
 
-// src/serve/shared/zkppConstants.ts
-var AUTHSALT, CONTRACTSALT, CS, SU, SALT_LENGTH_IN_OCTETS;
-var init_zkppConstants = __esm({
-  "src/serve/shared/zkppConstants.ts"() {
-    "use strict";
-    AUTHSALT = "AUTHSALT";
-    CONTRACTSALT = "CONTRACTSALT";
-    CS = "CS";
-    SU = "SU";
-    SALT_LENGTH_IN_OCTETS = 24;
-  }
-});
-
-// src/serve/shared/zkpp.ts
-var base64ToBase64url, base64urlToBase64, hashStringArray, hashRawStringArray, randomNonce, hash2, computeCAndHc, encryptContractSalt, encryptSaltUpdate, decryptSaltUpdate, boxKeyPair, saltAgreement, parseRegisterSalt;
-var init_zkpp = __esm({
-  "src/serve/shared/zkpp.ts"() {
-    "use strict";
-    init_deps();
-    init_zkppConstants();
-    base64ToBase64url = (s) => s.replace(/\//g, "_").replace(/\+/g, "-").replace(/=*$/, "");
-    base64urlToBase64 = (s) => s.replace(/_/g, "/").replace(/-/g, "+") + "=".repeat((4 - s.length % 4) % 4);
-    hashStringArray = (...args) => {
-      return default2.hash(Buffer2.concat(args.map((s) => default2.hash(Buffer2.from(s)))));
-    };
-    hashRawStringArray = (...args) => {
-      return default2.hash(Buffer2.concat(args.map((s) => Buffer2.from(s))));
-    };
-    randomNonce = () => {
-      return base64ToBase64url(Buffer2.from(default2.randomBytes(12)).toString("base64"));
-    };
-    hash2 = (v2) => {
-      return base64ToBase64url(Buffer2.from(default2.hash(Buffer2.from(v2))).toString("base64"));
-    };
-    computeCAndHc = (r, s, h2) => {
-      const \u0127 = hashStringArray(r, s);
-      const c = hashStringArray(h2, \u0127);
-      const hc = default2.hash(c);
-      return [c, hc];
-    };
-    encryptContractSalt = (c, contractSalt) => {
-      const encryptionKey = hashRawStringArray(CS, c).slice(0, default2.secretbox.keyLength);
-      const nonce = default2.randomBytes(default2.secretbox.nonceLength);
-      const encryptedContractSalt = default2.secretbox(Buffer2.from(contractSalt), nonce, encryptionKey);
-      return base64ToBase64url(Buffer2.concat([nonce, encryptedContractSalt]).toString("base64"));
-    };
-    encryptSaltUpdate = (secret, recordId, record) => {
-      const nonce = default2.randomBytes(default2.secretbox.nonceLength);
-      const encryptionKey = hashRawStringArray(SU, secret, nonce, recordId).slice(0, default2.secretbox.keyLength);
-      const encryptedRecord = default2.secretbox(Buffer2.from(record), nonce, encryptionKey);
-      return base64ToBase64url(Buffer2.concat([nonce, encryptedRecord]).toString("base64"));
-    };
-    decryptSaltUpdate = (secret, recordId, encryptedRecordBox) => {
-      const encryptedRecordBoxBuf = Buffer2.from(base64urlToBase64(encryptedRecordBox), "base64");
-      const nonce = encryptedRecordBoxBuf.slice(0, default2.secretbox.nonceLength);
-      const encryptionKey = hashRawStringArray(SU, secret, nonce, recordId).slice(0, default2.secretbox.keyLength);
-      const encryptedRecord = encryptedRecordBoxBuf.slice(default2.secretbox.nonceLength);
-      const decrypted = default2.secretbox.open(encryptedRecord, nonce, encryptionKey);
-      if (!decrypted) throw new Error("Failed to decrypt salt update");
-      return Buffer2.from(decrypted).toString();
-    };
-    boxKeyPair = () => {
-      return default2.box.keyPair();
-    };
-    saltAgreement = (publicKey, secretKey) => {
-      const publicKeyBuf = Buffer2.from(base64urlToBase64(publicKey), "base64");
-      const dhKey = default2.box.before(publicKeyBuf, secretKey);
-      if (!publicKeyBuf || publicKeyBuf.byteLength !== default2.box.publicKeyLength) {
-        return false;
-      }
-      const authSalt = Buffer2.from(hashStringArray(AUTHSALT, dhKey)).slice(0, SALT_LENGTH_IN_OCTETS).toString("base64");
-      const contractSalt = Buffer2.from(hashStringArray(CONTRACTSALT, dhKey)).slice(0, SALT_LENGTH_IN_OCTETS).toString("base64");
-      return [authSalt, contractSalt];
-    };
-    parseRegisterSalt = (publicKey, secretKey, encryptedHashedPassword) => {
-      const saltAgreementRes = saltAgreement(publicKey, secretKey);
-      if (!saltAgreementRes) {
-        return false;
-      }
-      const [authSalt, contractSalt] = saltAgreementRes;
-      const encryptionKey = default2.hash(Buffer2.from(authSalt + contractSalt)).slice(0, default2.secretbox.keyLength);
-      const encryptedHashedPasswordBuf = Buffer2.from(base64urlToBase64(encryptedHashedPassword), "base64");
-      const hashedPasswordBuf = default2.secretbox.open(encryptedHashedPasswordBuf.slice(default2.box.nonceLength), encryptedHashedPasswordBuf.slice(0, default2.box.nonceLength), encryptionKey);
-      if (!hashedPasswordBuf) {
-        return false;
-      }
-      return [authSalt, contractSalt, hashedPasswordBuf, encryptionKey];
-    };
-  }
-});
-
 // src/serve/zkppSalt.ts
 import { randomBytes as randomBytes2, timingSafeEqual } from "node:crypto";
-var nacl2, recordSecret, challengeSecret, registrationSecret, hashUpdateSecret, initZkpp, maxAge, computeZkppSaltRecordId, getZkppSaltRecord, setZkppSaltRecord, getChallenge, verifyChallenge, registrationKey, register, contractSaltVerifyC, getContractSalt, updateContractSalt, redeemSaltRegistrationToken, redeemSaltUpdateToken;
+import { Buffer as Buffer9 } from "node:buffer";
+var nacl3, recordSecret, challengeSecret, registrationSecret, hashUpdateSecret, initZkpp, maxAge, computeZkppSaltRecordId, getZkppSaltRecord, setZkppSaltRecord, getChallenge, verifyChallenge, registrationKey, register, contractSaltVerifyC, getContractSalt, updateContractSalt, redeemSaltRegistrationToken, redeemSaltUpdateToken;
 var init_zkppSalt = __esm({
   "src/serve/zkppSalt.ts"() {
     "use strict";
     init_deps();
-    init_zkpp();
-    init_zkppConstants();
-    nacl2 = default2;
+    nacl3 = default2;
     initZkpp = async () => {
       const IKM = await default4("chelonia.db/get", "_private_immutable_zkpp_ikm").then((IKM2) => {
         if (!IKM2) {
@@ -13151,10 +13079,10 @@ var init_zkppSalt = __esm({
         }
         return IKM2;
       });
-      recordSecret = Buffer2.from(hashStringArray("private/recordSecret", IKM)).toString("base64");
-      challengeSecret = Buffer2.from(hashStringArray("private/challengeSecret", IKM)).toString("base64");
-      registrationSecret = Buffer2.from(hashStringArray("private/registrationSecret", IKM)).toString("base64");
-      hashUpdateSecret = Buffer2.from(hashStringArray("private/hashUpdateSecret", IKM)).toString("base64");
+      recordSecret = Buffer9.from(hashStringArray("private/recordSecret", IKM)).toString("base64");
+      challengeSecret = Buffer9.from(hashStringArray("private/challengeSecret", IKM)).toString("base64");
+      registrationSecret = Buffer9.from(hashStringArray("private/registrationSecret", IKM)).toString("base64");
+      hashUpdateSecret = Buffer9.from(hashStringArray("private/hashUpdateSecret", IKM)).toString("base64");
     };
     maxAge = 30;
     computeZkppSaltRecordId = async (contractID) => {
@@ -13163,22 +13091,22 @@ var init_zkppSalt = __esm({
       if (!record) {
         return null;
       }
-      const recordBuf = Buffer2.concat([Buffer2.from(contractID), Buffer2.from(record)]);
-      return hash2(recordBuf);
+      const recordBuf = Buffer9.concat([Buffer9.from(contractID), Buffer9.from(record)]);
+      return hash(recordBuf);
     };
     getZkppSaltRecord = async (contractID) => {
       const recordId = `_private_rid_${contractID}`;
       const record = await default4("chelonia.db/get", recordId);
       if (record) {
-        const encryptionKey = hashStringArray("REK", contractID, recordSecret).slice(0, nacl2.secretbox.keyLength);
-        const recordBuf = Buffer2.from(base64urlToBase64(record), "base64");
-        const nonce = recordBuf.slice(0, nacl2.secretbox.nonceLength);
-        const recordCiphertext = recordBuf.slice(nacl2.secretbox.nonceLength);
-        const recordPlaintext = nacl2.secretbox.open(recordCiphertext, nonce, encryptionKey);
+        const encryptionKey = hashStringArray("REK", contractID, recordSecret).slice(0, nacl3.secretbox.keyLength);
+        const recordBuf = Buffer9.from(base64urlToBase64(record), "base64");
+        const nonce = recordBuf.slice(0, nacl3.secretbox.nonceLength);
+        const recordCiphertext = recordBuf.slice(nacl3.secretbox.nonceLength);
+        const recordPlaintext = nacl3.secretbox.open(recordCiphertext, nonce, encryptionKey);
         if (!recordPlaintext) {
           return null;
         }
-        const recordString = Buffer2.from(recordPlaintext).toString("utf-8");
+        const recordString = Buffer9.from(recordPlaintext).toString("utf-8");
         try {
           const recordObj = JSON.parse(recordString);
           if (!Array.isArray(recordObj) || recordObj.length !== 3 && recordObj.length !== 4 || recordObj.slice(0, 3).some((r) => !r || typeof r !== "string") || recordObj[3] != null && typeof recordObj[3] !== "string") {
@@ -13200,11 +13128,11 @@ var init_zkppSalt = __esm({
     };
     setZkppSaltRecord = async (contractID, hashedPassword, authSalt, contractSalt, cid) => {
       const recordId = `_private_rid_${contractID}`;
-      const encryptionKey = hashStringArray("REK", contractID, recordSecret).slice(0, nacl2.secretbox.keyLength);
-      const nonce = nacl2.randomBytes(nacl2.secretbox.nonceLength);
+      const encryptionKey = hashStringArray("REK", contractID, recordSecret).slice(0, nacl3.secretbox.keyLength);
+      const nonce = nacl3.randomBytes(nacl3.secretbox.nonceLength);
       const recordPlaintext = JSON.stringify([hashedPassword, authSalt, contractSalt, cid]);
-      const recordCiphertext = nacl2.secretbox(Buffer2.from(recordPlaintext), nonce, encryptionKey);
-      const recordBuf = Buffer2.concat([nonce, recordCiphertext]);
+      const recordCiphertext = nacl3.secretbox(Buffer9.from(recordPlaintext), nonce, encryptionKey);
+      const recordBuf = Buffer9.concat([nonce, recordCiphertext]);
       const record = base64ToBase64url(recordBuf.toString("base64"));
       await default4("chelonia.db/set", recordId, record);
     };
@@ -13217,7 +13145,7 @@ var init_zkppSalt = __esm({
       const { authSalt } = record;
       const s = randomNonce();
       const now = (Date.now() / 1e3 | 0).toString(16);
-      const sig = [now, base64ToBase64url(Buffer2.from(hashStringArray(contract, b, s, now, challengeSecret)).toString("base64"))].join(",");
+      const sig = [now, base64ToBase64url(Buffer9.from(hashStringArray(contract, b, s, now, challengeSecret)).toString("base64"))].join(",");
       return {
         authSalt,
         s,
@@ -13235,21 +13163,21 @@ var init_zkppSalt = __esm({
       if (!(iThen <= now) || !(iThen >= now - maxAge)) {
         return false;
       }
-      const b = hash2(r);
+      const b = hash(r);
       const sig = hashStringArray(contractID, b, s, then, challengeSecret);
-      const macBuf = Buffer2.from(base64urlToBase64(mac), "base64");
+      const macBuf = Buffer9.from(base64urlToBase64(mac), "base64");
       return sig.byteLength === macBuf.byteLength && timingSafeEqual(sig, macBuf);
     };
     registrationKey = (provisionalId, b) => {
-      const encryptionKey = hashStringArray("REG", provisionalId, registrationSecret).slice(0, nacl2.secretbox.keyLength);
-      const nonce = nacl2.randomBytes(nacl2.secretbox.nonceLength);
+      const encryptionKey = hashStringArray("REG", provisionalId, registrationSecret).slice(0, nacl3.secretbox.keyLength);
+      const nonce = nacl3.randomBytes(nacl3.secretbox.nonceLength);
       const keyPair = boxKeyPair();
-      const s = base64ToBase64url(Buffer2.concat([nonce, nacl2.secretbox(keyPair.secretKey, nonce, encryptionKey)]).toString("base64"));
+      const s = base64ToBase64url(Buffer9.concat([nonce, nacl3.secretbox(keyPair.secretKey, nonce, encryptionKey)]).toString("base64"));
       const now = (Date.now() / 1e3 | 0).toString(16);
-      const sig = [now, base64ToBase64url(Buffer2.from(hashStringArray(provisionalId, b, s, now, challengeSecret)).toString("base64"))].join(",");
+      const sig = [now, base64ToBase64url(Buffer9.from(hashStringArray(provisionalId, b, s, now, challengeSecret)).toString("base64"))].join(",");
       return {
         s,
-        p: base64ToBase64url(Buffer2.from(keyPair.publicKey).toString("base64")),
+        p: base64ToBase64url(Buffer9.from(keyPair.publicKey).toString("base64")),
         sig
       };
     };
@@ -13258,9 +13186,9 @@ var init_zkppSalt = __esm({
         console.warn("register: Error validating challenge: " + JSON.stringify({ contract: provisionalId, clientPublicKey, userSig }));
         throw new Error("register: Invalid challenge");
       }
-      const encryptedSecretKeyBuf = Buffer2.from(base64urlToBase64(encryptedSecretKey), "base64");
-      const encryptionKey = hashStringArray("REG", provisionalId, registrationSecret).slice(0, nacl2.secretbox.keyLength);
-      const secretKeyBuf = nacl2.secretbox.open(encryptedSecretKeyBuf.slice(nacl2.secretbox.nonceLength), encryptedSecretKeyBuf.slice(0, nacl2.secretbox.nonceLength), encryptionKey);
+      const encryptedSecretKeyBuf = Buffer9.from(base64urlToBase64(encryptedSecretKey), "base64");
+      const encryptionKey = hashStringArray("REG", provisionalId, registrationSecret).slice(0, nacl3.secretbox.keyLength);
+      const secretKeyBuf = nacl3.secretbox.open(encryptedSecretKeyBuf.slice(nacl3.secretbox.nonceLength), encryptedSecretKeyBuf.slice(0, nacl3.secretbox.nonceLength), encryptionKey);
       if (!secretKeyBuf) {
         console.warn(`register: Error decrypting arguments for contract ID ${provisionalId} (${JSON.stringify({ clientPublicKey, userSig })})`);
         return false;
@@ -13274,13 +13202,13 @@ var init_zkppSalt = __esm({
       const token = encryptSaltUpdate(
         hashUpdateSecret,
         provisionalId,
-        JSON.stringify([Date.now(), Buffer2.from(hashedPasswordBuf).toString(), authSalt, contractSalt])
+        JSON.stringify([Date.now(), Buffer9.from(hashedPasswordBuf).toString(), authSalt, contractSalt])
       );
       return encryptContractSalt(sharedEncryptionKey, token);
     };
     contractSaltVerifyC = (h2, r, s, userHc) => {
       const [c, hc] = computeCAndHc(r, s, h2);
-      const userHcBuf = Buffer2.from(base64urlToBase64(userHc), "base64");
+      const userHcBuf = Buffer9.from(base64urlToBase64(userHc), "base64");
       if (hc.byteLength === userHcBuf.byteLength && timingSafeEqual(hc, userHcBuf)) {
         return c;
       }
@@ -13320,24 +13248,24 @@ var init_zkppSalt = __esm({
         console.error(`update: Error verifying challenge for contract ID ${contract} (${JSON.stringify({ r, s, hc })})`);
         throw new Error("update: Bad challenge");
       }
-      const encryptionKey = hashRawStringArray(SU, c).slice(0, nacl2.secretbox.keyLength);
-      const encryptedArgsBuf = Buffer2.from(base64urlToBase64(encryptedArgs), "base64");
-      const nonce = encryptedArgsBuf.slice(0, nacl2.secretbox.nonceLength);
-      const encryptedArgsCiphertext = encryptedArgsBuf.slice(nacl2.secretbox.nonceLength);
-      const args = nacl2.secretbox.open(encryptedArgsCiphertext, nonce, encryptionKey);
+      const encryptionKey = hashRawStringArray(SU, c).slice(0, nacl3.secretbox.keyLength);
+      const encryptedArgsBuf = Buffer9.from(base64urlToBase64(encryptedArgs), "base64");
+      const nonce = encryptedArgsBuf.slice(0, nacl3.secretbox.nonceLength);
+      const encryptedArgsCiphertext = encryptedArgsBuf.slice(nacl3.secretbox.nonceLength);
+      const args = nacl3.secretbox.open(encryptedArgsCiphertext, nonce, encryptionKey);
       if (!args) {
         console.error(`update: Error decrypting arguments for contract ID ${contract} (${JSON.stringify({ r, s, hc })})`);
         return false;
       }
       try {
-        const hashedPassword2 = Buffer2.from(args).toString();
+        const hashedPassword2 = Buffer9.from(args).toString();
         const recordId = await computeZkppSaltRecordId(contract);
         if (!recordId) {
           console.error(`update: Error obtaining record ID for contract ID ${contract}`);
           return false;
         }
-        const authSalt = Buffer2.from(hashStringArray(AUTHSALT, c)).slice(0, SALT_LENGTH_IN_OCTETS).toString("base64");
-        const contractSalt = Buffer2.from(hashStringArray(CONTRACTSALT, c)).slice(0, SALT_LENGTH_IN_OCTETS).toString("base64");
+        const authSalt = Buffer9.from(hashStringArray(AUTHSALT, c)).slice(0, SALT_LENGTH_IN_OCTETS).toString("base64");
+        const contractSalt = Buffer9.from(hashStringArray(CONTRACTSALT, c)).slice(0, SALT_LENGTH_IN_OCTETS).toString("base64");
         const token = encryptSaltUpdate(
           hashUpdateSecret,
           recordId,
@@ -14187,7 +14115,7 @@ var init_rfc8291Ikm = __esm({
 });
 
 // src/serve/push.ts
-import { Buffer as Buffer9 } from "node:buffer";
+import { Buffer as Buffer10 } from "node:buffer";
 var addSubscriptionToIndex, deleteSubscriptionFromIndex, saveSubscription, addChannelToSubscription, deleteChannelFromSubscription, removeSubscription, subscriptionInfoWrapper, encryptPayload, postEvent, pushServerActionhandlers;
 var init_push = __esm({
   "src/serve/push.ts"() {
@@ -14255,10 +14183,10 @@ var init_push = __esm({
             return function() {
               if ((count3 | 0) === 0) {
                 if (!salt) {
-                  salt = Buffer9.from(this.keys.auth, "base64url");
+                  salt = Buffer10.from(this.keys.auth, "base64url");
                 }
                 if (!uaPublic) {
-                  uaPublic = Buffer9.from(this.keys.p256dh, "base64url");
+                  uaPublic = Buffer10.from(this.keys.p256dh, "base64url");
                 }
                 resultPromise = rfc8291Ikm_default(uaPublic, salt);
                 count3 = 1;
@@ -14294,7 +14222,7 @@ var init_push = __esm({
           if (done) break;
           chunks.push(new Uint8Array(value));
         }
-        return Buffer9.concat(chunks);
+        return Buffer10.concat(chunks);
       });
     };
     postEvent = async (subscription, event) => {
@@ -14340,7 +14268,7 @@ var init_push = __esm({
         const { applicationServerKey, settings, subscriptionInfo } = payload;
         if (applicationServerKey) {
           const ourVapidPublicKey = getVapidPublicKey();
-          const theirVapidPublicKey = Buffer9.from(applicationServerKey, "base64").toString("base64url");
+          const theirVapidPublicKey = Buffer10.from(applicationServerKey, "base64").toString("base64url");
           if (ourVapidPublicKey !== theirVapidPublicKey) {
             socket.send(createMessage(REQUEST_TYPE.PUSH_ACTION, { type: PUSH_SERVER_ACTION_TYPE.SEND_PUBLIC_KEY, data: getVapidPublicKey() }));
             console.warn({ ourVapidPublicKey, theirVapidPublicKey }, "Refusing to store subscription because the associated public VAPID key does not match ours");
@@ -16141,7 +16069,7 @@ __export(commands_exports, {
   deploy: () => deploy,
   eventsAfter: () => eventsAfter,
   get: () => get,
-  hash: () => hash,
+  hash: () => hash2,
   help: () => help,
   keygen: () => keygen2,
   manifest: () => manifest,
@@ -16343,7 +16271,7 @@ async function get(args) {
 
 // src/hash.ts
 init_utils();
-async function hash(args, multicode = multicodes2.RAW, internal = false) {
+async function hash2(args, multicode = multicodes2.RAW, internal = false) {
   const [filename] = args;
   if (!filename) {
     console.error("please pass in a file");
@@ -16516,7 +16444,7 @@ async function manifest(args) {
     name,
     version: version2,
     contract: {
-      hash: await hash([contractFile], multicodes2.SHELTER_CONTRACT_TEXT, true),
+      hash: await hash2([contractFile], multicodes2.SHELTER_CONTRACT_TEXT, true),
       file: contractBasename
     },
     signingKeys: publicKeys
@@ -16524,7 +16452,7 @@ async function manifest(args) {
   if (typeof slim === "string" && slim !== "") {
     body.contractSlim = {
       file: path.basename(slim),
-      hash: await hash([slim], multicodes2.SHELTER_CONTRACT_TEXT, true)
+      hash: await hash2([slim], multicodes2.SHELTER_CONTRACT_TEXT, true)
     };
   }
   const serializedBody = JSON.stringify(body);
@@ -16722,12 +16650,12 @@ var verifySignature3 = async (args, internal = false) => {
   if (!body.contract?.file) {
     exit("Invalid manifest: no contract file", internal);
   }
-  const computedHash = await hash([path.join(parsedFilepath.dir, body.contract.file)], multicodes2.SHELTER_CONTRACT_TEXT, true);
+  const computedHash = await hash2([path.join(parsedFilepath.dir, body.contract.file)], multicodes2.SHELTER_CONTRACT_TEXT, true);
   if (computedHash !== body.contract.hash) {
     exit(`Invalid contract file hash. Expected ${body.contract.hash} but got ${computedHash}`, internal);
   }
   if (body.contractSlim) {
-    const computedHash2 = await hash([path.join(parsedFilepath.dir, body.contractSlim.file)], multicodes2.SHELTER_CONTRACT_TEXT, true);
+    const computedHash2 = await hash2([path.join(parsedFilepath.dir, body.contractSlim.file)], multicodes2.SHELTER_CONTRACT_TEXT, true);
     if (computedHash2 !== body.contractSlim.hash) {
       exit(`Invalid slim contract file hash. Expected ${body.contractSlim.hash} but got ${computedHash2}`, internal);
     }

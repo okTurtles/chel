@@ -1,7 +1,7 @@
 'use strict'
 
 import { initDB } from './database.ts'
-import { tweetnacl } from '../deps.ts'
+import { tweetnacl, AUTHSALT, CONTRACTSALT, CS, SALT_LENGTH_IN_OCTETS, SU } from '../deps.ts'
 import { Buffer } from 'node:buffer'
 
 // Type for Deno test context
@@ -51,7 +51,6 @@ const shouldAssert = (value: unknown) => ({
 
 const nacl = tweetnacl
 
-import { AUTHSALT, CONTRACTSALT, CS, SALT_LENGTH_IN_OCTETS, SU } from './shared/zkppConstants.ts'
 import { getChallenge, getContractSalt, redeemSaltRegistrationToken, register, registrationKey, updateContractSalt } from './zkppSalt.ts'
 
 const saltsAndEncryptedHashedPassword = (p: string, secretKey: Uint8Array, hash: string) => {
