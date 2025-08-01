@@ -21,8 +21,7 @@
   ],
   "dependencies": {
     "rimraf": "3.0.2",
-    "tar": "6.1.11",
-    "zod": "4.0.5"
+    "tar": "6.1.11"
   },
   "devDependencies": {
     "@eslint/js": "9.31.0",

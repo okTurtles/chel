@@ -1,4 +1,3 @@
-'use strict'
 // chel eventsAfter [--limit N] <url-or-localpath> <contractID> <hash>
 
 import { base64, flags } from './deps.ts'

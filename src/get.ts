@@ -1,4 +1,3 @@
-'use strict'
 // chel get <url-or-dir-or-sqlitedb> <key>
 /*
 When using a URL, this queries the GET /file/<key> route.

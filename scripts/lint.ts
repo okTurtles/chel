@@ -2,8 +2,6 @@
 
 // for examples of shebangs https://github.com/denoland/deno/blob/main/tools/lint.js#L1
 
-'use strict'
-
 // $ deno run \
 //   --compat --unstable \
 //   --allow-read --allow-write=./ --allow-env \

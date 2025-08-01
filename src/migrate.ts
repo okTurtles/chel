@@ -1,4 +1,3 @@
-'use strict'
 // chel migrate --from fs --to sqlite --out ./database.db ./data
 
 import { colors, flags, path } from './deps.ts'

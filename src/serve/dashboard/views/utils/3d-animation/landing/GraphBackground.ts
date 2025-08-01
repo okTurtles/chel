@@ -1,0 +1,66 @@
+import { Three } from '~/deps.ts'
+const {
+  BoxGeometry, Group, MeshLambertMaterial, Mesh, Vector3,
+  LineDashedMaterial, BufferGeometry, Line, DoubleSide
+} = Three
+import { CombineWithEdge } from '../animation-utils.ts'
+
+export default class GraphBackground extends Group {
+  constructor ({
+    width = 30,
+    height = 16,
+    bgThickness = 0.1,
+    bgColor = '#f7f9fb',
+    lineColor = '#000000',
+    edgeColor = '#414141',
+    lineCount = 4
+  }: {
+    width?: number,
+    height?: number,
+    bgThickness?: number,
+    bgColor?: string,
+    lineColor?: string,
+    edgeColor?: string,
+    lineCount?: number
+  } = {}) {
+    // background plane
+    const bgGeometry = new BoxGeometry(bgThickness, height, width)
+    const bgMaterial = new MeshLambertMaterial({
+      color: bgColor, side: DoubleSide, transparent: true, opacity: 0.625
+    })
+    const bgMesh = new CombineWithEdge({ mesh: new Mesh(bgGeometry, bgMaterial), edgeColor }) as Three.Group
+    bgMesh.position.y = height / 2
+    bgMesh.position.x = (bgThickness + 0.05) * -1
+
+    // lines
+    const lineMaterial = new LineDashedMaterial({ color: lineColor, gapSize: 0.2, dashSize: 0.375 })
+    const lineGap = height / (lineCount + 1)
+    const halfW = width / 2
+    const lineEnds = []
+    const lineMeshes = new Group()
+
+    for (let i = 1; i <= lineCount; i++) {
+      lineEnds.push([
+        new Vector3(0, lineGap * i, halfW),
+        new Vector3(0, lineGap * i, halfW * -1)
+      ])
+    }
+    lineMeshes.add(
+      ...lineEnds.map((endPoints) => {
+        const lineMesh = new Line(
+          new BufferGeometry().setFromPoints(endPoints),
+          lineMaterial
+        )
+        lineMesh.computeLineDistances()
+
+        return lineMesh
+      })
+    )
+    const lineMeshesClone = lineMeshes.clone(true) as Three.Group
+    lineMeshesClone.position.x = -1 * (bgThickness + 0.2)
+    super()
+    ;(this as Three.Group).add(bgMesh)
+    ;(this as Three.Group).add(lineMeshes)
+    ;(this as Three.Group).add(lineMeshesClone)
+  }
+}

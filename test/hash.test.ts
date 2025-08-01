@@ -1,5 +1,3 @@
-'use strict'
-
 import { CID, assertEquals, base58btc } from '../src/deps.ts'
 import { hash } from '../src/hash.ts'
 import { multicodes } from '../src/utils.ts'

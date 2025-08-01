@@ -1,5 +1,3 @@
-'use strict'
-
 import { path } from './deps.ts'
 import { checkKey } from './utils.ts'
 

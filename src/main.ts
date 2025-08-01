@@ -1,7 +1,5 @@
 #!/usr/bin/env -S deno run --allow-read=./ --allow-write=./  --allow-net --no-remote --import-map=vendor/import_map.json
 
-'use strict'
-
 // Deno APIs:
 // https://doc.deno.land/deno/stable
 // https://doc.deno.land/https://deno.land/std/

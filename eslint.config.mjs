@@ -34,6 +34,7 @@ export default tseslint.config(
       "no-console": "off",
       "no-constant-condition": "off",
       "@typescript-eslint/no-unused-vars": "off",
+      "@typescript-eslint/no-explicit-any": "off",
       "no-constant-binary-expression": "off",
       "@typescript-eslint/no-unused-expressions": "off",
       "no-control-regex": "off",
