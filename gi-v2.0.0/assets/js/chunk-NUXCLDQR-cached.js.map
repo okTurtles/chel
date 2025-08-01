@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../../frontend/views/utils/buildInvitationUrl.js"],
+  "sourcesContent": ["import sbp from '@sbp/sbp'\n\nexport function buildInvitationUrl (groupId        , groupName        , inviteSecret        , creatorID         )         {\n  const rootGetters = sbp('state/vuex/getters')\n  const creatorUsername = creatorID && rootGetters.usernameFromID(creatorID)\n  return `${location.origin}/app/join#?${(new URLSearchParams({\n        groupId: groupId,\n        groupName: groupName,\n        secret: inviteSecret,\n        ...(creatorID && {\n          creatorID,\n          ...(creatorUsername && {\n            creatorUsername\n          })\n        })\n      })).toString()}`\n}\n"],
+  "mappings": "+CAEO,SAASA,EAAoBC,EAAiBC,EAAmBC,EAAsBC,EAA4B,CACxH,IAAMC,EAAcC,EAAI,oBAAoB,EACtCC,EAAkBH,GAAaC,EAAY,eAAeD,CAAS,EACzE,MAAO,GAAG,SAAS,MAAM,cAAe,IAAI,gBAAgB,CACtD,QAASH,EACT,UAAWC,EACX,OAAQC,EACR,GAAIC,GAAa,CACf,UAAAA,EACA,GAAIG,GAAmB,CACrB,gBAAAA,CACF,CACF,CACF,CAAC,EAAG,SAAS,CAAC,EACpB",
+  "names": ["buildInvitationUrl", "groupId", "groupName", "inviteSecret", "creatorID", "rootGetters", "esm_default", "creatorUsername"]
+}

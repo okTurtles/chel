@@ -101,16 +101,15 @@ const updateCredits = async (billableEntity: string, type: 'credit' | 'charge', 
       // Calculate new balance
       const balancePicocreditAmount = (previousPcBalance - picocreditsUsed).toString(10)
 
-      // Prepare the new history entry
-      const newChargeEntry: GranularChargeEntry = {
+      granularHistory.unshift({
         type: 'charge',
         date,
         sizeTotal: amount,
         picocreditAmount: picocreditsUsed.toString(10),
+        // Period in ISO 8601 format, i.e., `{start}/{end}`
         period: `${new Date(now.getTime() - timeElapsed).toISOString()}/${date}`,
         balancePicocreditAmount
-      }
-      granularHistory.unshift(newChargeEntry)
+      })
 
       // Persist the updated balance (optimization: faster reads elsewhere)
       await sbp('chelonia.db/set', `_private_ownerPicocreditBalance_${billableEntity}`, balancePicocreditAmount)
@@ -120,14 +119,14 @@ const updateCredits = async (billableEntity: string, type: 'credit' | 'charge', 
       const newBalance = previousPcBalance + picocreditsToAdd
       const newBalanceStr = newBalance.toString(10)
 
-      // Prepare the new history entry for credit addition.
-      const newCreditEntry: GranularCreditEntry = {
-        type: 'credit',
+      const newEntry = {
+        type: 'credit' as const,
         date,
-        picocreditAmount: picocreditsToAdd.toString(10), // Credits added
+        picocreditAmount: picocreditsToAdd.toString(10),
+        // Credits added
         balancePicocreditAmount: newBalanceStr
       }
-      granularHistory.unshift(newCreditEntry)
+      granularHistory.unshift(newEntry)
 
       // Persist the updated balance
       await sbp('chelonia.db/set', `_private_ownerPicocreditBalance_${billableEntity}`, newBalanceStr)
@@ -167,6 +166,8 @@ const updateCredits = async (billableEntity: string, type: 'credit' | 'charge', 
           acc.periodStart = periodStart
         } else if (entry.type === 'credit') {
           acc.credits += BigInt(entry.picocreditAmount)
+        } else {
+          throw new Error('Invalid entry type: ' + (entry as any).type)
         }
         return acc
       }, { charges: BigInt(0), credits: BigInt(0), periodStart: date, periodSize: 0, totalPeriodLength: 0 } as { charges: bigint; credits: bigint; periodStart: string; periodSize: number; totalPeriodLength: number })

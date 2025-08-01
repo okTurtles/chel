@@ -53,18 +53,19 @@ export default class RouterBackend extends DatabaseBackend implements IDatabaseB
     return Object.fromEntries(Object.entries(config).sort((a, b) => b[0].length - a[0].length)) as Config
   }
 
-  validateConfig (config: Config): Array<{ msg: string; entry?: ConfigEntry }> {
+  validateConfig (config: Config): Array<{ msg: string; entry?: [string, ConfigEntry] }> {
     const errors = []
     if (!config['*']) {
       errors.push({ msg: 'Missing key: "*" (fallback storage is required)' })
     }
-    for (const [key, value] of Object.entries(config)) {
+    for (const entry of Object.entries(config)) {
+      const value = entry[1]
       if (typeof value?.name !== 'string' || typeof value?.options !== 'object') {
-        errors.push({ msg: 'entry value must be of type { name: string, options: Record<string, unknown> }', entry: value as ConfigEntry })
+        errors.push({ msg: 'entry value must be of type { name: string, options: Object }', entry })
         continue
       }
       if (value.name === 'router') {
-        errors.push({ msg: 'Router backends cannot be nested.', entry: value as ConfigEntry })
+        errors.push({ msg: 'Router backends cannot be nested.', entry })
         continue
       }
     }
@@ -76,7 +77,7 @@ export default class RouterBackend extends DatabaseBackend implements IDatabaseB
     if (!this.config) this.config = await this.readConfig()
     const errors = this.validateConfig(this.config)
     if (errors.length) {
-      throw new Error(`[${this.constructor.name}] ${errors.length} error(s) found in your config.`)
+      throw new Error(`[${this.constructor.name}] ${errors.length} error(s) found in your config.`, { cause: errors })
     }
     // Init backends
     this.backends = Object.create(null) as { [key: string]: IDatabaseBackend }

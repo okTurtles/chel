@@ -13635,13 +13635,14 @@ var init_database_router = __esm({
         if (!config["*"]) {
           errors.push({ msg: 'Missing key: "*" (fallback storage is required)' });
         }
-        for (const [key, value] of Object.entries(config)) {
+        for (const entry of Object.entries(config)) {
+          const value = entry[1];
           if (typeof value?.name !== "string" || typeof value?.options !== "object") {
-            errors.push({ msg: "entry value must be of type { name: string, options: Record<string, unknown> }", entry: value });
+            errors.push({ msg: "entry value must be of type { name: string, options: Object }", entry });
             continue;
           }
           if (value.name === "router") {
-            errors.push({ msg: "Router backends cannot be nested.", entry: value });
+            errors.push({ msg: "Router backends cannot be nested.", entry });
             continue;
           }
         }
@@ -13651,7 +13652,7 @@ var init_database_router = __esm({
         if (!this.config) this.config = await this.readConfig();
         const errors = this.validateConfig(this.config);
         if (errors.length) {
-          throw new Error(`[${this.constructor.name}] ${errors.length} error(s) found in your config.`);
+          throw new Error(`[${this.constructor.name}] ${errors.length} error(s) found in your config.`, { cause: errors });
         }
         this.backends = /* @__PURE__ */ Object.create(null);
         const entries = Object.entries(this.config);
