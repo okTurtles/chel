@@ -6319,7 +6319,7 @@ var require_nacl_fast = __commonJS({
             cleanup(v2);
           });
         } else if (typeof __require !== "undefined") {
-          crypto2 = __require("node:crypto");
+          crypto2 = __require("crypto");
           if (crypto2 && crypto2.randomBytes) {
             nacl4.setPRNG(function(x2, n) {
               var i2, v2 = crypto2.randomBytes(n);

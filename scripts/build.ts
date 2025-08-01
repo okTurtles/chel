@@ -84,16 +84,7 @@ const options = {
   outdir: 'build',
   splitting: false,
   alias: {
-    'fs': 'node:fs',
-    'path': 'node:path',
-    'crypto': 'node:crypto',
-    'stream': 'node:stream',
-    'url': 'node:url',
-    'util': 'node:util',
-    'assert': 'node:assert',
-    'buffer': 'node:buffer',
-    'events': 'node:events',
-    'os': 'node:os'
+    'buffer': 'node:buffer'
   }
 }
 const result = await esbuild.build(options)
