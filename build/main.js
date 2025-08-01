@@ -15865,7 +15865,7 @@ var init_server = __esm({
           const handler = pushServerActionhandlers[action];
           if (handler) {
             try {
-              await handler.call(socket, payload);
+              await handler(socket, payload);
             } catch (error) {
               const message = error?.message || `push server failed to perform [${action}] action`;
               console.warn(error, `[${socket.ip}] Action '${action}' for '${REQUEST_TYPE.PUSH_ACTION}' handler failed: ${message}`);

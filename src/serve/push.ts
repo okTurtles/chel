@@ -13,6 +13,41 @@ import {
   rfc8188Encrypt
 } from '~/deps.ts'
 
+// TypeScript interfaces for push server types
+interface WebSocketConnection {
+  send: (message: unknown) => void;
+  pushSubscriptionId?: string;
+  subscriptions?: Set<string>;
+  ip?: string;
+  server: {
+    pushSubscriptions: Record<string, {
+      settings?: unknown;
+      subscriptions: Set<string>;
+    }>;
+    subscribersByChannelID: Record<string, Set<WebSocketConnection>>;
+  };
+}
+
+interface StoreSubscriptionPayload {
+  applicationServerKey?: string;
+  settings?: unknown;
+  subscriptionInfo?: unknown;
+}
+
+interface PushSubscriptionInfo {
+  keys: {
+    auth: string; // base64url encoded
+    p256dh: string; // base64url encoded
+  };
+  encryptionKeys: Promise<[Buffer, Buffer]>;
+}
+
+interface PushServerActionHandlers {
+  [PUSH_SERVER_ACTION_TYPE.SEND_PUBLIC_KEY]: (socket: WebSocketConnection) => void;
+  [PUSH_SERVER_ACTION_TYPE.STORE_SUBSCRIPTION]: (socket: WebSocketConnection, payload: StoreSubscriptionPayload) => Promise<void>;
+  [PUSH_SERVER_ACTION_TYPE.DELETE_SUBSCRIPTION]: (socket: WebSocketConnection) => Promise<void> | void;
+}
+
 // Note: aes128gcm and encrypt imports will be handled via deps.ts if needed
 // const pushController = require('web-push') - commented out as not used
 
@@ -86,7 +121,7 @@ export const subscriptionInfoWrapper = (subscriptionId: string, subscriptionInfo
         let salt: Buffer
         let uaPublic: Buffer
 
-        return function (this: any) {
+        return function (this: PushSubscriptionInfo) {
           // Rotate encryption keys every 2**32 messages
           // This is just a precaution for a birthday attack, which reduces the
           // odds of a collision due to salt reuse to under 10**-18.
@@ -152,13 +187,13 @@ const encryptPayload = async (subscription: any, data: string): Promise<Buffer> 
   if (!readableStream) throw new Error('Failed to create readable stream')
   const [asPublic, IKM] = await subscription.encryptionKeys
 
-  return rfc8188Encrypt(aes128gcm, readableStream as any, 32768, asPublic, IKM).then(async (bodyStream: any) => {
+  return rfc8188Encrypt(aes128gcm, readableStream as unknown as ReadableStream<BufferSource>, 32768, asPublic, IKM).then(async (bodyStream: ReadableStream<ArrayBufferLike>) => {
     const chunks: Uint8Array[] = []
     const reader = bodyStream.getReader()
     for (;;) {
       const { done, value } = await reader.read()
       if (done) break
-      chunks.push(new Uint8Array(value))
+      chunks.push(new Uint8Array(value as ArrayBuffer))
     }
     return Buffer.concat(chunks)
   })
@@ -211,11 +246,11 @@ export const postEvent = async (subscription: any, event: string | null): Promis
   }
 }
 
-export const pushServerActionhandlers: any = {
-  [PUSH_SERVER_ACTION_TYPE.SEND_PUBLIC_KEY] (socket: any) {
+export const pushServerActionhandlers: PushServerActionHandlers = {
+  [PUSH_SERVER_ACTION_TYPE.SEND_PUBLIC_KEY] (socket: WebSocketConnection) {
     socket.send(createMessage(REQUEST_TYPE.PUSH_ACTION, { type: PUSH_SERVER_ACTION_TYPE.SEND_PUBLIC_KEY, data: getVapidPublicKey() }))
   },
-  async [PUSH_SERVER_ACTION_TYPE.STORE_SUBSCRIPTION] (socket: any, payload: any) {
+  async [PUSH_SERVER_ACTION_TYPE.STORE_SUBSCRIPTION] (socket: WebSocketConnection, payload: StoreSubscriptionPayload) {
     const { server } = socket
     const { applicationServerKey, settings, subscriptionInfo } = payload
     if (applicationServerKey) {
@@ -324,7 +359,7 @@ export const pushServerActionhandlers: any = {
       throw e // rethrow
     }
   },
-  [PUSH_SERVER_ACTION_TYPE.DELETE_SUBSCRIPTION] (socket: any) {
+  [PUSH_SERVER_ACTION_TYPE.DELETE_SUBSCRIPTION] (socket: WebSocketConnection) {
     const { pushSubscriptionId: subscriptionId } = socket
 
     if (subscriptionId) {

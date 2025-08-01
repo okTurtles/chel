@@ -539,11 +539,11 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
         (socket as any).send(createPushErrorResponse({ message: '\'action\' field is required' }))
       }
 
-      const handler = pushServerActionhandlers[action]
+      const handler = pushServerActionhandlers[action as keyof typeof pushServerActionhandlers]
 
       if (handler) {
         try {
-          await handler.call(socket, payload)
+          await (handler as any)(socket, payload)
         } catch (error) {
           const message = (error as any)?.message || `push server failed to perform [${action}] action`
           console.warn(error, `[${(socket as any).ip}] Action '${action}' for '${REQUEST_TYPE.PUSH_ACTION}' handler failed: ${message}`)

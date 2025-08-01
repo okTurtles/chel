@@ -164,10 +164,18 @@ const errorMapper = (e: Error): any => {
 // defining routes instead of calling `server.route` with an object, and to
 // dynamically get the HAPI server object from the `SERVER_INSTANCE`, which is
 // defined in `server.js`.
-const route = new Proxy({} as any, {
-  get: function (obj: any, prop: any): any {
-    return function (path: string, options: any, handler: ((...args: any[]) => any) | any): void {
-      sbp('okTurtles.data/apply', SERVER_INSTANCE, function (server: any) {
+interface RouteHandler {
+  (path: string, options: Record<string, unknown>, handler: unknown): void;
+}
+
+interface RouteProxy {
+  [method: string]: RouteHandler;
+}
+
+const route = new Proxy({} as RouteProxy, {
+  get: function (obj: RouteProxy, prop: string | symbol): RouteHandler {
+    return function (path: string, options: Record<string, unknown>, handler: unknown): void {
+      sbp('okTurtles.data/apply', SERVER_INSTANCE, function (server: { route: (config: { path: string; method: string | symbol; options: Record<string, unknown>; handler: unknown }) => void }) {
         server.route({ path, method: prop, options, handler })
       })
     }
