@@ -15882,7 +15882,7 @@ var init_server = __esm({
         [NOTIFICATION_TYPE.SUB](...args) {
           const { channelID } = args[0];
           const socket = this;
-          const server = this.server;
+          const { server } = this;
           if (!socket.pushSubscriptionId) return;
           if (!server.pushSubscriptions[socket.pushSubscriptionId]) {
             delete socket.pushSubscriptionId;
@@ -15896,7 +15896,7 @@ var init_server = __esm({
         [NOTIFICATION_TYPE.UNSUB](...args) {
           const { channelID } = args[0];
           const socket = this;
-          const server = this.server;
+          const { server } = this;
           if (!socket.pushSubscriptionId) return;
           if (!server.pushSubscriptions[socket.pushSubscriptionId]) {
             delete socket.pushSubscriptionId;

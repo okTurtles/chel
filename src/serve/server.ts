@@ -557,9 +557,9 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
     // associated with the WS, so that when the WS is closed we can continue
     // sending messages as web push notifications.
     [NOTIFICATION_TYPE.SUB] (...args: unknown[]) {
-      const { channelID } = args[0] as SubMessage
+      const { channelID } = args[0] as { channelID: string }
       const socket = this as any
-      const server = (this as any).server
+      const { server } = this as any
 
       // If the WS doesn't have an associated push subscription, we're done
       if (!socket.pushSubscriptionId) return
@@ -576,9 +576,9 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
     // associated with the WS, so that when the WS is closed we don't send
     // messages as web push notifications.
     [NOTIFICATION_TYPE.UNSUB] (...args: unknown[]) {
-      const { channelID } = args[0] as UnsubMessage
+      const { channelID } = args[0] as { channelID: string }
       const socket = this as any
-      const server = (this as any).server
+      const { server } = this as any
 
       // If the WS doesn't have an associated push subscription, we're done
       if (!socket.pushSubscriptionId) return

@@ -27,6 +27,7 @@ Vue.config.errorHandler = function (err: Error, vm: unknown, info: string) {
 }
 
 async function startApp () {
+  // deno-lint-ignore no-window
   sbp('okTurtles.data/set', 'API_URL', window.location.origin)
   await sbp('translations/init', 'en-US' /* TODO!: switch back to navigator.language once the development is complete..! */)
 
