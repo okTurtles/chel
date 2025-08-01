@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../../shared/domains/chelonia/constants.js"],
-  "sourcesContent": ["export const INVITE_STATUS = {\n  REVOKED: 'revoked',\n  VALID: 'valid',\n  USED: 'used'\n}\n"],
-  "mappings": "AAAO,IAAMA,EAAgB,CAC3B,QAAS,UACT,MAAO,QACP,KAAM,MACR",
-  "names": ["INVITE_STATUS"]
-}
