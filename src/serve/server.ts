@@ -1,5 +1,5 @@
-import { Hapi, Inert, sbp, chalk, SPMessage, SERVER, multicodes, parseCID } from '../deps.ts'
-import type { SubMessage, UnsubMessage } from '../deps.ts'
+import { Hapi, Inert, sbp, chalk, SPMessage, SERVER, multicodes, parseCID } from '~/deps.ts'
+import type { SubMessage, UnsubMessage } from '~/deps.ts'
 import { basename, join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Worker } from 'node:worker_threads'

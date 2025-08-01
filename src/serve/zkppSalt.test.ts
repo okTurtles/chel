@@ -1,5 +1,5 @@
 import { initDB } from './database.ts'
-import { tweetnacl, AUTHSALT, CONTRACTSALT, CS, SALT_LENGTH_IN_OCTETS, SU } from '../deps.ts'
+import { tweetnacl, AUTHSALT, CONTRACTSALT, CS, SALT_LENGTH_IN_OCTETS, SU } from '~/deps.ts'
 import { Buffer } from 'node:buffer'
 
 // Simple assertion helpers to replace 'should'

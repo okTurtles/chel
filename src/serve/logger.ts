@@ -1,4 +1,4 @@
-import { pino } from '../deps.ts'
+import { pino } from '~/deps.ts'
 import process from 'node:process'
 
 // NOTE: enabling pretty print does add a slight bit of overhead to logging and therefore is not recommended in production

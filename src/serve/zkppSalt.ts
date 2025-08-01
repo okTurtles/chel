@@ -1,4 +1,4 @@
-import { sbp, tweetnacl, base64ToBase64url, base64urlToBase64, boxKeyPair, computeCAndHc, decryptSaltUpdate, encryptContractSalt, encryptSaltUpdate, hash, hashRawStringArray, hashStringArray, parseRegisterSalt, randomNonce, AUTHSALT, CONTRACTSALT, SALT_LENGTH_IN_OCTETS, SU } from '../deps.ts'
+import { sbp, tweetnacl, base64ToBase64url, base64urlToBase64, boxKeyPair, computeCAndHc, decryptSaltUpdate, encryptContractSalt, encryptSaltUpdate, hash, hashRawStringArray, hashStringArray, parseRegisterSalt, randomNonce, AUTHSALT, CONTRACTSALT, SALT_LENGTH_IN_OCTETS, SU } from '~/deps.ts'
 import { randomBytes, timingSafeEqual } from 'node:crypto'
 import { Buffer } from 'node:buffer'
 

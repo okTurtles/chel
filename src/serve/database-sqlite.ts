@@ -1,7 +1,7 @@
 import { Buffer } from 'node:buffer'
 import { mkdir } from 'node:fs/promises'
 import { basename, dirname, join, resolve } from 'node:path'
-import { sqlite, SQLiteDB } from '../deps.ts'
+import { sqlite, SQLiteDB } from '~/deps.ts'
 import DatabaseBackend from './DatabaseBackend.ts'
 import type { IDatabaseBackend } from './DatabaseBackend.ts'
 

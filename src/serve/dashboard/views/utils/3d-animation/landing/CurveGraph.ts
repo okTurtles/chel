@@ -1,4 +1,4 @@
-import { Three } from '../../../../../../deps.ts'
+import { Three } from '~/deps.ts'
 const {
   MeshLambertMaterial, CatmullRomCurve3, SphereGeometry, TubeGeometry,
   Mesh, Group, DoubleSide

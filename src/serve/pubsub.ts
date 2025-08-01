@@ -23,18 +23,18 @@ import {
   createMessage,
   createKvMessage,
   messageParser
-} from '../deps.ts'
+} from '~/deps.ts'
 
 import type {
   Message, PubMessage, SubMessage, UnsubMessage,
   NotificationTypeEnum
-} from '../deps.ts'
+} from '~/deps.ts'
 
 // Define JSON types locally since they're not exported from the module
 type JSONType = string | number | boolean | null | JSONObject | JSONType[]
 type JSONObject = { [key: string]: JSONType }
 import { postEvent } from './push.ts'
-import { chalk, WebSocket, WebSocketServer } from '../deps.ts'
+import { chalk, WebSocket, WebSocketServer } from '~/deps.ts'
 
 const { bold } = chalk
 

@@ -1,4 +1,4 @@
-import { sbp } from '../../../deps.ts'
+import { sbp } from '~/deps.ts'
 
 // Used by 'backend/translations/get'
 // Do not include 'english.json' here unless the browser might need to download it.

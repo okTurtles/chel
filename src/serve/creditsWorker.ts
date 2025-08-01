@@ -30,7 +30,7 @@ interface CoarseHistoryEntry {
   balancePicocreditAmount: string; // BigInt string
 }
 
-import { sbp } from '../deps.ts'
+import { sbp } from '~/deps.ts'
 import { CREDITS_WORKER_TASK_TIME_INTERVAL as TASK_TIME_INTERVAL } from './constants.ts'
 import { readyQueueName } from './genericWorker.ts'
 

@@ -1,6 +1,6 @@
 /* globals logger */
 
-import { sbp, chalk, SPMessage, maybeParseCID, multicodes, createCID, Boom, Joi, Bottleneck, blake32Hash, Request, ResponseToolkit } from '../deps.ts'
+import { sbp, chalk, SPMessage, maybeParseCID, multicodes, createCID, Boom, Joi, Bottleneck, blake32Hash, Request, ResponseToolkit } from '~/deps.ts'
 import { Buffer } from 'node:buffer'
 import { isIP } from 'node:net'
 import path from 'node:path'

@@ -1,4 +1,4 @@
-import { sbp, okturtlesEventQueue } from '../deps.ts'
+import { sbp, okturtlesEventQueue } from '~/deps.ts'
 import { parentPort } from 'node:worker_threads'
 import { initDB } from './database.ts'
 import './logger.ts'

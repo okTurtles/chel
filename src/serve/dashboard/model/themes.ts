@@ -1,4 +1,4 @@
-import { sbp } from '../../../deps.ts'
+import { sbp } from '~/deps.ts'
 
 const common = {
   black: '#000000',

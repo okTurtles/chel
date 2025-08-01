@@ -2,7 +2,7 @@ import { mkdir, readdir, readFile, rm, unlink, writeFile } from 'node:fs/promise
 import { basename, dirname, join, normalize, resolve } from 'node:path'
 import process from 'node:process'
 import { Buffer } from 'node:buffer'
-import { checkKey } from '../deps.ts'
+import { checkKey } from '~/deps.ts'
 import DatabaseBackend from './DatabaseBackend.ts'
 import type { IDatabaseBackend } from './DatabaseBackend.ts'
 

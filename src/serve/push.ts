@@ -11,7 +11,7 @@ import {
   createMessage,
   aes128gcm,
   rfc8188Encrypt
-} from '../deps.ts'
+} from '~/deps.ts'
 
 // Note: aes128gcm and encrypt imports will be handled via deps.ts if needed
 // const pushController = require('web-push') - commented out as not used

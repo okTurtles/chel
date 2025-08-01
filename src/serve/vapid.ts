@@ -1,4 +1,4 @@
-import { sbp } from '../deps.ts'
+import { sbp } from '~/deps.ts'
 import { Buffer } from 'node:buffer'
 import process from 'node:process'
 

@@ -1,4 +1,4 @@
-import { Hapi, Request, ResponseToolkit, Boom, verifyShelterAuthorizationHeader } from '../deps.ts'
+import { Hapi, Request, ResponseToolkit, Boom, verifyShelterAuthorizationHeader } from '~/deps.ts'
 
 const plugin = {
   name: 'chel-auth',

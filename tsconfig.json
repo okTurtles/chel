@@ -17,7 +17,7 @@
         "@common/*": ["./src/common/*"],
         "~/*": ["./src/*"]
       },
-      "types": ["node", "deno.ns", "deno.test", "deno.window"]
+      "types": ["node"]
     },
     "include": ["./src/**/*", "./scripts/*", "./src/**/*.vue", "src/types/vue-shims.d.ts"],
     "exclude": ["node_modules", "vendor/", "dist/", "build/", "test/assets/"]

@@ -1,6 +1,6 @@
-import { assert } from '../deps.ts'
+import { assert } from '~/deps.ts'
 import RouterBackend from './database-router.ts'
-import { cloneDeep, omit } from '../deps.ts'
+import { cloneDeep, omit } from '~/deps.ts'
 
 // CID for shelter-contract-text.
 const CID = '\x51\x1e\x01'

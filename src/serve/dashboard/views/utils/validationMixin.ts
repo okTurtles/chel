@@ -1,5 +1,5 @@
 import { debounce } from '../../common/cdLodash.ts'
-import { validationMixin as vuelidateSetup } from '../../../../deps.ts'
+import { validationMixin as vuelidateSetup } from '~/deps.ts'
 
 // TypeScript interfaces for Vue component with vuelidate
 interface VuelidateField {
