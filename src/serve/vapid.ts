@@ -32,7 +32,7 @@ export const initVapid = async () => {
       const serializedKeyPair = await Promise.all([
         crypto.subtle.exportKey('jwk', keyPair.privateKey),
         crypto.subtle.exportKey('raw', keyPair.publicKey).then((key) =>
-          // $FlowFixMe[incompatible-call]
+
           Buffer.from(key).toString('base64url')
         )
       ])
@@ -70,7 +70,7 @@ const generateJwt = async (endpoint: URL): Promise<string> => {
 
   const header = Buffer.from(JSON.stringify(
     Object.fromEntries([['typ', 'JWT'], ['alg', 'ES256']])
-    // $FlowFixMe[incompatible-call]
+
   )).toString('base64url')
   const body = Buffer.from(JSON.stringify(
     // We're expecting to use the JWT immediately. We set a 10-minute window
@@ -89,7 +89,7 @@ const generateJwt = async (endpoint: URL): Promise<string> => {
       // provider to get in touch in case of issues.
       ['sub', vapid.VAPID_EMAIL]
     ])
-    // $FlowFixMe[incompatible-call]
+
   )).toString('base64url')
 
   const signature = Buffer.from(

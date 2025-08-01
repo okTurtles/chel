@@ -12990,10 +12990,7 @@ var init_vapid = __esm({
           const serializedKeyPair2 = await Promise.all([
             crypto.subtle.exportKey("jwk", keyPair.privateKey),
             crypto.subtle.exportKey("raw", keyPair.publicKey).then(
-              (key) => (
-                // $FlowFixMe[incompatible-call]
-                Buffer7.from(key).toString("base64url")
-              )
+              (key) => Buffer7.from(key).toString("base64url")
             )
           ]);
           return default4("chelonia.db/set", "_private_immutable_vapid_key", JSON.stringify(serializedKeyPair2)).then(() => {
@@ -13021,7 +13018,6 @@ var init_vapid = __esm({
       const audience = endpoint.origin;
       const header = Buffer7.from(JSON.stringify(
         Object.fromEntries([["typ", "JWT"], ["alg", "ES256"]])
-        // $FlowFixMe[incompatible-call]
       )).toString("base64url");
       const body = Buffer7.from(JSON.stringify(
         // We're expecting to use the JWT immediately. We set a 10-minute window
@@ -13040,7 +13036,6 @@ var init_vapid = __esm({
           // provider to get in touch in case of issues.
           ["sub", vapid.VAPID_EMAIL]
         ])
-        // $FlowFixMe[incompatible-call]
       )).toString("base64url");
       const signature = Buffer7.from(
         await crypto.subtle.sign(

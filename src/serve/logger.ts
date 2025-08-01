@@ -38,8 +38,8 @@ if (Object.keys(logger.levels.values).includes(logLevel)) {
 }
 
 (globalThis as { logger?: unknown }).logger = logger // TypeScript global assignment
-console.debug = logger.debug.bind(logger) // $FlowExpectedError
-console.info = logger.info.bind(logger) // $FlowExpectedError
-console.log = logger.info.bind(logger) // $FlowExpectedError
-console.warn = logger.warn.bind(logger) // $FlowExpectedError
+console.debug = logger.debug.bind(logger)
+console.info = logger.info.bind(logger)
+console.log = logger.info.bind(logger)
+console.warn = logger.warn.bind(logger)
 console.error = logger.error.bind(logger)

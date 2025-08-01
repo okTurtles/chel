@@ -37,7 +37,7 @@ import { readyQueueName } from './genericWorker.ts'
 // Rate: How many credits are charged per byte stored per second.
 // Using BigInt for precision. Using 'picocredits' so that ~1k 'credits' cover
 // about 100MiB for a period of one year, while allowing granularity and precision.
-// $FlowFixMe[cannot-resolve-name]
+
 const PICOCREDITS_PER_BYTESECOND = BigInt(10)
 // History Limit: How many entries to keep in the granular history log.
 const GRANULAR_HISTORY_MAX_ENTRIES = 1000
