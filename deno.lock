@@ -40,7 +40,6 @@
     "npm:axios@0.27.2": "0.27.2",
     "npm:better-sqlite3@11.9.1": "11.9.1",
     "npm:bottleneck@2.19.5": "2.19.5",
-    "npm:buffer@6.0.3": "6.0.3",
     "npm:chalk@4.1.0": "4.1.0",
     "npm:dompurify@2.2.7": "2.2.7",
     "npm:esbuild@0.25.6": "0.25.6",

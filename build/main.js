@@ -77,7 +77,6 @@ import { default as default15 } from "npm:dompurify@2.2.7";
 import { default as default16 } from "npm:should@13.2.3";
 import { v4 } from "npm:uuid@9.0.0";
 import { cloneDeep, omit } from "npm:turtledash@1.0.3";
-import { Buffer as Buffer2 } from "npm:buffer@6.0.3";
 import { default as default17 } from "npm:bottleneck@2.19.5";
 import { default as default18 } from "npm:scrypt-async@2.0.1";
 import { aes128gcm } from "npm:@apeleghq/rfc8188@1.0.7/encodings";
@@ -3022,7 +3021,7 @@ var init_cid = __esm({
 });
 
 // node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/functions.mjs
-import { Buffer as Buffer3 } from "node:buffer";
+import { Buffer as Buffer2 } from "node:buffer";
 async function createCIDfromStream(data, multicode = multicodes3.RAW) {
   const uint8array = typeof data === "string" ? new TextEncoder().encode(data) : data;
   const digest = await blake2b256stream.digest(uint8array);
@@ -3064,7 +3063,7 @@ var init_functions = __esm({
       }
       return parsed;
     };
-    b64ToBuf = (b64) => Buffer3.from(b64, "base64");
+    b64ToBuf = (b64) => Buffer2.from(b64, "base64");
     b64ToStr = (b64) => b64ToBuf(b64).toString("utf8");
   }
 });
@@ -8176,7 +8175,7 @@ var init_constants = __esm({
 });
 
 // node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/utils.mjs
-import { Buffer as Buffer4 } from "node:buffer";
+import { Buffer as Buffer3 } from "node:buffer";
 function eventsAfter2(contractID, { sinceHeight, limit, sinceHash, stream = true }) {
   if (!contractID) {
     throw new Error("Missing contract ID");
@@ -8248,7 +8247,7 @@ function eventsAfter2(contractID, { sinceHeight, limit, sinceHash, stream = true
               if (!value) {
                 throw new Error("Invalid response: missing body");
               }
-              buffer = buffer + Buffer4.from(value).toString().trim();
+              buffer = buffer + Buffer3.from(value).toString().trim();
               if (!buffer)
                 break;
               if (state === "read-new-response") {
@@ -8354,7 +8353,7 @@ function buildShelterAuthorizationHeader(contractID, state) {
   const deserializedSAK = typeof SAK === "string" ? deserializeKey2(SAK) : SAK;
   const nonceBytes = new Uint8Array(15);
   globalThis.crypto.getRandomValues(nonceBytes);
-  const data = `${contractID} ${esm_default("chelonia/time")}.${Buffer4.from(nonceBytes).toString("base64")}`;
+  const data = `${contractID} ${esm_default("chelonia/time")}.${Buffer3.from(nonceBytes).toString("base64")}`;
   return `shelter ${data}.${sign2(deserializedSAK, data)}`;
 }
 var MAX_EVENTS_AFTER, findKeyIdByName, findForeignKeysByContractID, findRevokedKeyIdsByName, findSuitableSecretKeyId, findSuitablePublicKeyIds, validateActionPermissions, validateKeyPermissions, validateKeyAddPermissions, validateKeyDelPermissions, validateKeyUpdatePermissions, keyAdditionProcessor, subscribeToForeignKeyContracts, recreateEvent, getContractIDfromKeyId, clearObject, reactiveClearObject, checkCanBeGarbageCollected, collectEventStream, logEvtError, handleFetchResult2;
@@ -8792,7 +8791,7 @@ var init_utils2 = __esm({
 });
 
 // node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/files.mjs
-import { Buffer as Buffer5 } from "node:buffer";
+import { Buffer as Buffer4 } from "node:buffer";
 var supportsRequestStreams, streamToUint8Array, ArrayBufferToUint8ArrayStream, computeChunkDescriptors, fileStream, aes256gcmHandlers, noneHandlers, cipherHandlers, files_default;
 var init_files = __esm({
   "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/files.mjs"() {
@@ -8841,7 +8840,7 @@ var init_files = __esm({
         await this.config.fetch(`${connectionURL}/streams-test`, {
           method: "POST",
           body: new ReadableStream({ start(c) {
-            c.enqueue(Buffer5.from("ok"));
+            c.enqueue(Buffer4.from("ok"));
             c.close();
           } }),
           duplex: "half"
@@ -8938,7 +8937,7 @@ var init_files = __esm({
           self.crypto.getRandomValues(IKM);
         }
         const keyId3 = blake32Hash2("aes256gcm-keyId" + blake32Hash2(IKM)).slice(-8);
-        const binaryKeyId = Buffer5.from(keyId3);
+        const binaryKeyId = Buffer4.from(keyId3);
         return {
           cipherParams: {
             keyId: keyId3
@@ -8947,7 +8946,7 @@ var init_files = __esm({
             return await K(e, stream, recordSize, binaryKeyId, IKM);
           },
           downloadParams: {
-            IKM: Buffer5.from(IKM).toString("base64"),
+            IKM: Buffer4.from(IKM).toString("base64"),
             rs: recordSize
           }
         };
@@ -8957,7 +8956,7 @@ var init_files = __esm({
         if (!IKMb64) {
           throw new Error("Missing IKM in downloadParams");
         }
-        const IKM = Buffer5.from(IKMb64, "base64");
+        const IKM = Buffer4.from(IKMb64, "base64");
         const keyId3 = blake32Hash2("aes256gcm-keyId" + blake32Hash2(IKM)).slice(-8);
         if (!manifest2["cipher-params"] || !manifest2["cipher-params"].keyId) {
           throw new Error("Missing cipher-params");
@@ -8969,7 +8968,7 @@ var init_files = __esm({
         return {
           payloadHandler: async () => {
             const bytes = await streamToUint8Array(S(e, fileStream(chelonia, manifest2), (actualKeyId) => {
-              if (Buffer5.from(actualKeyId).toString() !== keyId3) {
+              if (Buffer4.from(actualKeyId).toString() !== keyId3) {
                 throw new Error("Invalid key ID");
               }
               return IKM;
@@ -9046,7 +9045,7 @@ var init_files = __esm({
                 "name-map": manifestOptions["name-map"] ?? void 0,
                 alternatives: manifestOptions.alternatives ?? void 0
               };
-              controller.enqueue(Buffer5.from(JSON.stringify(manifest2)));
+              controller.enqueue(Buffer4.from(JSON.stringify(manifest2)));
               controller.close();
             }
           })
@@ -9088,7 +9087,7 @@ var init_files = __esm({
         const manifestBinary = await manifestResponse.arrayBuffer();
         if (createCID3(coerce(manifestBinary), multicodes3.SHELTER_FILE_MANIFEST) !== manifestCid)
           throw new Error("mismatched manifest hash");
-        const manifest2 = JSON.parse(Buffer5.from(manifestBinary).toString());
+        const manifest2 = JSON.parse(Buffer4.from(manifestBinary).toString());
         if (typeof manifest2 !== "object")
           throw new Error("manifest format is invalid");
         if (manifest2.version !== "1.0.0")
@@ -9138,7 +9137,7 @@ var init_files = __esm({
 });
 
 // node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/db.mjs
-import { Buffer as Buffer6 } from "node:buffer";
+import { Buffer as Buffer5 } from "node:buffer";
 var headPrefix2, getContractIdFromLogHead, getLogHead, checkKey3, parsePrefixableKey2, prefixHandlers2, dbPrimitiveSelectors, db_default;
 var init_db = __esm({
   "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/db.mjs"() {
@@ -9172,7 +9171,7 @@ var init_db = __esm({
     };
     prefixHandlers2 = {
       // Decode buffers, but don't transform other values.
-      "": (value) => Buffer6.isBuffer(value) ? value.toString("utf8") : value,
+      "": (value) => Buffer5.isBuffer(value) ? value.toString("utf8") : value,
       "any:": (value) => value
       /*
       // 2025-03-24: Commented out because it's not used; currently, only `any:`
@@ -11092,7 +11091,7 @@ var init_time_sync = __esm({
 });
 
 // node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/chelonia.mjs
-import { Buffer as Buffer7 } from "node:buffer";
+import { Buffer as Buffer6 } from "node:buffer";
 function contractNameFromAction(action) {
   const regexResult = ACTION_REGEX.exec(action);
   const contractName = regexResult?.[2];
@@ -11709,7 +11708,7 @@ var init_chelonia = __esm({
                       v2.call(this.pubsub, [msg.key, parseEncryptedOrUnencryptedMessage(this, {
                         contractID: msg.channelID,
                         meta: msg.key,
-                        serializedData: JSON.parse(Buffer7.from(msg.data).toString())
+                        serializedData: JSON.parse(Buffer6.from(msg.data).toString())
                       })]);
                     }).catch((e2) => {
                       console.error(`[chelonia] Error processing kv event for ${msg.channelID} and key ${msg.key}`, msg, e2);
@@ -12962,7 +12961,7 @@ var init_constants2 = __esm({
 });
 
 // src/serve/vapid.ts
-import { Buffer as Buffer8 } from "node:buffer";
+import { Buffer as Buffer7 } from "node:buffer";
 import process3 from "node:process";
 var vapidPublicKey, vapidPrivateKey, vapid, initVapid, generateJwt, getVapidPublicKey, vapidAuthorization;
 var init_vapid = __esm({
@@ -12993,7 +12992,7 @@ var init_vapid = __esm({
             crypto.subtle.exportKey("raw", keyPair.publicKey).then(
               (key) => (
                 // $FlowFixMe[incompatible-call]
-                Buffer8.from(key).toString("base64url")
+                Buffer7.from(key).toString("base64url")
               )
             )
           ]);
@@ -13020,11 +13019,11 @@ var init_vapid = __esm({
     generateJwt = async (endpoint) => {
       const now = Date.now() / 1e3 | 0;
       const audience = endpoint.origin;
-      const header = Buffer8.from(JSON.stringify(
+      const header = Buffer7.from(JSON.stringify(
         Object.fromEntries([["typ", "JWT"], ["alg", "ES256"]])
         // $FlowFixMe[incompatible-call]
       )).toString("base64url");
-      const body = Buffer8.from(JSON.stringify(
+      const body = Buffer7.from(JSON.stringify(
         // We're expecting to use the JWT immediately. We set a 10-minute window
         // for using the JWT (5 minutes into the past, 5 minutes into the future)
         // to account for potential network delays and clock drift.
@@ -13043,11 +13042,11 @@ var init_vapid = __esm({
         ])
         // $FlowFixMe[incompatible-call]
       )).toString("base64url");
-      const signature = Buffer8.from(
+      const signature = Buffer7.from(
         await crypto.subtle.sign(
           { name: "ECDSA", hash: "SHA-256" },
           vapidPrivateKey,
-          Buffer8.from([header, body].join("."))
+          Buffer7.from([header, body].join("."))
         )
       ).toString("base64url");
       return [header, body, signature].join(".");
@@ -13062,7 +13061,7 @@ var init_vapid = __esm({
 
 // src/serve/zkppSalt.ts
 import { randomBytes as randomBytes2, timingSafeEqual } from "node:crypto";
-import { Buffer as Buffer9 } from "node:buffer";
+import { Buffer as Buffer8 } from "node:buffer";
 var nacl3, recordSecret, challengeSecret, registrationSecret, hashUpdateSecret, initZkpp, maxAge, computeZkppSaltRecordId, getZkppSaltRecord, setZkppSaltRecord, getChallenge, verifyChallenge, registrationKey, register, contractSaltVerifyC, getContractSalt, updateContractSalt, redeemSaltRegistrationToken, redeemSaltUpdateToken;
 var init_zkppSalt = __esm({
   "src/serve/zkppSalt.ts"() {
@@ -13079,10 +13078,10 @@ var init_zkppSalt = __esm({
         }
         return IKM2;
       });
-      recordSecret = Buffer9.from(hashStringArray("private/recordSecret", IKM)).toString("base64");
-      challengeSecret = Buffer9.from(hashStringArray("private/challengeSecret", IKM)).toString("base64");
-      registrationSecret = Buffer9.from(hashStringArray("private/registrationSecret", IKM)).toString("base64");
-      hashUpdateSecret = Buffer9.from(hashStringArray("private/hashUpdateSecret", IKM)).toString("base64");
+      recordSecret = Buffer8.from(hashStringArray("private/recordSecret", IKM)).toString("base64");
+      challengeSecret = Buffer8.from(hashStringArray("private/challengeSecret", IKM)).toString("base64");
+      registrationSecret = Buffer8.from(hashStringArray("private/registrationSecret", IKM)).toString("base64");
+      hashUpdateSecret = Buffer8.from(hashStringArray("private/hashUpdateSecret", IKM)).toString("base64");
     };
     maxAge = 30;
     computeZkppSaltRecordId = async (contractID) => {
@@ -13091,7 +13090,7 @@ var init_zkppSalt = __esm({
       if (!record) {
         return null;
       }
-      const recordBuf = Buffer9.concat([Buffer9.from(contractID), Buffer9.from(record)]);
+      const recordBuf = Buffer8.concat([Buffer8.from(contractID), Buffer8.from(record)]);
       return hash(recordBuf);
     };
     getZkppSaltRecord = async (contractID) => {
@@ -13099,14 +13098,14 @@ var init_zkppSalt = __esm({
       const record = await default4("chelonia.db/get", recordId);
       if (record) {
         const encryptionKey = hashStringArray("REK", contractID, recordSecret).slice(0, nacl3.secretbox.keyLength);
-        const recordBuf = Buffer9.from(base64urlToBase64(record), "base64");
+        const recordBuf = Buffer8.from(base64urlToBase64(record), "base64");
         const nonce = recordBuf.slice(0, nacl3.secretbox.nonceLength);
         const recordCiphertext = recordBuf.slice(nacl3.secretbox.nonceLength);
         const recordPlaintext = nacl3.secretbox.open(recordCiphertext, nonce, encryptionKey);
         if (!recordPlaintext) {
           return null;
         }
-        const recordString = Buffer9.from(recordPlaintext).toString("utf-8");
+        const recordString = Buffer8.from(recordPlaintext).toString("utf-8");
         try {
           const recordObj = JSON.parse(recordString);
           if (!Array.isArray(recordObj) || recordObj.length !== 3 && recordObj.length !== 4 || recordObj.slice(0, 3).some((r) => !r || typeof r !== "string") || recordObj[3] != null && typeof recordObj[3] !== "string") {
@@ -13131,8 +13130,8 @@ var init_zkppSalt = __esm({
       const encryptionKey = hashStringArray("REK", contractID, recordSecret).slice(0, nacl3.secretbox.keyLength);
       const nonce = nacl3.randomBytes(nacl3.secretbox.nonceLength);
       const recordPlaintext = JSON.stringify([hashedPassword, authSalt, contractSalt, cid]);
-      const recordCiphertext = nacl3.secretbox(Buffer9.from(recordPlaintext), nonce, encryptionKey);
-      const recordBuf = Buffer9.concat([nonce, recordCiphertext]);
+      const recordCiphertext = nacl3.secretbox(Buffer8.from(recordPlaintext), nonce, encryptionKey);
+      const recordBuf = Buffer8.concat([nonce, recordCiphertext]);
       const record = base64ToBase64url(recordBuf.toString("base64"));
       await default4("chelonia.db/set", recordId, record);
     };
@@ -13145,7 +13144,7 @@ var init_zkppSalt = __esm({
       const { authSalt } = record;
       const s = randomNonce();
       const now = (Date.now() / 1e3 | 0).toString(16);
-      const sig = [now, base64ToBase64url(Buffer9.from(hashStringArray(contract, b, s, now, challengeSecret)).toString("base64"))].join(",");
+      const sig = [now, base64ToBase64url(Buffer8.from(hashStringArray(contract, b, s, now, challengeSecret)).toString("base64"))].join(",");
       return {
         authSalt,
         s,
@@ -13165,19 +13164,19 @@ var init_zkppSalt = __esm({
       }
       const b = hash(r);
       const sig = hashStringArray(contractID, b, s, then, challengeSecret);
-      const macBuf = Buffer9.from(base64urlToBase64(mac), "base64");
+      const macBuf = Buffer8.from(base64urlToBase64(mac), "base64");
       return sig.byteLength === macBuf.byteLength && timingSafeEqual(sig, macBuf);
     };
     registrationKey = (provisionalId, b) => {
       const encryptionKey = hashStringArray("REG", provisionalId, registrationSecret).slice(0, nacl3.secretbox.keyLength);
       const nonce = nacl3.randomBytes(nacl3.secretbox.nonceLength);
       const keyPair = boxKeyPair();
-      const s = base64ToBase64url(Buffer9.concat([nonce, nacl3.secretbox(keyPair.secretKey, nonce, encryptionKey)]).toString("base64"));
+      const s = base64ToBase64url(Buffer8.concat([nonce, nacl3.secretbox(keyPair.secretKey, nonce, encryptionKey)]).toString("base64"));
       const now = (Date.now() / 1e3 | 0).toString(16);
-      const sig = [now, base64ToBase64url(Buffer9.from(hashStringArray(provisionalId, b, s, now, challengeSecret)).toString("base64"))].join(",");
+      const sig = [now, base64ToBase64url(Buffer8.from(hashStringArray(provisionalId, b, s, now, challengeSecret)).toString("base64"))].join(",");
       return {
         s,
-        p: base64ToBase64url(Buffer9.from(keyPair.publicKey).toString("base64")),
+        p: base64ToBase64url(Buffer8.from(keyPair.publicKey).toString("base64")),
         sig
       };
     };
@@ -13186,7 +13185,7 @@ var init_zkppSalt = __esm({
         console.warn("register: Error validating challenge: " + JSON.stringify({ contract: provisionalId, clientPublicKey, userSig }));
         throw new Error("register: Invalid challenge");
       }
-      const encryptedSecretKeyBuf = Buffer9.from(base64urlToBase64(encryptedSecretKey), "base64");
+      const encryptedSecretKeyBuf = Buffer8.from(base64urlToBase64(encryptedSecretKey), "base64");
       const encryptionKey = hashStringArray("REG", provisionalId, registrationSecret).slice(0, nacl3.secretbox.keyLength);
       const secretKeyBuf = nacl3.secretbox.open(encryptedSecretKeyBuf.slice(nacl3.secretbox.nonceLength), encryptedSecretKeyBuf.slice(0, nacl3.secretbox.nonceLength), encryptionKey);
       if (!secretKeyBuf) {
@@ -13202,13 +13201,13 @@ var init_zkppSalt = __esm({
       const token = encryptSaltUpdate(
         hashUpdateSecret,
         provisionalId,
-        JSON.stringify([Date.now(), Buffer9.from(hashedPasswordBuf).toString(), authSalt, contractSalt])
+        JSON.stringify([Date.now(), Buffer8.from(hashedPasswordBuf).toString(), authSalt, contractSalt])
       );
       return encryptContractSalt(sharedEncryptionKey, token);
     };
     contractSaltVerifyC = (h2, r, s, userHc) => {
       const [c, hc] = computeCAndHc(r, s, h2);
-      const userHcBuf = Buffer9.from(base64urlToBase64(userHc), "base64");
+      const userHcBuf = Buffer8.from(base64urlToBase64(userHc), "base64");
       if (hc.byteLength === userHcBuf.byteLength && timingSafeEqual(hc, userHcBuf)) {
         return c;
       }
@@ -13249,7 +13248,7 @@ var init_zkppSalt = __esm({
         throw new Error("update: Bad challenge");
       }
       const encryptionKey = hashRawStringArray(SU, c).slice(0, nacl3.secretbox.keyLength);
-      const encryptedArgsBuf = Buffer9.from(base64urlToBase64(encryptedArgs), "base64");
+      const encryptedArgsBuf = Buffer8.from(base64urlToBase64(encryptedArgs), "base64");
       const nonce = encryptedArgsBuf.slice(0, nacl3.secretbox.nonceLength);
       const encryptedArgsCiphertext = encryptedArgsBuf.slice(nacl3.secretbox.nonceLength);
       const args = nacl3.secretbox.open(encryptedArgsCiphertext, nonce, encryptionKey);
@@ -13258,14 +13257,14 @@ var init_zkppSalt = __esm({
         return false;
       }
       try {
-        const hashedPassword2 = Buffer9.from(args).toString();
+        const hashedPassword2 = Buffer8.from(args).toString();
         const recordId = await computeZkppSaltRecordId(contract);
         if (!recordId) {
           console.error(`update: Error obtaining record ID for contract ID ${contract}`);
           return false;
         }
-        const authSalt = Buffer9.from(hashStringArray(AUTHSALT, c)).slice(0, SALT_LENGTH_IN_OCTETS).toString("base64");
-        const contractSalt = Buffer9.from(hashStringArray(CONTRACTSALT, c)).slice(0, SALT_LENGTH_IN_OCTETS).toString("base64");
+        const authSalt = Buffer8.from(hashStringArray(AUTHSALT, c)).slice(0, SALT_LENGTH_IN_OCTETS).toString("base64");
+        const contractSalt = Buffer8.from(hashStringArray(CONTRACTSALT, c)).slice(0, SALT_LENGTH_IN_OCTETS).toString("base64");
         const token = encryptSaltUpdate(
           hashUpdateSecret,
           recordId,
@@ -14115,7 +14114,7 @@ var init_rfc8291Ikm = __esm({
 });
 
 // src/serve/push.ts
-import { Buffer as Buffer10 } from "node:buffer";
+import { Buffer as Buffer9 } from "node:buffer";
 var addSubscriptionToIndex, deleteSubscriptionFromIndex, saveSubscription, addChannelToSubscription, deleteChannelFromSubscription, removeSubscription, subscriptionInfoWrapper, encryptPayload, postEvent, pushServerActionhandlers;
 var init_push = __esm({
   "src/serve/push.ts"() {
@@ -14183,10 +14182,10 @@ var init_push = __esm({
             return function() {
               if ((count3 | 0) === 0) {
                 if (!salt) {
-                  salt = Buffer10.from(this.keys.auth, "base64url");
+                  salt = Buffer9.from(this.keys.auth, "base64url");
                 }
                 if (!uaPublic) {
-                  uaPublic = Buffer10.from(this.keys.p256dh, "base64url");
+                  uaPublic = Buffer9.from(this.keys.p256dh, "base64url");
                 }
                 resultPromise = rfc8291Ikm_default(uaPublic, salt);
                 count3 = 1;
@@ -14222,7 +14221,7 @@ var init_push = __esm({
           if (done) break;
           chunks.push(new Uint8Array(value));
         }
-        return Buffer10.concat(chunks);
+        return Buffer9.concat(chunks);
       });
     };
     postEvent = async (subscription, event) => {
@@ -14268,7 +14267,7 @@ var init_push = __esm({
         const { applicationServerKey, settings, subscriptionInfo } = payload;
         if (applicationServerKey) {
           const ourVapidPublicKey = getVapidPublicKey();
-          const theirVapidPublicKey = Buffer10.from(applicationServerKey, "base64").toString("base64url");
+          const theirVapidPublicKey = Buffer9.from(applicationServerKey, "base64").toString("base64url");
           if (ourVapidPublicKey !== theirVapidPublicKey) {
             socket.send(createMessage(REQUEST_TYPE.PUSH_ACTION, { type: PUSH_SERVER_ACTION_TYPE.SEND_PUBLIC_KEY, data: getVapidPublicKey() }));
             console.warn({ ourVapidPublicKey, theirVapidPublicKey }, "Refusing to store subscription because the associated public VAPID key does not match ours");
@@ -14658,6 +14657,7 @@ var init_pubsub2 = __esm({
 
 // src/serve/routes.ts
 var routes_exports = {};
+import { Buffer as Buffer10 } from "node:buffer";
 import { isIP } from "node:net";
 import path3 from "node:path";
 import process8 from "node:process";
@@ -14874,7 +14874,7 @@ var init_routes = __esm({
               await default4("chelonia.db/set", `_private_deletionTokenDgst_${deserializedHEAD.contractID}`, deletionTokenDgst);
             }
           }
-          await default4("backend/server/updateSize", deserializedHEAD.contractID, Buffer2.byteLength(request.payload), deserializedHEAD.isFirstMessage && !credentials?.billableContractID ? deserializedHEAD.contractID : void 0);
+          await default4("backend/server/updateSize", deserializedHEAD.contractID, Buffer10.byteLength(request.payload), deserializedHEAD.isFirstMessage && !credentials?.billableContractID ? deserializedHEAD.contractID : void 0);
         } catch (err) {
           console.error(err, default8.bold.yellow(err.name));
           if (err.name === "ChelErrorDBBadPreviousHEAD" || err.name === "ChelErrorAlreadyProcessed") {
@@ -15013,7 +15013,7 @@ var init_routes = __esm({
         }
       },
       function(request, h2) {
-        if (request.payload.byteLength === 2 && Buffer2.from(request.payload).toString() === "ok") {
+        if (request.payload.byteLength === 2 && Buffer10.from(request.payload).toString() === "ok") {
           return h2.response().code(204);
         } else {
           return default5.badRequest();
@@ -15089,7 +15089,7 @@ var init_routes = __esm({
         if (!(manifestMeta.payload instanceof Uint8Array)) return default5.badRequest("wrong manifest format");
         const manifest2 = (() => {
           try {
-            return JSON.parse(Buffer2.from(manifestMeta.payload).toString());
+            return JSON.parse(Buffer10.from(manifestMeta.payload).toString());
           } catch {
             throw default5.badData("Error parsing manifest");
           }
@@ -15322,7 +15322,7 @@ var init_routes = __esm({
         } catch (e2) {
           return default5.badData();
         }
-        const existingSize = existing ? Buffer2.from(existing).byteLength : 0;
+        const existingSize = existing ? Buffer10.from(existing).byteLength : 0;
         await default4("chelonia.db/set", `_private_kv_${contractID}_${key}`, request.payload);
         await default4("backend/server/updateSize", contractID, request.payload.byteLength - existingSize);
         await appendToIndexFactory(`_private_kvIdx_${contractID}`)(key);

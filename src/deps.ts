@@ -36,7 +36,7 @@ export { default as dompurify } from 'npm:dompurify@2.2.7'
 export { default as should } from 'npm:should@13.2.3'
 export { v4 as uuid } from 'npm:uuid@9.0.0'
 export { cloneDeep, omit } from 'npm:turtledash@1.0.3'
-export { Buffer } from 'npm:buffer@6.0.3'
+
 export { default as Bottleneck } from 'npm:bottleneck@2.19.5'
 export { default as scrypt } from 'npm:scrypt-async@2.0.1'
 

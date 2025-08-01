@@ -1,4 +1,5 @@
-import { blake32Hash, Buffer } from '../../../deps.ts'
+import { blake32Hash } from '../../../deps.ts'
+import { Buffer } from 'node:buffer'
 
 if (typeof window === 'object' && typeof Buffer === 'undefined') {
   ;(window as any).Buffer = Buffer
