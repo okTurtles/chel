@@ -1,5 +1,3 @@
-'use strict'
-
 import { mkdir, readdir, readFile, rm, unlink, writeFile } from 'node:fs/promises'
 import { basename, dirname, join, normalize, resolve } from 'node:path'
 import process from 'node:process'

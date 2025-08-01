@@ -1,5 +1,3 @@
-'use strict'
-
 import { Buffer } from 'node:buffer'
 import { sbp, maybeParseCID, multicodes, strToB64, checkKey, parsePrefixableKey, prefixHandlers, LRU, Boom, okturtlesData } from '../deps.ts'
 import { Readable } from 'node:stream'

@@ -1,7 +1,5 @@
 #!/usr/bin/env -S deno run --allow-run --allow-read --allow-env --allow-write=./build --allow-net
 
-'use strict'
-
 import { colors, esbuild } from '../src/deps.ts'
 
 const { default: { version } } = await import('../package.json', { with: { type: 'json' } })

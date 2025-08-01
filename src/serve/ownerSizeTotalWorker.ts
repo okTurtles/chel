@@ -1,5 +1,3 @@
-'use strict'
-
 import { sbp } from '../deps.ts'
 import { OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL as TASK_TIME_INTERVAL } from './constants.ts'
 import { appendToIndexFactory, lookupUltimateOwner, removeFromIndexFactory, updateSize } from './database.ts'

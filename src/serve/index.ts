@@ -1,5 +1,3 @@
-'use strict'
-
 import { sbp, chalk, okturtlesData, okturtlesEvents } from '../deps.ts'
 import { SERVER_RUNNING } from './events.ts'
 import { PUBSUB_INSTANCE } from './instance-keys.ts'

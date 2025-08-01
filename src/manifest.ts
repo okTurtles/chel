@@ -1,5 +1,3 @@
-'use strict'
-
 // chel manifest [-k|--key <pubkey1> [-k|--key <pubkey2> ...]] [--out=<manifest.json>] [-s|--slim <contract-slim.js>] [-v|--version <version>] <key.json> <contract-bundle.js>
 
 // TODO: consider a --copy-files option that works with --out which copies version-stamped

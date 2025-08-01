@@ -1,5 +1,3 @@
-'use strict'
-
 import { path, colors } from './deps.ts'
 import { type Entry, createEntryFromFile, isDir, multicodes, revokeNet } from './utils.ts'
 

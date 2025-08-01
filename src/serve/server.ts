@@ -1,5 +1,3 @@
-'use strict'
-
 import { Hapi, Inert, sbp, chalk, SPMessage, SERVER, multicodes, parseCID, SubMessage, UnsubMessage } from '../deps.ts'
 import { basename, join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'

@@ -1,7 +1,5 @@
 /* globals logger */
 
-'use strict'
-
 import { sbp, chalk, SPMessage, maybeParseCID, multicodes, createCID, Buffer, Boom, Joi, Bottleneck, blake32Hash, Request, ResponseToolkit } from '../deps.ts'
 import { isIP } from 'node:net'
 import path from 'node:path'

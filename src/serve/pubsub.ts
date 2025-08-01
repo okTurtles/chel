@@ -1,5 +1,4 @@
 /* globals logger */
-'use strict'
 
 import { Buffer } from 'node:buffer'
 import process from 'node:process'

@@ -1,5 +1,3 @@
-'use strict'
-
 // Type definitions for credit history entries
 interface GranularHistoryEntryBase {
   type: 'charge' | 'credit';

@@ -1,5 +1,3 @@
-'use strict'
-
 import { assert } from '../deps.ts'
 import RouterBackend from './database-router.ts'
 import { cloneDeep, omit } from '../deps.ts'

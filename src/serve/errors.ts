@@ -1,5 +1,3 @@
-'use strict'
-
 import { ChelErrorGenerator } from '../deps.ts'
 
 export const BackendErrorNotFound = ChelErrorGenerator('BackendErrorNotFound') as unknown as { new (message?: string): Error; (message?: string): Error }

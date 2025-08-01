@@ -1,5 +1,3 @@
-'use strict'
-
 // constants for UI-related events
 
 export const OPEN_MODAL = 'open-modal'

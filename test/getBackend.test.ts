@@ -1,5 +1,3 @@
-'use strict'
-
 import { assert, assertRejects, path } from '../src/deps.ts'
 import { getBackend } from '../src/utils.ts'
 

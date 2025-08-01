@@ -1,5 +1,3 @@
-'use strict'
-
 export { deploy } from './deploy.ts'
 export { eventsAfter } from './eventsAfter.ts'
 export { get } from './get.ts'

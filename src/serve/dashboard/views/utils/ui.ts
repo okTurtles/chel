@@ -1,5 +1,3 @@
-'use strict'
-
 import { sbp } from '../../../../deps.ts'
 import { OPEN_PROMPT, PROMPT_RESPONSE } from './events.ts'
 

@@ -1,5 +1,3 @@
-'use strict'
-
 // chel deploy <url-or-dir-or-sqlitedb> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
 
 import { path, z } from './deps.ts'

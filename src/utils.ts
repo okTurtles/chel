@@ -1,5 +1,3 @@
-'use strict'
-
 import { CID, base58btc, blake, colors, path } from './deps.ts'
 import * as fs from './database-fs.ts'
 import * as sqlite from './database-sqlite.ts'
