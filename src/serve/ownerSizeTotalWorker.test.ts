@@ -2,11 +2,6 @@ import { sbp, assert, path, okturtlesData, okturtlesEvents, okturtlesEventQueue 
 import { createCID } from '../deps.ts'
 import { appendToIndexFactory, initDB, updateSize as updateSize_ } from './database.ts'
 
-// Type for Deno test context
-type TestContext = {
-  step(name: string, fn: () => void | Promise<void>): Promise<boolean>
-}
-
 let worker = new Worker(new URL('./ownerSizeTotalWorker.ts', import.meta.url), {
   type: 'module'
 })
@@ -288,7 +283,7 @@ async function * randomOp (iterations: number): AsyncGenerator<void, Contract[],
 
 Deno.test({
   name: 'Owner total size computation fuzzing',
-  async fn (t: TestContext) {
+  async fn (t: Deno.TestContext) {
     // Setup
     await initDB()
     await workerReady

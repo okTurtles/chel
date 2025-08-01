@@ -2,11 +2,6 @@ import { initDB } from './database.ts'
 import { tweetnacl, AUTHSALT, CONTRACTSALT, CS, SALT_LENGTH_IN_OCTETS, SU } from '../deps.ts'
 import { Buffer } from 'node:buffer'
 
-// Type for Deno test context
-type TestContext = {
-  step(name: string, fn: () => void | Promise<void>): Promise<boolean>
-}
-
 // Simple assertion helpers to replace 'should'
 const should = {
   be: {
@@ -79,7 +74,7 @@ const decryptRegistrationRedemptionToken = (p: string, secretKey: Uint8Array, en
 
 Deno.test({
   name: 'ZKPP Salt functions',
-  async fn (t: TestContext) {
+  async fn (t: Deno.TestContext) {
     // Setup
     await initDB()
     await t.step('register() conforms to the API to register a new salt', async () => {

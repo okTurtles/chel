@@ -2,11 +2,6 @@ import { assert } from '../deps.ts'
 import RouterBackend from './database-router.ts'
 import { cloneDeep, omit } from '../deps.ts'
 
-// Type for Deno test context
-type TestContext = {
-  step(name: string, fn: () => void | Promise<void>): Promise<boolean>
-}
-
 // CID for shelter-contract-text.
 const CID = '\x51\x1e\x01'
 
@@ -31,7 +26,7 @@ const db = new RouterBackend({ config: validConfig })
 
 Deno.test({
   name: 'DatabaseRouter::validateConfig',
-  async fn (t: TestContext) {
+  async fn (t: Deno.TestContext) {
     await t.step('should accept a valid config', () => {
       const errors = db.validateConfig(validConfig)
       if (errors.length !== 0) throw new Error(`Expected 0 errors but got ${errors.length}`)
@@ -54,7 +49,7 @@ Deno.test({
 
 Deno.test({
   name: 'DatabaseRouter::lookupBackend',
-  async fn (t: TestContext) {
+  async fn (t: Deno.TestContext) {
     // Setup
     await db.init()
 
