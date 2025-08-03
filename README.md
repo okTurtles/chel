@@ -43,7 +43,7 @@ chel serve [options] <directory>
 
 OPTIONS
 
---dp <port>        set dashboard port (default: 7000)
+--dp <port>        set dashboard port (default: 7001)
 --port <port>      set application port (default: 8000)
 --db-type <type>   one of: files, sqlite, mem (default: mem)
 --db-location <loc>  for "files", a directory, for "sqlite", path to sqlite database
@@ -59,7 +59,7 @@ chel serve --dp 3000 --port 8080 --db-type sqlite --db-location ./app.db ./my-ap
 ```
 
 The serve command will:
-- Start a dashboard server (default: http://localhost:7000)
+- Start a dashboard server (default: http://localhost:7001)
 - Start an application server (default: http://localhost:8000)
 - Serve static assets and handle API routes
 - Support different database backends (memory, filesystem, SQLite)

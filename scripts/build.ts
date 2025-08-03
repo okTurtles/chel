@@ -51,7 +51,7 @@ const options = {
     'npm:three@0.151.3',
     'npm:better-sqlite3@11.9.1',
     'npm:ws@8.5.0',
-    'npm:vue@2.6.12',
+    'npm:vue@2.7.16',
     'npm:vuex@3.6.0',
     'npm:dompurify@2.2.7',
     'npm:should@13.2.3',
@@ -71,13 +71,18 @@ const options = {
     'npm:@chelonia/lib@1.2.0',
     'npm:@chelonia/lib@1.2.0/pubsub',
     'npm:@chelonia/lib@1.2.0/utils',
+    'npm:@chelonia/lib@1.2.0/zkpp',
+    'npm:@chelonia/lib@1.2.0/zkppConstants',
     'npm:@chelonia/crypto@1.0.1',
     // SBP dependencies
     'npm:@sbp/okturtles.data@0.1.5',
     'npm:@sbp/okturtles.eventqueue@1.2.0',
     'npm:@sbp/okturtles.events@1.0.0',
     // Vue validation dependencies
-    'npm:vuelidate@0.7.6'
+    'npm:vuelidate@0.7.6',
+    'npm:vue-clickaway@2.2.2',
+    'npm:vue-router@3.6.5',
+    'npm:pug@3.0.2'
   ],
   format: 'esm',
   platform: 'node',
@@ -96,4 +101,6 @@ if (result.errors.length) {
   console.warn(colors.yellow('build warnings:'), result.warnings)
 }
 console.log(colors.green('built:'), options.outdir)
+// Build dashboard assets
+await import('./dashboard-build.ts')
 esbuild.stop()

@@ -11,10 +11,10 @@ var __require = /* @__PURE__ */ ((x2) => typeof require !== "undefined" ? requir
   if (typeof require !== "undefined") return require.apply(this, arguments);
   throw Error('Dynamic require of "' + x2 + '" is not supported');
 });
-var __glob = (map) => (path4) => {
-  var fn = map[path4];
+var __glob = (map) => (path5) => {
+  var fn = map[path5];
   if (fn) return fn();
-  throw new Error("Module not found in bundle: " + path4);
+  throw new Error("Module not found in bundle: " + path5);
 };
 var __esm = (fn, res) => function __init() {
   return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
@@ -71,16 +71,19 @@ import { default as default10 } from "npm:lru-cache@7.14.0";
 import * as Three from "npm:three@0.151.3";
 import { default as default11 } from "npm:better-sqlite3@11.9.1";
 import { default as default12, WebSocketServer } from "npm:ws@8.5.0";
-import { default as default13 } from "npm:vue@2.6.12";
+import { default as default13 } from "npm:vue@2.7.16";
+import { mixin } from "npm:vue-clickaway@2.2.2";
 import { default as default14 } from "npm:vuex@3.6.0";
-import { default as default15 } from "npm:dompurify@2.2.7";
-import { default as default16 } from "npm:should@13.2.3";
+import { default as default15 } from "npm:vue-router@3.6.5";
+import { default as default16 } from "npm:pug@3.0.2";
+import { default as default17 } from "npm:dompurify@2.2.7";
+import { default as default18 } from "npm:should@13.2.3";
 import { v4 } from "npm:uuid@9.0.0";
 import { cloneDeep, omit } from "npm:turtledash@1.0.3";
-import { default as default17 } from "npm:bottleneck@2.19.5";
-import { default as default18 } from "npm:scrypt-async@2.0.1";
+import { default as default19 } from "npm:bottleneck@2.19.5";
+import { default as default20 } from "npm:scrypt-async@2.0.1";
 import { aes128gcm } from "npm:@apeleghq/rfc8188@1.0.7/encodings";
-import { default as default19 } from "npm:@apeleghq/rfc8188@1.0.7/encrypt";
+import { default as default21 } from "npm:@apeleghq/rfc8188@1.0.7/encrypt";
 import { blake32Hash, createCID, maybeParseCID, multicodes, strToB64, getSubscriptionId, parseCID } from "npm:@chelonia/lib@1.2.0/functions";
 import { checkKey, parsePrefixableKey, prefixHandlers } from "npm:@chelonia/lib@1.2.0/db";
 import { SPMessage } from "npm:@chelonia/lib@1.2.0/SPMessage";
@@ -93,9 +96,9 @@ import { AUTHSALT, CONTRACTSALT, CS, SALT_LENGTH_IN_OCTETS, SU } from "npm:@chel
 import { EDWARDS25519SHA512BATCH, CURVE25519XSALSA20POLY1305, XSALSA20POLY1305 } from "npm:@chelonia/crypto@1.0.1";
 import { keygen, serializeKey, deserializeKey, keygenOfSameType, keyId, generateSalt, deriveKeyFromPassword } from "npm:@chelonia/crypto@1.0.1";
 import { sign, verifySignature, encrypt, decrypt } from "npm:@chelonia/crypto@1.0.1";
-import { default as default20 } from "npm:@sbp/okturtles.data@0.1.5";
-import { default as default21 } from "npm:@sbp/okturtles.eventqueue@1.2.0";
-import { default as default22 } from "npm:@sbp/okturtles.events@1.0.0";
+import { default as default22 } from "npm:@sbp/okturtles.data@0.1.5";
+import { default as default23 } from "npm:@sbp/okturtles.eventqueue@1.2.0";
+import { default as default24 } from "npm:@sbp/okturtles.events@1.0.0";
 import { validationMixin } from "npm:vuelidate@0.7.6";
 var init_deps = __esm({
   "src/deps.ts"() {
@@ -290,16 +293,16 @@ async function getBackend(src2, { type, create: create2 } = { type: "", create: 
 function isArrayLength(arg) {
   return Number.isInteger(arg) && arg >= 0 && arg <= 2 ** 32 - 1;
 }
-async function isDir(path4) {
+async function isDir(path5) {
   try {
-    return (await Deno.stat(path4)).isDirectory;
+    return (await Deno.stat(path5)).isDirectory;
   } catch {
     return false;
   }
 }
-async function isFile(path4) {
+async function isFile(path5) {
   try {
-    return (await Deno.stat(path4)).isFile;
+    return (await Deno.stat(path5)).isFile;
   } catch {
     return false;
   }
@@ -346,6 +349,70 @@ var init_utils = __esm({
   }
 });
 
+// src/serve/dashboard-server.ts
+var dashboard_server_exports = {};
+__export(dashboard_server_exports, {
+  default: () => dashboard_server_default,
+  startDashboard: () => startDashboard
+});
+import path2 from "node:path";
+import process2 from "node:process";
+async function startDashboard(port) {
+  const dashboardServer = new Server({
+    port,
+    host: "localhost",
+    routes: {
+      files: {
+        relativeTo: getDashboardPath()
+      }
+    }
+  });
+  await dashboardServer.register(default7);
+  dashboardServer.route({
+    method: "GET",
+    path: "/assets/{path*}",
+    handler: {
+      directory: {
+        path: "assets",
+        redirectToSlash: false
+      }
+    }
+  });
+  dashboardServer.route({
+    method: "GET",
+    path: "/dashboard",
+    handler: (_request, h2) => h2.file("index.html")
+  });
+  dashboardServer.route({
+    method: "GET",
+    path: "/dashboard/",
+    handler: (_request, h2) => h2.file("index.html")
+  });
+  dashboardServer.route({
+    method: "GET",
+    path: "/{path*}",
+    handler: {
+      directory: {
+        path: ".",
+        index: ["index.html"]
+      }
+    }
+  });
+  await dashboardServer.start();
+  console.log(`\u{1F4CA} Dashboard server running at: http://localhost:${port}`);
+}
+var getDashboardPath, dashboard_server_default;
+var init_dashboard_server = __esm({
+  "src/serve/dashboard-server.ts"() {
+    "use strict";
+    init_deps();
+    getDashboardPath = () => {
+      return path2.resolve(process2.cwd(), "dist-dashboard");
+    };
+    dashboard_server_default = startDashboard;
+  }
+});
+
 // src/serve/events.ts
 var SERVER_RUNNING;
 var init_events = __esm({
@@ -366,17 +433,17 @@ var init_instance_keys = __esm({
 });
 
 // src/serve/logger.ts
-import process2 from "node:process";
+import process3 from "node:process";
 var prettyPrint, logger2, logLevel;
 var init_logger = __esm({
   "src/serve/logger.ts"() {
     "use strict";
     init_deps();
-    prettyPrint = process2.env.NODE_ENV === "development" || process2.env.CI || process2.env.CYPRESS_RECORD_KEY || process2.env.PRETTY;
+    prettyPrint = process3.env.NODE_ENV === "development" || process3.env.CI || process3.env.CYPRESS_RECORD_KEY || process3.env.PRETTY;
     logger2 = default9({
       level: "debug"
     });
-    logLevel = process2.env.LOG_LEVEL || (prettyPrint ? "debug" : "info");
+    logLevel = process3.env.LOG_LEVEL || (prettyPrint ? "debug" : "info");
     if (Object.keys(logger2.levels.values).includes(logLevel)) {
       logger2.level = logLevel;
     } else {
@@ -12962,16 +13029,16 @@ var init_constants2 = __esm({
 
 // src/serve/vapid.ts
 import { Buffer as Buffer7 } from "node:buffer";
-import process3 from "node:process";
+import process4 from "node:process";
 var vapidPublicKey, vapidPrivateKey, vapid, initVapid, generateJwt, getVapidPublicKey, vapidAuthorization;
 var init_vapid = __esm({
   "src/serve/vapid.ts"() {
     "use strict";
     init_deps();
-    if (!process3.env.VAPID_EMAIL) {
+    if (!process4.env.VAPID_EMAIL) {
       console.warn('Missing VAPID identification. Please set VAPID_EMAIL to a value like "mailto:some@example".');
     }
-    vapid = { VAPID_EMAIL: process3.env.VAPID_EMAIL || "mailto:test@example.com" };
+    vapid = { VAPID_EMAIL: process4.env.VAPID_EMAIL || "mailto:test@example.com" };
     initVapid = async () => {
       const vapidKeyPair = await default4("chelonia.db/get", "_private_immutable_vapid_key").then(async (vapidKeyPair2) => {
         if (!vapidKeyPair2) {
@@ -13333,7 +13400,7 @@ __export(database_fs_exports2, {
 });
 import { mkdir, readdir, readFile, rm, unlink, writeFile } from "node:fs/promises";
 import { basename, dirname, join, normalize, resolve } from "node:path";
-import process4 from "node:process";
+import process5 from "node:process";
 async function testCaseSensitivity(backend2) {
   const { readData: readData3, writeData: writeData3, deleteData } = backend2;
   const date = /* @__PURE__ */ new Date();
@@ -13386,7 +13453,7 @@ var init_database_fs2 = __esm({
       }
       async init() {
         await mkdir(this.dataFolder, { mode: 488, recursive: true });
-        if (process4.env.SKIP_DB_FS_CASE_SENSITIVITY_CHECK === void 0) {
+        if (process5.env.SKIP_DB_FS_CASE_SENSITIVITY_CHECK === void 0) {
           await testCaseSensitivity(this);
         }
       }
@@ -13405,9 +13472,9 @@ var init_database_fs2 = __esm({
         });
       }
       async writeData(key, value) {
-        const path4 = this.mapKey(key);
-        if (this.depth) await mkdir(dirname(path4), { mode: 488, recursive: true });
-        await writeFile(path4, value);
+        const path5 = this.mapKey(key);
+        if (this.depth) await mkdir(dirname(path5), { mode: 488, recursive: true });
+        await writeFile(path5, value);
       }
       async deleteData(key) {
         await unlink(this.mapKey(key)).catch((e2) => {
@@ -13506,7 +13573,7 @@ __export(database_router_exports, {
 });
 import { resolve as resolve3 } from "node:path";
 import { readFile as readFile2 } from "node:fs/promises";
-import process5 from "node:process";
+import process6 from "node:process";
 var GI_PERSIST_ROUTER_CONFIG, GI_PERSIST_ROUTER_CONFIG_PATH, RouterBackend;
 var init_database_router = __esm({
   "src/serve/database-router.ts"() {
@@ -13524,7 +13591,7 @@ var init_database_router = __esm({
         // Define this if your config comes from a JSON file.
         GI_PERSIST_ROUTER_CONFIG_PATH
       ) = "./database-router-config.json"
-    } = process5.env);
+    } = process6.env);
     RouterBackend = class extends DatabaseBackend {
       backends;
       config;
@@ -13702,8 +13769,8 @@ var init_2 = __esm({
 import { Readable } from "node:stream";
 import fs2 from "node:fs";
 import { readdir as readdir2, readFile as readFile3 } from "node:fs/promises";
-import path2 from "node:path";
-import process6 from "node:process";
+import path3 from "node:path";
+import process7 from "node:process";
 function namespaceKey(name) {
   return "name=" + name;
 }
@@ -13715,9 +13782,9 @@ var init_database = __esm({
     init_vapid();
     init_zkppSalt();
     init_2();
-    production = process6.env.NODE_ENV === "production";
-    persistence = process6.env.GI_PERSIST || (production ? "fs" : void 0);
-    dbRootPath = process6.env.DB_PATH || "./data";
+    production = process7.env.NODE_ENV === "production";
+    persistence = process7.env.GI_PERSIST || (production ? "fs" : void 0);
+    dbRootPath = process7.env.DB_PATH || "./data";
     options = {
       fs: {
         depth: 0,
@@ -13725,11 +13792,11 @@ var init_database = __esm({
         keyChunkLength: 2
       },
       sqlite: {
-        filepath: path2.join(dbRootPath, "groupincome.db")
+        filepath: path3.join(dbRootPath, "groupincome.db")
       }
     };
     KEYOP_SEGMENT_LENGTH = 1e4;
-    dataFolder3 = path2.resolve(options.fs.dirname);
+    dataFolder3 = path3.resolve(options.fs.dirname);
     if (!fs2.existsSync(dataFolder3)) {
       fs2.mkdirSync(dataFolder3, { mode: 488 });
     }
@@ -13753,7 +13820,7 @@ var init_database = __esm({
     };
     database_default = default4("sbp/selectors/register", {
       "backend/db/streamEntriesAfter": async function(contractID, height, requestedLimit, options2 = {}) {
-        const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, Number(process6.env.MAX_EVENTS_BATCH_SIZE ?? "500"));
+        const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, Number(process7.env.MAX_EVENTS_BATCH_SIZE ?? "500"));
         const latestHEADinfo = await default4("chelonia/db/latestHEADinfo", contractID);
         if (latestHEADinfo === "") {
           throw default5.resourceGone(`contractID ${contractID} has been deleted!`);
@@ -13865,7 +13932,7 @@ var init_database = __esm({
         const { init, readData: readData3, writeData: writeData3, deleteData } = new Ctor(options[persistence]);
         await init();
         const cache2 = new default10({
-          max: Number(process6.env.GI_LRU_NUM_ITEMS) || 1e4
+          max: Number(process7.env.GI_LRU_NUM_ITEMS) || 1e4
         });
         const prefixes = Object.keys(prefixHandlers);
         default4("sbp/selectors/overwrite", {
@@ -13886,7 +13953,7 @@ var init_database = __esm({
             return value;
           },
           "chelonia.db/set": async function(key, value) {
-            if (process6.env.CHELONIA_ARCHIVE_MODE) throw new Error("Unable to write in archive mode");
+            if (process7.env.CHELONIA_ARCHIVE_MODE) throw new Error("Unable to write in archive mode");
             checkKey(key);
             if (key.startsWith("_private_immutable")) {
               const existingValue = await readData3(key);
@@ -13900,7 +13967,7 @@ var init_database = __esm({
             });
           },
           "chelonia.db/delete": async function(key) {
-            if (process6.env.CHELONIA_ARCHIVE_MODE) throw new Error("Unable to write in archive mode");
+            if (process7.env.CHELONIA_ARCHIVE_MODE) throw new Error("Unable to write in archive mode");
             checkKey(key);
             if (key.startsWith("_private_immutable")) {
               throw new Error("Cannot delete immutable key");
@@ -13931,7 +13998,7 @@ var init_database = __esm({
         console.info("[chelonia.db] Preloading...");
         for (const key of keys) {
           if (!persistence || !await default4("chelonia.db/get", key)) {
-            const value = await readFile3(path2.join(dataFolder3, key), "utf8");
+            const value = await readFile3(path3.join(dataFolder3, key), "utf8");
             await default4("chelonia.db/set", key, value);
             numNewKeys++;
           }
@@ -14208,7 +14275,7 @@ var init_push = __esm({
       const readableStream = new Response(data).body;
       if (!readableStream) throw new Error("Failed to create readable stream");
       const [asPublic, IKM] = await subscription.encryptionKeys;
-      return default19(aes128gcm, readableStream, 32768, asPublic, IKM).then(async (bodyStream) => {
+      return default21(aes128gcm, readableStream, 32768, asPublic, IKM).then(async (bodyStream) => {
         const chunks = [];
         const reader = bodyStream.getReader();
         for (; ; ) {
@@ -14325,7 +14392,7 @@ var init_push = __esm({
 });
 
 // src/serve/pubsub.ts
-import process7 from "node:process";
+import process8 from "node:process";
 function createErrorResponse(data) {
   return JSON.stringify({ type: ERROR, data });
 }
@@ -14400,7 +14467,7 @@ var init_pubsub2 = __esm({
     ({ PING, PONG, PUB, SUB, UNSUB, KV_FILTER } = NOTIFICATION_TYPE);
     ({ ERROR, OK } = RESPONSE_TYPE);
     defaultOptions3 = {
-      logPingRounds: process7.env.NODE_ENV !== "production" && !process7.env.CI,
+      logPingRounds: process8.env.NODE_ENV !== "production" && !process8.env.CI,
       logPongMessages: false,
       maxPayload: 6 * 1024 * 1024,
       pingInterval: 3e4
@@ -14654,8 +14721,8 @@ var init_pubsub2 = __esm({
 var routes_exports = {};
 import { Buffer as Buffer10 } from "node:buffer";
 import { isIP } from "node:net";
-import path3 from "node:path";
-import process8 from "node:process";
+import path4 from "node:path";
+import process9 from "node:process";
 function notFoundNoCache(h2) {
   return h2.response().code(404).header("Cache-Control", "no-store");
 }
@@ -14679,27 +14746,27 @@ var init_routes = __esm({
     KV_KEY_REGEX = /^(?!_private)[^\x00]{1,256}$/;
     NAME_REGEX = /^(?![_-])((?!([_-])\2)[a-z\d_-]){1,80}(?<![_-])$/;
     POSITIVE_INTEGER_REGEX = /^\d{1,16}$/;
-    FILE_UPLOAD_MAX_BYTES = parseInt(process8.env.FILE_UPLOAD_MAX_BYTES || "0") || 30 * MEGABYTE;
-    SIGNUP_LIMIT_MIN = parseInt(process8.env.SIGNUP_LIMIT_MIN || "0") || 2;
-    SIGNUP_LIMIT_HOUR = parseInt(process8.env.SIGNUP_LIMIT_HOUR || "0") || 10;
-    SIGNUP_LIMIT_DAY = parseInt(process8.env.SIGNUP_LIMIT_DAY || "0") || 50;
-    SIGNUP_LIMIT_DISABLED = process8.env.NODE_ENV !== "production" || process8.env.SIGNUP_LIMIT_DISABLED === "true";
-    limiterPerMinute = new default17.Group({
-      strategy: default17.strategy.LEAK,
+    FILE_UPLOAD_MAX_BYTES = parseInt(process9.env.FILE_UPLOAD_MAX_BYTES || "0") || 30 * MEGABYTE;
+    SIGNUP_LIMIT_MIN = parseInt(process9.env.SIGNUP_LIMIT_MIN || "0") || 2;
+    SIGNUP_LIMIT_HOUR = parseInt(process9.env.SIGNUP_LIMIT_HOUR || "0") || 10;
+    SIGNUP_LIMIT_DAY = parseInt(process9.env.SIGNUP_LIMIT_DAY || "0") || 50;
+    SIGNUP_LIMIT_DISABLED = process9.env.NODE_ENV !== "production" || process9.env.SIGNUP_LIMIT_DISABLED === "true";
+    limiterPerMinute = new default19.Group({
+      strategy: default19.strategy.LEAK,
       highWater: 0,
       reservoir: SIGNUP_LIMIT_MIN,
       reservoirRefreshInterval: 60 * SECOND,
       reservoirRefreshAmount: SIGNUP_LIMIT_MIN
     });
-    limiterPerHour = new default17.Group({
-      strategy: default17.strategy.LEAK,
+    limiterPerHour = new default19.Group({
+      strategy: default19.strategy.LEAK,
       highWater: 0,
       reservoir: SIGNUP_LIMIT_HOUR,
       reservoirRefreshInterval: 60 * 60 * SECOND,
       reservoirRefreshAmount: SIGNUP_LIMIT_HOUR
     });
-    limiterPerDay = new default17.Group({
-      strategy: default17.strategy.LEAK,
+    limiterPerDay = new default19.Group({
+      strategy: default19.strategy.LEAK,
       highWater: 0,
       reservoir: SIGNUP_LIMIT_DAY,
       reservoirRefreshInterval: 24 * 60 * 60 * SECOND,
@@ -14760,11 +14827,11 @@ var init_routes = __esm({
       }
       return r === 0;
     };
-    isCheloniaDashboard = process8.env.IS_CHELONIA_DASHBOARD_DEV;
+    isCheloniaDashboard = process9.env.IS_CHELONIA_DASHBOARD_DEV;
     staticServeConfig = {
       routePath: isCheloniaDashboard ? "/dashboard/{path*}" : "/app/{path*}",
-      distAssets: path3.resolve(isCheloniaDashboard ? "dist-dashboard/assets" : "dist/assets"),
-      distIndexHtml: path3.resolve(isCheloniaDashboard ? "./dist-dashboard/index.html" : "./dist/index.html"),
+      distAssets: path4.resolve(isCheloniaDashboard ? "dist-dashboard/assets" : "dist/assets"),
+      distIndexHtml: path4.resolve(isCheloniaDashboard ? "./dist-dashboard/index.html" : "./dist/index.html"),
       redirect: isCheloniaDashboard ? "/dashboard/" : "/app/"
     };
     errorMapper = (e2) => {
@@ -14782,9 +14849,9 @@ var init_routes = __esm({
     };
     route = new Proxy({}, {
       get: function(obj, prop) {
-        return function(path4, options2, handler) {
+        return function(path5, options2, handler) {
           default4("okTurtles.data/apply", SERVER_INSTANCE, function(server) {
-            server.route({ path: path4, method: prop, options: options2, handler });
+            server.route({ path: path5, method: prop, options: options2, handler });
           });
         };
       }
@@ -14804,7 +14871,7 @@ var init_routes = __esm({
         payload: default6.string().required()
       }
     }, async function(request, h2) {
-      if (process8.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
+      if (process9.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
       const ip = request.headers["x-real-ip"] || request.info.remoteAddress;
       try {
         const deserializedHEAD = SPMessage.deserializeHEAD(request.payload);
@@ -14821,7 +14888,7 @@ var init_routes = __esm({
             if (name !== "gi.contracts/identity") {
               return default5.unauthorized("This contract type requires ownership information", "shelter");
             }
-            if (process8.env.CHELONIA_REGISTRATION_DISABLED) {
+            if (process9.env.CHELONIA_REGISTRATION_DISABLED) {
               return default5.forbidden("Registration disabled");
             }
             if (!SIGNUP_LIMIT_DISABLED) {
@@ -14932,7 +14999,7 @@ var init_routes = __esm({
       const resources = (await default4("chelonia.db/get", `_private_resources_${billableContractID}`))?.split("\0");
       return resources || [];
     });
-    if (process8.env.NODE_ENV === "development") {
+    if (process9.env.NODE_ENV === "development") {
       const levelToColor = {
         error: default8.bold.red,
         warn: default8.yellow,
@@ -14948,7 +15015,7 @@ var init_routes = __esm({
           })
         }
       }, function(request, h2) {
-        if (process8.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
+        if (process9.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
         const ip = request.headers["x-real-ip"] || request.info.remoteAddress;
         const log2 = levelToColor[request.payload.level];
         console.debug(default8.bold.yellow(`REMOTE LOG (${ip}): `) + log2(`[${request.payload.level}] ${request.payload.value}`));
@@ -15015,7 +15082,7 @@ var init_routes = __esm({
         }
       }
     );
-    if (process8.env.NODE_ENV === "development") {
+    if (process9.env.NODE_ENV === "development") {
       route.POST("/dev-file", {
         payload: {
           output: "data",
@@ -15031,7 +15098,7 @@ var init_routes = __esm({
           // TODO: make this a configurable setting
         }
       }, async function(request, h2) {
-        if (process8.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
+        if (process9.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
         try {
           console.log("FILE UPLOAD!");
           const { hash: hash3, data } = request.payload;
@@ -15071,7 +15138,7 @@ var init_routes = __esm({
         // TODO: make this a configurable setting
       }
     }, async function(request, h2) {
-      if (process8.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
+      if (process9.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
       try {
         console.info("FILE UPLOAD!");
         const credentials = request.auth.credentials;
@@ -15172,7 +15239,7 @@ var init_routes = __esm({
         })
       }
     }, async function(request, h2) {
-      if (process8.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
+      if (process9.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
       const { hash: hash3 } = request.params;
       const strategy = request.auth.strategy;
       const parsed = maybeParseCID(hash3);
@@ -15220,7 +15287,7 @@ var init_routes = __esm({
         mode: "required"
       }
     }, async function(request, h2) {
-      if (process8.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
+      if (process9.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
       const { hash: hash3 } = request.params;
       const strategy = request.auth.strategy;
       if (!hash3 || hash3.startsWith("_private")) return default5.notFound();
@@ -15281,7 +15348,7 @@ var init_routes = __esm({
         })
       }
     }, function(request, h2) {
-      if (process8.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
+      if (process9.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
       const { contractID, key } = request.params;
       const parsed = maybeParseCID(contractID);
       if (parsed?.code !== multicodes.SHELTER_CONTRACT_DATA) {
@@ -15354,8 +15421,8 @@ var init_routes = __esm({
       return h2.response(result).etag(cid).header("x-cid", `"${cid}"`);
     });
     route.GET("/serverMessages", { cache: { otherwise: "no-store" } }, (request, h2) => {
-      if (!process8.env.CHELONIA_SERVER_MESSAGES) return [];
-      return h2.response(process8.env.CHELONIA_SERVER_MESSAGES).type("application/json");
+      if (!process9.env.CHELONIA_SERVER_MESSAGES) return [];
+      return h2.response(process9.env.CHELONIA_SERVER_MESSAGES).type("application/json");
     });
     route.GET("/assets/{subpath*}", {
       ext: {
@@ -15374,12 +15441,37 @@ var init_routes = __esm({
       }
     }, function(request, h2) {
       const { subpath } = request.params;
-      const basename4 = path3.basename(subpath);
+      const basename4 = path4.basename(subpath);
       if (basename4.includes("-cached")) {
         return h2.file(subpath, { etagMethod: false }).etag(basename4).header("Cache-Control", "public,max-age=31536000,immutable");
       }
       return h2.file(subpath);
     });
+    if (isCheloniaDashboard) {
+      route.GET("/dashboard/assets/{subpath*}", {
+        ext: {
+          onPostHandler: {
+            method(request, h2) {
+              if (request.path.includes("assets/js/sw-")) {
+                console.debug("adding header: Service-Worker-Allowed /");
+                request.response.header("Service-Worker-Allowed", "/");
+              }
+              return h2.continue;
+            }
+          }
+        },
+        files: {
+          relativeTo: staticServeConfig.distAssets
+        }
+      }, function(request, h2) {
+        const { subpath } = request.params;
+        const basename4 = path4.basename(subpath);
+        if (basename4.includes("-cached")) {
+          return h2.file(subpath, { etagMethod: false }).etag(basename4).header("Cache-Control", "public,max-age=31536000,immutable");
+        }
+        return h2.file(subpath);
+      });
+    }
     route.GET(staticServeConfig.routePath, {}, {
       file: staticServeConfig.distIndexHtml
     });
@@ -15415,7 +15507,7 @@ var init_routes = __esm({
         ])
       }
     }, async function(req, h2) {
-      if (process8.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
+      if (process9.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
       const lookupResult = await default4("backend/db/lookupName", req.params["name"]);
       if (lookupResult) {
         return default5.conflict();
@@ -15493,7 +15585,7 @@ var init_routes = __esm({
         })
       }
     }, async function(req, h2) {
-      if (process8.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
+      if (process9.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
       try {
         const result = await updateContractSalt(req.params["contractID"], req.payload["r"], req.payload["s"], req.payload["sig"], req.payload["hc"], req.payload["Ea"]);
         if (result) {
@@ -15512,7 +15604,7 @@ var init_routes = __esm({
 var server_exports = {};
 import { basename as basename3, dirname as dirname3 } from "node:path";
 import { fileURLToPath } from "node:url";
-import process9 from "node:process";
+import process10 from "node:process";
 var __filename, __dirname, ownerSizeTotalWorker, creditsWorker, CONTRACTS_VERSION, GI_VERSION, hapi, appendToOrphanedNamesIndex;
 var init_server = __esm({
   async "src/serve/server.ts"() {
@@ -15531,8 +15623,8 @@ var init_server = __esm({
     __filename = fileURLToPath(import.meta.url);
     __dirname = dirname3(__filename);
     if (CREDITS_WORKER_TASK_TIME_INTERVAL && OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL > CREDITS_WORKER_TASK_TIME_INTERVAL) {
-      process9.stderr.write("The size calculation worker must run more frequently than the credits worker for accurate billing");
-      process9.exit(1);
+      process10.stderr.write("The size calculation worker must run more frequently than the credits worker for accurate billing");
+      process10.exit(1);
     }
     ownerSizeTotalWorker = void 0;
     creditsWorker = void 0;
@@ -15547,12 +15639,12 @@ var init_server = __esm({
         });
       }
     }
-    ({ CONTRACTS_VERSION, GI_VERSION } = process9.env);
+    ({ CONTRACTS_VERSION, GI_VERSION } = process10.env);
     hapi = new Server({
       // debug: false, // <- Hapi v16 was outputing too many unnecessary debug statements
       //               // v17 doesn't seem to do this anymore so I've re-enabled the logging
       // debug: { log: ['error'], request: ['error'] },
-      port: process9.env.API_PORT,
+      port: process10.env.API_PORT,
       // See: https://github.com/hapijs/discuss/issues/262#issuecomment-204616831
       routes: {
         cors: {
@@ -15816,7 +15908,7 @@ var init_server = __esm({
         });
       }
     });
-    if (process9.env.NODE_ENV === "development" && !process9.env.CI) {
+    if (process10.env.NODE_ENV === "development" && !process10.env.CI) {
       hapi.events.on("response", (req, event, tags) => {
         const ip = req.headers["x-real-ip"] || req.info.remoteAddress;
         console.debug(default8`{grey ${ip}: ${req.method} ${req.path} --> ${req.response.statusCode}}`);
@@ -15994,7 +16086,7 @@ var serve_exports = {};
 __export(serve_exports, {
   default: () => serve_default
 });
-import process10 from "node:process";
+import process11 from "node:process";
 function logSBP(domain, selector, data) {
   if (!dontLog[selector]) {
     if (selector === "backend/server/handleEntry") {
@@ -16012,7 +16104,7 @@ var init_serve = __esm({
     init_events();
     init_instance_keys();
     init_logger();
-    console.info("NODE_ENV =", process10.env.NODE_ENV);
+    console.info("NODE_ENV =", process11.env.NODE_ENV);
     dontLog = {
       "backend/server/broadcastEntry": true,
       "backend/server/broadcastDeletion": true,
@@ -16034,26 +16126,26 @@ var init_serve = __esm({
           try {
             await default4("backend/server/stop");
             console.info("Hapi server down");
-            process10.send?.({});
-            process10.nextTick(() => process10.exit(0));
+            process11.send?.({});
+            process11.nextTick(() => process11.exit(0));
           } catch (err) {
             console.error(err, "Error during shutdown");
-            process10.exit(1);
+            process11.exit(1);
           }
         });
         pubsub.close();
         pubsub.clients.forEach((client) => client.terminate());
       });
     };
-    process10.on("SIGUSR2", shutdownFn);
-    process10.on("message", shutdownFn);
-    process10.on("uncaughtException", (err) => {
+    process11.on("SIGUSR2", shutdownFn);
+    process11.on("message", shutdownFn);
+    process11.on("uncaughtException", (err) => {
       console.error(err, "[server] Unhandled exception");
-      process10.exit(1);
+      process11.exit(1);
     });
-    process10.on("unhandledRejection", (reason, p) => {
+    process11.on("unhandledRejection", (reason, p) => {
       console.error(reason, "[server] Unhandled promise rejection:", reason);
-      process10.exit(1);
+      process11.exit(1);
     });
   }
 });
@@ -16510,45 +16602,72 @@ async function migrate(args) {
 
 // src/serve.ts
 init_deps();
-import process11 from "node:process";
+import process12 from "node:process";
+async function startDashboardServer(port) {
+  process12.env.IS_CHELONIA_DASHBOARD_DEV = "true";
+  process12.env.DASHBOARD_PORT = port.toString();
+  process12.env.PORT = port.toString();
+  const dashboardServer = await Promise.resolve().then(() => (init_dashboard_server(), dashboard_server_exports));
+  await dashboardServer.startDashboard(port);
+}
+async function startApplicationServer(port) {
+  delete process12.env.IS_CHELONIA_DASHBOARD_DEV;
+  process12.env.PORT = port.toString();
+  process12.env.API_PORT = port.toString();
+  const startServer = await Promise.resolve().then(() => (init_serve(), serve_exports));
+  await startServer.default;
+}
 async function serve(directory, options2 = {}) {
   const {
-    dp: dashboardPort = 7e3,
+    dp: dashboardPort = 7001,
     port: applicationPort = 8e3,
     "db-type": dbType = "mem",
     "db-location": dbLocation
   } = options2;
   console.log(colors.cyan("\u{1F680} Starting Chelonia app server..."));
-  console.log(colors.gray(`Directory: ${directory}`));
-  console.log(colors.gray(`Dashboard port: ${dashboardPort}`));
-  console.log(colors.gray(`Application port: ${applicationPort}`));
-  console.log(colors.gray(`Database type: ${dbType}`));
+  console.log(colors.blue("Directory:"), directory || "");
+  console.log(colors.blue("Dashboard port:"), dashboardPort);
+  console.log(colors.blue("Application port:"), applicationPort);
+  console.log(colors.blue("Database type:"), dbType);
   if (dbLocation) {
     console.log(colors.gray(`Database location: ${dbLocation}`));
   }
   try {
-    process11.env.NODE_ENV = "development";
-    process11.env.PORT = applicationPort.toString();
-    process11.env.API_PORT = applicationPort.toString();
-    process11.env.DASHBOARD_PORT = dashboardPort.toString();
-    process11.env.GI_PERSIST = dbType === "mem" ? "" : dbType;
+    process12.env.NODE_ENV = "development";
+    process12.env.GI_PERSIST = dbType === "mem" ? "" : dbType;
     if (dbLocation) {
       if (dbType === "files") {
-        process11.env.DB_PATH = dbLocation;
+        process12.env.DB_PATH = dbLocation;
       } else if (dbType === "sqlite") {
-        process11.env.DB_PATH = dbLocation;
+        process12.env.DB_PATH = dbLocation;
       }
     }
-    const startServer = await Promise.resolve().then(() => (init_serve(), serve_exports));
-    await startServer.default;
-    console.log(colors.green("\u2705 Server started successfully!"));
+    console.log(colors.cyan("\u{1F680} Starting dashboard server..."));
+    try {
+      await startDashboardServer(dashboardPort);
+      console.log(colors.green(`\u2705 Dashboard server started on port ${dashboardPort}`));
+    } catch (error) {
+      console.error(colors.red("\u274C Failed to start dashboard server:"), error);
+      throw error;
+    }
+    console.log(colors.cyan("\u{1F680} Starting application server..."));
+    process12.env.PORT = applicationPort.toString();
+    process12.env.API_PORT = applicationPort.toString();
+    try {
+      await startApplicationServer(applicationPort);
+      console.log(colors.green(`\u2705 Application server started on port ${applicationPort}`));
+    } catch (error) {
+      console.error(colors.red("\u274C Failed to start application server:"), error);
+      throw error;
+    }
+    console.log(colors.green("\u2705 Both servers started successfully!"));
     console.log(colors.yellow(`\u{1F4CA} Dashboard: http://localhost:${dashboardPort}`));
     console.log(colors.yellow(`\u{1F310} Application: http://localhost:${applicationPort}`));
     await new Promise(() => {
     });
   } catch (error) {
     console.error(colors.red("\u274C Failed to start server:"), error);
-    Deno.exit(1);
+    process12.exit(1);
   }
 }
 function parseServeArgs(args) {
@@ -16556,7 +16675,7 @@ function parseServeArgs(args) {
     string: ["dp", "port", "db-type", "db-location"],
     default: {
       dp: "7000",
-      port: "8000",
+      port: "7000",
       "db-type": "mem"
     }
   });

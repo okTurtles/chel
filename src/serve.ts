@@ -8,19 +8,43 @@ interface ServeOptions {
   'db-location'?: string
 }
 
+// Dashboard server function
+async function startDashboardServer (port: number): Promise<void> {
+  // Set dashboard-specific environment variables
+  process.env.IS_CHELONIA_DASHBOARD_DEV = 'true'
+  process.env.DASHBOARD_PORT = port.toString()
+  process.env.PORT = port.toString()
+
+  // Import and start the dashboard server
+  const dashboardServer = await import('./serve/dashboard-server.ts')
+  await dashboardServer.startDashboard(port)
+}
+
+// Application server function
+async function startApplicationServer (port: number): Promise<void> {
+  // Set application-specific environment variables
+  delete process.env.IS_CHELONIA_DASHBOARD_DEV
+  process.env.PORT = port.toString()
+  process.env.API_PORT = port.toString()
+
+  // Import and start the application server
+  const startServer = await import('./serve/index.ts')
+  await startServer.default
+}
+
 export async function serve (directory: string, options: ServeOptions = {}) {
   const {
-    dp: dashboardPort = 7000,
+    dp: dashboardPort = 7001,
     port: applicationPort = 8000,
     'db-type': dbType = 'mem',
     'db-location': dbLocation
   } = options
 
   console.log(colors.cyan('🚀 Starting Chelonia app server...'))
-  console.log(colors.gray(`Directory: ${directory}`))
-  console.log(colors.gray(`Dashboard port: ${dashboardPort}`))
-  console.log(colors.gray(`Application port: ${applicationPort}`))
-  console.log(colors.gray(`Database type: ${dbType}`))
+  console.log(colors.blue('Directory:'), directory || '')
+  console.log(colors.blue('Dashboard port:'), dashboardPort)
+  console.log(colors.blue('Application port:'), applicationPort)
+  console.log(colors.blue('Database type:'), dbType)
   if (dbLocation) {
     console.log(colors.gray(`Database location: ${dbLocation}`))
   }
@@ -28,9 +52,6 @@ export async function serve (directory: string, options: ServeOptions = {}) {
   try {
     // Set environment variables for the serve backend
     process.env.NODE_ENV = 'development'
-    process.env.PORT = applicationPort.toString()
-    process.env.API_PORT = applicationPort.toString()
-    process.env.DASHBOARD_PORT = dashboardPort.toString()
     process.env.GI_PERSIST = dbType === 'mem' ? '' : dbType
 
     if (dbLocation) {
@@ -41,18 +62,36 @@ export async function serve (directory: string, options: ServeOptions = {}) {
       }
     }
 
-    // Import and start the server
-    const startServer = await import('./serve/index.ts')
-    await startServer.default
+    // Start dashboard server on port 7000 first
+    console.log(colors.cyan('🚀 Starting dashboard server...'))
+    try {
+      await startDashboardServer(dashboardPort)
+      console.log(colors.green(`✅ Dashboard server started on port ${dashboardPort}`))
+    } catch (error) {
+      console.error(colors.red('❌ Failed to start dashboard server:'), error)
+      throw error
+    }
 
-    console.log(colors.green('✅ Server started successfully!'))
+    // Start application server on port 8000 second
+    console.log(colors.cyan('🚀 Starting application server...'))
+    process.env.PORT = applicationPort.toString()
+    process.env.API_PORT = applicationPort.toString()
+    try {
+      await startApplicationServer(applicationPort)
+      console.log(colors.green(`✅ Application server started on port ${applicationPort}`))
+    } catch (error) {
+      console.error(colors.red('❌ Failed to start application server:'), error)
+      throw error
+    }
+
+    console.log(colors.green('✅ Both servers started successfully!'))
     console.log(colors.yellow(`📊 Dashboard: http://localhost:${dashboardPort}`))
     console.log(colors.yellow(`🌐 Application: http://localhost:${applicationPort}`))
 
     await new Promise(() => {})
   } catch (error) {
     console.error(colors.red('❌ Failed to start server:'), error)
-    Deno.exit(1)
+    process.exit(1)
   }
 }
 
@@ -61,7 +100,7 @@ export function parseServeArgs (args: string[]): { directory: string; options: S
     string: ['dp', 'port', 'db-type', 'db-location'],
     default: {
       dp: '7000',
-      port: '8000',
+      port: '7000',
       'db-type': 'mem'
     }
   })

@@ -989,6 +989,44 @@ route.GET('/assets/{subpath*}', {
   return h.file(subpath)
 })
 
+// Dashboard-specific assets route (when IS_CHELONIA_DASHBOARD_DEV is set)
+if (isCheloniaDashboard) {
+  route.GET('/dashboard/assets/{subpath*}', {
+    ext: {
+      onPostHandler: {
+        method (request: Request, h: ResponseToolkit) {
+          // since our JS is placed under /assets/ and since service workers
+          // have their scope limited by where they are, we must add this
+          // header to allow the service worker to function. Details:
+          // https://w3c.github.io/ServiceWorker/#service-worker-allowed
+          if (request.path.includes('assets/js/sw-')) {
+            console.debug('adding header: Service-Worker-Allowed /')
+            request.response.header('Service-Worker-Allowed', '/')
+          }
+          return h.continue
+        }
+      }
+    },
+    files: {
+      relativeTo: staticServeConfig.distAssets
+    }
+  }, function (request: Request, h: ResponseToolkit) {
+    const { subpath } = request.params
+    const basename = path.basename(subpath)
+    // In the build config we told our bundler to use the `[name]-[hash]-cached` template
+    // to name immutable assets. This is useful because `dist/assets/` currently includes
+    // a few files without hash in their name.
+    if (basename.includes('-cached')) {
+      return h.file(subpath, { etagMethod: false })
+        .etag(basename)
+        .header('Cache-Control', 'public,max-age=31536000,immutable')
+    }
+    // Files like `main.js` or `main.css` should be revalidated before use. Se we use the default headers.
+    // This should also be suitable for serving unversioned fonts and images.
+    return h.file(subpath)
+  })
+}
+
 route.GET(staticServeConfig.routePath, {}, {
   file: staticServeConfig.distIndexHtml
 })
