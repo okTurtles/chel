@@ -1,520 +1,673 @@
-#!/usr/bin/env -S deno run --allow-read --allow-write --allow-env --allow-net
-
 /**
- * Vue 2 SFC Precompiler
- *
- * Transforms .vue single-file components into .js files using vue-template-compiler
- * This matches the approach used by Group Income's Grunt-based build system.
- *
- * Usage:
- *   deno run --allow-read --allow-write --allow-env --allow-net scripts/vue-precompile.ts
+ * Vue 2 SFC Precompiler for Chelonia Dashboard
  */
 
-import { join, dirname, relative } from 'jsr:@std/path@1.1.1'
-import { walk, ensureDir } from 'jsr:@std/fs@1.0.19'
-import * as vueCompiler from 'npm:vue-template-compiler@2.7.16'
-const { compile, parseComponent } = await import('npm:vue-template-compiler@2.7.16')
-import { pug } from '~/deps.ts'
-import * as esbuild from 'npm:esbuild@0.25.6'
+import { dirname, join, relative } from 'jsr:@std/path@1.1.1'
+import { ensureDir, exists } from 'jsr:@std/fs@1.0.19'
+import { esbuild } from '~/deps.ts'
 
-const projectRoot = dirname(dirname(new URL(import.meta.url).pathname))
-const dashboardRoot = join(projectRoot, 'src', 'serve', 'dashboard')
-const tempDir = join(projectRoot, '.vue-compiled')
+// Vue template compiler for proper SFC parsing
+const vueTemplateCompiler = await import('npm:vue-template-compiler@2.7.16')
 
-// Ensure temp directory exists
-await Deno.mkdir(tempDir, { recursive: true })
+// Configuration
+const dashboardRoot = join(Deno.cwd(), 'src/serve/dashboard')
+const tempDir = join(Deno.cwd(), '.vue-compiled')
 
 interface VueDescriptor {
-  template?: {
-    content: string
-    attrs: Record<string, string>
-  }
-  script?: {
-    content: string
-    attrs: Record<string, string>
-  }
-  styles: Array<{
-    content: string
-    attrs: Record<string, string>
-  }>
+  template?: { content: string; attrs: Record<string, string> }
+  script?: { content: string; attrs: Record<string, string> }
+  styles: Array<{ content: string; attrs: Record<string, string> }>
+  customBlocks: Array<{ type: string; content: string; attrs: Record<string, string> }>
+}
+
+interface CompileOptions {
+  filename: string
+  sourceRoot: string
+  outputDir: string
+  extractedStyles?: string[] // For collecting styles from all components
 }
 
 /**
- * Compile a single Vue SFC to JavaScript
+ * Parse Vue SFC
  */
-async function compileVueFile (vueFilePath: string): Promise<void> {
-  console.log(`Compiling: ${vueFilePath}`)
+function parseVueSFC (source: string, filename: string): VueDescriptor {
+  try {
+    return vueTemplateCompiler.parseComponent(source, { pad: 'line' })
+  } catch (error) {
+    console.error(`❌ Failed to parse Vue SFC ${filename}:`, error)
+    throw error
+  }
+}
 
-  const vueSource = await Deno.readTextFile(vueFilePath)
-  const descriptor: VueDescriptor = vueCompiler.parseComponent(vueSource)
+/**
+ * Strip 'with(this)' statement from render functions
+ */
+function stripWithStatement (renderFn: string): string {
+  if (!renderFn) return renderFn
 
-  let jsOutput = ''
+  // Remove 'with(this){' at the beginning and matching '}' at the end
+  // Pattern: with(this){...code...}
+  const withPattern = /^with\(this\)\{([\s\S]*)\}$/
+  const match = renderFn.match(withPattern)
 
-  // Handle script block
-  if (descriptor.script) {
-    jsOutput += descriptor.script.content + '\n\n'
-  } else {
-    // Default export if no script block
-    jsOutput += 'export default {}\n\n'
+  if (match) {
+    // Extract the inner code and wrap it in a proper function with Vue context binding
+    const innerCode = match[1]
+
+    // Extract variable names used in the render function that need to be bound from component context
+    // This includes computed properties, data, props, methods, etc.
+    const variablePattern = /\b([a-zA-Z_$][a-zA-Z0-9_$]*)(?=\s*[.[]|\s*\(|\s*$|\s*[^a-zA-Z0-9_$])/g
+    const variables = new Set<string>()
+    let varMatch
+
+    // Find all variable references in the render function
+    while ((varMatch = variablePattern.exec(innerCode)) !== null) {
+      const varName = varMatch[1]
+      // Skip Vue render helpers, JavaScript keywords, reserved words, and common globals
+      if (
+        !varName.startsWith('_') &&
+        ![
+          'return',
+          'var',
+          'let',
+          'const',
+          'function',
+          'if',
+          'else',
+          'for',
+          'while',
+          'do',
+          'switch',
+          'case',
+          'break',
+          'continue',
+          'try',
+          'catch',
+          'finally',
+          'throw',
+          'new',
+          'this',
+          'true',
+          'false',
+          'null',
+          'undefined',
+          'typeof',
+          'instanceof',
+          'in',
+          'of',
+          'delete',
+          'void',
+          'Array',
+          'Object',
+          'String',
+          'Number',
+          'Boolean',
+          'Date',
+          'RegExp',
+          'Math',
+          'JSON',
+          'console',
+          'window',
+          'document',
+          'global',
+          'process',
+          'class',
+          'default',
+          'with',
+          'export',
+          'import',
+          'extends',
+          'implements',
+          'interface',
+          'enum',
+          'type',
+          'namespace',
+          'module',
+          'declare',
+          'abstract',
+          'static',
+          'readonly',
+          'private',
+          'protected',
+          'public',
+          'async',
+          'await',
+          'yield',
+          'debugger',
+          'super',
+          'arguments',
+          'eval',
+        ].includes(varName)
+      ) {
+        variables.add(varName)
+      }
+    }
+
+    // Create variable bindings for component properties
+    const variableBindings = Array.from(variables).map((varName) => `${varName}=this.${varName}`)
+      .join(',')
+
+    // Bind Vue's render helpers and ensure all Vue instance properties are available
+    // The key fix is to bind render helpers to the Vue instance context so they can access this.$scopedSlots
+    const vueContextBinding =
+      'var _c=this.$createElement,_v=this._v,_s=this._s,_e=this._e,_m=this._m,_f=this._f,_k=this._k,_b=this._b,_g=this._g,_l=this._l,_t=this._t.bind(this),_n=this._n,_q=this._q,_i=this._i,_o=this._o,_u=this._u;'
+    const vueInstanceBinding =
+      'var $v=this.$v||{},$emit=this.$emit,$scopedSlots=this.$scopedSlots||{},$slots=this.$slots||{},$attrs=this.$attrs||{},$listeners=this.$listeners||{},$set=this.$set,$delete=this.$delete,$watch=this.$watch,$nextTick=this.$nextTick,$router=this.$router,$route=this.$route,_events=this._events||{};'
+    const componentBinding = variables.size > 0 ? `var ${variableBindings};` : ''
+
+    return `function(){${vueContextBinding}${vueInstanceBinding}${componentBinding}${innerCode}}`
   }
 
-  // Handle template block
-  if (descriptor.template) {
-    let templateContent = descriptor.template.content.trim()
-    const templateLang = descriptor.template.attrs?.lang || 'html'
+  return renderFn
+}
 
-    // Skip empty templates but continue with script-only component
-    if (!templateContent) {
-      console.warn(`Empty template in ${vueFilePath}, using script-only component`)
-    } else {
-      // Preprocess Pug templates to HTML
-      if (templateLang === 'pug') {
-        try {
-          templateContent = pug.render(templateContent, {
-            filename: vueFilePath,
-            pretty: false
-          })
-        } catch (pugError) {
-          console.error(`Pug compilation error in ${vueFilePath}:`, pugError)
-          console.warn(`Continuing with script-only component for ${vueFilePath}`)
-          templateContent = ''
+/**
+ * Compile Vue template to render function
+ */
+async function compileTemplate (template: string, filename: string, lang?: string): Promise<{ render: string; staticRenderFns: string[] }> {
+  try {
+    // Process Pug templates first
+    let processedTemplate = template
+    if (lang === 'pug') {
+      try {
+        const pug = await import('npm:pug@3.0.2')
+        processedTemplate = pug.render(template, { filename })
+        console.log(`🔄 Processed Pug template for ${filename}`)
+      } catch (pugError) {
+        console.warn(`⚠️  Pug processing failed for ${filename}:`, pugError)
+        // Fall back to original template
+      }
+    }
+
+    const compiled = vueTemplateCompiler.compile(processedTemplate, {
+      filename,
+      preserveWhitespace: false,
+      modules: [],
+      directives: {},
+      isReservedTag: (tag: string) => /^[a-z]/.test(tag),
+      isUnaryTag: () => false,
+      mustUseProp: () => false,
+      canBeLeftOpenTag: () => false,
+      isPreTag: () => false,
+      getTagNamespace: () => undefined,
+      expectHTML: true,
+      isFromDOM: false,
+      shouldDecodeTags: true,
+      shouldDecodeNewlines: false,
+      shouldDecodeNewlinesForHref: false,
+      outputSourceRange: false,
+    })
+
+    if (compiled.errors && compiled.errors.length > 0) {
+      console.warn(`⚠️  Template compilation warnings for ${filename}:`, compiled.errors)
+    }
+
+    // Post-process render functions to remove 'with(this)' for strict mode compatibility
+    const processedRender = compiled.render ? stripWithStatement(compiled.render) : ''
+    const processedStaticRenderFns = (compiled.staticRenderFns || []).map((fn: string) =>
+      stripWithStatement(fn)
+    )
+
+    return {
+      render: processedRender,
+      staticRenderFns: processedStaticRenderFns,
+    }
+  } catch (error) {
+    console.error(`❌ Failed to compile template for ${filename}:`, error)
+    // Return fallback render function
+    return {
+      render:
+        'function render() { return this.$createElement("div", "Template compilation failed") }',
+      staticRenderFns: [],
+    }
+  }
+}
+
+/**
+ * Transform TypeScript to JavaScript
+ */
+async function transformTypeScript (code: string, filename: string): Promise<string> {
+  try {
+    const result = await esbuild.transform(code, {
+      loader: 'ts',
+      target: 'es2020',
+      format: 'esm',
+      sourcefile: filename,
+      tsconfigRaw: {
+        compilerOptions: {
+          experimentalDecorators: true,
+          emitDecoratorMetadata: false,
+          useDefineForClassFields: false,
+        },
+      },
+    })
+    return result.code
+  } catch (error) {
+    console.error(`❌ Failed to transform TypeScript for ${filename}:`, error)
+    throw error
+  }
+}
+
+/**
+ * Resolve import paths
+ */
+function resolveImportPath (importPath: string, sourceFile: string, dashboardRoot: string): string {
+  const sourceDir = dirname(sourceFile)
+  const relativeToRoot = relative(dashboardRoot, sourceDir)
+
+  // External imports - keep as-is
+  if (
+    importPath.startsWith('npm:') || importPath.startsWith('jsr:') || importPath.startsWith('http')
+  ) {
+    return importPath
+  }
+
+  // Node.js built-ins - keep as-is (don't add .js)
+  if (importPath.startsWith('node:')) {
+    return importPath
+  }
+
+  // External packages (vue-router, vuex, etc.) - keep as-is
+  const externalPackages = [
+    'vue',
+    'vue-router',
+    'vuex',
+    'vue-clickaway',
+    'vuelidate',
+    'dompurify',
+    'pug',
+    'three',
+    '@sbp/sbp',
+    '@sbp/okturtles.data',
+    '@sbp/okturtles.events',
+    '@sbp/okturtles.eventqueue',
+  ]
+  if (externalPackages.some((pkg) => importPath === pkg || importPath.startsWith(pkg + '/'))) {
+    return importPath
+  }
+
+  // Handle ~/deps alias - calculate correct relative path to deps.js
+  if (importPath === '~/deps.ts' || importPath === '~/deps.js') {
+    // Calculate relative path from current file to deps.js in compiled root
+    const compiledRoot = join(dirname(dashboardRoot), '.vue-compiled')
+    const compiledSourceDir = join(compiledRoot, relativeToRoot)
+    const depsPath = join(compiledRoot, 'deps.js')
+    const relativePath = relative(compiledSourceDir, depsPath)
+    return relativePath.startsWith('.') ? relativePath : './' + relativePath
+  }
+
+  // Handle path aliases - resolve to correct nested paths
+  if (importPath.startsWith('@')) {
+    const resolved = resolveAlias(importPath, relativeToRoot)
+    if (resolved) {
+      // Keep the nested structure but convert extensions
+      return resolved.replace(/\.(ts|vue)$/, '.js')
+    }
+    // If alias resolution fails, return as-is to avoid breaking
+    return importPath
+  }
+
+  // Relative imports - convert .ts/.vue to .js but maintain relative paths
+  if (importPath.startsWith('./') || importPath.startsWith('../')) {
+    if (importPath.endsWith('.ts') || importPath.endsWith('.vue')) {
+      return importPath.replace(/\.(ts|vue)$/, '.js')
+    }
+    // Add .js if no extension
+    if (!importPath.includes('.')) {
+      return importPath + '.js'
+    }
+    return importPath
+  }
+
+  // Handle bare imports (like 'deps' -> './deps.js')
+  if (!importPath.includes('/') && !importPath.includes('.')) {
+    return './' + importPath + '.js'
+  }
+
+  return importPath
+}
+
+function transformImports (code: string, sourceFile: string, dashboardRoot: string): string {
+  const sourceDir = dirname(sourceFile)
+  const relativeToRoot = relative(dashboardRoot, sourceDir)
+
+  let result = code
+
+  result = result.replace(/from\s+['"]([^'"]+)['"]/g, (match, importPath) => {
+    const resolved = resolveImportPath(importPath, sourceFile, dashboardRoot)
+    return match.replace(importPath, resolved)
+  })
+
+  result = result.replace(/import\s+['"]([^'"]+)['"]/g, (match, importPath) => {
+    const resolved = resolveImportPath(importPath, sourceFile, dashboardRoot)
+    return match.replace(importPath, resolved)
+  })
+
+  result = result.replace(
+    /import\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
+    (match: string, importPath: string) => {
+      const resolved = resolveImportPath(importPath, sourceFile, dashboardRoot)
+      return match.replace(importPath, resolved)
+    },
+  )
+
+  return result
+}
+
+/**
+ * Resolve alias paths
+ */
+function resolveAlias (importPath: string, relativeToRoot: string): string | null {
+  // Remove any existing .js extension to prevent double extensions
+  // Also handle .vue extensions - they should become .js
+  const cleanPath = importPath.replace(/\.(js|vue)$/, '')
+
+  const aliases: Record<string, string> = {
+    '@sbp': 'deps',
+    '@common': '../common',
+    '@model': '../model',
+    '@controller': '../controller',
+    '@view-utils': '../views/utils',
+    '@views': '../views',
+    '@components': '../views/components',
+    '@containers': '../views/containers',
+    '@pages': '../views/pages',
+    '@forms': '../views/components/forms',
+    '@validators': '../views/utils/validators',
+  }
+
+  for (const [alias, target] of Object.entries(aliases)) {
+    if (cleanPath.startsWith(alias)) {
+      const remainder = cleanPath.slice(alias.length)
+      const depth = relativeToRoot.split('/').filter((p) => p.length > 0).length
+      const prefix = depth > 0 ? '../'.repeat(depth) : './'
+
+      // Build the resolved path
+      let resolvedPath: string
+
+      if (alias === '@sbp') {
+        // Special case for @sbp - it should resolve directly to deps.js
+        resolvedPath = prefix + target
+      } else {
+        resolvedPath = prefix + target.replace('../', '')
+
+        // Add remainder (like /events from @view-utils/events)
+        if (remainder) {
+          resolvedPath += remainder
         }
       }
 
-      if (templateContent) {
-        // Generate ESM-compatible render function
-        try {
-          // Compile template with stripWith option for ESM compatibility
-          const compiled = compile(templateContent, {
-            preserveWhitespace: false,
-            transforms: {
-              stripWith: true // Remove 'with' statements for ESM compatibility
-            }
-          })
+      // Add .js extension only once
+      if (!resolvedPath.endsWith('.js')) {
+        resolvedPath += '.js'
+      }
 
-          if (compiled.errors && compiled.errors.length > 0) {
-            console.warn(`Template compilation errors for ${vueFilePath}:`, compiled.errors)
-            // Fall back to script-only mode on errors
-            jsOutput += `
-// Template compilation failed, using script-only mode
-`
-          } else {
-            // Create ESM-compatible render function
-            let renderCode = compiled.render
+      return resolvedPath
+    }
+  }
 
-            // Transform render function to be ESM-compatible
-            // Replace 'with' statements and fix variable scoping
-            renderCode = renderCode
-              .replace(/^function render\s*\(/m, 'function render(')
-              .replace(/with\s*\([^)]+\)\s*\{/g, '{')
-              .replace(/\b_c\b/g, 'this.$createElement')
-              .replace(/\b_v\b/g, 'this._v')
-              .replace(/\b_s\b/g, 'this._s')
-              .replace(/\b_l\b/g, 'this._l')
-              .replace(/\b_t\b/g, 'this._t')
-              .replace(/\b_q\b/g, 'this._q')
-              .replace(/\b_i\b/g, 'this._i')
-              .replace(/\b_m\b/g, 'this._m')
-              .replace(/\b_f\b/g, 'this._f')
-              .replace(/\b_k\b/g, 'this._k')
-              .replace(/\b_b\b/g, 'this._b')
-              .replace(/\b_g\b/g, 'this._g')
-              .replace(/\b_e\b/g, 'this._e')
-              .replace(/\b_n\b/g, 'this._n')
-              .replace(/\b_p\b/g, 'this._p')
+  return null
+}
 
-            // Ensure render function has proper function wrapper
-            if (!renderCode.startsWith('function')) {
-              // Remove any existing braces and add proper function wrapper
-              const cleanCode = renderCode.replace(/^\{(.*)\}$/, '$1')
-              renderCode = `function() { ${cleanCode} }`
-            }
+/**
+ * Compile a single Vue SFC file
+ */
+async function compileVueSFC (sourceFile: string, options: CompileOptions): Promise<void> {
+  const source = await Deno.readTextFile(sourceFile)
+  const descriptor = parseVueSFC(source, sourceFile)
 
-            // Insert render function into the export default object
-            // Find the last closing brace of the export default object and insert render function before it
-            const lines = jsOutput.split('\n')
-            let lastBraceIndex = -1
+  // Calculate output path
+  const relativePath = relative(options.sourceRoot, sourceFile)
+  const outputPath = join(options.outputDir, relativePath.replace(/\.vue$/, '.js'))
 
-            // Find the last standalone closing brace (end of export default object)
-            for (let i = lines.length - 1; i >= 0; i--) {
-              if (lines[i].trim() === '}' && !lines[i].includes('//')) {
-                lastBraceIndex = i
-                break
-              }
-            }
+  await ensureDir(dirname(outputPath))
 
-            if (lastBraceIndex !== -1) {
-              // Check if the line before the closing brace needs a comma
-              const lineBeforeBrace = lines[lastBraceIndex - 1]
-              if (lineBeforeBrace && !lineBeforeBrace.trim().endsWith(',') && !lineBeforeBrace.trim().endsWith('{')) {
-                lines[lastBraceIndex - 1] = lineBeforeBrace + ','
-              }
-              // Insert render function before the closing brace
-              lines.splice(lastBraceIndex, 0, `  render: ${renderCode},`)
-              jsOutput = lines.join('\n')
-            } else {
-              // Fallback: append render function assignment
-              jsOutput += `\n\n// Compiled template render function\nif (typeof exports !== 'undefined' && exports.default) {\n  exports.default.render = ${renderCode};\n}\n`
-            }
+  let scriptContent = ''
+  let hasExportDefault = false
 
-            // Add static render functions if any
-            if (compiled.staticRenderFns && compiled.staticRenderFns.length > 0) {
-              const staticFunctions = compiled.staticRenderFns.map((fn: string) => {
-                let staticFn = fn
-                  .replace(/^function\s*\(/m, 'function(')
-                  .replace(/with\s*\([^)]+\)\s*\{/g, '{')
-                  .replace(/\b_c\b/g, 'this.$createElement')
-                  .replace(/\b_v\b/g, 'this._v')
-                  .replace(/\b_s\b/g, 'this._s')
-                  .replace(/\b_l\b/g, 'this._l')
-                  .replace(/\b_t\b/g, 'this._t')
-                  .replace(/\b_q\b/g, 'this._q')
-                  .replace(/\b_i\b/g, 'this._i')
-                  .replace(/\b_m\b/g, 'this._m')
-                  .replace(/\b_f\b/g, 'this._f')
-                  .replace(/\b_k\b/g, 'this._k')
-                  .replace(/\b_b\b/g, 'this._b')
-                  .replace(/\b_g\b/g, 'this._g')
-                  .replace(/\b_e\b/g, 'this._e')
-                  .replace(/\b_n\b/g, 'this._n')
-                  .replace(/\b_p\b/g, 'this._p')
+  // Process script block if present
+  if (descriptor.script?.content) {
+    scriptContent = descriptor.script.content.trim()
+    hasExportDefault = /export\s+default\s+/.test(scriptContent)
 
-                // Ensure static render function has proper function wrapper
-                if (!staticFn.startsWith('function')) {
-                  // Remove any existing braces and add proper function wrapper
-                  const cleanStaticCode = staticFn.replace(/^\{(.*)\}$/, '$1')
-                  staticFn = `function() { ${cleanStaticCode} }`
-                }
+    // Transform TypeScript to JavaScript properly
+    scriptContent = await transformTypeScript(scriptContent, sourceFile)
 
-                return staticFn
-              })
+    // Transform imports to use relative paths and correct extensions
+    scriptContent = transformImports(scriptContent, sourceFile, dashboardRoot)
+  }
 
-              // Insert static render functions into the export default object
-              const lines = jsOutput.split('\n')
-              let lastBraceIndex = -1
+  // Process template block if present
+  let renderFunction = ''
+  let staticRenderFns: string[] = []
 
-              // Find the last standalone closing brace (end of export default object)
-              for (let i = lines.length - 1; i >= 0; i--) {
-                if (lines[i].trim() === '}' && !lines[i].includes('//')) {
-                  lastBraceIndex = i
-                  break
-                }
-              }
+  if (descriptor.template?.content) {
+    const templateLang = descriptor.template.attrs?.lang || 'html'
+    console.log(`🔍 Processing template for ${sourceFile}, lang: ${templateLang}`)
+    const compiled = await compileTemplate(descriptor.template.content, sourceFile, templateLang)
+    renderFunction = compiled.render
+    staticRenderFns = compiled.staticRenderFns
+    console.log(`🔍 Render function generated: ${renderFunction ? 'YES' : 'NO'}`)
+  }
 
-              if (lastBraceIndex !== -1) {
-                // Check if the line before the closing brace needs a comma
-                const lineBeforeBrace = lines[lastBraceIndex - 1]
-                if (lineBeforeBrace && !lineBeforeBrace.trim().endsWith(',') && !lineBeforeBrace.trim().endsWith('{')) {
-                  lines[lastBraceIndex - 1] = lineBeforeBrace + ','
-                }
-                // Insert static render functions before the closing brace
-                const staticRenderFnsCode = `  _staticRenderFns: [\n    ${staticFunctions.join(',\n    ')}\n  ],`
-                lines.splice(lastBraceIndex, 0, staticRenderFnsCode)
-                jsOutput = lines.join('\n')
-              } else {
-                // Fallback: append static render functions assignment
-                jsOutput += `\n\n// Static render functions\nif (typeof exports !== 'undefined' && exports.default) {\n  exports.default._staticRenderFns = [${staticFunctions.join(', ')}];\n}\n`
-              }
-            }
-          }
-        } catch (error) {
-          console.warn(`Failed to compile template for ${vueFilePath}:`, error)
-          jsOutput += `
-// Template compilation failed, using script-only mode
-`
-        }
+  // Process style blocks and extract them for CSS compilation
+  if (descriptor.styles && descriptor.styles.length > 0 && options.extractedStyles) {
+    console.log(`🎨 Processing ${descriptor.styles.length} style blocks for ${sourceFile}`)
+    for (const styleBlock of descriptor.styles) {
+      if (styleBlock.content.trim()) {
+        // Add component-specific comment for debugging
+        const componentName = sourceFile.split('/').pop()?.replace('.vue', '') || 'unknown'
+        const styleWithComment = `/* Styles from ${componentName}.vue */\n${styleBlock.content}\n`
+        options.extractedStyles.push(styleWithComment)
+        console.log(
+          `✅ Extracted styles from ${componentName}.vue (${styleBlock.content.length} chars)`,
+        )
       }
     }
   }
 
-  // Handle style blocks (for now, just add as comments - SCSS will be handled separately)
-  if (descriptor.styles && descriptor.styles.length > 0) {
-    jsOutput += '\n// Styles (handled separately by SCSS compiler):\n'
-    descriptor.styles.forEach((style, index) => {
-      jsOutput += `/* Style block ${index + 1}:\n${style.content}\n*/\n`
-    })
+  // Generate clean output without text manipulation
+  let output = ''
+
+  if (scriptContent && hasExportDefault) {
+    // Script has export default - inject render functions properly
+    // Handle both "export default { ... }" and "var X_default = { ... }; export { X_default as default };" patterns
+    const exportDefaultRegex = /export\s+default\s+(\{[\s\S]*\})/
+    // Improved regex to match complete component object with balanced braces
+    const varExportRegex =
+      /var\s+(\w+)_default\s*=\s*(\{[\s\S]*\});[\s\S]*export\s*\{[\s\S]*\1_default\s+as\s+default[\s\S]*\}/
+
+    const directMatch = scriptContent.match(exportDefaultRegex)
+    const varMatch = scriptContent.match(varExportRegex)
+
+    if (directMatch) {
+      const componentObject = directMatch[1]
+      // Remove the export default part
+      const scriptWithoutExport = scriptContent.replace(exportDefaultRegex, '')
+
+      output = scriptWithoutExport + '\n\n'
+      output += 'const component = ' + componentObject + '\n\n'
+
+      if (renderFunction) {
+        console.log(`🔧 Injecting render function for ${sourceFile} (direct export)`)
+        output += `component.render = ${renderFunction}\n`
+      } else {
+        console.log(`❌ No render function to inject for ${sourceFile} (direct export)`)
+      }
+
+      if (staticRenderFns.length > 0) {
+        output += `component.staticRenderFns = [${staticRenderFns.join(',\n  ')}]\n`
+      }
+
+      output += '\nexport default component\n'
+    } else if (varMatch) {
+      const componentObject = varMatch[2]
+      // Remove the var declaration and export
+      const scriptWithoutExport = scriptContent.replace(varMatch[0], '')
+
+      output = scriptWithoutExport + '\n\n'
+      output += 'const component = ' + componentObject + '\n\n'
+
+      if (renderFunction) {
+        console.log(`🔧 Injecting render function for ${sourceFile} (var export)`)
+        output += `component.render = ${renderFunction}\n`
+      } else {
+        console.log(`❌ No render function to inject for ${sourceFile} (var export)`)
+      }
+
+      if (staticRenderFns.length > 0) {
+        output += `component.staticRenderFns = [${staticRenderFns.join(',\n  ')}]\n`
+      }
+
+      output += '\nexport default component\n'
+    } else {
+      // Fallback - keep original script
+      console.log(`⚠️ Could not match export pattern for ${sourceFile}, keeping original`)
+      output = scriptContent
+    }
+  } else if (scriptContent) {
+    // Script without export default
+    output = scriptContent + '\n\n'
+    output += 'const component = {}\n'
+
+    if (renderFunction) {
+      output += `component.render = ${renderFunction}\n`
+    }
+
+    if (staticRenderFns.length > 0) {
+      output += `component.staticRenderFns = [${staticRenderFns.join(',\n  ')}]\n`
+    }
+
+    output += '\nexport default component\n'
+  } else {
+    // Template-only component
+    output = 'const component = {}\n'
+
+    if (renderFunction) {
+      output += `component.render = ${renderFunction}\n`
+    }
+
+    if (staticRenderFns.length > 0) {
+      output += `component.staticRenderFns = [${staticRenderFns.join(',\n  ')}]\n`
+    }
+
+    output += '\nexport default component\n'
   }
 
-  // Determine current file depth relative to dashboard root for alias rewriting
-  const relPath = vueFilePath.replace(dashboardRoot + '/', '')
-  const depthSegments = relPath.split('/')
-  const depthUp = depthSegments.length > 1 ? '../'.repeat(depthSegments.length - 1) : './'
-
-  // Rewrite import paths inside this Vue component output
-  jsOutput = jsOutput
-    // Redirect server deps to browser-compatible deps (use depth-aware path)
-    .replace(/from '~\/deps(?:\.ts)?'/g, `from '${depthUp}deps.js'`)
-    .replace(/import '~\/deps(?:\.ts)?'/g, `import '${depthUp}deps.js'`)
-    .replace(/from '\.\.\.\/deps(?:\.ts)?'/g, `from '${depthUp}deps.js'`)
-    .replace(/import '\.\.\.\/deps(?:\.ts)?'/g, `import '${depthUp}deps.js'`)
-    // extensions
-    .replace(/from '([^']+)\.vue'/g, 'from \'$1.js\'')
-    .replace(/import\((['"])([^'"]+)\.vue\)/g, 'import($1$2.js)')
-    .replace(/from '([^']+)\.ts'/g, 'from \'$1.js\'')
-    .replace(/import '([^']+)\.ts'/g, 'import \'$1.js\'')
-    // dynamically rewrite alias prefixes to proper relative paths based on depth
-    .replace(/from ['"]@([a-z-]+)\//g, (_m, alias) => {
-      const map = {
-        'pages': 'views/pages/',
-        'containers': 'views/containers/',
-        'components': 'views/components/',
-        'view-utils': 'views/utils/',
-        'model': 'model/',
-        'common': 'common/'
-      } as Record<string, string>
-      const target = map[alias]
-      if (!target) return _m // unknown alias, leave unchanged
-      return `from '${depthUp}${target}`
-    })
-    .replace(/import\((['"])@([a-z-]+)\//g, (_m, quote, alias) => {
-      const map = {
-        'pages': 'views/pages/',
-        'containers': 'views/containers/',
-        'components': 'views/components/',
-        'view-utils': 'views/utils/',
-        'model': 'model/',
-        'common': 'common/'
-      } as Record<string, string>
-      const target = map[alias]
-      if (!target) return _m
-      return `import(${quote}${depthUp}${target}`
-    })
-
-  // Determine destination path inside .vue-compiled keeping original folder structure
-  const destPath = join(tempDir, relPath).replace(/\.vue$/, '.js')
-  await ensureDir(dirname(destPath))
-  await Deno.writeTextFile(destPath, jsOutput)
+  await Deno.writeTextFile(outputPath, output)
+  console.log(
+    `✅ Compiled: ${relative(Deno.cwd(), sourceFile)} -> ${relative(Deno.cwd(), outputPath)}`,
+  )
 }
 
 /**
- * Process a TypeScript file to rewrite alias imports and transpile to JavaScript
+ * Transform TypeScript files
  */
-async function processTypeScriptFile (tsFilePath: string): Promise<void> {
-  console.log(`Processing TypeScript file: ${tsFilePath}`)
+async function transformTSFile (sourceFile: string, options: CompileOptions): Promise<void> {
+  const source = await Deno.readTextFile(sourceFile)
+  const relativePath = relative(options.sourceRoot, sourceFile)
+  const outputPath = join(options.outputDir, relativePath.replace(/\.ts$/, '.js'))
 
-  // Read the original TypeScript file
-  let tsContent = await Deno.readTextFile(tsFilePath)
+  await ensureDir(dirname(outputPath))
 
-  // Determine current file depth relative to dashboard root for alias rewriting
-  const relPath = tsFilePath.replace(dashboardRoot + '/', '')
-  const depthSegments = relPath.split('/')
-  const depthUp = depthSegments.length > 1 ? '../'.repeat(depthSegments.length - 1) : './'
+  // Transform with esbuild (proper way)
+  let transformedCode = await transformTypeScript(source, sourceFile)
 
-  // First rewrite import paths before transpilation
-  tsContent = tsContent
-    // Redirect server deps to browser-compatible deps (use depth-aware path)
-    .replace(/from '~\/deps(?:\.ts)?'/g, `from '${depthUp}deps.js'`)
-    .replace(/import '~\/deps(?:\.ts)?'/g, `import '${depthUp}deps.js'`)
-    .replace(/from '\.\.\.\/deps(?:\.ts)?'/g, `from '${depthUp}deps.js'`)
-    .replace(/import '\.\.\.\/deps(?:\.ts)?'/g, `import '${depthUp}deps.js'`)
-    // extensions
-    .replace(/from '([^']+)\.vue'/g, 'from \'$1.js\'')
-    .replace(/import\((['"])([^'"]+)\.vue\1\)/g, 'import($1$2.js$1)')
-    .replace(/from '([^']+)\.ts'/g, 'from \'$1.js\'')
-    .replace(/import '([^']+)\.ts'/g, 'import \'$1.js\'')
-    // dynamically rewrite alias prefixes to proper relative paths based on depth
-    .replace(/from ['"]@([a-z-]+)\//g, (_m: string, alias: string) => {
-      const map = {
-        'pages': 'views/pages/',
-        'containers': 'views/containers/',
-        'components': 'views/components/',
-        'view-utils': 'views/utils/',
-        'model': 'model/',
-        'common': 'common/',
-        'forms': 'views/components/forms/',
-        'validators': 'views/utils/'
-      } as Record<string, string>
-      const target = map[alias]
-      if (!target) return _m // unknown alias, leave unchanged
-      return `from '${depthUp}${target}`
-    })
-    .replace(/import\((['"])@([a-z-]+)\//g, (_m: string, quote: string, alias: string) => {
-      const map = {
-        'pages': 'views/pages/',
-        'containers': 'views/containers/',
-        'components': 'views/components/',
-        'view-utils': 'views/utils/',
-        'model': 'model/',
-        'common': 'common/',
-        'forms': 'views/components/forms/',
-        'validators': 'views/utils/'
-      } as Record<string, string>
-      const target = map[alias]
-      if (!target) return _m
-      return `import(${quote}${depthUp}${target}`
-    })
+  // Transform imports to use relative paths and correct extensions
+  transformedCode = transformImports(transformedCode, sourceFile, dashboardRoot)
 
-  // Transpile TypeScript to JavaScript using esbuild
-  const transformed = await esbuild.transform(tsContent, {
-    loader: 'ts',
-    target: 'esnext',
-    format: 'esm'
-  })
-
-  const jsContent = transformed.code
-
-  // Determine destination path inside .vue-compiled keeping original folder structure
-  const destPath = join(tempDir, relPath).replace(/\.ts$/, '.js')
-  await ensureDir(dirname(destPath))
-  await Deno.writeTextFile(destPath, jsContent)
+  await Deno.writeTextFile(outputPath, transformedCode)
+  console.log(
+    `✅ Transformed: ${relative(Deno.cwd(), sourceFile)} -> ${relative(Deno.cwd(), outputPath)}`,
+  )
 }
 
 /**
- * Find all .vue and .ts files in the dashboard directory
+ * Find all Vue and TypeScript files
  */
-async function findVueAndTsFiles (): Promise<{vueFiles: string[], tsFiles: string[]}> {
+async function findSourceFiles (dir: string): Promise<{ vueFiles: string[]; tsFiles: string[] }> {
   const vueFiles: string[] = []
   const tsFiles: string[] = []
 
-  for await (const entry of walk(dashboardRoot, {
-    exts: ['.vue', '.ts'],
-    includeDirs: false
-  })) {
-    if (entry.path.endsWith('.vue')) {
-      vueFiles.push(entry.path)
-    } else if (entry.path.endsWith('.ts')) {
-      tsFiles.push(entry.path)
+  async function walk (currentDir: string) {
+    for await (const entry of Deno.readDir(currentDir)) {
+      const fullPath = join(currentDir, entry.name)
+
+      if (entry.isDirectory && !entry.name.startsWith('.')) {
+        await walk(fullPath)
+      } else if (entry.isFile) {
+        if (entry.name.endsWith('.vue')) {
+          vueFiles.push(fullPath)
+        } else if (entry.name.endsWith('.ts') && !entry.name.endsWith('.d.ts')) {
+          tsFiles.push(fullPath)
+        }
+      }
     }
   }
 
+  await walk(dir)
   return { vueFiles, tsFiles }
 }
 
 /**
- * Main precompilation process
+ * Main precompilation function
  */
-export async function precompileVueFiles () {
-  console.log('🔄 Starting Vue SFC precompilation...')
+export async function precompileVueFiles (): Promise<void> {
+  console.log('🔄 Starting Vue SFC precompilation (robust implementation)...')
 
-  // Find all .vue files
-  const { vueFiles, tsFiles } = await findVueAndTsFiles()
-  console.log(`Found ${vueFiles.length} Vue files and ${tsFiles.length} TypeScript files to process`)
+  // Ensure output directory exists
+  await ensureDir(tempDir)
 
-  // Process each Vue file
+  const options: CompileOptions = {
+    filename: '',
+    sourceRoot: dashboardRoot,
+    outputDir: tempDir,
+    extractedStyles: [], // Collect all styles from Vue components
+  }
+
+  // Find all source files
+  const { vueFiles, tsFiles } = await findSourceFiles(dashboardRoot)
+  console.log(`Found ${vueFiles.length} Vue files and ${tsFiles.length} TypeScript files`)
+  console.log('Vue files found:', vueFiles.map((f) => f.replace(dashboardRoot, '')).sort())
+
+  // Compile Vue SFCs properly
   for (const vueFile of vueFiles) {
-    await compileVueFile(vueFile)
+    await compileVueSFC(vueFile, { ...options, filename: vueFile })
   }
 
-  // Process each TypeScript file
+  // Transform TypeScript files
   for (const tsFile of tsFiles) {
-    await processTypeScriptFile(tsFile)
+    await transformTSFile(tsFile, { ...options, filename: tsFile })
   }
 
-  // Also compile main.ts to main.js
-  console.log('🔄 Compiling main.ts entry point...')
-  const mainTsPath = join(dashboardRoot, 'main.ts')
-  const mainJsPath = join(tempDir, 'main.js')
+  // Write all extracted styles to a combined CSS file
+  if (options.extractedStyles && options.extractedStyles.length > 0) {
+    let combinedStyles = options.extractedStyles.join('\n\n')
 
-  try {
-    const mainContent = await Deno.readTextFile(mainTsPath)
+    // Fix @assets imports to use relative paths for SCSS compilation
+    combinedStyles = combinedStyles.replace(
+      /@import "@assets\/style\/_variables\.scss";/g,
+      `@import "${join(dashboardRoot, 'assets', 'style', '_variables.scss').replace(/\\/g, '/')}";`,
+    )
 
-    // Transform imports to use compiled .js files and fix paths
-    const transformedContent = mainContent
-      // First, handle .vue file imports
-      .replace(/from '([^']+)\.vue'/g, 'from \'$1.js\'')
-      .replace(/import '([^']+)\.vue'/g, 'import \'$1.js\'')
-
-      // Convert .ts imports to .js
-      .replace(/from '([^']+)\.ts'/g, 'from \'$1.js\'')
-      .replace(/import '([^']+)\.ts'/g, 'import \'$1.js\'')
-
-      // Redirect server deps to browser-compatible deps (main.ts is at root, so use relative path)
-      .replace(/from '~\/deps(?:\.ts)?'/g, 'from \'./deps.js\'')
-      .replace(/import '~\/deps(?:\.ts)?'/g, 'import \'./deps.js\'')
-      .replace(/from '\.\.\/\.\.\/deps(?:\.ts)?'/g, 'from \'./deps.js\'')
-      .replace(/import '\.\.\/\.\.\/\.\.\/deps(?:\.ts)?'/g, 'import \'./deps.js\'')
-
-      // Handle path aliases - convert to relative paths in compiled output
-      .replace(/from '@([^']+)'/g, (match: string, path: string) => {
-        if (path.startsWith('containers/')) return `from './views/${path}.js'`
-        if (path.startsWith('components/')) return `from './views/${path}.js'`
-        if (path.startsWith('common/')) return `from './common/${path.replace('common/', '')}.js'`
-        return match
-      })
-      .replace(/import '@([^']+)'/g, (match: string, path: string) => {
-        if (path.startsWith('containers/')) return `import './views/${path}.js'`
-        if (path.startsWith('components/')) return `import './views/${path}.js'`
-        if (path.startsWith('common/')) return `import './common/${path.replace('common/', '')}.js'`
-        return match
-      })
-
-      // Fix double .js.js extensions
-      .replace(/\.js\.js'/g, '.js\'')
-
-    // Transpile TS with esbuild
-    const transformed = await esbuild.transform(transformedContent, {
-      loader: 'ts',
-      target: 'esnext',
-    })
-    let finalContent = transformed.code
-
-    // Global stripping of leftover TS constructs
-    finalContent = finalContent
-      // Interfaces & type exports
-      .replace(/export?\s+interface\s+\w+\s*{[\s\S]*?}\s*/g, '')
-      .replace(/export?\s+type\s+\w+[^=]*=[\s\S]*?;\s*/g, '')
-      .replace(/interface\s+\w+\s*{[\s\S]*?}\s*/g, '')
-      // Parameter object annotations (single line only)
-      .replace(/:\s*\{[^}\n]*\}(?=[,)]?)/g, '')
-      // Complex type annotations including generics and function types
-      .replace(/:\s*[^,){}=;\n]+(?=\s*[,){}=;])/g, '')
-      // Rest parameter type annotations
-      .replace(/\(([^)]*?)\s*}\s*,/g, '($1, ')
-      // Remove leftover generics
-      .replace(/<[^>]+>\s*(?=\()/g, '')
-    // Final fixes for all remaining syntax errors
-    // 1. Ensure the Vue error handler template literal is intact
-    finalContent = finalContent.replace(/console\.error\([^\n]*uncaught Vue error in[^\n]*\)/g, 'console.error(`uncaught Vue error in ${info}:`, err)')
-    // 2. Fix malformed inline TODO comment - close the parenthesis and comment
-    finalContent = finalContent.replace(/await sbp\('translations\/init', 'en-US' \/\* TODO!\)/g, 'await sbp(\'translations/init\', \'en-US\') /* TODO */')
-    finalContent = finalContent.replace(/await sbp\('translations\/init', 'en-US' \/\* TODO \*\//g, 'await sbp(\'translations/init\', \'en-US\') /* TODO */')
-    // 3. Fix missing closing brace for components object
-    finalContent = finalContent.replace(/Modal,\s*data \(/g, 'Modal\n    },\n    data (')
-    // 4. Fix missing variable declaration
-    finalContent = finalContent.replace(/return {\s*isNavOpen\s*}/g, 'return {\n        isNavOpen: false\n      }')
-    // 5. Fix remaining property colons for all Vue object properties
-    finalContent = finalContent.replace(/^(\s*)(components|computed|methods|data)\s*\{/gm, '$1$2: {')
-    // Also handle cases where there might be extra whitespace
-    finalContent = finalContent.replace(/(components|computed|methods|data)\s*\{/g, '$1: {')
-    // 5b. Fix missing closing brace/comma after Modal component
-    finalContent = finalContent.replace(/Modal,\s*\n\s*data\(/, 'Modal,\n      },\n      data(')
-    // 6. Ensure proper indentation and structure
-    finalContent = finalContent.replace(/\}\s*\}\s*\)\s*\$mount\('#app'\)/g, '    }\n  }).$mount(\'#app\')')
-
-    await Deno.writeTextFile(mainJsPath, finalContent)
-    console.log('✅ Compiled: main.ts -> main.js (manual TS->JS conversion)')
-  } catch (error) {
-    console.error('❌ Failed to compile main.ts:', error)
-    throw error
+    const stylesOutputPath = join(tempDir, 'combined-styles.scss')
+    await Deno.writeTextFile(stylesOutputPath, combinedStyles)
+    console.log(
+      `🎨 Combined ${options.extractedStyles.length} style blocks into: ${stylesOutputPath}`,
+    )
+    console.log(`📊 Total styles: ${combinedStyles.length} characters`)
+    console.log('🔧 Fixed @assets imports to use absolute paths')
+  } else {
+    console.log('⚠️  No styles extracted from Vue components')
   }
 
-  // Copy dashboard-specific deps file to compiled directory
-  const dashboardDepsPath = join(dashboardRoot, 'deps.ts')
-  const compiledDepsPath = join(tempDir, 'deps.js')
-
-  try {
-    const depsContent = await Deno.readTextFile(dashboardDepsPath)
-    // Convert TypeScript to JavaScript for the deps file
-    const transformed = await esbuild.transform(depsContent, {
-      loader: 'ts',
-      target: 'esnext',
-    })
-    await Deno.writeTextFile(compiledDepsPath, transformed.code)
-    console.log('✅ Copied and compiled dashboard deps.ts -> deps.js')
-  } catch (error) {
-    console.error('❌ Failed to copy dashboard deps file:', error)
-  }
-
-  console.log(`🎉 Successfully precompiled ${vueFiles.length} Vue files + main.js + ${tsFiles.length} TS files (JS-compatible)`)
+  console.log(
+    `🎉 Successfully precompiled ${vueFiles.length} Vue files + ${tsFiles.length} TS files`,
+  )
   console.log(`📁 Compiled files available in: ${tempDir}`)
 }
 
-// Run precompilation if this script is executed directly
+// Run if called directly
 if (import.meta.main) {
-  try {
-    await precompileVueFiles()
-  } catch (error) {
-    console.error('Vue precompilation failed:', error)
-    Deno.exit(1)
-  }
+  await precompileVueFiles()
 }

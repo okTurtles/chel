@@ -139,10 +139,11 @@ const ctEq = (expected: string, actual: string): boolean => {
 
 // Boom and Joi already imported above
 const isCheloniaDashboard = process.env.IS_CHELONIA_DASHBOARD_DEV
+const appDir = process.env.CHELONIA_APP_DIR || '.'
 const staticServeConfig = {
   routePath: isCheloniaDashboard ? '/dashboard/{path*}' : '/app/{path*}',
-  distAssets: path.resolve(isCheloniaDashboard ? 'dist-dashboard/assets' : 'dist/assets'),
-  distIndexHtml: path.resolve(isCheloniaDashboard ? './dist-dashboard/index.html' : './dist/index.html'),
+  distAssets: path.resolve(isCheloniaDashboard ? 'dist-dashboard/assets' : path.join(appDir, 'assets')),
+  distIndexHtml: path.resolve(isCheloniaDashboard ? './dist-dashboard/index.html' : path.join(appDir, 'index.html')),
   redirect: isCheloniaDashboard ? '/dashboard/' : '/app/'
 }
 

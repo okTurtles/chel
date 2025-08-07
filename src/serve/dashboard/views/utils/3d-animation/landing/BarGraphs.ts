@@ -1,4 +1,4 @@
-import { Three } from '~/deps.ts'
+import { Three } from '../../../../deps.ts'
 const { Group, BoxGeometry, Mesh, MeshLambertMaterial } = Three
 import { randomFromMinMax, CombineWithEdge } from '../animation-utils.ts'
 import GraphBackground from './GraphBackground.ts'

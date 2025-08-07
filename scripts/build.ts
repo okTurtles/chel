@@ -101,6 +101,5 @@ if (result.errors.length) {
   console.warn(colors.yellow('build warnings:'), result.warnings)
 }
 console.log(colors.green('built:'), options.outdir)
-// Build dashboard assets
-await import('./dashboard-build.ts')
+
 esbuild.stop()

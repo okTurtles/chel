@@ -21,11 +21,12 @@ async function startDashboardServer (port: number): Promise<void> {
 }
 
 // Application server function
-async function startApplicationServer (port: number): Promise<void> {
+async function startApplicationServer (port: number, directory: string): Promise<void> {
   // Set application-specific environment variables
   delete process.env.IS_CHELONIA_DASHBOARD_DEV
   process.env.PORT = port.toString()
   process.env.API_PORT = port.toString()
+  process.env.CHELONIA_APP_DIR = directory
 
   // Import and start the application server
   const startServer = await import('./serve/index.ts')
@@ -34,7 +35,7 @@ async function startApplicationServer (port: number): Promise<void> {
 
 export async function serve (directory: string, options: ServeOptions = {}) {
   const {
-    dp: dashboardPort = 7001,
+    dp: dashboardPort = 3000,
     port: applicationPort = 8000,
     'db-type': dbType = 'mem',
     'db-location': dbLocation
@@ -77,7 +78,7 @@ export async function serve (directory: string, options: ServeOptions = {}) {
     process.env.PORT = applicationPort.toString()
     process.env.API_PORT = applicationPort.toString()
     try {
-      await startApplicationServer(applicationPort)
+      await startApplicationServer(applicationPort, directory)
       console.log(colors.green(`✅ Application server started on port ${applicationPort}`))
     } catch (error) {
       console.error(colors.red('❌ Failed to start application server:'), error)

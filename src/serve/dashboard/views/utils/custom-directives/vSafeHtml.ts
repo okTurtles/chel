@@ -15,7 +15,7 @@
  * `Vue.directive()` rather than exporting it, consistently with our other
  * custom Vue directives.
  */
-import { dompurify, Vue } from '~/deps.ts'
+import { dompurify, Vue } from '../../../deps.ts'
 import { cloneDeep } from '../../../common/cdLodash.ts'
 
 // TypeScript interfaces for Vue directive

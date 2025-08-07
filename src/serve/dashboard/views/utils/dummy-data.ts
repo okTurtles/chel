@@ -1,7 +1,7 @@
 /* eslint-disable */
 
 // dummy placeholder data to be used in various pages
-import { createCID } from '~/deps.ts'
+import { createCID } from '../../deps.ts'
 import { addTimeToDate, MONTHS_MILLIS } from '../../common/cdTimeUtils.ts'
 import L from '../../common/translations.ts'
 

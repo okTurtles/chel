@@ -1,4 +1,4 @@
-import { Three } from '~/deps.ts'
+import { Three } from '../../../../deps.ts'
 const {
   BoxGeometry, Group, MeshLambertMaterial, Mesh, Vector3,
   LineDashedMaterial, BufferGeometry, Line, DoubleSide

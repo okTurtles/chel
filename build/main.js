@@ -68,22 +68,15 @@ import { default as default7 } from "npm:@hapi/inert@6.0.3";
 import { default as default8 } from "npm:chalk@4.1.0";
 import { default as default9 } from "npm:pino@8.19.0";
 import { default as default10 } from "npm:lru-cache@7.14.0";
-import * as Three from "npm:three@0.151.3";
 import { default as default11 } from "npm:better-sqlite3@11.9.1";
 import { default as default12, WebSocketServer } from "npm:ws@8.5.0";
-import { default as default13 } from "npm:vue@2.7.16";
-import { mixin } from "npm:vue-clickaway@2.2.2";
-import { default as default14 } from "npm:vuex@3.6.0";
-import { default as default15 } from "npm:vue-router@3.6.5";
-import { default as default16 } from "npm:pug@3.0.2";
-import { default as default17 } from "npm:dompurify@2.2.7";
-import { default as default18 } from "npm:should@13.2.3";
+import { default as default13 } from "npm:should@13.2.3";
 import { v4 } from "npm:uuid@9.0.0";
 import { cloneDeep, omit } from "npm:turtledash@1.0.3";
-import { default as default19 } from "npm:bottleneck@2.19.5";
-import { default as default20 } from "npm:scrypt-async@2.0.1";
+import { default as default14 } from "npm:bottleneck@2.19.5";
+import { default as default15 } from "npm:scrypt-async@2.0.1";
 import { aes128gcm } from "npm:@apeleghq/rfc8188@1.0.7/encodings";
-import { default as default21 } from "npm:@apeleghq/rfc8188@1.0.7/encrypt";
+import { default as default16 } from "npm:@apeleghq/rfc8188@1.0.7/encrypt";
 import { blake32Hash, createCID, maybeParseCID, multicodes, strToB64, getSubscriptionId, parseCID } from "npm:@chelonia/lib@1.2.0/functions";
 import { checkKey, parsePrefixableKey, prefixHandlers } from "npm:@chelonia/lib@1.2.0/db";
 import { SPMessage } from "npm:@chelonia/lib@1.2.0/SPMessage";
@@ -96,9 +89,9 @@ import { AUTHSALT, CONTRACTSALT, CS, SALT_LENGTH_IN_OCTETS, SU } from "npm:@chel
 import { EDWARDS25519SHA512BATCH, CURVE25519XSALSA20POLY1305, XSALSA20POLY1305 } from "npm:@chelonia/crypto@1.0.1";
 import { keygen, serializeKey, deserializeKey, keygenOfSameType, keyId, generateSalt, deriveKeyFromPassword } from "npm:@chelonia/crypto@1.0.1";
 import { sign, verifySignature, encrypt, decrypt } from "npm:@chelonia/crypto@1.0.1";
-import { default as default22 } from "npm:@sbp/okturtles.data@0.1.5";
-import { default as default23 } from "npm:@sbp/okturtles.eventqueue@1.2.0";
-import { default as default24 } from "npm:@sbp/okturtles.events@1.0.0";
+import { default as default17 } from "npm:@sbp/okturtles.data@0.1.5";
+import { default as default18 } from "npm:@sbp/okturtles.eventqueue@1.2.0";
+import { default as default19 } from "npm:@sbp/okturtles.events@1.0.0";
 import { validationMixin } from "npm:vuelidate@0.7.6";
 var init_deps = __esm({
   "src/deps.ts"() {
@@ -14275,7 +14268,7 @@ var init_push = __esm({
       const readableStream = new Response(data).body;
       if (!readableStream) throw new Error("Failed to create readable stream");
       const [asPublic, IKM] = await subscription.encryptionKeys;
-      return default21(aes128gcm, readableStream, 32768, asPublic, IKM).then(async (bodyStream) => {
+      return default16(aes128gcm, readableStream, 32768, asPublic, IKM).then(async (bodyStream) => {
         const chunks = [];
         const reader = bodyStream.getReader();
         for (; ; ) {
@@ -14726,7 +14719,7 @@ import process9 from "node:process";
 function notFoundNoCache(h2) {
   return h2.response().code(404).header("Cache-Control", "no-store");
 }
-var logger3, MEGABYTE, SECOND, CID_REGEX, KV_KEY_REGEX, NAME_REGEX, POSITIVE_INTEGER_REGEX, FILE_UPLOAD_MAX_BYTES, SIGNUP_LIMIT_MIN, SIGNUP_LIMIT_HOUR, SIGNUP_LIMIT_DAY, SIGNUP_LIMIT_DISABLED, limiterPerMinute, limiterPerHour, limiterPerDay, cidLookupTable, limiterKey, ctEq, isCheloniaDashboard, staticServeConfig, errorMapper, route;
+var logger3, MEGABYTE, SECOND, CID_REGEX, KV_KEY_REGEX, NAME_REGEX, POSITIVE_INTEGER_REGEX, FILE_UPLOAD_MAX_BYTES, SIGNUP_LIMIT_MIN, SIGNUP_LIMIT_HOUR, SIGNUP_LIMIT_DAY, SIGNUP_LIMIT_DISABLED, limiterPerMinute, limiterPerHour, limiterPerDay, cidLookupTable, limiterKey, ctEq, isCheloniaDashboard, appDir, staticServeConfig, errorMapper, route;
 var init_routes = __esm({
   "src/serve/routes.ts"() {
     "use strict";
@@ -14751,22 +14744,22 @@ var init_routes = __esm({
     SIGNUP_LIMIT_HOUR = parseInt(process9.env.SIGNUP_LIMIT_HOUR || "0") || 10;
     SIGNUP_LIMIT_DAY = parseInt(process9.env.SIGNUP_LIMIT_DAY || "0") || 50;
     SIGNUP_LIMIT_DISABLED = process9.env.NODE_ENV !== "production" || process9.env.SIGNUP_LIMIT_DISABLED === "true";
-    limiterPerMinute = new default19.Group({
-      strategy: default19.strategy.LEAK,
+    limiterPerMinute = new default14.Group({
+      strategy: default14.strategy.LEAK,
       highWater: 0,
       reservoir: SIGNUP_LIMIT_MIN,
       reservoirRefreshInterval: 60 * SECOND,
       reservoirRefreshAmount: SIGNUP_LIMIT_MIN
     });
-    limiterPerHour = new default19.Group({
-      strategy: default19.strategy.LEAK,
+    limiterPerHour = new default14.Group({
+      strategy: default14.strategy.LEAK,
       highWater: 0,
       reservoir: SIGNUP_LIMIT_HOUR,
       reservoirRefreshInterval: 60 * 60 * SECOND,
       reservoirRefreshAmount: SIGNUP_LIMIT_HOUR
     });
-    limiterPerDay = new default19.Group({
-      strategy: default19.strategy.LEAK,
+    limiterPerDay = new default14.Group({
+      strategy: default14.strategy.LEAK,
       highWater: 0,
       reservoir: SIGNUP_LIMIT_DAY,
       reservoirRefreshInterval: 24 * 60 * 60 * SECOND,
@@ -14828,10 +14821,11 @@ var init_routes = __esm({
       return r === 0;
     };
     isCheloniaDashboard = process9.env.IS_CHELONIA_DASHBOARD_DEV;
+    appDir = process9.env.CHELONIA_APP_DIR || ".";
     staticServeConfig = {
       routePath: isCheloniaDashboard ? "/dashboard/{path*}" : "/app/{path*}",
-      distAssets: path4.resolve(isCheloniaDashboard ? "dist-dashboard/assets" : "dist/assets"),
-      distIndexHtml: path4.resolve(isCheloniaDashboard ? "./dist-dashboard/index.html" : "./dist/index.html"),
+      distAssets: path4.resolve(isCheloniaDashboard ? "dist-dashboard/assets" : path4.join(appDir, "assets")),
+      distIndexHtml: path4.resolve(isCheloniaDashboard ? "./dist-dashboard/index.html" : path4.join(appDir, "index.html")),
       redirect: isCheloniaDashboard ? "/dashboard/" : "/app/"
     };
     errorMapper = (e2) => {
@@ -16610,16 +16604,17 @@ async function startDashboardServer(port) {
   const dashboardServer = await Promise.resolve().then(() => (init_dashboard_server(), dashboard_server_exports));
   await dashboardServer.startDashboard(port);
 }
-async function startApplicationServer(port) {
+async function startApplicationServer(port, directory) {
   delete process12.env.IS_CHELONIA_DASHBOARD_DEV;
   process12.env.PORT = port.toString();
   process12.env.API_PORT = port.toString();
+  process12.env.CHELONIA_APP_DIR = directory;
   const startServer = await Promise.resolve().then(() => (init_serve(), serve_exports));
   await startServer.default;
 }
 async function serve(directory, options2 = {}) {
   const {
-    dp: dashboardPort = 7001,
+    dp: dashboardPort = 3e3,
     port: applicationPort = 8e3,
     "db-type": dbType = "mem",
     "db-location": dbLocation
@@ -16654,7 +16649,7 @@ async function serve(directory, options2 = {}) {
     process12.env.PORT = applicationPort.toString();
     process12.env.API_PORT = applicationPort.toString();
     try {
-      await startApplicationServer(applicationPort);
+      await startApplicationServer(applicationPort, directory);
       console.log(colors.green(`\u2705 Application server started on port ${applicationPort}`));
     } catch (error) {
       console.error(colors.red("\u274C Failed to start application server:"), error);

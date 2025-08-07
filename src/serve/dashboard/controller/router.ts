@@ -1,6 +1,5 @@
-import { Vue } from '~/deps.ts'
+import { Vue } from '../deps.ts'
 import process from 'node:process'
-// @ts-expect-error - vue-router types not available in current setup
 import Router from 'vue-router'
 
 import Landing from '@pages/miscellaneous/Landing.vue'

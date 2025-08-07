@@ -1,8 +1,8 @@
 // Browser-compatible dependencies for dashboard
 // This file replaces src/deps.ts for dashboard builds to avoid server-side imports
 
-// Vue ecosystem (loaded via CDN in index.html)
-export { default as Vue } from 'vue'
+// Vue ecosystem - using full build with template compiler for dashboard
+export { default as Vue } from 'vue/dist/vue.esm.js'
 export { default as Vuex } from 'vuex'
 export { default as VueRouter } from 'vue-router'
 export { default as VueClickaway, mixin as clickaway } from 'vue-clickaway'
@@ -11,14 +11,19 @@ export * as Three from 'three'
 // Browser-compatible utilities
 export { default as dompurify } from 'dompurify'
 export { validationMixin } from 'vuelidate'
-export { default as pug } from 'pug'
+// Note: pug is build-time only, not included in browser bundle
 
 // SBP for dashboard functionality
-export { default as sbp } from '@sbp/sbp'
+import sbpDefault from '@sbp/sbp'
+export { sbpDefault as sbp }
+export default sbpDefault
 
 // Import SBP selector implementations needed by dashboard
 import '@sbp/okturtles.data'
 import '@sbp/okturtles.events'
+
+// Additional SBP selectors needed for dashboard functionality
+import '@sbp/okturtles.eventqueue'
 
 // Stub out server-side dependencies that dashboard shouldn't use
 export const chalk = { green: (s: string) => s, red: (s: string) => s, yellow: (s: string) => s }

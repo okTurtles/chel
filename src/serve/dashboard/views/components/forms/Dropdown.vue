@@ -19,7 +19,7 @@
 
 <script>
 import L from '@common/translations.js'
-import { clickaway } from '~/deps.ts'
+import { clickaway } from '../../../deps.ts'
 
 export default {
   name: 'Dropdown',

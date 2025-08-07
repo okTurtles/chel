@@ -3,3 +3,4 @@
 dist/
 dist-dashboard/
 .vue-compiled
+data
