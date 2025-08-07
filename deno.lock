@@ -26,6 +26,7 @@
     "npm:@apeleghq/rfc8188@1.0.7": "1.0.7",
     "npm:@chelonia/crypto@1.0.1": "1.0.1",
     "npm:@chelonia/lib@1.2.0": "1.2.0_@sbp+sbp@2.4.1",
+    "npm:@chelonia/lib@1.2.2": "1.2.2_@sbp+sbp@2.4.1",
     "npm:@eslint/js@9.31.0": "9.31.0",
     "npm:@hapi/boom@9.1.0": "9.1.0",
     "npm:@hapi/hapi@20.1.2": "20.1.2",
@@ -190,6 +191,22 @@
         "@sbp/sbp",
         "scrypt-async",
         "turtledash@1.0.2"
+      ]
+    },
+    "@chelonia/lib@1.2.2_@sbp+sbp@2.4.1": {
+      "integrity": "sha512-d5PeLgkUVYXoYwoP2h3io67ybJsgST9ASP7FL89SvIzQca+SA9958Bx+49ArRIuQt+/5wzX+o5beae9EJ47E9w==",
+      "dependencies": [
+        "@apeleghq/multipart-parser",
+        "@apeleghq/rfc8188@1.0.8",
+        "@chelonia/crypto",
+        "@chelonia/serdes",
+        "@sbp/okturtles.data@0.1.6_@sbp+sbp@2.4.1",
+        "@sbp/okturtles.eventqueue@1.2.1_@sbp+sbp@2.4.1",
+        "@sbp/okturtles.events@1.0.1_@sbp+sbp@2.4.1",
+        "@sbp/sbp",
+        "scrypt-async",
+        "turtledash@1.0.2",
+        "tweetnacl"
       ]
     },
     "@chelonia/multiformats@1.0.0": {

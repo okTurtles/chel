@@ -77,15 +77,15 @@ import { default as default14 } from "npm:bottleneck@2.19.5";
 import { default as default15 } from "npm:scrypt-async@2.0.1";
 import { aes128gcm } from "npm:@apeleghq/rfc8188@1.0.7/encodings";
 import { default as default16 } from "npm:@apeleghq/rfc8188@1.0.7/encrypt";
-import { blake32Hash, createCID, maybeParseCID, multicodes, strToB64, getSubscriptionId, parseCID } from "npm:@chelonia/lib@1.2.0/functions";
-import { checkKey, parsePrefixableKey, prefixHandlers } from "npm:@chelonia/lib@1.2.0/db";
-import { SPMessage } from "npm:@chelonia/lib@1.2.0/SPMessage";
-import { SERVER } from "npm:@chelonia/lib@1.2.0/presets";
-import { ChelErrorGenerator } from "npm:@chelonia/lib@1.2.0";
-import { PUSH_SERVER_ACTION_TYPE, REQUEST_TYPE, RESPONSE_TYPE, NOTIFICATION_TYPE, createMessage, createClient, createKvMessage, messageParser } from "npm:@chelonia/lib@1.2.0/pubsub";
-import { verifyShelterAuthorizationHeader } from "npm:@chelonia/lib@1.2.0/utils";
-import { base64ToBase64url, base64urlToBase64, boxKeyPair, computeCAndHc, decryptSaltUpdate, encryptContractSalt, encryptSaltUpdate, hash, hashRawStringArray, hashStringArray, parseRegisterSalt, randomNonce } from "npm:@chelonia/lib@1.2.0/zkpp";
-import { AUTHSALT, CONTRACTSALT, CS, SALT_LENGTH_IN_OCTETS, SU } from "npm:@chelonia/lib@1.2.0/zkppConstants";
+import { blake32Hash, createCID, maybeParseCID, multicodes, strToB64, getSubscriptionId, parseCID } from "npm:@chelonia/lib@1.2.2/functions";
+import { checkKey, parsePrefixableKey, prefixHandlers } from "npm:@chelonia/lib@1.2.2/db";
+import { SPMessage } from "npm:@chelonia/lib@1.2.2/SPMessage";
+import { SERVER } from "npm:@chelonia/lib@1.2.2/presets";
+import { ChelErrorGenerator } from "npm:@chelonia/lib@1.2.2";
+import { PUSH_SERVER_ACTION_TYPE, REQUEST_TYPE, RESPONSE_TYPE, NOTIFICATION_TYPE, createMessage, createClient, createKvMessage, messageParser } from "npm:@chelonia/lib@1.2.2/pubsub";
+import { verifyShelterAuthorizationHeader } from "npm:@chelonia/lib@1.2.2/utils";
+import { base64ToBase64url, base64urlToBase64, boxKeyPair, computeCAndHc, decryptSaltUpdate, encryptContractSalt, encryptSaltUpdate, hash, hashRawStringArray, hashStringArray, parseRegisterSalt, randomNonce } from "npm:@chelonia/lib@1.2.2/zkpp";
+import { AUTHSALT, CONTRACTSALT, CS, SALT_LENGTH_IN_OCTETS, SU } from "npm:@chelonia/lib@1.2.2/zkppConstants";
 import { EDWARDS25519SHA512BATCH, CURVE25519XSALSA20POLY1305, XSALSA20POLY1305 } from "npm:@chelonia/crypto@1.0.1";
 import { keygen, serializeKey, deserializeKey, keygenOfSameType, keyId, generateSalt, deriveKeyFromPassword } from "npm:@chelonia/crypto@1.0.1";
 import { sign, verifySignature, encrypt, decrypt } from "npm:@chelonia/crypto@1.0.1";
@@ -3080,7 +3080,7 @@ var init_cid = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/functions.mjs
+// node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/functions.mjs
 import { Buffer as Buffer2 } from "node:buffer";
 async function createCIDfromStream(data, multicode = multicodes3.RAW) {
   const uint8array = typeof data === "string" ? new TextEncoder().encode(data) : data;
@@ -3099,7 +3099,7 @@ function blake32Hash2(data) {
 }
 var multicodes3, parseCID2, b64ToBuf, b64ToStr;
 var init_functions = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/functions.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/functions.mjs"() {
     init_base58();
     init_blake2b();
     init_blake2bstream();
@@ -3128,7 +3128,7 @@ var init_functions = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/pubsub/index.mjs
+// node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/pubsub/index.mjs
 function createClient2(url, options2 = {}) {
   const client = {
     customEventHandlers: options2.handlers || {},
@@ -3201,7 +3201,7 @@ function createRequest(type, data) {
 }
 var NOTIFICATION_TYPE2, REQUEST_TYPE2, RESPONSE_TYPE2, PUSH_SERVER_ACTION_TYPE2, defaultOptions, PUBSUB_ERROR, PUBSUB_RECONNECTION_ATTEMPT, PUBSUB_RECONNECTION_FAILED, PUBSUB_RECONNECTION_SCHEDULED, PUBSUB_RECONNECTION_SUCCEEDED, PUBSUB_SUBSCRIPTION_SUCCEEDED, defaultClientEventHandlers, defaultMessageHandlers, globalEventNames, socketEventNames, globalEventMap, isDefinetelyOffline, messageParser2, publicMethods;
 var init_pubsub = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/pubsub/index.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/pubsub/index.mjs"() {
     init_esm4();
     init_esm();
     NOTIFICATION_TYPE2 = Object.freeze({
@@ -6744,10 +6744,10 @@ var init_esm7 = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/errors.mjs
+// node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/errors.mjs
 var ChelErrorGenerator2, ChelErrorWarning, ChelErrorAlreadyProcessed, ChelErrorDBBadPreviousHEAD, ChelErrorDBConnection, ChelErrorUnexpected, ChelErrorKeyAlreadyExists, ChelErrorUnrecoverable, ChelErrorForkedChain, ChelErrorDecryptionError, ChelErrorDecryptionKeyNotFound, ChelErrorSignatureError, ChelErrorSignatureKeyUnauthorized, ChelErrorSignatureKeyNotFound, ChelErrorFetchServerTimeFailed, ChelErrorUnexpectedHttpResponseCode, ChelErrorResourceGone;
 var init_errors = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/errors.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/errors.mjs"() {
     ChelErrorGenerator2 = (name, base2 = Error) => class extends base2 {
       constructor(...params) {
         super(...params);
@@ -6779,10 +6779,10 @@ var init_errors = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/events.mjs
+// node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/events.mjs
 var CHELONIA_RESET, CONTRACT_IS_SYNCING, CONTRACTS_MODIFIED, EVENT_HANDLED, EVENT_PUBLISHED, EVENT_PUBLISHING_ERROR, CONTRACT_REGISTERED, CONTRACT_IS_PENDING_KEY_REQUESTS, CONTRACT_HAS_RECEIVED_KEYS, PERSISTENT_ACTION_FAILURE, PERSISTENT_ACTION_SUCCESS, PERSISTENT_ACTION_TOTAL_FAILURE;
 var init_events2 = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/events.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/events.mjs"() {
     CHELONIA_RESET = "chelonia-reset";
     CONTRACT_IS_SYNCING = "contract-is-syncing";
     CONTRACTS_MODIFIED = "contracts-modified";
@@ -6968,10 +6968,10 @@ var init_esm8 = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/signedData.mjs
+// node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/signedData.mjs
 var rootStateFn, proto, wrapper, isSignedData, signData, verifySignatureData, signedOutgoingData, signedOutgoingDataWithRawKey, signedIncomingData, signedDataKeyId, isRawSignedData, rawSignedIncomingData;
 var init_signedData = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/signedData.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/signedData.mjs"() {
     init_esm7();
     init_esm();
     init_esm5();
@@ -7227,10 +7227,10 @@ var init_signedData = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/encryptedData.mjs
+// node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/encryptedData.mjs
 var rootStateFn2, proto2, wrapper2, isEncryptedData, encryptData, decryptData, encryptedOutgoingData, encryptedOutgoingDataWithRawKey, encryptedIncomingData, encryptedIncomingForeignData, encryptedDataKeyId, isRawEncryptedData, unwrapMaybeEncryptedData, maybeEncryptedIncomingData;
 var init_encryptedData = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/encryptedData.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/encryptedData.mjs"() {
     init_esm7();
     init_esm();
     init_esm5();
@@ -7469,7 +7469,7 @@ var init_encryptedData = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/SPMessage.mjs
+// node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/SPMessage.mjs
 function messageToParams(head, message) {
   let mapping;
   return {
@@ -7494,7 +7494,7 @@ function messageToParams(head, message) {
 }
 var decryptedAndVerifiedDeserializedMessage, SPMessage2, keyOps;
 var init_SPMessage = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/SPMessage.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/SPMessage.mjs"() {
     init_esm7();
     init_esm8();
     init_esm5();
@@ -7884,10 +7884,10 @@ var init_SPMessage = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/chelonia-utils.mjs
+// node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/chelonia-utils.mjs
 var chelonia_utils_default;
 var init_chelonia_utils = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/chelonia-utils.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/chelonia-utils.mjs"() {
     init_esm();
     chelonia_utils_default = esm_default("sbp/selectors/register", {
       // This selector is a wrapper for the `chelonia/kv/set` selector that uses
@@ -8196,10 +8196,10 @@ var init_encrypt = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/Secret.mjs
+// node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/Secret.mjs
 var wm, Secret;
 var init_Secret = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/Secret.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/Secret.mjs"() {
     init_esm8();
     wm = /* @__PURE__ */ new WeakMap();
     Secret = class {
@@ -8222,10 +8222,10 @@ var init_Secret = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/constants.mjs
+// node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/constants.mjs
 var INVITE_STATUS;
 var init_constants = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/constants.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/constants.mjs"() {
     INVITE_STATUS = {
       REVOKED: "revoked",
       VALID: "valid",
@@ -8234,7 +8234,7 @@ var init_constants = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/utils.mjs
+// node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/utils.mjs
 import { Buffer as Buffer3 } from "node:buffer";
 function eventsAfter2(contractID, { sinceHeight, limit, sinceHash, stream = true }) {
   if (!contractID) {
@@ -8418,7 +8418,7 @@ function buildShelterAuthorizationHeader(contractID, state) {
 }
 var MAX_EVENTS_AFTER, findKeyIdByName, findForeignKeysByContractID, findRevokedKeyIdsByName, findSuitableSecretKeyId, findSuitablePublicKeyIds, validateActionPermissions, validateKeyPermissions, validateKeyAddPermissions, validateKeyDelPermissions, validateKeyUpdatePermissions, keyAdditionProcessor, subscribeToForeignKeyContracts, recreateEvent, getContractIDfromKeyId, clearObject, reactiveClearObject, checkCanBeGarbageCollected, collectEventStream, logEvtError, handleFetchResult2;
 var init_utils2 = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/utils.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/utils.mjs"() {
     init_esm7();
     init_esm();
     init_esm5();
@@ -8850,11 +8850,11 @@ var init_utils2 = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/files.mjs
+// node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/files.mjs
 import { Buffer as Buffer4 } from "node:buffer";
 var supportsRequestStreams, streamToUint8Array, ArrayBufferToUint8ArrayStream, computeChunkDescriptors, fileStream, aes256gcmHandlers, noneHandlers, cipherHandlers, files_default;
 var init_files = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/files.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/files.mjs"() {
     init_encodeMultipartMessage();
     init_decrypt();
     init_encodings();
@@ -9196,11 +9196,11 @@ var init_files = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/db.mjs
+// node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/db.mjs
 import { Buffer as Buffer5 } from "node:buffer";
 var headPrefix2, getContractIdFromLogHead, getLogHead, checkKey3, parsePrefixableKey2, prefixHandlers2, dbPrimitiveSelectors, db_default;
 var init_db = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/db.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/db.mjs"() {
     init_esm3();
     init_esm2();
     init_esm();
@@ -9394,10 +9394,10 @@ var init_db = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/internals.mjs
+// node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/internals.mjs
 var missingDecryptionKeyIdsMap, getMsgMeta, keysToMap, keyRotationHelper, internals_default, eventsToReingest, reprocessDebounced, handleEvent, notImplemented;
 var init_internals = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/internals.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/internals.mjs"() {
     init_esm();
     init_functions();
     init_esm5();
@@ -11059,10 +11059,10 @@ var init_internals = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/time-sync.mjs
+// node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/time-sync.mjs
 var wallBase, monotonicBase, resyncTimeout, watchdog, syncServerTime, time_sync_default;
 var init_time_sync = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/time-sync.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/time-sync.mjs"() {
     init_esm();
     wallBase = Date.now();
     monotonicBase = performance.now();
@@ -11150,7 +11150,7 @@ var init_time_sync = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/chelonia.mjs
+// node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/chelonia.mjs
 import { Buffer as Buffer6 } from "node:buffer";
 function contractNameFromAction(action) {
   const regexResult = ACTION_REGEX.exec(action);
@@ -11295,7 +11295,7 @@ function gettersProxy(state, getters) {
 }
 var ACTION_REGEX, chelonia_default;
 var init_chelonia = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/chelonia.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/chelonia.mjs"() {
     init_esm2();
     init_esm4();
     init_esm();
@@ -12758,10 +12758,10 @@ var init_chelonia = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/persistent-actions.mjs
+// node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/persistent-actions.mjs
 var timer, coerceToError, defaultOptions2, tag, PersistentAction, persistent_actions_default;
 var init_persistent_actions = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/persistent-actions.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/persistent-actions.mjs"() {
     init_esm4();
     init_esm();
     init_events2();
@@ -12953,38 +12953,38 @@ var init_persistent_actions = __esm({
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/presets.mjs
+// node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/presets.mjs
 var init_presets = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/presets.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/presets.mjs"() {
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/types.mjs
+// node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/types.mjs
 var init_types = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/types.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/types.mjs"() {
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/zkppConstants.mjs
+// node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/zkppConstants.mjs
 var init_zkppConstants = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/zkppConstants.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/zkppConstants.mjs"() {
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/zkpp.mjs
+// node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/zkpp.mjs
 var import_scrypt_async2, import_tweetnacl2;
 var init_zkpp = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/zkpp.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/zkpp.mjs"() {
     import_scrypt_async2 = __toESM(require_scrypt_async(), 1);
     import_tweetnacl2 = __toESM(require_nacl_fast(), 1);
     init_zkppConstants();
   }
 });
 
-// node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/index.mjs
+// node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/index.mjs
 var esm_default5;
 var init_esm9 = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.0/node_modules/@chelonia/lib/dist/esm/index.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.2/node_modules/@chelonia/lib/dist/esm/index.mjs"() {
     init_chelonia();
     init_db();
     init_files();
