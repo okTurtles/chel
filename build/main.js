@@ -15594,17 +15594,17 @@ var init_routes = __esm({
 
 // src/serve/server.ts
 var server_exports = {};
-import { basename as basename3, dirname as dirname3 } from "node:path";
+import { basename as basename3, join as join3, dirname as dirname3 } from "node:path";
 import { fileURLToPath } from "node:url";
+import { Worker } from "node:worker_threads";
 import process10 from "node:process";
-var __filename, __dirname, ownerSizeTotalWorker, creditsWorker, CONTRACTS_VERSION, GI_VERSION, hapi, appendToOrphanedNamesIndex;
+var __filename, __dirname, createWorker, ownerSizeTotalWorker, creditsWorker, CONTRACTS_VERSION, GI_VERSION, hapi, appendToOrphanedNamesIndex;
 var init_server = __esm({
-  async "src/serve/server.ts"() {
+  "src/serve/server.ts"() {
     "use strict";
     init_deps();
     init_auth();
     init_esm9();
-    init_chelonia();
     init_persistent_actions();
     init_constants2();
     init_database();
@@ -15615,22 +15615,70 @@ var init_server = __esm({
     init_push();
     __filename = fileURLToPath(import.meta.url);
     __dirname = dirname3(__filename);
+    createWorker = (path5) => {
+      let worker;
+      let ready;
+      const launchWorker = () => {
+        worker = new Worker(path5);
+        return new Promise((resolve4, reject) => {
+          const msgHandler = (msg) => {
+            if (msg === "ready") {
+              worker.off("error", reject);
+              worker.on("error", (e2) => {
+                console.error(e2, `Running worker ${basename3(path5)} terminated. Attempting relaunch...`);
+                worker.off("message", msgHandler);
+                ready = launchWorker().catch((e3) => {
+                  console.error(e3, `Error on worker ${basename3(path5)} relaunch`);
+                  process10.exit(1);
+                });
+              });
+              resolve4();
+            }
+          };
+          worker.on("message", msgHandler);
+          worker.once("error", reject);
+        });
+      };
+      ready = launchWorker();
+      const rpcSbp = (...args) => {
+        return ready.then(() => new Promise((resolve4, reject) => {
+          const mc = new MessageChannel();
+          const cleanup = /* @__PURE__ */ ((worker2) => () => {
+            worker2.off("error", reject);
+            mc.port2.onmessage = null;
+            mc.port2.onmessageerror = null;
+          })(worker);
+          mc.port2.onmessage = (event) => {
+            cleanup();
+            const [success, result] = event.data;
+            if (success) return resolve4(result);
+            reject(result);
+          };
+          mc.port2.onmessageerror = () => {
+            cleanup();
+            reject(Error("Message error"));
+          };
+          worker.postMessage([mc.port1, ...args], [mc.port1]);
+          worker.once("error", reject);
+        }));
+      };
+      return {
+        ready,
+        rpcSbp,
+        terminate: () => worker.terminate()
+      };
+    };
     if (CREDITS_WORKER_TASK_TIME_INTERVAL && OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL > CREDITS_WORKER_TASK_TIME_INTERVAL) {
       process10.stderr.write("The size calculation worker must run more frequently than the credits worker for accurate billing");
       process10.exit(1);
     }
-    ownerSizeTotalWorker = void 0;
-    creditsWorker = void 0;
-    if (!("crypto" in globalThis) && typeof __require === "function") {
-      const crypto2 = await import("node:crypto");
-      const { webcrypto } = crypto2;
-      if (webcrypto) {
-        Object.defineProperty(globalThis, "crypto", {
-          enumerable: true,
-          configurable: true,
-          get: () => webcrypto
-        });
-      }
+    try {
+      ownerSizeTotalWorker = createWorker(join3(__dirname, "ownerSizeTotalWorker.ts"));
+      creditsWorker = createWorker(join3(__dirname, "creditsWorker.ts"));
+    } catch (error) {
+      console.warn("[server] Workers disabled - worker files not found in bundled environment:", error.message);
+      ownerSizeTotalWorker = void 0;
+      creditsWorker = void 0;
     }
     ({ CONTRACTS_VERSION, GI_VERSION } = process10.env);
     hapi = new Server({
@@ -15995,15 +16043,7 @@ var init_server = __esm({
       await initDB();
       if (ownerSizeTotalWorker) await ownerSizeTotalWorker.ready;
       if (creditsWorker) await creditsWorker.ready;
-      try {
-        await default4("chelonia/configure", SERVER);
-      } catch (error) {
-        if (error.message && error.message.includes("selector not registered")) {
-          console.log("chelonia/configure selector not registered, skipping configuration");
-        } else {
-          throw error;
-        }
-      }
+      await default4("chelonia/configure", SERVER);
       default4("chelonia.persistentActions/configure", {
         databaseKey: "_private_persistent_actions"
       });
@@ -16118,7 +16158,7 @@ var init_serve = __esm({
         console.info(default8.bold("backend startup sequence complete."));
         resolve4();
       });
-      init_server().then(() => server_exports).catch(reject);
+      Promise.resolve().then(() => (init_server(), server_exports)).catch(reject);
     });
     shutdownFn = function(message) {
       default4("okTurtles.data/apply", PUBSUB_INSTANCE, function(pubsub) {
@@ -16162,7 +16202,6 @@ __export(commands_exports, {
   keygen: () => keygen2,
   manifest: () => manifest,
   migrate: () => migrate,
-  parseServeArgs: () => parseServeArgs,
   serve: () => serve,
   upload: () => upload,
   verifySignature: () => verifySignature3,
@@ -16677,8 +16716,8 @@ function parseServeArgs(args) {
   const parsed = flags.parse(args, {
     string: ["dp", "port", "db-type", "db-location"],
     default: {
-      dp: "7000",
-      port: "7000",
+      dp: "3000",
+      port: "8000",
       "db-type": "mem"
     }
   });

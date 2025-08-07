@@ -101,10 +101,19 @@ if (CREDITS_WORKER_TASK_TIME_INTERVAL && OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTER
   process.exit(1)
 }
 
-// Temporarily disable workers in bundled environment
-// TODO: Implement proper worker bundling support
-const ownerSizeTotalWorker = undefined as WorkerType | undefined
-const creditsWorker = undefined as WorkerType | undefined
+// Initialize workers for size calculation and credits processing
+// Try to create workers, but handle gracefully if worker files don't exist in bundled environment
+let ownerSizeTotalWorker: WorkerType | undefined
+let creditsWorker: WorkerType | undefined
+
+try {
+  ownerSizeTotalWorker = createWorker(join(__dirname, 'ownerSizeTotalWorker.ts'))
+  creditsWorker = createWorker(join(__dirname, 'creditsWorker.ts'))
+} catch (error) {
+  console.warn('[server] Workers disabled - worker files not found in bundled environment:', (error as Error).message)
+  ownerSizeTotalWorker = undefined
+  creditsWorker = undefined
+}
 
 const { CONTRACTS_VERSION, GI_VERSION } = process.env
 

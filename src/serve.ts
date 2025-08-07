@@ -101,8 +101,8 @@ export function parseServeArgs (args: string[]): { directory: string; options: S
   const parsed = flags.parse(args, {
     string: ['dp', 'port', 'db-type', 'db-location'],
     default: {
-      dp: '7000',
-      port: '7000',
+      dp: '3000',
+      port: '8000',
       'db-type': 'mem'
     }
   })
