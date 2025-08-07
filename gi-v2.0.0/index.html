@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Group Income</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <meta name="theme-color" content="#F5F5F5">
+    <link rel="stylesheet" href="/assets/css/main.css">
+    <link rel="manifest" href="/assets/pwa-manifest.webmanifest" />
+    <link rel="icon" href="/assets/images/group-income-icon-transparent.png" sizes="32x32">
+    <link rel="apple-touch-icon" href="/assets/images/pwa-icons/group-income-icon-maskable_192x192.png" />
+  </head>
+  <body>
+    <div id="main-loading-screen" class="main-loading-screen">
+      <img src="/assets/images/group-income-icon-transparent.png" alt="logo" />
+    </div>
+
+    <div class="modal is-active" id="fallback" style="display: none;">
+      <div class="modal-content">
+        <h1>Outdated browser</h1>
+        <p>You are using an <strong>outdated</strong> or unsupported browser. Please upgrade your browser to improve your experience.</p>
+      </div>
+    </div>
+    <div
+      id="app"
+      data-test="app"
+      :class="appClasses"
+      :data-sync="ephemeral.syncs"
+      :data-logged-in="ephemeral.finishedLogin"
+      :data-ready="ephemeral.ready"
+    >
+      <app-styles></app-styles>
+      <banner-general ref="bannerGeneral"></banner-general>
+      <navigation v-if="showNav" class="l-navigation"></navigation>
+      <router-view v-if="ephemeral.ready" class="l-page"></router-view>
+      <modal class="l-modal"></modal>
+      <background-sounds></background-sounds>
+      <!-- we no longer use cypress-bypass-ui -->
+      <!-- <cypress-bypass-ui v-if="isInCypress"></cypress-bypass-ui> -->
+    </div>
+    <script type="module" src="/assets/js/main.js"></script>
+    <!-- Makes the fallback element visible if JS is enabled but modules aren't supported. -->
+    <script type="text/javascript" nomodule>document.getElementById('fallback').style.display = ''</script>
+    <noscript>
+      <section class="hero is-fullheight">
+        <div class="hero-body">
+          <div class="container has-text-centered">
+            <h1>JavaScript disabled!</h1>
+            <p>This app requires JavaScript to function.</p>
+          </div>
+        </div>
+      </section>
+    </noscript>
+  </body>
+</html>

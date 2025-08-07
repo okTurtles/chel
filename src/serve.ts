@@ -33,7 +33,8 @@ async function startApplicationServer (port: number, directory: string): Promise
   await startServer.default
 }
 
-export async function serve (directory: string, options: ServeOptions = {}) {
+export async function serve (args: string[]) {
+  const { directory, options } = parseServeArgs(args)
   const {
     dp: dashboardPort = 3000,
     port: applicationPort = 8000,
@@ -106,10 +107,7 @@ export function parseServeArgs (args: string[]): { directory: string; options: S
     }
   })
 
-  const directory = parsed._[0] as string
-  if (!directory) {
-    throw new Error('Directory argument is required')
-  }
+  const directory = parsed._[0] as string || '.'
 
   const options: ServeOptions = {
     dp: parseInt(parsed.dp),

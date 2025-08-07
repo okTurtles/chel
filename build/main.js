@@ -15604,6 +15604,7 @@ var init_server = __esm({
     init_deps();
     init_auth();
     init_esm9();
+    init_chelonia();
     init_persistent_actions();
     init_constants2();
     init_database();
@@ -15994,7 +15995,15 @@ var init_server = __esm({
       await initDB();
       if (ownerSizeTotalWorker) await ownerSizeTotalWorker.ready;
       if (creditsWorker) await creditsWorker.ready;
-      await default4("chelonia/configure", SERVER);
+      try {
+        await default4("chelonia/configure", SERVER);
+      } catch (error) {
+        if (error.message && error.message.includes("selector not registered")) {
+          console.log("chelonia/configure selector not registered, skipping configuration");
+        } else {
+          throw error;
+        }
+      }
       default4("chelonia.persistentActions/configure", {
         databaseKey: "_private_persistent_actions"
       });
@@ -16610,7 +16619,8 @@ async function startApplicationServer(port, directory) {
   const startServer = await Promise.resolve().then(() => (init_serve(), serve_exports));
   await startServer.default;
 }
-async function serve(directory, options2 = {}) {
+async function serve(args) {
+  const { directory, options: options2 } = parseServeArgs(args);
   const {
     dp: dashboardPort = 3e3,
     port: applicationPort = 8e3,
@@ -16672,10 +16682,7 @@ function parseServeArgs(args) {
       "db-type": "mem"
     }
   });
-  const directory = parsed._[0];
-  if (!directory) {
-    throw new Error("Directory argument is required");
-  }
+  const directory = parsed._[0] || ".";
   const options2 = {
     dp: parseInt(parsed.dp),
     port: parseInt(parsed.port),
