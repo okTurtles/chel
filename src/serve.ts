@@ -17,7 +17,11 @@ async function startDashboardServer (port: number) {
 }
 
 // Application server function
-async function startApplicationServer (port: number, directory: string): Promise<void> {
+async function startApplicationServer (port: number, directory: string, options: ServeOptions): Promise<void> {
+  // Set environment variables that the server expects
+  process.env.API_PORT = port.toString()
+  process.env.CHELONIA_APP_DIR = directory
+
   // Import and start the application server
   const startServer = await import('./serve/index.ts')
   await startServer.default
@@ -55,7 +59,7 @@ export async function serve (args: string[]) {
     // Start application server on port 8000 second
     console.log(colors.cyan('🚀 Starting application server...'))
     try {
-      await startApplicationServer(applicationPort, directory)
+      await startApplicationServer(applicationPort, directory, options)
       console.log(colors.green(`✅ Application server started on port ${applicationPort}`))
     } catch (error) {
       console.error(colors.red('❌ Failed to start application server:'), error)

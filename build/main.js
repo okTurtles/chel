@@ -16748,7 +16748,9 @@ async function startDashboardServer(port) {
   const dashboardServer = await Promise.resolve().then(() => (init_dashboard_server(), dashboard_server_exports));
   await dashboardServer.startDashboard(port);
 }
-async function startApplicationServer(port, directory) {
+async function startApplicationServer(port, directory, options2) {
+  process12.env.API_PORT = port.toString();
+  process12.env.CHELONIA_APP_DIR = directory;
   const startServer = await Promise.resolve().then(() => (init_serve(), serve_exports));
   await startServer.default;
 }
@@ -16779,7 +16781,7 @@ async function serve(args) {
     }
     console.log(colors.cyan("\u{1F680} Starting application server..."));
     try {
-      await startApplicationServer(applicationPort, directory);
+      await startApplicationServer(applicationPort, directory, options2);
       console.log(colors.green(`\u2705 Application server started on port ${applicationPort}`));
     } catch (error) {
       console.error(colors.red("\u274C Failed to start application server:"), error);
