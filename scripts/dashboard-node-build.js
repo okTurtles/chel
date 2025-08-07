@@ -75,6 +75,12 @@ const buildOptions = {
   // External dependencies (build-time only, not needed in browser)
   external: [
     'pug', // Build-time template compiler
+    'vue',
+    'vuex',
+    'vue-router',
+    'vue-clickaway',
+    'three',
+    'dompurify',
     'fs', 'path', 'assert', 'os' // Node.js built-ins that shouldn't be in browser bundle
   ],
   alias: {
