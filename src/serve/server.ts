@@ -6,10 +6,6 @@ import { Worker } from 'node:worker_threads'
 import process from 'node:process'
 import authPlugin from './auth.ts'
 import '@chelonia/lib'
-
-// ES module equivalent of __dirname
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
 import '@chelonia/lib/persistent-actions'
 import { CREDITS_WORKER_TASK_TIME_INTERVAL, OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL } from './constants.ts'
 import { KEYOP_SEGMENT_LENGTH, appendToIndexFactory, initDB, lookupUltimateOwner, removeFromIndexFactory, updateSize } from './database.ts'
@@ -26,6 +22,10 @@ import {
   createServer
 } from './pubsub.ts'
 import { addChannelToSubscription, deleteChannelFromSubscription, postEvent, pushServerActionhandlers, subscriptionInfoWrapper } from './push.ts'
+
+// ES module equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 type WorkerType = {
   ready: Promise<void>,
