@@ -7,7 +7,7 @@ import { ensureDir, exists } from 'jsr:@std/fs@1.0.19'
 import { esbuild } from '~/deps.ts'
 
 // Vue template compiler for proper SFC parsing
-const vueTemplateCompiler = await import('npm:vue-template-compiler@2.7.16')
+import * as vueTemplateCompiler from 'npm:vue-template-compiler@2.7.16'
 
 // Configuration
 const dashboardRoot = join(Deno.cwd(), 'src/serve/dashboard')

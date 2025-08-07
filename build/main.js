@@ -68,20 +68,18 @@ import { default as default7 } from "npm:@hapi/inert@6.0.3";
 import { default as default8 } from "npm:chalk@4.1.0";
 import { default as default9 } from "npm:pino@8.19.0";
 import { default as default10 } from "npm:lru-cache@7.14.0";
-import { default as default11 } from "npm:better-sqlite3@11.9.1";
-import { default as default12, WebSocketServer } from "npm:ws@8.5.0";
-import { default as default13 } from "npm:should@13.2.3";
+import { default as default11, WebSocketServer } from "npm:ws@8.5.0";
 import { v4 } from "npm:uuid@9.0.0";
 import { cloneDeep, omit } from "npm:turtledash@1.0.3";
-import { default as default14 } from "npm:bottleneck@2.19.5";
-import { default as default15 } from "npm:scrypt-async@2.0.1";
+import { default as default12 } from "npm:bottleneck@2.19.5";
+import { default as default13 } from "npm:scrypt-async@2.0.1";
 import { aes128gcm } from "npm:@apeleghq/rfc8188@1.0.7/encodings";
-import { default as default16 } from "npm:@apeleghq/rfc8188@1.0.7/encrypt";
+import { default as default14 } from "npm:@apeleghq/rfc8188@1.0.7/encrypt";
 import { blake32Hash, createCID, maybeParseCID, multicodes, strToB64, getSubscriptionId, parseCID } from "npm:@chelonia/lib@1.2.2/functions";
 import { checkKey, parsePrefixableKey, prefixHandlers } from "npm:@chelonia/lib@1.2.2/db";
 import { SPMessage } from "npm:@chelonia/lib@1.2.2/SPMessage";
 import { SERVER } from "npm:@chelonia/lib@1.2.2/presets";
-import { ChelErrorGenerator } from "npm:@chelonia/lib@1.2.2";
+import { ChelErrorGenerator } from "npm:@chelonia/lib@1.2.2/errors";
 import { PUSH_SERVER_ACTION_TYPE, REQUEST_TYPE, RESPONSE_TYPE, NOTIFICATION_TYPE, createMessage, createClient, createKvMessage, messageParser } from "npm:@chelonia/lib@1.2.2/pubsub";
 import { verifyShelterAuthorizationHeader } from "npm:@chelonia/lib@1.2.2/utils";
 import { base64ToBase64url, base64urlToBase64, boxKeyPair, computeCAndHc, decryptSaltUpdate, encryptContractSalt, encryptSaltUpdate, hash, hashRawStringArray, hashStringArray, parseRegisterSalt, randomNonce } from "npm:@chelonia/lib@1.2.2/zkpp";
@@ -89,9 +87,9 @@ import { AUTHSALT, CONTRACTSALT, CS, SALT_LENGTH_IN_OCTETS, SU } from "npm:@chel
 import { EDWARDS25519SHA512BATCH, CURVE25519XSALSA20POLY1305, XSALSA20POLY1305 } from "npm:@chelonia/crypto@1.0.1";
 import { keygen, serializeKey, deserializeKey, keygenOfSameType, keyId, generateSalt, deriveKeyFromPassword } from "npm:@chelonia/crypto@1.0.1";
 import { sign, verifySignature, encrypt, decrypt } from "npm:@chelonia/crypto@1.0.1";
-import { default as default17 } from "npm:@sbp/okturtles.data@0.1.5";
-import { default as default18 } from "npm:@sbp/okturtles.eventqueue@1.2.0";
-import { default as default19 } from "npm:@sbp/okturtles.events@1.0.0";
+import { default as default15 } from "npm:@sbp/okturtles.data@0.1.5";
+import { default as default16 } from "npm:@sbp/okturtles.eventqueue@1.2.0";
+import { default as default17 } from "npm:@sbp/okturtles.events@1.0.0";
 import { validationMixin } from "npm:vuelidate@0.7.6";
 var init_deps = __esm({
   "src/deps.ts"() {
@@ -14268,7 +14266,7 @@ var init_push = __esm({
       const readableStream = new Response(data).body;
       if (!readableStream) throw new Error("Failed to create readable stream");
       const [asPublic, IKM] = await subscription.encryptionKeys;
-      return default16(aes128gcm, readableStream, 32768, asPublic, IKM).then(async (bodyStream) => {
+      return default14(aes128gcm, readableStream, 32768, asPublic, IKM).then(async (bodyStream) => {
         const chunks = [];
         const reader = bodyStream.getReader();
         for (; ; ) {
@@ -14438,7 +14436,7 @@ function createServer(httpServer, options2 = {}) {
           log(`Disconnecting irresponsive client ${client.id}`);
           return client.terminate();
         }
-        if (client.readyState === default12.OPEN) {
+        if (client.readyState === default11.OPEN) {
           client.send(createMessage(PING, Date.now()), () => {
             client.activeSinceLastPing = false;
             client.pinged = true;
@@ -14683,7 +14681,7 @@ var init_pubsub2 = __esm({
             });
             continue;
           }
-          if (client.readyState === default12.OPEN && client !== except) {
+          if (client.readyState === default11.OPEN && client !== except) {
             client.send(msg);
           }
         }
@@ -14744,22 +14742,22 @@ var init_routes = __esm({
     SIGNUP_LIMIT_HOUR = parseInt(process9.env.SIGNUP_LIMIT_HOUR || "0") || 10;
     SIGNUP_LIMIT_DAY = parseInt(process9.env.SIGNUP_LIMIT_DAY || "0") || 50;
     SIGNUP_LIMIT_DISABLED = process9.env.NODE_ENV !== "production" || process9.env.SIGNUP_LIMIT_DISABLED === "true";
-    limiterPerMinute = new default14.Group({
-      strategy: default14.strategy.LEAK,
+    limiterPerMinute = new default12.Group({
+      strategy: default12.strategy.LEAK,
       highWater: 0,
       reservoir: SIGNUP_LIMIT_MIN,
       reservoirRefreshInterval: 60 * SECOND,
       reservoirRefreshAmount: SIGNUP_LIMIT_MIN
     });
-    limiterPerHour = new default14.Group({
-      strategy: default14.strategy.LEAK,
+    limiterPerHour = new default12.Group({
+      strategy: default12.strategy.LEAK,
       highWater: 0,
       reservoir: SIGNUP_LIMIT_HOUR,
       reservoirRefreshInterval: 60 * 60 * SECOND,
       reservoirRefreshAmount: SIGNUP_LIMIT_HOUR
     });
-    limiterPerDay = new default14.Group({
-      strategy: default14.strategy.LEAK,
+    limiterPerDay = new default12.Group({
+      strategy: default12.strategy.LEAK,
       highWater: 0,
       reservoir: SIGNUP_LIMIT_DAY,
       reservoirRefreshInterval: 24 * 60 * 60 * SECOND,
