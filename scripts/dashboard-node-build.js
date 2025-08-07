@@ -72,15 +72,9 @@ const buildOptions = {
     'process.env.NODE_ENV': JSON.stringify(NODE_ENV),
     'process.env': '{}' // Provide empty process.env for browser
   },
-  // External dependencies (build-time only, not needed in browser)
+  // External dependencies (only build-time tools and Node.js built-ins)
   external: [
-    'pug', // Build-time template compiler
-    'vue',
-    'vuex',
-    'vue-router',
-    'vue-clickaway',
-    'three',
-    'dompurify',
+    'pug', // Build-time template compiler only
     'fs', 'path', 'assert', 'os' // Node.js built-ins that shouldn't be in browser bundle
   ],
   alias: {

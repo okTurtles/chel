@@ -41,6 +41,7 @@
     "npm:better-sqlite3@11.9.1": "11.9.1",
     "npm:bottleneck@2.19.5": "2.19.5",
     "npm:chalk@4.1.0": "4.1.0",
+    "npm:dompurify@2.2.7": "2.2.7",
     "npm:esbuild-sass-plugin@^3.3.1": "3.3.1_esbuild@0.25.6_sass-embedded@1.90.0",
     "npm:esbuild@0.25.6": "0.25.6",
     "npm:esbuild@~0.25.8": "0.25.8",
@@ -53,12 +54,17 @@
     "npm:scrypt-async@2.0.1": "2.0.1",
     "npm:should@13.2.3": "13.2.3",
     "npm:tar@6.1.11": "6.1.11",
+    "npm:three@0.151.3": "0.151.3",
     "npm:turtledash@1.0.3": "1.0.3",
     "npm:tweetnacl@1.0.3": "1.0.3",
     "npm:typescript-eslint@8.37.0": "8.37.0_eslint@9.32.0_typescript@5.8.3_@typescript-eslint+parser@8.37.0__eslint@9.32.0__typescript@5.8.3",
     "npm:uuid@9.0.0": "9.0.0",
+    "npm:vue-clickaway@2.2.2": "2.2.2_vue@2.7.16",
+    "npm:vue-router@3.6.5": "3.6.5",
     "npm:vue-template-compiler@2.7.16": "2.7.16",
+    "npm:vue@2.7.16": "2.7.16",
     "npm:vuelidate@0.7.6": "0.7.6",
+    "npm:vuex@3.6.0": "3.6.0_vue@2.7.16",
     "npm:ws@8.5.0": "8.5.0",
     "npm:zod@4.0.5": "4.0.5"
   },
@@ -1071,6 +1077,17 @@
         "eslint-visitor-keys@4.2.1"
       ]
     },
+    "@vue/compiler-sfc@2.7.16": {
+      "integrity": "sha512-KWhJ9k5nXuNtygPU7+t1rX6baZeqOYLEforUPjgNDBnLicfHCoi48H87Q8XyLZOrNNsmhuwKqtpDQWjEFe6Ekg==",
+      "dependencies": [
+        "@babel/parser",
+        "postcss",
+        "source-map"
+      ],
+      "optionalDependencies": [
+        "prettier"
+      ]
+    },
     "abort-controller@3.0.0": {
       "integrity": "sha512-h8lQ8tacZYnR3vNQTgibj+tODHI5/+l06Au2Pcriv/Gmet0eaj4TwWH41sO9wnHDiQsEj19q0drzdWdeAHtweg==",
       "dependencies": [
@@ -1289,6 +1306,9 @@
         "which"
       ]
     },
+    "csstype@3.1.3": {
+      "integrity": "sha512-M1uQkMl8rQK/szD0LNhtqxIPLpimGm8sOBwU7lLnCpSbTyY3yeU1Vc7l4KT5zT4s/yOxHH5O7tIuuLOCnLADRw=="
+    },
     "de-indent@1.0.2": {
       "integrity": "sha512-e/1zu3xH5MQryN2zdVaF0OrdNLUbvWxzMbi+iNA6Bky7l1RoP8a2fIbRocyHclXt/arDrrR6lL3TqFD9pMQTsg=="
     },
@@ -1322,6 +1342,9 @@
     },
     "doctypes@1.1.0": {
       "integrity": "sha512-LLBi6pEqS6Do3EKQ3J0NqHWV5hhb78Pi8vvESYwyOy2c31ZEZVdtitdzsQsKb7878PEERhzUk0ftqGhG6Mz+pQ=="
+    },
+    "dompurify@2.2.7": {
+      "integrity": "sha512-jdtDffdGNY+C76jvodNTu9jt5yYj59vuTUyx+wXdzcSwAGTYZDAQkQ7Iwx9zcGrA4ixC1syU4H3RZROqRxokxg=="
     },
     "dunder-proto@1.0.1": {
       "integrity": "sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==",
@@ -1814,6 +1837,9 @@
     "js-stringify@1.0.2": {
       "integrity": "sha512-rtS5ATOo2Q5k1G+DADISilDA6lv79zIiwFd6CcjuIxGKLFm5C+RLImRscVap9k55i+MOZwgliw+NejvkLuGD5g=="
     },
+    "js-tokens@4.0.0": {
+      "integrity": "sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ=="
+    },
     "js-yaml@4.1.0": {
       "integrity": "sha512-wpxZs9NoxZaJESJGIZTyDEaYpl0FKSA+FB9aJiyemKhMwkxQg63h4T1KJgUGHpTqPDNRcmmYLugrRjJlBtWvRA==",
       "dependencies": [
@@ -1858,6 +1884,13 @@
     },
     "lodash.merge@4.6.2": {
       "integrity": "sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ=="
+    },
+    "loose-envify@1.4.0": {
+      "integrity": "sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==",
+      "dependencies": [
+        "js-tokens"
+      ],
+      "bin": true
     },
     "lru-cache@6.0.0": {
       "integrity": "sha512-Jo6dJ04CmSjuznwJSS3pUeWmd/H0ffTlkXXgwZi+eq1UCmqQwCh+eLsYOYCwY991i2Fah4h1BEMCx4qThGbsiA==",
@@ -1937,6 +1970,10 @@
     "multiformats@9.9.0": {
       "integrity": "sha512-HoMUjhH9T8DDBNT+6xzkrd9ga/XiBI4xLr58LJACwK6G3HTOPeMz4nB4KJs33L2BelrIJa7P0VuNaVF3hMYfjg=="
     },
+    "nanoid@3.3.11": {
+      "integrity": "sha512-N8SpfPUnUp1bK+PMYW8qSWdl9U+wwNWI4QKxOYDy9JAro3WMX7p2OeVRF9v+347pnakNevPmiHhNmZ2HbFA76w==",
+      "bin": true
+    },
     "napi-build-utils@2.0.0": {
       "integrity": "sha512-GEbrYkbfF7MoNaoh2iGG84Mnf/WZfB0GdGEsM8wz7Expx/LlWf5U8t9nvJKXSp3qr5IsEbK04cBGhol/KwOsWA=="
     },
@@ -2005,6 +2042,9 @@
     "path-parse@1.0.7": {
       "integrity": "sha512-LDJzPVEEEPR+y48z93A0Ed0yXb8pAByGWo/k5YYdYgpY2/2EsOsksJrq7lOHxryrVOn1ejG6oAp8ahvOIQD8sw=="
     },
+    "picocolors@1.1.1": {
+      "integrity": "sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA=="
+    },
     "picomatch@2.3.1": {
       "integrity": "sha512-JU3teHTNjmE2VCGFzuY8EXzCDVwEqB2a8fsIvwaStHhAWJEeVd1o1QD80CU6+ZdEXXSLbSsuLwJjkCBWqRQUVA=="
     },
@@ -2035,6 +2075,14 @@
       ],
       "bin": true
     },
+    "postcss@8.5.6": {
+      "integrity": "sha512-3Ybi1tAuwAP9s0r1UQ2J4n5Y0G05bJkpUIO0/bI9MhwmD70S5aTWbXGBwxHrelT+XM1k6dM0pk+SwNkpTRN7Pg==",
+      "dependencies": [
+        "nanoid",
+        "picocolors",
+        "source-map-js"
+      ]
+    },
     "prebuild-install@7.1.3": {
       "integrity": "sha512-8Mf2cbV7x1cXPUILADGI3wuhfqWvtiLA1iclTDbFRZkgRQS0NqsPZphna9V+HyTEadheuPmjaJMsbzKQFOzLug==",
       "dependencies": [
@@ -2055,6 +2103,10 @@
     },
     "prelude-ls@1.2.1": {
       "integrity": "sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g=="
+    },
+    "prettier@2.8.8": {
+      "integrity": "sha512-tdN8qQGvNjw4CHbY+XXk0JgCXn9QiF21a55rBe5LJAU+kDyC4WQn4+awm2Xfk2lQMk5fKup9XgzTZtGkjBdP9Q==",
+      "bin": true
     },
     "process-warning@3.0.0": {
       "integrity": "sha512-mqn0kFRl0EoqhnL0GQ0veqFHyIN1yig9RHh/InzORTUiZHFRAur+aMtRkELNwGs9aNwKS6tg/An4NYBPGwvtzQ=="
@@ -2462,6 +2514,9 @@
     "source-map-js@1.2.1": {
       "integrity": "sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA=="
     },
+    "source-map@0.6.1": {
+      "integrity": "sha512-UjgapumWlbMhkBgzT7Ykc5YXUT46F0iKu8SGXq0bcwP5dz/h0Plj6enJqjz1Zbq2l5WaqYnrVbwWOWMyF3F47g=="
+    },
     "split2@4.2.0": {
       "integrity": "sha512-UcjcJOWknrNkF6PLX83qcHM6KHgVKNkV62Y8a5uYDVv9ydGQVwAHMKqHdJje1VTWpljG0WYpCDhrCdAOYH4TWg=="
     },
@@ -2536,6 +2591,9 @@
       "dependencies": [
         "real-require"
       ]
+    },
+    "three@0.151.3": {
+      "integrity": "sha512-+vbuqxFy8kzLeO5MgpBHUvP/EAiecaDwDuOPPDe6SbrZr96kccF0ktLngXc7xA7bzyd3N0t2f6mw3Z9y6JCojQ=="
     },
     "to-regex-range@5.0.1": {
       "integrity": "sha512-65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ==",
@@ -2613,6 +2671,16 @@
     "void-elements@3.1.0": {
       "integrity": "sha512-Dhxzh5HZuiHQhbvTW9AMetFfBHDMYpo23Uo9btPXgdYP+3T5S+p+jgNy7spra+veYhBP2dCSgxR/i2Y02h5/6w=="
     },
+    "vue-clickaway@2.2.2_vue@2.7.16": {
+      "integrity": "sha512-25SpjXKetL06GLYoLoC8pqAV6Cur9cQ//2g35GRFBV4FgoljbZZjTINR8g2NuVXXDMLSUXaKx5dutgO4PaDE7A==",
+      "dependencies": [
+        "loose-envify",
+        "vue"
+      ]
+    },
+    "vue-router@3.6.5": {
+      "integrity": "sha512-VYXZQLtjuvKxxcshuRAwjHnciqZVoXAjTjcqBTz4rKc8qih9g9pI3hbDjmqXaHdgL3v8pV6P8Z335XvHzESxLQ=="
+    },
     "vue-template-compiler@2.7.16": {
       "integrity": "sha512-AYbUWAJHLGGQM7+cNTELw+KsOG9nl2CnSv467WobS5Cv9uk3wFcnr1Etsz2sEIHEZvw1U+o9mRlEO6QbZvUPGQ==",
       "dependencies": [
@@ -2620,8 +2688,22 @@
         "he"
       ]
     },
+    "vue@2.7.16": {
+      "integrity": "sha512-4gCtFXaAA3zYZdTp5s4Hl2sozuySsgz4jy1EnpBHNfpMa9dK1ZCG7viqBPCwXtmgc8nHqUsAu3G4gtmXkkY3Sw==",
+      "dependencies": [
+        "@vue/compiler-sfc",
+        "csstype"
+      ],
+      "deprecated": true
+    },
     "vuelidate@0.7.6": {
       "integrity": "sha512-suzIuet1jGcyZ4oUSW8J27R2tNrJ9cIfklAh63EbAkFjE380iv97BAiIeolRYoB9bF9usBXCu4BxftWN1Dkn3g=="
+    },
+    "vuex@3.6.0_vue@2.7.16": {
+      "integrity": "sha512-W74OO2vCJPs9/YjNjW8lLbj+jzT24waTo2KShI8jLvJW8OaIkgb3wuAMA7D+ZiUxDOx3ubwSZTaJBip9G8a3aQ==",
+      "dependencies": [
+        "vue"
+      ]
     },
     "which@2.0.2": {
       "integrity": "sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==",
@@ -2666,11 +2748,18 @@
       "dependencies": [
         "npm:@eslint/js@9.31.0",
         "npm:axios@0.27.2",
+        "npm:dompurify@2.2.7",
         "npm:esbuild-sass-plugin@^3.3.1",
         "npm:esbuild@~0.25.8",
         "npm:rimraf@3.0.2",
         "npm:tar@6.1.11",
-        "npm:typescript-eslint@8.37.0"
+        "npm:three@0.151.3",
+        "npm:typescript-eslint@8.37.0",
+        "npm:vue-clickaway@2.2.2",
+        "npm:vue-router@3.6.5",
+        "npm:vue@2.7.16",
+        "npm:vuelidate@0.7.6",
+        "npm:vuex@3.6.0"
       ]
     }
   }
