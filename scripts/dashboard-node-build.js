@@ -8,6 +8,7 @@ const esbuild = require('esbuild')
 const { sassPlugin } = require('esbuild-sass-plugin')
 const path = require('path')
 const fs = require('fs')
+const process = require('process')
 
 const projectRoot = path.dirname(__dirname)
 const dashboardRoot = path.join(projectRoot, 'src', 'serve', 'dashboard')
