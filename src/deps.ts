@@ -39,6 +39,7 @@ export { aes128gcm } from 'npm:@apeleghq/rfc8188@1.0.7/encodings'
 export { default as rfc8188Encrypt } from 'npm:@apeleghq/rfc8188@1.0.7/encrypt'
 
 // Chelonia dependencies
+export * from 'npm:@chelonia/lib@1.2.2'
 export { blake32Hash, createCID, maybeParseCID, multicodes, strToB64, getSubscriptionId, parseCID } from 'npm:@chelonia/lib@1.2.2/functions'
 export { checkKey, parsePrefixableKey, prefixHandlers } from 'npm:@chelonia/lib@1.2.2/db'
 export { SPMessage } from 'npm:@chelonia/lib@1.2.2/SPMessage'

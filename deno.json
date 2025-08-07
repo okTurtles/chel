@@ -9,8 +9,6 @@
   },
   "imports": {
     "~/": "./src/",
-    "@chelonia/lib": "npm:@chelonia/lib@1.2.2",
-    "@chelonia/lib/persistent-actions": "npm:@chelonia/lib@1.2.2/persistent-actions",
     "jsr:@std/assert": "https://jsr.io/@std/assert@1.0.13",
     "jsr:@std/encoding/": "https://jsr.io/@std/encoding@1.0.10/",
     "jsr:@std/flags/": "https://jsr.io/@std/flags@0.224.0/",

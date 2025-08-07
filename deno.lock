@@ -2660,7 +2660,6 @@
   },
   "workspace": {
     "dependencies": [
-      "npm:@chelonia/lib@1.2.2",
       "npm:@types/node@24.0.13"
     ],
     "packageJson": {
