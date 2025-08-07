@@ -4,7 +4,7 @@ import process from 'node:process'
 interface ServeOptions {
   dp?: number
   port?: number
-  'db-type'?: 'files' | 'sqlite' | 'mem'
+  'db-type'?: string
   'db-location'?: string
 }
 
@@ -88,7 +88,7 @@ export function parseServeArgs (args: string[]): { directory: string; options: S
   const options: ServeOptions = {
     dp: parseInt(parsed.dp),
     port: parseInt(parsed.port),
-    'db-type': parsed['db-type'] as 'files' | 'sqlite' | 'mem',
+    'db-type': parsed['db-type'],
     'db-location': parsed['db-location']
   }
 

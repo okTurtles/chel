@@ -16677,8 +16677,6 @@ async function serve(args) {
       throw error;
     }
     console.log(colors.cyan("\u{1F680} Starting application server..."));
-    process12.env.PORT = applicationPort.toString();
-    process12.env.API_PORT = applicationPort.toString();
     try {
       await startApplicationServer(applicationPort, directory);
       console.log(colors.green(`\u2705 Application server started on port ${applicationPort}`));
