@@ -16709,7 +16709,7 @@ async function migrate(args) {
   await revokeNet();
   const parsedArgs = flags.parse(args);
   const { from: from3, to, out } = parsedArgs;
-  const src2 = path.resolve(String(parsedArgs._[0]) ?? ".");
+  const src2 = path.resolve(parsedArgs._[0] ? String(parsedArgs._[0]) : ".");
   if (!from3) exit("missing argument: --from");
   if (!to) exit("missing argument: --to");
   if (!out) exit("missing argument: --out");

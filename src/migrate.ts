@@ -8,7 +8,7 @@ export async function migrate (args: string[]): Promise<void> {
   const parsedArgs = flags.parse(args)
 
   const { from, to, out } = parsedArgs
-  const src = path.resolve(String(parsedArgs._[0]) ?? '.')
+  const src = path.resolve(parsedArgs._[0] ? String(parsedArgs._[0]) : '.')
 
   if (!from) exit('missing argument: --from')
   if (!to) exit('missing argument: --to')
