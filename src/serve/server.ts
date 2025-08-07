@@ -106,23 +106,6 @@ if (CREDITS_WORKER_TASK_TIME_INTERVAL && OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTER
 const ownerSizeTotalWorker = undefined as WorkerType | undefined
 const creditsWorker = undefined as WorkerType | undefined
 
-// Node.js version 18 and lower don't have global.crypto defined
-// by default
-if (
-  !('crypto' in globalThis) &&
-  typeof require === 'function'
-) {
-  const crypto = await import('node:crypto')
-  const { webcrypto } = crypto
-  if (webcrypto) {
-    Object.defineProperty(globalThis, 'crypto', {
-      enumerable: true,
-      configurable: true,
-      get: () => webcrypto
-    })
-  }
-}
-
 const { CONTRACTS_VERSION, GI_VERSION } = process.env
 
 // Dynamic runtime import to bypass bundling issues with npm: specifier
