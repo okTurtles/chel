@@ -16644,17 +16644,10 @@ async function migrate(args) {
 init_deps();
 import process12 from "node:process";
 async function startDashboardServer(port) {
-  process12.env.IS_CHELONIA_DASHBOARD_DEV = "true";
-  process12.env.DASHBOARD_PORT = port.toString();
-  process12.env.PORT = port.toString();
   const dashboardServer = await Promise.resolve().then(() => (init_dashboard_server(), dashboard_server_exports));
   await dashboardServer.startDashboard(port);
 }
 async function startApplicationServer(port, directory) {
-  delete process12.env.IS_CHELONIA_DASHBOARD_DEV;
-  process12.env.PORT = port.toString();
-  process12.env.API_PORT = port.toString();
-  process12.env.CHELONIA_APP_DIR = directory;
   const startServer = await Promise.resolve().then(() => (init_serve(), serve_exports));
   await startServer.default;
 }
@@ -16675,15 +16668,6 @@ async function serve(args) {
     console.log(colors.gray(`Database location: ${dbLocation}`));
   }
   try {
-    process12.env.NODE_ENV = "development";
-    process12.env.GI_PERSIST = dbType === "mem" ? "" : dbType;
-    if (dbLocation) {
-      if (dbType === "files") {
-        process12.env.DB_PATH = dbLocation;
-      } else if (dbType === "sqlite") {
-        process12.env.DB_PATH = dbLocation;
-      }
-    }
     console.log(colors.cyan("\u{1F680} Starting dashboard server..."));
     try {
       await startDashboardServer(dashboardPort);

@@ -9,11 +9,7 @@ interface ServeOptions {
 }
 
 // Dashboard server function
-async function startDashboardServer (port: number): Promise<void> {
-  // Set dashboard-specific environment variables
-  process.env.IS_CHELONIA_DASHBOARD_DEV = 'true'
-  process.env.DASHBOARD_PORT = port.toString()
-  process.env.PORT = port.toString()
+async function startDashboardServer (port: number) {
 
   // Import and start the dashboard server
   const dashboardServer = await import('./serve/dashboard-server.ts')
@@ -22,12 +18,6 @@ async function startDashboardServer (port: number): Promise<void> {
 
 // Application server function
 async function startApplicationServer (port: number, directory: string): Promise<void> {
-  // Set application-specific environment variables
-  delete process.env.IS_CHELONIA_DASHBOARD_DEV
-  process.env.PORT = port.toString()
-  process.env.API_PORT = port.toString()
-  process.env.CHELONIA_APP_DIR = directory
-
   // Import and start the application server
   const startServer = await import('./serve/index.ts')
   await startServer.default
@@ -52,18 +42,6 @@ export async function serve (args: string[]) {
   }
 
   try {
-    // Set environment variables for the serve backend
-    process.env.NODE_ENV = 'development'
-    process.env.GI_PERSIST = dbType === 'mem' ? '' : dbType
-
-    if (dbLocation) {
-      if (dbType === 'files') {
-        process.env.DB_PATH = dbLocation
-      } else if (dbType === 'sqlite') {
-        process.env.DB_PATH = dbLocation
-      }
-    }
-
     // Start dashboard server on port 7000 first
     console.log(colors.cyan('🚀 Starting dashboard server...'))
     try {
@@ -76,8 +54,6 @@ export async function serve (args: string[]) {
 
     // Start application server on port 8000 second
     console.log(colors.cyan('🚀 Starting application server...'))
-    process.env.PORT = applicationPort.toString()
-    process.env.API_PORT = applicationPort.toString()
     try {
       await startApplicationServer(applicationPort, directory)
       console.log(colors.green(`✅ Application server started on port ${applicationPort}`))
