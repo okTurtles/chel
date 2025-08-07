@@ -72,6 +72,9 @@ const options = {
     'npm:@chelonia/lib@1.2.2/utils',
     'npm:@chelonia/lib@1.2.2/zkpp',
     'npm:@chelonia/lib@1.2.2/zkppConstants',
+    'npm:@chelonia/lib@1.2.2/persistent-actions',
+    '@chelonia/lib',
+    '@chelonia/lib/persistent-actions',
     'npm:@chelonia/crypto@1.0.1',
     // SBP dependencies
     'npm:@sbp/okturtles.data@0.1.5',

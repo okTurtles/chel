@@ -25,7 +25,6 @@
     "jsr:@std/streams@1.0.10": "1.0.10",
     "npm:@apeleghq/rfc8188@1.0.7": "1.0.7",
     "npm:@chelonia/crypto@1.0.1": "1.0.1",
-    "npm:@chelonia/lib@1.2.0": "1.2.0_@sbp+sbp@2.4.1",
     "npm:@chelonia/lib@1.2.2": "1.2.2_@sbp+sbp@2.4.1",
     "npm:@eslint/js@9.31.0": "9.31.0",
     "npm:@hapi/boom@9.1.0": "9.1.0",
@@ -181,21 +180,6 @@
         "@chelonia/multiformats",
         "scrypt-async",
         "tweetnacl"
-      ]
-    },
-    "@chelonia/lib@1.2.0_@sbp+sbp@2.4.1": {
-      "integrity": "sha512-Wt8L0Qvq8wpkh7iTbBm9sKQnDQAciNS50u69KOeR/Qg6MDjvqKPpHEx2TJRdfPGPg3Z7qyUj9Cf+5VPi1zKxSQ==",
-      "dependencies": [
-        "@apeleghq/multipart-parser",
-        "@apeleghq/rfc8188@1.0.8",
-        "@chelonia/crypto",
-        "@chelonia/serdes",
-        "@sbp/okturtles.data@0.1.6_@sbp+sbp@2.4.1",
-        "@sbp/okturtles.eventqueue@1.2.1_@sbp+sbp@2.4.1",
-        "@sbp/okturtles.events@1.0.1_@sbp+sbp@2.4.1",
-        "@sbp/sbp",
-        "scrypt-async",
-        "turtledash@1.0.2"
       ]
     },
     "@chelonia/lib@1.2.2_@sbp+sbp@2.4.1": {
@@ -2676,6 +2660,7 @@
   },
   "workspace": {
     "dependencies": [
+      "npm:@chelonia/lib@1.2.2",
       "npm:@types/node@24.0.13"
     ],
     "packageJson": {
