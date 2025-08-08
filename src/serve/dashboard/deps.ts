@@ -30,11 +30,11 @@ export const chalk = { green: (s: string) => s, red: (s: string) => s, yellow: (
 export const process = { env: { NODE_ENV: 'development' } }
 
 // Re-export common utilities that are safe for browser
-export function cloneDeep (obj: any): any {
+export function cloneDeep<T> (obj: T): T {
   return JSON.parse(JSON.stringify(obj))
 }
 
-export function omit (obj: any, keys: string[]): any {
+export function omit (obj: Record<string, unknown>, keys: string[]): Record<string, unknown> {
   const result = { ...obj }
   keys.forEach(key => delete result[key])
   return result

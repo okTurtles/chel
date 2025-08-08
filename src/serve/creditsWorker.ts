@@ -165,7 +165,7 @@ const updateCredits = async (billableEntity: string, type: 'credit' | 'charge', 
         } else if (entry.type === 'credit') {
           acc.credits += BigInt(entry.picocreditAmount)
         } else {
-          throw new Error('Invalid entry type: ' + (entry as any).type)
+          throw new Error('Invalid entry type: ' + (entry as { type: unknown }).type)
         }
         return acc
       }, { charges: BigInt(0), credits: BigInt(0), periodStart: date, periodSize: 0, totalPeriodLength: 0 } as { charges: bigint; credits: bigint; periodStart: string; periodSize: number; totalPeriodLength: number })

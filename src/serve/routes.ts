@@ -7,7 +7,12 @@ import { Buffer } from 'node:buffer'
 import { isIP } from 'node:net'
 import path from 'node:path'
 import process from 'node:process'
-const logger: any = {
+const logger: {
+  info: (...args: unknown[]) => void;
+  warn: (...args: unknown[]) => void;
+  error: (...args: unknown[]) => void;
+  debug: (...args: unknown[]) => void;
+} = {
   info: console.log,
   warn: console.warn,
   error: console.error,
@@ -149,7 +154,7 @@ const staticServeConfig = {
   redirect: isCheloniaDashboard ? '/dashboard/' : '/app/'
 }
 
-const errorMapper = (e: Error): any => {
+const errorMapper = (e: Error): ReturnType<typeof Boom.notFound> => {
   switch (e?.name) {
     case 'BackendErrorNotFound':
       return Boom.notFound()
@@ -187,7 +192,7 @@ const route = new Proxy({} as RouteProxy, {
 
 // helper function that returns 404 and prevents client from caching the 404 response
 // which can sometimes break things: https://github.com/okTurtles/group-income/issues/2608
-function notFoundNoCache (h: ResponseToolkit): any {
+function notFoundNoCache (h: ResponseToolkit): ReturnType<typeof h.response> {
   return h.response().code(404).header('Cache-Control', 'no-store')
 }
 
@@ -210,7 +215,7 @@ route.POST('/event', {
     },
     payload: Joi.string().required()
   }
-}, async function (request: Request): Promise<any> {
+}, async function (request: Request): Promise<unknown> {
   if (process.env.CHELONIA_ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
   // IMPORTANT: IT IS A REQUIREMENT THAT ANY PROXY SERVERS (E.G. nginx) IN FRONT OF US SET THE
   // X-Real-IP HEADER! OTHERWISE THIS IS EASILY SPOOFED!
@@ -313,9 +318,9 @@ route.POST('/event', {
       throw err // rethrow error
     }
     return deserializedHEAD.hash
-  } catch (err: any) {
-    err.ip = ip
-    logger.error(err, 'POST /event', err.message)
+  } catch (err) {
+    (err as unknown as { ip: string }).ip = ip
+    logger.error(err, 'POST /event', (err as Error).message)
     return err
   }
 })
@@ -331,7 +336,7 @@ route.GET('/eventsAfter/{contractID}/{since}/{limit?}', {
       keyOps: Joi.boolean()
     })
   }
-}, async function (request: Request): Promise<any> {
+}, async function (request: Request): Promise<object[] | Boom.Boom<unknown>> {
   const { contractID, since, limit } = request.params
   const ip = request.headers['x-real-ip'] || request.info.remoteAddress
   try {
@@ -352,10 +357,10 @@ route.GET('/eventsAfter/{contractID}/{since}/{limit?}', {
     //       Writable stream. Both types however do have .destroy.
     request.events.once('disconnect', stream.destroy.bind(stream))
     return stream
-  } catch (err: any) {
-    err.ip = ip
-    logger.error(err, `GET /eventsAfter/${contractID}/${since}`, err.message)
-    return err
+  } catch (err) {
+    (err as unknown as { ip: string }).ip = ip
+    logger.error(err, `GET /eventsAfter/${contractID}/${since}`, (err as Error).message)
+    return err as object[]
   }
 })
 
@@ -368,7 +373,7 @@ route.GET('/ownResources', {
     strategies: ['chel-shelter'],
     mode: 'required'
   }
-}, async function (request: Request): Promise<any> {
+}, async function (request: Request): Promise<string[]> {
   const billableContractID = request.auth.credentials.billableContractID
   const resources = (await sbp('chelonia.db/get', `_private_resources_${billableContractID}`))?.split('\x00')
 
@@ -397,7 +402,7 @@ if (process.env.NODE_ENV === 'development') {
   }, function (request: Request, h: ResponseToolkit) {
     if (process.env.CHELONIA_ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
     const ip = request.headers['x-real-ip'] || request.info.remoteAddress
-    const log = (levelToColor as any)[request.payload.level]
+    const log = (levelToColor as Record<string, (text: string) => string>)[request.payload.level]
     console.debug(chalk.bold.yellow(`REMOTE LOG (${ip}): `) + log(`[${request.payload.level}] ${request.payload.value}`))
     return h.response().code(200)
   })
@@ -414,13 +419,13 @@ route.POST('/name', {
       value: Joi.string().required()
     })
   }
-}, async function (request: Request, h: ResponseToolkit): Promise<any> {
+}, async function (request: Request, h: ResponseToolkit): Promise<unknown> {
   try {
     const { name, value } = request.payload
     if (value.startsWith('_private')) return Boom.badData()
     return await sbp('backend/db/registerName', name, value)
-  } catch (err: any) {
-    logger.error(err, 'POST /name', err.message)
+  } catch (err) {
+    logger.error(err, 'POST /name', (err as Error).message)
     return err
   }
 })
@@ -432,15 +437,15 @@ route.GET('/name/{name}', {
       name: Joi.string().regex(NAME_REGEX).required()
     })
   }
-}, async function (request: Request, h: ResponseToolkit): Promise<any> {
+}, async function (request: Request, h: ResponseToolkit): Promise<unknown> {
   const { name } = request.params
   try {
     const lookupResult = await sbp('backend/db/lookupName', name)
     return lookupResult
       ? h.response(lookupResult).type('text/plain')
       : notFoundNoCache(h)
-  } catch (err: any) {
-    logger.error(err, `GET /name/${name}`, err.message)
+  } catch (err) {
+    logger.error(err, `GET /name/${name}`, (err as Error).message)
     return err
   }
 })
@@ -452,7 +457,7 @@ route.GET('/latestHEADinfo/{contractID}', {
       contractID: Joi.string().regex(CID_REGEX).required()
     })
   }
-}, async function (request: Request, h: ResponseToolkit): Promise<any> {
+}, async function (request: Request, h: ResponseToolkit): Promise<unknown> {
   const { contractID } = request.params
   try {
     const parsed = maybeParseCID(contractID)
@@ -467,8 +472,8 @@ route.GET('/latestHEADinfo/{contractID}', {
       return notFoundNoCache(h)
     }
     return HEADinfo
-  } catch (err: any) {
-    logger.error(err, `GET /latestHEADinfo/${contractID}`, err.message)
+  } catch (err) {
+    logger.error(err, `GET /latestHEADinfo/${contractID}`, (err as Error).message)
     return err
   }
 })
@@ -512,14 +517,14 @@ if (process.env.NODE_ENV === 'development') {
       output: 'data',
       multipart: true,
       allow: 'multipart/form-data',
-      failAction: function (request: Request, h: ResponseToolkit, err: any) {
+      failAction: function (request: Request, h: ResponseToolkit, err: Error) {
         console.error('failAction error:', err)
         return err
       },
       maxBytes: 6 * MEGABYTE, // TODO: make this a configurable setting
       timeout: 10 * SECOND // TODO: make this a configurable setting
     }
-  }, async function (request: Request): Promise<any> {
+  }, async function (request: Request): Promise<unknown> {
     if (process.env.CHELONIA_ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
     try {
       console.log('FILE UPLOAD!')
@@ -537,7 +542,7 @@ if (process.env.NODE_ENV === 'development') {
       }
       await sbp('chelonia.db/set', hash, data)
       return '/file/' + hash
-    } catch (err: any) {
+    } catch (err) {
       logger.error(err)
       return Boom.internal('File upload failed')
     }
@@ -556,14 +561,14 @@ route.POST('/file', {
     output: 'stream',
     multipart: { output: 'annotated' },
     allow: 'multipart/form-data',
-    failAction: function (request: Request, h: ResponseToolkit, err: any) {
+    failAction: function (request: Request, h: ResponseToolkit, err: unknown) {
       console.error(err, 'failAction error')
       return err
     },
     maxBytes: FILE_UPLOAD_MAX_BYTES,
     timeout: 10 * SECOND // TODO: make this a configurable setting
   }
-}, async function (request: Request, h: ResponseToolkit): Promise<any> {
+}, async function (request: Request, h: ResponseToolkit): Promise<unknown> {
   if (process.env.CHELONIA_ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
   try {
     console.info('FILE UPLOAD!')
@@ -589,7 +594,7 @@ route.POST('/file', {
 
     // Now that the manifest format looks right, validate the chunks
     let ourSize = 0
-    const chunks = manifest.chunks.map((chunk: any, i: number) => {
+    const chunks = manifest.chunks.map((chunk: { hash: string; size: number }, i: number) => {
       // Validate the chunk information
       if (
         !Array.isArray(chunk) ||
@@ -638,7 +643,7 @@ route.POST('/file', {
       }
     }))
     // Now, store all chunks and the manifest
-    await Promise.all(chunks.map(([cid, data]: [string, any]) => sbp('chelonia.db/set', cid, data)))
+    await Promise.all(chunks.map(([cid, data]: [string, unknown]) => sbp('chelonia.db/set', cid, data)))
     await sbp('chelonia.db/set', manifestHash, manifestMeta.payload)
     // Store attribution information
     await sbp('backend/server/saveOwner', credentials.billableContractID, manifestHash)
@@ -652,8 +657,8 @@ route.POST('/file', {
       await sbp('chelonia.db/set', `_private_deletionTokenDgst_${manifestHash}`, deletionTokenDgst)
     }
     return h.response(manifestHash)
-  } catch (err: any) {
-    logger.error(err, 'POST /file', err.message)
+  } catch (err) {
+    logger.error(err, 'POST /file', (err as Error).message)
     return err
   }
 })
@@ -666,7 +671,7 @@ route.GET('/file/{hash}', {
       hash: Joi.string().regex(CID_REGEX).required()
     })
   }
-}, async function (request: Request, h: ResponseToolkit): Promise<any> {
+}, async function (request: Request, h: ResponseToolkit): Promise<unknown> {
   const { hash } = request.params
 
   const parsed = maybeParseCID(hash)
@@ -709,7 +714,7 @@ route.POST('/deleteFile/{hash}', {
       hash: Joi.string().regex(CID_REGEX).required()
     })
   }
-}, async function (request: Request, h: ResponseToolkit): Promise<any> {
+}, async function (request: Request, h: ResponseToolkit): Promise<unknown> {
   if (process.env.CHELONIA_ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
   const { hash } = request.params
   const strategy = request.auth.strategy
@@ -755,8 +760,8 @@ route.POST('/deleteFile/{hash}', {
   try {
     await sbp('backend/deleteFile', hash, null, true)
     return h.response()
-  } catch (e: any) {
-    return errorMapper(e)
+  } catch (e) {
+    return errorMapper(e as Error)
   }
 })
 
@@ -767,7 +772,7 @@ route.POST('/deleteContract/{hash}', {
     strategies: ['chel-shelter', 'chel-bearer'],
     mode: 'required'
   }
-}, async function (request: Request, h: ResponseToolkit): Promise<any> {
+}, async function (request: Request, h: ResponseToolkit): Promise<unknown> {
   if (process.env.CHELONIA_ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
   const { hash } = request.params
   const strategy = request.auth.strategy
@@ -817,8 +822,8 @@ route.POST('/deleteContract/{hash}', {
     // We return the queue ID to allow users to track progress
     // TODO: Tracking progress not yet implemented
     return h.response({ id }).code(202)
-  } catch (e: any) {
-    return errorMapper(e)
+  } catch (e) {
+    return errorMapper(e as Error)
   }
 })
 
@@ -915,7 +920,7 @@ route.POST('/kv/{contractID}/{key}', {
     await sbp('backend/server/updateSize', contractID, request.payload.byteLength - existingSize)
     await appendToIndexFactory(`_private_kvIdx_${contractID}`)(key)
     // No await on broadcast for faster responses
-    sbp('backend/server/broadcastKV', contractID, key, request.payload.toString()).catch((e: any) => console.error(e, 'Error broadcasting KV update', contractID, key))
+    sbp('backend/server/broadcastKV', contractID, key, request.payload.toString()).catch((e: Error) => console.error(e, 'Error broadcasting KV update', contractID, key))
 
     return h.response().code(204)
   })
@@ -933,7 +938,7 @@ route.GET('/kv/{contractID}/{key}', {
       key: Joi.string().regex(KV_KEY_REGEX).required()
     })
   }
-}, async function (request: Request, h: ResponseToolkit): Promise<any> {
+}, async function (request: Request, h: ResponseToolkit): Promise<unknown> {
   const { contractID, key } = request.params
 
   const parsed = maybeParseCID(contractID)
@@ -1070,7 +1075,7 @@ route.POST('/zkpp/register/{name}', {
       }
     ])
   }
-}, async function (req: Request): Promise<any> {
+}, async function (req: Request): Promise<unknown> {
   if (process.env.CHELONIA_ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
   const lookupResult = await sbp('backend/db/lookupName', req.params['name'])
   if (lookupResult) {
@@ -1091,9 +1096,9 @@ route.POST('/zkpp/register/{name}', {
         return result
       }
     }
-  } catch (e: any) {
-    e.ip = req.headers['x-real-ip'] || req.info.remoteAddress
-    console.error(e, 'Error at POST /zkpp/{name}: ' + e.message)
+  } catch (e) {
+    (e as unknown as { ip: string }).ip = req.headers['x-real-ip'] || req.info.remoteAddress
+    console.error(e, 'Error at POST /zkpp/{name}: ' + (e as Error).message)
   }
 
   return Boom.internal('internal error')
@@ -1106,14 +1111,14 @@ route.GET('/zkpp/{contractID}/auth_hash', {
     }),
     query: Joi.object({ b: Joi.string().required() })
   }
-}, async function (req: Request, h: ResponseToolkit): Promise<any> {
+}, async function (req: Request, h: ResponseToolkit): Promise<unknown> {
   try {
     const challenge = await getChallenge(req.params['contractID'], req.query['b'])
 
     return challenge || notFoundNoCache(h)
-  } catch (e: any) {
-    e.ip = req.headers['x-real-ip'] || req.info.remoteAddress
-    console.error(e, 'Error at GET /zkpp/{contractID}/auth_hash: ' + e.message)
+  } catch (e) {
+    (e as unknown as { ip: string }).ip = req.headers['x-real-ip'] || req.info.remoteAddress
+    console.error(e, 'Error at GET /zkpp/{contractID}/auth_hash: ' + (e as Error).message)
   }
 
   return Boom.internal('internal error')
@@ -1131,16 +1136,16 @@ route.GET('/zkpp/{contractID}/contract_hash', {
       hc: Joi.string().required()
     })
   }
-}, async function (req: Request): Promise<any> {
+}, async function (req: Request): Promise<unknown> {
   try {
     const salt = await getContractSalt(req.params['contractID'], req.query['r'], req.query['s'], req.query['sig'], req.query['hc'])
 
     if (salt) {
       return salt
     }
-  } catch (e: any) {
-    e.ip = req.headers['x-real-ip'] || req.info.remoteAddress
-    console.error(e, 'Error at GET /zkpp/{contractID}/contract_hash: ' + e.message)
+  } catch (e) {
+    (e as unknown as { ip: string }).ip = req.headers['x-real-ip'] || req.info.remoteAddress
+    console.error(e, 'Error at GET /zkpp/{contractID}/contract_hash: ' + (e as Error).message)
   }
 
   return Boom.internal('internal error')
@@ -1159,7 +1164,7 @@ route.POST('/zkpp/{contractID}/updatePasswordHash', {
       Ea: Joi.string().required()
     })
   }
-}, async function (req: Request): Promise<any> {
+}, async function (req: Request): Promise<unknown> {
   if (process.env.CHELONIA_ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
   try {
     const result = await updateContractSalt(req.params['contractID'], req.payload['r'], req.payload['s'], req.payload['sig'], req.payload['hc'], req.payload['Ea'])
@@ -1167,9 +1172,9 @@ route.POST('/zkpp/{contractID}/updatePasswordHash', {
     if (result) {
       return result
     }
-  } catch (e: any) {
-    e.ip = req.headers['x-real-ip'] || req.info.remoteAddress
-    console.error(e, 'Error at POST /zkpp/{contractID}/updatePasswordHash: ' + e.message)
+  } catch (e) {
+    (e as unknown as { ip: string }).ip = req.headers['x-real-ip'] || req.info.remoteAddress
+    console.error(e, 'Error at POST /zkpp/{contractID}/updatePasswordHash: ' + (e as Error).message)
   }
 
   return Boom.internal('internal error')

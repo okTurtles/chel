@@ -146,10 +146,10 @@ export function createServer (httpServer: unknown, options: ServerOptions = {}):
 
   // Add listeners for server events, i.e. events emitted on the server object.
   Object.keys(defaultServerHandlers).forEach((name: string) => {
-    server.on(name, (...args: any[]) => {
+    server.on(name, (...args: unknown[]) => {
       try {
         // Always call the default handler first.
-        (defaultServerHandlers as any)[name]?.call(server, ...args)
+        (defaultServerHandlers as Record<string, (...args: unknown[]) => void>)[name]?.call(server, ...args)
         server.customServerEventHandlers[name]?.call(server, ...args)
       } catch (error) {
         server.emit('error', error)
@@ -162,7 +162,7 @@ export function createServer (httpServer: unknown, options: ServerOptions = {}):
       if (server.clients.size && server.options.logPingRounds) {
         log.debug('Pinging clients')
       }
-      server.clients.forEach((client: any) => {
+      server.clients.forEach((client: WebSocket & { pinged?: boolean; activeSinceLastPing?: boolean; id?: string }) => {
         if (client.pinged && !client.activeSinceLastPing) {
           log(`Disconnecting irresponsive client ${client.id}`)
           return client.terminate()
@@ -192,7 +192,7 @@ const defaultServerHandlers = {
    * @param {ws.WebSocket} socket - The client socket that connected.
    * @param {http.IncomingMessage} request - The underlying Node http GET request.
    */
-  connection (socket: any, request: any) {
+  connection (socket: WebSocket, request: { url: string; headers: Record<string, string | string[]>; socket: { remoteAddress?: string } }) {
     const server = this as unknown
     const url = request.url
     const urlSearch = url.includes('?') ? url.slice(url.lastIndexOf('?')) : ''
@@ -203,32 +203,32 @@ const defaultServerHandlers = {
     socket.pinged = false
     socket.server = server
     socket.subscriptions = new Set<string>()
-    socket.kvFilter = new Map<string, any>()
+    socket.kvFilter = new Map<string, unknown>()
     socket.ip = request.headers['x-real-ip'] ||
-      request.headers['x-forwarded-for']?.split(',')[0].trim() ||
+      (typeof request.headers['x-forwarded-for'] === 'string' ? request.headers['x-forwarded-for'].split(',')[0].trim() : undefined) ||
       request.socket.remoteAddress
     // Sometimes (like when using `createMessage`), we want to send objects that
     // are serialized as strings. The `ws` library sends these as binary data,
     // whereas the client expects strings. This avoids having to manually
     // specify `{ binary: false }` along with calls.
-    socket.send = function (data: any) {
-      if (typeof data === 'object' && typeof data[Symbol.toPrimitive] === 'function') {
-        return send(data[Symbol.toPrimitive]())
+    socket.send = function (data: unknown) {
+      if (typeof data === 'object' && data !== null && typeof (data as { [Symbol.toPrimitive]?: () => string })[Symbol.toPrimitive] === 'function') {
+        return send((data as { [Symbol.toPrimitive]: () => string })[Symbol.toPrimitive]())
       }
       return send(data)
     }
 
-    log.bold(`Socket ${socket.id} connected. Total: ${(this as any).clients.size}`)
+    log.bold(`Socket ${socket.id} connected. Total: ${(this as unknown as { clients: Set<WebSocket> }).clients.size}`)
 
     // Add listeners for socket events, i.e. events emitted on a socket object.
     ;['close', 'error', 'message', 'ping', 'pong'].forEach((eventName: string) => {
-      socket.on(eventName, (...args: any[]) => {
+      socket.on(eventName, (...args: unknown[]) => {
         // Logging of 'message' events is handled in the default 'message' event handler.
         if (eventName !== 'message') {
           log.debug(`Event '${eventName}' on socket ${socket.id}`, ...args.map(arg => String(arg)))
         }
         try {
-          (defaultSocketEventHandlers as any)[eventName]?.call(socket, ...args)
+          (defaultSocketEventHandlers as Record<string, (this: WebSocket, ...args: unknown[]) => void>)[eventName]?.call(socket, ...args)
           socket.server.customSocketEventHandlers[eventName]?.call(socket, ...args)
         } catch (error: unknown) {
           socket.server.emit('error', error)
@@ -251,8 +251,8 @@ const defaultServerHandlers = {
 // The `this` binding refers to the connected `ws` socket object.
 const defaultSocketEventHandlers = {
   close () {
-    const socket = this as any
-    const { server } = this as any
+    const socket = this as WebSocket & { subscriptions: Set<string>; server: unknown }
+    const server = socket.server as { subscribersByChannelID: Record<string, Set<WebSocket>> }
 
     for (const channelID of socket.subscriptions) {
       // Remove this socket from the channel subscribers.
@@ -262,13 +262,26 @@ const defaultSocketEventHandlers = {
   },
 
   message (data: Buffer | ArrayBuffer | Buffer[]) {
-    const socket = this as any
-    const { server } = this as any
+    const socket = this as WebSocket & {
+      subscriptions: Set<string>;
+      kvFilter: Map<string, unknown>;
+      server: unknown;
+      activeSinceLastPing: boolean;
+      ip?: string;
+    }
+    const server = socket.server as {
+      subscribersByChannelID: Record<string, Set<WebSocket>>;
+      kvFiltersByChannelID: Record<string, Map<WebSocket, Map<string, unknown>>>;
+      rejectMessageAndTerminateSocket: (socket: WebSocket, reason: string) => void;
+      options: { maxMessageSizeBytes?: number; logPongMessages?: boolean };
+      customMessageHandlers: Record<string, (socket: WebSocket, msg: Message) => void>;
+    }
     const text = data.toString()
     let msg: Message = { type: '' }
 
     try {
-      msg = messageParser(text)
+      const message: Message = messageParser(text) as Message
+      msg = message
     } catch (error: unknown) {
       log.error(error, `Malformed message: ${(error as Error).message}`)
       server.rejectMessageAndTerminateSocket(msg, socket)
@@ -280,13 +293,13 @@ const defaultSocketEventHandlers = {
     }
     // The socket can be marked as active since it just received a message.
     socket.activeSinceLastPing = true
-    const defaultHandler = (defaultMessageHandlers as any)[msg.type]
+    const defaultHandler = (defaultMessageHandlers as Record<string, (socket: WebSocket, message: Message) => void>)[msg.type]
     const customHandler = server.customMessageHandlers[msg.type]
 
     if (defaultHandler || customHandler) {
       try {
-        defaultHandler?.call(socket, msg)
-        customHandler?.call(socket, msg)
+        defaultHandler?.call(server, socket, msg)
+        customHandler?.call(server, socket, msg)
       } catch (error: unknown) {
         // Log the error message and stack trace but do not send it to the client.
         log.error(error, 'onMessage')
@@ -302,21 +315,21 @@ const defaultSocketEventHandlers = {
 // These handlers receive the connected `ws` socket through the `this` binding.
 const defaultMessageHandlers = {
   [PONG] () {
-    const socket = this as any
+    const socket = this as WebSocket & { activeSinceLastPing: boolean }
     // const timestamp = Number(msg.data)
     // const latency = Date.now() - timestamp
     socket.activeSinceLastPing = true
   },
 
   [PUB] (msg: PubMessage) {
-    const { server } = this as any
+    const server = (this as WebSocket & { server: unknown }).server as { subscribersByChannelID: Record<string, Set<WebSocket>>; broadcast: (msg: unknown, options: { to: WebSocket[] }) => void }
     const subscribers = server.subscribersByChannelID[msg.channelID]
-    server.broadcast(msg, { to: subscribers ?? [] })
+    server.broadcast(msg, { to: Array.from(subscribers ?? []) })
   },
 
   [SUB] ({ channelID, kvFilter }: SubMessage) {
-    const socket = this as any
-    const { server } = this as any
+    const socket = this as WebSocket & { subscriptions: Set<string>; kvFilter: Map<string, unknown>; send: (data: unknown) => void }
+    const server = (socket as WebSocket & { server: unknown }).server as { channels: Set<string>; subscribersByChannelID: Record<string, Set<WebSocket>>; kvFiltersByChannelID: Record<string, Map<WebSocket, Map<string, unknown>>> }
 
     if (!server.channels.has(channelID)) {
       socket.send(createErrorResponse(
@@ -340,12 +353,12 @@ const defaultMessageHandlers = {
     }
     // `kvFilter` can be undefined, which is incompatible with the way JSONType
     // is defined. Using type assertion to handle this case.
-    socket.send(createOkResponse({ type: SUB, channelID, kvFilter } as any))
+    socket.send(createOkResponse({ type: SUB, channelID, kvFilter } as SubMessage))
   },
 
   [KV_FILTER] ({ channelID, kvFilter }: SubMessage) {
-    const socket = this as any
-    const { server } = this as any
+    const socket = this as WebSocket & { subscriptions: Set<string>; kvFilter: Map<string, unknown>; send: (data: unknown) => void }
+    const server = (socket as WebSocket & { server: unknown }).server as { channels: Set<string> }
 
     if (!server.channels.has(channelID)) {
       socket.send(createErrorResponse(
@@ -363,12 +376,12 @@ const defaultMessageHandlers = {
       log.debug('[KV_FILTER] Not subscribed to', channelID)
     }
     // Using type assertion to handle kvFilter compatibility
-    socket.send(createOkResponse({ type: KV_FILTER, channelID, kvFilter } as any))
+    socket.send(createOkResponse({ type: KV_FILTER, channelID, kvFilter } as unknown as SubMessage))
   },
 
   [UNSUB] ({ channelID }: UnsubMessage) {
-    const socket = this as any
-    const { server } = this as any
+    const socket = this as WebSocket & { subscriptions: Set<string>; kvFilter: Map<string, unknown>; send: (data: unknown) => void }
+    const server = (socket as WebSocket & { server: unknown }).server as { channels: Set<string>; subscribersByChannelID: Record<string, Set<WebSocket>> }
 
     if (!server.channels.has(channelID)) {
       socket.send(createErrorResponse(
@@ -398,9 +411,9 @@ const publicMethods = {
    */
   broadcast (
     message: Message | string,
-    { to, except, wsOnly }: { to?: Iterable<any>, except?: any, wsOnly?: boolean } = {}
+    { to, except, wsOnly }: { to?: Iterable<unknown>, except?: unknown, wsOnly?: boolean } = {}
   ) {
-    const server = this as any
+    const server = (this as unknown) as { clients: Set<WebSocket> }
 
     const msg = typeof message === 'string' ? message : JSON.stringify(message)
     let shortMsg: string | undefined
@@ -408,14 +421,14 @@ const publicMethods = {
     // message. We need this for push notifications, which may have a certain
     // maximum size (usually around 4 KiB)
     const shortenPayload = (): string | undefined => {
-      if (!shortMsg && (typeof message === 'object' && message.type === NOTIFICATION_TYPE.ENTRY && (message as any).data)) {
-        delete (message as any).data
+      if (!shortMsg && (typeof message === 'object' && message.type === NOTIFICATION_TYPE.ENTRY && message.data)) {
+        delete (message as { data?: unknown }).data
         shortMsg = JSON.stringify(message)
       }
       return shortMsg
     }
 
-    for (const client of (to || server.clients) as any) {
+    for (const client of (to || server.clients) as Iterable<WebSocket & { endpoint?: string; id?: string; readyState?: number }>) {
       // `client` could be either a WebSocket or a wrapped subscription info
       // object
       // Duplicate message sending (over both WS and push) is handled on the
@@ -458,15 +471,15 @@ const publicMethods = {
   },
 
   // Enumerates the subscribers of a given channel.
-  * enumerateSubscribers (channelID: string, kvKey?: string): Iterable<any> {
-    const server = this as any
+  * enumerateSubscribers (channelID: string, kvKey?: string): Iterable<WebSocket> {
+    const server = (this as unknown) as { subscribersByChannelID: Record<string, Set<WebSocket>> }
 
     if (channelID in server.subscribersByChannelID) {
       const subscribers = server.subscribersByChannelID[channelID]
       if (!kvKey) {
         yield * subscribers
       } else {
-        for (const subscriber of subscribers as any) {
+        for (const subscriber of subscribers as Set<WebSocket & { kvFilter?: Map<string, Set<string>> }>) {
           // kvFilter may be undefined for push subscriptions
           const kvFilter = subscriber.kvFilter?.get(channelID)
           if (!kvFilter || kvFilter.has(kvKey)) yield subscriber
@@ -475,7 +488,7 @@ const publicMethods = {
     }
   },
 
-  rejectMessageAndTerminateSocket (request: Message, socket: any) {
+  rejectMessageAndTerminateSocket (request: Message, socket: WebSocket & { send: (data: unknown, callback?: () => void) => void; terminate: () => void }) {
     socket.send(createErrorResponse({ ...request }), () => socket.terminate())
   }
 }

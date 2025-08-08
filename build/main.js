@@ -14361,7 +14361,7 @@ var init_push = __esm({
       const readableStream = new Response(data).body;
       if (!readableStream) throw new Error("Failed to create readable stream");
       const [asPublic, IKM] = await subscription.encryptionKeys;
-      return default14(aes128gcm, readableStream, 32768, asPublic, IKM).then(async (bodyStream) => {
+      return default14(aes128gcm, readableStream, 32768, asPublic.buffer, IKM.buffer).then(async (bodyStream) => {
         const chunks = [];
         const reader = bodyStream.getReader();
         for (; ; ) {
@@ -14438,13 +14438,17 @@ var init_push = __esm({
             host = subscriptionWrapper.endpoint.host;
             await addSubscriptionToIndex(subscriptionId);
             await saveSubscription(server, subscriptionId);
-            await postEvent(subscriptionWrapper, JSON.stringify({ type: "initial" }));
+            if (subscriptionWrapper) {
+              await postEvent(subscriptionWrapper, JSON.stringify({ type: "initial" }));
+            }
           } else {
             host = subscriptionWrapper.endpoint.host;
             if (subscriptionWrapper.sockets.size === 0) {
               subscriptionWrapper.subscriptions.forEach((channelID) => {
                 if (!server.subscribersByChannelID[channelID]) return;
-                server.subscribersByChannelID[channelID].delete(subscriptionWrapper);
+                if (subscriptionWrapper) {
+                  server.subscribersByChannelID[channelID].delete(subscriptionWrapper);
+                }
               });
             }
           }
@@ -14590,9 +14594,9 @@ var init_pubsub2 = __esm({
         socket.server = server;
         socket.subscriptions = /* @__PURE__ */ new Set();
         socket.kvFilter = /* @__PURE__ */ new Map();
-        socket.ip = request.headers["x-real-ip"] || request.headers["x-forwarded-for"]?.split(",")[0].trim() || request.socket.remoteAddress;
+        socket.ip = request.headers["x-real-ip"] || (typeof request.headers["x-forwarded-for"] === "string" ? request.headers["x-forwarded-for"].split(",")[0].trim() : void 0) || request.socket.remoteAddress;
         socket.send = function(data) {
-          if (typeof data === "object" && typeof data[Symbol.toPrimitive] === "function") {
+          if (typeof data === "object" && data !== null && typeof data[Symbol.toPrimitive] === "function") {
             return send(data[Symbol.toPrimitive]());
           }
           return send(data);
@@ -14625,7 +14629,7 @@ var init_pubsub2 = __esm({
     defaultSocketEventHandlers = {
       close() {
         const socket = this;
-        const { server } = this;
+        const server = socket.server;
         for (const channelID of socket.subscriptions) {
           server.subscribersByChannelID[channelID].delete(socket);
         }
@@ -14633,11 +14637,12 @@ var init_pubsub2 = __esm({
       },
       message(data) {
         const socket = this;
-        const { server } = this;
+        const server = socket.server;
         const text = data.toString();
         let msg = { type: "" };
         try {
-          msg = messageParser(text);
+          const message = messageParser(text);
+          msg = message;
         } catch (error) {
           log.error(error, `Malformed message: ${error.message}`);
           server.rejectMessageAndTerminateSocket(msg, socket);
@@ -14651,8 +14656,8 @@ var init_pubsub2 = __esm({
         const customHandler = server.customMessageHandlers[msg.type];
         if (defaultHandler || customHandler) {
           try {
-            defaultHandler?.call(socket, msg);
-            customHandler?.call(socket, msg);
+            defaultHandler?.call(server, socket, msg);
+            customHandler?.call(server, socket, msg);
           } catch (error) {
             log.error(error, "onMessage");
             server.rejectMessageAndTerminateSocket(msg, socket);
@@ -14669,13 +14674,13 @@ var init_pubsub2 = __esm({
         socket.activeSinceLastPing = true;
       },
       [PUB](msg) {
-        const { server } = this;
+        const server = this.server;
         const subscribers = server.subscribersByChannelID[msg.channelID];
-        server.broadcast(msg, { to: subscribers ?? [] });
+        server.broadcast(msg, { to: Array.from(subscribers ?? []) });
       },
       [SUB]({ channelID, kvFilter }) {
         const socket = this;
-        const { server } = this;
+        const server = socket.server;
         if (!server.channels.has(channelID)) {
           socket.send(createErrorResponse(
             { type: SUB, channelID, reason: `Unknown channel id: ${channelID}` }
@@ -14698,7 +14703,7 @@ var init_pubsub2 = __esm({
       },
       [KV_FILTER]({ channelID, kvFilter }) {
         const socket = this;
-        const { server } = this;
+        const server = socket.server;
         if (!server.channels.has(channelID)) {
           socket.send(createErrorResponse(
             { type: SUB, channelID, reason: `Unknown channel id: ${channelID}` }
@@ -14718,7 +14723,7 @@ var init_pubsub2 = __esm({
       },
       [UNSUB]({ channelID }) {
         const socket = this;
-        const { server } = this;
+        const server = socket.server;
         if (!server.channels.has(channelID)) {
           socket.send(createErrorResponse(
             { type: UNSUB, channelID, reason: `Unknown channel id: ${channelID}` }
@@ -15802,10 +15807,14 @@ var init_server = __esm({
       type: "onPreResponse",
       method: function(request, h2) {
         try {
-          if (typeof request.response.header === "function") {
-            request.response.header("X-Frame-Options", "deny");
+          const req = request;
+          const response = req.response;
+          if (typeof response.header === "function") {
+            response.header("X-Frame-Options", "deny");
           } else {
-            request.response.output.headers["X-Frame-Options"] = "deny";
+            const output = response.output;
+            const headers = output.headers;
+            headers["X-Frame-Options"] = "deny";
           }
         } catch (err) {
           console.warn(default8.yellow("[backend] Could not set X-Frame-Options header:", err.message));
@@ -16053,8 +16062,12 @@ var init_server = __esm({
     });
     if (process10.env.NODE_ENV === "development" && !process10.env.CI) {
       hapi.events.on("response", (request) => {
-        const ip = request.headers["x-real-ip"] || request.info.remoteAddress;
-        console.debug(default8`{grey ${ip}: ${request.method} ${request.path} --> ${request.response.statusCode}}`);
+        const req = request;
+        const headers = req.headers;
+        const info = req.info;
+        const ip = headers["x-real-ip"] || info.remoteAddress;
+        const response = req.response;
+        console.debug(default8`{grey ${ip}: ${req.method} ${req.path} --> ${response.statusCode}}`);
       });
     }
     default4("okTurtles.data/set", PUBSUB_INSTANCE, createServer(hapi.listener, {
@@ -16076,16 +16089,22 @@ var init_server = __esm({
           const server = this.server;
           const subscriptionId = socket.pushSubscriptionId;
           if (!subscriptionId) return;
-          if (!server.pushSubscriptions[subscriptionId]) return;
-          server.pushSubscriptions[subscriptionId].sockets.delete(socket);
+          const pushSubscriptions = server.pushSubscriptions;
+          const subscribersByChannelID = server.subscribersByChannelID;
+          if (!pushSubscriptions[subscriptionId]) return;
+          const subscription = pushSubscriptions[subscriptionId];
+          const sockets = subscription.sockets;
+          sockets.delete(socket);
           delete socket.pushSubscriptionId;
-          if (server.pushSubscriptions[subscriptionId].sockets.size === 0) {
-            server.pushSubscriptions[subscriptionId].subscriptions.forEach((channelID) => {
-              if (!server.subscribersByChannelID[channelID]) {
-                server.subscribersByChannelID[channelID] = /* @__PURE__ */ new Set();
+          if (sockets.size === 0) {
+            const subscriptions = subscription.subscriptions;
+            for (const channelID of subscriptions) {
+              const channelKey = channelID;
+              if (!subscribersByChannelID[channelKey]) {
+                subscribersByChannelID[channelKey] = /* @__PURE__ */ new Set();
               }
-              server.subscribersByChannelID[channelID].add(server.pushSubscriptions[subscriptionId]);
-            });
+              subscribersByChannelID[channelKey].add(subscription);
+            }
           }
         }
       },
@@ -16093,7 +16112,8 @@ var init_server = __esm({
         [REQUEST_TYPE.PUSH_ACTION]: async function(...args) {
           const { data } = args[0];
           const socket = this;
-          const { action, payload } = data;
+          const dataObj = data;
+          const { action, payload } = dataObj;
           if (!action) {
             socket.send(createPushErrorResponse({ message: "'action' field is required" }));
           }
@@ -16119,11 +16139,13 @@ var init_server = __esm({
           const socket = this;
           const { server } = this;
           if (!socket.pushSubscriptionId) return;
-          if (!server.pushSubscriptions[socket.pushSubscriptionId]) {
+          const serverObj = server;
+          const pushSubscriptions = serverObj.pushSubscriptions;
+          if (!pushSubscriptions[socket.pushSubscriptionId]) {
             delete socket.pushSubscriptionId;
             return;
           }
-          addChannelToSubscription(server, socket.pushSubscriptionId, channelID);
+          addChannelToSubscription(serverObj, socket.pushSubscriptionId, channelID);
         },
         // This handler removes subscribed channels from the web push subscription
         // associated with the WS, so that when the WS is closed we don't send
@@ -16133,11 +16155,13 @@ var init_server = __esm({
           const socket = this;
           const { server } = this;
           if (!socket.pushSubscriptionId) return;
-          if (!server.pushSubscriptions[socket.pushSubscriptionId]) {
+          const serverObj = server;
+          const pushSubscriptions = serverObj.pushSubscriptions;
+          if (!pushSubscriptions[socket.pushSubscriptionId]) {
             delete socket.pushSubscriptionId;
             return;
           }
-          deleteChannelFromSubscription(server, socket.pushSubscriptionId, channelID);
+          deleteChannelFromSubscription(serverObj, socket.pushSubscriptionId, channelID);
         }
       }
     }));
@@ -16208,15 +16232,20 @@ var init_server = __esm({
         const now = Date.now();
         const pubsub = default4("okTurtles.data/get", PUBSUB_INSTANCE);
         const notification = JSON.stringify({ type: "recurring" });
-        Object.values(pubsub.pushSubscriptions || {}).filter(
-          (pushSubscription) => !!pushSubscription.settings.heartbeatInterval && pushSubscription.sockets.size === 0
-        ).forEach((pushSubscription) => {
-          const last = map.get(pushSubscription) ?? Number.NEGATIVE_INFINITY;
-          if (now - last < pushSubscription.settings.heartbeatInterval) return;
-          postEvent(pushSubscription, notification).then(() => {
-            map.set(pushSubscription, now);
+        Object.values(pubsub.pushSubscriptions || {}).filter((pushSubscription) => {
+          const sub = pushSubscription;
+          const settings = sub.settings;
+          const sockets = sub.sockets;
+          return !!settings?.heartbeatInterval && sockets.size === 0;
+        }).forEach((pushSubscription) => {
+          const sub = pushSubscription;
+          const last = map.get(sub) ?? Number.NEGATIVE_INFINITY;
+          const settings = sub.settings;
+          if (now - last < settings.heartbeatInterval) return;
+          postEvent(sub, notification).then(() => {
+            map.set(sub, now);
           }).catch((e2) => {
-            console.warn(e2, "Error sending recurring message to web push client", pushSubscription.id);
+            console.warn(e2, "Error sending recurring message to web push client", sub.id);
           });
         });
       }, 1 * 60 * 60 * 1e3);

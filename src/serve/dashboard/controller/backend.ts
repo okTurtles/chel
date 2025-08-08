@@ -9,7 +9,7 @@ const languageFileMap = new Map([
 export function handleFetchResult (type: string): ((r: Response) => Promise<unknown>) {
   return function (r: Response) {
     if (!r.ok) throw new Error(`${r.status}: ${r.statusText}`)
-    return (r as any)[type]()
+    return (r as unknown as { [key: string]: () => Promise<unknown> })[type]()
   }
 }
 

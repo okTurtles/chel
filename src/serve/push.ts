@@ -34,12 +34,17 @@ interface StoreSubscriptionPayload {
   subscriptionInfo?: unknown;
 }
 
-interface PushSubscriptionInfo {
+export interface PushSubscriptionInfo {
+  endpoint: URL;
   keys: {
     auth: string; // base64url encoded
     p256dh: string; // base64url encoded
   };
+  id: string;
   encryptionKeys: Promise<[Buffer, Buffer]>;
+  settings: unknown;
+  sockets: Set<WebSocketConnection>;
+  subscriptions: Set<string>;
 }
 
 interface PushServerActionHandlers {
@@ -103,8 +108,8 @@ const removeSubscription = async (subscriptionId: string): Promise<void> => {
 
 // Wrap a SubscriptionInfo object to include a subscription ID and encryption
 // keys
-export const subscriptionInfoWrapper = (subscriptionId: string, subscriptionInfo: any, extra: { channelIDs?: string[], settings?: any }): any => {
-  subscriptionInfo.endpoint = new URL(subscriptionInfo.endpoint)
+export const subscriptionInfoWrapper = (subscriptionId: string, subscriptionInfo: { endpoint: string; keys: { auth: string; p256dh: string } }, extra: { channelIDs?: string[], settings?: unknown }): PushSubscriptionInfo => {
+  (subscriptionInfo as { endpoint: string | URL; keys: { auth: string; p256dh: string } }).endpoint = new URL(subscriptionInfo.endpoint)
 
   Object.defineProperties(subscriptionInfo, {
     'id': {
@@ -117,7 +122,7 @@ export const subscriptionInfoWrapper = (subscriptionId: string, subscriptionInfo
     'encryptionKeys': {
       get: (() => {
         let count = 0
-        let resultPromise: any
+        let resultPromise: Promise<unknown> | undefined
         let salt: Buffer
         let uaPublic: Buffer
 
@@ -165,7 +170,7 @@ export const subscriptionInfoWrapper = (subscriptionId: string, subscriptionInfo
 
   Object.freeze(subscriptionInfo)
 
-  return subscriptionInfo
+  return subscriptionInfo as unknown as PushSubscriptionInfo
 }
 
 // Web push subscriptions (that contain a body) are mandatorily encrypted. The
@@ -182,12 +187,12 @@ export const subscriptionInfoWrapper = (subscriptionId: string, subscriptionInfo
 // push notifications that isn't already public or could be derived from other
 // public sources. The main concern if the encryption is compromised would be
 // the ability to infer which channels a client is subscribed to.
-const encryptPayload = async (subscription: any, data: string): Promise<Buffer> => {
+const encryptPayload = async (subscription: { encryptionKeys: Promise<[Buffer, Buffer]> }, data: string): Promise<Buffer> => {
   const readableStream = new Response(data).body
   if (!readableStream) throw new Error('Failed to create readable stream')
   const [asPublic, IKM] = await subscription.encryptionKeys
 
-  return rfc8188Encrypt(aes128gcm, readableStream as unknown as ReadableStream<BufferSource>, 32768, asPublic, IKM).then(async (bodyStream: ReadableStream<ArrayBufferLike>) => {
+  return rfc8188Encrypt(aes128gcm, readableStream as unknown as ReadableStream<BufferSource>, 32768, asPublic.buffer as Readonly<ArrayBufferLike>, IKM.buffer as Readonly<ArrayBufferLike>).then(async (bodyStream: ReadableStream<ArrayBufferLike>) => {
     const chunks: Uint8Array[] = []
     const reader = bodyStream.getReader()
     for (;;) {
@@ -199,7 +204,7 @@ const encryptPayload = async (subscription: any, data: string): Promise<Buffer> 
   })
 }
 
-export const postEvent = async (subscription: any, event: string | null): Promise<void> => {
+export const postEvent = async (subscription: PushSubscriptionInfo, event: string | null): Promise<void> => {
   const authorization = await vapidAuthorization(subscription.endpoint)
   // Note: web push notifications can be 'bodyless' or they can contain a body
   // If there's no body, there isn't anything to encrypt, so we skip both the
@@ -275,19 +280,19 @@ export const pushServerActionhandlers: PushServerActionHandlers = {
     }
     let subscriptionId: string | null = null
     let host = ''
-    let subscriptionWrapper: any = null
+    let subscriptionWrapper: PushSubscriptionInfo | null = null
     try {
       subscriptionId = await getSubscriptionId(subscriptionInfo)
       if (!subscriptionId) {
         throw new Error('Failed to generate subscription ID')
       }
-      subscriptionWrapper = server.pushSubscriptions[subscriptionId]
+      subscriptionWrapper = server.pushSubscriptions[subscriptionId] as unknown as PushSubscriptionInfo
 
       if (!subscriptionWrapper) {
         console.debug(`saving new push subscription '${subscriptionId}':`, subscriptionInfo)
         // If this is a new subscription, we call `subscriptionInfoWrapper` and store it in memory.
-        server.pushSubscriptions[subscriptionId] = subscriptionInfoWrapper(subscriptionId, subscriptionInfo, { settings })
-        subscriptionWrapper = server.pushSubscriptions[subscriptionId]
+        server.pushSubscriptions[subscriptionId] = subscriptionInfoWrapper(subscriptionId, subscriptionInfo as { endpoint: string; keys: { auth: string; p256dh: string } }, { settings })
+        subscriptionWrapper = server.pushSubscriptions[subscriptionId] as unknown as PushSubscriptionInfo
         host = subscriptionWrapper.endpoint.host
         await addSubscriptionToIndex(subscriptionId)
         await saveSubscription(server, subscriptionId)
@@ -295,7 +300,9 @@ export const pushServerActionhandlers: PushServerActionHandlers = {
         // This is mostly for testing to be able to auto-remove invalid or expired
         // endpoints. This doesn't need more error handling than any other failed
         // call to `postEvent`.
-        await postEvent(subscriptionWrapper, JSON.stringify({ type: 'initial' }))
+        if (subscriptionWrapper) {
+          await postEvent(subscriptionWrapper, JSON.stringify({ type: 'initial' }))
+        }
       } else {
         // Otherwise, if this is an _existing_ push subscription, we don't need
         // to call `subscriptionInfoWrapper` but we need to stop sending messages
@@ -309,7 +316,9 @@ export const pushServerActionhandlers: PushServerActionHandlers = {
         if (subscriptionWrapper.sockets.size === 0) {
           subscriptionWrapper.subscriptions.forEach((channelID: string) => {
             if (!server.subscribersByChannelID[channelID]) return
-            server.subscribersByChannelID[channelID].delete(subscriptionWrapper)
+            if (subscriptionWrapper) {
+              server.subscribersByChannelID[channelID].delete(subscriptionWrapper as unknown as WebSocketConnection)
+            }
           })
         }
       }
@@ -345,7 +354,7 @@ export const pushServerActionhandlers: PushServerActionHandlers = {
       // WS is closed, see the `close` () function in socketHandlers in server.js)
       socket.pushSubscriptionId = subscriptionId
       subscriptionWrapper.subscriptions.forEach((channelID: string) => {
-        server.subscribersByChannelID[channelID]?.delete(subscriptionWrapper)
+        server.subscribersByChannelID[channelID]?.delete(subscriptionWrapper as unknown as WebSocketConnection)
       })
       subscriptionWrapper.sockets.add(socket)
       socket.subscriptions?.forEach((channelID: string) => {

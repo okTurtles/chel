@@ -25,7 +25,7 @@ export function lazyPage (lazyImport: () => Promise<unknown>): () => Promise<unk
 
   return () => Promise.resolve({
     functional: true,
-    render (h: any, { data, children }: { data: unknown, children: unknown }) {
+    render (h: (component: unknown, data: unknown, children: unknown) => unknown, { data, children }: { data: unknown, children: unknown }) {
       return h(handler, data, children)
     }
   })

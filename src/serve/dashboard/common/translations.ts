@@ -80,7 +80,7 @@ Vue.component('i18n', {
       default: 'span'
     }
   },
-  render: function (h: any, context: any) {
+  render: function (h: (tag: string, data: unknown, content: unknown) => unknown, context: { children: Array<{ text: string }>; props: { args?: Record<string, unknown>; tag: string }; data: unknown }) {
     const text = context.children[0].text
     const translation = L(text, context.props.args || {})
 
@@ -89,12 +89,14 @@ Vue.component('i18n', {
       return h(context.props.tag, context.data, text)
     }
     // Prevent reverse tabnabbing by including `rel="noopener noreferrer"` when rendering as an outbound hyperlink.
-    if (context.props.tag === 'a' && context.data.attrs.target === '_blank') {
-      context.data.attrs.rel = 'noopener noreferrer'
+    const data = context.data as { attrs?: { target?: string; rel?: string }; domProps?: { innerHTML?: string } }
+    if (context.props.tag === 'a' && data.attrs?.target === '_blank') {
+      if (!data.attrs) data.attrs = {}
+      data.attrs.rel = 'noopener noreferrer'
     }
 
-    if (!context.data.domProps) context.data.domProps = {}
-    context.data.domProps.innerHTML = sanitize(translation)
-    return h(context.props.tag, context.data)
+    if (!data.domProps) data.domProps = {}
+    data.domProps.innerHTML = sanitize(translation)
+    return h(context.props.tag, data, '')
   }
 })

@@ -21,7 +21,7 @@ import {
   createPushErrorResponse,
   createServer
 } from './pubsub.ts'
-import { addChannelToSubscription, deleteChannelFromSubscription, postEvent, pushServerActionhandlers, subscriptionInfoWrapper } from './push.ts'
+import { addChannelToSubscription, deleteChannelFromSubscription, postEvent, pushServerActionhandlers, subscriptionInfoWrapper, type PushSubscriptionInfo } from './push.ts'
 
 // ES module equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url)
@@ -29,7 +29,7 @@ const __dirname = dirname(__filename)
 
 type WorkerType = {
   ready: Promise<void>,
-  rpcSbp: (...args: any[]) => Promise<any>,
+  rpcSbp: (...args: unknown[]) => Promise<unknown>,
   terminate: () => Promise<number>
 }
 
@@ -40,17 +40,17 @@ const createWorker = (path: string): WorkerType => {
   const launchWorker = (): Promise<void> => {
     worker = new Worker(path)
     return new Promise<void>((resolve, reject) => {
-      const msgHandler = (msg: any) => {
+      const msgHandler = (msg: unknown) => {
         if (msg === 'ready') {
           worker.off('error', reject)
-          worker.on('error', (e: any) => {
+          worker.on('error', (e: unknown) => {
             console.error(e, `Running worker ${basename(path)} terminated. Attempting relaunch...`)
             worker.off('message', msgHandler)
             // This won't result in an infinite loop because of exiting and
             // because this handler is only executed after the 'ready' event
             // Relaunch can happen multiple times, so long as the worker doesn't
             // immediately fail.
-            ready = launchWorker().catch((e: any) => {
+            ready = launchWorker().catch((e: unknown) => {
               console.error(e, `Error on worker ${basename(path)} relaunch`)
               process.exit(1)
             })
@@ -64,8 +64,8 @@ const createWorker = (path: string): WorkerType => {
   }
   ready = launchWorker()
 
-  const rpcSbp = (...args: any[]): Promise<any> => {
-    return ready.then(() => new Promise<any>((resolve, reject) => {
+  const rpcSbp = (...args: unknown[]): Promise<unknown> => {
+    return ready.then(() => new Promise<unknown>((resolve, reject) => {
       const mc = new MessageChannel()
       const cleanup = ((worker: Worker) => () => {
         worker.off('error', reject)
@@ -74,7 +74,7 @@ const createWorker = (path: string): WorkerType => {
       })(worker)
       mc.port2.onmessage = (event) => {
         cleanup()
-        const [success, result] = (event.data as any) as [boolean, any]
+        const [success, result] = (event.data as unknown) as [boolean, unknown]
         if (success) return resolve(result)
         reject(result)
       }
@@ -82,7 +82,7 @@ const createWorker = (path: string): WorkerType => {
         cleanup()
         reject(Error('Message error'))
       }
-      worker.postMessage([mc.port1, ...args], [mc.port1 as any])
+      worker.postMessage([mc.port1, ...args], [mc.port1] as unknown as readonly import('node:worker_threads').Transferable[])
       // If the worker itself breaks during an SBP call, we want to make sure
       // this promise immediately rejects
       worker.once('error', reject)
@@ -140,20 +140,24 @@ const hapi = new Hapi({
 // See https://stackoverflow.com/questions/26213255/hapi-set-header-before-sending-response
 hapi.ext({
   type: 'onPreResponse',
-  method: function (request: any, h: any) {
+  method: function (request: unknown, h: unknown) {
     try {
       // Hapi Boom error responses don't have `.header()`,
       // but custom headers can be manually added using `.output.headers`.
       // See https://hapi.dev/module/boom/api/.
-      if (typeof request.response.header === 'function') {
-        request.response.header('X-Frame-Options', 'deny')
+      const req = request as Record<string, unknown>
+      const response = req.response as Record<string, unknown>
+      if (typeof response.header === 'function') {
+        (response.header as (key: string, value: string) => void)('X-Frame-Options', 'deny')
       } else {
-        request.response.output.headers['X-Frame-Options'] = 'deny'
+        const output = response.output as Record<string, unknown>
+        const headers = output.headers as Record<string, string>
+        headers['X-Frame-Options'] = 'deny'
       }
-    } catch (err: any) {
-      console.warn(chalk.yellow('[backend] Could not set X-Frame-Options header:', err.message))
+    } catch (err: unknown) {
+      console.warn(chalk.yellow('[backend] Could not set X-Frame-Options header:', (err as Error).message))
     }
-    return h.continue
+    return (h as Record<string, unknown>).continue
   }
 })
 
@@ -162,8 +166,8 @@ const appendToOrphanedNamesIndex = appendToIndexFactory('_private_orphaned_names
 sbp('okTurtles.data/set', SERVER_INSTANCE, hapi)
 
 sbp('sbp/selectors/register', {
-  'backend/server/persistState': async function (deserializedHEAD: any) {
-    const contractID = (deserializedHEAD as any).contractID
+  'backend/server/persistState': async function (deserializedHEAD: unknown) {
+    const contractID = (deserializedHEAD as Record<string, unknown>).contractID
     const cheloniaState = sbp('chelonia/rootState')
     // If the contract has been removed or the height hasn't been updated,
     // there's nothing to persist.
@@ -173,17 +177,17 @@ sbp('sbp/selectors/register', {
     // it means that the message wasn't processed (we'd expect the height to
     // be `>=` than the message's height if so), and therefore we also shouldn't
     // save it.
-    if (!cheloniaState.contracts[contractID] || cheloniaState.contracts[contractID].height < (deserializedHEAD as any).head.height) {
+    if (!cheloniaState.contracts[contractID as string] || cheloniaState.contracts[contractID as string].height < (((deserializedHEAD as Record<string, unknown>).head as Record<string, unknown>).height as number)) {
       return
     }
     // If the current HEAD is not what we expect, don't save (the state could
     // have been updated by a later message). This ensures that we save the
     // latest state and also reduces the number of write operations
-    if (cheloniaState.contracts[contractID].HEAD === (deserializedHEAD as any).hash) {
+    if (cheloniaState.contracts[contractID as string].HEAD === (deserializedHEAD as Record<string, unknown>).hash) {
       // Extract the parts of the state relevant to this contract
       const state = {
-        contractState: cheloniaState[contractID],
-        cheloniaContractInfo: cheloniaState.contracts[contractID]
+        contractState: (cheloniaState as Record<string, unknown>)[contractID as string],
+        cheloniaContractInfo: cheloniaState.contracts[contractID as string]
       }
       // Save the state under a 'contract partition' key, so that updating a
       // contract doesn't require saving the entire state.
@@ -209,7 +213,7 @@ sbp('sbp/selectors/register', {
     // is used when starting up the server to know which keys to fetch.
     // In the future, consider having a multi-level index, since the index can
     // get pretty large.
-    if (contractID === deserializedHEAD.hash) {
+    if (contractID === (deserializedHEAD as Record<string, unknown>).hash) {
       // We want to ensure that the index is updated atomically (i.e., if there
       // are multiple new contracts, all of them should be added), so a queue
       // is needed for the load & store operation.
@@ -218,8 +222,8 @@ sbp('sbp/selectors/register', {
     // If this was a key op, add it to a keyop index. To prevent the index from
     // growing too large, the index is segmented for every KEYOP_SEGMENT_LENGTH
     // height values
-    if (cheloniaState.contracts[contractID].previousKeyOp === deserializedHEAD.hash) {
-      await appendToIndexFactory(`_private_keyop_idx_${contractID}_${deserializedHEAD.head.height - deserializedHEAD.head.height % KEYOP_SEGMENT_LENGTH}`)(String(deserializedHEAD.head.height))
+    if (cheloniaState.contracts[contractID as string].previousKeyOp === (deserializedHEAD as Record<string, unknown>).hash) {
+      await appendToIndexFactory(`_private_keyop_idx_${contractID}_${(((deserializedHEAD as Record<string, unknown>).head as Record<string, unknown>).height as number) - (((deserializedHEAD as Record<string, unknown>).head as Record<string, unknown>).height as number) % KEYOP_SEGMENT_LENGTH}`)(String(((deserializedHEAD as Record<string, unknown>).head as Record<string, unknown>).height))
     }
   },
   'backend/server/appendToContractIndex': appendToIndexFactory('_private_cheloniaState_index'),
@@ -230,32 +234,32 @@ sbp('sbp/selectors/register', {
     console.debug(chalk.blue.bold(`[pubsub] Broadcasting KV change on ${contractID} to key ${key}`))
     await pubsub.broadcast(pubsubMessage, { to: subscribers, wsOnly: true })
   },
-  'backend/server/broadcastEntry': async function (deserializedHEAD: any, entry: string) {
+  'backend/server/broadcastEntry': async function (deserializedHEAD: unknown, entry: string) {
     const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE)
-    const contractID = (deserializedHEAD as any).contractID
-    const contractType = sbp('chelonia/rootState').contracts[contractID]?.type
+    const contractID = (deserializedHEAD as Record<string, unknown>).contractID
+    const contractType = sbp('chelonia/rootState').contracts[contractID as string]?.type
     const pubsubMessage = createMessage(NOTIFICATION_TYPE.ENTRY, entry, { contractID, contractType })
-    const subscribers = (pubsub as any).enumerateSubscribers(contractID)
-    console.debug(chalk.blue.bold(`[pubsub] Broadcasting ${(deserializedHEAD as any).description()}`))
-    await (pubsub as any).broadcast(pubsubMessage, { to: subscribers })
+    const subscribers = ((pubsub as Record<string, unknown>).enumerateSubscribers as (id: string) => unknown)(contractID as string)
+    console.debug(chalk.blue.bold(`[pubsub] Broadcasting ${((deserializedHEAD as Record<string, unknown>).description as () => string)()}`))
+    await ((pubsub as Record<string, unknown>).broadcast as (msg: unknown, opts: unknown) => Promise<void>)(pubsubMessage, { to: subscribers })
   },
   'backend/server/broadcastDeletion': async function (contractID: string) {
     const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE)
     const pubsubMessage = createMessage(NOTIFICATION_TYPE.DELETION, contractID)
-    const subscribers = (pubsub as any).enumerateSubscribers(contractID)
+    const subscribers = ((pubsub as Record<string, unknown>).enumerateSubscribers as (id: string) => unknown)(contractID)
     console.debug(chalk.blue.bold(`[pubsub] Broadcasting deletion of ${contractID}`))
-    await (pubsub as any).broadcast(pubsubMessage, { to: subscribers })
+    await ((pubsub as Record<string, unknown>).broadcast as (msg: unknown, opts: unknown) => Promise<void>)(pubsubMessage, { to: subscribers })
   },
-  'backend/server/handleEntry': async function (deserializedHEAD: any, entry: string) {
-    const contractID = (deserializedHEAD as any).contractID
-    if ((deserializedHEAD as any).head.op === SPMessage.OP_CONTRACT) {
+  'backend/server/handleEntry': async function (deserializedHEAD: unknown, entry: string) {
+    const contractID = (deserializedHEAD as Record<string, unknown>).contractID
+    if (((deserializedHEAD as Record<string, unknown>).head as Record<string, unknown>).op === SPMessage.OP_CONTRACT) {
       sbp('okTurtles.data/get', PUBSUB_INSTANCE).channels.add(contractID)
     }
     await sbp('chelonia/private/in/enqueueHandleEvent', contractID, entry)
     // Persist the Chelonia state after processing a message
     await sbp('backend/server/persistState', deserializedHEAD, entry)
     // No await on broadcast for faster responses
-    sbp('backend/server/broadcastEntry', deserializedHEAD, entry).catch((e: any) => console.error(e, 'Error broadcasting entry', contractID, (deserializedHEAD as any).hash))
+    sbp('backend/server/broadcastEntry', deserializedHEAD, entry).catch((e: unknown) => console.error(e, 'Error broadcasting entry', contractID, (deserializedHEAD as Record<string, unknown>).hash))
   },
   'backend/server/saveOwner': async function (ownerID: string, resourceID: string) {
     // Store the owner for the current resource
@@ -334,8 +338,8 @@ sbp('sbp/selectors/register', {
       if (manifest.version !== '1.0.0') throw new BackendErrorBadData('unsupported manifest version')
       if (!Array.isArray(manifest.chunks) || !manifest.chunks.length) throw BackendErrorBadData('missing chunks')
       // Delete all chunks
-      await Promise.all(manifest.chunks.map(([, cid]: [any, string]) => sbp('chelonia.db/delete', cid)))
-    } catch (e: any) {
+      await Promise.all(manifest.chunks.map(([, cid]: [unknown, string]) => sbp('chelonia.db/delete', cid)))
+    } catch (e: unknown) {
       console.warn(e, `Error parsing manifest for ${cid}. It's probably not a file manifest.`)
       throw new BackendErrorNotFound()
     }
@@ -441,11 +445,11 @@ sbp('sbp/selectors/register', {
       await sbp('backend/server/removeFromIndirectResourcesIndex', cid)
       await sbp('chelonia.db/delete', `_private_indirectResources_${cid}`)
 
-      await sbp('chelonia.db/get', `_private_cid2name_${cid}`).then((name: any) => {
+      await sbp('chelonia.db/get', `_private_cid2name_${cid}`).then((name: unknown) => {
         if (!name) return
         return Promise.all([
           sbp('chelonia.db/delete', `_private_cid2name_${cid}`),
-          appendToOrphanedNamesIndex(name)
+          appendToOrphanedNamesIndex(name as string)
         ])
       })
       await sbp('chelonia.db/delete', `_private_rid_${cid}`)
@@ -470,32 +474,36 @@ sbp('sbp/selectors/register', {
       await removeFromIndexFactory('_private_cheloniaState_index')(cid)
       // Note: `creditsWorker.js` could be updated to do this instead
       await removeFromIndexFactory('_private_billable_entities')(cid)
-      sbp('backend/server/broadcastDeletion', cid).catch((e: any) => {
+      sbp('backend/server/broadcastDeletion', cid).catch((e: unknown) => {
         console.error(e, 'Error broadcasting contract deletion', cid)
       })
     }).finally(() => {
       contractsPendingDeletion.delete(cid)
-    }).catch((e: any) => {
+    }).catch((e: unknown) => {
       console.error(e, 'Error in contract deletion cleanup')
     })
   }
 })
 
 if (process.env.NODE_ENV === 'development' && !process.env.CI) {
-  hapi.events.on('response', (request: any) => {
-    const ip = request.headers['x-real-ip'] || request.info.remoteAddress
-    console.debug(chalk`{grey ${ip}: ${request.method} ${request.path} --> ${request.response.statusCode}}`)
+  hapi.events.on('response', (request: unknown) => {
+    const req = request as Record<string, unknown>
+    const headers = req.headers as Record<string, string>
+    const info = req.info as Record<string, unknown>
+    const ip = headers['x-real-ip'] || info.remoteAddress
+    const response = req.response as Record<string, unknown>
+    console.debug(chalk`{grey ${ip}: ${req.method} ${req.path} --> ${response.statusCode}}`)
   })
 }
 
 sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
   serverHandlers: {
-    connection (socket: any) {
+    connection (socket: unknown) {
       const versionInfo = {
         GI_VERSION: GI_VERSION || null,
         CONTRACTS_VERSION: CONTRACTS_VERSION || null
       }
-      socket.send(createNotification(NOTIFICATION_TYPE.VERSION_INFO, versionInfo))
+      ;((socket as Record<string, unknown>).send as (msg: unknown) => void)(createNotification(NOTIFICATION_TYPE.VERSION_INFO, versionInfo))
     }
   },
   socketHandlers: {
@@ -503,49 +511,56 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
     // that subsequent messages to subscribed channels should now be sent to its
     // associated web push subscription, if it exists.
     close () {
-      const socket = this as any
-      const server = (this as any).server
+      const socket = this as Record<string, unknown>
+      const server = (this as Record<string, unknown>).server as Record<string, unknown>
 
-      const subscriptionId = socket.pushSubscriptionId
+      const subscriptionId = socket.pushSubscriptionId as string
 
       if (!subscriptionId) return
-      if (!server.pushSubscriptions[subscriptionId]) return
+      const pushSubscriptions = server.pushSubscriptions as Record<string, unknown>
+      const subscribersByChannelID = server.subscribersByChannelID as Record<string, unknown>
+      if (!pushSubscriptions[subscriptionId]) return
 
-      server.pushSubscriptions[subscriptionId].sockets.delete(socket)
+      const subscription = pushSubscriptions[subscriptionId] as Record<string, unknown>
+      const sockets = subscription.sockets as Set<unknown>
+      sockets.delete(socket)
       delete socket.pushSubscriptionId
 
-      if (server.pushSubscriptions[subscriptionId].sockets.size === 0) {
-        server.pushSubscriptions[subscriptionId].subscriptions.forEach((channelID: any) => {
-          if (!server.subscribersByChannelID[channelID]) {
-            server.subscribersByChannelID[channelID] = new Set()
+      if (sockets.size === 0) {
+        const subscriptions = subscription.subscriptions as Iterable<unknown>
+        for (const channelID of subscriptions) {
+          const channelKey = channelID as string
+          if (!subscribersByChannelID[channelKey]) {
+            subscribersByChannelID[channelKey] = new Set()
           }
-          server.subscribersByChannelID[channelID].add(server.pushSubscriptions[subscriptionId])
-        })
+          (subscribersByChannelID[channelKey] as Set<unknown>).add(subscription)
+        }
       }
     }
   },
   messageHandlers: {
     [REQUEST_TYPE.PUSH_ACTION]: async function (...args: unknown[]) {
-      const { data } = args[0] as { data: any }
-      const socket = this as any
-      const { action, payload } = data
+      const { data } = args[0] as { data: unknown }
+      const socket = this as Record<string, unknown>
+      const dataObj = data as Record<string, unknown>
+      const { action, payload } = dataObj
 
       if (!action) {
-        (socket as any).send(createPushErrorResponse({ message: '\'action\' field is required' }))
+        ((socket as Record<string, unknown>).send as (msg: unknown) => void)(createPushErrorResponse({ message: '\'action\' field is required' }))
       }
 
       const handler = pushServerActionhandlers[action as keyof typeof pushServerActionhandlers]
 
       if (handler) {
         try {
-          await (handler as any)(socket, payload)
+          await (handler as (socket: unknown, payload: unknown) => Promise<void>)(socket, payload)
         } catch (error) {
-          const message = (error as any)?.message || `push server failed to perform [${action}] action`
-          console.warn(error, `[${(socket as any).ip}] Action '${action}' for '${REQUEST_TYPE.PUSH_ACTION}' handler failed: ${message}`)
-          ;(socket as any).send(createPushErrorResponse({ actionType: action, message }))
+          const message = (error as Record<string, unknown>)?.message || `push server failed to perform [${action}] action`
+          console.warn(error, `[${(socket as Record<string, unknown>).ip}] Action '${action}' for '${REQUEST_TYPE.PUSH_ACTION}' handler failed: ${message}`)
+          ;((socket as Record<string, unknown>).send as (msg: unknown) => void)(createPushErrorResponse({ actionType: action as string, message: message as string }))
         }
       } else {
-        ;(socket as any).send(createPushErrorResponse({ message: `No handler for the '${action}' action` }))
+        ;((socket as Record<string, unknown>).send as (msg: unknown) => void)(createPushErrorResponse({ message: `No handler for the '${action}' action` }))
       }
     },
     // This handler adds subscribed channels to the web push subscription
@@ -553,38 +568,42 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
     // sending messages as web push notifications.
     [NOTIFICATION_TYPE.SUB] (...args: unknown[]) {
       const { channelID } = args[0] as { channelID: string }
-      const socket = this as any
-      const { server } = this as any
+      const socket = this as Record<string, unknown>
+      const { server } = this as Record<string, unknown>
 
       // If the WS doesn't have an associated push subscription, we're done
       if (!socket.pushSubscriptionId) return
       // If the WS has an associated push subscription that's since been
       // removed, delete the association and return.
-      if (!server.pushSubscriptions[socket.pushSubscriptionId]) {
+      const serverObj = server as Record<string, unknown>
+      const pushSubscriptions = serverObj.pushSubscriptions as Record<string, unknown>
+      if (!pushSubscriptions[socket.pushSubscriptionId as string]) {
         delete socket.pushSubscriptionId
         return
       }
 
-      addChannelToSubscription(server, socket.pushSubscriptionId, channelID)
+      addChannelToSubscription(serverObj as { pushSubscriptions: Record<string, { settings?: unknown; subscriptions: Set<string> }> }, socket.pushSubscriptionId as string, channelID)
     },
     // This handler removes subscribed channels from the web push subscription
     // associated with the WS, so that when the WS is closed we don't send
     // messages as web push notifications.
     [NOTIFICATION_TYPE.UNSUB] (...args: unknown[]) {
       const { channelID } = args[0] as { channelID: string }
-      const socket = this as any
-      const { server } = this as any
+      const socket = this as Record<string, unknown>
+      const { server } = this as Record<string, unknown>
 
       // If the WS doesn't have an associated push subscription, we're done
       if (!socket.pushSubscriptionId) return
       // If the WS has an associated push subscription that's since been
       // removed, delete the association and return.
-      if (!server.pushSubscriptions[socket.pushSubscriptionId]) {
+      const serverObj = server as Record<string, unknown>
+      const pushSubscriptions = serverObj.pushSubscriptions as Record<string, unknown>
+      if (!pushSubscriptions[socket.pushSubscriptionId as string]) {
         delete socket.pushSubscriptionId
         return
       }
 
-      deleteChannelFromSubscription(server, socket.pushSubscriptionId, channelID)
+      deleteChannelFromSubscription(serverObj as { pushSubscriptions: Record<string, { settings?: unknown; subscriptions: Set<string> }> }, socket.pushSubscriptionId as string, channelID)
     }
   }
 }))
@@ -639,7 +658,7 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
       })
     }))
   }
-  sbp('chelonia.persistentActions/load').catch((e: any) => {
+  sbp('chelonia.persistentActions/load').catch((e: unknown) => {
     console.error(e, 'Error loading persistent actions')
   })
   // https://hapi.dev/tutorials/plugins
@@ -672,18 +691,22 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
     // Find push subscriptions that do _not_ have a WS open. This means clients
     // that are 'asleep' and that might be woken up by the push event
     Object.values(pubsub.pushSubscriptions || {})
-      .filter((pushSubscription: any) =>
-        !!(pushSubscription as any).settings.heartbeatInterval &&
-        (pushSubscription as any).sockets.size === 0
-      ).forEach((pushSubscription: any) => {
-        const last = map.get(pushSubscription) ?? Number.NEGATIVE_INFINITY
+      .filter((pushSubscription: unknown) => {
+        const sub = pushSubscription as Record<string, unknown>
+        const settings = sub.settings as Record<string, unknown>
+        const sockets = sub.sockets as Set<unknown>
+        return !!(settings?.heartbeatInterval) && sockets.size === 0
+      }).forEach((pushSubscription: unknown) => {
+        const sub = pushSubscription as Record<string, unknown>
+        const last = map.get(sub) ?? Number.NEGATIVE_INFINITY
+        const settings = sub.settings as Record<string, unknown>
         // If we've recently sent a recurring notification, skip it
-        if ((now - last) < (pushSubscription as any).settings.heartbeatInterval) return
+        if ((now - last) < (settings.heartbeatInterval as number)) return
 
-        postEvent(pushSubscription, notification).then(() => {
-          map.set(pushSubscription, now)
+        postEvent(sub as unknown as PushSubscriptionInfo, notification).then(() => {
+          map.set(sub, now)
         }).catch((e) => {
-          console.warn(e, 'Error sending recurring message to web push client', pushSubscription.id)
+          console.warn(e, 'Error sending recurring message to web push client', sub.id)
         })
       })
     // Repeat every 1 hour
