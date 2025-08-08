@@ -386,7 +386,13 @@ function resolveAlias (importPath: string, relativeToRoot: string): string | nul
         // Special case for @sbp - it should resolve directly to deps.js
         resolvedPath = prefix + target
       } else {
-        resolvedPath = prefix + target.replace(/\.\.\//g, '')
+        // For other aliases, we need to handle the target path correctly
+        // If target starts with '../', we need to resolve it relative to the prefix
+        let sanitizedTarget = target
+        while (sanitizedTarget.includes('../')) {
+          sanitizedTarget = sanitizedTarget.replace('../', '')
+        }
+        resolvedPath = prefix + sanitizedTarget
 
         // Add remainder (like /events from @view-utils/events)
         if (remainder) {
