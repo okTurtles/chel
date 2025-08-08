@@ -20,7 +20,6 @@
     "scripts/**/*"
   ],
   "dependencies": {
-    "axios": "0.27.2",
     "dompurify": "2.2.7",
     "rimraf": "3.0.2",
     "tar": "6.1.11",
