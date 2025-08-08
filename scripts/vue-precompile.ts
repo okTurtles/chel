@@ -386,7 +386,7 @@ function resolveAlias (importPath: string, relativeToRoot: string): string | nul
         // Special case for @sbp - it should resolve directly to deps.js
         resolvedPath = prefix + target
       } else {
-        resolvedPath = prefix + target.replace('../', '')
+        resolvedPath = prefix + target.replace(/\.\.\//g, '')
 
         // Add remainder (like /events from @view-utils/events)
         if (remainder) {
