@@ -52,7 +52,7 @@ const options = {
     'npm:ws@8.5.0',
     'npm:vue@2.7.16',
     'npm:vuex@3.6.0',
-    'npm:dompurify@2.2.7',
+    'npm:dompurify@2.4.2',
     'npm:uuid@9.0.0',
     'npm:turtledash@1.0.3',
     'npm:buffer@6.0.3',

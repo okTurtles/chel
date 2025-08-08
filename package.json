@@ -20,7 +20,7 @@
     "scripts/**/*"
   ],
   "dependencies": {
-    "dompurify": "2.2.7",
+    "dompurify": "2.4.2",
     "rimraf": "3.0.2",
     "tar": "6.1.11",
     "three": "0.151.3",
