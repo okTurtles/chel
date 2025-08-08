@@ -240,7 +240,7 @@ sbp('sbp/selectors/register', {
       // NB! There can be potentially many DB reads
       const totalSize = (await Promise.all(allSubresources.map((id) => {
         return sbp('chelonia.db/get', `_private_size_${id}`)
-      }))).reduce((acc: number, cv: string | null, i: number) => {
+      }))).reduce((acc: number, cv: string | null) => {
         if (cv) {
           // Sum the sizes (parsing string values).
           const parsed = parseInt(cv, 10)

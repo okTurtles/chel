@@ -2,46 +2,6 @@ import { initDB } from './database.ts'
 import { tweetnacl, AUTHSALT, CONTRACTSALT, CS, SALT_LENGTH_IN_OCTETS, SU } from '~/deps.ts'
 import { Buffer } from 'node:buffer'
 
-// Simple assertion helpers to replace 'should'
-const should = {
-  be: {
-    of: {
-      type: (expectedType: string) => ({
-        equal: (actual: unknown, message?: string) => {
-          const actualType = typeof actual
-          if (actualType !== expectedType) {
-            throw new Error(message || `Expected type ${expectedType}, got ${actualType}`)
-          }
-        }
-      })
-    }
-  },
-  equal: (expected: unknown, message?: string) => (actual: unknown) => {
-    if (actual !== expected) {
-      throw new Error(message || `Expected ${expected}, got ${actual}`)
-    }
-  }
-}
-
-// Helper function to replace should() calls
-const shouldAssert = (value: unknown) => ({
-  be: {
-    of: {
-      type: (expectedType: string) => {
-        const actualType = typeof value
-        if (actualType !== expectedType) {
-          throw new Error(`Expected type ${expectedType}, got ${actualType}`)
-        }
-      }
-    }
-  },
-  equal: (expected: unknown, message?: string) => {
-    if (value !== expected) {
-      throw new Error(message || `Expected ${expected}, got ${value}`)
-    }
-  }
-})
-
 const nacl = tweetnacl
 
 import { getChallenge, getContractSalt, redeemSaltRegistrationToken, register, registrationKey, updateContractSalt } from './zkppSalt.ts'

@@ -1,7 +1,9 @@
-/* globals logger */
+// TODO: Use logger for debug output if needed
 
 import { sbp, chalk, SPMessage, maybeParseCID, multicodes, createCID, Boom, Joi, Bottleneck, blake32Hash, Request, ResponseToolkit } from '~/deps.ts'
 import { Buffer } from 'node:buffer'
+// TODO: Use logger for debugging route handlers
+// import { logger } from './logger.ts'
 import { isIP } from 'node:net'
 import path from 'node:path'
 import process from 'node:process'
@@ -208,7 +210,7 @@ route.POST('/event', {
     },
     payload: Joi.string().required()
   }
-}, async function (request: Request, h: ResponseToolkit): Promise<any> {
+}, async function (request: Request): Promise<any> {
   if (process.env.CHELONIA_ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
   // IMPORTANT: IT IS A REQUIREMENT THAT ANY PROXY SERVERS (E.G. nginx) IN FRONT OF US SET THE
   // X-Real-IP HEADER! OTHERWISE THIS IS EASILY SPOOFED!
@@ -329,7 +331,7 @@ route.GET('/eventsAfter/{contractID}/{since}/{limit?}', {
       keyOps: Joi.boolean()
     })
   }
-}, async function (request: Request, h: ResponseToolkit): Promise<any> {
+}, async function (request: Request): Promise<any> {
   const { contractID, since, limit } = request.params
   const ip = request.headers['x-real-ip'] || request.info.remoteAddress
   try {
@@ -366,11 +368,15 @@ route.GET('/ownResources', {
     strategies: ['chel-shelter'],
     mode: 'required'
   }
-}, async function (request: Request, h: ResponseToolkit): Promise<any> {
+}, async function (request: Request): Promise<any> {
   const billableContractID = request.auth.credentials.billableContractID
   const resources = (await sbp('chelonia.db/get', `_private_resources_${billableContractID}`))?.split('\x00')
 
-  return resources || []
+  if (resources) {
+    return resources
+  } else {
+    return []
+  }
 })
 
 if (process.env.NODE_ENV === 'development') {
@@ -513,7 +519,7 @@ if (process.env.NODE_ENV === 'development') {
       maxBytes: 6 * MEGABYTE, // TODO: make this a configurable setting
       timeout: 10 * SECOND // TODO: make this a configurable setting
     }
-  }, async function (request: Request, h: ResponseToolkit): Promise<any> {
+  }, async function (request: Request): Promise<any> {
     if (process.env.CHELONIA_ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
     try {
       console.log('FILE UPLOAD!')
@@ -900,7 +906,7 @@ route.POST('/kv/{contractID}/{key}', {
         serializedData,
         meta: key
       })
-    } catch (e: any) {
+    } catch {
       return Boom.badData()
     }
 
@@ -1064,7 +1070,7 @@ route.POST('/zkpp/register/{name}', {
       }
     ])
   }
-}, async function (req: Request, h: ResponseToolkit): Promise<any> {
+}, async function (req: Request): Promise<any> {
   if (process.env.CHELONIA_ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
   const lookupResult = await sbp('backend/db/lookupName', req.params['name'])
   if (lookupResult) {
@@ -1125,7 +1131,7 @@ route.GET('/zkpp/{contractID}/contract_hash', {
       hc: Joi.string().required()
     })
   }
-}, async function (req: Request, h: ResponseToolkit): Promise<any> {
+}, async function (req: Request): Promise<any> {
   try {
     const salt = await getContractSalt(req.params['contractID'], req.query['r'], req.query['s'], req.query['sig'], req.query['hc'])
 
@@ -1153,7 +1159,7 @@ route.POST('/zkpp/{contractID}/updatePasswordHash', {
       Ea: Joi.string().required()
     })
   }
-}, async function (req: Request, h: ResponseToolkit): Promise<any> {
+}, async function (req: Request): Promise<any> {
   if (process.env.CHELONIA_ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
   try {
     const result = await updateContractSalt(req.params['contractID'], req.payload['r'], req.payload['s'], req.payload['sig'], req.payload['hc'], req.payload['Ea'])

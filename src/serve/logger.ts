@@ -6,19 +6,20 @@ import process from 'node:process'
 const prettyPrint = process.env.NODE_ENV === 'development' || process.env.CI || process.env.CYPRESS_RECORD_KEY || process.env.PRETTY
 // support regular console.log('asdf', 'adsf', 'adsf') style logging that might be used by libraries
 // https://github.com/pinojs/pino/blob/master/docs/api.md#interpolationvalues-any
-function logMethod (args: unknown[], method: (...args: unknown[]) => void) {
-  if (!method || typeof method !== 'function') {
-    console.error('logMethod called with invalid method:', method)
-    return
-  }
-  const stringIdx = typeof args[0] === 'string' ? 0 : 1
-  if (args.length > 1) {
-    for (let i = stringIdx + 1; i < args.length; ++i) {
-      args[stringIdx] += typeof args[i] === 'string' ? ' %s' : ' %o'
-    }
-  }
-  method(...args)
-}
+// TODO: Use this function for custom logging
+// function logMethod (args: unknown[], method: (...args: unknown[]) => void) {
+//   if (!method || typeof method !== 'function') {
+//     console.error('logMethod called with invalid method:', method)
+//     return
+//   }
+//   const stringIdx = typeof args[0] === 'string' ? 0 : 1
+//   if (args.length > 1) {
+//     for (let i = stringIdx + 1; i < args.length; ++i) {
+//       args[stringIdx] += typeof args[i] === 'string' ? ' %s' : ' %o'
+//     }
+//   }
+//   method(...args)
+// }
 const logger = (pino as unknown as (config: unknown) => {
   level: string;
   levels: { values: Record<string, unknown> };

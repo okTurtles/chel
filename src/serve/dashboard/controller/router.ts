@@ -18,7 +18,7 @@ Vue.use(Router)
 const router = new Router({
   mode: 'history',
   base: process.env.NODE_ENV === 'production' ? '' : '/dashboard',
-  scrollBehavior (to: unknown, from: unknown, savedPosition: unknown) {
+  scrollBehavior () {
     return { x: 0, y: 0 }
   },
   routes: [

@@ -1,4 +1,4 @@
-/* globals logger */
+// TODO: Use logger for debug output if needed
 
 import { Buffer } from 'node:buffer'
 import process from 'node:process'
@@ -34,6 +34,8 @@ import type {
 type JSONType = string | number | boolean | null | JSONObject | JSONType[]
 type JSONObject = { [key: string]: JSONType }
 import { postEvent } from './push.ts'
+// TODO: Use logger for debugging WebSocket events
+// import { logger } from './logger.ts'
 import { chalk, WebSocket, WebSocketServer } from '~/deps.ts'
 
 const { bold } = chalk
@@ -248,7 +250,7 @@ const defaultServerHandlers = {
 // Default handlers for server-side client socket events.
 // The `this` binding refers to the connected `ws` socket object.
 const defaultSocketEventHandlers = {
-  close (code: string, reason: string) {
+  close () {
     const socket = this as any
     const { server } = this as any
 
@@ -259,7 +261,7 @@ const defaultSocketEventHandlers = {
     socket.subscriptions.clear()
   },
 
-  message (data: Buffer | ArrayBuffer | Buffer[], isBinary: boolean) {
+  message (data: Buffer | ArrayBuffer | Buffer[]) {
     const socket = this as any
     const { server } = this as any
     const text = data.toString()
@@ -299,7 +301,7 @@ const defaultSocketEventHandlers = {
 
 // These handlers receive the connected `ws` socket through the `this` binding.
 const defaultMessageHandlers = {
-  [PONG] (msg: Message) {
+  [PONG] () {
     const socket = this as any
     // const timestamp = Number(msg.data)
     // const latency = Date.now() - timestamp

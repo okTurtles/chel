@@ -552,8 +552,8 @@ var init_auth = __esm({
     init_deps();
     plugin = {
       name: "chel-auth",
-      register(server, opts) {
-        server.auth.scheme("chel-bearer", (server2, options2) => {
+      register(server) {
+        server.auth.scheme("chel-bearer", () => {
           return {
             authenticate(request, h2) {
               const { authorization } = request.headers;
@@ -569,7 +569,7 @@ var init_auth = __esm({
             }
           };
         });
-        server.auth.scheme("chel-shelter", (server2, options2) => {
+        server.auth.scheme("chel-shelter", () => {
           return {
             authenticate(request, h2) {
               const { authorization } = request.headers;
@@ -14623,7 +14623,7 @@ var init_pubsub2 = __esm({
       }
     };
     defaultSocketEventHandlers = {
-      close(code, reason) {
+      close() {
         const socket = this;
         const { server } = this;
         for (const channelID of socket.subscriptions) {
@@ -14631,7 +14631,7 @@ var init_pubsub2 = __esm({
         }
         socket.subscriptions.clear();
       },
-      message(data, isBinary) {
+      message(data) {
         const socket = this;
         const { server } = this;
         const text = data.toString();
@@ -14664,7 +14664,7 @@ var init_pubsub2 = __esm({
       }
     };
     defaultMessageHandlers2 = {
-      [PONG](msg) {
+      [PONG]() {
         const socket = this;
         socket.activeSinceLastPing = true;
       },
@@ -14957,7 +14957,7 @@ var init_routes = __esm({
         },
         payload: default6.string().required()
       }
-    }, async function(request, h2) {
+    }, async function(request) {
       if (process9.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
       const ip = request.headers["x-real-ip"] || request.info.remoteAddress;
       try {
@@ -15059,7 +15059,7 @@ var init_routes = __esm({
           keyOps: default6.boolean()
         })
       }
-    }, async function(request, h2) {
+    }, async function(request) {
       const { contractID, since, limit } = request.params;
       const ip = request.headers["x-real-ip"] || request.info.remoteAddress;
       try {
@@ -15081,10 +15081,14 @@ var init_routes = __esm({
         strategies: ["chel-shelter"],
         mode: "required"
       }
-    }, async function(request, h2) {
+    }, async function(request) {
       const billableContractID = request.auth.credentials.billableContractID;
       const resources = (await default4("chelonia.db/get", `_private_resources_${billableContractID}`))?.split("\0");
-      return resources || [];
+      if (resources) {
+        return resources;
+      } else {
+        return [];
+      }
     });
     if (process9.env.NODE_ENV === "development") {
       const levelToColor = {
@@ -15184,7 +15188,7 @@ var init_routes = __esm({
           timeout: 10 * SECOND
           // TODO: make this a configurable setting
         }
-      }, async function(request, h2) {
+      }, async function(request) {
         if (process9.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
         try {
           console.log("FILE UPLOAD!");
@@ -15468,7 +15472,7 @@ var init_routes = __esm({
             serializedData,
             meta: key
           });
-        } catch (e2) {
+        } catch {
           return default5.badData();
         }
         const existingSize = existing ? Buffer10.from(existing).byteLength : 0;
@@ -15593,7 +15597,7 @@ var init_routes = __esm({
           }
         ])
       }
-    }, async function(req, h2) {
+    }, async function(req) {
       if (process9.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
       const lookupResult = await default4("backend/db/lookupName", req.params["name"]);
       if (lookupResult) {
@@ -15646,7 +15650,7 @@ var init_routes = __esm({
           hc: default6.string().required()
         })
       }
-    }, async function(req, h2) {
+    }, async function(req) {
       try {
         const salt = await getContractSalt(req.params["contractID"], req.query["r"], req.query["s"], req.query["sig"], req.query["hc"]);
         if (salt) {
@@ -15671,7 +15675,7 @@ var init_routes = __esm({
           Ea: default6.string().required()
         })
       }
-    }, async function(req, h2) {
+    }, async function(req) {
       if (process9.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
       try {
         const result = await updateContractSalt(req.params["contractID"], req.payload["r"], req.payload["s"], req.payload["sig"], req.payload["hc"], req.payload["Ea"]);
@@ -15812,7 +15816,7 @@ var init_server = __esm({
     appendToOrphanedNamesIndex = appendToIndexFactory("_private_orphaned_names_index");
     default4("okTurtles.data/set", SERVER_INSTANCE, hapi);
     default4("sbp/selectors/register", {
-      "backend/server/persistState": async function(deserializedHEAD, entry) {
+      "backend/server/persistState": async function(deserializedHEAD) {
         const contractID = deserializedHEAD.contractID;
         const cheloniaState = default4("chelonia/rootState");
         if (!cheloniaState.contracts[contractID] || cheloniaState.contracts[contractID].height < deserializedHEAD.head.height) {
@@ -15906,8 +15910,11 @@ var init_server = __esm({
         });
       },
       "backend/server/updateContractFilesTotalSize": function(resourceID, size) {
-        const sizeKey = `_private_contractFilesTotalSize_${resourceID}`;
-        return updateSize(resourceID, sizeKey, size, true);
+        const contractsIndex = default4("okTurtles.data/get", "contractsIndex");
+        for (const [,] of Object.entries(contractsIndex)) {
+          const sizeKey = `_private_contractFilesTotalSize_${resourceID}`;
+          return updateSize(resourceID, sizeKey, size, true);
+        }
       },
       "backend/server/stop": function() {
         return hapi.stop();
@@ -16045,14 +16052,14 @@ var init_server = __esm({
       }
     });
     if (process10.env.NODE_ENV === "development" && !process10.env.CI) {
-      hapi.events.on("response", (req, event, tags) => {
-        const ip = req.headers["x-real-ip"] || req.info.remoteAddress;
-        console.debug(default8`{grey ${ip}: ${req.method} ${req.path} --> ${req.response.statusCode}}`);
+      hapi.events.on("response", (request) => {
+        const ip = request.headers["x-real-ip"] || request.info.remoteAddress;
+        console.debug(default8`{grey ${ip}: ${request.method} ${request.path} --> ${request.response.statusCode}}`);
       });
     }
     default4("okTurtles.data/set", PUBSUB_INSTANCE, createServer(hapi.listener, {
       serverHandlers: {
-        connection(socket, request) {
+        connection(socket) {
           const versionInfo = {
             GI_VERSION: GI_VERSION || null,
             CONTRACTS_VERSION: CONTRACTS_VERSION || null
@@ -16279,7 +16286,7 @@ var init_serve = __esm({
       console.error(err, "[server] Unhandled exception");
       process11.exit(1);
     });
-    process11.on("unhandledRejection", (reason, p) => {
+    process11.on("unhandledRejection", (reason) => {
       console.error(reason, "[server] Unhandled promise rejection:", reason);
       process11.exit(1);
     });
@@ -16456,7 +16463,7 @@ async function getMessagesSince(src2, contractID, sinceHeight, limit) {
 async function getRemoteMessagesSince(src2, contractID, sinceHeight, limit) {
   const response = await fetch(`${src2}/eventsAfter/${contractID}/${sinceHeight}`);
   if (!response.ok) {
-    const bodyText = await response.text().catch((_) => "") || "";
+    const bodyText = await response.text().catch(() => "") || "";
     throw new Error(`failed network request to ${src2}: ${response.status} - ${response.statusText} - '${bodyText}'`);
   }
   const b64messages = await response.json();
@@ -16742,7 +16749,7 @@ async function startDashboardServer(port) {
   const dashboardServer = await Promise.resolve().then(() => (init_dashboard_server(), dashboard_server_exports));
   await dashboardServer.startDashboard(port);
 }
-async function startApplicationServer(port, directory, options2) {
+async function startApplicationServer(port, directory) {
   process12.env.API_PORT = port.toString();
   process12.env.CHELONIA_APP_DIR = directory;
   const startServer = await Promise.resolve().then(() => (init_serve(), serve_exports));
@@ -16775,7 +16782,7 @@ async function serve(args) {
     }
     console.log(colors.cyan("\u{1F680} Starting application server..."));
     try {
-      await startApplicationServer(applicationPort, directory, options2);
+      await startApplicationServer(applicationPort, directory);
       console.log(colors.green(`\u2705 Application server started on port ${applicationPort}`));
     } catch (error) {
       console.error(colors.red("\u274C Failed to start application server:"), error);

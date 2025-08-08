@@ -30,7 +30,6 @@ export default tseslint.config(
       'indent': ['error', 2, { SwitchCase: 1 }],
       'eol-last': ['error', 'always'],
       'no-multiple-empty-lines': ['error', { max: 1 }],
-      "@typescript-eslint/no-unused-vars": "off",
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unused-expressions": "off",
       "no-control-regex": "off",

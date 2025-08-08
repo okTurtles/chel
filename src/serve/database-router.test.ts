@@ -1,4 +1,4 @@
-import { assert } from '~/deps.ts'
+// import { assert } from '~/deps.ts' // TODO: Add tests using assert
 import RouterBackend from './database-router.ts'
 import { cloneDeep, omit } from '~/deps.ts'
 

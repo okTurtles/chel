@@ -1,5 +1,5 @@
 import { Hapi, Inert, sbp, chalk, SPMessage, SERVER, multicodes, parseCID } from '~/deps.ts'
-import type { SubMessage, UnsubMessage } from '~/deps.ts'
+// import type { SubMessage, UnsubMessage } from './pubsub.ts' // TODO: Use for type checking
 import { basename, join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { Worker } from 'node:worker_threads'
@@ -162,7 +162,7 @@ const appendToOrphanedNamesIndex = appendToIndexFactory('_private_orphaned_names
 sbp('okTurtles.data/set', SERVER_INSTANCE, hapi)
 
 sbp('sbp/selectors/register', {
-  'backend/server/persistState': async function (deserializedHEAD: any, entry: string) {
+  'backend/server/persistState': async function (deserializedHEAD: any) {
     const contractID = (deserializedHEAD as any).contractID
     const cheloniaState = sbp('chelonia/rootState')
     // If the contract has been removed or the height hasn't been updated,
@@ -308,8 +308,11 @@ sbp('sbp/selectors/register', {
     })
   },
   'backend/server/updateContractFilesTotalSize': function (resourceID: string, size: number) {
-    const sizeKey = `_private_contractFilesTotalSize_${resourceID}`
-    return updateSize(resourceID, sizeKey, size, true)
+    const contractsIndex = sbp('okTurtles.data/get', 'contractsIndex')
+    for (const [,] of Object.entries(contractsIndex)) {
+      const sizeKey = `_private_contractFilesTotalSize_${resourceID}`
+      return updateSize(resourceID, sizeKey, size, true)
+    }
   },
   'backend/server/stop': function () {
     return hapi.stop()
@@ -479,15 +482,15 @@ sbp('sbp/selectors/register', {
 })
 
 if (process.env.NODE_ENV === 'development' && !process.env.CI) {
-  hapi.events.on('response', (req: any, event: any, tags: any) => {
-    const ip = req.headers['x-real-ip'] || req.info.remoteAddress
-    console.debug(chalk`{grey ${ip}: ${req.method} ${req.path} --> ${req.response.statusCode}}`)
+  hapi.events.on('response', (request: any) => {
+    const ip = request.headers['x-real-ip'] || request.info.remoteAddress
+    console.debug(chalk`{grey ${ip}: ${request.method} ${request.path} --> ${request.response.statusCode}}`)
   })
 }
 
 sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
   serverHandlers: {
-    connection (socket: any, request: any) {
+    connection (socket: any) {
       const versionInfo = {
         GI_VERSION: GI_VERSION || null,
         CONTRACTS_VERSION: CONTRACTS_VERSION || null

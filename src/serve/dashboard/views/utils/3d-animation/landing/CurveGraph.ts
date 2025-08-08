@@ -10,7 +10,7 @@ export default class CurveGraph extends Group {
     points = [],
     tubeColor = '#000000',
     sphereColor = '#000000',
-    edgeColor = '#000000',
+    // edgeColor = '#000000', // TODO: Use this for edge styling
     tubeRadius = 0.5,
     sphereRadius = 1,
     isDarkTheme = false

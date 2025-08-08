@@ -2,8 +2,8 @@ import { Hapi, Request, ResponseToolkit, Boom, verifyShelterAuthorizationHeader 
 
 const plugin = {
   name: 'chel-auth',
-  register (server: Hapi, opts: unknown) {
-    server.auth.scheme('chel-bearer', (server: Hapi, options: Record<string, unknown>) => {
+  register (server: Hapi) {
+    server.auth.scheme('chel-bearer', () => {
       return {
         authenticate (request: Request, h: ResponseToolkit) {
           const { authorization } = request.headers
@@ -20,7 +20,7 @@ const plugin = {
       }
     })
 
-    server.auth.scheme ('chel-shelter', (server: Hapi, options: Record<string, unknown>) => {
+    server.auth.scheme ('chel-shelter', () => {
       return {
         authenticate (request: Request, h: ResponseToolkit) {
           const { authorization } = request.headers

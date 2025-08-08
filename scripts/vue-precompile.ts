@@ -3,7 +3,7 @@
  */
 
 import { dirname, join, relative } from 'jsr:@std/path@1.1.1'
-import { ensureDir, exists } from 'jsr:@std/fs@1.0.19'
+import { ensureDir } from 'jsr:@std/fs@1.0.19'
 import { esbuild } from '~/deps.ts'
 
 // Vue template compiler for proper SFC parsing
@@ -328,9 +328,6 @@ function resolveImportPath (importPath: string, sourceFile: string, dashboardRoo
 }
 
 function transformImports (code: string, sourceFile: string, dashboardRoot: string): string {
-  const sourceDir = dirname(sourceFile)
-  const relativeToRoot = relative(dashboardRoot, sourceDir)
-
   let result = code
 
   result = result.replace(/from\s+['"]([^'"]+)['"]/g, (match, importPath) => {
