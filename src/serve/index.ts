@@ -1,4 +1,4 @@
-import { sbp, chalk, okturtlesData, okturtlesEvents } from '~/deps.ts'
+import { sbp, chalk } from '~/deps.ts'
 import { SERVER_RUNNING } from './events.ts'
 import { PUBSUB_INSTANCE } from './instance-keys.ts'
 import process from 'node:process'

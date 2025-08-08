@@ -55,10 +55,5 @@ export { EDWARDS25519SHA512BATCH, CURVE25519XSALSA20POLY1305, XSALSA20POLY1305 }
 export { keygen, serializeKey, deserializeKey, keygenOfSameType, keyId, generateSalt, deriveKeyFromPassword } from 'npm:@chelonia/crypto@1.0.1'
 export { sign, verifySignature, encrypt, decrypt } from 'npm:@chelonia/crypto@1.0.1'
 
-// SBP dependencies
-export { default as okturtlesData } from 'npm:@sbp/okturtles.data@0.1.5'
-export { default as okturtlesEventQueue } from 'npm:@sbp/okturtles.eventqueue@1.2.0'
-export { default as okturtlesEvents } from 'npm:@sbp/okturtles.events@1.0.0'
-
 // Vue validation dependencies
 export { validationMixin } from 'npm:vuelidate@0.7.6'

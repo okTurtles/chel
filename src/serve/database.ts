@@ -1,5 +1,5 @@
 import { Buffer } from 'node:buffer'
-import { sbp, maybeParseCID, multicodes, strToB64, checkKey, parsePrefixableKey, prefixHandlers, LRU, Boom, okturtlesData } from '~/deps.ts'
+import { sbp, maybeParseCID, multicodes, strToB64, checkKey, parsePrefixableKey, prefixHandlers, LRU, Boom } from '~/deps.ts'
 import { Readable } from 'node:stream'
 import fs from 'node:fs'
 import { readdir, readFile } from 'node:fs/promises'

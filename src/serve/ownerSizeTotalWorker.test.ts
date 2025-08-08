@@ -1,4 +1,4 @@
-import { sbp, assert, path, okturtlesData, okturtlesEvents, okturtlesEventQueue } from '~/deps.ts'
+import { sbp, assert, path } from '~/deps.ts'
 import { createCID } from '~/deps.ts'
 import { appendToIndexFactory, initDB, updateSize as updateSize_ } from './database.ts'
 
