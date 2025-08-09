@@ -38,7 +38,7 @@ export function throttle<T extends unknown[], R> (func: (...args: T) => R, delay
   }
 }
 
-export function debounce<T extends unknown[], R> (func: (...args: T) => R, wait: number, immediate: boolean | null | undefined): ((...args: T) => R | undefined) & { clear: () => void; flush: () => void } {
+export function debounce<T extends unknown[], R> (func: (...args: T) => R, wait: number, immediate?: boolean | null): ((...args: T) => R | undefined) & { clear: () => void; flush: () => void } {
   let timeout: ReturnType<typeof setTimeout> | null, args: T | null, context: unknown, timestamp: number, result: R | undefined
   if (wait == null) wait = 100
 
