@@ -54,7 +54,7 @@ class Axes extends Group {
   }
 }
 
-class CombineWithEdge extends Group {
+class CombineWithEdge extends Three.Group {
   data: { geometry: Three.BufferGeometry | null, material: Three.Material | null }
 
   constructor ({
@@ -80,8 +80,8 @@ class CombineWithEdge extends Group {
     const edgesMesh = new LineSegments(edges, new LineBasicMaterial({ color: edgeColor, transparent: true, opacity: edgeOpacity }))
 
     super()
-    ;(this as Three.Group).add(originalMesh)
-    ;(this as Three.Group).add(edgesMesh)
+    this.add(originalMesh)
+    this.add(edgesMesh)
     this.data = { geometry, material }
   }
 }
@@ -123,9 +123,9 @@ class Column extends Group {
     const faceTop = new CombineWithEdge({ geometry: faceGeometry, material: faceMaterial, edgeColor })
     const faceBottom = new CombineWithEdge({ geometry: faceGeometry, material: faceMaterial })
 
-    ;(faceTop as Three.Group).rotation.x = Math.PI / 2 * -1
-    ;(faceTop as Three.Group).position.set(0, height, 0)
-    ;(faceBottom as Three.Group).rotation.x = Math.PI / 2 * -1
+    faceTop.rotation.x = Math.PI / 2 * -1
+    faceTop.position.set(0, height, 0)
+    faceBottom.rotation.x = Math.PI / 2 * -1
 
     const cylinder = new Mesh(
       new CylinderGeometry(radius, radius, height, 64, 1, true),

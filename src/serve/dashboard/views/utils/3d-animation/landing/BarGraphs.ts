@@ -43,8 +43,8 @@ export default class BarGraphs extends Group {
       ]
       const geo1 = new BoxGeometry(barThickness, h1, barWidth)
       const geo2 = new BoxGeometry(barThickness, h2, barWidth)
-      const mesh1 = new CombineWithEdge({ mesh: new Mesh(geo1, mat1), edgeColor: '#414141' }) as Three.Group
-      const mesh2 = new CombineWithEdge({ mesh: new Mesh(geo2, mat2), edgeColor: '#414141' }) as Three.Group
+      const mesh1 = new CombineWithEdge({ mesh: new Mesh(geo1, mat1), edgeColor: '#414141' })
+      const mesh2 = new CombineWithEdge({ mesh: new Mesh(geo2, mat2), edgeColor: '#414141' })
 
       mesh1.position.set(0, h1 / 2, -1 * choppedW * 2)
       mesh2.position.set(0, h2 / 2, 1 * choppedW * 2)
@@ -56,7 +56,7 @@ export default class BarGraphs extends Group {
     pairs.position.z = BG_WIDTH * -0.435
 
     super()
-    ;(this as Three.Group).add(bgMesh)
-    ;(this as Three.Group).add(pairs)
+    this.add(bgMesh)
+    this.add(pairs)
   }
 }

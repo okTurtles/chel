@@ -28,7 +28,7 @@ export default class GraphBackground extends Group {
     const bgMaterial = new MeshLambertMaterial({
       color: bgColor, side: DoubleSide, transparent: true, opacity: 0.625
     })
-    const bgMesh = new CombineWithEdge({ mesh: new Mesh(bgGeometry, bgMaterial), edgeColor }) as Three.Group
+    const bgMesh = new CombineWithEdge({ mesh: new Mesh(bgGeometry, bgMaterial), edgeColor })
     bgMesh.position.y = height / 2
     bgMesh.position.x = (bgThickness + 0.05) * -1
 
@@ -56,11 +56,11 @@ export default class GraphBackground extends Group {
         return lineMesh
       })
     )
-    const lineMeshesClone = lineMeshes.clone(true) as Three.Group
+    const lineMeshesClone = lineMeshes.clone(true)
     lineMeshesClone.position.x = -1 * (bgThickness + 0.2)
     super()
-    ;(this as Three.Group).add(bgMesh)
-    ;(this as Three.Group).add(lineMeshes)
-    ;(this as Three.Group).add(lineMeshesClone)
+    this.add(bgMesh)
+    this.add(lineMeshes)
+    this.add(lineMeshesClone)
   }
 }

@@ -60,7 +60,7 @@ function initAnimation (canvasEl: HTMLCanvasElement, theme: string = 'light') {
   const box = new Edgify({
     geometry: new BoxGeometry(18, boxDepth, 38),
     color: isDarkTheme ? COLORS.primary_blue : COLORS.grey_0
-  }) as Three.Group
+  })
   box.position.y = boxDepth / 2 + PLANE_HEIGHT + 0.15
   scene.root.add(box)
 
@@ -79,8 +79,7 @@ function initAnimation (canvasEl: HTMLCanvasElement, theme: string = 'light') {
     sphereRadius: 0.85,
     tubeColor: COLORS.tube,
     sphereColor: COLORS.sphere,
-    isDarkTheme
-  }) as Three.Group
+  })
   curveGraph.position.x = -2.5
   scene.root.add(curveGraph)
 
@@ -88,8 +87,7 @@ function initAnimation (canvasEl: HTMLCanvasElement, theme: string = 'light') {
   const barGraphs = new BarGraphs({
     pairColors: [COLORS.bar_1, COLORS.bar_2],
     pairCount: 8,
-    isDarkTheme
-  }) as Three.Group
+  })
   barGraphs.position.set(2.5, PLANE_HEIGHT, 0)
   scene.root.add(barGraphs)
 
