@@ -30,7 +30,7 @@
   "lint": {
     "exclude": ["node_modules/", "vendor/", "dist/", "build/", "test/assets/"],
     "rules": {
-      "exclude": ["no-explicit-any", "no-unused-vars"]
+      "exclude": ["no-explicit-any", "no-unused-vars", "no-window", "no-window-prefix"]
     }
   },
   "vendor": true
