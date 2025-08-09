@@ -121,11 +121,11 @@ const onPointerMove = throttle((e: PointerEvent) => {
 
 function terminateAnimation () {
   cancelAnimationFrame(animationId)
-  globalThis.removeEventListener('pointermove', onPointerMove as EventListener)
+  window.removeEventListener('pointermove', onPointerMove as EventListener)
 }
 
 function addPointerMoveListener () {
-  globalThis.addEventListener('pointermove', onPointerMove as EventListener)
+  window.addEventListener('pointermove', onPointerMove as EventListener)
 }
 
 export {

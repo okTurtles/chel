@@ -139,7 +139,7 @@ class Column extends Group {
 }
 
 function resizeRendererToDisplaySize (renderer: Three.WebGLRenderer): boolean {
-  const pixelRatio = globalThis.devicePixelRatio || 1
+  const pixelRatio = window.devicePixelRatio || 1
   const canvasEl = renderer.domElement
   const [desiredWidth, desiredHeight] = [canvasEl.clientWidth * pixelRatio, canvasEl.clientHeight * pixelRatio]
   const needResize = canvasEl.width !== desiredWidth || canvasEl.height !== desiredHeight
