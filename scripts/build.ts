@@ -62,17 +62,7 @@ const options = {
     'npm:@apeleghq/rfc8188@1.0.7/encodings',
     'npm:@apeleghq/rfc8188@1.0.7/encrypt',
     // Chelonia dependencies
-    'npm:@chelonia/lib@1.2.2/functions',
-    'npm:@chelonia/lib@1.2.2/db',
-    'npm:@chelonia/lib@1.2.2/SPMessage',
-    'npm:@chelonia/lib@1.2.2/presets',
-    'npm:@chelonia/lib@1.2.2/errors',
     'npm:@chelonia/lib@1.2.2',
-    'npm:@chelonia/lib@1.2.2/pubsub',
-    'npm:@chelonia/lib@1.2.2/utils',
-    'npm:@chelonia/lib@1.2.2/zkpp',
-    'npm:@chelonia/lib@1.2.2/zkppConstants',
-    'npm:@chelonia/lib@1.2.2/persistent-actions',
     'npm:@chelonia/crypto@1.0.1',
     // SBP dependencies
     'npm:@sbp/okturtles.data@0.1.5',
