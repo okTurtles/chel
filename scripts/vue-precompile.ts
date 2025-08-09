@@ -373,11 +373,13 @@ function resolveAlias (importPath: string, relativeToRoot: string): string | nul
     '@validators': '../views/utils/validators',
   }
 
+  // Calculate depth and prefix once, outside the loop
+  const depth = relativeToRoot.split('/').filter((p) => p.length > 0).length
+  const prefix = depth > 0 ? '../'.repeat(depth) : './'
+
   for (const [alias, target] of Object.entries(aliases)) {
     if (cleanPath.startsWith(alias)) {
       const remainder = cleanPath.slice(alias.length)
-      const depth = relativeToRoot.split('/').filter((p) => p.length > 0).length
-      const prefix = depth > 0 ? '../'.repeat(depth) : './'
 
       // Build the resolved path
       let resolvedPath: string
@@ -386,12 +388,8 @@ function resolveAlias (importPath: string, relativeToRoot: string): string | nul
         // Special case for @sbp - it should resolve directly to deps.js
         resolvedPath = prefix + target
       } else {
-        // For other aliases, we need to handle the target path correctly
-        // If target starts with '../', we need to resolve it relative to the prefix
-        let sanitizedTarget = target
-        while (sanitizedTarget.includes('../')) {
-          sanitizedTarget = sanitizedTarget.replace('../', '')
-        }
+        // For other aliases, sanitize target by removing leading '../' sequences
+        const sanitizedTarget = target.replace(/^(\.\.\/)+/, '')
         resolvedPath = prefix + sanitizedTarget
 
         // Add remainder (like /events from @view-utils/events)
