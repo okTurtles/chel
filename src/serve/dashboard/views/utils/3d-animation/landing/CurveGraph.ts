@@ -10,7 +10,7 @@ export default class CurveGraph extends Group {
     points = [],
     tubeColor = '#000000',
     sphereColor = '#000000',
-    // edgeColor = '#000000', // TODO: Use this for edge styling
+    edgeColor = '#000000',
     tubeRadius = 0.5,
     sphereRadius = 1,
     isDarkTheme = false
@@ -52,7 +52,7 @@ export default class CurveGraph extends Group {
     const bgMesh = new GraphBackground({
       lineCount: 6,
       bgColor: isDarkTheme ? '#1c1c1c' : '#f7f9fb',
-      edgeColor: isDarkTheme ? '#e3f5ff' : '#414141',
+      edgeColor,
       lineColor: isDarkTheme ? '#e3f5ff' : '#000000',
       bgThickness
     })
