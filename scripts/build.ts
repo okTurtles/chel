@@ -64,10 +64,6 @@ const options = {
     // Chelonia dependencies
     'npm:@chelonia/lib@1.2.2',
     'npm:@chelonia/crypto@1.0.1',
-    // SBP dependencies
-    'npm:@sbp/okturtles.data@0.1.5',
-    'npm:@sbp/okturtles.eventqueue@1.2.0',
-    'npm:@sbp/okturtles.events@1.0.0',
     // Vue validation dependencies
     'npm:vuelidate@0.7.6',
     'npm:vue-clickaway@2.2.2',

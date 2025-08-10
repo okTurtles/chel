@@ -1,5 +1,4 @@
-import { sbp, Vue } from '~/deps.ts'
-import '~/deps.ts' // For okturtles.data and okturtles.events side effects
+import { sbp, Vue } from './deps.ts'
 import router from './controller/router.ts'
 import store from './model/state.ts'
 import { initTheme } from './model/themes.ts'

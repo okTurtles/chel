@@ -1,4 +1,4 @@
-import { Vue } from '~/deps.ts'
+import { Vue } from '../../../deps.ts'
 
 Vue.directive('focus', {
   inserted: (el, args) => {

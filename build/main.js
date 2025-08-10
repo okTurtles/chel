@@ -95,9 +95,6 @@ __export(deps_exports, {
   maybeParseCID: () => maybeParseCID,
   messageParser: () => messageParser,
   multicodes: () => multicodes,
-  okturtlesData: () => default15,
-  okturtlesEventQueue: () => default16,
-  okturtlesEvents: () => default17,
   omit: () => omit,
   parseCID: () => parseCID,
   parsePrefixableKey: () => parsePrefixableKey,
@@ -169,9 +166,6 @@ import { AUTHSALT, CONTRACTSALT, CS, SALT_LENGTH_IN_OCTETS, SU } from "npm:@chel
 import { EDWARDS25519SHA512BATCH, CURVE25519XSALSA20POLY1305, XSALSA20POLY1305 } from "npm:@chelonia/crypto@1.0.1";
 import { keygen, serializeKey, deserializeKey, keygenOfSameType, keyId, generateSalt, deriveKeyFromPassword } from "npm:@chelonia/crypto@1.0.1";
 import { sign, verifySignature, encrypt, decrypt } from "npm:@chelonia/crypto@1.0.1";
-import { default as default15 } from "npm:@sbp/okturtles.data@0.1.5";
-import { default as default16 } from "npm:@sbp/okturtles.eventqueue@1.2.0";
-import { default as default17 } from "npm:@sbp/okturtles.events@1.0.0";
 import { validationMixin } from "npm:vuelidate@0.7.6";
 var init_deps = __esm({
   "src/deps.ts"() {

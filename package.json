@@ -20,6 +20,11 @@
     "scripts/**/*"
   ],
   "dependencies": {
+    "@vue/component-compiler": "4.2.4",
+    "@sbp/sbp": "2.4.1",
+    "@sbp/okturtles.data": "0.1.5",
+    "@sbp/okturtles.eventqueue": "1.2.0",
+    "@sbp/okturtles.events": "1.0.0",
     "dompurify": "2.4.2",
     "rimraf": "3.0.2",
     "tar": "6.1.11",
@@ -32,9 +37,9 @@
   },
   "devDependencies": {
     "@eslint/js": "9.31.0",
-    "@types/three": "^0.179.0",
-    "esbuild": "^0.25.8",
-    "esbuild-sass-plugin": "^3.3.1",
+    "@types/three": "0.179.0",
+    "esbuild": "0.25.8",
+    "esbuild-sass-plugin": "3.3.1",
     "typescript-eslint": "8.37.0"
   }
 }

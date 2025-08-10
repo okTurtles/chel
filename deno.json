@@ -3,7 +3,7 @@
     "chel": "deno task lint && deno task build && deno run --allow-net --allow-read=. --allow-write=. --allow-sys --allow-env build/main.js",
     "lint": "deno run --allow-env --allow-read --allow-sys --deny-sys=\"networkInterfaces\" npm:eslint@9.31.0 ./src ./scripts",
     "compile": "deno run --allow-run --allow-read=. --allow-write=./dist scripts/compile.ts",
-    "build": "deno run --allow-read=. --allow-write=. --allow-net --allow-env --allow-sys scripts/vue-precompile.ts && node scripts/dashboard-node-build.js && deno run --node-modules-dir --allow-run --allow-read --allow-env --allow-write=./build,.vue-compiled,./dist-dashboard --allow-net --allow-sys scripts/build.ts",
+    "build": "node scripts/dashboard-node-esbuild.js && deno run --node-modules-dir --allow-run --allow-read --allow-env --allow-write=./build,./dist-dashboard --allow-net --allow-sys scripts/build.ts",
     "dist": "deno lint . && deno task lint && deno task build && deno task compile",
     "test": "SKIP_DB_FS_CASE_SENSITIVITY_CHECK=true deno task lint && SKIP_DB_FS_CASE_SENSITIVITY_CHECK=true deno test --unstable-worker-options --allow-read=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-write=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-env --allow-ffi --allow-net --allow-sys"
   },
