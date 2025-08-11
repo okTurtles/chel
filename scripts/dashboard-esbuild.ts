@@ -1,17 +1,21 @@
 // Node.js-based dashboard build using Group Income's Vue esbuild plugin approach
 // Uses Node.js to avoid Deno compatibility issues with @vue/component-compiler
 
-const esbuild = require('esbuild')
-const path = require('path')
-const { readFile, writeFile, mkdir, readdir } = require('fs/promises')
-const componentCompiler = require('@vue/component-compiler')
-const { relative, dirname, join } = require('path')
-const { sassPlugin } = require('esbuild-sass-plugin')
-const process = require('node:process')
+import { sassPlugin } from 'esbuild-sass-plugin'
+import fs from 'node:fs'
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
+import { basename, dirname, join, relative, resolve } from 'node:path'
+import process from 'node:process'
+import { fileURLToPath } from 'node:url'
+import componentCompiler, { type SFCCompiler, type StyleCompileResult, type DescriptorCompileResult } from 'npm:@vue/component-compiler'
+import esbuild from 'npm:esbuild'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
 
 // Fix for __proto__ issue with buble (used by @vue/component-compiler)
 // See: https://github.com/denoland/deno/issues/20618
-if (({}).__proto__ !== Object.prototype) {
+if (({} as Record<PropertyKey, unknown>).__proto__ !== Object.prototype) {
   Object.defineProperty(Object.prototype, '__proto__', {
     get () {
       return Object.getPrototypeOf(this)
@@ -23,20 +27,20 @@ if (({}).__proto__ !== Object.prototype) {
 }
 
 // Alias replacer function (adapted from Group Income's utils.js)
-function createAliasReplacer(aliases) {
+function createAliasReplacer (aliases: Record<string, string>) {
   if (Object.keys(aliases).some(alias => alias.includes('/'))) {
     throw new Error('Path aliases may not include slash characters.')
   }
-  
+
   const cwd = process.cwd()
-  const escapeForRegExp = (string) => string.replace(/[.*+?^${}()|\\[\]]/g, '\\$&')
+  const escapeForRegExp = (string: string) => string.replace(/[.*+?^${}()|\\[\]]/g, '\\$&')
   const escapedAndSortedAliases = Object.keys(aliases).map(escapeForRegExp).sort().reverse()
   const re = new RegExp(
     `(?:^import[ (]|\\bimport[ (]|import .+? from |^\\} from )['"](${ escapedAndSortedAliases.join('|')})(?:['"]|/[^'"]+?['"])`,
     'gm'
   )
 
-  return function aliasReplacer({ path, source }) {
+  return function aliasReplacer ({ path, source }: { path: string, source: string }) {
     const relativeDirPath = relative(dirname(path), cwd)
 
     return source.replace(re, (match, capture) => {
@@ -50,24 +54,24 @@ function createAliasReplacer(aliases) {
 }
 
 // Copy and update index.html with correct asset references
-async function copyAndUpdateIndexHtml(outDir) {
+async function copyAndUpdateIndexHtml (outDir: string) {
   try {
-    const sourceHtml = path.join(__dirname, '../src/serve/dashboard/index.html')
-    const targetHtml = path.join(outDir, 'index.html')
-    
+    const sourceHtml = join(__dirname, '../src/serve/dashboard/index.html')
+    const targetHtml = join(outDir, 'index.html')
+
     // Read the source HTML
     let htmlContent = await readFile(sourceHtml, 'utf8')
-    
+
     // Update asset references
     htmlContent = htmlContent.replace(
       '<script type="module" src="/main.js"></script>',
       '<script type="module" src="/assets/js/main.js"></script>\n  <link rel="stylesheet" href="/assets/css/main.css">'
     )
-    
+
     // Write the updated HTML
     await writeFile(targetHtml, htmlContent, 'utf8')
     console.log('📄 index.html copied and updated')
-    
+
     // CSS extraction is now handled by the Vue plugin
   } catch (error) {
     console.error('❌ Failed to copy index.html:', error)
@@ -76,26 +80,26 @@ async function copyAndUpdateIndexHtml(outDir) {
 }
 
 // Extract CSS from Vue components and create combined-styles.scss
-async function extractAndCreateCSS(outDir) {
+async function extractAndCreateCSS (outDir: string) {
   try {
     const vueFiles = await findVueFiles(dashboardDir)
     let combinedCSS = ''
-    
+
     for (const vueFile of vueFiles) {
       const source = await readFile(vueFile, 'utf-8')
       const styleMatch = source.match(/<style[^>]*scoped[^>]*>([\s\S]*?)<\/style>/)
-      
+
       if (styleMatch) {
-        const componentName = path.basename(vueFile, '.vue')
+        const componentName = basename(vueFile, '.vue')
         combinedCSS += `\n/* Styles from ${componentName}.vue */\n${styleMatch[1]}\n`
       }
     }
-    
+
     if (combinedCSS) {
-      const cssDir = path.join(outDir, 'assets', 'css')
+      const cssDir = join(outDir, 'assets', 'css')
       await mkdir(cssDir, { recursive: true })
-      
-      const cssPath = path.join(cssDir, 'combined-styles.css')
+
+      const cssPath = join(cssDir, 'combined-styles.css')
       await writeFile(cssPath, combinedCSS)
       console.log(`📄 Created combined styles: ${cssPath}`)
     }
@@ -105,14 +109,14 @@ async function extractAndCreateCSS(outDir) {
 }
 
 // Vue plugin adapted from Group Income's approach with proper SCSS extraction
-function vuePlugin({ aliases = {} } = {}) {
+function vuePlugin ({ aliases = {} } = {}) {
   const aliasReplacer = Object.keys(aliases).length > 0 ? createAliasReplacer(aliases) : null
-  const extractedStyles = []
+  const extractedStyles: string[] = []
   const compiler = componentCompiler.createDefaultCompiler()
 
   return {
     name: 'vue',
-    setup(build) {
+    setup (build) {
       build.onLoad({ filter: /[^/]\.vue$/ }, async ({ path }) => {
         let source = await readFile(path, 'utf8')
 
@@ -121,14 +125,14 @@ function vuePlugin({ aliases = {} } = {}) {
         }
 
         // Handle @assets alias in SCSS imports with context-aware relative paths
-        const assetsPath = require('path').resolve(__dirname, '../src/serve/dashboard/assets')
-        const componentDir = require('path').dirname(path)
-        const relativePath = require('path').relative(componentDir, assetsPath).replace(/\\/g, '/')
+        const assetsPath = resolve(__dirname, '../src/serve/dashboard/assets')
+        const componentDir = dirname(path)
+        const relativePath = relative(componentDir, assetsPath).replace(/\\/g, '/')
         source = source.replace(/@import\s+["']@assets\//g, `@import "${relativePath}/`)
 
         try {
           const result = await compile({ filename: path, source, compiler, extractedStyles })
-          
+
           // Return JS code WITHOUT styles - styles will be handled separately
           return { contents: result.code, loader: 'js' }
         } catch (error) {
@@ -140,60 +144,60 @@ function vuePlugin({ aliases = {} } = {}) {
       build.onStart(async () => {
         // Clear previous styles
         extractedStyles.length = 0
-        
+
         // Pre-extract styles from all Vue files to create combined-styles.scss
-        const vueFiles = await findVueFiles(path.join(__dirname, '../src/serve/dashboard'))
-        
+        const vueFiles = await findVueFiles(join(__dirname, '../src/serve/dashboard'))
+
         for (const vueFile of vueFiles) {
           let source = await readFile(vueFile, 'utf8')
-          
+
           if (aliasReplacer) {
             source = aliasReplacer({ path: vueFile, source })
           }
 
           // Handle @assets alias
-          const assetsPath = require('path').resolve(__dirname, '../src/serve/dashboard/assets')
-          const componentDir = require('path').dirname(vueFile)
-          const relativePath = require('path').relative(componentDir, assetsPath).replace(/\\/g, '/')
+          const assetsPath = resolve(__dirname, '../src/serve/dashboard/assets')
+          const componentDir = dirname(vueFile)
+          const relativePath = relative(componentDir, assetsPath).replace(/\\/g, '/')
           source = source.replace(/@import\s+["']@assets\//g, `@import "${relativePath}/`)
 
           // Extract styles from this Vue file
           try {
             await compile({ filename: vueFile, source, compiler, extractedStyles })
           } catch (error) {
-            console.warn(`Warning: Could not extract styles from ${vueFile}:`, error.message)
+            console.warn(`Warning: Could not extract styles from ${vueFile}:`, (error as Error)!.message)
           }
         }
 
         // Write combined-styles.scss file directly to dist-dashboard
         if (extractedStyles.length > 0) {
-          const cssDir = path.join(outDir, 'assets', 'css')
+          const cssDir = join(outDir, 'assets', 'css')
           await mkdir(cssDir, { recursive: true })
-          
+
           // Write both SCSS source and compiled CSS
-          const combinedScssPath = path.join(cssDir, 'combined-styles.scss')
-          const combinedCssPath = path.join(cssDir, 'combined-styles.css')
+          const combinedScssPath = join(cssDir, 'combined-styles.scss')
+          const combinedCssPath = join(cssDir, 'combined-styles.css')
           const allStyles = extractedStyles.join('\n\n')
-          
+
           await writeFile(combinedScssPath, allStyles, 'utf8')
           await writeFile(combinedCssPath, allStyles, 'utf8')
           console.log(`📄 Created combined-styles.scss and combined-styles.css with ${extractedStyles.length} style blocks`)
         }
       })
     }
-  }
+  } as esbuild.Plugin
 }
 
 // Helper function to find all Vue files
-async function findVueFiles(dir) {
-  const files = []
-  
-  async function walk(currentDir) {
+async function findVueFiles (dir: string) {
+  const files: string[] = []
+
+  async function walk (currentDir: string) {
     const entries = await readdir(currentDir, { withFileTypes: true })
-    
+
     for (const entry of entries) {
-      const fullPath = path.join(currentDir, entry.name)
-      
+      const fullPath = join(currentDir, entry.name)
+
       if (entry.isDirectory()) {
         await walk(fullPath)
       } else if (entry.name.endsWith('.vue')) {
@@ -201,12 +205,12 @@ async function findVueFiles(dir) {
       }
     }
   }
-  
+
   await walk(dir)
   return files
 }
 
-function compile({ filename, source, compiler, extractedStyles }) {
+function compile ({ filename, source, compiler, extractedStyles }: { filename: string, source: string, compiler: SFCCompiler, extractedStyles: string[] }) {
   try {
     if (/^\s*$/.test(source)) {
       throw new Error('File is empty')
@@ -214,7 +218,7 @@ function compile({ filename, source, compiler, extractedStyles }) {
 
     const descriptor = compiler.compileToDescriptor(filename, source)
     const errors = combineErrors(descriptor.template, ...descriptor.styles)
-    
+
     if (errors.length > 0) {
       return { errors }
     }
@@ -223,7 +227,7 @@ function compile({ filename, source, compiler, extractedStyles }) {
     if (extractedStyles && descriptor.styles && descriptor.styles.length > 0) {
       for (const styleBlock of descriptor.styles) {
         if (styleBlock.code && styleBlock.code.trim()) {
-          const componentName = path.basename(filename, '.vue')
+          const componentName = basename(filename, '.vue')
           const styleWithComment = `/* Styles from ${componentName}.vue */\n${styleBlock.code}\n`
           extractedStyles.push(styleWithComment)
         }
@@ -244,7 +248,7 @@ function compile({ filename, source, compiler, extractedStyles }) {
   }
 }
 
-function combineErrors(...outputs) {
+function combineErrors (...outputs: (DescriptorCompileResult['template'] | StyleCompileResult)[]) {
   return outputs.map((output) => {
     if (!output || !output.errors) {
       return []
@@ -253,7 +257,7 @@ function combineErrors(...outputs) {
   }).flat()
 }
 
-function convertError(error) {
+function convertError (error: unknown) {
   if (typeof error === 'string') {
     return { text: error }
   }
@@ -268,88 +272,87 @@ const outDir = 'dist-dashboard'
 
 // Path aliases are defined inline in the esbuild config
 
-async function build() {
+async function build () {
   console.log('🚀 Starting dashboard build...')
-  
-  const mainScssPath = path.join(dashboardDir, 'assets/style/main.scss')
-  
+
+  const mainScssPath = join(dashboardDir, 'assets/style/main.scss')
+
   const entryPoints = [
-    path.join(dashboardDir, 'main.ts'),
+    join(dashboardDir, 'main.ts'),
     mainScssPath
   ]
-  
+
   try {
     const result = await esbuild.build({
-    entryPoints,
-    bundle: true,
-    outdir: outDir,
-    format: 'esm',
-    target: 'es2020',
-    platform: 'browser',
-    splitting: true,
-    chunkNames: 'assets/js/[name]-[hash]',
-    entryNames: 'assets/js/[name]',
-    assetNames: 'assets/fonts/[name]',
-    sourcemap: false,
-    minify: false,
-    define: {
-      'process.env.NODE_ENV': '"development"'
-    },
-    alias: {
-      '@common': './src/serve/dashboard/common',
-      '@model': './src/serve/dashboard/model', 
-      '@controller': './src/serve/dashboard/controller',
-      '@view-utils': './src/serve/dashboard/views/utils',
-      '@views': './src/serve/dashboard/views',
-      '@components': './src/serve/dashboard/views/components',
-      '@containers': './src/serve/dashboard/views/containers',
-      '@pages': './src/serve/dashboard/views/pages',
-      '@forms': './src/serve/dashboard/views/components/forms',
-      '@validators': './src/serve/dashboard/views/utils/validators',
-      '@assets': './src/serve/dashboard/assets',
-      'node:process': 'process'
-    },
-    loader: {
-      '.vue': 'js', // Will be handled by our Vue plugin
-      '.png': 'file',
-      '.jpg': 'file',
-      '.jpeg': 'file',
-      '.gif': 'file',
-      '.svg': 'file',
-      '.woff': 'file',
-      '.woff2': 'file',
-      '.ttf': 'file',
-      '.eot': 'file'
-    },
-    external: [
+      entryPoints,
+      bundle: true,
+      outdir: outDir,
+      format: 'esm',
+      target: 'es2020',
+      platform: 'browser',
+      splitting: true,
+      chunkNames: 'assets/js/[name]-[hash]',
+      entryNames: 'assets/js/[name]',
+      assetNames: 'assets/fonts/[name]',
+      sourcemap: false,
+      minify: false,
+      define: {
+        'process.env.NODE_ENV': '"development"'
+      },
+      alias: {
+        '@common': './src/serve/dashboard/common',
+        '@model': './src/serve/dashboard/model',
+        '@controller': './src/serve/dashboard/controller',
+        '@view-utils': './src/serve/dashboard/views/utils',
+        '@views': './src/serve/dashboard/views',
+        '@components': './src/serve/dashboard/views/components',
+        '@containers': './src/serve/dashboard/views/containers',
+        '@pages': './src/serve/dashboard/views/pages',
+        '@forms': './src/serve/dashboard/views/components/forms',
+        '@validators': './src/serve/dashboard/views/utils/validators',
+        '@assets': './src/serve/dashboard/assets',
+        'node:process': 'process'
+      },
+      loader: {
+        '.vue': 'js', // Will be handled by our Vue plugin
+        '.png': 'file',
+        '.jpg': 'file',
+        '.jpeg': 'file',
+        '.gif': 'file',
+        '.svg': 'file',
+        '.woff': 'file',
+        '.woff2': 'file',
+        '.ttf': 'file',
+        '.eot': 'file'
+      },
+      external: [
 
-    ],
-    plugins: [
-      sassPlugin({
-        type: 'css',
-        outputStyle: 'expanded'
-      }),
-      vuePlugin({ aliases: {} }),
+      ],
+      plugins: [
+        sassPlugin({
+          type: 'css',
+        }),
+        vuePlugin({ aliases: {} }),
         // Plugin to resolve npm: prefixes (as suggested by @corrideat)
         {
           name: 'npm-prefix-resolver',
-          setup(build) {
+          setup (build) {
             build.onResolve({ filter: /^npm:/ }, args => {
               if (args.namespace !== 'file') return
               const { path, ...extra } = args
               return build.resolve(path.slice(4), extra)
             })
           }
-        },
+        } as esbuild.Plugin,
         // Process polyfill plugin
         {
           name: 'process-polyfill',
-          setup(build) {
+          setup (build) {
             build.onResolve({ filter: /^node:process$/ }, () => ({
               path: 'process-polyfill',
               namespace: 'process-polyfill'
             }))
-            
+
             build.onLoad({ filter: /.*/, namespace: 'process-polyfill' }, () => ({
               contents: `
                 // Process polyfill for browser environment
@@ -365,7 +368,7 @@ async function build() {
               loader: 'js'
             }))
           }
-        }
+        } as esbuild.Plugin
       ]
     })
 
@@ -379,35 +382,34 @@ async function build() {
     }
 
     // Move CSS files from assets/js/ to assets/css/
-    const fs = require('fs')
-    const jsDir = path.join(outDir, 'assets', 'js')
-    const cssDir = path.join(outDir, 'assets', 'css')
-    
+    const jsDir = join(outDir, 'assets', 'js')
+    const cssDir = join(outDir, 'assets', 'css')
+
     // Ensure CSS directory exists
     await mkdir(cssDir, { recursive: true })
-    
+
     // Move CSS files
     if (fs.existsSync(jsDir)) {
       const files = fs.readdirSync(jsDir)
       for (const file of files) {
         if (file.endsWith('.css')) {
-          const srcPath = path.join(jsDir, file)
-          const destPath = path.join(cssDir, file)
+          const srcPath = join(jsDir, file)
+          const destPath = join(cssDir, file)
           fs.renameSync(srcPath, destPath)
           console.log(`📄 Moved ${file} from assets/js/ to assets/css/`)
         }
       }
     }
-    
+
     // Copy and update index.html
     await copyAndUpdateIndexHtml(outDir)
-    
+
     // Extract and create combined CSS from Vue components
     await extractAndCreateCSS(outDir)
-    
+
     console.log('✅ Dashboard build completed successfully!')
     console.log(`📦 Output directory: ${outDir}`)
-    
+
     // Log bundle analysis
     if (result.metafile) {
       const analysis = await esbuild.analyzeMetafile(result.metafile)
@@ -422,11 +424,4 @@ async function build() {
   }
 }
 
-// Run if this is the main module
-if (require.main === module) {
-  build().then(success => {
-    process.exit(success ? 0 : 1)
-  })
-}
-
-module.exports = { build }
+await build()
