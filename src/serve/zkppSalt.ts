@@ -127,7 +127,7 @@ const getZkppSaltRecord = async (contractID: string) => {
   return null
 }
 
-const setZkppSaltRecord = async (contractID: string, hashedPassword: string, authSalt: string, contractSalt: string, cid: string | null | undefined) => {
+const setZkppSaltRecord = async (contractID: string, hashedPassword: string, authSalt: string, contractSalt: string, cid?: string | null | undefined) => {
   const recordId = `_private_rid_${contractID}`
   const encryptionKey = hashStringArray('REK', contractID, recordSecret).slice(0, nacl.secretbox.keyLength)
   const nonce = nacl.randomBytes(nacl.secretbox.nonceLength)
@@ -340,7 +340,7 @@ export const redeemSaltRegistrationToken = async (provisoryRegistrationKey: stri
     throw new Error('ZKPP token expired')
   }
 
-  await setZkppSaltRecord(contract, hashedPassword, authSalt, contractSalt, undefined)
+  await setZkppSaltRecord(contract, hashedPassword, authSalt, contractSalt)
 }
 
 export const redeemSaltUpdateToken = async (contract: string, token: string): Promise<(cid: string | null | undefined) => Promise<void>> => {

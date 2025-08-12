@@ -911,7 +911,7 @@ var init_zkppSalt = __esm({
       if (timestamp < Date.now() - 18e4) {
         throw new Error("ZKPP token expired");
       }
-      await setZkppSaltRecord(contract, hashedPassword, authSalt, contractSalt, void 0);
+      await setZkppSaltRecord(contract, hashedPassword, authSalt, contractSalt);
     };
     redeemSaltUpdateToken = async (contract, token) => {
       const recordId = await computeZkppSaltRecordId(contract);
@@ -1030,8 +1030,7 @@ var init_database_fs2 = __esm({
       async readData(key) {
         checkKey(key);
         return await readFile(this.mapKey(key)).catch((err) => {
-          const error = err;
-          if (error.code !== "ENOENT") throw err;
+          if (err.code !== "ENOENT") throw err;
         });
       }
       async writeData(key, value) {
@@ -1041,8 +1040,7 @@ var init_database_fs2 = __esm({
       }
       async deleteData(key) {
         await unlink(this.mapKey(key)).catch((e) => {
-          const error = e;
-          if (error?.code === "ENOENT") {
+          if (e?.code === "ENOENT") {
             return;
           }
           throw e;
@@ -1100,20 +1098,17 @@ var init_database_sqlite2 = __esm({
       }
       // Useful in test hooks.
       async clear() {
-        this.run("DELETE FROM Data");
-        return await Promise.resolve();
+        await this.run("DELETE FROM Data");
       }
       async readData(key) {
         const row = this.readStatement?.get(key);
-        return await Promise.resolve(row?.value);
+        return await row?.value;
       }
       async writeData(key, value) {
-        this.writeStatement?.run(key, value);
-        return await Promise.resolve();
+        await this.writeStatement?.run(key, value);
       }
       async deleteData(key) {
-        this.deleteStatement?.run(key);
-        return await Promise.resolve();
+        await this.deleteStatement?.run(key);
       }
     };
   }
@@ -1461,8 +1456,7 @@ var init_database = __esm({
               }
               await fetchMeta();
             } catch (e) {
-              const error = e;
-              console.error(`[backend] streamEntriesAfter: read(): ${error.message}:`, error.stack);
+              console.error(`[backend] streamEntriesAfter: read(): ${e.message}:`, e.stack);
               break;
             }
           }

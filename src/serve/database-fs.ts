@@ -87,10 +87,9 @@ export default class FsBackend extends DatabaseBackend implements IDatabaseBacke
     // Necessary here to thwart path traversal attacks.
     checkKey(key)
     return await readFile(this.mapKey(key))
-      .catch((err: unknown) => {
+      .catch((err) => {
         // If the key was not found (ENOENT), ignore the error since in that case we want to return undefined.
-        const error = err as { code?: string }
-        if (error.code !== 'ENOENT') throw err
+        if (err.code !== 'ENOENT') throw err
       })
   }
 
@@ -101,10 +100,9 @@ export default class FsBackend extends DatabaseBackend implements IDatabaseBacke
   }
 
   async deleteData (key: string) {
-    await unlink(this.mapKey(key)).catch((e: unknown) => {
+    await unlink(this.mapKey(key)).catch((e) => {
       // Ignore 'not found' errors
-      const error = e as { code?: string }
-      if (error?.code === 'ENOENT') {
+      if (e?.code === 'ENOENT') {
         return
       }
       throw e

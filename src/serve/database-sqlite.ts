@@ -46,8 +46,7 @@ export default class SqliteBackend extends DatabaseBackend implements IDatabaseB
 
   // Useful in test hooks.
   async clear (): Promise<void> {
-    this.run('DELETE FROM Data')
-    return await Promise.resolve()
+    await this.run('DELETE FROM Data')
   }
 
   async readData (key: string): Promise<Buffer | string | void> {
@@ -55,16 +54,14 @@ export default class SqliteBackend extends DatabaseBackend implements IDatabaseB
     // 'row' will be undefined if the key was not found.
     // Note: sqlite remembers the type of every stored value, therefore we
     // can return the value as-is.
-    return await Promise.resolve(row?.value)
+    return await row?.value
   }
 
   async writeData (key: string, value: Buffer | string): Promise<void> {
-    this.writeStatement?.run(key, value)
-    return await Promise.resolve()
+    await this.writeStatement?.run(key, value)
   }
 
   async deleteData (key: string): Promise<void> {
-    this.deleteStatement?.run(key)
-    return await Promise.resolve()
+    await this.deleteStatement?.run(key)
   }
 }

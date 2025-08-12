@@ -182,14 +182,11 @@ export default sbp('sbp/selectors/register', {
           if (options.keyOps) {
             // Advance `currentHeight` until the next key op
             // `nextKeyOp` relies on the height advancing after an ideration and
-            // the previous currentHeight++ will not result in incorrect
-            // behaviour.
             while ((await nextKeyOp()) === null);
           }
           await fetchMeta()
-        } catch (e: unknown) {
-          const error = e as Error
-          console.error(`[backend] streamEntriesAfter: read(): ${error.message}:`, error.stack)
+        } catch (e) {
+          console.error(`[backend] streamEntriesAfter: read(): ${(e as Error).message}:`, (e as Error).stack)
           break
         }
       }
