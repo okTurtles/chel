@@ -25,7 +25,7 @@ export async function compile (): Promise<void> {
 try {
   await compile()
 } catch (e) {
-  console.error('caught:', e instanceof Error ? e.message : String(e))
+  console.error('caught:', e?.message || e)
 } finally {
   await shell('rm -rf ./dist/tmp')
 }
