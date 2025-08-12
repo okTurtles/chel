@@ -12,7 +12,7 @@ const dontLog: Record<string, boolean> = {
   'backend/server/broadcastKV': true
 }
 
-function logSBP (domain: string, selector: string, data: Array<unknown>) {
+function logSBP (_domain: string, selector: string, data: Array<unknown>) {
   if (!dontLog[selector]) {
     if (selector === 'backend/server/handleEntry') {
       console.debug(chalk.bold(`[sbp] ${selector}`), (data[0] as { description: () => string }).description())

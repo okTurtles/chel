@@ -78,7 +78,7 @@ const router = new (VueRouter as unknown as new (options: {
   ]
 })
 
-router.beforeEach((to: { meta: { title: string } }, from: unknown, next: (path?: string | false | void) => void) => {
+router.beforeEach((to: { meta: { title: string } }, _from: unknown, next: (path?: string | false | void) => void) => {
   document.title = to.meta.title
   next()
 })

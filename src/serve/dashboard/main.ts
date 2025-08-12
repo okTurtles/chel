@@ -21,7 +21,7 @@ import Toolbar from '@containers/toolbar/Toolbar.vue'
 import Navigation from '@containers/navigation/Navigation.vue'
 import AppStyles from '@components/AppStyles.vue'
 
-Vue.config.errorHandler = function (err: Error, vm: unknown, info: string) {
+Vue.config.errorHandler = function (err: Error, _vm: unknown, info: string) {
   console.error(`uncaught Vue error in ${info}: `, err)
 }
 

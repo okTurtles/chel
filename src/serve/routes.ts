@@ -181,7 +181,7 @@ interface RouteProxy {
 }
 
 const route = new Proxy({} as RouteProxy, {
-  get: function (obj: RouteProxy, prop: string | symbol): RouteHandler {
+  get: function (_obj: RouteProxy, prop: string | symbol): RouteHandler {
     return function (path: string, options: Record<string, unknown>, handler: unknown): void {
       sbp('okTurtles.data/apply', SERVER_INSTANCE, function (server: { route: (config: { path: string; method: string | symbol; options: Record<string, unknown>; handler: unknown }) => void }) {
         server.route({ path, method: prop, options, handler })
@@ -478,7 +478,7 @@ route.GET('/latestHEADinfo/{contractID}', {
   }
 })
 
-route.GET('/time', {}, function (request: Request, h: ResponseToolkit) {
+route.GET('/time', {}, function (_request: Request, h: ResponseToolkit) {
   return h
     .response(new Date().toISOString())
     .header('cache-control', 'no-store')
@@ -517,7 +517,7 @@ if (process.env.NODE_ENV === 'development') {
       output: 'data',
       multipart: true,
       allow: 'multipart/form-data',
-      failAction: function (request: Request, h: ResponseToolkit, err: Error) {
+      failAction: function (_request: Request, _h: ResponseToolkit, err: Error) {
         console.error('failAction error:', err)
         return err
       },
@@ -561,7 +561,7 @@ route.POST('/file', {
     output: 'stream',
     multipart: { output: 'annotated' },
     allow: 'multipart/form-data',
-    failAction: function (request: Request, h: ResponseToolkit, err: unknown) {
+    failAction: function (_request: Request, _h: ResponseToolkit, err: unknown) {
       console.error(err, 'failAction error')
       return err
     },
@@ -959,7 +959,7 @@ route.GET('/kv/{contractID}/{key}', {
   return h.response(result).etag(cid).header('x-cid', `"${cid}"`)
 })
 
-route.GET('/serverMessages', { cache: { otherwise: 'no-store' } }, (request: Request, h: ResponseToolkit) => {
+route.GET('/serverMessages', { cache: { otherwise: 'no-store' } }, (_request: Request, h: ResponseToolkit) => {
   if (!process.env.CHELONIA_SERVER_MESSAGES) return []
   return h.response(process.env.CHELONIA_SERVER_MESSAGES).type('application/json')
 })
@@ -1043,7 +1043,7 @@ route.GET(staticServeConfig.routePath, {}, {
   file: staticServeConfig.distIndexHtml
 })
 
-route.GET('/', {}, function (req: Request, h: ResponseToolkit) {
+route.GET('/', {}, function (_req: Request, h: ResponseToolkit) {
   return h.redirect(staticServeConfig.redirect)
 })
 
