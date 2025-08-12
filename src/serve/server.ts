@@ -688,25 +688,24 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
     const notification = JSON.stringify({ type: 'recurring' })
     // Find push subscriptions that do _not_ have a WS open. This means clients
     // that are 'asleep' and that might be woken up by the push event
-    Object.values(pubsub.pushSubscriptions || {})
-      .filter((pushSubscription: unknown) => {
+    Object.values(pubsub.pushSubscriptions || {}).filter(
+      (pushSubscription: unknown) => {
         const sub = pushSubscription as Record<string, unknown>
         const settings = sub.settings as Record<string, unknown>
         const sockets = sub.sockets as Set<unknown>
-        return !!(settings?.heartbeatInterval) && sockets.size === 0
-      }).forEach((pushSubscription: unknown) => {
-        const sub = pushSubscription as Record<string, unknown>
-        const last = map.get(sub) ?? Number.NEGATIVE_INFINITY
-        const settings = sub.settings as Record<string, unknown>
-        // If we've recently sent a recurring notification, skip it
-        if ((now - last) < (settings.heartbeatInterval as number)) return
-
-        postEvent(sub as unknown as PushSubscriptionInfo, notification).then(() => {
-          map.set(sub, now)
-        }).catch((e) => {
-          console.warn(e, 'Error sending recurring message to web push client', sub.id)
-        })
+        return !!settings?.heartbeatInterval && sockets.size === 0
+      }
+    ).forEach((pushSubscription: unknown) => {
+      const sub = pushSubscription as Record<string, unknown>
+      const last = map.get(sub) ?? Number.NEGATIVE_INFINITY
+      const settings = sub.settings as Record<string, unknown>
+      if (now - last < (settings.heartbeatInterval as number)) return
+      postEvent(sub as unknown as PushSubscriptionInfo, notification).then(() => {
+        map.set(sub, now)
+      }).catch((e) => {
+        console.warn(e, 'Error sending recurring message to web push client', sub.id)
       })
+    })
     // Repeat every 1 hour
   }, 1 * 60 * 60 * 1000)
 })()
