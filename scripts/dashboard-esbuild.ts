@@ -53,26 +53,18 @@ function createAliasReplacer (aliases: Record<string, string>) {
   }
 }
 
-// Copy and update index.html with correct asset references
-async function copyAndUpdateIndexHtml (outDir: string) {
+// Copy index.html to output directory
+async function copyIndexHtml (outDir: string) {
   try {
     const sourceHtml = join(__dirname, '../src/serve/dashboard/index.html')
     const targetHtml = join(outDir, 'index.html')
 
     // Read the source HTML
-    let htmlContent = await readFile(sourceHtml, 'utf8')
+    const htmlContent = await readFile(sourceHtml, 'utf8')
 
-    // Update asset references
-    htmlContent = htmlContent.replace(
-      '<script type="module" src="/main.js"></script>',
-      '<script type="module" src="/assets/js/main.js"></script>\n  <link rel="stylesheet" href="/assets/css/main.css">'
-    )
-
-    // Write the updated HTML
+    // Write the HTML to output directory
     await writeFile(targetHtml, htmlContent, 'utf8')
-    console.log('📄 index.html copied and updated')
-
-    // CSS extraction is now handled by the Vue plugin
+    console.log('📄 index.html copied')
   } catch (error) {
     console.error('❌ Failed to copy index.html:', error)
     throw error
@@ -402,7 +394,7 @@ async function build () {
     }
 
     // Copy and update index.html
-    await copyAndUpdateIndexHtml(outDir)
+    await copyIndexHtml(outDir)
 
     // Extract and create combined CSS from Vue components
     await extractAndCreateCSS(outDir)
