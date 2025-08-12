@@ -1,11 +1,19 @@
 # Chel: Chelonia Command-line Interface
 
 🚧 Under construction! 🚧
+Modern CLI for Chelonia contract development, deployment, and management.
+
+## All Available Commands
 
 ```
 chel
 chel help [command]
 chel version
+chel dev
+chel build
+chel pin <version> [--only-changed | --overwrite]
+chel publish
+chel test
 chel keygen [--out=<key.json>]
 chel manifest [-k|--key <pubkey1> [-k|--key <pubkey2> ...]] [--out=<manifest.json>] [-s|--slim <contract-slim.js>] [-v|--version <version>] <key.json> <contract-bundle.js>
 chel deploy <url-or-dir-or-sqlitedb> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
@@ -19,6 +27,28 @@ chel migrate --from <backend> --to <backend> --out <dir-or-sqlitedb>
 ```
 
 Note: in many (if not all) instances, the `<url>` parameter can refer to a local folder path, in which case the command will operate without making a network connection, and will instead use the folder's contents to perform its operations.
+
+### `chel pin` Command Options
+
+The pin command supports two modes for handling existing versions:
+
+- **`--only-changed`**: Efficiently copies only changed contracts from current build + unchanged contracts from baseline version. Also allows switching to existing versions without overwriting.
+- **`--overwrite`**: Allows switching to existing versions (same behavior as `--only-changed` for existing versions).
+- **Default (no flags)**: Creates new versions by copying all contracts from the most recent complete version.
+
+**Examples:**
+```bash
+# Create new version with all contracts (default behavior)
+deno task pin 2.0.0
+
+# Create new version with only changed contracts (more efficient)
+deno task pin 2.0.0 --only-changed
+
+# Switch to existing version 2.0.1
+deno task pin 2.0.1 --only-changed
+# or
+deno task pin 2.0.1 --overwrite
+```
 
 ### `chel keygen`
 
