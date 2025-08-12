@@ -1,7 +1,7 @@
 // Node.js-based dashboard build using Group Income's Vue esbuild plugin approach
 // Uses Node.js to avoid Deno compatibility issues with @vue/component-compiler
 
-import { sassPlugin } from 'esbuild-sass-plugin'
+import { sassPlugin } from 'npm:esbuild-sass-plugin@3.3.1'
 import fs from 'node:fs'
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import { basename, dirname, join, relative, resolve } from 'node:path'
