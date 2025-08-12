@@ -1080,6 +1080,9 @@ var init_database_sqlite2 = __esm({
         this.filename = basename2(resolvedPath);
       }
       run(sql) {
+        if (!this.db) {
+          throw new Error("Database not initialized");
+        }
         this.db.prepare(sql).run();
       }
       async init() {

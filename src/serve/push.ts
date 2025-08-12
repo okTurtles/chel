@@ -282,7 +282,7 @@ export const pushServerActionhandlers: PushServerActionHandlers = {
     let host = ''
     let subscriptionWrapper: PushSubscriptionInfo | null = null
     try {
-      subscriptionId = await getSubscriptionId(subscriptionInfo)
+      subscriptionId = await getSubscriptionId(subscriptionInfo as { endpoint: string; keys: { auth: string; p256dh: string } })
       if (!subscriptionId) {
         throw new Error('Failed to generate subscription ID')
       }

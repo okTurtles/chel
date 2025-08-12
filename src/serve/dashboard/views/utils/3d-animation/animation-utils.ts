@@ -71,7 +71,7 @@ class CombineWithEdge extends Three.Group {
     const originalMesh = mesh || new Mesh(geometry!, material!)
     if (mesh) {
       geometry = mesh.geometry
-      material = mesh.material
+      material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material
     }
     originalMesh.castShadow = shadow
 
@@ -95,11 +95,14 @@ class Edgify extends LineSegments {
     color?: string,
     geometry?: Three.BufferGeometry | null
   }) {
+    if (!geometry) {
+      throw new Error('Geometry is required for EdgesMesh')
+    }
     const edgeGeometry = new EdgesGeometry(geometry)
     const material = new LineBasicMaterial({ color })
 
     super(edgeGeometry, material)
-    this.data = { geometry, material }
+    this.data = { geometry: edgeGeometry, material }
   }
 }
 

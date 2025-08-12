@@ -4,7 +4,7 @@ import { Vue } from '../../deps.ts'
 * the content inside the tag otherwise
 */
 Vue.component('v-style', {
-  render: function (createElement) {
+  render: function (createElement: (tag: string, children?: unknown) => unknown) {
     return createElement('style', this.$slots.default)
   }
 })

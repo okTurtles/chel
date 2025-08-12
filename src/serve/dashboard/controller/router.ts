@@ -1,6 +1,6 @@
 import { Vue } from '../deps.ts'
+import VueRouter from 'vue-router'
 import process from 'node:process'
-import Router from 'vue-router'
 
 import Landing from '@pages/miscellaneous/Landing.vue'
 import L from '../common/translations.ts'
@@ -13,9 +13,14 @@ const lazyBilling = lazyPage(() => import('@pages/Billing.vue'))
 const lazyAccounts = lazyPage(() => import('@pages/Accounts.vue'))
 const lazyDesignSystem = lazyPage(() => import('@pages/design-system/CheloniaDesignSystem.vue'))
 
-Vue.use(Router)
+Vue.use(VueRouter)
 
-const router = new Router({
+const router = new (VueRouter as unknown as new (options: {
+  mode: string;
+  base: string;
+  scrollBehavior: () => { x: number; y: number };
+  routes: unknown[];
+}) => { beforeEach: (guard: unknown) => void })({
   mode: 'history',
   base: process.env.NODE_ENV === 'production' ? '' : '/dashboard',
   scrollBehavior () {

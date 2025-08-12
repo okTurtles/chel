@@ -5,9 +5,9 @@ import { initTheme } from './model/themes.ts'
 import './views/utils/vStyle.js'
 import './views/utils/vError.js'
 import './views/utils/vSafeHtml.js'
-import './views/utils/ui.js'
-import './controller/backend.js'
-import '@common/translations.js'
+import './views/utils/ui.ts'
+import './controller/backend.ts'
+import '@common/translations.ts'
 
 // custom directive declarations
 import './views/utils/custom-directives/index.js'

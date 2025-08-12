@@ -32,7 +32,7 @@ function initAnimation (canvasEl: HTMLCanvasElement, theme: string = 'light') {
 
   // create a scene & root
   const isDarkTheme = theme === 'dark'
-  const scene = new Scene()
+  const scene = new Scene() as Three.Scene & { root: Three.Group }
   const root = new Group() // root object that contains all meshes
   root.position.y = -10
   scene.add(root)

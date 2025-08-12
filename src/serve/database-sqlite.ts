@@ -22,6 +22,9 @@ export default class SqliteBackend extends DatabaseBackend implements IDatabaseB
   }
 
   run (sql: string) {
+    if (!this.db) {
+      throw new Error('Database not initialized')
+    }
     this.db.prepare(sql).run()
   }
 
