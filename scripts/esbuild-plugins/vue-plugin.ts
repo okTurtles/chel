@@ -1,5 +1,5 @@
 // Adapted from Group Income's vue-plugin.js for Deno/TypeScript compatibility
-// Original: https://github.com/okTurtles/group-income/blob/master/scripts/esbuild-plugins/vue-plugin.js
+// Original: https://github.com/okTurtles/group-income/blob/93de1fea25b9775499a6e7ce5cc00a3c747e4ece/scripts/esbuild-plugins/vue-plugin.js
 
 // Fix for Deno's __proto__ issue with buble (used by @vue/component-compiler)
 // See: https://github.com/denoland/deno/issues/20618

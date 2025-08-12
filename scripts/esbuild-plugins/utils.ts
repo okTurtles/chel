@@ -1,5 +1,5 @@
 // Adapted from Group Income's utils.js for Deno/TypeScript compatibility
-// Original: https://github.com/okTurtles/group-income/blob/master/scripts/esbuild-plugins/utils.js
+// Original: https://github.com/okTurtles/group-income/blob/93de1fea25b9775499a6e7ce5cc00a3c747e4ece/scripts/esbuild-plugins/utils.js
 
 import { dirname, join, relative } from 'node:path'
 import process from 'node:process'
