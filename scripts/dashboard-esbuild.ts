@@ -13,6 +13,21 @@ import esbuild from 'npm:esbuild'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
+// Environment variables setup (following Group Income pattern)
+const {
+  CI = '',
+  LIGHTWEIGHT_CLIENT = 'true',
+  NODE_ENV = 'development',
+  EXPOSE_SBP = '',
+  ENABLE_UNSAFE_NULL_CRYPTO = 'false',
+  UNSAFE_TRUST_ALL_MANIFEST_SIGNING_KEYS = 'false'
+} = process.env
+
+// Read package.json for version info
+const packageJSON = JSON.parse(fs.readFileSync(join(__dirname, '../package.json'), 'utf8'))
+const CONTRACTS_VERSION = packageJSON.contractsVersion || '2.0.0'
+const CHEL_VERSION = packageJSON.version
+
 // Fix for __proto__ issue with buble (used by @vue/component-compiler)
 // See: https://github.com/denoland/deno/issues/20618
 if (({} as Record<PropertyKey, unknown>).__proto__ !== Object.prototype) {
@@ -289,7 +304,17 @@ async function build () {
       sourcemap: false,
       minify: false,
       define: {
-        'process.env.NODE_ENV': '"development"'
+        'process.env.BUILD': 'web', // Required by Vuelidate
+        'process.env.CI': `'${CI}'`,
+        'process.env.CONTRACTS_VERSION': `'${CONTRACTS_VERSION}'`,
+        'process.env.CHEL_VERSION': `'${CHEL_VERSION}'`,
+        'process.env.LIGHTWEIGHT_CLIENT': `'${LIGHTWEIGHT_CLIENT}'`,
+        'process.env.NODE_ENV': `'${NODE_ENV}'`,
+        'process.env.EXPOSE_SBP': `'${EXPOSE_SBP}'`,
+        'process.env.ENABLE_UNSAFE_NULL_CRYPTO': `'${ENABLE_UNSAFE_NULL_CRYPTO}'`,
+        'process.env.UNSAFE_TRUST_ALL_MANIFEST_SIGNING_KEYS': `'${UNSAFE_TRUST_ALL_MANIFEST_SIGNING_KEYS}'`,
+        // Define NODE_ENV directly for router.ts
+        'NODE_ENV': `'${NODE_ENV}'`
       },
       alias: {
         '@common': './src/serve/dashboard/common',
@@ -302,8 +327,7 @@ async function build () {
         '@pages': './src/serve/dashboard/views/pages',
         '@forms': './src/serve/dashboard/views/components/forms',
         '@validators': './src/serve/dashboard/views/utils/validators',
-        '@assets': './src/serve/dashboard/assets',
-        'node:process': 'process'
+        '@assets': './src/serve/dashboard/assets'
       },
       loader: {
         '.vue': 'js', // Will be handled by our Vue plugin
@@ -334,31 +358,6 @@ async function build () {
               const { path, ...extra } = args
               return build.resolve(path.slice(4), extra)
             })
-          }
-        } as esbuild.Plugin,
-        // Process polyfill plugin
-        {
-          name: 'process-polyfill',
-          setup (build) {
-            build.onResolve({ filter: /^node:process$/ }, () => ({
-              path: 'process-polyfill',
-              namespace: 'process-polyfill'
-            }))
-
-            build.onLoad({ filter: /.*/, namespace: 'process-polyfill' }, () => ({
-              contents: `
-                // Process polyfill for browser environment
-                const process = {
-                  env: typeof globalThis !== 'undefined' && globalThis.process ? globalThis.process.env : {},
-                  cwd: () => '/',
-                  platform: 'browser',
-                  version: '16.0.0',
-                  versions: { node: '16.0.0' }
-                };
-                module.exports = process;
-              `,
-              loader: 'js'
-            }))
           }
         } as esbuild.Plugin
       ]
