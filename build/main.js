@@ -4292,7 +4292,7 @@ async function startApplicationServer(port, directory) {
 async function serve(args) {
   const { directory, options: options2 } = parseServeArgs(args);
   const {
-    dp: dashboardPort = 3e3,
+    dp: dashboardPort = 8888,
     port: applicationPort = 8e3,
     "db-type": dbType = "mem",
     "db-location": dbLocation
@@ -4336,7 +4336,7 @@ function parseServeArgs(args) {
   const parsed = flags.parse(args, {
     string: ["dp", "port", "db-type", "db-location"],
     default: {
-      dp: "3000",
+      dp: "8888",
       port: "8000",
       "db-type": "mem"
     }

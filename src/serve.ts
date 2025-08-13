@@ -30,7 +30,7 @@ async function startApplicationServer (port: number, directory: string): Promise
 export async function serve (args: string[]) {
   const { directory, options } = parseServeArgs(args)
   const {
-    dp: dashboardPort = 3000,
+    dp: dashboardPort = 8888,
     port: applicationPort = 8000,
     'db-type': dbType = 'mem',
     'db-location': dbLocation
@@ -81,7 +81,7 @@ export function parseServeArgs (args: string[]): { directory: string; options: S
   const parsed = flags.parse(args, {
     string: ['dp', 'port', 'db-type', 'db-location'],
     default: {
-      dp: '3000',
+      dp: '8888',
       port: '8000',
       'db-type': 'mem'
     }
