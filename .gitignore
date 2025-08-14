@@ -2,5 +2,5 @@
 *.DS_Store
 dist/
 dist-dashboard/
-contracts/
-data
+data/
+chelonia.json

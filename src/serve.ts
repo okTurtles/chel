@@ -1,5 +1,9 @@
 import { flags, colors } from './deps.ts'
 import process from 'node:process'
+import { deploy } from './deploy.ts'
+import { readdir, mkdir } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
+import { join, resolve } from 'node:path'
 
 interface ServeOptions {
   dp?: number
@@ -14,6 +18,82 @@ async function startDashboardServer (port: number) {
   // Import and start the dashboard server
   const dashboardServer = await import('./serve/dashboard-server.ts')
   await dashboardServer.startDashboard(port)
+}
+
+/**
+ * Preload all contract manifests into the database
+ * This replicates the behavior of grunt serve's 'exec:chelProdDeploy'
+ *
+ * The purpose is to ensure that when the app processes old events that reference
+ * historical contract versions, those contracts are available in the database
+ * for clients to fetch and process messages with.
+ */
+async function preloadContracts (directory: string, dbLocation?: string): Promise<void> {
+  console.log(colors.blue('📦 Preloading contract manifests into database...'))
+
+  const contractsDir = join(directory, 'contracts')
+
+  if (!existsSync(contractsDir)) {
+    console.log(colors.yellow('⚠️  No contracts directory found, skipping contract preloading'))
+    return
+  }
+
+  try {
+    // Find all manifest files in the contracts directory structure
+    const manifestFiles: string[] = []
+
+    // New structure: contracts/<name>/<version>/*.manifest.json
+    const contractNames = await readdir(contractsDir, { withFileTypes: true })
+
+    for (const contractEntry of contractNames) {
+      if (contractEntry.isDirectory()) {
+        const contractPath = join(contractsDir, contractEntry.name)
+        const versions = await readdir(contractPath, { withFileTypes: true })
+
+        for (const versionEntry of versions) {
+          if (versionEntry.isDirectory()) {
+            const versionPath = join(contractPath, versionEntry.name)
+            const files = await readdir(versionPath)
+
+            // Find manifest files in this version directory
+            const manifests = files.filter(f => f.endsWith('.manifest.json'))
+            for (const manifest of manifests) {
+              manifestFiles.push(join(versionPath, manifest))
+            }
+          }
+        }
+      }
+    }
+
+    if (manifestFiles.length === 0) {
+      console.log(colors.yellow('⚠️  No contract manifest files found'))
+      return
+    }
+
+    console.log(colors.blue(`📋 Found ${manifestFiles.length} contract manifest(s) to deploy`))
+
+    // Deploy all manifests to the database
+    // Use the database location or default to 'data' directory
+    // Make sure to use absolute paths to avoid URL parsing issues
+    const deployTarget = dbLocation || resolve(join(directory, 'data'))
+
+    // Ensure the target directory exists before deploying
+    // This prevents the "Invalid URL" error when upload tries to determine the target type
+    if (!existsSync(deployTarget)) {
+      console.log(colors.blue(`📁 Creating deploy target directory: ${deployTarget}`))
+      await mkdir(deployTarget, { recursive: true })
+    }
+
+    console.log(colors.gray(`Deploy target: ${deployTarget}`))
+    await deploy([deployTarget, ...manifestFiles])
+
+    console.log(colors.green(`✅ Successfully preloaded ${manifestFiles.length} contract(s) into database`))
+
+  } catch (error) {
+    console.error(colors.red('❌ Failed to preload contracts:'), error instanceof Error ? error.message : error)
+    console.log(colors.yellow('⚠️  Server will continue without preloaded contracts'))
+    // Don't throw - server can still start without preloaded contracts
+  }
 }
 
 // Application server function
@@ -46,8 +126,13 @@ export async function serve (args: string[]) {
   }
 
   try {
-    // Start dashboard server on port 7000 first
-    console.log(colors.cyan('🚀 Starting dashboard server...'))
+    // Step 1: Preload all contract manifests into the database
+    // This replicates grunt serve's 'exec:chelProdDeploy' behavior
+    console.log(colors.cyan('📦 Step 1: Preloading contracts...'))
+    await preloadContracts(directory, dbLocation)
+
+    // Step 2: Start dashboard server
+    console.log(colors.cyan('🚀 Step 2: Starting dashboard server...'))
     try {
       await startDashboardServer(dashboardPort)
       console.log(colors.green(`✅ Dashboard server started on port ${dashboardPort}`))
@@ -56,8 +141,8 @@ export async function serve (args: string[]) {
       throw error
     }
 
-    // Start application server on port 8000 second
-    console.log(colors.cyan('🚀 Starting application server...'))
+    // Step 3: Start application server
+    console.log(colors.cyan('🚀 Step 3: Starting application server...'))
     try {
       await startApplicationServer(applicationPort, directory)
       console.log(colors.green(`✅ Application server started on port ${applicationPort}`))

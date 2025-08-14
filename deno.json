@@ -7,7 +7,6 @@
     "dist": "deno lint . && deno task lint && deno task build && deno task compile",
     "test": "SKIP_DB_FS_CASE_SENSITIVITY_CHECK=true deno task lint && SKIP_DB_FS_CASE_SENSITIVITY_CHECK=true deno test --unstable-worker-options --allow-read=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-write=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-env --allow-ffi --allow-net --allow-sys",
     "pin": "deno run --allow-net --allow-read=. --allow-write=. --allow-sys --allow-env --allow-ffi build/main.js pin",
-    "publish": "deno run --allow-net --allow-read=. --allow-write=. --allow-sys --allow-env --allow-ffi build/main.js publish",
     "dev": "deno run --allow-net --allow-read=. --allow-write=. --allow-sys --allow-env --allow-ffi --allow-run dev"
   },
   "imports": {

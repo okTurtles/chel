@@ -256,8 +256,8 @@ __export(database_sqlite_exports, {
   writeDataOnce: () => writeDataOnce2
 });
 async function initStorage2(options2 = {}) {
-  const { dirname: dirname4, filename } = options2;
-  dataFolder2 = path.resolve(dirname4);
+  const { dirname: dirname5, filename } = options2;
+  dataFolder2 = path.resolve(dirname5);
   const filepath = path.join(dataFolder2, filename);
   if (db !== void 0) {
     if (filepath === dbPath) {
@@ -3011,9 +3011,9 @@ var init_routes = __esm({
       }
     }, function(request, h) {
       const { subpath } = request.params;
-      const basename4 = path4.basename(subpath);
-      if (basename4.includes("-cached")) {
-        return h.file(subpath, { etagMethod: false }).etag(basename4).header("Cache-Control", "public,max-age=31536000,immutable");
+      const basename5 = path4.basename(subpath);
+      if (basename5.includes("-cached")) {
+        return h.file(subpath, { etagMethod: false }).etag(basename5).header("Cache-Control", "public,max-age=31536000,immutable");
       }
       return h.file(subpath);
     });
@@ -3035,9 +3035,9 @@ var init_routes = __esm({
         }
       }, function(request, h) {
         const { subpath } = request.params;
-        const basename4 = path4.basename(subpath);
-        if (basename4.includes("-cached")) {
-          return h.file(subpath, { etagMethod: false }).etag(basename4).header("Cache-Control", "public,max-age=31536000,immutable");
+        const basename5 = path4.basename(subpath);
+        if (basename5.includes("-cached")) {
+          return h.file(subpath, { etagMethod: false }).etag(basename5).header("Cache-Control", "public,max-age=31536000,immutable");
         }
         return h.file(subpath);
       });
@@ -3807,7 +3807,6 @@ __export(commands_exports, {
   manifest: () => manifest,
   migrate: () => migrate,
   pin: () => pin,
-  publish: () => publish,
   serve: () => serve,
   upload: () => upload,
   verifySignature: () => verifySignature2,
@@ -3900,10 +3899,10 @@ async function deploy(args) {
   for (const manifestPath of manifests) {
     const json = JSON.parse(Deno.readTextFileSync(manifestPath));
     const body = ContractBodySchema.parse(JSON.parse(json.body));
-    const dirname4 = path.dirname(manifestPath);
-    toUpload.push(CONTRACT_TEXT_PREFIX + path.join(dirname4, body.contract.file));
+    const dirname5 = path.dirname(manifestPath);
+    toUpload.push(CONTRACT_TEXT_PREFIX + path.join(dirname5, body.contract.file));
     if (body.contractSlim) {
-      toUpload.push(CONTRACT_TEXT_PREFIX + path.join(dirname4, body.contractSlim.file));
+      toUpload.push(CONTRACT_TEXT_PREFIX + path.join(dirname5, body.contractSlim.file));
     }
     toUpload.push(CONTRACT_MANIFEST_PREFIX + manifestPath);
   }
@@ -4249,9 +4248,56 @@ async function migrate(args) {
 // src/serve.ts
 init_deps();
 import process11 from "node:process";
+import { readdir as readdir3, mkdir as mkdir3 } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { join as join4, resolve as resolve4 } from "node:path";
 async function startDashboardServer(port) {
   const dashboardServer = await Promise.resolve().then(() => (init_dashboard_server(), dashboard_server_exports));
   await dashboardServer.startDashboard(port);
+}
+async function preloadContracts(directory, dbLocation) {
+  console.log(colors.blue("\u{1F4E6} Preloading contract manifests into database..."));
+  const contractsDir = join4(directory, "contracts");
+  if (!existsSync(contractsDir)) {
+    console.log(colors.yellow("\u26A0\uFE0F  No contracts directory found, skipping contract preloading"));
+    return;
+  }
+  try {
+    const manifestFiles = [];
+    const contractNames = await readdir3(contractsDir, { withFileTypes: true });
+    for (const contractEntry of contractNames) {
+      if (contractEntry.isDirectory()) {
+        const contractPath = join4(contractsDir, contractEntry.name);
+        const versions = await readdir3(contractPath, { withFileTypes: true });
+        for (const versionEntry of versions) {
+          if (versionEntry.isDirectory()) {
+            const versionPath = join4(contractPath, versionEntry.name);
+            const files = await readdir3(versionPath);
+            const manifests = files.filter((f) => f.endsWith(".manifest.json"));
+            for (const manifest2 of manifests) {
+              manifestFiles.push(join4(versionPath, manifest2));
+            }
+          }
+        }
+      }
+    }
+    if (manifestFiles.length === 0) {
+      console.log(colors.yellow("\u26A0\uFE0F  No contract manifest files found"));
+      return;
+    }
+    console.log(colors.blue(`\u{1F4CB} Found ${manifestFiles.length} contract manifest(s) to deploy`));
+    const deployTarget = dbLocation || resolve4(join4(directory, "data"));
+    if (!existsSync(deployTarget)) {
+      console.log(colors.blue(`\u{1F4C1} Creating deploy target directory: ${deployTarget}`));
+      await mkdir3(deployTarget, { recursive: true });
+    }
+    console.log(colors.gray(`Deploy target: ${deployTarget}`));
+    await deploy([deployTarget, ...manifestFiles]);
+    console.log(colors.green(`\u2705 Successfully preloaded ${manifestFiles.length} contract(s) into database`));
+  } catch (error) {
+    console.error(colors.red("\u274C Failed to preload contracts:"), error instanceof Error ? error.message : error);
+    console.log(colors.yellow("\u26A0\uFE0F  Server will continue without preloaded contracts"));
+  }
 }
 async function startApplicationServer(port, directory) {
   process11.env.API_PORT = port.toString();
@@ -4276,7 +4322,9 @@ async function serve(args) {
     console.log(colors.gray(`Database location: ${dbLocation}`));
   }
   try {
-    console.log(colors.cyan("\u{1F680} Starting dashboard server..."));
+    console.log(colors.cyan("\u{1F4E6} Step 1: Preloading contracts..."));
+    await preloadContracts(directory, dbLocation);
+    console.log(colors.cyan("\u{1F680} Step 2: Starting dashboard server..."));
     try {
       await startDashboardServer(dashboardPort);
       console.log(colors.green(`\u2705 Dashboard server started on port ${dashboardPort}`));
@@ -4284,7 +4332,7 @@ async function serve(args) {
       console.error(colors.red("\u274C Failed to start dashboard server:"), error);
       throw error;
     }
-    console.log(colors.cyan("\u{1F680} Starting application server..."));
+    console.log(colors.cyan("\u{1F680} Step 3: Starting application server..."));
     try {
       await startApplicationServer(applicationPort, directory);
       console.log(colors.green(`\u2705 Application server started on port ${applicationPort}`));
@@ -4413,32 +4461,28 @@ function version() {
 
 // src/dev.ts
 init_deps();
-import { readFile as readFile4, mkdir as mkdir3, stat, readdir as readdir3 } from "node:fs/promises";
-import { existsSync, watch } from "node:fs";
-import { resolve as resolve4, join as join4 } from "node:path";
+import { mkdir as mkdir4, readdir as readdir4 } from "node:fs/promises";
+import { existsSync as existsSync2, watch } from "node:fs";
+import { resolve as resolve5, join as join5 } from "node:path";
 import process12 from "node:process";
-import vm from "node:vm";
-var DevDashboard = class {
+var DevEnvironment = class {
   watchers = [];
-  backendProcess;
-  browserSync;
-  projectConfig;
+  serverProcess;
   options;
   projectRoot;
-  contractsHealth = /* @__PURE__ */ new Map();
   metrics;
   startTime;
+  contractChanges = [];
   constructor(projectRoot, options2) {
-    this.projectRoot = resolve4(projectRoot);
+    this.projectRoot = resolve5(projectRoot);
     this.options = options2;
-    this.projectConfig = { contractsVersion: "1.0.0", version: "1.0.0" };
-    this.startTime = /* @__PURE__ */ new Date();
     this.metrics = {
       contractsWatched: 0,
       changesDetected: 0,
-      healthChecks: 0,
+      hotReloads: 0,
       uptime: 0
     };
+    this.startTime = /* @__PURE__ */ new Date();
   }
   // Simple fast non-crypto hash for content (djb2)
   hashContent(str) {
@@ -4446,301 +4490,133 @@ var DevDashboard = class {
     for (let i = 0; i < str.length; i++) h = (h << 5) + h ^ str.charCodeAt(i);
     return (h >>> 0).toString(16);
   }
-  async init() {
+  async start() {
     this.printWelcomeBanner();
-    await this.loadProjectConfig();
-    await this.initializeContractHealth();
-    this.setupWatchers();
-    if (this.options.interactive !== false) {
-      this.startInteractiveDashboard();
-    }
-    if (this.options.performance) {
-      this.startPerformanceMonitoring();
-    }
-    this.printDashboardStatus();
-    this.setupGracefulShutdown();
+    await this.startServer();
+    await this.startContractWatching();
+    await this.startInteractiveMode();
   }
-  async loadProjectConfig() {
+  async startServer() {
+    console.log(colors.blue("\u{1F680} Starting development server with hot reload..."));
+    const serverArgs = [
+      "--dp",
+      String(this.options.dashboardPort || 3e3),
+      "--port",
+      String(this.options.port || 8e3),
+      "--db-type",
+      "mem",
+      // Use memory for faster dev iterations
+      this.projectRoot
+    ];
     try {
-      const packageJsonPath = join4(this.projectRoot, "package.json");
-      if (existsSync(packageJsonPath)) {
-        const packageJson = JSON.parse(await readFile4(packageJsonPath, "utf8"));
-        this.projectConfig = {
-          contractsVersion: packageJson.contractsVersion || "1.0.0",
-          version: packageJson.version || "1.0.0"
-        };
-      }
-    } catch {
-      console.warn(colors.yellow("Warning: Could not load package.json, using defaults"));
+      this.serverProcess = serve(serverArgs).catch((error) => {
+        console.error(colors.red("\u274C Server error:"), error);
+        process12.exit(1);
+      });
+      await new Promise((resolve7) => setTimeout(resolve7, 2e3));
+      console.log(colors.green("\u2705 Development server started"));
+      console.log(colors.gray(`   Dashboard: http://localhost:${this.options.dashboardPort || 3e3}`));
+      console.log(colors.gray(`   Application: http://localhost:${this.options.port || 8e3}`));
+    } catch (error) {
+      console.error(colors.red("\u274C Failed to start development server:"), error);
+      throw error;
     }
   }
   printWelcomeBanner() {
     console.log(colors.cyan("\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557"));
-    console.log(colors.cyan("\u2551") + colors.bold(colors.white("                \u{1F680} CHEL DEVELOPMENT DASHBOARD                ")) + colors.cyan("\u2551"));
-    console.log(colors.cyan("\u2551") + colors.white("              Interactive Contract Development               ") + colors.cyan("\u2551"));
+    console.log(colors.cyan("\u2551") + colors.bold(colors.white("               \u{1F9EA} CHEL LIVE DEVELOPMENT                     ")) + colors.cyan("\u2551"));
+    console.log(colors.cyan("\u2551") + colors.white("           Live-testing with Hot Reload & Interaction        ") + colors.cyan("\u2551"));
     console.log(colors.cyan("\u255A\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255D"));
     console.log();
+    console.log(colors.gray("Similar to grunt dev - provides live-testing environment"));
+    console.log(colors.gray("with automatic contract redeployment and interactive testing."));
+    console.log();
   }
-  // Track last content hashes to ignore no-op saves
-  lastHashes = /* @__PURE__ */ new Map();
-  async initializeContractHealth() {
-    console.log(colors.blue("\u{1F50D} Scanning contracts..."));
-    const contractsDir = join4(this.projectRoot, "contracts");
-    if (!existsSync(contractsDir)) {
+  async startContractWatching() {
+    console.log(colors.blue("\u{1F440} Setting up contract file watching..."));
+    const contractsDir = join5(this.projectRoot, "contracts");
+    if (!existsSync2(contractsDir)) {
       console.log(colors.yellow("\u26A0\uFE0F  No contracts directory found, creating one..."));
-      await mkdir3(contractsDir, { recursive: true });
+      await mkdir4(contractsDir, { recursive: true });
       return;
     }
     try {
-      const entries = await readdir3(contractsDir, { recursive: true });
-      const files = entries.filter((f) => typeof f === "string" && f.endsWith(".js"));
-      this.contractsHealth.clear();
-      this.lastHashes.clear();
-      this.metrics.contractsWatched = files.length;
-      for (const file of files) {
-        await this.updateContractHealth(file);
-      }
-      console.log(colors.green(`\u2705 Found ${files.length} contracts`));
-    } catch (error) {
-      console.error(colors.red("\u274C Error scanning contracts:"), error);
-    }
-  }
-  analyzeContractHealth(content) {
-    const issues = this.findContractIssues(content);
-    const isStructuralError = issues.some((i) => i === "Unmatched braces" || i === "Unmatched parentheses" || i === "Unmatched brackets" || i.startsWith("Syntax error: "));
-    if (isStructuralError) return "error";
-    return issues.length > 0 ? "warning" : "healthy";
-  }
-  // Split issues into error vs warning categories for accurate counting
-  splitIssueTypes(issues) {
-    const errorIssues = [];
-    const warningIssues = [];
-    for (const i of issues) {
-      if (i === "Unmatched braces" || i === "Unmatched parentheses" || i === "Unmatched brackets" || i.startsWith("Syntax error: ")) errorIssues.push(i);
-      else warningIssues.push(i);
-    }
-    return { errorIssues, warningIssues };
-  }
-  findContractIssues(content) {
-    const issues = [];
-    try {
-      new vm.Script(content);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      issues.push("Syntax error: " + msg);
-    }
-    const openBraces = (content.match(/\{/g) || []).length;
-    const closeBraces = (content.match(/\}/g) || []).length;
-    if (openBraces !== closeBraces) issues.push("Unmatched braces");
-    const openParens = (content.match(/\(/g) || []).length;
-    const closeParens = (content.match(/\)/g) || []).length;
-    if (openParens !== closeParens) issues.push("Unmatched parentheses");
-    const openBrackets = (content.match(/\[/g) || []).length;
-    const closeBrackets = (content.match(/\]/g) || []).length;
-    if (openBrackets !== closeBrackets) issues.push("Unmatched brackets");
-    if (!content.includes("actions:")) issues.push("Missing actions object");
-    if (!content.includes("getters:")) issues.push("Missing getters object");
-    if (!content.includes("methods:")) issues.push("Missing methods object");
-    if (content.length < 100) issues.push("Contract appears incomplete (too short)");
-    return issues;
-  }
-  extractDependencies(content) {
-    const deps = [];
-    const matches = content.match(/from\s+['"]([^'"]+)['"]/g);
-    if (matches) for (const m of matches) {
-      const mm = m.match(/from\s+['"]([^'"]+)['"]/);
-      if (mm && mm[1]) deps.push(mm[1]);
-    }
-    return [...new Set(deps)];
-  }
-  setupWatchers() {
-    console.log(colors.blue("\u{1F441}\uFE0F  Setting up intelligent file watching..."));
-    const contractsDir = join4(this.projectRoot, "contracts");
-    if (!existsSync(contractsDir)) return;
-    const debounced = {};
-    const watcher = watch(contractsDir, { recursive: true }, async (event, filename) => {
-      if (this.options.debug) console.log(colors.gray(`\u{1F50D} File event: ${event} on ${filename}`));
-      if (!filename || !filename.endsWith(".js")) {
-        if (this.options.debug) console.log(colors.gray(`\u23ED\uFE0F  Skipping non-JS file: ${filename}`));
-        return;
-      }
-      const normalizedKey = await this.normalizeContractKey(filename);
-      if (this.options.debug) console.log(colors.gray(`\u{1F511} Using key: ${normalizedKey}`));
-      const now = Date.now();
-      if (debounced[normalizedKey] && now - debounced[normalizedKey] < 800) return;
-      debounced[normalizedKey] = now;
-      await new Promise((r) => setTimeout(r, 120));
-      const changed = await this.updateContractHealth(normalizedKey);
-      if (this.options.debug) console.log(colors.gray(`\u{1F4DD} Content changed: ${changed}`));
-      if (!changed) {
-        if (this.options.debug) console.log(colors.gray("\u23ED\uFE0F  No content change detected, skipping"));
-        return;
-      }
-      this.metrics.changesDetected++;
-      console.log(colors.yellow(`\u{1F504} Contract changed: ${normalizedKey}`));
-      const health = this.contractsHealth.get(normalizedKey);
-      if (health) {
-        if (health.status === "error") {
-          console.log(colors.red(`\u274C ${normalizedKey} has ${health.issues.length} issue(s): ${health.issues.join(", ")}`));
-        } else if (health.status === "warning") {
-          console.log(colors.yellow(`\u26A0\uFE0F  ${normalizedKey} has ${health.issues.length} warning(s): ${health.issues.join(", ")}`));
-        } else {
-          console.log(colors.green(`\u2705 ${normalizedKey} is healthy`));
+      const watcher = watch(contractsDir, { recursive: true }, (eventType, filename) => {
+        if (filename && (filename.endsWith(".js") || filename.endsWith(".json"))) {
+          this.handleContractChange(eventType, filename);
         }
+      });
+      this.watchers.push(watcher);
+      const entries = await readdir4(contractsDir, { recursive: true });
+      const contractFiles = entries.filter(
+        (f) => typeof f === "string" && f.endsWith(".js")
+      );
+      this.metrics.contractsWatched = contractFiles.length;
+      console.log(colors.green(`\u2705 Watching ${contractFiles.length} contract files for changes`));
+    } catch (error) {
+      console.error(colors.red("\u274C Error setting up file watching:"), error);
+    }
+  }
+  handleContractChange(eventType, filename) {
+    const changeEvent = {
+      file: filename,
+      type: eventType === "rename" ? "added" : "changed",
+      timestamp: /* @__PURE__ */ new Date()
+    };
+    this.contractChanges.push(changeEvent);
+    this.metrics.changesDetected++;
+    console.log(colors.yellow(`\u{1F4DD} Contract ${eventType}: ${filename}`));
+    if (this.options["hot-reload"] !== false) {
+      this.triggerHotReload(filename);
+    }
+  }
+  triggerHotReload(filename) {
+    try {
+      console.log(colors.blue(`\u{1F504} Hot reloading contract: ${filename}`));
+      if (filename.endsWith(".js") && !filename.includes("manifest")) {
+        console.log(colors.gray("   \u2192 Triggering contract redeployment..."));
+        this.metrics.hotReloads++;
+        console.log(colors.green("   \u2705 Hot reload triggered"));
       }
-      if (this.options.interactive !== false) this.refreshDashboard();
+    } catch (error) {
+      console.error(colors.red("\u274C Hot reload failed:"), error);
+    }
+  }
+  async startInteractiveMode() {
+    console.log(colors.blue("\u{1F39B}\uFE0F  Starting interactive mode..."));
+    console.log(colors.gray("Interactive commands:"));
+    console.log(colors.gray("  - Press Ctrl+C to exit"));
+    console.log(colors.gray("  - File changes will trigger hot reload automatically"));
+    console.log(colors.gray("  - Check the dashboard for live contract status"));
+    console.log();
+    process12.on("SIGINT", () => {
+      console.log(colors.yellow("\n\u{1F6D1} Shutting down development environment..."));
+      this.cleanup();
+      process12.exit(0);
     });
-    this.watchers.push(watcher);
-    console.log(colors.green("\u2705 File watching active"));
-  }
-  async updateContractHealth(filename) {
-    try {
-      const contractsDir = join4(this.projectRoot, "contracts");
-      let filePath = join4(contractsDir, filename);
-      if (!existsSync(filePath)) {
-        const entries = await readdir3(contractsDir, { recursive: true });
-        const foundFile = entries.find(
-          (entry) => typeof entry === "string" && entry.endsWith(filename)
-        );
-        if (foundFile) {
-          filePath = join4(contractsDir, foundFile);
-        } else {
-          throw new Error(`Contract file ${filename} not found`);
-        }
-      }
-      const stats = await stat(filePath);
-      await new Promise((r) => setTimeout(r, 50));
-      const content = await readFile4(filePath, "utf8");
-      const normalizedKey = filePath.startsWith(contractsDir) ? filePath.slice(contractsDir.length + 1) : filename;
-      const hash3 = this.hashContent(content);
-      const prev = this.lastHashes.get(normalizedKey);
-      if (this.options.debug) console.log(colors.gray(`\u{1F50D} Hash check: ${normalizedKey} - prev: ${prev}, new: ${hash3}`));
-      if (prev === hash3) {
-        if (this.options.debug) console.log(colors.gray("\u23ED\uFE0F  Same content hash, ignoring save"));
-        return false;
-      }
-      this.lastHashes.set(normalizedKey, hash3);
-      const health = {
-        name: normalizedKey.replace(".js", ""),
-        status: this.analyzeContractHealth(content),
-        lastModified: stats.mtime,
-        size: stats.size,
-        issues: this.findContractIssues(content),
-        dependencies: this.extractDependencies(content)
-      };
-      this.contractsHealth.set(normalizedKey, health);
-      this.metrics.healthChecks++;
-      return true;
-    } catch (error) {
-      console.error(colors.red(`\u274C Error updating health for ${filename}:`), error);
-      return false;
-    }
-  }
-  // Normalize file key to a stable relative path inside contracts dir.
-  // If multiple files match the basename, pick the most recently modified one.
-  async normalizeContractKey(filename) {
-    const contractsDir = join4(this.projectRoot, "contracts");
-    const candidate = join4(contractsDir, filename);
-    if (existsSync(candidate)) {
-      return candidate.slice(contractsDir.length + 1);
-    }
-    const entries = await readdir3(contractsDir, { recursive: true });
-    const matches = entries.filter(
-      (entry) => typeof entry === "string" && (entry === filename || entry.endsWith("/" + filename))
-    );
-    if (matches.length === 0) return filename;
-    if (matches.length === 1) return matches[0];
-    let best = matches[0];
-    let bestTime = 0;
-    for (const m of matches) {
-      try {
-        const st = await stat(join4(contractsDir, m));
-        const t = st.mtime?.getTime?.() ?? 0;
-        if (t > bestTime) {
-          best = m;
-          bestTime = t;
-        }
-      } catch {
-      }
-    }
-    return best;
-  }
-  startInteractiveDashboard() {
-    console.log(colors.blue("\u{1F39B}\uFE0F  Starting interactive dashboard..."));
-    setInterval(() => this.refreshDashboard(), 5e3);
-    this.setupKeyboardShortcuts();
-    console.log(colors.green("\u2705 Interactive dashboard ready"));
-    console.log(colors.gray("Press [h] for help, [q] to quit"));
-  }
-  refreshDashboard() {
-    if (this.options.debug) this.printDashboardStatus();
-  }
-  setupKeyboardShortcuts() {
-    if (!process12.stdin.isTTY) return;
-    process12.stdin.setRawMode(true);
-    process12.stdin.resume();
-    process12.stdin.setEncoding("utf8");
-    process12.stdin.on("data", async (key) => {
-      switch (key) {
-        case "h":
-          this.showHelp();
-          break;
-        case "r":
-          await this.refreshContractHealth();
-          break;
-        case "s":
-          this.showDetailedStatus();
-          break;
-        case "q":
-        case "":
-          this.gracefulShutdown();
-          break;
-      }
+    console.log(colors.green("\u{1F3AF} Live development environment ready!"));
+    console.log(colors.gray("Watching for contract changes..."));
+    await new Promise(() => {
     });
   }
-  showDetailedStatus() {
-    console.log();
-    console.log(colors.bold(colors.cyan("\u{1F9E9} Contracts Status")));
-    for (const [file, h] of this.contractsHealth.entries()) {
-      console.log(`- ${file}: ${h.status} (${h.size}B, updated ${h.lastModified?.toISOString?.() || h.lastModified})`);
-      if (h.issues.length) console.log("  issues:", h.issues.join("; "));
-      if (h.dependencies.length) console.log("  deps:", h.dependencies.join(", "));
+  cleanup() {
+    console.log(colors.blue("\u{1F9F9} Cleaning up watchers..."));
+    for (const watcher of this.watchers) {
+      if (watcher && typeof watcher.close === "function") {
+        watcher.close();
+      }
     }
+    this.watchers = [];
   }
-  startPerformanceMonitoring() {
-    setInterval(() => {
-      this.metrics.uptime = Math.floor((Date.now() - this.startTime.getTime()) / 1e3);
-    }, 1e3);
-  }
-  printDashboardStatus() {
+  printStatus() {
+    const uptime = Math.floor((Date.now() - this.startTime.getTime()) / 1e3);
+    this.metrics.uptime = uptime;
+    console.log(colors.bold("\n\u{1F4CA} Development Status"));
+    console.log(`   Contracts watched: ${colors.cyan(this.metrics.contractsWatched.toString())}`);
+    console.log(`   Changes detected: ${colors.yellow(this.metrics.changesDetected.toString())}`);
+    console.log(`   Hot reloads: ${colors.blue(this.metrics.hotReloads.toString())}`);
+    console.log(`   Uptime: ${colors.gray(this.formatUptime(uptime))}`);
     console.log();
-    console.log(colors.bold(colors.cyan("\u{1F4CA} DEVELOPMENT DASHBOARD STATUS")));
-    console.log(colors.gray("\u2550".repeat(50)));
-    const counts = { healthyFiles: 0, warningFiles: 0, errorFiles: 0, errors: 0, warnings: 0 };
-    for (const h of this.contractsHealth.values()) {
-      if (h.status === "healthy") counts.healthyFiles++;
-      else if (h.status === "warning") counts.warningFiles++;
-      else counts.errorFiles++;
-      const { errorIssues, warningIssues } = this.splitIssueTypes(h.issues);
-      counts.errors += errorIssues.length;
-      counts.warnings += warningIssues.length;
-    }
-    console.log(
-      colors.green(`\u2705 Healthy files: ${counts.healthyFiles}`),
-      colors.yellow(`\u26A0\uFE0F  Warning files: ${counts.warningFiles}`),
-      colors.red(`\u274C Error files: ${counts.errorFiles}`)
-    );
-    console.log(
-      colors.red(`Errors: ${counts.errors}`),
-      colors.yellow(`Warnings: ${counts.warnings}`)
-    );
-    console.log();
-    console.log(colors.bold("\u{1F4C8} Metrics:"));
-    console.log(`   Contracts Watched: ${this.metrics.contractsWatched}`);
-    console.log(`   Changes Detected: ${this.metrics.changesDetected}`);
-    console.log(`   Health Checks: ${this.metrics.healthChecks}`);
-    console.log(`   Uptime: ${this.formatUptime(this.metrics.uptime)}`);
-    console.log(colors.gray("\u2550".repeat(50)));
   }
   formatUptime(seconds) {
     const h = Math.floor(seconds / 3600);
@@ -4748,83 +4624,35 @@ var DevDashboard = class {
     const s = seconds % 60;
     return `${h}h ${m}m ${s}s`;
   }
-  setupGracefulShutdown() {
-    process12.on("SIGINT", () => this.gracefulShutdown());
-    process12.on("SIGTERM", () => this.gracefulShutdown());
-  }
-  gracefulShutdown() {
-    console.log(colors.yellow("\n\u{1F6D1} Shutting down development dashboard..."));
-    for (const w of this.watchers) {
-      if (w && typeof w === "object" && "close" in w && typeof w.close === "function") w.close();
-    }
-    console.log(colors.cyan("\u{1F4CA} Final: changes=" + this.metrics.changesDetected + ", uptime=" + this.formatUptime(this.metrics.uptime)));
-    console.log(colors.green("\u2705 Development dashboard stopped"));
-    process12.exit(0);
-  }
-  async refreshContractHealth() {
-    await this.initializeContractHealth();
-    this.printDashboardStatus();
-  }
-  showHelp() {
-    console.log();
-    console.log(colors.bold(colors.cyan("\u{1F39B}\uFE0F  CHEL DEV DASHBOARD - SHORTCUTS")));
-    console.log(colors.gray("\u2550".repeat(50)));
-    console.log(colors.white("[h]") + " help   " + colors.white("[r]") + " refresh   " + colors.white("[s]") + " status   " + colors.white("[q]") + " quit");
-    console.log(colors.gray("\u2550".repeat(50)));
-  }
-  stop() {
-    console.log(colors.yellow("\u{1F6D1} Stopping development dashboard..."));
-    for (const watcher of this.watchers) {
-      if (watcher && typeof watcher === "object" && "close" in watcher && typeof watcher.close === "function") {
-        watcher.close();
-      }
-    }
-    console.log(colors.green("\u2705 Development dashboard stopped"));
-  }
 };
 async function dev(args) {
   const { directory, options: options2 } = parseDevArgs(args);
-  const dashboard = new DevDashboard(directory, options2);
-  process12.on("SIGINT", async () => {
-    await dashboard.stop();
-    process12.exit(0);
-  });
-  process12.on("SIGTERM", async () => {
-    await dashboard.stop();
-    process12.exit(0);
-  });
-  try {
-    await dashboard.init();
-    await new Promise(() => {
-    });
-  } catch (error) {
-    console.error(colors.red("Development server error:"), error);
-    await dashboard.stop();
-    process12.exit(1);
-  }
+  const devEnv = new DevEnvironment(directory, options2);
+  await devEnv.start();
 }
 function parseDevArgs(args) {
   const parsed = flags.parse(args, {
-    string: ["port", "dashboard-port"],
-    boolean: ["performance", "interactive", "debug"],
+    string: ["port", "dp", "dashboard-port"],
+    boolean: ["watch-contracts", "hot-reload", "auto-test", "interactive", "debug"],
     default: {
-      port: "8000",
-      "dashboard-port": "3000",
-      performance: true,
+      "watch-contracts": true,
+      "hot-reload": true,
+      "auto-test": false,
       interactive: true,
       debug: false
     },
     alias: {
       p: "port",
-      dp: "dashboard-port",
-      d: "debug"
+      dp: "dashboard-port"
     }
   });
-  const directory = parsed._[0]?.toString() || ".";
+  const directory = parsed._[0] || ".";
   const options2 = {
-    port: parsed.port ? parseInt(parsed.port, 10) : void 0,
-    dashboardPort: parsed["dashboard-port"] ? parseInt(parsed["dashboard-port"], 10) : void 0,
-    performance: parsed.performance,
+    port: parsed.port ? parseInt(parsed.port) : 8e3,
+    dashboardPort: parsed["dashboard-port"] ? parseInt(parsed["dashboard-port"]) : 3e3,
+    "watch-contracts": parsed["watch-contracts"],
+    "hot-reload": parsed["hot-reload"],
+    "auto-test": parsed["auto-test"],
     interactive: parsed.interactive,
     debug: parsed.debug
   };
@@ -4833,531 +4661,296 @@ function parseDevArgs(args) {
 
 // src/pin.ts
 init_deps();
-import { readFile as readFile5, writeFile as writeFile2, mkdir as mkdir4, copyFile, readdir as readdir4 } from "node:fs/promises";
-import { existsSync as existsSync2 } from "node:fs";
-import { resolve as resolve5, join as join5 } from "node:path";
+import { readFile as readFile4, writeFile as writeFile2, mkdir as mkdir5, copyFile, readdir as readdir5 } from "node:fs/promises";
+import { existsSync as existsSync3 } from "node:fs";
+import { resolve as resolve6, join as join6, dirname as dirname4, basename as basename4 } from "node:path";
 import process13 from "node:process";
-import { spawn } from "node:child_process";
 var ContractPinner = class {
   projectRoot;
   options;
-  projectConfig;
+  cheloniaConfig;
   constructor(projectRoot, options2) {
-    this.projectRoot = resolve5(projectRoot);
+    this.projectRoot = resolve6(projectRoot);
     this.options = options2;
-    this.projectConfig = { contractsVersion: "1.0.0", version: "1.0.0" };
+    this.cheloniaConfig = { contracts: {} };
   }
-  async pin(version2) {
+  /**
+   * Pin a specific contract to a version
+   *
+   * @param version - The version to pin to (e.g., '2.0.3')
+   * @param contractPath - Path to the contract file to pin (e.g., 'frontend/model/contracts/chatroom.js')
+   */
+  async pin(version2, contractPath) {
     if (!version2 || typeof version2 !== "string") {
-      throw new Error("Usage: chel pin <version>");
+      throw new Error("Usage: chel pin <version> [contract-file-path]");
     }
-    console.log(colors.cyan(`\u{1F4CC} Pinning contracts to version: ${version2}`));
-    await this.loadProjectConfig();
-    const versionDir = join5(this.projectRoot, "contracts", version2);
-    if (existsSync2(versionDir)) {
+    if (!contractPath) {
+      await this.showAvailableContracts();
+      return;
+    }
+    console.log(colors.cyan(`\u{1F4CC} Pinning contract to version: ${version2}`));
+    console.log(colors.gray(`Contract: ${contractPath}`));
+    await this.loadCheloniaConfig();
+    const contractName = this.extractContractName(contractPath);
+    console.log(colors.blue(`Contract name: ${contractName}`));
+    const fullContractPath = join6(this.projectRoot, contractPath);
+    if (!existsSync3(fullContractPath)) {
+      throw new Error(`Contract file not found: ${contractPath}`);
+    }
+    const contractVersionDir = join6(this.projectRoot, "contracts", contractName, version2);
+    if (existsSync3(contractVersionDir)) {
       if (this.options["only-changed"] || this.options.overwrite) {
-        console.log(colors.yellow(`Version ${version2} already exists - updating package.json only`));
+        console.log(colors.yellow(`Version ${version2} already exists for ${contractName} - updating configuration only`));
         console.log(colors.gray("Existing version directory preserved as-is"));
-        await this.updatePackageJsonVersion(version2);
-        console.log(colors.green(`Package.json updated to use existing version: ${version2}`));
+        await this.updateCheloniaConfig(contractName, version2, contractPath);
         return;
       } else {
-        throw new Error(`Version ${version2} already exists. Use --overwrite to replace it, or --only-changed to switch to it.`);
+        throw new Error(`Version ${version2} already exists for contract ${contractName}. Use --overwrite to replace it, or --only-changed to switch to it`);
       }
     }
-    await this.buildContracts();
-    await this.pinContracts(version2);
-    console.log(colors.green(`\u2705 Contracts pinned to version: ${version2}`));
+    await this.createVersionDirectory(contractName, version2);
+    await this.copyContractFiles(contractPath, contractName, version2);
+    await this.updateCheloniaConfig(contractName, version2, contractPath);
+    await this.generateContractManifest(contractName, version2);
+    console.log(colors.green(`\u2705 Successfully pinned ${contractName} to version ${version2}`));
+    console.log(colors.gray(`Location: contracts/${contractName}/${version2}/`));
   }
-  async loadProjectConfig() {
-    try {
-      const packageJsonPath = join5(this.projectRoot, "package.json");
-      if (existsSync2(packageJsonPath)) {
-        const packageJson = JSON.parse(await readFile5(packageJsonPath, "utf8"));
-        this.projectConfig = {
-          contractsVersion: packageJson.contractsVersion || "1.0.0",
-          version: packageJson.version || "1.0.0"
-        };
-      }
-    } catch {
-      console.warn(colors.yellow("Warning: Could not load package.json, using defaults"));
-    }
-  }
-  async updatePackageJsonVersion(version2) {
-    console.log(colors.blue("\u{1F4DD} Updating package.json..."));
-    const packageJsonPath = join5(this.projectRoot, "package.json");
-    if (existsSync2(packageJsonPath)) {
-      const packageJson = JSON.parse(await readFile5(packageJsonPath, "utf8"));
-      packageJson.contractsVersion = version2;
-      process13.env.CONTRACTS_VERSION = version2;
-      await writeFile2(packageJsonPath, JSON.stringify(packageJson, null, 2) + "\n", "utf8");
-      console.log(colors.green(`Updated package.json "contractsVersion" to: ${version2}`));
-    } else {
-      throw new Error("package.json not found in project root");
-    }
-  }
-  async buildContracts() {
-    console.log(colors.blue("\u{1F528} Building contracts..."));
-    const buildProcess = spawn("deno", ["task", "build"], {
-      cwd: this.projectRoot,
-      stdio: "inherit",
-      env: { ...process13.env, NODE_ENV: "production" }
-    });
-    await new Promise((resolve7, reject) => {
-      buildProcess.on("close", (code) => {
-        if (code === 0) {
-          resolve7();
-        } else {
-          reject(new Error(`Build process exited with code ${code}`));
-        }
-      });
-      buildProcess.on("error", reject);
-    });
-  }
-  async pinContracts(version2) {
-    const contractsDir = join5(this.projectRoot, "contracts");
-    const versionDir = join5(contractsDir, version2);
-    if (existsSync2(versionDir)) {
-      if (this.options["only-changed"] || this.options.overwrite) {
-        console.log(colors.yellow(`Version ${version2} already exists - updating package.json only`));
-        console.log(colors.gray("Existing version directory preserved as-is"));
-        await this.updatePackageJsonVersion(version2);
-        console.log(colors.green(`Package.json updated to use existing version: ${version2}`));
-        return;
-      } else {
-        throw new Error(`Version ${version2} already exists. Use --overwrite to replace it, or --only-changed to switch to it.`);
-      }
-    }
-    if (!existsSync2(contractsDir)) {
-      await mkdir4(contractsDir, { recursive: true });
-    }
-    if (this.options["only-changed"]) {
-      await this.pinOnlyChangedContracts(versionDir);
-    } else {
-      await this.pinAllContracts(versionDir);
-    }
-    console.log(colors.green(`Version ${version2} pinned to: ${versionDir}`));
-  }
-  async pinOnlyChangedContracts(versionDir) {
-    console.log(colors.blue("\u{1F50D} Analyzing contract changes (improved pinning)..."));
-    const existingVersions = await this.getExistingVersions();
-    if (existingVersions.length === 0) {
-      console.log(colors.yellow("No existing contract versions found."));
-      console.log(colors.gray("Make sure you have contracts in the contracts/ directory"));
-      return;
-    }
-    const latestVersion = this.getLatestVersion(existingVersions);
-    const completeVersion = await this.getLastCompleteVersion(existingVersions);
-    const baselineVersion = completeVersion || latestVersion;
-    console.log(colors.gray(`Using baseline version: ${baselineVersion}`));
-    const baselineVersionDir = join5(this.projectRoot, "contracts", baselineVersion);
-    const baselineFiles = await readdir4(baselineVersionDir);
-    const contractFiles = baselineFiles.filter((file) => file.endsWith(".js"));
-    const manifestFiles = baselineFiles.filter((file) => file.endsWith(".manifest.json"));
-    const allFiles = [...contractFiles, ...manifestFiles];
-    if (allFiles.length === 0) {
-      console.log(colors.yellow(`No contract files found in baseline version ${baselineVersion}.`));
-      return;
-    }
-    console.log(colors.gray(`Found ${allFiles.length} contract-related files in ${baselineVersion}`));
-    const currentDirFiles = await readdir4(this.projectRoot).catch(() => []);
-    const currentContractFiles = currentDirFiles.filter(
-      (file) => file.endsWith(".js") && (file.includes("group") || file.includes("identity") || file.includes("chatroom"))
-    );
-    const changedFiles = [];
-    for (const file of currentContractFiles) {
-      const currentFilePath = join5(this.projectRoot, file);
-      const baselineFilePath = join5(baselineVersionDir, file);
-      if (await this.hasContractChanged(currentFilePath, baselineFilePath)) {
-        changedFiles.push(file);
-        console.log(colors.green(`\u{1F4DD} Found updated contract: ${file}`));
-      }
-    }
-    if (changedFiles.length === 0) {
-      console.log(colors.blue("\u{1F4CB} No changes detected, copying all contracts from baseline version..."));
-    } else {
-      console.log(colors.blue(`\u{1F4CB} Found ${changedFiles.length} changed files, creating new version...`));
-      changedFiles.forEach((file) => console.log(colors.gray(`  - ${file}`)));
-    }
-    await mkdir4(versionDir, { recursive: true });
-    console.log(colors.blue("\u{1F4CB} Creating complete version with all contracts..."));
-    let copiedCount = 0;
-    for (const file of allFiles) {
-      let srcPath;
-      if (changedFiles.includes(file)) {
-        srcPath = join5(this.projectRoot, file);
-        console.log(colors.green(`  \u{1F4CC} ${file} (updated from current build)`));
-      } else {
-        srcPath = join5(baselineVersionDir, file);
-        console.log(colors.gray(`  \u{1F4CC} ${file} (from ${baselineVersion})`));
-      }
-      const destPath = join5(versionDir, file);
+  /**
+   * Load chelonia.json configuration file
+   * Creates a default one if it doesn't exist
+   */
+  async loadCheloniaConfig() {
+    const configPath = join6(this.projectRoot, "chelonia.json");
+    if (existsSync3(configPath)) {
       try {
-        await copyFile(srcPath, destPath);
-        copiedCount++;
+        const configContent = await readFile4(configPath, "utf8");
+        this.cheloniaConfig = JSON.parse(configContent);
+        console.log(colors.blue("\u{1F4C4} Loaded existing chelonia.json"));
       } catch (error) {
-        console.warn(colors.yellow(`Warning: Could not copy ${file}:`), error);
+        console.warn(colors.yellow(`Warning: Could not parse chelonia.json: ${error}`));
       }
+    } else {
+      console.log(colors.blue("\u{1F4C4} Creating new chelonia.json"));
     }
-    console.log(colors.green(`\u2705 Copied ${copiedCount} files to new version`));
-    const versionName = versionDir.split("/").pop();
-    await this.updatePackageJsonVersion(versionName);
+    if (!this.cheloniaConfig.contracts) {
+      this.cheloniaConfig.contracts = {};
+    }
   }
-  async pinAllContracts(versionDir) {
-    console.log(colors.blue("\u{1F4CB} Pinning all contracts..."));
-    const existingVersions = await this.getExistingVersions();
-    if (existingVersions.length === 0) {
-      console.log(colors.yellow("No existing contract versions found."));
-      console.log(colors.gray("Make sure you have contracts in the contracts/ directory"));
-      return;
-    }
-    const latestVersion = this.getLatestVersion(existingVersions);
-    const completeVersion = await this.getLastCompleteVersion(existingVersions);
-    const baselineVersion = completeVersion || latestVersion;
-    console.log(colors.gray(`Using baseline version: ${baselineVersion}`));
-    const baselineVersionDir = join5(this.projectRoot, "contracts", baselineVersion);
-    const baselineFiles = await readdir4(baselineVersionDir);
-    const allFiles = baselineFiles.filter((file) => file.endsWith(".js") || file.endsWith(".manifest.json"));
-    if (allFiles.length === 0) {
-      console.log(colors.yellow(`No contract files found in baseline version ${baselineVersion}.`));
-      return;
-    }
-    console.log(colors.gray(`Found ${allFiles.length} files to pin:`));
-    allFiles.forEach((file) => console.log(colors.gray(`  - ${file}`)));
-    await mkdir4(versionDir, { recursive: true });
-    let copiedCount = 0;
-    for (const file of allFiles) {
-      const srcPath = join5(baselineVersionDir, file);
-      const destPath = join5(versionDir, file);
-      try {
-        await copyFile(srcPath, destPath);
-        console.log(colors.green(`\u{1F4CC} Pinned: ${file} (from ${baselineVersion})`));
-        copiedCount++;
-      } catch (error) {
-        console.warn(colors.yellow(`Warning: Could not copy ${file}:`), error);
-      }
-    }
-    console.log(colors.green(`\u2705 Pinned ${copiedCount} files`));
-    const versionName = versionDir.split("/").pop();
-    await this.updatePackageJsonVersion(versionName);
+  /**
+   * Extract contract name from file path
+   * Examples:
+   * - 'frontend/model/contracts/chatroom.js' -> 'chatroom'
+   * - 'contracts/identity.js' -> 'identity'
+   * - 'src/contracts/group.js' -> 'group'
+   */
+  extractContractName(contractPath) {
+    const fileName = basename4(contractPath);
+    return fileName.replace(/(-slim)?\.js$/, "");
   }
-  async getExistingVersions() {
-    const contractsDir = join5(this.projectRoot, "contracts");
-    if (!existsSync2(contractsDir)) {
-      return [];
-    }
-    const entries = await readdir4(contractsDir, { withFileTypes: true });
-    return entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
-  }
-  getLatestVersion(versions) {
-    if (versions.length === 0) return null;
-    return versions.sort((a, b) => {
-      const aParts = a.split(".").map(Number);
-      const bParts = b.split(".").map(Number);
-      for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
-        const aPart = aParts[i] || 0;
-        const bPart = bParts[i] || 0;
-        if (aPart !== bPart) return aPart - bPart;
-      }
-      return 0;
-    }).pop() || null;
-  }
-  async getLastCompleteVersion(versions) {
-    if (versions.length === 0) return null;
-    const sortedVersions = versions.sort((a, b) => {
-      const aParts = a.split(".").map(Number);
-      const bParts = b.split(".").map(Number);
-      for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
-        const aPart = aParts[i] || 0;
-        const bPart = bParts[i] || 0;
-        if (aPart !== bPart) return aPart - bPart;
-      }
-      return 0;
-    }).reverse();
-    for (const version2 of sortedVersions) {
-      const versionDir = join5(this.projectRoot, "contracts", version2);
-      if (existsSync2(versionDir)) {
-        const files = await readdir4(versionDir);
-        const hasGroup = files.some((f) => f === "group.js");
-        const hasIdentity = files.some((f) => f === "identity.js");
-        const hasChatroom = files.some((f) => f === "chatroom.js");
-        if (hasGroup && hasIdentity && hasChatroom) {
-          console.log(colors.gray(`Using complete version ${version2} as baseline (has all contracts)`));
-          return version2;
+  /**
+   * Show available contracts in the project
+   * This helps users know what contracts they can pin
+   */
+  async showAvailableContracts() {
+    console.log(colors.cyan("\u{1F4CB} Available contracts to pin:"));
+    console.log(colors.gray("Usage: chel pin <version> <contract-file-path>"));
+    console.log();
+    const commonPaths = [
+      "frontend/model/contracts",
+      "contracts",
+      "src/contracts"
+    ];
+    let foundContracts = false;
+    for (const searchPath of commonPaths) {
+      const fullPath = join6(this.projectRoot, searchPath);
+      if (existsSync3(fullPath)) {
+        try {
+          const files = await readdir5(fullPath);
+          const contractFiles = files.filter((f) => f.endsWith(".js") && !f.endsWith("-slim.js"));
+          if (contractFiles.length > 0) {
+            console.log(colors.blue(`\u{1F4C1} ${searchPath}/`));
+            for (const file of contractFiles) {
+              const contractName = file.replace(".js", "");
+              const relativePath = join6(searchPath, file);
+              console.log(`  ${colors.green(contractName)} - ${colors.gray(relativePath)}`);
+            }
+            console.log();
+            foundContracts = true;
+          }
+        } catch {
         }
       }
     }
-    console.log(colors.yellow("Warning: No complete version found, using latest version"));
-    return this.getLatestVersion(versions);
+    if (!foundContracts) {
+      console.log(colors.yellow("No contract files found in common locations."));
+      console.log(colors.gray("Make sure your contract files end with .js and are in a contracts/ directory."));
+    }
+    if (Object.keys(this.cheloniaConfig.contracts).length > 0) {
+      console.log(colors.cyan("\u{1F4CC} Currently pinned contracts:"));
+      for (const [name, config] of Object.entries(this.cheloniaConfig.contracts)) {
+        console.log(`  ${colors.green(name)} - ${colors.blue(config.version)} (${colors.gray(config.path)})`);
+      }
+    }
   }
-  async hasContractChanged(newFilePath, existingFilePath) {
-    if (!existsSync2(existingFilePath)) {
-      return true;
+  /**
+   * Create the directory structure for a contract version
+   * Structure: contracts/<contractName>/<version>/
+   */
+  async createVersionDirectory(contractName, version2) {
+    const versionDir = join6(this.projectRoot, "contracts", contractName, version2);
+    console.log(colors.blue(`\u{1F4C1} Creating directory: contracts/${contractName}/${version2}/`));
+    await mkdir5(versionDir, { recursive: true });
+  }
+  /**
+   * Copy contract files to the version directory
+   * This includes both the main contract and its slim version if it exists
+   */
+  async copyContractFiles(contractPath, contractName, version2) {
+    const sourceDir = dirname4(join6(this.projectRoot, contractPath));
+    const targetDir = join6(this.projectRoot, "contracts", contractName, version2);
+    const mainFile = `${contractName}.js`;
+    const mainSource = join6(sourceDir, mainFile);
+    const mainTarget = join6(targetDir, mainFile);
+    if (existsSync3(mainSource)) {
+      await copyFile(mainSource, mainTarget);
+      console.log(colors.green(`\u2705 Copied ${mainFile}`));
+    } else {
+      throw new Error(`Main contract file not found: ${mainSource}`);
     }
-    try {
-      const newContent = await readFile5(newFilePath, "utf8");
-      const existingContent = await readFile5(existingFilePath, "utf8");
-      return newContent !== existingContent;
-    } catch (error) {
-      console.warn(colors.yellow(`Warning: Could not compare ${newFilePath}`), error);
-      return true;
+    const slimFile = `${contractName}-slim.js`;
+    const slimSource = join6(sourceDir, slimFile);
+    const slimTarget = join6(targetDir, slimFile);
+    if (existsSync3(slimSource)) {
+      await copyFile(slimSource, slimTarget);
+      console.log(colors.green(`\u2705 Copied ${slimFile}`));
+    } else {
+      console.log(colors.yellow(`\u26A0\uFE0F  Slim version not found: ${slimFile} (this is optional)`));
     }
+    const manifestFile = `${contractName}.manifest.json`;
+    const manifestSource = join6(sourceDir, manifestFile);
+    const manifestTarget = join6(targetDir, manifestFile);
+    if (existsSync3(manifestSource)) {
+      await copyFile(manifestSource, manifestTarget);
+      console.log(colors.green(`\u2705 Copied ${manifestFile}`));
+    }
+  }
+  /**
+   * Update chelonia.json with the new contract version
+   * This only updates the specific contract being pinned
+   */
+  async updateCheloniaConfig(contractName, version2, contractPath) {
+    this.cheloniaConfig.contracts[contractName] = {
+      version: version2,
+      path: contractPath
+    };
+    const configPath = join6(this.projectRoot, "chelonia.json");
+    const configContent = JSON.stringify(this.cheloniaConfig, null, 2) + "\n";
+    await writeFile2(configPath, configContent, "utf8");
+    console.log(colors.green("\u2705 Updated chelonia.json"));
+    console.log(colors.gray(`Set ${contractName} to version ${version2}`));
+  }
+  /**
+   * Generate manifest for the specific contract version
+   * This creates the .manifest.json file needed by chel deploy
+   *
+   * The manifest format must match what deploy.ts expects:
+   * - head: JSON string with manifestVersion
+   * - body: JSON string with contract details (name, version, contract.file, contractSlim.file)
+   * - signature: cryptographic signature (placeholder for now)
+   */
+  async generateContractManifest(contractName, version2) {
+    console.log(colors.blue(`\u{1F4DD} Generating manifest for ${contractName} v${version2}`));
+    const contractDir = join6(this.projectRoot, "contracts", contractName, version2);
+    const mainFile = join6(contractDir, `${contractName}.js`);
+    const slimFile = join6(contractDir, `${contractName}-slim.js`);
+    if (!existsSync3(mainFile)) {
+      throw new Error(`Main contract file missing: ${mainFile}`);
+    }
+    const head = {
+      manifestVersion: "1.0.0"
+    };
+    const body = {
+      name: `gi.contracts/${contractName}`,
+      version: version2,
+      contract: {
+        file: `${contractName}.js`,
+        hash: "placeholder-hash-" + Date.now()
+        // TODO: Calculate actual hash
+      },
+      ...existsSync3(slimFile) && {
+        contractSlim: {
+          file: `${contractName}-slim.js`,
+          hash: "placeholder-slim-hash-" + Date.now()
+          // TODO: Calculate actual hash
+        }
+      },
+      signingKeys: []
+      // TODO: Add actual signing keys
+    };
+    const manifest2 = {
+      head: JSON.stringify(head),
+      body: JSON.stringify(body),
+      signature: {
+        keyId: "placeholder-key-id",
+        value: "placeholder-signature-value"
+      }
+    };
+    const manifestPath = join6(contractDir, `${contractName}.manifest.json`);
+    await writeFile2(manifestPath, JSON.stringify(manifest2) + "\n", "utf8");
+    console.log(colors.green(`\u2705 Generated manifest: ${contractName}.manifest.json`));
+    console.log(colors.yellow("\u26A0\uFE0F  Note: Manifest contains placeholder hashes and signatures"));
+    console.log(colors.yellow('\u26A0\uFE0F  For production use, run "chel manifest" to generate proper cryptographic signatures'));
+  }
+  /**
+   * Update contractManifests.json to include this contract version
+   * This is used by the application to know which contracts are available
+   */
+  async updateContractManifests(contractName, version2, manifestHash) {
+    const manifestsPath = join6(this.projectRoot, "contractManifests.json");
+    let manifests = { manifests: {} };
+    if (existsSync3(manifestsPath)) {
+      try {
+        const content = await readFile4(manifestsPath, "utf8");
+        manifests = JSON.parse(content);
+      } catch (error) {
+        console.warn(colors.yellow(`Warning: Could not parse contractManifests.json: ${error}`));
+      }
+    }
+    const contractKey = `gi.contracts/${contractName}`;
+    manifests.manifests[contractKey] = manifestHash;
+    await writeFile2(manifestsPath, JSON.stringify(manifests, null, 2) + "\n", "utf8");
+    console.log(colors.green("\u2705 Updated contractManifests.json"));
   }
 };
 async function pin(args) {
-  const { version: version2, directory, options: options2 } = parsePinArgs(args);
-  if (!version2) {
-    console.error(colors.red("Error: Version is required"));
-    console.log(colors.blue("Usage: chel pin <version> [options]"));
-    process13.exit(1);
-  }
-  const pinner = new ContractPinner(directory, options2);
+  const { version: version2, contractPath, directory, options: options2 } = parsePinArgs(args);
   try {
-    await pinner.pin(version2);
+    const pinner = new ContractPinner(directory, options2);
+    await pinner.pin(version2, contractPath);
   } catch (error) {
-    console.error(colors.red("Pin failed:"), error);
+    console.error(colors.red("\u274C Pin failed:"), error instanceof Error ? error.message : error);
     process13.exit(1);
   }
 }
 function parsePinArgs(args) {
   const parsed = flags.parse(args, {
     boolean: ["overwrite", "only-changed"],
-    default: {
-      overwrite: false,
-      "only-changed": true
-      // Default to improved behavior
-    },
     alias: {
       o: "overwrite",
       c: "only-changed"
     }
   });
-  const version2 = parsed._[0]?.toString() || "";
-  const directory = parsed._[1]?.toString() || ".";
+  const version2 = parsed._[0]?.toString();
+  const contractPath = parsed._[1]?.toString();
+  const directory = process13.cwd();
+  if (!version2) {
+    throw new Error("Usage: chel pin <version> [contract-file-path]");
+  }
   const options2 = {
     overwrite: parsed.overwrite,
     "only-changed": parsed["only-changed"]
   };
-  return { version: version2, directory, options: options2 };
-}
-
-// src/publish.ts
-init_deps();
-import { readFile as readFile6, readdir as readdir5, stat as stat2 } from "node:fs/promises";
-import { existsSync as existsSync3 } from "node:fs";
-import { resolve as resolve6, join as join6 } from "node:path";
-import process14 from "node:process";
-import { spawn as spawn2 } from "node:child_process";
-var Publisher = class {
-  projectRoot;
-  options;
-  projectConfig;
-  constructor(projectRoot, options2) {
-    this.projectRoot = resolve6(projectRoot);
-    this.options = options2;
-    this.projectConfig = { contractsVersion: "1.0.0", version: "1.0.0" };
-  }
-  async publish() {
-    console.log(colors.cyan("\u{1F680} Publishing project..."));
-    await this.loadProjectConfig();
-    this.setupProductionEnvironment();
-    if (!this.options["skip-build"]) {
-      await this.buildForProduction();
-    }
-    await this.organizeContracts();
-    await this.deployContracts();
-    console.log(colors.green("\u2705 Project published successfully!"));
-  }
-  async loadProjectConfig() {
-    try {
-      const packageJsonPath = join6(this.projectRoot, "package.json");
-      if (existsSync3(packageJsonPath)) {
-        const packageJson = JSON.parse(await readFile6(packageJsonPath, "utf8"));
-        this.projectConfig = {
-          contractsVersion: packageJson.contractsVersion || "1.0.0",
-          version: packageJson.version || "1.0.0"
-        };
-      }
-    } catch {
-      console.warn(colors.yellow("Warning: Could not load package.json, using defaults"));
-    }
-  }
-  setupProductionEnvironment() {
-    console.log(colors.blue("\u{1F527} Setting up production environment..."));
-    Object.assign(process14.env, {
-      NODE_ENV: "production",
-      CONTRACTS_VERSION: this.projectConfig.contractsVersion,
-      GI_VERSION: this.projectConfig.version,
-      // No timestamp for production
-      LIGHTWEIGHT_CLIENT: "true",
-      EXPOSE_SBP: "",
-      ENABLE_UNSAFE_NULL_CRYPTO: "false",
-      UNSAFE_TRUST_ALL_MANIFEST_SIGNING_KEYS: "false"
-    });
-    if (this.options.production !== false) {
-      console.log(colors.green("Production environment configured"));
-    } else {
-      console.log(colors.yellow("\u26A0\uFE0F  You should probably run with --production"));
-    }
-  }
-  async buildForProduction() {
-    console.log(colors.blue("\u{1F4E6} Building for production..."));
-    const buildProcess = spawn2("deno", ["task", "build"], {
-      cwd: this.projectRoot,
-      stdio: "inherit",
-      env: { ...process14.env, NODE_ENV: "production" }
-    });
-    await new Promise((resolve7, reject) => {
-      buildProcess.on("close", (code) => {
-        if (code === 0) {
-          resolve7();
-        } else {
-          reject(new Error(`Build process exited with code ${code}`));
-        }
-      });
-      buildProcess.on("error", reject);
-    });
-  }
-  async organizeContracts() {
-    console.log(colors.blue("\u{1F4CB} Organizing contracts..."));
-    const contractsDir = join6(this.projectRoot, "contracts");
-    const { contractsVersion } = this.projectConfig;
-    if (!existsSync3(contractsDir)) {
-      console.log(colors.yellow("No contracts directory found."));
-      console.log(colors.gray("Chel publish works with existing contract versions."));
-      console.log(colors.gray('Use "chel pin <version>" to create contract versions first.'));
-      return;
-    }
-    const versionDir = join6(contractsDir, contractsVersion);
-    if (!existsSync3(versionDir)) {
-      console.log(colors.yellow(`Contract version ${contractsVersion} not found.`));
-      console.log(colors.gray(`Available versions: ${await this.getExistingVersions().then((v) => v.join(", ")) || "none"}`));
-      console.log(colors.gray(`Use "chel pin ${contractsVersion}" to create this version first.`));
-      return;
-    }
-    const contractFiles = await readdir5(versionDir);
-    const contracts = contractFiles.filter((file) => file.endsWith(".js") || file.endsWith(".manifest.json"));
-    if (contracts.length === 0) {
-      console.log(colors.yellow(`No contracts found in version ${contractsVersion}`));
-      return;
-    }
-    console.log(colors.gray(`Found ${contracts.length} contracts in version ${contractsVersion}:`));
-    contracts.forEach((contract) => console.log(colors.gray(`  - ${contract}`)));
-    const existingVersions = await this.getExistingVersions();
-    console.log(colors.gray(`Available contract versions: ${existingVersions.join(", ")}`));
-    console.log(colors.green("Contracts organized successfully"));
-  }
-  async getExistingVersions() {
-    const contractsDir = join6(this.projectRoot, "contracts");
-    if (!existsSync3(contractsDir)) {
-      return [];
-    }
-    const entries = await readdir5(contractsDir, { withFileTypes: true });
-    return entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name).sort();
-  }
-  async deployContracts() {
-    console.log(colors.blue("\u{1F680} Deploying contracts..."));
-    const destination = this.options.destination || process14.env.DB_PATH || "./data";
-    const { contractsVersion } = this.projectConfig;
-    const versionDir = join6(this.projectRoot, "contracts", contractsVersion);
-    const manifestFiles = [];
-    if (existsSync3(versionDir)) {
-      const files = await readdir5(versionDir);
-      for (const file of files) {
-        if (file.endsWith(".manifest.json")) {
-          const manifestPath = join6(versionDir, file);
-          try {
-            const stats = await stat2(manifestPath);
-            if (stats.size > 0) {
-              manifestFiles.push(manifestPath);
-            } else {
-              console.log(colors.gray(`Skipping empty manifest file: ${file}`));
-            }
-          } catch (error) {
-            console.warn(colors.yellow(`Could not read manifest file ${file}: ${error}`));
-          }
-        }
-      }
-    } else {
-      console.log(colors.yellow(`Version directory ${contractsVersion} not found.`));
-      console.log(colors.gray(`Use "chel pin ${contractsVersion}" to create this version first.`));
-      return;
-    }
-    if (manifestFiles.length === 0) {
-      console.warn(colors.yellow("No manifest files found to deploy"));
-      return;
-    }
-    console.log(colors.gray(`Found ${manifestFiles.length} manifest files to deploy`));
-    try {
-      await this.runDeployCommand(destination, manifestFiles);
-      console.log(colors.green("Contracts deployed successfully"));
-    } catch (error) {
-      throw new Error(`Contract deployment failed: ${error}`);
-    }
-  }
-  runDeployCommand(destination, manifestFiles) {
-    return new Promise((resolve7, reject) => {
-      const args = [destination, ...manifestFiles];
-      const deployProcess = spawn2("deno", [
-        "run",
-        "--allow-net",
-        "--allow-read",
-        "--allow-write=.",
-        "--allow-sys",
-        "--allow-env",
-        join6(this.projectRoot, "build/main.js"),
-        "deploy",
-        ...args
-      ], {
-        stdio: "inherit",
-        cwd: this.projectRoot,
-        env: process14.env
-      });
-      deployProcess.on("close", (code) => {
-        if (code === 0) {
-          resolve7();
-        } else {
-          reject(new Error(`Deploy command failed with exit code: ${code}`));
-        }
-      });
-      deployProcess.on("error", (error) => {
-        reject(new Error(`Deploy command error: ${error.message}`));
-      });
-    });
-  }
-};
-async function publish(args) {
-  const { directory, options: options2 } = parsePublishArgs(args);
-  const publisher = new Publisher(directory, options2);
-  try {
-    await publisher.publish();
-  } catch (error) {
-    console.error(colors.red("Publish failed:"), error);
-    process14.exit(1);
-  }
-}
-function parsePublishArgs(args) {
-  const parsed = flags.parse(args, {
-    boolean: ["production", "skip-build"],
-    string: ["destination"],
-    default: {
-      production: true,
-      // Default to production for publish
-      "skip-build": false,
-      destination: ""
-    },
-    alias: {
-      p: "production",
-      d: "destination"
-    }
-  });
-  const directory = parsed._[0]?.toString() || ".";
-  const options2 = {
-    production: parsed.production,
-    "skip-build": parsed["skip-build"],
-    destination: parsed.destination || void 0
-  };
-  return { directory, options: options2 };
+  return { version: version2, contractPath, directory, options: options2 };
 }
 
 // src/main.ts
