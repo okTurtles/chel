@@ -1,0 +1,21 @@
+{
+  "name": "todomvc-chelonia",
+  "version": "1.0.0",
+  "description": "TodoMVC implementation using Chelonia identity contracts and direct KV store operations",
+  "main": "index.html",
+  "scripts": {
+    "start": "cd .. && deno task chel serve todomvc"
+  },
+  "keywords": [
+    "todomvc",
+    "chelonia",
+    "identity-contracts",
+    "decentralized",
+    "group-income",
+    "shelter-protocol"
+  ],
+  "author": "Chelonia Team",
+  "license": "",
+  "dependencies": {},
+  "devDependencies": {}
+}

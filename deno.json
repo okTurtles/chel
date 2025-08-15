@@ -30,7 +30,7 @@
     "singleQuote": true
   },
   "lint": {
-    "exclude": ["node_modules/", "vendor/", "dist/", "build/", "test/assets/"],
+    "exclude": ["node_modules/", "vendor/", "dist/", "build/", "test/assets/", "todomvc/"],
     "rules": {
       "exclude": ["no-explicit-any", "no-unused-vars", "no-window", "no-window-prefix"]
     }
