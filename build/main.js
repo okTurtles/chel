@@ -3199,7 +3199,6 @@ var init_routes = __esm({
 // src/serve/server.ts
 var server_exports = {};
 import { basename as basename3, join as join3, dirname as dirname3 } from "node:path";
-import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { Worker } from "node:worker_threads";
 import process10 from "node:process";
@@ -3275,16 +3274,8 @@ var init_server = __esm({
       process10.stderr.write("The size calculation worker must run more frequently than the credits worker for accurate billing");
       process10.exit(1);
     }
-    try {
-      const workerExtension = existsSync(join3(__dirname, "serve", "ownerSizeTotalWorker.js")) ? ".js" : ".ts";
-      const workerDir = workerExtension === ".js" ? join3(__dirname, "serve") : __dirname;
-      ownerSizeTotalWorker = createWorker(join3(workerDir, `ownerSizeTotalWorker${workerExtension}`));
-      creditsWorker = createWorker(join3(workerDir, `creditsWorker${workerExtension}`));
-    } catch (error) {
-      console.warn("[server] Workers disabled - worker files not found in bundled environment:", error.message);
-      ownerSizeTotalWorker = void 0;
-      creditsWorker = void 0;
-    }
+    ownerSizeTotalWorker = createWorker(join3(__dirname, "serve", "ownerSizeTotalWorker.js"));
+    creditsWorker = createWorker(join3(__dirname, "serve", "creditsWorker.js"));
     ({ CONTRACTS_VERSION, GI_VERSION } = process10.env);
     hapi = new Server({
       // debug: false, // <- Hapi v16 was outputing too many unnecessary debug statements

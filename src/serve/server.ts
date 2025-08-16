@@ -105,17 +105,8 @@ if (CREDITS_WORKER_TASK_TIME_INTERVAL && OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTER
 let ownerSizeTotalWorker: WorkerType | undefined
 let creditsWorker: WorkerType | undefined
 
-try {
-  const workerExtension = existsSync(join(__dirname, 'serve', 'ownerSizeTotalWorker.js')) ? '.js' : '.ts'
-  const workerDir = workerExtension === '.js' ? join(__dirname, 'serve') : __dirname
-
-  ownerSizeTotalWorker = createWorker(join(workerDir, `ownerSizeTotalWorker${workerExtension}`))
-  creditsWorker = createWorker(join(workerDir, `creditsWorker${workerExtension}`))
-} catch (error) {
-  console.warn('[server] Workers disabled - worker files not found in bundled environment:', (error as Error).message)
-  ownerSizeTotalWorker = undefined
-  creditsWorker = undefined
-}
+ownerSizeTotalWorker = createWorker(join(__dirname, 'serve', 'ownerSizeTotalWorker.js'))
+creditsWorker = createWorker(join(__dirname, 'serve', 'creditsWorker.js'))
 
 const { CONTRACTS_VERSION, GI_VERSION } = process.env
 
