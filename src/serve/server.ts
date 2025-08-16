@@ -1,6 +1,7 @@
 import { Hapi, Inert, sbp, chalk, SPMessage, SERVER, multicodes, parseCID } from '~/deps.ts'
 // import type { SubMessage, UnsubMessage } from './pubsub.ts' // TODO: Use for type checking
 import { basename, join, dirname } from 'node:path'
+import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { Worker } from 'node:worker_threads'
 import process from 'node:process'
@@ -105,8 +106,11 @@ let ownerSizeTotalWorker: WorkerType | undefined
 let creditsWorker: WorkerType | undefined
 
 try {
-  ownerSizeTotalWorker = createWorker(join(__dirname, 'ownerSizeTotalWorker.ts'))
-  creditsWorker = createWorker(join(__dirname, 'creditsWorker.ts'))
+  const workerExtension = existsSync(join(__dirname, 'serve', 'ownerSizeTotalWorker.js')) ? '.js' : '.ts'
+  const workerDir = workerExtension === '.js' ? join(__dirname, 'serve') : __dirname
+
+  ownerSizeTotalWorker = createWorker(join(workerDir, `ownerSizeTotalWorker${workerExtension}`))
+  creditsWorker = createWorker(join(workerDir, `creditsWorker${workerExtension}`))
 } catch (error) {
   console.warn('[server] Workers disabled - worker files not found in bundled environment:', (error as Error).message)
   ownerSizeTotalWorker = undefined

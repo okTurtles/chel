@@ -517,15 +517,24 @@ var init_logger = __esm({
     "use strict";
     init_deps();
     prettyPrint = process2.env.NODE_ENV === "development" || process2.env.CI || process2.env.CYPRESS_RECORD_KEY || process2.env.PRETTY;
-    logger2 = default9(prettyPrint ? {
-      hooks: { logMethod },
-      transport: {
-        target: "pino-pretty",
-        options: {
-          colorize: true
-        }
+    if (prettyPrint) {
+      try {
+        logger2 = default9({
+          hooks: { logMethod },
+          transport: {
+            target: "pino-pretty",
+            options: {
+              colorize: true
+            }
+          }
+        });
+      } catch (e) {
+        console.warn("pino-pretty transport unavailable, using basic logging", e);
+        logger2 = default9({ hooks: { logMethod } });
       }
-    } : { hooks: { logMethod } });
+    } else {
+      logger2 = default9({ hooks: { logMethod } });
+    }
     logLevel = process2.env.LOG_LEVEL || (prettyPrint ? "debug" : "info");
     if (Object.keys(logger2.levels.values).includes(logLevel)) {
       logger2.level = logLevel;
@@ -3190,6 +3199,7 @@ var init_routes = __esm({
 // src/serve/server.ts
 var server_exports = {};
 import { basename as basename3, join as join3, dirname as dirname3 } from "node:path";
+import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { Worker } from "node:worker_threads";
 import process10 from "node:process";
@@ -3266,8 +3276,10 @@ var init_server = __esm({
       process10.exit(1);
     }
     try {
-      ownerSizeTotalWorker = createWorker(join3(__dirname, "ownerSizeTotalWorker.ts"));
-      creditsWorker = createWorker(join3(__dirname, "creditsWorker.ts"));
+      const workerExtension = existsSync(join3(__dirname, "serve", "ownerSizeTotalWorker.js")) ? ".js" : ".ts";
+      const workerDir = workerExtension === ".js" ? join3(__dirname, "serve") : __dirname;
+      ownerSizeTotalWorker = createWorker(join3(workerDir, `ownerSizeTotalWorker${workerExtension}`));
+      creditsWorker = createWorker(join3(workerDir, `creditsWorker${workerExtension}`));
     } catch (error) {
       console.warn("[server] Workers disabled - worker files not found in bundled environment:", error.message);
       ownerSizeTotalWorker = void 0;
