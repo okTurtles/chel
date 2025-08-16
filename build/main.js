@@ -3736,15 +3736,12 @@ var init_server = __esm({
         Object.values(pubsub.pushSubscriptions || {}).filter(
           (pushSubscription) => {
             const sub = pushSubscription;
-            const settings = sub.settings;
-            const sockets = sub.sockets;
-            return !!settings?.heartbeatInterval && sockets.size === 0;
+            return !!sub.settings?.heartbeatInterval && sub.sockets.size === 0;
           }
         ).forEach((pushSubscription) => {
           const sub = pushSubscription;
           const last = map.get(sub) ?? Number.NEGATIVE_INFINITY;
-          const settings = sub.settings;
-          if (now - last < settings.heartbeatInterval) return;
+          if (now - last < sub.settings.heartbeatInterval) return;
           postEvent(sub, notification).then(() => {
             map.set(sub, now);
           }).catch((e) => {

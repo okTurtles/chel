@@ -1,0 +1,12 @@
+var b=Symbol("@@empty"),p=t=>t===b,d=t=>t===null,w=t=>typeof t>"u",l=t=>typeof t=="boolean",O=t=>typeof t=="number",j=t=>typeof t=="string",S=t=>!d(t)&&typeof t=="object",T=t=>typeof t=="function";var a=(t,r)=>T(t.type)?t.type(r):t.name||"?",x=class t extends Error{expectedType;valueType;value;typeScope;sourceFile;constructor(r,n,o,e,i="",h=""){let f=r||`invalid "${o}" value type; ${i||n} type expected`;super(f),this.expectedType=n,this.valueType=o,this.value=e,this.typeScope=h||"",this.sourceFile=this.getSourceFile(),this.message=`${f}
+${this.getErrorInfo()}`,this.name=this.constructor.name,Error.captureStackTrace&&Error.captureStackTrace(this,t)}getSourceFile(){return(this.stack.match(/(\/[\w_\-.]+)+(\.\w+:\d+:\d+)/g)||[]).find(n=>n.indexOf("/flowTyper-js/dist/")===-1)||""}getErrorInfo(){return`
+    file     ${this.sourceFile}
+    scope    ${this.typeScope}
+    expected ${this.expectedType.replace(/\n/g,"")}
+    type     ${this.valueType}
+    value    ${this.value}
+`}},u=(t,r,n,o,e,i)=>new x(o,e||a(t),i||typeof r,JSON.stringify(r),t.name,n);var E=t=>{function r(n,o=""){if(p(n)||n===t)return t;throw u(r,n,o)}return r.type=()=>l(t)?`${t?"true":"false"}`:`"${t}"`,r};var g=function(t){if(p(t))return{};if(S(t)&&!Array.isArray(t))return Object.assign({},t);throw u(g,t)},M=(t,r="Object")=>{function n(o){let e=g(o),i=Object.keys(t),h=Object.keys(e).find(s=>!i.includes(s));if(h)throw u(n,o,r,`missing object property '${h}' in ${r} type`);let f=i.find(s=>t[s].name.includes("maybe")&&!e.hasOwnProperty(s));if(f)throw u(n,e[f],`${r}.${f}`,`empty object property '${f}' for ${r} type`,`void | null | ${a(t[f]).substr(1)}`,"-");let y=p(o)?(s,c)=>Object.assign(s,{[c]:t[c](o)}):(s,c)=>{let $=t[c];return $.name.includes("optional")&&!e.hasOwnProperty(c)?Object.assign(s,{}):Object.assign(s,{[c]:$(e[c],`${r}.${c}`)})};return i.reduce(y,{})}return n.type=()=>`{|
+ ${Object.keys(t).map(e=>t[e].name.includes("optional")?`${e}?: ${a(t[e],{noVoid:!0})}`:`${e}: ${a(t[e])}`).join(`,
+  `)} 
+|}`,n};function m(t,r=""){if(!(p(t)||w(t)))throw u(m,t,r)}m.type=()=>"void";var I=function t(r,n=""){if(p(r))return 0;if(O(r))return r;throw u(t,r,n)};var P=function t(r,n=""){if(p(r))return"";if(j(r))return r;throw u(t,r,n)};function A(...t){function r(n,o=""){for(let e of t)try{return e(n,o)}catch{}throw u(r,n,o)}return r.type=()=>`(${t.map(n=>a(n)).join(" | ")})`,r}var N=A;export{T as a,E as b,M as c,I as d,P as e,N as f};
+//# sourceMappingURL=chunk-MMWHE4QG-cached.js.map
