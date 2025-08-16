@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["../../../frontend/views/utils/safeLinkTag.js"],
-  "sourcesContent": ["import allowedUrlsByKey from '@view-utils/allowedUrls.js'\nimport { has } from 'turtledash'\n\nexport default function safeLinkTag (key        )         {\n  if (!has(allowedUrlsByKey, key)) {\n    throw new Error(`Unknown URL key: ${key}`)\n  }\n  // Make sure to include `noopener` and `noreferrer` in the `rel` attribute,\n  // to prevent reverse tabnabbing attacks.\n  return `<a class=\"link\" href=\"${allowedUrlsByKey[key]}\" target=\"_blank\" rel=\"noopener noreferrer\">`\n}\n"],
-  "mappings": "8FAGe,SAARA,EAA8BC,EAAqB,CACxD,GAAI,CAACC,EAAIC,EAAkBF,CAAG,EAC5B,MAAM,IAAI,MAAM,oBAAoBA,CAAG,EAAE,EAI3C,MAAO,yBAAyBE,EAAiBF,CAAG,CAAC,8CACvD",
-  "names": ["safeLinkTag", "key", "has", "allowedUrls_default"]
-}

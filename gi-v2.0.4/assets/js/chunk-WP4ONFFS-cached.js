@@ -1,2 +1,0 @@
-var E={Text:"TEXT",InAppLink:"IN_APP_LINK",MemberMention:"MEMBER_MENTION",ChannelMention:"CHANNEL_MENTION"},T={UNREAD_MESSAGES:"unreadMessages",LAST_LOGGED_IN:"lastLoggedIn",PREFERENCES:"preferences",NOTIFICATIONS:"notifications",NS_CACHE:"namespace-cache"},t={NON_INIT:"non-init",LOADING:"loading",LOADED:"loaded"},_=2e3,e=30*6e4,o={DISABLE_NOTIFICATIONS:"disableNotifications"};export{E as a,T as b,t as c,_ as d,o as e};
-//# sourceMappingURL=chunk-WP4ONFFS-cached.js.map
