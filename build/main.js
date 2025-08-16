@@ -3274,8 +3274,8 @@ var init_server = __esm({
       process10.stderr.write("The size calculation worker must run more frequently than the credits worker for accurate billing");
       process10.exit(1);
     }
-    ownerSizeTotalWorker = createWorker(join3(__dirname, "serve", "ownerSizeTotalWorker.js"));
-    creditsWorker = createWorker(join3(__dirname, "serve", "creditsWorker.js"));
+    ownerSizeTotalWorker = process10.env.CHELONIA_ARCHIVE_MODE || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker(join3(__dirname, "serve", "ownerSizeTotalWorker.js"));
+    creditsWorker = process10.env.CHELONIA_ARCHIVE_MODE || !CREDITS_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker(join3(__dirname, "serve", "creditsWorker.js"));
     ({ CONTRACTS_VERSION, GI_VERSION } = process10.env);
     hapi = new Server({
       // debug: false, // <- Hapi v16 was outputing too many unnecessary debug statements
