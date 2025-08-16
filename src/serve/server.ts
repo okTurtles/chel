@@ -694,19 +694,16 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
     // that are 'asleep' and that might be woken up by the push event
     Object.values(pubsub.pushSubscriptions || {}).filter(
       (pushSubscription: unknown) => {
-        const sub = pushSubscription as Record<string, unknown>
-        const settings = sub.settings as Record<string, unknown>
-        const sockets = sub.sockets as Set<unknown>
-        return !!settings?.heartbeatInterval && sockets.size === 0
+        const sub = pushSubscription as { settings?: { heartbeatInterval?: number }; sockets: { size: number } }
+        return !!sub.settings?.heartbeatInterval && sub.sockets.size === 0
       }
     ).forEach((pushSubscription: unknown) => {
-      const sub = pushSubscription as Record<string, unknown>
+      const sub = pushSubscription as PushSubscriptionInfo
       const last = map.get(sub) ?? Number.NEGATIVE_INFINITY
-      const settings = sub.settings as Record<string, unknown>
-      if (now - last < (settings.heartbeatInterval as number)) return
-      postEvent(sub as unknown as PushSubscriptionInfo, notification).then(() => {
+      if (now - last < (sub.settings as { heartbeatInterval: number }).heartbeatInterval) return
+      postEvent(sub, notification).then(() => {
         map.set(sub, now)
-      }).catch((e) => {
+      }).catch((e: unknown) => {
         console.warn(e, 'Error sending recurring message to web push client', sub.id)
       })
     })
