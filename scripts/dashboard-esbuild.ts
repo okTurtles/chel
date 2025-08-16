@@ -87,7 +87,7 @@ async function copyIndexHtml (outDir: string) {
 }
 
 // Extract CSS from Vue components and create combined-styles.scss
-async function extractAndCreateCSS (outDir: string) {
+export async function extractAndCreateCSS (outDir: string) {
   try {
     const vueFiles = await findVueFiles(dashboardDir)
     let combinedCSS = ''
@@ -140,55 +140,9 @@ function vuePlugin ({ aliases = {} } = {}) {
         try {
           const result = await compile({ filename: path, source, compiler, extractedStyles })
 
-          // Return JS code WITHOUT styles - styles will be handled separately
-          return { contents: result.code, loader: 'js' }
+          return { contents: result.contents }
         } catch (error) {
           return { errors: [convertError(error)] }
-        }
-      })
-
-      // Create combined-styles.scss file before build starts
-      build.onStart(async () => {
-        // Clear previous styles
-        extractedStyles.length = 0
-
-        // Pre-extract styles from all Vue files to create combined-styles.scss
-        const vueFiles = await findVueFiles(join(__dirname, '../src/serve/dashboard'))
-
-        for (const vueFile of vueFiles) {
-          let source = await readFile(vueFile, 'utf8')
-
-          if (aliasReplacer) {
-            source = aliasReplacer({ path: vueFile, source })
-          }
-
-          // Handle @assets alias
-          const assetsPath = resolve(__dirname, '../src/serve/dashboard/assets')
-          const componentDir = dirname(vueFile)
-          const relativePath = relative(componentDir, assetsPath).replace(/\\/g, '/')
-          source = source.replace(/@import\s+["']@assets\//g, `@import "${relativePath}/`)
-
-          // Extract styles from this Vue file
-          try {
-            await compile({ filename: vueFile, source, compiler, extractedStyles })
-          } catch (error) {
-            console.warn(`Warning: Could not extract styles from ${vueFile}:`, (error as Error)!.message)
-          }
-        }
-
-        // Write combined-styles.scss file directly to dist-dashboard
-        if (extractedStyles.length > 0) {
-          const cssDir = join(outDir, 'assets', 'css')
-          await mkdir(cssDir, { recursive: true })
-
-          // Write both SCSS source and compiled CSS
-          const combinedScssPath = join(cssDir, 'combined-styles.scss')
-          const combinedCssPath = join(cssDir, 'combined-styles.css')
-          const allStyles = extractedStyles.join('\n\n')
-
-          await writeFile(combinedScssPath, allStyles, 'utf8')
-          await writeFile(combinedCssPath, allStyles, 'utf8')
-          console.log(`📄 Created combined-styles.scss and combined-styles.css with ${extractedStyles.length} style blocks`)
         }
       })
     }
@@ -217,7 +171,7 @@ async function findVueFiles (dir: string) {
   return files
 }
 
-function compile ({ filename, source, compiler, extractedStyles }: { filename: string, source: string, compiler: SFCCompiler, extractedStyles: string[] }) {
+function compile ({ filename, source, compiler }: { filename: string, source: string, compiler: SFCCompiler, extractedStyles?: string[] }) {
   try {
     if (/^\s*$/.test(source)) {
       throw new Error('File is empty')
@@ -230,19 +184,8 @@ function compile ({ filename, source, compiler, extractedStyles }: { filename: s
       return { errors }
     }
 
-    // Extract styles if extractedStyles array is provided
-    if (extractedStyles && descriptor.styles && descriptor.styles.length > 0) {
-      for (const styleBlock of descriptor.styles) {
-        if (styleBlock.code && styleBlock.code.trim()) {
-          const componentName = basename(filename, '.vue')
-          const styleWithComment = `/* Styles from ${componentName}.vue */\n${styleBlock.code}\n`
-          extractedStyles.push(styleWithComment)
-        }
-      }
-    }
-
     const output = componentCompiler.assemble(compiler, source, descriptor, {})
-    return { code: output.code }
+    return { contents: output.code }
   } catch (error) {
     return {
       errors: [
@@ -394,9 +337,6 @@ async function build () {
 
     // Copy and update index.html
     await copyIndexHtml(outDir)
-
-    // Extract and create combined CSS from Vue components
-    await extractAndCreateCSS(outDir)
 
     console.log('✅ Dashboard build completed successfully!')
     console.log(`📦 Output directory: ${outDir}`)
