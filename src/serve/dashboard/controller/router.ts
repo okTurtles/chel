@@ -1,6 +1,8 @@
 import { Vue } from '../deps.ts'
 import VueRouter from 'vue-router'
-import process from 'node:process'
+
+// This will be replaced by esbuild at build time via define: { 'NODE_ENV': '...' }
+declare const NODE_ENV: string
 
 import Landing from '@pages/miscellaneous/Landing.vue'
 import L from '../common/translations.ts'
@@ -22,7 +24,7 @@ const router = new (VueRouter as unknown as new (options: {
   routes: unknown[];
 }) => { beforeEach: (guard: unknown) => void })({
   mode: 'history',
-  base: process.env.NODE_ENV === 'production' ? '' : '/dashboard',
+  base: NODE_ENV === 'production' ? '' : '/dashboard',
   scrollBehavior () {
     return { x: 0, y: 0 }
   },
@@ -78,7 +80,7 @@ const router = new (VueRouter as unknown as new (options: {
   ]
 })
 
-router.beforeEach((to: { meta: { title: string } }, from: unknown, next: (path?: string | false | void) => void) => {
+router.beforeEach((to: { meta: { title: string } }, _from: unknown, next: (path?: string | false | void) => void) => {
   document.title = to.meta.title
   next()
 })

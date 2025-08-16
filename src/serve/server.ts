@@ -1,6 +1,7 @@
 import { Hapi, Inert, sbp, chalk, SPMessage, SERVER, multicodes, parseCID } from '~/deps.ts'
 // import type { SubMessage, UnsubMessage } from './pubsub.ts' // TODO: Use for type checking
 import { basename, join, dirname } from 'node:path'
+import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { Worker } from 'node:worker_threads'
 import process from 'node:process'
@@ -105,8 +106,11 @@ let ownerSizeTotalWorker: WorkerType | undefined
 let creditsWorker: WorkerType | undefined
 
 try {
-  ownerSizeTotalWorker = createWorker(join(__dirname, 'ownerSizeTotalWorker.ts'))
-  creditsWorker = createWorker(join(__dirname, 'creditsWorker.ts'))
+  const workerExtension = existsSync(join(__dirname, 'serve', 'ownerSizeTotalWorker.js')) ? '.js' : '.ts'
+  const workerDir = workerExtension === '.js' ? join(__dirname, 'serve') : __dirname
+
+  ownerSizeTotalWorker = createWorker(join(workerDir, `ownerSizeTotalWorker${workerExtension}`))
+  creditsWorker = createWorker(join(workerDir, `creditsWorker${workerExtension}`))
 } catch (error) {
   console.warn('[server] Workers disabled - worker files not found in bundled environment:', (error as Error).message)
   ownerSizeTotalWorker = undefined
@@ -688,25 +692,38 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
     const notification = JSON.stringify({ type: 'recurring' })
     // Find push subscriptions that do _not_ have a WS open. This means clients
     // that are 'asleep' and that might be woken up by the push event
-    Object.values(pubsub.pushSubscriptions || {})
-      .filter((pushSubscription: unknown) => {
-        const sub = pushSubscription as Record<string, unknown>
-        const settings = sub.settings as Record<string, unknown>
-        const sockets = sub.sockets as Set<unknown>
-        return !!(settings?.heartbeatInterval) && sockets.size === 0
-      }).forEach((pushSubscription: unknown) => {
-        const sub = pushSubscription as Record<string, unknown>
-        const last = map.get(sub) ?? Number.NEGATIVE_INFINITY
-        const settings = sub.settings as Record<string, unknown>
-        // If we've recently sent a recurring notification, skip it
-        if ((now - last) < (settings.heartbeatInterval as number)) return
-
-        postEvent(sub as unknown as PushSubscriptionInfo, notification).then(() => {
-          map.set(sub, now)
-        }).catch((e) => {
-          console.warn(e, 'Error sending recurring message to web push client', sub.id)
-        })
+    Object.values(pubsub.pushSubscriptions || {}).filter(
+      (pushSubscription: unknown) => {
+        const sub = pushSubscription as { settings?: { heartbeatInterval?: number }; sockets: { size: number } }
+        return !!sub.settings?.heartbeatInterval && sub.sockets.size === 0
+      }
+    ).forEach((pushSubscription: unknown) => {
+      const sub = pushSubscription as PushSubscriptionInfo
+      const last = map.get(sub) ?? Number.NEGATIVE_INFINITY
+      if (now - last < (sub.settings as { heartbeatInterval: number }).heartbeatInterval) return
+      postEvent(sub, notification).then(() => {
+        map.set(sub, now)
+      }).catch((e: unknown) => {
+        console.warn(e, 'Error sending recurring message to web push client', sub.id)
       })
+    })
     // Repeat every 1 hour
   }, 1 * 60 * 60 * 1000)
 })()
+
+const handleSignal = (signal: string, code: number) => {
+  process.on(signal, () => {
+    console.error(`Exiting upon receiving ${signal} (${code})`)
+    process.exit(128 + code)
+  })
+}
+
+// Codes from <signal.h>
+([
+  ['SIGHUP', 1],
+  ['SIGINT', 2],
+  ['SIGQUIT', 3],
+  ['SIGTERM', 15],
+  ['SIGUSR1', 10],
+  ['SIGUSR2', 11]
+] as [string, number][]).forEach(([signal, code]) => handleSignal(signal, code))

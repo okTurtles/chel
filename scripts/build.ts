@@ -5,7 +5,11 @@ import { colors, esbuild } from '../src/deps.ts'
 const { default: { version } } = await import('../package.json', { with: { type: 'json' } })
 
 const options = {
-  entryPoints: ['./src/main.ts'],
+  entryPoints: [
+    './src/main.ts',
+    './src/serve/ownerSizeTotalWorker.ts',
+    './src/serve/creditsWorker.ts'
+  ],
   bundle: true,
   define: {
     '__build__.VERSION': JSON.stringify(version)

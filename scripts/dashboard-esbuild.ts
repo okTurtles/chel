@@ -1,7 +1,7 @@
 // Node.js-based dashboard build using Group Income's Vue esbuild plugin approach
 // Uses Node.js to avoid Deno compatibility issues with @vue/component-compiler
 
-import { sassPlugin } from 'esbuild-sass-plugin'
+import { sassPlugin } from 'npm:esbuild-sass-plugin@3.3.1'
 import fs from 'node:fs'
 import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import { basename, dirname, join, relative, resolve } from 'node:path'
@@ -12,6 +12,21 @@ import esbuild from 'npm:esbuild'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
+
+// Environment variables setup (following Group Income pattern)
+const {
+  CI = '',
+  LIGHTWEIGHT_CLIENT = 'true',
+  NODE_ENV = 'development',
+  EXPOSE_SBP = '',
+  ENABLE_UNSAFE_NULL_CRYPTO = 'false',
+  UNSAFE_TRUST_ALL_MANIFEST_SIGNING_KEYS = 'false'
+} = process.env
+
+// Read package.json for version info
+const packageJSON = JSON.parse(fs.readFileSync(join(__dirname, '../package.json'), 'utf8'))
+const CONTRACTS_VERSION = packageJSON.contractsVersion || '2.0.0'
+const CHEL_VERSION = packageJSON.version
 
 // Fix for __proto__ issue with buble (used by @vue/component-compiler)
 // See: https://github.com/denoland/deno/issues/20618
@@ -53,26 +68,18 @@ function createAliasReplacer (aliases: Record<string, string>) {
   }
 }
 
-// Copy and update index.html with correct asset references
-async function copyAndUpdateIndexHtml (outDir: string) {
+// Copy index.html to output directory
+async function copyIndexHtml (outDir: string) {
   try {
     const sourceHtml = join(__dirname, '../src/serve/dashboard/index.html')
     const targetHtml = join(outDir, 'index.html')
 
     // Read the source HTML
-    let htmlContent = await readFile(sourceHtml, 'utf8')
+    const htmlContent = await readFile(sourceHtml, 'utf8')
 
-    // Update asset references
-    htmlContent = htmlContent.replace(
-      '<script type="module" src="/main.js"></script>',
-      '<script type="module" src="/assets/js/main.js"></script>\n  <link rel="stylesheet" href="/assets/css/main.css">'
-    )
-
-    // Write the updated HTML
+    // Write the HTML to output directory
     await writeFile(targetHtml, htmlContent, 'utf8')
-    console.log('📄 index.html copied and updated')
-
-    // CSS extraction is now handled by the Vue plugin
+    console.log('📄 index.html copied')
   } catch (error) {
     console.error('❌ Failed to copy index.html:', error)
     throw error
@@ -80,7 +87,7 @@ async function copyAndUpdateIndexHtml (outDir: string) {
 }
 
 // Extract CSS from Vue components and create combined-styles.scss
-async function extractAndCreateCSS (outDir: string) {
+export async function extractAndCreateCSS (outDir: string) {
   try {
     const vueFiles = await findVueFiles(dashboardDir)
     let combinedCSS = ''
@@ -133,55 +140,9 @@ function vuePlugin ({ aliases = {} } = {}) {
         try {
           const result = await compile({ filename: path, source, compiler, extractedStyles })
 
-          // Return JS code WITHOUT styles - styles will be handled separately
-          return { contents: result.code, loader: 'js' }
+          return { contents: result.contents }
         } catch (error) {
           return { errors: [convertError(error)] }
-        }
-      })
-
-      // Create combined-styles.scss file before build starts
-      build.onStart(async () => {
-        // Clear previous styles
-        extractedStyles.length = 0
-
-        // Pre-extract styles from all Vue files to create combined-styles.scss
-        const vueFiles = await findVueFiles(join(__dirname, '../src/serve/dashboard'))
-
-        for (const vueFile of vueFiles) {
-          let source = await readFile(vueFile, 'utf8')
-
-          if (aliasReplacer) {
-            source = aliasReplacer({ path: vueFile, source })
-          }
-
-          // Handle @assets alias
-          const assetsPath = resolve(__dirname, '../src/serve/dashboard/assets')
-          const componentDir = dirname(vueFile)
-          const relativePath = relative(componentDir, assetsPath).replace(/\\/g, '/')
-          source = source.replace(/@import\s+["']@assets\//g, `@import "${relativePath}/`)
-
-          // Extract styles from this Vue file
-          try {
-            await compile({ filename: vueFile, source, compiler, extractedStyles })
-          } catch (error) {
-            console.warn(`Warning: Could not extract styles from ${vueFile}:`, (error as Error)!.message)
-          }
-        }
-
-        // Write combined-styles.scss file directly to dist-dashboard
-        if (extractedStyles.length > 0) {
-          const cssDir = join(outDir, 'assets', 'css')
-          await mkdir(cssDir, { recursive: true })
-
-          // Write both SCSS source and compiled CSS
-          const combinedScssPath = join(cssDir, 'combined-styles.scss')
-          const combinedCssPath = join(cssDir, 'combined-styles.css')
-          const allStyles = extractedStyles.join('\n\n')
-
-          await writeFile(combinedScssPath, allStyles, 'utf8')
-          await writeFile(combinedCssPath, allStyles, 'utf8')
-          console.log(`📄 Created combined-styles.scss and combined-styles.css with ${extractedStyles.length} style blocks`)
         }
       })
     }
@@ -210,7 +171,7 @@ async function findVueFiles (dir: string) {
   return files
 }
 
-function compile ({ filename, source, compiler, extractedStyles }: { filename: string, source: string, compiler: SFCCompiler, extractedStyles: string[] }) {
+function compile ({ filename, source, compiler }: { filename: string, source: string, compiler: SFCCompiler, extractedStyles?: string[] }) {
   try {
     if (/^\s*$/.test(source)) {
       throw new Error('File is empty')
@@ -223,19 +184,8 @@ function compile ({ filename, source, compiler, extractedStyles }: { filename: s
       return { errors }
     }
 
-    // Extract styles if extractedStyles array is provided
-    if (extractedStyles && descriptor.styles && descriptor.styles.length > 0) {
-      for (const styleBlock of descriptor.styles) {
-        if (styleBlock.code && styleBlock.code.trim()) {
-          const componentName = basename(filename, '.vue')
-          const styleWithComment = `/* Styles from ${componentName}.vue */\n${styleBlock.code}\n`
-          extractedStyles.push(styleWithComment)
-        }
-      }
-    }
-
     const output = componentCompiler.assemble(compiler, source, descriptor, {})
-    return { code: output.code }
+    return { contents: output.code }
   } catch (error) {
     return {
       errors: [
@@ -297,7 +247,17 @@ async function build () {
       sourcemap: false,
       minify: false,
       define: {
-        'process.env.NODE_ENV': '"development"'
+        'process.env.BUILD': 'web', // Required by Vuelidate
+        'process.env.CI': `'${CI}'`,
+        'process.env.CONTRACTS_VERSION': `'${CONTRACTS_VERSION}'`,
+        'process.env.CHEL_VERSION': `'${CHEL_VERSION}'`,
+        'process.env.LIGHTWEIGHT_CLIENT': `'${LIGHTWEIGHT_CLIENT}'`,
+        'process.env.NODE_ENV': `'${NODE_ENV}'`,
+        'process.env.EXPOSE_SBP': `'${EXPOSE_SBP}'`,
+        'process.env.ENABLE_UNSAFE_NULL_CRYPTO': `'${ENABLE_UNSAFE_NULL_CRYPTO}'`,
+        'process.env.UNSAFE_TRUST_ALL_MANIFEST_SIGNING_KEYS': `'${UNSAFE_TRUST_ALL_MANIFEST_SIGNING_KEYS}'`,
+        // Define NODE_ENV directly for router.ts
+        'NODE_ENV': `'${NODE_ENV}'`
       },
       alias: {
         '@common': './src/serve/dashboard/common',
@@ -310,8 +270,7 @@ async function build () {
         '@pages': './src/serve/dashboard/views/pages',
         '@forms': './src/serve/dashboard/views/components/forms',
         '@validators': './src/serve/dashboard/views/utils/validators',
-        '@assets': './src/serve/dashboard/assets',
-        'node:process': 'process'
+        '@assets': './src/serve/dashboard/assets'
       },
       loader: {
         '.vue': 'js', // Will be handled by our Vue plugin
@@ -342,31 +301,6 @@ async function build () {
               const { path, ...extra } = args
               return build.resolve(path.slice(4), extra)
             })
-          }
-        } as esbuild.Plugin,
-        // Process polyfill plugin
-        {
-          name: 'process-polyfill',
-          setup (build) {
-            build.onResolve({ filter: /^node:process$/ }, () => ({
-              path: 'process-polyfill',
-              namespace: 'process-polyfill'
-            }))
-
-            build.onLoad({ filter: /.*/, namespace: 'process-polyfill' }, () => ({
-              contents: `
-                // Process polyfill for browser environment
-                const process = {
-                  env: typeof globalThis !== 'undefined' && globalThis.process ? globalThis.process.env : {},
-                  cwd: () => '/',
-                  platform: 'browser',
-                  version: '16.0.0',
-                  versions: { node: '16.0.0' }
-                };
-                module.exports = process;
-              `,
-              loader: 'js'
-            }))
           }
         } as esbuild.Plugin
       ]
@@ -402,10 +336,7 @@ async function build () {
     }
 
     // Copy and update index.html
-    await copyAndUpdateIndexHtml(outDir)
-
-    // Extract and create combined CSS from Vue components
-    await extractAndCreateCSS(outDir)
+    await copyIndexHtml(outDir)
 
     console.log('✅ Dashboard build completed successfully!')
     console.log(`📦 Output directory: ${outDir}`)

@@ -12,7 +12,7 @@ interface ContractItem {
   size: number
   spaceUsed: number
   createdDate: Date
-  manifestJSON?: any
+  manifestJSON?: Record<string, unknown>
 }
 
 interface UserStat {
@@ -46,7 +46,7 @@ const randomHash = (): string => createCID()
 
 // Contracts.vue //
 const contractDummyData: ContractItem[] = []
-const manifestDummy: Record<string, any> = {
+const manifestDummy: Record<string, Record<string, unknown>> = {
   'gi.contracts/identity': {"head":{"manifestVersion":"1.0.0"},"body":"{\"version\":\"0.0.1\",\"contract\":{\"hash\":\"21XWnNVpDxBCmdcQvko21FoGWpTXhNydrWfsCxB1VdfWg2wtxA\",\"file\":\"identity.js\"},\"authors\":[{\"cipher\":\"algo\",\"key\":\"<pubkey from deploy-key.json>\"},{\"cipher\":\"algo\",\"key\":\"<pubkey from alex.json>\"}],\"contractSlim\":{\"file\":\"identity-slim.js\",\"hash\":\"21XWnNSeKaQFg61hqcw9FvNV3TPZpqdBnNYQSVz3tKPVWygToL\"}}","signature":{"key":"<which of the \'authors\' keys was used to sign \'body\'>","signature":"<signature>"}},
   'gi.contracts/chatroom': {"head":{"manifestVersion":"1.0.0"},"body":"{\"version\":\"0.0.1\",\"contract\":{\"hash\":\"21XWnNPTjY6GrUyqb7GzsLstF5JZhs9b5jADnSVufZipPvtQeA\",\"file\":\"chatroom.js\"},\"authors\":[{\"cipher\":\"algo\",\"key\":\"<pubkey from deploy-key.json>\"},{\"cipher\":\"algo\",\"key\":\"<pubkey from alex.json>\"}],\"contractSlim\":{\"file\":\"chatroom-slim.js\",\"hash\":\"21XWnNRT58PL4Hj1BUv2SaJYZHVFkFAF8bS2FTwQy7XvuXB1QE\"}}","signature":{"key":"<which of the \'authors\' keys was used to sign \'body\'>","signature":"<signature>"}},
   'gi.contracts/group': {"head":{"manifestVersion":"1.0.0"},"body":"{\"version\":\"0.0.1\",\"contract\":{\"hash\":\"21XWnNXo4eU77dCQuWkPZtNTXST4hxd1DGnGMiBsaBB6vkdTZk\",\"file\":\"group.js\"},\"authors\":[{\"cipher\":\"algo\",\"key\":\"<pubkey from deploy-key.json>\"},{\"cipher\":\"algo\",\"key\":\"<pubkey from alex.json>\"}],\"contractSlim\":{\"file\":\"group-slim.js\",\"hash\":\"21XWnNSmnNSZZ6oZfsRmss2KKCSQS5QqVh62Ub7iojRAYwcxRr\"}}","signature":{"key":"<which of the \'authors\' keys was used to sign \'body\'>","signature":"<signature>"}}

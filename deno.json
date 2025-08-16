@@ -19,7 +19,24 @@
     "jsr:@std/path/": "https://jsr.io/@std/path@1.1.1/",
     "jsr:@std/streams/": "https://jsr.io/@std/streams@1.0.10/",
     "jsr:@std/io/": "https://jsr.io/@std/io@0.225.2/",
-    "npm:@types/node": "npm:@types/node@24.0.13"
+    "npm:@types/node": "npm:@types/node@24.0.13",
+    "npm:@vue/component-compiler": "npm:@vue/component-compiler@4.2.4",
+    "npm:@sbp/sbp": "npm:@sbp/sbp@2.4.1",
+    "npm:@sbp/okturtles.data": "npm:@sbp/okturtles.data@0.1.5",
+    "npm:@sbp/okturtles.eventqueue": "npm:@sbp/okturtles.eventqueue@1.2.0",
+    "npm:@sbp/okturtles.events": "npm:@sbp/okturtles.events@1.0.0",
+    "npm:dompurify": "npm:dompurify@2.4.2",
+    "npm:@eslint/js": "npm:@eslint/js@9.31.0",
+    "npm:@types/three": "npm:@types/three@0.179.0",
+    "npm:esbuild": "npm:esbuild@0.25.8",
+    "npm:esbuild-sass-plugin": "npm:esbuild-sass-plugin@3.3.1",
+    "npm:typescript-eslint": "npm:typescript-eslint@8.37.0",
+    "npm:three": "npm:three@0.151.3",
+    "npm:vue": "npm:vue@2.7.16",
+    "npm:vue-clickaway": "npm:vue-clickaway@2.2.2",
+    "npm:vue-router": "npm:vue-router@3.6.5",
+    "npm:vuelidate": "npm:vuelidate@0.7.6",
+    "npm:vuex": "npm:vuex@3.6.0"
     },
   "compilerOptions": {
   },
@@ -32,7 +49,7 @@
   "lint": {
     "exclude": ["node_modules/", "vendor/", "dist/", "build/", "test/assets/"],
     "rules": {
-      "exclude": ["no-explicit-any", "no-unused-vars", "no-window", "no-window-prefix"]
+      "exclude": ["no-window", "no-window-prefix"]
     }
   },
   "vendor": true

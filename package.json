@@ -23,23 +23,5 @@
     "rimraf": "3.0.2",
     "tar": "6.1.11"
   },
-  "devDependencies": {
-    "@vue/component-compiler": "4.2.4",
-    "@sbp/sbp": "2.4.1",
-    "@sbp/okturtles.data": "0.1.5",
-    "@sbp/okturtles.eventqueue": "1.2.0",
-    "@sbp/okturtles.events": "1.0.0",
-    "dompurify": "2.4.2",
-    "@eslint/js": "9.31.0",
-    "@types/three": "0.179.0",
-    "esbuild": "0.25.8",
-    "esbuild-sass-plugin": "3.3.1",
-    "typescript-eslint": "8.37.0",
-    "three": "0.151.3",
-    "vue": "2.7.16",
-    "vue-clickaway": "2.2.2",
-    "vue-router": "3.6.5",
-    "vuelidate": "0.7.6",
-    "vuex": "3.6.0"
-  }
+  "devDependencies": {}
 }
