@@ -28,16 +28,6 @@ interface CheloniaConfig {
 }
 
 /**
- * Structure of contractManifests.json
- * This tracks the deployed contract manifests and their hashes
- */
-interface ContractManifests {
-  manifests: {
-    [contractKey: string]: string // contract key -> hash
-  }
-}
-
-/**
  * ContractPinner class handles pinning individual contracts to specific versions
  *
  * Key improvements over the old implementation:
@@ -116,8 +106,8 @@ class ContractPinner {
     // Update chelonia.json configuration
     await this.updateCheloniaConfig(contractName, version, contractPath)
 
-    // Generate manifests for this specific contract version
-    await this.generateContractManifest(contractName, version)
+    // Note: Manifests should be generated using 'chel manifest' command
+    // The pin command only copies existing manifests if they exist
 
     console.log(colors.green(`✅ Successfully pinned ${contractName} to version ${version}`))
     console.log(colors.gray(`Location: contracts/${contractName}/${version}/`))
@@ -186,12 +176,12 @@ class ContractPinner {
       if (existsSync(fullPath)) {
         try {
           const files = await readdir(fullPath)
-          const contractFiles = files.filter(f => f.endsWith('.js') && !f.endsWith('-slim.js'))
+          const manifestFiles = files.filter(f => f.endsWith('.manifest.json'))
 
-          if (contractFiles.length > 0) {
+          if (manifestFiles.length > 0) {
             console.log(colors.blue(`📁 ${searchPath}/`))
-            for (const file of contractFiles) {
-              const contractName = file.replace('.js', '')
+            for (const file of manifestFiles) {
+              const contractName = file.replace('.manifest.json', '')
               const relativePath = join(searchPath, file)
               console.log(`  ${colors.green(contractName)} - ${colors.gray(relativePath)}`)
             }
@@ -290,93 +280,6 @@ class ContractPinner {
     await writeFile(configPath, configContent, 'utf8')
     console.log(colors.green('✅ Updated chelonia.json'))
     console.log(colors.gray(`Set ${contractName} to version ${version}`))
-  }
-
-  /**
-   * Generate manifest for the specific contract version
-   * This creates the .manifest.json file needed by chel deploy
-   *
-   * The manifest format must match what deploy.ts expects:
-   * - head: JSON string with manifestVersion
-   * - body: JSON string with contract details (name, version, contract.file, contractSlim.file)
-   * - signature: cryptographic signature (placeholder for now)
-   */
-  private async generateContractManifest (contractName: string, version: string) {
-    console.log(colors.blue(`📝 Generating manifest for ${contractName} v${version}`))
-
-    const contractDir = join(this.projectRoot, 'contracts', contractName, version)
-    const mainFile = join(contractDir, `${contractName}.js`)
-    const slimFile = join(contractDir, `${contractName}-slim.js`)
-
-    // Check if we have the necessary files
-    if (!existsSync(mainFile)) {
-      throw new Error(`Main contract file missing: ${mainFile}`)
-    }
-
-    // Create the manifest in the format expected by deploy.ts
-    const head = {
-      manifestVersion: '1.0.0'
-    }
-
-    const body = {
-      name: `gi.contracts/${contractName}`,
-      version,
-      contract: {
-        file: `${contractName}.js`,
-        hash: 'placeholder-hash-' + Date.now() // TODO: Calculate actual hash
-      },
-      ...(existsSync(slimFile) && {
-        contractSlim: {
-          file: `${contractName}-slim.js`,
-          hash: 'placeholder-slim-hash-' + Date.now() // TODO: Calculate actual hash
-        }
-      }),
-      signingKeys: [], // TODO: Add actual signing keys
-    }
-
-    // Create the full manifest structure that deploy.ts expects
-    const manifest = {
-      head: JSON.stringify(head),
-      body: JSON.stringify(body),
-      signature: {
-        keyId: 'placeholder-key-id',
-        value: 'placeholder-signature-value'
-      }
-    }
-
-    const manifestPath = join(contractDir, `${contractName}.manifest.json`)
-    await writeFile(manifestPath, JSON.stringify(manifest) + '\n', 'utf8')
-
-    console.log(colors.green(`✅ Generated manifest: ${contractName}.manifest.json`))
-    console.log(colors.yellow('⚠️  Note: Manifest contains placeholder hashes and signatures'))
-    console.log(colors.yellow('⚠️  For production use, run "chel manifest" to generate proper cryptographic signatures'))
-  }
-
-  /**
-   * Update contractManifests.json to include this contract version
-   * This is used by the application to know which contracts are available
-   */
-  private async updateContractManifests (contractName: string, version: string, manifestHash: string) {
-    const manifestsPath = join(this.projectRoot, 'contractManifests.json')
-    let manifests: ContractManifests = { manifests: {} }
-
-    // Load existing manifests if the file exists
-    if (existsSync(manifestsPath)) {
-      try {
-        const content = await readFile(manifestsPath, 'utf8')
-        manifests = JSON.parse(content)
-      } catch (error) {
-        console.warn(colors.yellow(`Warning: Could not parse contractManifests.json: ${error}`))
-      }
-    }
-
-    // Update only this contract's manifest entry
-    const contractKey = `gi.contracts/${contractName}`
-    manifests.manifests[contractKey] = manifestHash
-
-    // Write back to file
-    await writeFile(manifestsPath, JSON.stringify(manifests, null, 2) + '\n', 'utf8')
-    console.log(colors.green('✅ Updated contractManifests.json'))
   }
 }
 
