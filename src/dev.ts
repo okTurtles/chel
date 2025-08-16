@@ -8,6 +8,8 @@ import { serve } from './serve.ts'
 interface DevOptions {
   port?: number
   dashboardPort?: number
+  dbType?: string
+  host?: string
   'watch-contracts'?: boolean
   'hot-reload'?: boolean
   'auto-test'?: boolean
@@ -60,14 +62,6 @@ class DevEnvironment {
     this.startTime = new Date()
   }
 
-  // Simple fast non-crypto hash for content (djb2)
-  private hashContent (str: string): string {
-    let h = 5381
-    for (let i = 0; i < str.length; i++) h = ((h << 5) + h) ^ str.charCodeAt(i)
-    // force to unsigned 32-bit and to hex
-    return (h >>> 0).toString(16)
-  }
-
   async start () {
     this.printWelcomeBanner()
     await this.startServer()
@@ -82,7 +76,7 @@ class DevEnvironment {
     const serverArgs = [
       '--dp', String(this.options.dashboardPort || 3000),
       '--port', String(this.options.port || 8000),
-      '--db-type', 'mem', // Use memory for faster dev iterations
+      '--db-type', this.options.dbType || 'mem', // Use memory for faster dev iterations by default
       this.projectRoot
     ]
 
@@ -99,7 +93,7 @@ class DevEnvironment {
 
       console.log(colors.green('✅ Development server started'))
       console.log(colors.gray(`   Dashboard: http://localhost:${this.options.dashboardPort || 3000}`))
-      console.log(colors.gray(`   Application: http://localhost:${this.options.port || 8000}`))
+      console.log(colors.gray(`   Application: http://0.0.0.0:${this.options.port || 8000} (all interfaces)`))
     } catch (error) {
       console.error(colors.red('❌ Failed to start development server:'), error)
       throw error
@@ -108,12 +102,12 @@ class DevEnvironment {
 
   private printWelcomeBanner () {
     console.log(colors.cyan('╔══════════════════════════════════════════════════════════════╗'))
-    console.log(colors.cyan('║') + colors.bold(colors.white('               🧪 CHEL LIVE DEVELOPMENT                     ')) + colors.cyan('║'))
-    console.log(colors.cyan('║') + colors.white('           Live-testing with Hot Reload & Interaction        ') + colors.cyan('║'))
+    console.log(colors.cyan('║') + colors.bold(colors.white('               🧪 CHEL LIVE DEVELOPMENT                     ')) + colors.cyan('  ║'))
+    console.log(colors.cyan('║') + colors.white('           Live-testing with Hot Reload & Interaction        ') + colors.cyan(' ║'))
     console.log(colors.cyan('╚══════════════════════════════════════════════════════════════╝'))
     console.log()
-    console.log(colors.gray('Similar to grunt dev - provides live-testing environment'))
-    console.log(colors.gray('with automatic contract redeployment and interactive testing.'))
+    console.log(colors.gray('Provides live-testing environment with automatic contract'))
+    console.log(colors.gray('redeployment and interactive testing capabilities.'))
     console.log()
   }
 
@@ -137,14 +131,14 @@ class DevEnvironment {
 
       this.watchers.push(watcher)
 
-      // Count initial contracts
+      // Count initial contracts by looking for manifest files
       const entries = await readdir(contractsDir, { recursive: true })
-      const contractFiles = (entries as unknown as string[]).filter((f) =>
-        typeof f === 'string' && f.endsWith('.js')
+      const manifestFiles = (entries as unknown as string[]).filter((f) =>
+        typeof f === 'string' && f.endsWith('.manifest.json')
       )
-      this.metrics.contractsWatched = contractFiles.length
+      this.metrics.contractsWatched = manifestFiles.length
 
-      console.log(colors.green(`✅ Watching ${contractFiles.length} contract files for changes`))
+      console.log(colors.green(`✅ Watching ${manifestFiles.length} contract files for changes`))
     } catch (error) {
       console.error(colors.red('❌ Error setting up file watching:'), error)
     }
@@ -172,16 +166,18 @@ class DevEnvironment {
       console.log(colors.blue(`🔄 Hot reloading contract: ${filename}`))
 
       // For hot reload, we need to:
-      // 1. Re-pin the changed contract (if it's a source file)
+      // 1. Re-create the manifest file and re-sign it on the fly
       // 2. Redeploy to the running server
       // 3. Notify the dashboard of the change
+      // Note: Development contracts are not pinned, only manifests are regenerated
 
       if (filename.endsWith('.js') && !filename.includes('manifest')) {
-        console.log(colors.gray('   → Triggering contract redeployment...'))
-        // The server's contract preloading will handle the actual redeployment
-        // We just need to signal that contracts have changed
+        console.log(colors.gray('   → Regenerating manifest and redeploying...'))
+        // TODO: Implement manifest regeneration and signing on the fly
+        // This should call the manifest generation logic from manifest.ts
+        // and then trigger redeployment to the running server
         this.metrics.hotReloads++
-        console.log(colors.green('   ✅ Hot reload triggered'))
+        console.log(colors.green('   ✅ Hot reload triggered (manifest regeneration pending)'))
       }
     } catch (error) {
       console.error(colors.red('❌ Hot reload failed:'), error)
@@ -196,11 +192,14 @@ class DevEnvironment {
     console.log(colors.gray('  - Check the dashboard for live contract status'))
     console.log()
 
-    // Setup graceful shutdown
-    process.on('SIGINT', () => {
-      console.log(colors.yellow('\n🛑 Shutting down development environment...'))
-      this.cleanup()
-      process.exit(0)
+    // Setup graceful shutdown for all relevant signals
+    const signals = ['SIGINT', 'SIGTERM', 'SIGQUIT', 'SIGHUP'] as const
+    signals.forEach(signal => {
+      process.on(signal, () => {
+        console.log(colors.yellow(`\n🛑 Received ${signal}, shutting down development environment...`))
+        this.cleanup()
+        process.exit(0)
+      })
     })
 
     // Keep the process alive
@@ -222,7 +221,7 @@ class DevEnvironment {
   }
 
   private printStatus () {
-    const uptime = Math.floor((Date.now() - this.startTime.getTime()) / 1000)
+    const uptime = Math.floor(performance.now() / 1000)
     this.metrics.uptime = uptime
 
     console.log(colors.bold('\n📊 Development Status'))

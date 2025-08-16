@@ -4484,12 +4484,6 @@ var DevEnvironment = class {
     };
     this.startTime = /* @__PURE__ */ new Date();
   }
-  // Simple fast non-crypto hash for content (djb2)
-  hashContent(str) {
-    let h = 5381;
-    for (let i = 0; i < str.length; i++) h = (h << 5) + h ^ str.charCodeAt(i);
-    return (h >>> 0).toString(16);
-  }
   async start() {
     this.printWelcomeBanner();
     await this.startServer();
@@ -4504,8 +4498,8 @@ var DevEnvironment = class {
       "--port",
       String(this.options.port || 8e3),
       "--db-type",
-      "mem",
-      // Use memory for faster dev iterations
+      this.options.dbType || "mem",
+      // Use memory for faster dev iterations by default
       this.projectRoot
     ];
     try {
@@ -4516,7 +4510,7 @@ var DevEnvironment = class {
       await new Promise((resolve7) => setTimeout(resolve7, 2e3));
       console.log(colors.green("\u2705 Development server started"));
       console.log(colors.gray(`   Dashboard: http://localhost:${this.options.dashboardPort || 3e3}`));
-      console.log(colors.gray(`   Application: http://localhost:${this.options.port || 8e3}`));
+      console.log(colors.gray(`   Application: http://0.0.0.0:${this.options.port || 8e3} (all interfaces)`));
     } catch (error) {
       console.error(colors.red("\u274C Failed to start development server:"), error);
       throw error;
@@ -4524,12 +4518,12 @@ var DevEnvironment = class {
   }
   printWelcomeBanner() {
     console.log(colors.cyan("\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557"));
-    console.log(colors.cyan("\u2551") + colors.bold(colors.white("               \u{1F9EA} CHEL LIVE DEVELOPMENT                     ")) + colors.cyan("\u2551"));
-    console.log(colors.cyan("\u2551") + colors.white("           Live-testing with Hot Reload & Interaction        ") + colors.cyan("\u2551"));
+    console.log(colors.cyan("\u2551") + colors.bold(colors.white("               \u{1F9EA} CHEL LIVE DEVELOPMENT                     ")) + colors.cyan("  \u2551"));
+    console.log(colors.cyan("\u2551") + colors.white("           Live-testing with Hot Reload & Interaction        ") + colors.cyan(" \u2551"));
     console.log(colors.cyan("\u255A\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255D"));
     console.log();
-    console.log(colors.gray("Similar to grunt dev - provides live-testing environment"));
-    console.log(colors.gray("with automatic contract redeployment and interactive testing."));
+    console.log(colors.gray("Provides live-testing environment with automatic contract"));
+    console.log(colors.gray("redeployment and interactive testing capabilities."));
     console.log();
   }
   async startContractWatching() {
@@ -4548,11 +4542,11 @@ var DevEnvironment = class {
       });
       this.watchers.push(watcher);
       const entries = await readdir4(contractsDir, { recursive: true });
-      const contractFiles = entries.filter(
-        (f) => typeof f === "string" && f.endsWith(".js")
+      const manifestFiles = entries.filter(
+        (f) => typeof f === "string" && f.endsWith(".manifest.json")
       );
-      this.metrics.contractsWatched = contractFiles.length;
-      console.log(colors.green(`\u2705 Watching ${contractFiles.length} contract files for changes`));
+      this.metrics.contractsWatched = manifestFiles.length;
+      console.log(colors.green(`\u2705 Watching ${manifestFiles.length} contract files for changes`));
     } catch (error) {
       console.error(colors.red("\u274C Error setting up file watching:"), error);
     }
@@ -4574,9 +4568,9 @@ var DevEnvironment = class {
     try {
       console.log(colors.blue(`\u{1F504} Hot reloading contract: ${filename}`));
       if (filename.endsWith(".js") && !filename.includes("manifest")) {
-        console.log(colors.gray("   \u2192 Triggering contract redeployment..."));
+        console.log(colors.gray("   \u2192 Regenerating manifest and redeploying..."));
         this.metrics.hotReloads++;
-        console.log(colors.green("   \u2705 Hot reload triggered"));
+        console.log(colors.green("   \u2705 Hot reload triggered (manifest regeneration pending)"));
       }
     } catch (error) {
       console.error(colors.red("\u274C Hot reload failed:"), error);
@@ -4589,10 +4583,14 @@ var DevEnvironment = class {
     console.log(colors.gray("  - File changes will trigger hot reload automatically"));
     console.log(colors.gray("  - Check the dashboard for live contract status"));
     console.log();
-    process12.on("SIGINT", () => {
-      console.log(colors.yellow("\n\u{1F6D1} Shutting down development environment..."));
-      this.cleanup();
-      process12.exit(0);
+    const signals = ["SIGINT", "SIGTERM", "SIGQUIT", "SIGHUP"];
+    signals.forEach((signal) => {
+      process12.on(signal, () => {
+        console.log(colors.yellow(`
+\u{1F6D1} Received ${signal}, shutting down development environment...`));
+        this.cleanup();
+        process12.exit(0);
+      });
     });
     console.log(colors.green("\u{1F3AF} Live development environment ready!"));
     console.log(colors.gray("Watching for contract changes..."));
@@ -4609,7 +4607,7 @@ var DevEnvironment = class {
     this.watchers = [];
   }
   printStatus() {
-    const uptime = Math.floor((Date.now() - this.startTime.getTime()) / 1e3);
+    const uptime = Math.floor(performance.now() / 1e3);
     this.metrics.uptime = uptime;
     console.log(colors.bold("\n\u{1F4CA} Development Status"));
     console.log(`   Contracts watched: ${colors.cyan(this.metrics.contractsWatched.toString())}`);
