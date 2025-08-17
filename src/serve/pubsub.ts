@@ -252,7 +252,7 @@ const defaultServerHandlers = {
 const defaultSocketEventHandlers = {
   close () {
     const socket = this as WebSocket & { subscriptions: Set<string>; server: unknown }
-    const server = socket.server as { subscribersByChannelID: Record<string, Set<WebSocket>> }
+    const { server } = socket as { server: { subscribersByChannelID: Record<string, Set<WebSocket>> } }
 
     for (const channelID of socket.subscriptions) {
       // Remove this socket from the channel subscribers.
@@ -269,13 +269,13 @@ const defaultSocketEventHandlers = {
       activeSinceLastPing: boolean;
       ip?: string;
     }
-    const server = socket.server as {
+    const { server } = socket as { server: {
       subscribersByChannelID: Record<string, Set<WebSocket>>;
       kvFiltersByChannelID: Record<string, Map<WebSocket, Map<string, unknown>>>;
       rejectMessageAndTerminateSocket: (socket: WebSocket, reason: string) => void;
       options: { maxMessageSizeBytes?: number; logPongMessages?: boolean };
       customMessageHandlers: Record<string, (socket: WebSocket, msg: Message) => void>;
-    }
+    }}
     const text = data.toString()
     let msg: Message = { type: '' }
 
@@ -322,14 +322,14 @@ const defaultMessageHandlers = {
   },
 
   [PUB] (msg: PubMessage) {
-    const server = (this as WebSocket & { server: unknown }).server as { subscribersByChannelID: Record<string, Set<WebSocket>>; broadcast: (msg: unknown, options: { to: WebSocket[] }) => void }
+    const { server } = (this as WebSocket & { server: unknown }) as { server: { subscribersByChannelID: Record<string, Set<WebSocket>>; broadcast: (msg: unknown, options: { to: WebSocket[] }) => void } }
     const subscribers = server.subscribersByChannelID[msg.channelID]
     server.broadcast(msg, { to: Array.from(subscribers ?? []) })
   },
 
   [SUB] ({ channelID, kvFilter }: SubMessage) {
     const socket = this as WebSocket & { subscriptions: Set<string>; kvFilter: Map<string, unknown>; send: (data: unknown) => void }
-    const server = (socket as WebSocket & { server: unknown }).server as { channels: Set<string>; subscribersByChannelID: Record<string, Set<WebSocket>>; kvFiltersByChannelID: Record<string, Map<WebSocket, Map<string, unknown>>> }
+    const { server } = socket as { server: { channels: Set<string>; subscribersByChannelID: Record<string, Set<WebSocket>>; kvFiltersByChannelID: Record<string, Map<WebSocket, Map<string, unknown>>> } }
 
     if (!server.channels.has(channelID)) {
       socket.send(createErrorResponse(
@@ -358,7 +358,7 @@ const defaultMessageHandlers = {
 
   [KV_FILTER] ({ channelID, kvFilter }: SubMessage) {
     const socket = this as WebSocket & { subscriptions: Set<string>; kvFilter: Map<string, unknown>; send: (data: unknown) => void }
-    const server = (socket as WebSocket & { server: unknown }).server as { channels: Set<string> }
+    const { server } = socket as { server: { channels: Set<string> } }
 
     if (!server.channels.has(channelID)) {
       socket.send(createErrorResponse(
@@ -381,7 +381,7 @@ const defaultMessageHandlers = {
 
   [UNSUB] ({ channelID }: UnsubMessage) {
     const socket = this as WebSocket & { subscriptions: Set<string>; kvFilter: Map<string, unknown>; send: (data: unknown) => void }
-    const server = (socket as WebSocket & { server: unknown }).server as { channels: Set<string>; subscribersByChannelID: Record<string, Set<WebSocket>> }
+    const { server } = socket as { server: { channels: Set<string>; subscribersByChannelID: Record<string, Set<WebSocket>> } }
 
     if (!server.channels.has(channelID)) {
       socket.send(createErrorResponse(
@@ -413,7 +413,7 @@ const publicMethods = {
     message: Message | string,
     { to, except, wsOnly }: { to?: Iterable<unknown>, except?: unknown, wsOnly?: boolean } = {}
   ) {
-    const server = (this as unknown) as { clients: Set<WebSocket> }
+    const { clients } = (this as unknown) as { clients: Set<WebSocket> }
 
     const msg = typeof message === 'string' ? message : JSON.stringify(message)
     let shortMsg: string | undefined
@@ -428,7 +428,8 @@ const publicMethods = {
       return shortMsg
     }
 
-    for (const client of (to || server.clients) as Iterable<WebSocket & { endpoint?: string; id?: string; readyState?: number }>) {
+    const recipients = to || clients
+    for (const client of recipients as Iterable<WebSocket & { endpoint?: string; id?: string; readyState?: number }>) {
       // `client` could be either a WebSocket or a wrapped subscription info
       // object
       // Duplicate message sending (over both WS and push) is handled on the
@@ -472,10 +473,10 @@ const publicMethods = {
 
   // Enumerates the subscribers of a given channel.
   * enumerateSubscribers (channelID: string, kvKey?: string): Iterable<WebSocket> {
-    const server = (this as unknown) as { subscribersByChannelID: Record<string, Set<WebSocket>> }
+    const { subscribersByChannelID } = (this as unknown) as { subscribersByChannelID: Record<string, Set<WebSocket>> }
 
-    if (channelID in server.subscribersByChannelID) {
-      const subscribers = server.subscribersByChannelID[channelID]
+    if (channelID in subscribersByChannelID) {
+      const subscribers = subscribersByChannelID[channelID]
       if (!kvKey) {
         yield * subscribers
       } else {

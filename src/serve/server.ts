@@ -503,29 +503,19 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
     // that subsequent messages to subscribed channels should now be sent to its
     // associated web push subscription, if it exists.
     close () {
-      const socket = this as Record<string, unknown>
-      const server = (this as Record<string, unknown>).server as Record<string, unknown>
-
-      const subscriptionId = socket.pushSubscriptionId as string
-
+      const { server } = this as Record<string, unknown> & { server: Record<string, unknown> }
+      const subscriptionId = (this as Record<string, unknown>).pushSubscriptionId
       if (!subscriptionId) return
-      const pushSubscriptions = server.pushSubscriptions as Record<string, unknown>
-      const subscribersByChannelID = server.subscribersByChannelID as Record<string, unknown>
-      if (!pushSubscriptions[subscriptionId]) return
+      if (!(server.pushSubscriptions as Record<string, unknown>)[subscriptionId as string]) return
+      (((server.pushSubscriptions as Record<string, unknown>)[subscriptionId as string] as Record<string, unknown>).sockets as Set<unknown>).delete(this)
+      delete (this as Record<string, unknown>).pushSubscriptionId
 
-      const subscription = pushSubscriptions[subscriptionId] as Record<string, unknown>
-      const sockets = subscription.sockets as Set<unknown>
-      sockets.delete(socket)
-      delete socket.pushSubscriptionId
-
-      if (sockets.size === 0) {
-        const subscriptions = subscription.subscriptions as Iterable<unknown>
-        for (const channelID of subscriptions) {
-          const channelKey = channelID as string
-          if (!subscribersByChannelID[channelKey]) {
-            subscribersByChannelID[channelKey] = new Set()
+      if ((((server.pushSubscriptions as Record<string, unknown>)[subscriptionId as string] as Record<string, unknown>).sockets as Set<unknown>).size === 0) {
+        for (const channelID of ((server.pushSubscriptions as Record<string, unknown>)[subscriptionId as string] as Record<string, unknown>).subscriptions as Iterable<unknown>) {
+          if (!(server.subscribersByChannelID as Record<string, unknown>)[channelID as string]) {
+            (server.subscribersByChannelID as Record<string, unknown>)[channelID as string] = new Set()
           }
-          (subscribersByChannelID[channelKey] as Set<unknown>).add(subscription)
+          ((server.subscribersByChannelID as Record<string, unknown>)[channelID as string] as Set<unknown>).add((server.pushSubscriptions as Record<string, unknown>)[subscriptionId as string])
         }
       }
     }
@@ -561,20 +551,18 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
     [NOTIFICATION_TYPE.SUB] (...args: unknown[]) {
       const { channelID } = args[0] as { channelID: string }
       const socket = this as Record<string, unknown>
-      const { server } = this as Record<string, unknown>
 
       // If the WS doesn't have an associated push subscription, we're done
       if (!socket.pushSubscriptionId) return
       // If the WS has an associated push subscription that's since been
       // removed, delete the association and return.
-      const serverObj = server as Record<string, unknown>
-      const pushSubscriptions = serverObj.pushSubscriptions as Record<string, unknown>
-      if (!pushSubscriptions[socket.pushSubscriptionId as string]) {
+      const { server } = socket as { server: { pushSubscriptions: Record<string, unknown> } }
+      if (!server.pushSubscriptions[socket.pushSubscriptionId as string]) {
         delete socket.pushSubscriptionId
         return
       }
 
-      addChannelToSubscription(serverObj as { pushSubscriptions: Record<string, { settings?: unknown; subscriptions: Set<string> }> }, socket.pushSubscriptionId as string, channelID)
+      addChannelToSubscription(server as { pushSubscriptions: Record<string, { settings?: unknown; subscriptions: Set<string> }> }, socket.pushSubscriptionId as string, channelID)
     },
     // This handler removes subscribed channels from the web push subscription
     // associated with the WS, so that when the WS is closed we don't send
@@ -582,20 +570,18 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
     [NOTIFICATION_TYPE.UNSUB] (...args: unknown[]) {
       const { channelID } = args[0] as { channelID: string }
       const socket = this as Record<string, unknown>
-      const { server } = this as Record<string, unknown>
 
       // If the WS doesn't have an associated push subscription, we're done
       if (!socket.pushSubscriptionId) return
       // If the WS has an associated push subscription that's since been
       // removed, delete the association and return.
-      const serverObj = server as Record<string, unknown>
-      const pushSubscriptions = serverObj.pushSubscriptions as Record<string, unknown>
-      if (!pushSubscriptions[socket.pushSubscriptionId as string]) {
+      const { server } = socket as { server: { pushSubscriptions: Record<string, unknown> } }
+      if (!server.pushSubscriptions[socket.pushSubscriptionId as string]) {
         delete socket.pushSubscriptionId
         return
       }
 
-      deleteChannelFromSubscription(serverObj as { pushSubscriptions: Record<string, { settings?: unknown; subscriptions: Set<string> }> }, socket.pushSubscriptionId as string, channelID)
+      deleteChannelFromSubscription(server as { pushSubscriptions: Record<string, { settings?: unknown; subscriptions: Set<string> }> }, socket.pushSubscriptionId as string, channelID)
     }
   }
 }))

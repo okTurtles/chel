@@ -37,10 +37,10 @@ const KV_KEY_REGEX = /^(?!_private)[^\x00]{1,256}$/
 const NAME_REGEX = /^(?![_-])((?!([_-])\2)[a-z\d_-]){1,80}(?<![_-])$/
 const POSITIVE_INTEGER_REGEX = /^\d{1,16}$/
 
-const FILE_UPLOAD_MAX_BYTES = parseInt(process.env.FILE_UPLOAD_MAX_BYTES || '0') || 30 * MEGABYTE
-const SIGNUP_LIMIT_MIN = parseInt(process.env.SIGNUP_LIMIT_MIN || '0') || 2
-const SIGNUP_LIMIT_HOUR = parseInt(process.env.SIGNUP_LIMIT_HOUR || '0') || 10
-const SIGNUP_LIMIT_DAY = parseInt(process.env.SIGNUP_LIMIT_DAY || '0') || 50
+const FILE_UPLOAD_MAX_BYTES = parseInt(process.env.FILE_UPLOAD_MAX_BYTES!) || 30 * MEGABYTE
+const SIGNUP_LIMIT_MIN = parseInt(process.env.SIGNUP_LIMIT_MIN!) || 2
+const SIGNUP_LIMIT_HOUR = parseInt(process.env.SIGNUP_LIMIT_HOUR!) || 10
+const SIGNUP_LIMIT_DAY = parseInt(process.env.SIGNUP_LIMIT_DAY!) || 50
 const SIGNUP_LIMIT_DISABLED = process.env.NODE_ENV !== 'production' || process.env.SIGNUP_LIMIT_DISABLED === 'true'
 const limiterPerMinute = new Bottleneck.Group({
   strategy: Bottleneck.strategy.LEAK,
@@ -139,7 +139,7 @@ const limiterKey = (ip: string) => {
 const ctEq = (expected: string, actual: string): boolean => {
   let r = actual.length ^ expected.length
   for (let i = 0; i < actual.length; i++) {
-    r |= (actual.codePointAt(i) || 0) ^ (expected.codePointAt(i) || 0)
+    r |= actual.codePointAt(i)! ^ expected.codePointAt(i)!
   }
   return r === 0
 }

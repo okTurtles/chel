@@ -369,7 +369,7 @@ export const pushServerActionhandlers: PushServerActionHandlers = {
     }
   },
   [PUSH_SERVER_ACTION_TYPE.DELETE_SUBSCRIPTION] (socket: WebSocketConnection) {
-    const { pushSubscriptionId: subscriptionId } = socket
+    const subscriptionId = socket.pushSubscriptionId
 
     if (subscriptionId) {
       return removeSubscription(subscriptionId)

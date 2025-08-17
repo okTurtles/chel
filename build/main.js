@@ -1972,7 +1972,7 @@ var init_push = __esm({
         }
       },
       [PUSH_SERVER_ACTION_TYPE.DELETE_SUBSCRIPTION](socket) {
-        const { pushSubscriptionId: subscriptionId } = socket;
+        const subscriptionId = socket.pushSubscriptionId;
         if (subscriptionId) {
           return removeSubscription(subscriptionId);
         }
@@ -2129,7 +2129,7 @@ var init_pubsub = __esm({
     defaultSocketEventHandlers = {
       close() {
         const socket = this;
-        const server = socket.server;
+        const { server } = socket;
         for (const channelID of socket.subscriptions) {
           server.subscribersByChannelID[channelID].delete(socket);
         }
@@ -2137,7 +2137,7 @@ var init_pubsub = __esm({
       },
       message(data) {
         const socket = this;
-        const server = socket.server;
+        const { server } = socket;
         const text = data.toString();
         let msg = { type: "" };
         try {
@@ -2174,13 +2174,13 @@ var init_pubsub = __esm({
         socket.activeSinceLastPing = true;
       },
       [PUB](msg) {
-        const server = this.server;
+        const { server } = this;
         const subscribers = server.subscribersByChannelID[msg.channelID];
         server.broadcast(msg, { to: Array.from(subscribers ?? []) });
       },
       [SUB]({ channelID, kvFilter }) {
         const socket = this;
-        const server = socket.server;
+        const { server } = socket;
         if (!server.channels.has(channelID)) {
           socket.send(createErrorResponse(
             { type: SUB, channelID, reason: `Unknown channel id: ${channelID}` }
@@ -2203,7 +2203,7 @@ var init_pubsub = __esm({
       },
       [KV_FILTER]({ channelID, kvFilter }) {
         const socket = this;
-        const server = socket.server;
+        const { server } = socket;
         if (!server.channels.has(channelID)) {
           socket.send(createErrorResponse(
             { type: SUB, channelID, reason: `Unknown channel id: ${channelID}` }
@@ -2223,7 +2223,7 @@ var init_pubsub = __esm({
       },
       [UNSUB]({ channelID }) {
         const socket = this;
-        const server = socket.server;
+        const { server } = socket;
         if (!server.channels.has(channelID)) {
           socket.send(createErrorResponse(
             { type: UNSUB, channelID, reason: `Unknown channel id: ${channelID}` }
@@ -2248,7 +2248,7 @@ var init_pubsub = __esm({
        * @param except - A recipient to exclude. Optional.
        */
       broadcast(message, { to, except, wsOnly } = {}) {
-        const server = this;
+        const { clients } = this;
         const msg = typeof message === "string" ? message : JSON.stringify(message);
         let shortMsg;
         const shortenPayload = () => {
@@ -2258,7 +2258,8 @@ var init_pubsub = __esm({
           }
           return shortMsg;
         };
-        for (const client of to || server.clients) {
+        const recipients = to || clients;
+        for (const client of recipients) {
           if (!wsOnly && client.endpoint) {
             if (msg.length > 4096 - 86 - 17) {
               if (!shortenPayload()) {
@@ -2288,9 +2289,9 @@ var init_pubsub = __esm({
       },
       // Enumerates the subscribers of a given channel.
       *enumerateSubscribers(channelID, kvKey) {
-        const server = this;
-        if (channelID in server.subscribersByChannelID) {
-          const subscribers = server.subscribersByChannelID[channelID];
+        const { subscribersByChannelID } = this;
+        if (channelID in subscribersByChannelID) {
+          const subscribers = subscribersByChannelID[channelID];
           if (!kvKey) {
             yield* subscribers;
           } else {
@@ -2337,10 +2338,10 @@ var init_routes = __esm({
     KV_KEY_REGEX = /^(?!_private)[^\x00]{1,256}$/;
     NAME_REGEX = /^(?![_-])((?!([_-])\2)[a-z\d_-]){1,80}(?<![_-])$/;
     POSITIVE_INTEGER_REGEX = /^\d{1,16}$/;
-    FILE_UPLOAD_MAX_BYTES = parseInt(process9.env.FILE_UPLOAD_MAX_BYTES || "0") || 30 * MEGABYTE;
-    SIGNUP_LIMIT_MIN = parseInt(process9.env.SIGNUP_LIMIT_MIN || "0") || 2;
-    SIGNUP_LIMIT_HOUR = parseInt(process9.env.SIGNUP_LIMIT_HOUR || "0") || 10;
-    SIGNUP_LIMIT_DAY = parseInt(process9.env.SIGNUP_LIMIT_DAY || "0") || 50;
+    FILE_UPLOAD_MAX_BYTES = parseInt(process9.env.FILE_UPLOAD_MAX_BYTES) || 30 * MEGABYTE;
+    SIGNUP_LIMIT_MIN = parseInt(process9.env.SIGNUP_LIMIT_MIN) || 2;
+    SIGNUP_LIMIT_HOUR = parseInt(process9.env.SIGNUP_LIMIT_HOUR) || 10;
+    SIGNUP_LIMIT_DAY = parseInt(process9.env.SIGNUP_LIMIT_DAY) || 50;
     SIGNUP_LIMIT_DISABLED = process9.env.NODE_ENV !== "production" || process9.env.SIGNUP_LIMIT_DISABLED === "true";
     limiterPerMinute = new default12.Group({
       strategy: default12.strategy.LEAK,
@@ -2414,7 +2415,7 @@ var init_routes = __esm({
     ctEq = (expected, actual) => {
       let r = actual.length ^ expected.length;
       for (let i = 0; i < actual.length; i++) {
-        r |= (actual.codePointAt(i) || 0) ^ (expected.codePointAt(i) || 0);
+        r |= actual.codePointAt(i) ^ expected.codePointAt(i);
       }
       return r === 0;
     };
@@ -3577,25 +3578,18 @@ var init_server = __esm({
         // that subsequent messages to subscribed channels should now be sent to its
         // associated web push subscription, if it exists.
         close() {
-          const socket = this;
-          const server = this.server;
-          const subscriptionId = socket.pushSubscriptionId;
+          const { server } = this;
+          const subscriptionId = this.pushSubscriptionId;
           if (!subscriptionId) return;
-          const pushSubscriptions = server.pushSubscriptions;
-          const subscribersByChannelID = server.subscribersByChannelID;
-          if (!pushSubscriptions[subscriptionId]) return;
-          const subscription = pushSubscriptions[subscriptionId];
-          const sockets = subscription.sockets;
-          sockets.delete(socket);
-          delete socket.pushSubscriptionId;
-          if (sockets.size === 0) {
-            const subscriptions = subscription.subscriptions;
-            for (const channelID of subscriptions) {
-              const channelKey = channelID;
-              if (!subscribersByChannelID[channelKey]) {
-                subscribersByChannelID[channelKey] = /* @__PURE__ */ new Set();
+          if (!server.pushSubscriptions[subscriptionId]) return;
+          server.pushSubscriptions[subscriptionId].sockets.delete(this);
+          delete this.pushSubscriptionId;
+          if (server.pushSubscriptions[subscriptionId].sockets.size === 0) {
+            for (const channelID of server.pushSubscriptions[subscriptionId].subscriptions) {
+              if (!server.subscribersByChannelID[channelID]) {
+                server.subscribersByChannelID[channelID] = /* @__PURE__ */ new Set();
               }
-              subscribersByChannelID[channelKey].add(subscription);
+              server.subscribersByChannelID[channelID].add(server.pushSubscriptions[subscriptionId]);
             }
           }
         }
@@ -3629,15 +3623,13 @@ var init_server = __esm({
         [NOTIFICATION_TYPE.SUB](...args) {
           const { channelID } = args[0];
           const socket = this;
-          const { server } = this;
           if (!socket.pushSubscriptionId) return;
-          const serverObj = server;
-          const pushSubscriptions = serverObj.pushSubscriptions;
-          if (!pushSubscriptions[socket.pushSubscriptionId]) {
+          const { server } = socket;
+          if (!server.pushSubscriptions[socket.pushSubscriptionId]) {
             delete socket.pushSubscriptionId;
             return;
           }
-          addChannelToSubscription(serverObj, socket.pushSubscriptionId, channelID);
+          addChannelToSubscription(server, socket.pushSubscriptionId, channelID);
         },
         // This handler removes subscribed channels from the web push subscription
         // associated with the WS, so that when the WS is closed we don't send
@@ -3645,15 +3637,13 @@ var init_server = __esm({
         [NOTIFICATION_TYPE.UNSUB](...args) {
           const { channelID } = args[0];
           const socket = this;
-          const { server } = this;
           if (!socket.pushSubscriptionId) return;
-          const serverObj = server;
-          const pushSubscriptions = serverObj.pushSubscriptions;
-          if (!pushSubscriptions[socket.pushSubscriptionId]) {
+          const { server } = socket;
+          if (!server.pushSubscriptions[socket.pushSubscriptionId]) {
             delete socket.pushSubscriptionId;
             return;
           }
-          deleteChannelFromSubscription(serverObj, socket.pushSubscriptionId, channelID);
+          deleteChannelFromSubscription(server, socket.pushSubscriptionId, channelID);
         }
       }
     }));
