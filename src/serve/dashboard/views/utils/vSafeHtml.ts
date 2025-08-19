@@ -29,10 +29,10 @@ const sanitize = (el: HTMLElement, binding: SafeHtmlBinding) => {
       'button': ['type']
     }
 
-    if (binding.arg && Object.keys(allowedTagsAttrs).includes(binding.arg)) {
+    if (Object.keys(allowedTagsAttrs).includes(binding.arg as string)) {
       config = cloneDeep(config)
-      config.ALLOWED_TAGS.push(binding.arg)
-      config.ALLOWED_ATTR.push(...(allowedTagsAttrs[binding.arg] || []))
+      config.ALLOWED_TAGS.push(binding.arg as string)
+      config.ALLOWED_ATTR.push(...(allowedTagsAttrs[binding.arg as string] || []))
     }
 
     el.textContent = ''

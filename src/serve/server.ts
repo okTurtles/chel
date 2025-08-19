@@ -503,20 +503,21 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
     // that subsequent messages to subscribed channels should now be sent to its
     // associated web push subscription, if it exists.
     close () {
-      const { server } = this as Record<string, unknown> & { server: Record<string, unknown> }
-      const subscriptionId = (this as Record<string, unknown>).pushSubscriptionId
+      const socket = this as Record<string, unknown>
+      const { server } = socket as { server: Record<string, unknown> }
+      const subscriptionId = socket.pushSubscriptionId
       if (!subscriptionId) return
       if (!(server.pushSubscriptions as Record<string, unknown>)[subscriptionId as string]) return
-      (((server.pushSubscriptions as Record<string, unknown>)[subscriptionId as string] as Record<string, unknown>).sockets as Set<unknown>).delete(this)
-      delete (this as Record<string, unknown>).pushSubscriptionId
+      (((server.pushSubscriptions as Record<string, unknown>)[subscriptionId as string] as Record<string, unknown>).sockets as Set<unknown>).delete(socket)
+      delete socket.pushSubscriptionId
 
       if ((((server.pushSubscriptions as Record<string, unknown>)[subscriptionId as string] as Record<string, unknown>).sockets as Set<unknown>).size === 0) {
-        for (const channelID of ((server.pushSubscriptions as Record<string, unknown>)[subscriptionId as string] as Record<string, unknown>).subscriptions as Iterable<unknown>) {
+        (((server.pushSubscriptions as Record<string, unknown>)[subscriptionId as string] as Record<string, unknown>).subscriptions as Set<unknown>).forEach((channelID: unknown) => {
           if (!(server.subscribersByChannelID as Record<string, unknown>)[channelID as string]) {
             (server.subscribersByChannelID as Record<string, unknown>)[channelID as string] = new Set()
           }
           ((server.subscribersByChannelID as Record<string, unknown>)[channelID as string] as Set<unknown>).add((server.pushSubscriptions as Record<string, unknown>)[subscriptionId as string])
-        }
+        })
       }
     }
   },
@@ -669,18 +670,15 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
     // Find push subscriptions that do _not_ have a WS open. This means clients
     // that are 'asleep' and that might be woken up by the push event
     Object.values(pubsub.pushSubscriptions || {}).filter(
-      (pushSubscription: unknown) => {
-        const sub = pushSubscription as { settings?: { heartbeatInterval?: number }; sockets: { size: number } }
-        return !!sub.settings?.heartbeatInterval && sub.sockets.size === 0
-      }
+      (pushSubscription: unknown) => !!(pushSubscription as { settings?: { heartbeatInterval?: number }; sockets: { size: number } }).settings?.heartbeatInterval && (pushSubscription as { settings?: { heartbeatInterval?: number }; sockets: { size: number } }).sockets.size === 0
     ).forEach((pushSubscription: unknown) => {
-      const sub = pushSubscription as PushSubscriptionInfo
-      const last = map.get(sub) ?? Number.NEGATIVE_INFINITY
-      if (now - last < (sub.settings as { heartbeatInterval: number }).heartbeatInterval) return
-      postEvent(sub, notification).then(() => {
-        map.set(sub, now)
+      const subscription = pushSubscription as PushSubscriptionInfo
+      const last = map.get(subscription) ?? Number.NEGATIVE_INFINITY
+      if (now - last < (subscription.settings as { heartbeatInterval: number }).heartbeatInterval) return
+      postEvent(subscription, notification).then(() => {
+        map.set(subscription, now)
       }).catch((e: unknown) => {
-        console.warn(e, 'Error sending recurring message to web push client', sub.id)
+        console.warn(e, 'Error sending recurring message to web push client', subscription.id)
       })
     })
     // Repeat every 1 hour

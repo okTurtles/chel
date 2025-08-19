@@ -280,8 +280,7 @@ const defaultSocketEventHandlers = {
     let msg: Message = { type: '' }
 
     try {
-      const message: Message = messageParser(text) as Message
-      msg = message
+      msg = messageParser(text)
     } catch (error: unknown) {
       log.error(error, `Malformed message: ${(error as Error).message}`)
       server.rejectMessageAndTerminateSocket(msg, socket)

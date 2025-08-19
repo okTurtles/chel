@@ -59,8 +59,6 @@ export default class GraphBackground extends Group {
     const lineMeshesClone = lineMeshes.clone(true)
     lineMeshesClone.position.x = -1 * (bgThickness + 0.2)
     super()
-    this.add(bgMesh)
-    this.add(lineMeshes)
-    this.add(lineMeshesClone)
+    this.add(bgMesh, lineMeshes, lineMeshesClone)
   }
 }

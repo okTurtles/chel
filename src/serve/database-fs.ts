@@ -49,7 +49,7 @@ export default class FsBackend extends DatabaseBackend implements IDatabaseBacke
 
   constructor (options: { dirname?: string; depth?: number; keyChunkLength?: number } = {}) {
     super()
-    this.dataFolder = resolve(options.dirname || '')
+    this.dataFolder = resolve(options.dirname!)
     if (options.depth) this.depth = options.depth
     if (options.keyChunkLength) this.keyChunkLength = options.keyChunkLength
   }

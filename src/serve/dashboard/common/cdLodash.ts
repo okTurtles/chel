@@ -9,13 +9,12 @@ function isMergeableObject (val: unknown): val is Record<string, unknown> {
 
 export function merge<T extends Record<string, unknown>> (obj: T, src: Record<string, unknown>): T {
   for (const key in src) {
-    const srcValue = src[key]
-    const clone = isMergeableObject(srcValue) ? cloneDeep(srcValue) : undefined
+    const clone = isMergeableObject(src[key]) ? cloneDeep(src[key]) : undefined
     if (clone && isMergeableObject(obj[key])) {
       merge(obj[key] as Record<string, unknown>, clone)
       continue
     }
-    (obj as Record<string, unknown>)[key] = clone || srcValue
+    (obj as Record<string, unknown>)[key] = clone || src[key]
   }
   return obj
 }

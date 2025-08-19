@@ -49,31 +49,31 @@ Vue.directive('error', {
     if (!binding.arg) {
       throw new Error(`v-error: missing argument on ${el.outerHTML}`)
     }
-    if (!vnode.context?.$v.form[binding.arg]) {
+    if (!vnode.context!.$v.form[binding.arg]) {
       throw new Error(`v-error: vuelidate doesn't have validation for ${binding.arg} on ${el.outerHTML}`)
     }
     const opts = binding.value || {}
     const pErr = document.createElement(opts.tag || 'span')
-    for (const attr in (opts.attrs || {})) {
-      pErr.setAttribute(attr, opts.attrs![attr])
+    for (const attr in opts.attrs) {
+      pErr.setAttribute(attr, opts.attrs[attr])
     }
     pErr.classList.add('error', 'is-hidden')
     el.insertAdjacentElement('afterend', pErr)
   },
   update (el: HTMLElement, binding: DirectiveBinding, vnode: VNode) {
-    if (vnode.context?.$v.form[binding.arg!]?.$error) {
-      for (const key in vnode.context.$v.form[binding.arg!].$params) {
-        if (!vnode.context.$v.form[binding.arg!][key]) {
-          ;(el.nextSibling as HTMLElement).innerText = key
+    if (vnode.context!.$v.form[binding.arg!].$error) {
+      for (const key in vnode.context!.$v.form[binding.arg!].$params) {
+        if (!vnode.context!.$v.form[binding.arg!][key]) {
+          (el.nextSibling as HTMLElement).innerText = key
           break
         }
       }
-      ;(el.nextElementSibling as HTMLElement).classList.remove('is-hidden')
+      (el.nextElementSibling as HTMLElement).classList.remove('is-hidden')
     } else {
-      ;(el.nextElementSibling as HTMLElement).classList.add('is-hidden')
+      (el.nextElementSibling as HTMLElement).classList.add('is-hidden')
     }
   },
   unbind (el: HTMLElement) {
-    ;(el.nextElementSibling as HTMLElement).remove()
+    (el.nextElementSibling as HTMLElement).remove()
   }
 })

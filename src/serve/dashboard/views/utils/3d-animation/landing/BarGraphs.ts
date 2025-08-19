@@ -56,7 +56,6 @@ export default class BarGraphs extends Group {
     pairs.position.z = BG_WIDTH * -0.435
 
     super()
-    this.add(bgMesh)
-    this.add(pairs)
+    this.add(bgMesh, pairs)
   }
 }

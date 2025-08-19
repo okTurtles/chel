@@ -377,11 +377,7 @@ route.GET('/ownResources', {
   const billableContractID = request.auth.credentials.billableContractID
   const resources = (await sbp('chelonia.db/get', `_private_resources_${billableContractID}`))?.split('\x00')
 
-  if (resources) {
-    return resources
-  } else {
-    return []
-  }
+  return resources || []
 })
 
 if (process.env.NODE_ENV === 'development') {

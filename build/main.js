@@ -1027,7 +1027,7 @@ var init_database_fs2 = __esm({
       keyChunkLength = 2;
       constructor(options2 = {}) {
         super();
-        this.dataFolder = resolve(options2.dirname || "");
+        this.dataFolder = resolve(options2.dirname);
         if (options2.depth) this.depth = options2.depth;
         if (options2.keyChunkLength) this.keyChunkLength = options2.keyChunkLength;
       }
@@ -1097,15 +1097,12 @@ var init_database_sqlite2 = __esm({
       deleteStatement = null;
       constructor(options2 = {}) {
         super();
-        const { filepath = "" } = options2;
+        const { filepath } = options2;
         const resolvedPath = resolve2(filepath);
         this.dataFolder = dirname2(resolvedPath);
         this.filename = basename2(resolvedPath);
       }
       run(sql) {
-        if (!this.db) {
-          throw new Error("Database not initialized");
-        }
         this.db.prepare(sql).run();
       }
       async init() {
@@ -1127,14 +1124,14 @@ var init_database_sqlite2 = __esm({
         await this.run("DELETE FROM Data");
       }
       async readData(key) {
-        const row = this.readStatement?.get(key);
+        const row = this.readStatement.get(key);
         return await row?.value;
       }
       async writeData(key, value) {
-        await this.writeStatement?.run(key, value);
+        await this.writeStatement.run(key, value);
       }
       async deleteData(key) {
-        await this.deleteStatement?.run(key);
+        await this.deleteStatement.run(key);
       }
     };
   }
@@ -1407,7 +1404,7 @@ var init_database = __esm({
     };
     database_default = default4("sbp/selectors/register", {
       "backend/db/streamEntriesAfter": async function(contractID, height, requestedLimit, options2 = {}) {
-        const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, Number(process7.env.MAX_EVENTS_BATCH_SIZE ?? "500"));
+        const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, parseInt(process7.env.MAX_EVENTS_BATCH_SIZE) || 500);
         const latestHEADinfo = await default4("chelonia/db/latestHEADinfo", contractID);
         if (latestHEADinfo === "") {
           throw default5.resourceGone(`contractID ${contractID} has been deleted!`);
@@ -1487,7 +1484,7 @@ var init_database = __esm({
             }
           }
           yield "]";
-        }(), { encoding: "utf8", objectMode: false });
+        }(), { encoding: "utf-8", objectMode: false });
         stream.headers = {
           "shelter-headinfo-head": latestHEADinfo.HEAD,
           "shelter-headinfo-height": latestHEADinfo.height
@@ -1525,7 +1522,7 @@ var init_database = __esm({
           "chelonia.db/get": async function(prefixableKey, { bypassCache } = {}) {
             if (!bypassCache) {
               const lookupValue = cache.get(prefixableKey);
-              if (lookupValue !== void 0 && lookupValue !== null) {
+              if (lookupValue !== void 0) {
                 return lookupValue;
               }
             }
@@ -1938,17 +1935,13 @@ var init_push = __esm({
             host = subscriptionWrapper.endpoint.host;
             await addSubscriptionToIndex(subscriptionId);
             await saveSubscription(server, subscriptionId);
-            if (subscriptionWrapper) {
-              await postEvent(subscriptionWrapper, JSON.stringify({ type: "initial" }));
-            }
+            await postEvent(subscriptionWrapper, JSON.stringify({ type: "initial" }));
           } else {
             host = subscriptionWrapper.endpoint.host;
             if (subscriptionWrapper.sockets.size === 0) {
               subscriptionWrapper.subscriptions.forEach((channelID) => {
                 if (!server.subscribersByChannelID[channelID]) return;
-                if (subscriptionWrapper) {
-                  server.subscribersByChannelID[channelID].delete(subscriptionWrapper);
-                }
+                server.subscribersByChannelID[channelID].delete(subscriptionWrapper);
               });
             }
           }
@@ -2141,8 +2134,7 @@ var init_pubsub = __esm({
         const text = data.toString();
         let msg = { type: "" };
         try {
-          const message = messageParser(text);
-          msg = message;
+          msg = messageParser(text);
         } catch (error) {
           log.error(error, `Malformed message: ${error.message}`);
           server.rejectMessageAndTerminateSocket(msg, socket);
@@ -2590,11 +2582,7 @@ var init_routes = __esm({
     }, async function(request) {
       const billableContractID = request.auth.credentials.billableContractID;
       const resources = (await default4("chelonia.db/get", `_private_resources_${billableContractID}`))?.split("\0");
-      if (resources) {
-        return resources;
-      } else {
-        return [];
-      }
+      return resources || [];
     });
     if (process9.env.NODE_ENV === "development") {
       const levelToColor = {
@@ -3578,19 +3566,20 @@ var init_server = __esm({
         // that subsequent messages to subscribed channels should now be sent to its
         // associated web push subscription, if it exists.
         close() {
-          const { server } = this;
-          const subscriptionId = this.pushSubscriptionId;
+          const socket = this;
+          const { server } = socket;
+          const subscriptionId = socket.pushSubscriptionId;
           if (!subscriptionId) return;
           if (!server.pushSubscriptions[subscriptionId]) return;
-          server.pushSubscriptions[subscriptionId].sockets.delete(this);
-          delete this.pushSubscriptionId;
+          server.pushSubscriptions[subscriptionId].sockets.delete(socket);
+          delete socket.pushSubscriptionId;
           if (server.pushSubscriptions[subscriptionId].sockets.size === 0) {
-            for (const channelID of server.pushSubscriptions[subscriptionId].subscriptions) {
+            server.pushSubscriptions[subscriptionId].subscriptions.forEach((channelID) => {
               if (!server.subscribersByChannelID[channelID]) {
                 server.subscribersByChannelID[channelID] = /* @__PURE__ */ new Set();
               }
               server.subscribersByChannelID[channelID].add(server.pushSubscriptions[subscriptionId]);
-            }
+            });
           }
         }
       },
@@ -3715,18 +3704,15 @@ var init_server = __esm({
         const pubsub = default4("okTurtles.data/get", PUBSUB_INSTANCE);
         const notification = JSON.stringify({ type: "recurring" });
         Object.values(pubsub.pushSubscriptions || {}).filter(
-          (pushSubscription) => {
-            const sub = pushSubscription;
-            return !!sub.settings?.heartbeatInterval && sub.sockets.size === 0;
-          }
+          (pushSubscription) => !!pushSubscription.settings?.heartbeatInterval && pushSubscription.sockets.size === 0
         ).forEach((pushSubscription) => {
-          const sub = pushSubscription;
-          const last = map.get(sub) ?? Number.NEGATIVE_INFINITY;
-          if (now - last < sub.settings.heartbeatInterval) return;
-          postEvent(sub, notification).then(() => {
-            map.set(sub, now);
+          const subscription = pushSubscription;
+          const last = map.get(subscription) ?? Number.NEGATIVE_INFINITY;
+          if (now - last < subscription.settings.heartbeatInterval) return;
+          postEvent(subscription, notification).then(() => {
+            map.set(subscription, now);
           }).catch((e) => {
-            console.warn(e, "Error sending recurring message to web push client", sub.id);
+            console.warn(e, "Error sending recurring message to web push client", subscription.id);
           });
         });
       }, 1 * 60 * 60 * 1e3);

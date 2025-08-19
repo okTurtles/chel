@@ -71,7 +71,7 @@ class CombineWithEdge extends Three.Group {
     const originalMesh = mesh || new Mesh(geometry!, material!)
     if (mesh) {
       geometry = mesh.geometry
-      material = Array.isArray(mesh.material) ? mesh.material[0] : mesh.material
+      material = mesh.material as Three.Material
     }
     originalMesh.castShadow = shadow
 
@@ -80,8 +80,7 @@ class CombineWithEdge extends Three.Group {
     const edgesMesh = new LineSegments(edges, new LineBasicMaterial({ color: edgeColor, transparent: true, opacity: edgeOpacity }))
 
     super()
-    this.add(originalMesh)
-    this.add(edgesMesh)
+    this.add(originalMesh, edgesMesh)
     this.data = { geometry, material }
   }
 }
@@ -95,10 +94,7 @@ class Edgify extends LineSegments {
     color?: string,
     geometry?: Three.BufferGeometry | null
   }) {
-    if (!geometry) {
-      throw new Error('Geometry is required for EdgesMesh')
-    }
-    const edgeGeometry = new EdgesGeometry(geometry)
+    const edgeGeometry = new EdgesGeometry(geometry!)
     const material = new LineBasicMaterial({ color })
 
     super(edgeGeometry, material)
@@ -164,7 +160,7 @@ function randomFromMinMax (min = 0, max = 0) {
 }
 
 function degreeToRadian (deg: number): number {
-  return deg * (Math.PI / 180)
+  return deg * Math.PI / 180
 }
 
 export {

@@ -242,7 +242,7 @@ var init_database_fs = __esm({
       keyChunkLength = 2;
       constructor(options2 = {}) {
         super();
-        this.dataFolder = resolve(options2.dirname || "");
+        this.dataFolder = resolve(options2.dirname);
         if (options2.depth) this.depth = options2.depth;
         if (options2.keyChunkLength) this.keyChunkLength = options2.keyChunkLength;
       }
@@ -312,15 +312,12 @@ var init_database_sqlite = __esm({
       deleteStatement = null;
       constructor(options2 = {}) {
         super();
-        const { filepath = "" } = options2;
+        const { filepath } = options2;
         const resolvedPath = resolve2(filepath);
         this.dataFolder = dirname2(resolvedPath);
         this.filename = basename2(resolvedPath);
       }
       run(sql) {
-        if (!this.db) {
-          throw new Error("Database not initialized");
-        }
         this.db.prepare(sql).run();
       }
       async init() {
@@ -342,14 +339,14 @@ var init_database_sqlite = __esm({
         await this.run("DELETE FROM Data");
       }
       async readData(key) {
-        const row = this.readStatement?.get(key);
+        const row = this.readStatement.get(key);
         return await row?.value;
       }
       async writeData(key, value) {
-        await this.writeStatement?.run(key, value);
+        await this.writeStatement.run(key, value);
       }
       async deleteData(key) {
-        await this.deleteStatement?.run(key);
+        await this.deleteStatement.run(key);
       }
     };
   }
@@ -691,7 +688,7 @@ var updateSize = async (resourceID, sizeKey, size, skipIfDeleted) => {
 };
 var database_default = default4("sbp/selectors/register", {
   "backend/db/streamEntriesAfter": async function(contractID, height, requestedLimit, options2 = {}) {
-    const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, Number(process5.env.MAX_EVENTS_BATCH_SIZE ?? "500"));
+    const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, parseInt(process5.env.MAX_EVENTS_BATCH_SIZE) || 500);
     const latestHEADinfo = await default4("chelonia/db/latestHEADinfo", contractID);
     if (latestHEADinfo === "") {
       throw default5.resourceGone(`contractID ${contractID} has been deleted!`);
@@ -771,7 +768,7 @@ var database_default = default4("sbp/selectors/register", {
         }
       }
       yield "]";
-    }(), { encoding: "utf8", objectMode: false });
+    }(), { encoding: "utf-8", objectMode: false });
     stream.headers = {
       "shelter-headinfo-head": latestHEADinfo.HEAD,
       "shelter-headinfo-height": latestHEADinfo.height
@@ -812,7 +809,7 @@ var initDB = async ({ skipDbPreloading } = {}) => {
       "chelonia.db/get": async function(prefixableKey, { bypassCache } = {}) {
         if (!bypassCache) {
           const lookupValue = cache.get(prefixableKey);
-          if (lookupValue !== void 0 && lookupValue !== null) {
+          if (lookupValue !== void 0) {
             return lookupValue;
           }
         }
@@ -1005,26 +1002,22 @@ console.error = logger.error.bind(logger);
 
 // src/serve/genericWorker.ts
 var readyQueueName = "parentPort";
-if (parentPort) {
-  parentPort.on("message", ([port, ...msg]) => {
-    default4("okTurtles.eventQueue/queueEvent", readyQueueName, () => {
-      (async () => {
-        try {
-          port?.postMessage([true, await default4(...msg)]);
-        } catch (e) {
-          const err = e;
-          port?.postMessage([false, { message: err.message, stack: err.stack }]);
-        }
-      })();
-    });
+parentPort.on("message", ([port, ...msg]) => {
+  default4("okTurtles.eventQueue/queueEvent", readyQueueName, () => {
+    (async () => {
+      try {
+        port?.postMessage([true, await default4(...msg)]);
+      } catch (e) {
+        const err = e;
+        port?.postMessage([false, { message: err.message, stack: err.stack }]);
+      }
+    })();
   });
-}
-if (parentPort) {
-  default4("okTurtles.eventQueue/queueEvent", readyQueueName, async () => {
-    await initDB({ skipDbPreloading: true });
-    parentPort?.postMessage("ready");
-  });
-}
+});
+default4("okTurtles.eventQueue/queueEvent", readyQueueName, async () => {
+  await initDB({ skipDbPreloading: true });
+  parentPort.postMessage("ready");
+});
 
 // src/serve/ownerSizeTotalWorker.ts
 var updatedSizeList = /* @__PURE__ */ new Set();
