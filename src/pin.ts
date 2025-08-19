@@ -1,5 +1,5 @@
 import { flags, colors } from './deps.ts'
-import { readFile, writeFile, mkdir, copyFile, readdir } from 'node:fs/promises'
+import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { resolve, join, dirname, basename } from 'node:path'
 import process from 'node:process'
@@ -29,13 +29,14 @@ interface CheloniaConfig {
 
 /**
  * ContractPinner class handles pinning individual contracts to specific versions
+ * 1. Uses chelonia.json for Chelonia-specific configuration (separate from Node.js package.json)
+ * 2. Supports independent versioning for each contract (contracts can have different versions)
+ * 3. Organizes contracts in a structured directory layout: contracts/<name>/<version>/<files...>
+ * 4. Performs selective updates - only modifies the specific contract being pinned
+ * 5. Maintains compatibility with chel manifest and chel deploy workflows
  *
- * Key improvements over the old implementation:
- * 1. Uses chelonia.json instead of package.json for ecosystem-agnostic config
- * 2. Supports per-contract versioning instead of global versioning
- * 3. Uses contracts/<name>/<version>/<files...> directory structure
- * 4. Only updates the specific contract being pinned, not all contracts
- * 5. Maintains compatibility with chel manifest and chel deploy commands
+ * The pinning process copies contract files from a baseline version to create new versions,
+ * allowing developers to iterate on contracts while maintaining version history.
  */
 class ContractPinner {
   private projectRoot: string
@@ -154,50 +155,17 @@ class ContractPinner {
   }
 
   /**
-   * Show available contracts in the project
-   * This helps users know what contracts they can pin
+   * Show usage information and currently pinned contracts
+   * Removed automatic contract discovery since contracts may need to be built first
    */
   private async showAvailableContracts () {
-    console.log(colors.cyan('📋 Available contracts to pin:'))
+    console.log(colors.cyan('📋 Contract Pinning Usage:'))
     console.log(colors.gray('Usage: chel pin <version> <contract-file-path>'))
     console.log()
-
-    // Look for contract files in common locations
-    const commonPaths = [
-      'frontend/model/contracts',
-      'contracts',
-      'src/contracts'
-    ]
-
-    let foundContracts = false
-
-    for (const searchPath of commonPaths) {
-      const fullPath = join(this.projectRoot, searchPath)
-      if (existsSync(fullPath)) {
-        try {
-          const files = await readdir(fullPath)
-          const manifestFiles = files.filter(f => f.endsWith('.manifest.json'))
-
-          if (manifestFiles.length > 0) {
-            console.log(colors.blue(`📁 ${searchPath}/`))
-            for (const file of manifestFiles) {
-              const contractName = file.replace('.manifest.json', '')
-              const relativePath = join(searchPath, file)
-              console.log(`  ${colors.green(contractName)} - ${colors.gray(relativePath)}`)
-            }
-            console.log()
-            foundContracts = true
-          }
-        } catch {
-          // Ignore errors reading directories
-        }
-      }
-    }
-
-    if (!foundContracts) {
-      console.log(colors.yellow('No contract files found in common locations.'))
-      console.log(colors.gray('Make sure your contract files end with .js and are in a contracts/ directory.'))
-    }
+    console.log(colors.yellow('📝 Note: Specify the full path to your contract file.'))
+    console.log(colors.gray('   Contracts may need to be built first before pinning.'))
+    console.log(colors.gray('   Example: chel pin 1.0.0 dist/contracts/chatroom.js'))
+    console.log()
 
     // Show current pinned contracts if any exist
     if (Object.keys(this.cheloniaConfig.contracts).length > 0) {
@@ -205,6 +173,10 @@ class ContractPinner {
       for (const [name, config] of Object.entries(this.cheloniaConfig.contracts)) {
         console.log(`  ${colors.green(name)} - ${colors.blue(config.version)} (${colors.gray(config.path)})`)
       }
+      console.log()
+    } else {
+      console.log(colors.gray('No contracts currently pinned.'))
+      console.log()
     }
   }
 
@@ -220,15 +192,59 @@ class ContractPinner {
   }
 
   /**
-   * Copy contract files to the version directory
-   * This includes both the main contract and its slim version if it exists
+   * Copy contract files from source to target directory
+   * Reads file names from manifest if available, falls back to contract path
    */
   private async copyContractFiles (contractPath: string, contractName: string, version: string) {
     const sourceDir = dirname(join(this.projectRoot, contractPath))
     const targetDir = join(this.projectRoot, 'contracts', contractName, version)
 
+    // Look for manifest file to get actual file names
+    // Scan directory for manifest files matching pattern: <contractName>.*.manifest.json
+    let manifestSource: string | null = null
+
+    try {
+      const { readdir } = await import('node:fs/promises')
+      const files = await readdir(sourceDir)
+      const manifestPattern = new RegExp(`^${contractName}\\..*\\.manifest\\.json$`)
+
+      for (const file of files) {
+        if (manifestPattern.test(file)) {
+          manifestSource = join(sourceDir, file)
+          break
+        }
+      }
+    } catch (error) {
+      // If we can't read the directory, manifestSource remains null
+      console.log(colors.gray(`Could not scan directory for manifest files: ${error}`))
+    }
+
+    let mainFile: string
+    let slimFile: string | undefined
+
+    if (manifestSource) {
+      try {
+        // Read manifest to get actual file names
+        const manifestContent = await readFile(manifestSource, 'utf8')
+        const manifest = JSON.parse(manifestContent)
+        const body = JSON.parse(manifest.body)
+
+        mainFile = body.contract.file
+        slimFile = body.contractSlim?.file
+
+        console.log(colors.gray(`📋 Using manifest file names: ${mainFile}${slimFile ? `, ${slimFile}` : ''}`))
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        console.log(colors.yellow(`⚠️  Could not read manifest, falling back to contract path: ${errorMessage}`))
+        mainFile = basename(contractPath)
+      }
+    } else {
+      // Fallback: use the contract path basename
+      mainFile = basename(contractPath)
+      console.log(colors.yellow(`⚠️  No manifest found, using contract path: ${mainFile}`))
+    }
+
     // Copy main contract file
-    const mainFile = `${contractName}.js`
     const mainSource = join(sourceDir, mainFile)
     const mainTarget = join(targetDir, mainFile)
 
@@ -239,26 +255,17 @@ class ContractPinner {
       throw new Error(`Main contract file not found: ${mainSource}`)
     }
 
-    // Copy slim version if it exists
-    const slimFile = `${contractName}-slim.js`
-    const slimSource = join(sourceDir, slimFile)
-    const slimTarget = join(targetDir, slimFile)
+    // Copy slim version if specified in manifest
+    if (slimFile) {
+      const slimSource = join(sourceDir, slimFile)
+      const slimTarget = join(targetDir, slimFile)
 
-    if (existsSync(slimSource)) {
-      await copyFile(slimSource, slimTarget)
-      console.log(colors.green(`✅ Copied ${slimFile}`))
-    } else {
-      console.log(colors.yellow(`⚠️  Slim version not found: ${slimFile} (this is optional)`))
-    }
-
-    // Copy any existing manifest file
-    const manifestFile = `${contractName}.manifest.json`
-    const manifestSource = join(sourceDir, manifestFile)
-    const manifestTarget = join(targetDir, manifestFile)
-
-    if (existsSync(manifestSource)) {
-      await copyFile(manifestSource, manifestTarget)
-      console.log(colors.green(`✅ Copied ${manifestFile}`))
+      if (existsSync(slimSource)) {
+        await copyFile(slimSource, slimTarget)
+        console.log(colors.green(`✅ Copied ${slimFile}`))
+      } else {
+        console.log(colors.yellow(`⚠️  Slim file specified in manifest but not found: ${slimFile}`))
+      }
     }
   }
 

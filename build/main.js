@@ -4289,11 +4289,10 @@ async function migrate(args) {
 
 // src/serve.ts
 init_deps();
-import process11 from "node:process";
+import process12 from "node:process";
 import { readdir as readdir3, mkdir as mkdir3 } from "node:fs/promises";
-import { existsSync } from "node:fs";
+import { existsSync as existsSync2 } from "node:fs";
 import { join as join4, resolve as resolve4 } from "node:path";
-
 async function startDashboardServer(port) {
   const dashboardServer = await Promise.resolve().then(() => (init_dashboard_server(), dashboard_server_exports));
   await dashboardServer.startDashboard(port);
@@ -4301,7 +4300,7 @@ async function startDashboardServer(port) {
 async function preloadContracts(directory, dbLocation) {
   console.log(colors.blue("\u{1F4E6} Preloading contract manifests into database..."));
   const contractsDir = join4(directory, "contracts");
-  if (!existsSync(contractsDir)) {
+  if (!existsSync2(contractsDir)) {
     console.log(colors.yellow("\u26A0\uFE0F  No contracts directory found, skipping contract preloading"));
     return;
   }
@@ -4330,7 +4329,7 @@ async function preloadContracts(directory, dbLocation) {
     }
     console.log(colors.blue(`\u{1F4CB} Found ${manifestFiles.length} contract manifest(s) to deploy`));
     const deployTarget = dbLocation || resolve4(join4(directory, "data"));
-    if (!existsSync(deployTarget)) {
+    if (!existsSync2(deployTarget)) {
       console.log(colors.blue(`\u{1F4C1} Creating deploy target directory: ${deployTarget}`));
       await mkdir3(deployTarget, { recursive: true });
     }
@@ -4505,9 +4504,9 @@ function version() {
 // src/dev.ts
 init_deps();
 import { mkdir as mkdir4, readdir as readdir4 } from "node:fs/promises";
-import { existsSync as existsSync2, watch } from "node:fs";
+import { existsSync as existsSync3, watch } from "node:fs";
 import { resolve as resolve5, join as join5 } from "node:path";
-import process12 from "node:process";
+import process13 from "node:process";
 var DevEnvironment = class {
   watchers = [];
   serverProcess;
@@ -4548,7 +4547,7 @@ var DevEnvironment = class {
     try {
       this.serverProcess = serve(serverArgs).catch((error) => {
         console.error(colors.red("\u274C Server error:"), error);
-        process12.exit(1);
+        process13.exit(1);
       });
       await new Promise((resolve7) => setTimeout(resolve7, 2e3));
       console.log(colors.green("\u2705 Development server started"));
@@ -4572,7 +4571,7 @@ var DevEnvironment = class {
   async startContractWatching() {
     console.log(colors.blue("\u{1F440} Setting up contract file watching..."));
     const contractsDir = join5(this.projectRoot, "contracts");
-    if (!existsSync2(contractsDir)) {
+    if (!existsSync3(contractsDir)) {
       console.log(colors.yellow("\u26A0\uFE0F  No contracts directory found, creating one..."));
       await mkdir4(contractsDir, { recursive: true });
       return;
@@ -4628,11 +4627,11 @@ var DevEnvironment = class {
     console.log();
     const signals = ["SIGINT", "SIGTERM", "SIGQUIT", "SIGHUP"];
     signals.forEach((signal) => {
-      process12.on(signal, () => {
+      process13.on(signal, () => {
         console.log(colors.yellow(`
 \u{1F6D1} Received ${signal}, shutting down development environment...`));
         this.cleanup();
-        process12.exit(0);
+        process13.exit(0);
       });
     });
     console.log(colors.green("\u{1F3AF} Live development environment ready!"));
@@ -4703,9 +4702,9 @@ function parseDevArgs(args) {
 // src/pin.ts
 init_deps();
 import { readFile as readFile4, writeFile as writeFile2, mkdir as mkdir5, copyFile, readdir as readdir5 } from "node:fs/promises";
-import { existsSync as existsSync3 } from "node:fs";
+import { existsSync as existsSync4 } from "node:fs";
 import { resolve as resolve6, join as join6, dirname as dirname4, basename as basename4 } from "node:path";
-import process13 from "node:process";
+import process14 from "node:process";
 var ContractPinner = class {
   projectRoot;
   options;
@@ -4735,11 +4734,11 @@ var ContractPinner = class {
     const contractName = this.extractContractName(contractPath);
     console.log(colors.blue(`Contract name: ${contractName}`));
     const fullContractPath = join6(this.projectRoot, contractPath);
-    if (!existsSync3(fullContractPath)) {
+    if (!existsSync4(fullContractPath)) {
       throw new Error(`Contract file not found: ${contractPath}`);
     }
     const contractVersionDir = join6(this.projectRoot, "contracts", contractName, version2);
-    if (existsSync3(contractVersionDir)) {
+    if (existsSync4(contractVersionDir)) {
       if (this.options["only-changed"] || this.options.overwrite) {
         console.log(colors.yellow(`Version ${version2} already exists for ${contractName} - updating configuration only`));
         console.log(colors.gray("Existing version directory preserved as-is"));
@@ -4761,7 +4760,7 @@ var ContractPinner = class {
    */
   async loadCheloniaConfig() {
     const configPath = join6(this.projectRoot, "chelonia.json");
-    if (existsSync3(configPath)) {
+    if (existsSync4(configPath)) {
       try {
         const configContent = await readFile4(configPath, "utf8");
         this.cheloniaConfig = JSON.parse(configContent);
@@ -4803,7 +4802,7 @@ var ContractPinner = class {
     let foundContracts = false;
     for (const searchPath of commonPaths) {
       const fullPath = join6(this.projectRoot, searchPath);
-      if (existsSync3(fullPath)) {
+      if (existsSync4(fullPath)) {
         try {
           const files = await readdir5(fullPath);
           const manifestFiles = files.filter((f) => f.endsWith(".manifest.json"));
@@ -4851,7 +4850,7 @@ var ContractPinner = class {
     const mainFile = `${contractName}.js`;
     const mainSource = join6(sourceDir, mainFile);
     const mainTarget = join6(targetDir, mainFile);
-    if (existsSync3(mainSource)) {
+    if (existsSync4(mainSource)) {
       await copyFile(mainSource, mainTarget);
       console.log(colors.green(`\u2705 Copied ${mainFile}`));
     } else {
@@ -4860,7 +4859,7 @@ var ContractPinner = class {
     const slimFile = `${contractName}-slim.js`;
     const slimSource = join6(sourceDir, slimFile);
     const slimTarget = join6(targetDir, slimFile);
-    if (existsSync3(slimSource)) {
+    if (existsSync4(slimSource)) {
       await copyFile(slimSource, slimTarget);
       console.log(colors.green(`\u2705 Copied ${slimFile}`));
     } else {
@@ -4869,7 +4868,7 @@ var ContractPinner = class {
     const manifestFile = `${contractName}.manifest.json`;
     const manifestSource = join6(sourceDir, manifestFile);
     const manifestTarget = join6(targetDir, manifestFile);
-    if (existsSync3(manifestSource)) {
+    if (existsSync4(manifestSource)) {
       await copyFile(manifestSource, manifestTarget);
       console.log(colors.green(`\u2705 Copied ${manifestFile}`));
     }
@@ -4897,7 +4896,7 @@ async function pin(args) {
     await pinner.pin(version2, contractPath);
   } catch (error) {
     console.error(colors.red("\u274C Pin failed:"), error instanceof Error ? error.message : error);
-    process13.exit(1);
+    process14.exit(1);
   }
 }
 function parsePinArgs(args) {
@@ -4910,7 +4909,7 @@ function parsePinArgs(args) {
   });
   const version2 = parsed._[0]?.toString();
   const contractPath = parsed._[1]?.toString();
-  const directory = process13.cwd();
+  const directory = process14.cwd();
   if (!version2) {
     throw new Error("Usage: chel pin <version> [contract-file-path]");
   }

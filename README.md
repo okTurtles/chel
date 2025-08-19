@@ -103,7 +103,7 @@ This creates:
 ```bash
 chel manifest [-k|--key <pubkey1> [-k|--key <pubkey2> ...]] [--out=<manifest.json>] [-s|--slim <contract-slim.js>] [-v|--version <version>] <key.json> <contract-bundle.js>
 
-chel manifest --slim contracts/chatroom/2.0.10/chatroom-slim.js --version 2.0.10 --out contracts/chatroom/2.0.10/chatroom.manifest.json key.json contracts/chatroom/2.0.10/chatroom.js
+chel manifest --slim contracts/chatroom/2.0.10/chatroom-slim.js --version 2.0.10 --out contracts/chatroom/2.0.10/chatroom.2.0.10.manifest.json key.json contracts/chatroom/2.0.10/chatroom.js
 ```
 
 This replaces the placeholder values with actual cryptographic hashes and signatures required for secure contract deployment.
