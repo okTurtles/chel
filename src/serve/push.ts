@@ -300,9 +300,7 @@ export const pushServerActionhandlers: PushServerActionHandlers = {
         // This is mostly for testing to be able to auto-remove invalid or expired
         // endpoints. This doesn't need more error handling than any other failed
         // call to `postEvent`.
-        if (subscriptionWrapper) {
-          await postEvent(subscriptionWrapper, JSON.stringify({ type: 'initial' }))
-        }
+        await postEvent(subscriptionWrapper, JSON.stringify({ type: 'initial' }))
       } else {
         // Otherwise, if this is an _existing_ push subscription, we don't need
         // to call `subscriptionInfoWrapper` but we need to stop sending messages
@@ -316,9 +314,7 @@ export const pushServerActionhandlers: PushServerActionHandlers = {
         if (subscriptionWrapper.sockets.size === 0) {
           subscriptionWrapper.subscriptions.forEach((channelID: string) => {
             if (!server.subscribersByChannelID[channelID]) return
-            if (subscriptionWrapper) {
-              server.subscribersByChannelID[channelID].delete(subscriptionWrapper as unknown as WebSocketConnection)
-            }
+            server.subscribersByChannelID[channelID].delete(subscriptionWrapper as unknown as WebSocketConnection)
           })
         }
       }
@@ -369,7 +365,7 @@ export const pushServerActionhandlers: PushServerActionHandlers = {
     }
   },
   [PUSH_SERVER_ACTION_TYPE.DELETE_SUBSCRIPTION] (socket: WebSocketConnection) {
-    const { pushSubscriptionId: subscriptionId } = socket
+    const subscriptionId = socket.pushSubscriptionId
 
     if (subscriptionId) {
       return removeSubscription(subscriptionId)

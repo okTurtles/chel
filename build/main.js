@@ -1027,7 +1027,7 @@ var init_database_fs2 = __esm({
       keyChunkLength = 2;
       constructor(options2 = {}) {
         super();
-        this.dataFolder = resolve(options2.dirname || "");
+        this.dataFolder = resolve(options2.dirname);
         if (options2.depth) this.depth = options2.depth;
         if (options2.keyChunkLength) this.keyChunkLength = options2.keyChunkLength;
       }
@@ -1097,15 +1097,12 @@ var init_database_sqlite2 = __esm({
       deleteStatement = null;
       constructor(options2 = {}) {
         super();
-        const { filepath = "" } = options2;
+        const { filepath } = options2;
         const resolvedPath = resolve2(filepath);
         this.dataFolder = dirname2(resolvedPath);
         this.filename = basename2(resolvedPath);
       }
       run(sql) {
-        if (!this.db) {
-          throw new Error("Database not initialized");
-        }
         this.db.prepare(sql).run();
       }
       async init() {
@@ -1127,14 +1124,14 @@ var init_database_sqlite2 = __esm({
         await this.run("DELETE FROM Data");
       }
       async readData(key) {
-        const row = this.readStatement?.get(key);
+        const row = this.readStatement.get(key);
         return await row?.value;
       }
       async writeData(key, value) {
-        await this.writeStatement?.run(key, value);
+        await this.writeStatement.run(key, value);
       }
       async deleteData(key) {
-        await this.deleteStatement?.run(key);
+        await this.deleteStatement.run(key);
       }
     };
   }
@@ -1407,7 +1404,7 @@ var init_database = __esm({
     };
     database_default = default4("sbp/selectors/register", {
       "backend/db/streamEntriesAfter": async function(contractID, height, requestedLimit, options2 = {}) {
-        const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, Number(process7.env.MAX_EVENTS_BATCH_SIZE ?? "500"));
+        const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, parseInt(process7.env.MAX_EVENTS_BATCH_SIZE) || 500);
         const latestHEADinfo = await default4("chelonia/db/latestHEADinfo", contractID);
         if (latestHEADinfo === "") {
           throw default5.resourceGone(`contractID ${contractID} has been deleted!`);
@@ -1487,7 +1484,7 @@ var init_database = __esm({
             }
           }
           yield "]";
-        }(), { encoding: "utf8", objectMode: false });
+        }(), { encoding: "utf-8", objectMode: false });
         stream.headers = {
           "shelter-headinfo-head": latestHEADinfo.HEAD,
           "shelter-headinfo-height": latestHEADinfo.height
@@ -1525,7 +1522,7 @@ var init_database = __esm({
           "chelonia.db/get": async function(prefixableKey, { bypassCache } = {}) {
             if (!bypassCache) {
               const lookupValue = cache.get(prefixableKey);
-              if (lookupValue !== void 0 && lookupValue !== null) {
+              if (lookupValue !== void 0) {
                 return lookupValue;
               }
             }
@@ -1938,17 +1935,13 @@ var init_push = __esm({
             host = subscriptionWrapper.endpoint.host;
             await addSubscriptionToIndex(subscriptionId);
             await saveSubscription(server, subscriptionId);
-            if (subscriptionWrapper) {
-              await postEvent(subscriptionWrapper, JSON.stringify({ type: "initial" }));
-            }
+            await postEvent(subscriptionWrapper, JSON.stringify({ type: "initial" }));
           } else {
             host = subscriptionWrapper.endpoint.host;
             if (subscriptionWrapper.sockets.size === 0) {
               subscriptionWrapper.subscriptions.forEach((channelID) => {
                 if (!server.subscribersByChannelID[channelID]) return;
-                if (subscriptionWrapper) {
-                  server.subscribersByChannelID[channelID].delete(subscriptionWrapper);
-                }
+                server.subscribersByChannelID[channelID].delete(subscriptionWrapper);
               });
             }
           }
@@ -1972,7 +1965,7 @@ var init_push = __esm({
         }
       },
       [PUSH_SERVER_ACTION_TYPE.DELETE_SUBSCRIPTION](socket) {
-        const { pushSubscriptionId: subscriptionId } = socket;
+        const subscriptionId = socket.pushSubscriptionId;
         if (subscriptionId) {
           return removeSubscription(subscriptionId);
         }
@@ -2129,7 +2122,7 @@ var init_pubsub = __esm({
     defaultSocketEventHandlers = {
       close() {
         const socket = this;
-        const server = socket.server;
+        const { server } = socket;
         for (const channelID of socket.subscriptions) {
           server.subscribersByChannelID[channelID].delete(socket);
         }
@@ -2137,12 +2130,11 @@ var init_pubsub = __esm({
       },
       message(data) {
         const socket = this;
-        const server = socket.server;
+        const { server } = socket;
         const text = data.toString();
         let msg = { type: "" };
         try {
-          const message = messageParser(text);
-          msg = message;
+          msg = messageParser(text);
         } catch (error) {
           log.error(error, `Malformed message: ${error.message}`);
           server.rejectMessageAndTerminateSocket(msg, socket);
@@ -2174,13 +2166,13 @@ var init_pubsub = __esm({
         socket.activeSinceLastPing = true;
       },
       [PUB](msg) {
-        const server = this.server;
+        const { server } = this;
         const subscribers = server.subscribersByChannelID[msg.channelID];
         server.broadcast(msg, { to: Array.from(subscribers ?? []) });
       },
       [SUB]({ channelID, kvFilter }) {
         const socket = this;
-        const server = socket.server;
+        const { server } = socket;
         if (!server.channels.has(channelID)) {
           socket.send(createErrorResponse(
             { type: SUB, channelID, reason: `Unknown channel id: ${channelID}` }
@@ -2203,7 +2195,7 @@ var init_pubsub = __esm({
       },
       [KV_FILTER]({ channelID, kvFilter }) {
         const socket = this;
-        const server = socket.server;
+        const { server } = socket;
         if (!server.channels.has(channelID)) {
           socket.send(createErrorResponse(
             { type: SUB, channelID, reason: `Unknown channel id: ${channelID}` }
@@ -2223,7 +2215,7 @@ var init_pubsub = __esm({
       },
       [UNSUB]({ channelID }) {
         const socket = this;
-        const server = socket.server;
+        const { server } = socket;
         if (!server.channels.has(channelID)) {
           socket.send(createErrorResponse(
             { type: UNSUB, channelID, reason: `Unknown channel id: ${channelID}` }
@@ -2248,7 +2240,7 @@ var init_pubsub = __esm({
        * @param except - A recipient to exclude. Optional.
        */
       broadcast(message, { to, except, wsOnly } = {}) {
-        const server = this;
+        const { clients } = this;
         const msg = typeof message === "string" ? message : JSON.stringify(message);
         let shortMsg;
         const shortenPayload = () => {
@@ -2258,7 +2250,8 @@ var init_pubsub = __esm({
           }
           return shortMsg;
         };
-        for (const client of to || server.clients) {
+        const recipients = to || clients;
+        for (const client of recipients) {
           if (!wsOnly && client.endpoint) {
             if (msg.length > 4096 - 86 - 17) {
               if (!shortenPayload()) {
@@ -2288,9 +2281,9 @@ var init_pubsub = __esm({
       },
       // Enumerates the subscribers of a given channel.
       *enumerateSubscribers(channelID, kvKey) {
-        const server = this;
-        if (channelID in server.subscribersByChannelID) {
-          const subscribers = server.subscribersByChannelID[channelID];
+        const { subscribersByChannelID } = this;
+        if (channelID in subscribersByChannelID) {
+          const subscribers = subscribersByChannelID[channelID];
           if (!kvKey) {
             yield* subscribers;
           } else {
@@ -2337,10 +2330,10 @@ var init_routes = __esm({
     KV_KEY_REGEX = /^(?!_private)[^\x00]{1,256}$/;
     NAME_REGEX = /^(?![_-])((?!([_-])\2)[a-z\d_-]){1,80}(?<![_-])$/;
     POSITIVE_INTEGER_REGEX = /^\d{1,16}$/;
-    FILE_UPLOAD_MAX_BYTES = parseInt(process9.env.FILE_UPLOAD_MAX_BYTES || "0") || 30 * MEGABYTE;
-    SIGNUP_LIMIT_MIN = parseInt(process9.env.SIGNUP_LIMIT_MIN || "0") || 2;
-    SIGNUP_LIMIT_HOUR = parseInt(process9.env.SIGNUP_LIMIT_HOUR || "0") || 10;
-    SIGNUP_LIMIT_DAY = parseInt(process9.env.SIGNUP_LIMIT_DAY || "0") || 50;
+    FILE_UPLOAD_MAX_BYTES = parseInt(process9.env.FILE_UPLOAD_MAX_BYTES) || 30 * MEGABYTE;
+    SIGNUP_LIMIT_MIN = parseInt(process9.env.SIGNUP_LIMIT_MIN) || 2;
+    SIGNUP_LIMIT_HOUR = parseInt(process9.env.SIGNUP_LIMIT_HOUR) || 10;
+    SIGNUP_LIMIT_DAY = parseInt(process9.env.SIGNUP_LIMIT_DAY) || 50;
     SIGNUP_LIMIT_DISABLED = process9.env.NODE_ENV !== "production" || process9.env.SIGNUP_LIMIT_DISABLED === "true";
     limiterPerMinute = new default12.Group({
       strategy: default12.strategy.LEAK,
@@ -2414,7 +2407,7 @@ var init_routes = __esm({
     ctEq = (expected, actual) => {
       let r = actual.length ^ expected.length;
       for (let i = 0; i < actual.length; i++) {
-        r |= (actual.codePointAt(i) || 0) ^ (expected.codePointAt(i) || 0);
+        r |= actual.codePointAt(i) ^ expected.codePointAt(i);
       }
       return r === 0;
     };
@@ -2589,11 +2582,7 @@ var init_routes = __esm({
     }, async function(request) {
       const billableContractID = request.auth.credentials.billableContractID;
       const resources = (await default4("chelonia.db/get", `_private_resources_${billableContractID}`))?.split("\0");
-      if (resources) {
-        return resources;
-      } else {
-        return [];
-      }
+      return resources || [];
     });
     if (process9.env.NODE_ENV === "development") {
       const levelToColor = {
@@ -3199,7 +3188,6 @@ var init_routes = __esm({
 // src/serve/server.ts
 var server_exports = {};
 import { basename as basename3, join as join3, dirname as dirname3 } from "node:path";
-import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { Worker } from "node:worker_threads";
 import process10 from "node:process";
@@ -3275,16 +3263,8 @@ var init_server = __esm({
       process10.stderr.write("The size calculation worker must run more frequently than the credits worker for accurate billing");
       process10.exit(1);
     }
-    try {
-      const workerExtension = existsSync(join3(__dirname, "serve", "ownerSizeTotalWorker.js")) ? ".js" : ".ts";
-      const workerDir = workerExtension === ".js" ? join3(__dirname, "serve") : __dirname;
-      ownerSizeTotalWorker = createWorker(join3(workerDir, `ownerSizeTotalWorker${workerExtension}`));
-      creditsWorker = createWorker(join3(workerDir, `creditsWorker${workerExtension}`));
-    } catch (error) {
-      console.warn("[server] Workers disabled - worker files not found in bundled environment:", error.message);
-      ownerSizeTotalWorker = void 0;
-      creditsWorker = void 0;
-    }
+    ownerSizeTotalWorker = process10.env.CHELONIA_ARCHIVE_MODE || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker(join3(__dirname, "serve", "ownerSizeTotalWorker.js"));
+    creditsWorker = process10.env.CHELONIA_ARCHIVE_MODE || !CREDITS_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker(join3(__dirname, "serve", "creditsWorker.js"));
     ({ CONTRACTS_VERSION, GI_VERSION } = process10.env);
     hapi = new Server({
       // debug: false, // <- Hapi v16 was outputing too many unnecessary debug statements
@@ -3587,25 +3567,19 @@ var init_server = __esm({
         // associated web push subscription, if it exists.
         close() {
           const socket = this;
-          const server = this.server;
+          const { server } = socket;
           const subscriptionId = socket.pushSubscriptionId;
           if (!subscriptionId) return;
-          const pushSubscriptions = server.pushSubscriptions;
-          const subscribersByChannelID = server.subscribersByChannelID;
-          if (!pushSubscriptions[subscriptionId]) return;
-          const subscription = pushSubscriptions[subscriptionId];
-          const sockets = subscription.sockets;
-          sockets.delete(socket);
+          if (!server.pushSubscriptions[subscriptionId]) return;
+          server.pushSubscriptions[subscriptionId].sockets.delete(socket);
           delete socket.pushSubscriptionId;
-          if (sockets.size === 0) {
-            const subscriptions = subscription.subscriptions;
-            for (const channelID of subscriptions) {
-              const channelKey = channelID;
-              if (!subscribersByChannelID[channelKey]) {
-                subscribersByChannelID[channelKey] = /* @__PURE__ */ new Set();
+          if (server.pushSubscriptions[subscriptionId].sockets.size === 0) {
+            server.pushSubscriptions[subscriptionId].subscriptions.forEach((channelID) => {
+              if (!server.subscribersByChannelID[channelID]) {
+                server.subscribersByChannelID[channelID] = /* @__PURE__ */ new Set();
               }
-              subscribersByChannelID[channelKey].add(subscription);
-            }
+              server.subscribersByChannelID[channelID].add(server.pushSubscriptions[subscriptionId]);
+            });
           }
         }
       },
@@ -3638,15 +3612,13 @@ var init_server = __esm({
         [NOTIFICATION_TYPE.SUB](...args) {
           const { channelID } = args[0];
           const socket = this;
-          const { server } = this;
           if (!socket.pushSubscriptionId) return;
-          const serverObj = server;
-          const pushSubscriptions = serverObj.pushSubscriptions;
-          if (!pushSubscriptions[socket.pushSubscriptionId]) {
+          const { server } = socket;
+          if (!server.pushSubscriptions[socket.pushSubscriptionId]) {
             delete socket.pushSubscriptionId;
             return;
           }
-          addChannelToSubscription(serverObj, socket.pushSubscriptionId, channelID);
+          addChannelToSubscription(server, socket.pushSubscriptionId, channelID);
         },
         // This handler removes subscribed channels from the web push subscription
         // associated with the WS, so that when the WS is closed we don't send
@@ -3654,15 +3626,13 @@ var init_server = __esm({
         [NOTIFICATION_TYPE.UNSUB](...args) {
           const { channelID } = args[0];
           const socket = this;
-          const { server } = this;
           if (!socket.pushSubscriptionId) return;
-          const serverObj = server;
-          const pushSubscriptions = serverObj.pushSubscriptions;
-          if (!pushSubscriptions[socket.pushSubscriptionId]) {
+          const { server } = socket;
+          if (!server.pushSubscriptions[socket.pushSubscriptionId]) {
             delete socket.pushSubscriptionId;
             return;
           }
-          deleteChannelFromSubscription(serverObj, socket.pushSubscriptionId, channelID);
+          deleteChannelFromSubscription(server, socket.pushSubscriptionId, channelID);
         }
       }
     }));
@@ -3734,18 +3704,15 @@ var init_server = __esm({
         const pubsub = default4("okTurtles.data/get", PUBSUB_INSTANCE);
         const notification = JSON.stringify({ type: "recurring" });
         Object.values(pubsub.pushSubscriptions || {}).filter(
-          (pushSubscription) => {
-            const sub = pushSubscription;
-            return !!sub.settings?.heartbeatInterval && sub.sockets.size === 0;
-          }
+          (pushSubscription) => !!pushSubscription.settings?.heartbeatInterval && pushSubscription.sockets.size === 0
         ).forEach((pushSubscription) => {
-          const sub = pushSubscription;
-          const last = map.get(sub) ?? Number.NEGATIVE_INFINITY;
-          if (now - last < sub.settings.heartbeatInterval) return;
-          postEvent(sub, notification).then(() => {
-            map.set(sub, now);
+          const subscription = pushSubscription;
+          const last = map.get(subscription) ?? Number.NEGATIVE_INFINITY;
+          if (now - last < subscription.settings.heartbeatInterval) return;
+          postEvent(subscription, notification).then(() => {
+            map.set(subscription, now);
           }).catch((e) => {
-            console.warn(e, "Error sending recurring message to web push client", sub.id);
+            console.warn(e, "Error sending recurring message to web push client", subscription.id);
           });
         });
       }, 1 * 60 * 60 * 1e3);

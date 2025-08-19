@@ -69,7 +69,7 @@ export const updateSize = async (resourceID: string, sizeKey: string, size: numb
 // Streams stored contract log entries since the given entry hash (inclusive!).
 export default sbp('sbp/selectors/register', {
   'backend/db/streamEntriesAfter': async function (contractID: string, height: number, requestedLimit?: number, options: { keyOps?: boolean } = {}): Promise<unknown> {
-    const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, Number(process.env.MAX_EVENTS_BATCH_SIZE ?? '500'))
+    const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, parseInt(process.env.MAX_EVENTS_BATCH_SIZE!) || 500)
     const latestHEADinfo = await sbp('chelonia/db/latestHEADinfo', contractID)
     if (latestHEADinfo === '') {
       throw Boom.resourceGone(`contractID ${contractID} has been deleted!`)
@@ -191,7 +191,7 @@ export default sbp('sbp/selectors/register', {
         }
       }
       yield ']'
-    })(), { encoding: 'utf8', objectMode: false })
+    })(), { encoding: 'utf-8', objectMode: false })
 
     // Add headers to stream (TypeScript workaround)
     ;(stream as { headers?: Record<string, string> }).headers = {
@@ -244,7 +244,7 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
       'chelonia.db/get': async function (prefixableKey: string, { bypassCache }: { bypassCache?: boolean } = {}): Promise<Buffer | string | void> {
         if (!bypassCache) {
           const lookupValue = cache.get(prefixableKey)
-          if (lookupValue !== undefined && lookupValue !== null) {
+          if (lookupValue !== void 0) {
             return lookupValue as Buffer | string | void
           }
         }

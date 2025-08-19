@@ -198,11 +198,7 @@ sbp('sbp/selectors/register', {
     // cost of performance
     billableEntities && await Promise.all(billableEntities.split('\x00').map(async (billableEntity) => {
       // Fetch the current total size for the entity.
-      const sizeString: string | null = await sbp('chelonia.db/get', `_private_ownerTotalSize_${billableEntity}`, { bypassCache: true })
-      if (sizeString === null) {
-        console.warn(`[creditsWorker] Null size fetched for entity ${billableEntity}. Skipping charge.`)
-        return
-      }
+      const sizeString = await sbp('chelonia.db/get', `_private_ownerTotalSize_${billableEntity}`, { bypassCache: true })
       const size = parseInt(sizeString, 10)
 
       // Check if size is a valid number, otherwise skip (or log error)

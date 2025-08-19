@@ -16,17 +16,14 @@ export default class SqliteBackend extends DatabaseBackend implements IDatabaseB
 
   constructor (options: { filepath?: string } = {}) {
     super()
-    const { filepath = '' } = options
-    const resolvedPath = resolve(filepath)
+    const { filepath } = options
+    const resolvedPath = resolve(filepath!)
     this.dataFolder = dirname(resolvedPath)
     this.filename = basename(resolvedPath)
   }
 
   run (sql: string) {
-    if (!this.db) {
-      throw new Error('Database not initialized')
-    }
-    this.db.prepare(sql).run()
+    this.db!.prepare(sql).run()
   }
 
   async init () {
@@ -52,7 +49,7 @@ export default class SqliteBackend extends DatabaseBackend implements IDatabaseB
   }
 
   async readData (key: string): Promise<Buffer | string | void> {
-    const row = this.readStatement?.get(key)
+    const row = this.readStatement!.get(key)
     // 'row' will be undefined if the key was not found.
     // Note: sqlite remembers the type of every stored value, therefore we
     // can return the value as-is.
@@ -60,10 +57,10 @@ export default class SqliteBackend extends DatabaseBackend implements IDatabaseB
   }
 
   async writeData (key: string, value: Buffer | string): Promise<void> {
-    await this.writeStatement?.run(key, value)
+    await this.writeStatement!.run(key, value)
   }
 
   async deleteData (key: string): Promise<void> {
-    await this.deleteStatement?.run(key)
+    await this.deleteStatement!.run(key)
   }
 }

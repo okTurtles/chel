@@ -79,6 +79,7 @@ function initAnimation (canvasEl: HTMLCanvasElement, theme: string = 'light') {
     sphereRadius: 0.85,
     tubeColor: COLORS.tube,
     sphereColor: COLORS.sphere,
+    isDarkTheme
   })
   curveGraph.position.x = -2.5
   scene.root.add(curveGraph)
@@ -87,6 +88,7 @@ function initAnimation (canvasEl: HTMLCanvasElement, theme: string = 'light') {
   const barGraphs = new BarGraphs({
     pairColors: [COLORS.bar_1, COLORS.bar_2],
     pairCount: 8,
+    isDarkTheme
   })
   barGraphs.position.set(2.5, PLANE_HEIGHT, 0)
   scene.root.add(barGraphs)

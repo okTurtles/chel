@@ -1,7 +1,6 @@
 import { Hapi, Inert, sbp, chalk, SPMessage, SERVER, multicodes, parseCID } from '~/deps.ts'
 // import type { SubMessage, UnsubMessage } from './pubsub.ts' // TODO: Use for type checking
 import { basename, join, dirname } from 'node:path'
-import { existsSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { Worker } from 'node:worker_threads'
 import process from 'node:process'
@@ -101,21 +100,12 @@ if (CREDITS_WORKER_TASK_TIME_INTERVAL && OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTER
 }
 
 // Initialize workers for size calculation and credits processing
-// Try to create workers, but handle gracefully if worker files don't exist in bundled environment
-let ownerSizeTotalWorker: WorkerType | undefined
-let creditsWorker: WorkerType | undefined
-
-try {
-  const workerExtension = existsSync(join(__dirname, 'serve', 'ownerSizeTotalWorker.js')) ? '.js' : '.ts'
-  const workerDir = workerExtension === '.js' ? join(__dirname, 'serve') : __dirname
-
-  ownerSizeTotalWorker = createWorker(join(workerDir, `ownerSizeTotalWorker${workerExtension}`))
-  creditsWorker = createWorker(join(workerDir, `creditsWorker${workerExtension}`))
-} catch (error) {
-  console.warn('[server] Workers disabled - worker files not found in bundled environment:', (error as Error).message)
-  ownerSizeTotalWorker = undefined
-  creditsWorker = undefined
-}
+const ownerSizeTotalWorker = process.env.CHELONIA_ARCHIVE_MODE || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL
+  ? undefined
+  : createWorker(join(__dirname, 'serve', 'ownerSizeTotalWorker.js'))
+const creditsWorker = process.env.CHELONIA_ARCHIVE_MODE || !CREDITS_WORKER_TASK_TIME_INTERVAL
+  ? undefined
+  : createWorker(join(__dirname, 'serve', 'creditsWorker.js'))
 
 const { CONTRACTS_VERSION, GI_VERSION } = process.env
 
@@ -514,29 +504,20 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
     // associated web push subscription, if it exists.
     close () {
       const socket = this as Record<string, unknown>
-      const server = (this as Record<string, unknown>).server as Record<string, unknown>
-
-      const subscriptionId = socket.pushSubscriptionId as string
-
+      const { server } = socket as { server: Record<string, unknown> }
+      const subscriptionId = socket.pushSubscriptionId
       if (!subscriptionId) return
-      const pushSubscriptions = server.pushSubscriptions as Record<string, unknown>
-      const subscribersByChannelID = server.subscribersByChannelID as Record<string, unknown>
-      if (!pushSubscriptions[subscriptionId]) return
-
-      const subscription = pushSubscriptions[subscriptionId] as Record<string, unknown>
-      const sockets = subscription.sockets as Set<unknown>
-      sockets.delete(socket)
+      if (!(server.pushSubscriptions as Record<string, unknown>)[subscriptionId as string]) return
+      (((server.pushSubscriptions as Record<string, unknown>)[subscriptionId as string] as Record<string, unknown>).sockets as Set<unknown>).delete(socket)
       delete socket.pushSubscriptionId
 
-      if (sockets.size === 0) {
-        const subscriptions = subscription.subscriptions as Iterable<unknown>
-        for (const channelID of subscriptions) {
-          const channelKey = channelID as string
-          if (!subscribersByChannelID[channelKey]) {
-            subscribersByChannelID[channelKey] = new Set()
+      if ((((server.pushSubscriptions as Record<string, unknown>)[subscriptionId as string] as Record<string, unknown>).sockets as Set<unknown>).size === 0) {
+        (((server.pushSubscriptions as Record<string, unknown>)[subscriptionId as string] as Record<string, unknown>).subscriptions as Set<unknown>).forEach((channelID: unknown) => {
+          if (!(server.subscribersByChannelID as Record<string, unknown>)[channelID as string]) {
+            (server.subscribersByChannelID as Record<string, unknown>)[channelID as string] = new Set()
           }
-          (subscribersByChannelID[channelKey] as Set<unknown>).add(subscription)
-        }
+          ((server.subscribersByChannelID as Record<string, unknown>)[channelID as string] as Set<unknown>).add((server.pushSubscriptions as Record<string, unknown>)[subscriptionId as string])
+        })
       }
     }
   },
@@ -571,20 +552,18 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
     [NOTIFICATION_TYPE.SUB] (...args: unknown[]) {
       const { channelID } = args[0] as { channelID: string }
       const socket = this as Record<string, unknown>
-      const { server } = this as Record<string, unknown>
 
       // If the WS doesn't have an associated push subscription, we're done
       if (!socket.pushSubscriptionId) return
       // If the WS has an associated push subscription that's since been
       // removed, delete the association and return.
-      const serverObj = server as Record<string, unknown>
-      const pushSubscriptions = serverObj.pushSubscriptions as Record<string, unknown>
-      if (!pushSubscriptions[socket.pushSubscriptionId as string]) {
+      const { server } = socket as { server: { pushSubscriptions: Record<string, unknown> } }
+      if (!server.pushSubscriptions[socket.pushSubscriptionId as string]) {
         delete socket.pushSubscriptionId
         return
       }
 
-      addChannelToSubscription(serverObj as { pushSubscriptions: Record<string, { settings?: unknown; subscriptions: Set<string> }> }, socket.pushSubscriptionId as string, channelID)
+      addChannelToSubscription(server as { pushSubscriptions: Record<string, { settings?: unknown; subscriptions: Set<string> }> }, socket.pushSubscriptionId as string, channelID)
     },
     // This handler removes subscribed channels from the web push subscription
     // associated with the WS, so that when the WS is closed we don't send
@@ -592,20 +571,18 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
     [NOTIFICATION_TYPE.UNSUB] (...args: unknown[]) {
       const { channelID } = args[0] as { channelID: string }
       const socket = this as Record<string, unknown>
-      const { server } = this as Record<string, unknown>
 
       // If the WS doesn't have an associated push subscription, we're done
       if (!socket.pushSubscriptionId) return
       // If the WS has an associated push subscription that's since been
       // removed, delete the association and return.
-      const serverObj = server as Record<string, unknown>
-      const pushSubscriptions = serverObj.pushSubscriptions as Record<string, unknown>
-      if (!pushSubscriptions[socket.pushSubscriptionId as string]) {
+      const { server } = socket as { server: { pushSubscriptions: Record<string, unknown> } }
+      if (!server.pushSubscriptions[socket.pushSubscriptionId as string]) {
         delete socket.pushSubscriptionId
         return
       }
 
-      deleteChannelFromSubscription(serverObj as { pushSubscriptions: Record<string, { settings?: unknown; subscriptions: Set<string> }> }, socket.pushSubscriptionId as string, channelID)
+      deleteChannelFromSubscription(server as { pushSubscriptions: Record<string, { settings?: unknown; subscriptions: Set<string> }> }, socket.pushSubscriptionId as string, channelID)
     }
   }
 }))
@@ -693,18 +670,15 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
     // Find push subscriptions that do _not_ have a WS open. This means clients
     // that are 'asleep' and that might be woken up by the push event
     Object.values(pubsub.pushSubscriptions || {}).filter(
-      (pushSubscription: unknown) => {
-        const sub = pushSubscription as { settings?: { heartbeatInterval?: number }; sockets: { size: number } }
-        return !!sub.settings?.heartbeatInterval && sub.sockets.size === 0
-      }
+      (pushSubscription: unknown) => !!(pushSubscription as { settings?: { heartbeatInterval?: number }; sockets: { size: number } }).settings?.heartbeatInterval && (pushSubscription as { settings?: { heartbeatInterval?: number }; sockets: { size: number } }).sockets.size === 0
     ).forEach((pushSubscription: unknown) => {
-      const sub = pushSubscription as PushSubscriptionInfo
-      const last = map.get(sub) ?? Number.NEGATIVE_INFINITY
-      if (now - last < (sub.settings as { heartbeatInterval: number }).heartbeatInterval) return
-      postEvent(sub, notification).then(() => {
-        map.set(sub, now)
+      const subscription = pushSubscription as PushSubscriptionInfo
+      const last = map.get(subscription) ?? Number.NEGATIVE_INFINITY
+      if (now - last < (subscription.settings as { heartbeatInterval: number }).heartbeatInterval) return
+      postEvent(subscription, notification).then(() => {
+        map.set(subscription, now)
       }).catch((e: unknown) => {
-        console.warn(e, 'Error sending recurring message to web push client', sub.id)
+        console.warn(e, 'Error sending recurring message to web push client', subscription.id)
       })
     })
     // Repeat every 1 hour
