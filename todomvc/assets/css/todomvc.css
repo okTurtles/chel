@@ -41,6 +41,18 @@ body {
 	display: none;
 }
 
+.sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border: 0;
+}
+
 .todoapp {
 	background: #fff;
 	margin: 130px 0 40px 0;
@@ -216,6 +228,37 @@ body {
 	transition: color 0.4s;
 }
 
+.todo-list li .todo-text {
+	word-break: break-all;
+	padding: 15px 90px 15px 60px;
+	display: block;
+	line-height: 1.2;
+	transition: color 0.4s;
+	cursor: pointer;
+}
+
+.todo-list li .todo-text:focus {
+	outline: 2px solid #4d4d4d;
+	outline-offset: -2px;
+}
+
+.todo-list li .todo-text:hover {
+	background-color: #f9f9f9;
+}
+
+/* Mobile-friendly touch targets */
+@media (max-width: 768px) {
+	.todo-list li .destroy {
+		display: block;
+		opacity: 0.6;
+	}
+	
+	.todo-list li .destroy:active {
+		opacity: 1;
+		transform: scale(1.1);
+	}
+}
+
 .todo-list li.completed label {
 	color: #d9d9d9;
 	text-decoration: line-through;
@@ -225,15 +268,21 @@ body {
 	display: none;
 	position: absolute;
 	top: 0;
-	right: 10px;
 	bottom: 0;
 	width: 40px;
 	height: 40px;
 	margin: auto 0;
-	font-size: 30px;
+	font-size: 18px;
 	color: #cc9a9a;
 	margin-bottom: 11px;
 	transition: color 0.2s ease-out;
+	cursor: pointer;
+	border: none;
+	background: none;
+}
+
+.todo-list li .destroy {
+	right: 10px;
 }
 
 .todo-list li .destroy:hover {
