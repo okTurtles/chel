@@ -482,10 +482,11 @@ var init_dashboard_server = __esm({
 });
 
 // src/serve/events.ts
-var SERVER_RUNNING;
+var SERVER_EXITING, SERVER_RUNNING;
 var init_events = __esm({
   "src/serve/events.ts"() {
     "use strict";
+    SERVER_EXITING = "server-exiting";
     SERVER_RUNNING = "server-running";
   }
 });
@@ -963,7 +964,7 @@ var requiredMethodNames, DatabaseBackend;
 var init_DatabaseBackend = __esm({
   "src/serve/DatabaseBackend.ts"() {
     "use strict";
-    requiredMethodNames = ["init", "clear", "readData", "writeData", "deleteData"];
+    requiredMethodNames = ["init", "clear", "readData", "writeData", "deleteData", "close"];
     DatabaseBackend = class _DatabaseBackend {
       constructor() {
         if (new.target === _DatabaseBackend) {
@@ -1070,6 +1071,8 @@ var init_database_fs2 = __esm({
           throw e;
         });
       }
+      close() {
+      }
     };
   }
 });
@@ -1132,6 +1135,9 @@ var init_database_sqlite2 = __esm({
       }
       async deleteData(key) {
         await this.deleteStatement.run(key);
+      }
+      close() {
+        this.db?.close();
       }
     };
   }
@@ -1248,7 +1254,22 @@ var init_database_router = __esm({
       }
       async clear() {
         for (const backend2 of new Set(Object.values(this.backends))) {
-          await backend2.clear();
+          try {
+            await backend2.clear();
+          } catch (e) {
+            const prefix = Object.entries(this.backends).find(([, b]) => b === backend2)?.[0];
+            console.error(e, `Error clearing DB for prefix ${prefix}`);
+          }
+        }
+      }
+      async close() {
+        for (const backend2 of new Set(Object.values(this.backends))) {
+          try {
+            await backend2.close();
+          } catch (e) {
+            const prefix = Object.entries(this.backends).find(([, b]) => b === backend2)?.[0];
+            console.error(e, `Error closing DB for prefix ${prefix}`);
+          }
         }
       }
     };
@@ -1365,6 +1386,7 @@ var init_database = __esm({
     init_deps();
     init_vapid();
     init_zkppSalt();
+    init_events();
     init_2();
     production = process7.env.NODE_ENV === "production";
     persistence = process7.env.GI_PERSIST || (production ? "fs" : void 0);
@@ -1512,8 +1534,17 @@ var init_database = __esm({
     initDB = async ({ skipDbPreloading } = {}) => {
       if (persistence) {
         const Ctor = (await globImport_database_ts2(`./database-${persistence}.ts`)).default;
-        const { init, readData: readData3, writeData: writeData3, deleteData } = new Ctor(options[persistence]);
+        const { init, readData: readData3, writeData: writeData3, deleteData, close } = new Ctor(options[persistence]);
         await init();
+        default4("okTurtles.events/once", SERVER_EXITING, () => {
+          default4("okTurtles.eventQueue/queueEvent", SERVER_EXITING, async () => {
+            try {
+              await close();
+            } catch (e) {
+              console.error(e, `Error closing DB ${persistence}`);
+            }
+          });
+        });
         const cache = new default10({
           max: Number(process7.env.GI_LRU_NUM_ITEMS) || 1e4
         });
@@ -3191,7 +3222,7 @@ import { basename as basename3, join as join3, dirname as dirname3 } from "node:
 import { fileURLToPath } from "node:url";
 import { Worker } from "node:worker_threads";
 import process10 from "node:process";
-var __filename, __dirname, createWorker, ownerSizeTotalWorker, creditsWorker, CONTRACTS_VERSION, GI_VERSION, hapi, appendToOrphanedNamesIndex, handleSignal;
+var __filename, __dirname, createWorker, ownerSizeTotalWorker, creditsWorker, CONTRACTS_VERSION, GI_VERSION, hapi, appendToOrphanedNamesIndex;
 var init_server = __esm({
   "src/serve/server.ts"() {
     "use strict";
@@ -3713,20 +3744,6 @@ var init_server = __esm({
         });
       }, 1 * 60 * 60 * 1e3);
     })();
-    handleSignal = (signal, code) => {
-      process10.on(signal, () => {
-        console.error(`Exiting upon receiving ${signal} (${code})`);
-        process10.exit(128 + code);
-      });
-    };
-    [
-      ["SIGHUP", 1],
-      ["SIGINT", 2],
-      ["SIGQUIT", 3],
-      ["SIGTERM", 15],
-      ["SIGUSR1", 10],
-      ["SIGUSR2", 11]
-    ].forEach(([signal, code]) => handleSignal(signal, code));
   }
 });
 
@@ -3745,7 +3762,7 @@ function logSBP(_domain, selector, data) {
     }
   }
 }
-var dontLog, serve_default, shutdownFn;
+var dontLog, serve_default, exit2, handleSignal;
 var init_serve = __esm({
   "src/serve/index.ts"() {
     "use strict";
@@ -3768,26 +3785,26 @@ var init_serve = __esm({
       });
       Promise.resolve().then(() => (init_server(), server_exports)).catch(reject);
     });
-    shutdownFn = function(message) {
+    default4("okTurtles.events/once", SERVER_EXITING, () => {
       default4("okTurtles.data/apply", PUBSUB_INSTANCE, function(pubsub) {
-        console.info("message received in child, shutting down...", message);
-        pubsub.on("close", async function() {
-          try {
-            await default4("backend/server/stop");
-            console.info("Hapi server down");
-            process11.send?.({});
-            process11.nextTick(() => process11.exit(0));
-          } catch (err) {
-            console.error(err, "Error during shutdown");
-            process11.exit(1);
-          }
+        default4("okTurtles.eventQueue/queueEvent", SERVER_EXITING, () => {
+          return new Promise((resolve4) => {
+            pubsub.on("close", async function() {
+              try {
+                await default4("backend/server/stop");
+                console.info("Hapi server down");
+              } catch (err) {
+                console.error(err, "Error during shutdown");
+              } finally {
+                resolve4();
+              }
+            });
+            pubsub.close();
+            pubsub.clients.forEach((client) => client.terminate());
+          });
         });
-        pubsub.close();
-        pubsub.clients.forEach((client) => client.terminate());
       });
-    };
-    process11.on("SIGUSR2", shutdownFn);
-    process11.on("message", shutdownFn);
+    });
     process11.on("uncaughtException", (err) => {
       console.error(err, "[server] Unhandled exception");
       process11.exit(1);
@@ -3795,6 +3812,33 @@ var init_serve = __esm({
     process11.on("unhandledRejection", (reason) => {
       console.error(reason, "[server] Unhandled promise rejection:", reason);
       process11.exit(1);
+    });
+    exit2 = (code) => {
+      default4("okTurtles.events/once", SERVER_EXITING, () => {
+        default4("okTurtles.eventQueue/queueEvent", SERVER_EXITING, () => {
+          process11.send?.({});
+          process11.nextTick(() => process11.exit(code));
+        });
+      });
+      default4("okTurtles.events/emit", SERVER_EXITING);
+    };
+    handleSignal = (signal, code) => {
+      process11.on(signal, () => {
+        console.error(`Exiting upon receiving ${signal} (${code})`);
+        exit2(128 + code);
+      });
+    };
+    [
+      ["SIGHUP", 1],
+      ["SIGINT", 2],
+      ["SIGQUIT", 3],
+      ["SIGTERM", 15],
+      ["SIGUSR1", 10],
+      ["SIGUSR2", 11]
+    ].forEach(([signal, code]) => handleSignal(signal, code));
+    process11.on("message", (message) => {
+      console.info("message received in child, shutting down...", message);
+      exit2(0);
     });
   }
 });

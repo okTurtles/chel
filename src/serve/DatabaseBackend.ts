@@ -1,14 +1,15 @@
 import { Buffer } from 'node:buffer'
 
 export interface IDatabaseBackend {
-  init (): Promise<void>;
-  clear (): Promise<void>;
-  readData (key: string): Promise<Buffer | string | void>;
-  writeData (key: string, value: Buffer | string): Promise<void>;
-  deleteData (key: string): Promise<void>;
+  init (): Promise<void>
+  clear (): Promise<void>
+  readData (key: string): Promise<Buffer | string | void>
+  writeData (key: string, value: Buffer | string): Promise<void>
+  deleteData (key: string): Promise<void>
+  close (): Promise<void> | void
 }
 
-const requiredMethodNames = ['init', 'clear', 'readData', 'writeData', 'deleteData']
+const requiredMethodNames = ['init', 'clear', 'readData', 'writeData', 'deleteData', 'close']
 
 export default class DatabaseBackend {
   constructor () {

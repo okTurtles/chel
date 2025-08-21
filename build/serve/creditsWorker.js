@@ -178,7 +178,7 @@ var requiredMethodNames, DatabaseBackend;
 var init_DatabaseBackend = __esm({
   "src/serve/DatabaseBackend.ts"() {
     "use strict";
-    requiredMethodNames = ["init", "clear", "readData", "writeData", "deleteData"];
+    requiredMethodNames = ["init", "clear", "readData", "writeData", "deleteData", "close"];
     DatabaseBackend = class _DatabaseBackend {
       constructor() {
         if (new.target === _DatabaseBackend) {
@@ -285,6 +285,8 @@ var init_database_fs = __esm({
           throw e;
         });
       }
+      close() {
+      }
     };
   }
 });
@@ -347,6 +349,9 @@ var init_database_sqlite = __esm({
       }
       async deleteData(key) {
         await this.deleteStatement.run(key);
+      }
+      close() {
+        this.db?.close();
       }
     };
   }
@@ -463,7 +468,22 @@ var init_database_router = __esm({
       }
       async clear() {
         for (const backend of new Set(Object.values(this.backends))) {
-          await backend.clear();
+          try {
+            await backend.clear();
+          } catch (e) {
+            const prefix = Object.entries(this.backends).find(([, b]) => b === backend)?.[0];
+            console.error(e, `Error clearing DB for prefix ${prefix}`);
+          }
+        }
+      }
+      async close() {
+        for (const backend of new Set(Object.values(this.backends))) {
+          try {
+            await backend.close();
+          } catch (e) {
+            const prefix = Object.entries(this.backends).find(([, b]) => b === backend)?.[0];
+            console.error(e, `Error closing DB for prefix ${prefix}`);
+          }
         }
       }
     };
@@ -645,6 +665,9 @@ var initZkpp = async () => {
   hashUpdateSecret = Buffer3.from(hashStringArray("private/hashUpdateSecret", IKM)).toString("base64");
 };
 
+// src/serve/events.ts
+var SERVER_EXITING = "server-exiting";
+
 // import("./database-*.ts") in src/serve/database.ts
 var globImport_database_ts2 = __glob({
   "./database-fs.ts": () => Promise.resolve().then(() => (init_database_fs(), database_fs_exports)),
@@ -785,8 +808,17 @@ function namespaceKey(name) {
 var initDB = async ({ skipDbPreloading } = {}) => {
   if (persistence) {
     const Ctor = (await globImport_database_ts2(`./database-${persistence}.ts`)).default;
-    const { init, readData, writeData, deleteData } = new Ctor(options[persistence]);
+    const { init, readData, writeData, deleteData, close } = new Ctor(options[persistence]);
     await init();
+    default4("okTurtles.events/once", SERVER_EXITING, () => {
+      default4("okTurtles.eventQueue/queueEvent", SERVER_EXITING, async () => {
+        try {
+          await close();
+        } catch (e) {
+          console.error(e, `Error closing DB ${persistence}`);
+        }
+      });
+    });
     const cache = new default10({
       max: Number(process5.env.GI_LRU_NUM_ITEMS) || 1e4
     });

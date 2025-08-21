@@ -7,6 +7,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { initVapid } from './vapid.ts'
 import { initZkpp } from './zkppSalt.ts'
+import { SERVER_EXITING } from './events.ts'
 
 const production = process.env.NODE_ENV === 'production'
 // Defaults to `fs` in production.
@@ -231,8 +232,17 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
   if (persistence) {
     const Ctor = (await import(`./database-${persistence}.ts`)).default
     // Destructuring is safe because these methods have been bound using rebindMethods().
-    const { init, readData, writeData, deleteData } = new Ctor(options[persistence])
+    const { init, readData, writeData, deleteData, close } = new Ctor(options[persistence])
     await init()
+    sbp('okTurtles.events/once', SERVER_EXITING, () => {
+      sbp('okTurtles.eventQueue/queueEvent', SERVER_EXITING, async () => {
+        try {
+          await close()
+        } catch (e) {
+          console.error(e, `Error closing DB ${persistence}`)
+        }
+      })
+    })
 
     // https://github.com/isaacs/node-lru-cache#usage
     const cache = new LRU({
