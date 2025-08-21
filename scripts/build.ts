@@ -74,8 +74,8 @@ const options = {
     'npm:vue-router@3.6.5',
     'npm:pug@3.0.2'
   ],
-  format: 'esm' as const,
-  platform: 'node' as const,
+  format: 'esm',
+  platform: 'node',
   outdir: 'build',
   splitting: false,
   alias: {
