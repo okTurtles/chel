@@ -945,8 +945,7 @@ parentPort.on("message", ([port, ...msg]) => {
       try {
         port?.postMessage([true, await default4(...msg)]);
       } catch (e) {
-        const err = e;
-        port?.postMessage([false, { message: err.message, stack: err.stack }]);
+        port?.postMessage([false, e]);
       }
     })();
   });

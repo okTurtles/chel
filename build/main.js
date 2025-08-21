@@ -3567,7 +3567,7 @@ var init_server = __esm({
         // associated web push subscription, if it exists.
         close() {
           const socket = this;
-          const { server } = socket;
+          const { server } = this;
           const subscriptionId = socket.pushSubscriptionId;
           if (!subscriptionId) return;
           if (!server.pushSubscriptions[subscriptionId]) return;
@@ -3584,8 +3584,7 @@ var init_server = __esm({
         }
       },
       messageHandlers: {
-        [REQUEST_TYPE.PUSH_ACTION]: async function(...args) {
-          const { data } = args[0];
+        [REQUEST_TYPE.PUSH_ACTION]: async function({ data }) {
           const socket = this;
           const dataObj = data;
           const { action, payload } = dataObj;
@@ -3609,11 +3608,10 @@ var init_server = __esm({
         // This handler adds subscribed channels to the web push subscription
         // associated with the WS, so that when the WS is closed we can continue
         // sending messages as web push notifications.
-        [NOTIFICATION_TYPE.SUB](...args) {
-          const { channelID } = args[0];
+        [NOTIFICATION_TYPE.SUB]: function({ channelID }) {
           const socket = this;
+          const { server } = this;
           if (!socket.pushSubscriptionId) return;
-          const { server } = socket;
           if (!server.pushSubscriptions[socket.pushSubscriptionId]) {
             delete socket.pushSubscriptionId;
             return;
@@ -3623,11 +3621,10 @@ var init_server = __esm({
         // This handler removes subscribed channels from the web push subscription
         // associated with the WS, so that when the WS is closed we don't send
         // messages as web push notifications.
-        [NOTIFICATION_TYPE.UNSUB](...args) {
-          const { channelID } = args[0];
+        [NOTIFICATION_TYPE.UNSUB]: function({ channelID }) {
           const socket = this;
+          const { server } = this;
           if (!socket.pushSubscriptionId) return;
-          const { server } = socket;
           if (!server.pushSubscriptions[socket.pushSubscriptionId]) {
             delete socket.pushSubscriptionId;
             return;
@@ -3706,13 +3703,12 @@ var init_server = __esm({
         Object.values(pubsub.pushSubscriptions || {}).filter(
           (pushSubscription) => !!pushSubscription.settings?.heartbeatInterval && pushSubscription.sockets.size === 0
         ).forEach((pushSubscription) => {
-          const subscription = pushSubscription;
-          const last = map.get(subscription) ?? Number.NEGATIVE_INFINITY;
-          if (now - last < subscription.settings.heartbeatInterval) return;
-          postEvent(subscription, notification).then(() => {
-            map.set(subscription, now);
+          const last = map.get(pushSubscription) ?? Number.NEGATIVE_INFINITY;
+          if (now - last < pushSubscription.settings.heartbeatInterval) return;
+          postEvent(pushSubscription, notification).then(() => {
+            map.set(pushSubscription, now);
           }).catch((e) => {
-            console.warn(e, "Error sending recurring message to web push client", subscription.id);
+            console.warn(e, "Error sending recurring message to web push client", pushSubscription.id);
           });
         });
       }, 1 * 60 * 60 * 1e3);

@@ -504,7 +504,7 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
     // associated web push subscription, if it exists.
     close () {
       const socket = this as Record<string, unknown>
-      const { server } = socket as { server: Record<string, unknown> }
+      const { server } = (this as unknown) as { server: Record<string, unknown> }
       const subscriptionId = socket.pushSubscriptionId
       if (!subscriptionId) return
       if (!(server.pushSubscriptions as Record<string, unknown>)[subscriptionId as string]) return
@@ -522,8 +522,7 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
     }
   },
   messageHandlers: {
-    [REQUEST_TYPE.PUSH_ACTION]: async function (...args: unknown[]) {
-      const { data } = args[0] as { data: unknown }
+    [REQUEST_TYPE.PUSH_ACTION]: (async function (this: unknown, { data }: { data: unknown }) {
       const socket = this as Record<string, unknown>
       const dataObj = data as Record<string, unknown>
       const { action, payload } = dataObj
@@ -545,45 +544,35 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
       } else {
         ;((socket as Record<string, unknown>).send as (msg: unknown) => void)(createPushErrorResponse({ message: `No handler for the '${action}' action` }))
       }
-    },
+    }) as (...args: unknown[]) => unknown,
     // This handler adds subscribed channels to the web push subscription
     // associated with the WS, so that when the WS is closed we can continue
     // sending messages as web push notifications.
-    [NOTIFICATION_TYPE.SUB] (...args: unknown[]) {
-      const { channelID } = args[0] as { channelID: string }
+    [NOTIFICATION_TYPE.SUB]: (function (this: unknown, { channelID }: { channelID: string }) {
       const socket = this as Record<string, unknown>
-
-      // If the WS doesn't have an associated push subscription, we're done
+      const { server } = this as { server: { pushSubscriptions: Record<string, unknown> } }
       if (!socket.pushSubscriptionId) return
-      // If the WS has an associated push subscription that's since been
-      // removed, delete the association and return.
-      const { server } = socket as { server: { pushSubscriptions: Record<string, unknown> } }
       if (!server.pushSubscriptions[socket.pushSubscriptionId as string]) {
         delete socket.pushSubscriptionId
         return
       }
 
       addChannelToSubscription(server as { pushSubscriptions: Record<string, { settings?: unknown; subscriptions: Set<string> }> }, socket.pushSubscriptionId as string, channelID)
-    },
+    }) as (...args: unknown[]) => unknown,
     // This handler removes subscribed channels from the web push subscription
     // associated with the WS, so that when the WS is closed we don't send
     // messages as web push notifications.
-    [NOTIFICATION_TYPE.UNSUB] (...args: unknown[]) {
-      const { channelID } = args[0] as { channelID: string }
+    [NOTIFICATION_TYPE.UNSUB]: (function (this: unknown, { channelID }: { channelID: string }) {
       const socket = this as Record<string, unknown>
-
-      // If the WS doesn't have an associated push subscription, we're done
+      const { server } = this as { server: { pushSubscriptions: Record<string, unknown> } }
       if (!socket.pushSubscriptionId) return
-      // If the WS has an associated push subscription that's since been
-      // removed, delete the association and return.
-      const { server } = socket as { server: { pushSubscriptions: Record<string, unknown> } }
       if (!server.pushSubscriptions[socket.pushSubscriptionId as string]) {
         delete socket.pushSubscriptionId
         return
       }
 
       deleteChannelFromSubscription(server as { pushSubscriptions: Record<string, { settings?: unknown; subscriptions: Set<string> }> }, socket.pushSubscriptionId as string, channelID)
-    }
+    }) as (...args: unknown[]) => unknown
   }
 }))
 
@@ -672,13 +661,12 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
     Object.values(pubsub.pushSubscriptions || {}).filter(
       (pushSubscription: unknown) => !!(pushSubscription as { settings?: { heartbeatInterval?: number }; sockets: { size: number } }).settings?.heartbeatInterval && (pushSubscription as { settings?: { heartbeatInterval?: number }; sockets: { size: number } }).sockets.size === 0
     ).forEach((pushSubscription: unknown) => {
-      const subscription = pushSubscription as PushSubscriptionInfo
-      const last = map.get(subscription) ?? Number.NEGATIVE_INFINITY
-      if (now - last < (subscription.settings as { heartbeatInterval: number }).heartbeatInterval) return
-      postEvent(subscription, notification).then(() => {
-        map.set(subscription, now)
+      const last = map.get(pushSubscription as PushSubscriptionInfo) ?? Number.NEGATIVE_INFINITY
+      if (now - last < ((pushSubscription as PushSubscriptionInfo).settings as { heartbeatInterval: number }).heartbeatInterval) return
+      postEvent(pushSubscription as PushSubscriptionInfo, notification).then(() => {
+        map.set(pushSubscription as PushSubscriptionInfo, now)
       }).catch((e: unknown) => {
-        console.warn(e, 'Error sending recurring message to web push client', subscription.id)
+        console.warn(e, 'Error sending recurring message to web push client', (pushSubscription as PushSubscriptionInfo).id)
       })
     })
     // Repeat every 1 hour
