@@ -658,17 +658,22 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
     const notification = JSON.stringify({ type: 'recurring' })
     // Find push subscriptions that do _not_ have a WS open. This means clients
     // that are 'asleep' and that might be woken up by the push event
-    Object.values(pubsub.pushSubscriptions || {}).filter(
-      (pushSubscription: unknown) => !!(pushSubscription as { settings?: { heartbeatInterval?: number }; sockets: { size: number } }).settings?.heartbeatInterval && (pushSubscription as { settings?: { heartbeatInterval?: number }; sockets: { size: number } }).sockets.size === 0
-    ).forEach((pushSubscription: unknown) => {
-      const last = map.get(pushSubscription as PushSubscriptionInfo) ?? Number.NEGATIVE_INFINITY
-      if (now - last < ((pushSubscription as PushSubscriptionInfo).settings as { heartbeatInterval: number }).heartbeatInterval) return
-      postEvent(pushSubscription as PushSubscriptionInfo, notification).then(() => {
-        map.set(pushSubscription as PushSubscriptionInfo, now)
-      }).catch((e: unknown) => {
-        console.warn(e, 'Error sending recurring message to web push client', (pushSubscription as PushSubscriptionInfo).id)
+    Object.values(pubsub.pushSubscriptions || {})
+      .filter((pushSubscription: unknown) =>
+        !!((pushSubscription as PushSubscriptionInfo).settings as { heartbeatInterval?: number })?.heartbeatInterval &&
+        (pushSubscription as PushSubscriptionInfo).sockets.size === 0
+      ).forEach((pushSubscription: unknown) => {
+        const subscription = pushSubscription as PushSubscriptionInfo
+        const last = map.get(subscription) ?? Number.NEGATIVE_INFINITY
+        // If we've recently sent a recurring notification, skip it
+        if ((now - last) < (subscription.settings as { heartbeatInterval: number }).heartbeatInterval) return
+
+        postEvent(subscription, notification).then(() => {
+          map.set(subscription, now)
+        }).catch((e) => {
+          console.warn(e, 'Error sending recurring message to web push client', subscription.id)
+        })
       })
-    })
     // Repeat every 1 hour
   }, 1 * 60 * 60 * 1000)
 })()
