@@ -37,17 +37,14 @@ interface ContractFiles {
 
 /**
  * ContractPinner class handles pinning individual contracts to specific versions
- *
- * SECURITY FIX: This implementation takes the manifest file directly as input
- * instead of extracting contract names from user-controlled file paths and
- * using unsafe regular expressions. This addresses @corrideat's security feedback.
- *
- * Key improvements:
- * 1. Takes manifest file path directly as input
- * 2. Extracts contract name and file paths from the manifest content
- * 3. Uses chelonia.json for Chelonia-specific configuration
- * 4. Organizes contracts in structured directory layout: contracts/<name>/<version>/
+ * 1. Uses chelonia.json for Chelonia-specific configuration (separate from Node.js package.json)
+ * 2. Supports independent versioning for each contract (contracts can have different versions)
+ * 3. Organizes contracts in a structured directory layout: contracts/<name>/<version>/<files...>
+ * 4. Performs selective updates - only modifies the specific contract being pinned
  * 5. Maintains compatibility with chel manifest and chel deploy workflows
+ *
+ * The pinning process copies contract files from manifest to create new versions,
+ * allowing developers to iterate on contracts while maintaining version history.
  */
 class ContractPinner {
   private projectRoot: string
