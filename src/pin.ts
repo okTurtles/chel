@@ -1,7 +1,7 @@
 import { flags, colors } from './deps.ts'
 import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
-import { resolve, join, dirname, basename } from 'node:path'
+import { resolve, join, dirname } from 'node:path'
 import process from 'node:process'
 
 /**
@@ -20,7 +20,7 @@ interface CheloniaConfig {
   contracts: {
     [contractName: string]: {
       version: string
-      path: string // relative path to the contract file
+      path: string // relative path to the manifest file
     }
   }
   // Future: can add other Chelonia-specific configuration here
@@ -28,15 +28,26 @@ interface CheloniaConfig {
 }
 
 /**
+ * Contract file information extracted from manifest
+ */
+interface ContractFiles {
+  main: string
+  slim?: string
+}
+
+/**
  * ContractPinner class handles pinning individual contracts to specific versions
- * 1. Uses chelonia.json for Chelonia-specific configuration (separate from Node.js package.json)
- * 2. Supports independent versioning for each contract (contracts can have different versions)
- * 3. Organizes contracts in a structured directory layout: contracts/<name>/<version>/<files...>
- * 4. Performs selective updates - only modifies the specific contract being pinned
- * 5. Maintains compatibility with chel manifest and chel deploy workflows
  *
- * The pinning process copies contract files from a baseline version to create new versions,
- * allowing developers to iterate on contracts while maintaining version history.
+ * SECURITY FIX: This implementation takes the manifest file directly as input
+ * instead of extracting contract names from user-controlled file paths and
+ * using unsafe regular expressions. This addresses @corrideat's security feedback.
+ *
+ * Key improvements:
+ * 1. Takes manifest file path directly as input
+ * 2. Extracts contract name and file paths from the manifest content
+ * 3. Uses chelonia.json for Chelonia-specific configuration
+ * 4. Organizes contracts in structured directory layout: contracts/<name>/<version>/
+ * 5. Maintains compatibility with chel manifest and chel deploy workflows
  */
 class ContractPinner {
   private projectRoot: string
@@ -51,120 +62,106 @@ class ContractPinner {
   }
 
   /**
-   * Pin a specific contract to a version
-   *
-   * @param version - The version to pin to (e.g., '2.0.3')
-   * @param contractPath - Path to the contract file to pin (e.g., 'frontend/model/contracts/chatroom.js')
+   * Main pin method - takes a manifest file directly as input
+   * @param version - The version to pin to
+   * @param manifestPath - Path to the manifest file (required)
    */
-  async pin (version: string, contractPath?: string) {
+  async pin (version: string, manifestPath?: string) {
     if (!version || typeof version !== 'string') {
-      throw new Error('Usage: chel pin <version> [contract-file-path]')
+      throw new Error('Usage: chel pin <version> <manifest-file-path>')
     }
 
-    // If no contract path provided, show available contracts and exit
-    if (!contractPath) {
-      await this.showAvailableContracts()
+    // If no manifest path provided, show usage and exit
+    if (!manifestPath) {
+      await this.showUsage()
       return
     }
 
     console.log(colors.cyan(`📌 Pinning contract to version: ${version}`))
-    console.log(colors.gray(`Contract: ${contractPath}`))
+    console.log(colors.gray(`Manifest: ${manifestPath}`))
 
     // Load existing chelonia.json configuration
     await this.loadCheloniaConfig()
 
-    // Extract contract name from the file path
-    const contractName = this.extractContractName(contractPath)
-    console.log(colors.blue(`Contract name: ${contractName}`))
-
-    // Validate that the contract file exists
-    const fullContractPath = join(this.projectRoot, contractPath)
-    if (!existsSync(fullContractPath)) {
-      throw new Error(`Contract file not found: ${contractPath}`)
+    // Validate that the manifest file exists
+    const fullManifestPath = join(this.projectRoot, manifestPath)
+    if (!existsSync(fullManifestPath)) {
+      throw new Error(`Manifest file not found: ${manifestPath}`)
     }
+
+    // Parse the manifest to get contract information
+    const { contractName, contractFiles } = await this.parseManifest(fullManifestPath)
+    console.log(colors.blue(`Contract name: ${contractName}`))
 
     // Check if this version already exists for this contract
     const contractVersionDir = join(this.projectRoot, 'contracts', contractName, version)
 
     if (existsSync(contractVersionDir)) {
-      if (this.options['only-changed'] || this.options.overwrite) {
-        console.log(colors.yellow(`Version ${version} already exists for ${contractName} - updating configuration only`))
-        console.log(colors.gray('Existing version directory preserved as-is'))
-        // Just update the configuration and return
-        await this.updateCheloniaConfig(contractName, version, contractPath)
-        return
-      } else {
-        throw new Error(`Version ${version} already exists for contract ${contractName}. Use --overwrite to replace it, or --only-changed to switch to it`)
+      if (!this.options.overwrite && !this.options['only-changed']) {
+        throw new Error(`Version ${version} already exists for contract ${contractName}. Use --overwrite to replace it, or --only-changed to update only changed files`)
       }
+      console.log(colors.yellow(`Version ${version} already exists for ${contractName} - checking files...`))
+    } else {
+      // Create the new version directory structure
+      await this.createVersionDirectory(contractName, version)
     }
 
-    // Create the new version directory structure
-    await this.createVersionDirectory(contractName, version)
-
-    // Copy contract files to the new version directory
-    await this.copyContractFiles(contractPath, contractName, version)
+    // Copy contract files (this will handle --overwrite and --only-changed logic)
+    await this.copyContractFiles(manifestPath, contractFiles, contractName, version)
 
     // Update chelonia.json configuration
-    await this.updateCheloniaConfig(contractName, version, contractPath)
-
-    // Note: Manifests should be generated using 'chel manifest' command
-    // The pin command only copies existing manifests if they exist
+    await this.updateCheloniaConfig(contractName, version, manifestPath)
 
     console.log(colors.green(`✅ Successfully pinned ${contractName} to version ${version}`))
     console.log(colors.gray(`Location: contracts/${contractName}/${version}/`))
   }
 
   /**
-   * Load chelonia.json configuration file
-   * Creates a default one if it doesn't exist
+   * Parse manifest file to extract contract information
+   * @param manifestPath - Path to the manifest file
+   * @returns Object containing contract name and file information
    */
-  private async loadCheloniaConfig () {
-    const configPath = join(this.projectRoot, 'chelonia.json')
+  private async parseManifest (manifestPath: string): Promise<{ contractName: string, contractFiles: ContractFiles }> {
+    try {
+      const manifestContent = await readFile(manifestPath, 'utf8')
+      const manifest = JSON.parse(manifestContent)
+      const body = JSON.parse(manifest.body)
 
-    if (existsSync(configPath)) {
-      try {
-        const configContent = await readFile(configPath, 'utf8')
-        this.cheloniaConfig = JSON.parse(configContent)
-        console.log(colors.blue('📄 Loaded existing chelonia.json'))
-      } catch (error) {
-        console.warn(colors.yellow(`Warning: Could not parse chelonia.json: ${error}`))
-        // Use default empty config
+      const fullContractName = body.name
+      const mainFile = body.contract.file
+      const slimFile = body.contractSlim?.file
+
+      if (!fullContractName || !mainFile) {
+        throw new Error('Invalid manifest: missing contract name or main file')
       }
-    } else {
-      console.log(colors.blue('📄 Creating new chelonia.json'))
-      // Will be saved when updateCheloniaConfig is called
-    }
 
-    // Ensure contracts object exists
-    if (!this.cheloniaConfig.contracts) {
-      this.cheloniaConfig.contracts = {}
-    }
-  }
+      // Extract just the contract name part (after the last slash)
+      // e.g., "gi.contracts/group" -> "group"
+      const contractName = fullContractName.split('/').pop() || fullContractName
 
-  /**
-   * Extract contract name from file path
-   * Examples:
-   * - 'frontend/model/contracts/chatroom.js' -> 'chatroom'
-   * - 'contracts/identity.js' -> 'identity'
-   * - 'src/contracts/group.js' -> 'group'
-   */
-  private extractContractName (contractPath: string): string {
-    const fileName = basename(contractPath)
-    // Remove .js extension and any -slim suffix
-    return fileName.replace(/(-slim)?\.js$/, '')
+      return {
+        contractName,
+        contractFiles: {
+          main: mainFile,
+          slim: slimFile
+        }
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      throw new Error(`Failed to parse manifest file: ${errorMessage}`)
+    }
   }
 
   /**
    * Show usage information and currently pinned contracts
-   * Removed automatic contract discovery since contracts may need to be built first
    */
-  private async showAvailableContracts () {
+  showUsage () {
     console.log(colors.cyan('📋 Contract Pinning Usage:'))
-    console.log(colors.gray('Usage: chel pin <version> <contract-file-path>'))
+    console.log(colors.gray('Usage: chel pin <version> <manifest-file-path>'))
     console.log()
-    console.log(colors.yellow('📝 Note: Specify the full path to your contract file.'))
-    console.log(colors.gray('   Contracts may need to be built first before pinning.'))
-    console.log(colors.gray('   Example: chel pin 1.0.0 dist/contracts/chatroom.js'))
+    console.log(colors.yellow('📝 Note: Specify the full path to your manifest file.'))
+    console.log(colors.gray('   Generate manifests first using: chel manifest <contract-file>'))
+    console.log(colors.gray('   Example: chel pin 1.0.0 ./contracts/chatroom.1.0.0.manifest.json'))
     console.log()
 
     // Show current pinned contracts if any exist
@@ -192,92 +189,119 @@ class ContractPinner {
   }
 
   /**
-   * Copy contract files from source to target directory
-   * Reads file names from manifest if available, falls back to contract path
+   * Copy contract files from manifest to target directory
+   * @param manifestPath - Path to the manifest file
+   * @param contractFiles - Contract file information from manifest
+   * @param contractName - Name of the contract
+   * @param version - Version to pin to
    */
-  private async copyContractFiles (contractPath: string, contractName: string, version: string) {
-    const sourceDir = dirname(join(this.projectRoot, contractPath))
+  private async copyContractFiles (manifestPath: string, contractFiles: ContractFiles, contractName: string, version: string) {
+    const sourceDir = dirname(join(this.projectRoot, manifestPath))
     const targetDir = join(this.projectRoot, 'contracts', contractName, version)
 
-    // Look for manifest file to get actual file names
-    // Scan directory for manifest files matching pattern: <contractName>.*.manifest.json
-    let manifestSource: string | null = null
-
-    try {
-      const { readdir } = await import('node:fs/promises')
-      const files = await readdir(sourceDir)
-      const manifestPattern = new RegExp(`^${contractName}\\..*\\.manifest\\.json$`)
-
-      for (const file of files) {
-        if (manifestPattern.test(file)) {
-          manifestSource = join(sourceDir, file)
-          break
-        }
-      }
-    } catch (error) {
-      // If we can't read the directory, manifestSource remains null
-      console.log(colors.gray(`Could not scan directory for manifest files: ${error}`))
-    }
-
-    let mainFile: string
-    let slimFile: string | undefined
-
-    if (manifestSource) {
-      try {
-        // Read manifest to get actual file names
-        const manifestContent = await readFile(manifestSource, 'utf8')
-        const manifest = JSON.parse(manifestContent)
-        const body = JSON.parse(manifest.body)
-
-        mainFile = body.contract.file
-        slimFile = body.contractSlim?.file
-
-        console.log(colors.gray(`📋 Using manifest file names: ${mainFile}${slimFile ? `, ${slimFile}` : ''}`))
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error)
-        console.log(colors.yellow(`⚠️  Could not read manifest, falling back to contract path: ${errorMessage}`))
-        mainFile = basename(contractPath)
-      }
-    } else {
-      // Fallback: use the contract path basename
-      mainFile = basename(contractPath)
-      console.log(colors.yellow(`⚠️  No manifest found, using contract path: ${mainFile}`))
-    }
+    console.log(colors.gray(`📋 Copying files from manifest: ${contractFiles.main}${contractFiles.slim ? `, ${contractFiles.slim}` : ''}`))
 
     // Copy main contract file
-    const mainSource = join(sourceDir, mainFile)
-    const mainTarget = join(targetDir, mainFile)
+    const mainSource = join(sourceDir, contractFiles.main)
+    const mainTarget = join(targetDir, contractFiles.main)
 
-    if (existsSync(mainSource)) {
-      await copyFile(mainSource, mainTarget)
-      console.log(colors.green(`✅ Copied ${mainFile}`))
-    } else {
-      throw new Error(`Main contract file not found: ${mainSource}`)
-    }
+    await this.copyFileIfNeeded(mainSource, mainTarget, contractFiles.main)
 
-    // Copy slim version if specified in manifest
-    if (slimFile) {
-      const slimSource = join(sourceDir, slimFile)
-      const slimTarget = join(targetDir, slimFile)
+    // Copy slim file if it exists
+    if (contractFiles.slim) {
+      const slimSource = join(sourceDir, contractFiles.slim)
+      const slimTarget = join(targetDir, contractFiles.slim)
 
-      if (existsSync(slimSource)) {
-        await copyFile(slimSource, slimTarget)
-        console.log(colors.green(`✅ Copied ${slimFile}`))
-      } else {
-        console.log(colors.yellow(`⚠️  Slim file specified in manifest but not found: ${slimFile}`))
+      try {
+        await this.copyFileIfNeeded(slimSource, slimTarget, contractFiles.slim)
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        console.log(colors.yellow(`⚠️  Could not copy slim file: ${errorMessage}`))
+        // Don't fail the entire operation if slim file copy fails
       }
     }
   }
 
   /**
-   * Update chelonia.json with the new contract version
-   * This only updates the specific contract being pinned
+   * Copy a file only if needed based on --overwrite and --only-changed flags
+   * @param sourcePath - Source file path
+   * @param targetPath - Target file path
+   * @param fileName - File name for logging
    */
-  private async updateCheloniaConfig (contractName: string, version: string, contractPath: string) {
-    // Update the specific contract's configuration
+  private async copyFileIfNeeded (sourcePath: string, targetPath: string, fileName: string) {
+    const targetExists = existsSync(targetPath)
+
+    // If target doesn't exist, always copy
+    if (!targetExists) {
+      console.log(colors.blue(`📄 Copying: ${fileName} (new file)`))
+      await copyFile(sourcePath, targetPath)
+      return
+    }
+
+    // If target exists and overwrite is false, skip
+    if (targetExists && !this.options.overwrite) {
+      console.log(colors.yellow(`⏭️  Skipping: ${fileName} (already exists, use --overwrite to replace)`))
+      return
+    }
+
+    // If only-changed is true, check if files are different
+    if (this.options['only-changed']) {
+      const sourceContent = await readFile(sourcePath, 'utf8')
+      const targetContent = await readFile(targetPath, 'utf8')
+
+      if (sourceContent === targetContent) {
+        console.log(colors.gray(`⏭️  Skipping: ${fileName} (unchanged)`))
+        return
+      } else {
+        console.log(colors.blue(`📄 Copying: ${fileName} (changed)`))
+        await copyFile(sourcePath, targetPath)
+        return
+      }
+    }
+
+    // Default case: overwrite is true and only-changed is false
+    console.log(colors.blue(`📄 Copying: ${fileName} (overwriting)`))
+    await copyFile(sourcePath, targetPath)
+  }
+
+  /**
+   * Load chelonia.json configuration file
+   * Creates a default one if it doesn't exist
+   */
+  async loadCheloniaConfig () {
+    const configPath = join(this.projectRoot, 'chelonia.json')
+
+    if (existsSync(configPath)) {
+      try {
+        const configContent = await readFile(configPath, 'utf8')
+        this.cheloniaConfig = JSON.parse(configContent)
+        console.log(colors.blue('📄 Loaded existing chelonia.json'))
+      } catch (error) {
+        console.warn(colors.yellow(`Warning: Could not parse chelonia.json: ${error}`))
+        // Use default empty config
+      }
+    } else {
+      console.log(colors.blue('📄 Creating new chelonia.json'))
+      // Will be saved when updateCheloniaConfig is called
+    }
+
+    // Ensure contracts object exists
+    if (!this.cheloniaConfig.contracts) {
+      this.cheloniaConfig.contracts = {}
+    }
+  }
+
+  /**
+   * Update chelonia.json with the new contract version
+   * @param contractName - Name of the contract
+   * @param version - Version being pinned
+   * @param manifestPath - Path to the manifest file
+   */
+  private async updateCheloniaConfig (contractName: string, version: string, manifestPath: string) {
+    // Update the contract configuration
     this.cheloniaConfig.contracts[contractName] = {
       version,
-      path: contractPath
+      path: manifestPath
     }
 
     // Write the updated configuration back to chelonia.json
@@ -291,15 +315,16 @@ class ContractPinner {
 }
 
 /**
- * Main pin command function
- * Parses arguments and executes the pin operation
+ * Main pin function that handles the pinning process
+ * @param version - The version to pin to
+ * @param manifestPath - Optional path to the manifest file
+ * @param directory - Working directory (defaults to current directory)
+ * @param options - Pin options (overwrite, only-changed)
  */
-export async function pin (args: string[]) {
-  const { version, contractPath, directory, options } = parsePinArgs(args)
-
+export async function pinContracts (version: string, manifestPath: string | undefined, directory: string, options: PinOptions) {
   try {
     const pinner = new ContractPinner(directory, options)
-    await pinner.pin(version, contractPath)
+    await pinner.pin(version, manifestPath)
   } catch (error) {
     console.error(colors.red('❌ Pin failed:'), error instanceof Error ? error.message : error)
     process.exit(1)
@@ -310,13 +335,13 @@ export async function pin (args: string[]) {
  * Parse command line arguments for the pin command
  *
  * Examples:
- * - chel pin 2.0.3 frontend/model/contracts/chatroom.js
- * - chel pin 2.0.3 frontend/model/contracts/chatroom.js --overwrite
- * - chel pin 2.0.3 (shows available contracts)
+ * - chel pin 2.0.3 chatroom.2.0.3.manifest.json
+ * - chel pin 2.0.3 chatroom.2.0.3.manifest.json --overwrite
+ * - chel pin 2.0.3 (shows usage)
  */
 function parsePinArgs (args: string[]): {
   version: string
-  contractPath?: string
+  manifestPath?: string
   directory: string
   options: PinOptions
 } {
@@ -328,13 +353,13 @@ function parsePinArgs (args: string[]): {
     }
   })
 
-  // First argument is version, second is optional contract path
+  // First argument is version, second is optional manifest path
   const version = parsed._[0]?.toString()
-  const contractPath = parsed._[1]?.toString()
+  const manifestPath = parsed._[1]?.toString()
   const directory = process.cwd()
 
   if (!version) {
-    throw new Error('Usage: chel pin <version> [contract-file-path]')
+    throw new Error('Usage: chel pin <version> <manifest-file-path>')
   }
 
   const options: PinOptions = {
@@ -342,5 +367,17 @@ function parsePinArgs (args: string[]): {
     'only-changed': parsed['only-changed']
   }
 
-  return { version, contractPath, directory, options }
+  return { version, manifestPath, directory, options }
+}
+
+export async function pin (args: string[]) {
+  // If no arguments provided, show usage
+  if (args.length === 0) {
+    const pinner = new ContractPinner(process.cwd(), {})
+    await pinner.loadCheloniaConfig()
+    pinner.showUsage()
+    return
+  }
+  const { version, manifestPath, directory, options } = parsePinArgs(args)
+  await pinContracts(version, manifestPath, directory, options)
 }

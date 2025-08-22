@@ -3026,9 +3026,9 @@ var init_routes = __esm({
       }
     }, function(request, h) {
       const { subpath } = request.params;
-      const basename5 = path4.basename(subpath);
-      if (basename5.includes("-cached")) {
-        return h.file(subpath, { etagMethod: false }).etag(basename5).header("Cache-Control", "public,max-age=31536000,immutable");
+      const basename4 = path4.basename(subpath);
+      if (basename4.includes("-cached")) {
+        return h.file(subpath, { etagMethod: false }).etag(basename4).header("Cache-Control", "public,max-age=31536000,immutable");
       }
       return h.file(subpath);
     });
@@ -3050,9 +3050,9 @@ var init_routes = __esm({
         }
       }, function(request, h) {
         const { subpath } = request.params;
-        const basename5 = path4.basename(subpath);
-        if (basename5.includes("-cached")) {
-          return h.file(subpath, { etagMethod: false }).etag(basename5).header("Cache-Control", "public,max-age=31536000,immutable");
+        const basename4 = path4.basename(subpath);
+        if (basename4.includes("-cached")) {
+          return h.file(subpath, { etagMethod: false }).etag(basename4).header("Cache-Control", "public,max-age=31536000,immutable");
         }
         return h.file(subpath);
       });
@@ -4258,7 +4258,7 @@ async function migrate(args) {
 init_deps();
 import process12 from "node:process";
 import { readdir as readdir3, mkdir as mkdir3 } from "node:fs/promises";
-import { existsSync as existsSync2 } from "node:fs";
+import { existsSync } from "node:fs";
 import { join as join4, resolve as resolve4 } from "node:path";
 async function startDashboardServer(port) {
   const dashboardServer = await Promise.resolve().then(() => (init_dashboard_server(), dashboard_server_exports));
@@ -4267,7 +4267,7 @@ async function startDashboardServer(port) {
 async function preloadContracts(directory, dbLocation) {
   console.log(colors.blue("\u{1F4E6} Preloading contract manifests into database..."));
   const contractsDir = join4(directory, "contracts");
-  if (!existsSync2(contractsDir)) {
+  if (!existsSync(contractsDir)) {
     console.log(colors.yellow("\u26A0\uFE0F  No contracts directory found, skipping contract preloading"));
     return;
   }
@@ -4296,7 +4296,7 @@ async function preloadContracts(directory, dbLocation) {
     }
     console.log(colors.blue(`\u{1F4CB} Found ${manifestFiles.length} contract manifest(s) to deploy`));
     const deployTarget = dbLocation || resolve4(join4(directory, "data"));
-    if (!existsSync2(deployTarget)) {
+    if (!existsSync(deployTarget)) {
       console.log(colors.blue(`\u{1F4C1} Creating deploy target directory: ${deployTarget}`));
       await mkdir3(deployTarget, { recursive: true });
     }
@@ -4471,7 +4471,7 @@ function version() {
 // src/dev.ts
 init_deps();
 import { mkdir as mkdir4, readdir as readdir4 } from "node:fs/promises";
-import { existsSync as existsSync3, watch } from "node:fs";
+import { existsSync as existsSync2, watch } from "node:fs";
 import { resolve as resolve5, join as join5 } from "node:path";
 import process13 from "node:process";
 var DevEnvironment = class {
@@ -4538,7 +4538,7 @@ var DevEnvironment = class {
   async startContractWatching() {
     console.log(colors.blue("\u{1F440} Setting up contract file watching..."));
     const contractsDir = join5(this.projectRoot, "contracts");
-    if (!existsSync3(contractsDir)) {
+    if (!existsSync2(contractsDir)) {
       console.log(colors.yellow("\u26A0\uFE0F  No contracts directory found, creating one..."));
       await mkdir4(contractsDir, { recursive: true });
       return;
@@ -4668,9 +4668,9 @@ function parseDevArgs(args) {
 
 // src/pin.ts
 init_deps();
-import { readFile as readFile4, writeFile as writeFile2, mkdir as mkdir5, copyFile, readdir as readdir5 } from "node:fs/promises";
-import { existsSync as existsSync4 } from "node:fs";
-import { resolve as resolve6, join as join6, dirname as dirname4, basename as basename4 } from "node:path";
+import { readFile as readFile4, writeFile as writeFile2, mkdir as mkdir5, copyFile } from "node:fs/promises";
+import { existsSync as existsSync3 } from "node:fs";
+import { resolve as resolve6, join as join6, dirname as dirname4 } from "node:path";
 import process14 from "node:process";
 var ContractPinner = class {
   projectRoot;
@@ -4682,44 +4682,157 @@ var ContractPinner = class {
     this.cheloniaConfig = { contracts: {} };
   }
   /**
-   * Pin a specific contract to a version
-   *
-   * @param version - The version to pin to (e.g., '2.0.3')
-   * @param contractPath - Path to the contract file to pin (e.g., 'frontend/model/contracts/chatroom.js')
+   * Main pin method - takes a manifest file directly as input
+   * @param version - The version to pin to
+   * @param manifestPath - Path to the manifest file (required)
    */
-  async pin(version2, contractPath) {
+  async pin(version2, manifestPath) {
     if (!version2 || typeof version2 !== "string") {
-      throw new Error("Usage: chel pin <version> [contract-file-path]");
+      throw new Error("Usage: chel pin <version> <manifest-file-path>");
     }
-    if (!contractPath) {
-      await this.showAvailableContracts();
+    if (!manifestPath) {
+      await this.showUsage();
       return;
     }
     console.log(colors.cyan(`\u{1F4CC} Pinning contract to version: ${version2}`));
-    console.log(colors.gray(`Contract: ${contractPath}`));
+    console.log(colors.gray(`Manifest: ${manifestPath}`));
     await this.loadCheloniaConfig();
-    const contractName = this.extractContractName(contractPath);
+    const fullManifestPath = join6(this.projectRoot, manifestPath);
+    if (!existsSync3(fullManifestPath)) {
+      throw new Error(`Manifest file not found: ${manifestPath}`);
+    }
+    const { contractName, contractFiles } = await this.parseManifest(fullManifestPath);
     console.log(colors.blue(`Contract name: ${contractName}`));
-    const fullContractPath = join6(this.projectRoot, contractPath);
-    if (!existsSync4(fullContractPath)) {
-      throw new Error(`Contract file not found: ${contractPath}`);
-    }
     const contractVersionDir = join6(this.projectRoot, "contracts", contractName, version2);
-    if (existsSync4(contractVersionDir)) {
-      if (this.options["only-changed"] || this.options.overwrite) {
-        console.log(colors.yellow(`Version ${version2} already exists for ${contractName} - updating configuration only`));
-        console.log(colors.gray("Existing version directory preserved as-is"));
-        await this.updateCheloniaConfig(contractName, version2, contractPath);
-        return;
-      } else {
-        throw new Error(`Version ${version2} already exists for contract ${contractName}. Use --overwrite to replace it, or --only-changed to switch to it`);
+    if (existsSync3(contractVersionDir)) {
+      if (!this.options.overwrite && !this.options["only-changed"]) {
+        throw new Error(`Version ${version2} already exists for contract ${contractName}. Use --overwrite to replace it, or --only-changed to update only changed files`);
       }
+      console.log(colors.yellow(`Version ${version2} already exists for ${contractName} - checking files...`));
+    } else {
+      await this.createVersionDirectory(contractName, version2);
     }
-    await this.createVersionDirectory(contractName, version2);
-    await this.copyContractFiles(contractPath, contractName, version2);
-    await this.updateCheloniaConfig(contractName, version2, contractPath);
+    await this.copyContractFiles(manifestPath, contractFiles, contractName, version2);
+    await this.updateCheloniaConfig(contractName, version2, manifestPath);
     console.log(colors.green(`\u2705 Successfully pinned ${contractName} to version ${version2}`));
     console.log(colors.gray(`Location: contracts/${contractName}/${version2}/`));
+  }
+  /**
+   * Parse manifest file to extract contract information
+   * @param manifestPath - Path to the manifest file
+   * @returns Object containing contract name and file information
+   */
+  async parseManifest(manifestPath) {
+    try {
+      const manifestContent = await readFile4(manifestPath, "utf8");
+      const manifest2 = JSON.parse(manifestContent);
+      const body = JSON.parse(manifest2.body);
+      const fullContractName = body.name;
+      const mainFile = body.contract.file;
+      const slimFile = body.contractSlim?.file;
+      if (!fullContractName || !mainFile) {
+        throw new Error("Invalid manifest: missing contract name or main file");
+      }
+      const contractName = fullContractName.split("/").pop() || fullContractName;
+      return {
+        contractName,
+        contractFiles: {
+          main: mainFile,
+          slim: slimFile
+        }
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to parse manifest file: ${errorMessage}`);
+    }
+  }
+  /**
+   * Show usage information and currently pinned contracts
+   */
+  showUsage() {
+    console.log(colors.cyan("\u{1F4CB} Contract Pinning Usage:"));
+    console.log(colors.gray("Usage: chel pin <version> <manifest-file-path>"));
+    console.log();
+    console.log(colors.yellow("\u{1F4DD} Note: Specify the full path to your manifest file."));
+    console.log(colors.gray("   Generate manifests first using: chel manifest <contract-file>"));
+    console.log(colors.gray("   Example: chel pin 1.0.0 ./contracts/chatroom.1.0.0.manifest.json"));
+    console.log();
+    if (Object.keys(this.cheloniaConfig.contracts).length > 0) {
+      console.log(colors.cyan("\u{1F4CC} Currently pinned contracts:"));
+      for (const [name, config] of Object.entries(this.cheloniaConfig.contracts)) {
+        console.log(`  ${colors.green(name)} - ${colors.blue(config.version)} (${colors.gray(config.path)})`);
+      }
+      console.log();
+    } else {
+      console.log(colors.gray("No contracts currently pinned."));
+      console.log();
+    }
+  }
+  /**
+   * Create the directory structure for a contract version
+   * Structure: contracts/<contractName>/<version>/
+   */
+  async createVersionDirectory(contractName, version2) {
+    const versionDir = join6(this.projectRoot, "contracts", contractName, version2);
+    console.log(colors.blue(`\u{1F4C1} Creating directory: contracts/${contractName}/${version2}/`));
+    await mkdir5(versionDir, { recursive: true });
+  }
+  /**
+   * Copy contract files from manifest to target directory
+   * @param manifestPath - Path to the manifest file
+   * @param contractFiles - Contract file information from manifest
+   * @param contractName - Name of the contract
+   * @param version - Version to pin to
+   */
+  async copyContractFiles(manifestPath, contractFiles, contractName, version2) {
+    const sourceDir = dirname4(join6(this.projectRoot, manifestPath));
+    const targetDir = join6(this.projectRoot, "contracts", contractName, version2);
+    console.log(colors.gray(`\u{1F4CB} Copying files from manifest: ${contractFiles.main}${contractFiles.slim ? `, ${contractFiles.slim}` : ""}`));
+    const mainSource = join6(sourceDir, contractFiles.main);
+    const mainTarget = join6(targetDir, contractFiles.main);
+    await this.copyFileIfNeeded(mainSource, mainTarget, contractFiles.main);
+    if (contractFiles.slim) {
+      const slimSource = join6(sourceDir, contractFiles.slim);
+      const slimTarget = join6(targetDir, contractFiles.slim);
+      try {
+        await this.copyFileIfNeeded(slimSource, slimTarget, contractFiles.slim);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.log(colors.yellow(`\u26A0\uFE0F  Could not copy slim file: ${errorMessage}`));
+      }
+    }
+  }
+  /**
+   * Copy a file only if needed based on --overwrite and --only-changed flags
+   * @param sourcePath - Source file path
+   * @param targetPath - Target file path
+   * @param fileName - File name for logging
+   */
+  async copyFileIfNeeded(sourcePath, targetPath, fileName) {
+    const targetExists = existsSync3(targetPath);
+    if (!targetExists) {
+      console.log(colors.blue(`\u{1F4C4} Copying: ${fileName} (new file)`));
+      await copyFile(sourcePath, targetPath);
+      return;
+    }
+    if (targetExists && !this.options.overwrite) {
+      console.log(colors.yellow(`\u23ED\uFE0F  Skipping: ${fileName} (already exists, use --overwrite to replace)`));
+      return;
+    }
+    if (this.options["only-changed"]) {
+      const sourceContent = await readFile4(sourcePath, "utf8");
+      const targetContent = await readFile4(targetPath, "utf8");
+      if (sourceContent === targetContent) {
+        console.log(colors.gray(`\u23ED\uFE0F  Skipping: ${fileName} (unchanged)`));
+        return;
+      } else {
+        console.log(colors.blue(`\u{1F4C4} Copying: ${fileName} (changed)`));
+        await copyFile(sourcePath, targetPath);
+        return;
+      }
+    }
+    console.log(colors.blue(`\u{1F4C4} Copying: ${fileName} (overwriting)`));
+    await copyFile(sourcePath, targetPath);
   }
   /**
    * Load chelonia.json configuration file
@@ -4727,7 +4840,7 @@ var ContractPinner = class {
    */
   async loadCheloniaConfig() {
     const configPath = join6(this.projectRoot, "chelonia.json");
-    if (existsSync4(configPath)) {
+    if (existsSync3(configPath)) {
       try {
         const configContent = await readFile4(configPath, "utf8");
         this.cheloniaConfig = JSON.parse(configContent);
@@ -4743,111 +4856,15 @@ var ContractPinner = class {
     }
   }
   /**
-   * Extract contract name from file path
-   * Examples:
-   * - 'frontend/model/contracts/chatroom.js' -> 'chatroom'
-   * - 'contracts/identity.js' -> 'identity'
-   * - 'src/contracts/group.js' -> 'group'
-   */
-  extractContractName(contractPath) {
-    const fileName = basename4(contractPath);
-    return fileName.replace(/(-slim)?\.js$/, "");
-  }
-  /**
-   * Show available contracts in the project
-   * This helps users know what contracts they can pin
-   */
-  async showAvailableContracts() {
-    console.log(colors.cyan("\u{1F4CB} Available contracts to pin:"));
-    console.log(colors.gray("Usage: chel pin <version> <contract-file-path>"));
-    console.log();
-    const commonPaths = [
-      "frontend/model/contracts",
-      "contracts",
-      "src/contracts"
-    ];
-    let foundContracts = false;
-    for (const searchPath of commonPaths) {
-      const fullPath = join6(this.projectRoot, searchPath);
-      if (existsSync4(fullPath)) {
-        try {
-          const files = await readdir5(fullPath);
-          const manifestFiles = files.filter((f) => f.endsWith(".manifest.json"));
-          if (manifestFiles.length > 0) {
-            console.log(colors.blue(`\u{1F4C1} ${searchPath}/`));
-            for (const file of manifestFiles) {
-              const contractName = file.replace(".manifest.json", "");
-              const relativePath = join6(searchPath, file);
-              console.log(`  ${colors.green(contractName)} - ${colors.gray(relativePath)}`);
-            }
-            console.log();
-            foundContracts = true;
-          }
-        } catch {
-        }
-      }
-    }
-    if (!foundContracts) {
-      console.log(colors.yellow("No contract files found in common locations."));
-      console.log(colors.gray("Make sure your contract files end with .js and are in a contracts/ directory."));
-    }
-    if (Object.keys(this.cheloniaConfig.contracts).length > 0) {
-      console.log(colors.cyan("\u{1F4CC} Currently pinned contracts:"));
-      for (const [name, config] of Object.entries(this.cheloniaConfig.contracts)) {
-        console.log(`  ${colors.green(name)} - ${colors.blue(config.version)} (${colors.gray(config.path)})`);
-      }
-    }
-  }
-  /**
-   * Create the directory structure for a contract version
-   * Structure: contracts/<contractName>/<version>/
-   */
-  async createVersionDirectory(contractName, version2) {
-    const versionDir = join6(this.projectRoot, "contracts", contractName, version2);
-    console.log(colors.blue(`\u{1F4C1} Creating directory: contracts/${contractName}/${version2}/`));
-    await mkdir5(versionDir, { recursive: true });
-  }
-  /**
-   * Copy contract files to the version directory
-   * This includes both the main contract and its slim version if it exists
-   */
-  async copyContractFiles(contractPath, contractName, version2) {
-    const sourceDir = dirname4(join6(this.projectRoot, contractPath));
-    const targetDir = join6(this.projectRoot, "contracts", contractName, version2);
-    const mainFile = `${contractName}.js`;
-    const mainSource = join6(sourceDir, mainFile);
-    const mainTarget = join6(targetDir, mainFile);
-    if (existsSync4(mainSource)) {
-      await copyFile(mainSource, mainTarget);
-      console.log(colors.green(`\u2705 Copied ${mainFile}`));
-    } else {
-      throw new Error(`Main contract file not found: ${mainSource}`);
-    }
-    const slimFile = `${contractName}-slim.js`;
-    const slimSource = join6(sourceDir, slimFile);
-    const slimTarget = join6(targetDir, slimFile);
-    if (existsSync4(slimSource)) {
-      await copyFile(slimSource, slimTarget);
-      console.log(colors.green(`\u2705 Copied ${slimFile}`));
-    } else {
-      console.log(colors.yellow(`\u26A0\uFE0F  Slim version not found: ${slimFile} (this is optional)`));
-    }
-    const manifestFile = `${contractName}.manifest.json`;
-    const manifestSource = join6(sourceDir, manifestFile);
-    const manifestTarget = join6(targetDir, manifestFile);
-    if (existsSync4(manifestSource)) {
-      await copyFile(manifestSource, manifestTarget);
-      console.log(colors.green(`\u2705 Copied ${manifestFile}`));
-    }
-  }
-  /**
    * Update chelonia.json with the new contract version
-   * This only updates the specific contract being pinned
+   * @param contractName - Name of the contract
+   * @param version - Version being pinned
+   * @param manifestPath - Path to the manifest file
    */
-  async updateCheloniaConfig(contractName, version2, contractPath) {
+  async updateCheloniaConfig(contractName, version2, manifestPath) {
     this.cheloniaConfig.contracts[contractName] = {
       version: version2,
-      path: contractPath
+      path: manifestPath
     };
     const configPath = join6(this.projectRoot, "chelonia.json");
     const configContent = JSON.stringify(this.cheloniaConfig, null, 2) + "\n";
@@ -4856,11 +4873,10 @@ var ContractPinner = class {
     console.log(colors.gray(`Set ${contractName} to version ${version2}`));
   }
 };
-async function pin(args) {
-  const { version: version2, contractPath, directory, options: options2 } = parsePinArgs(args);
+async function pinContracts(version2, manifestPath, directory, options2) {
   try {
     const pinner = new ContractPinner(directory, options2);
-    await pinner.pin(version2, contractPath);
+    await pinner.pin(version2, manifestPath);
   } catch (error) {
     console.error(colors.red("\u274C Pin failed:"), error instanceof Error ? error.message : error);
     process14.exit(1);
@@ -4875,16 +4891,26 @@ function parsePinArgs(args) {
     }
   });
   const version2 = parsed._[0]?.toString();
-  const contractPath = parsed._[1]?.toString();
+  const manifestPath = parsed._[1]?.toString();
   const directory = process14.cwd();
   if (!version2) {
-    throw new Error("Usage: chel pin <version> [contract-file-path]");
+    throw new Error("Usage: chel pin <version> <manifest-file-path>");
   }
   const options2 = {
     overwrite: parsed.overwrite,
     "only-changed": parsed["only-changed"]
   };
-  return { version: version2, contractPath, directory, options: options2 };
+  return { version: version2, manifestPath, directory, options: options2 };
+}
+async function pin(args) {
+  if (args.length === 0) {
+    const pinner = new ContractPinner(process14.cwd(), {});
+    await pinner.loadCheloniaConfig();
+    pinner.showUsage();
+    return;
+  }
+  const { version: version2, manifestPath, directory, options: options2 } = parsePinArgs(args);
+  await pinContracts(version2, manifestPath, directory, options2);
 }
 
 // src/main.ts
