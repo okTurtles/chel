@@ -10,7 +10,7 @@ chel help [command]
 chel version
 chel dev [--dp <port>] [--port <port>] [--debug]
 chel build
-chel pin <version> <contract-file-path> [--only-changed | --overwrite]
+chel pin <version> <manifest-file-path> [--only-changed | --overwrite]
 chel test
 chel keygen [--out=<key.json>]
 chel manifest [-k|--key <pubkey1> [-k|--key <pubkey2> ...]] [--out=<manifest.json>] [-s|--slim <contract-slim.js>] [-v|--version <version>] <key.json> <contract-bundle.js>
@@ -32,21 +32,26 @@ Note: in many (if not all) instances, the `<url>` parameter can refer to a local
 
 **Key Features:**
 - ✅ **Per-contract versioning** using `chelonia.json` configuration
-- ✅ **Individual contract pinning** by specifying contract file path
+- ✅ **Individual contract pinning** by specifying manifest file path
 - ✅ **New directory structure**: `contracts/<contract-name>/<version>/`
-- ✅ **Automatic manifest generation** with proper deployment format
+- ✅ **Manifest-based workflow** - requires existing manifest files
 - ✅ **Ecosystem-agnostic** - no coupling to Node.js/npm
+
+**Workflow:**
+1. **Generate manifest first**: Use `chel manifest` to create `.manifest.json` files
+2. **Pin from manifest**: Use `chel pin` with the manifest file path
+3. **Contract files copied**: Only contract files (main/slim) are copied to new structure
 
 **Usage Examples:**
 ```bash
-chel pin <version> <contract-file-path>
+chel pin <version> <manifest-file-path>
 
-# Pin specific contract to a version
-chel pin 2.0.5 contracts/2.0.0/chatroom.js
-chel pin 2.0.0 contracts/2.0.0/group.js
+# Pin specific contract to a version using its manifest
+chel pin 2.0.5 contracts/2.0.0/chatroom.2.0.0.manifest.json
+chel pin 2.0.0 contracts/2.0.0/group.2.0.0.manifest.json
 
 # Switch versions efficiently with --only-changed
-chel pin 2.0.6 contracts/2.0.0/chatroom.js --only-changed
+chel pin 2.0.6 contracts/2.0.0/chatroom.2.0.0.manifest.json --only-changed
 ```
 
 **Configuration (`chelonia.json`):**
@@ -55,11 +60,11 @@ chel pin 2.0.6 contracts/2.0.0/chatroom.js --only-changed
   "contracts": {
     "chatroom": {
       "version": "2.0.6",
-      "path": "contracts/2.0.0/chatroom.js"
+      "path": "contracts/2.0.0/chatroom.2.0.0.manifest.json"
     },
     "group": {
       "version": "2.0.0",
-      "path": "contracts/2.0.0/group.js"
+      "path": "contracts/2.0.0/group.2.0.0.manifest.json"
     }
   }
 }
@@ -71,18 +76,17 @@ contracts/
 ├── chatroom/
 │   ├── 2.0.5/
 │   │   ├── chatroom.js
-│   │   ├── chatroom-slim.js
-│   │   └── chatroom.manifest.json
+│   │   └── chatroom-slim.js
 │   └── 2.0.6/
 │       ├── chatroom.js
-│       ├── chatroom-slim.js
-│       └── chatroom.manifest.json
+│       └── chatroom-slim.js
 └── group/
     └── 2.0.0/
         ├── group.js
-        ├── group-slim.js
-        └── group.manifest.json
+        └── group-slim.js
 ```
+
+> **Note:** The pin command only copies contract files (main and slim) from existing manifest files. It does not copy or generate manifest files - those should be created separately using `chel manifest`.
 
 > [!IMPORTANT]  
 > **Contract Manifest Files:**
