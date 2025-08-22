@@ -46,12 +46,14 @@ Note: in many (if not all) instances, the `<url>` parameter can refer to a local
 ```bash
 chel pin <version> <manifest-file-path>
 
-# Pin specific contract to a version using its manifest
-chel pin 2.0.5 contracts/2.0.0/chatroom.2.0.0.manifest.json
-chel pin 2.0.0 contracts/2.0.0/group.2.0.0.manifest.json
+# Pin specific contract to a version using its manifest (from dist/contracts)
+chel pin 2.0.5 dist/contracts/chatroom.2.0.5.manifest.json
+chel pin 2.0.0 dist/contracts/group.2.0.0.manifest.json
 
 # Switch versions efficiently with --only-changed
-chel pin 2.0.6 contracts/2.0.0/chatroom.2.0.0.manifest.json --only-changed
+chel pin 2.0.6 dist/contracts/chatroom.2.0.6.manifest.json --only-changed
+
+# Note: Contracts are pinned to the contracts/ output directory
 ```
 
 **Configuration (`chelonia.json`):**
@@ -60,11 +62,11 @@ chel pin 2.0.6 contracts/2.0.0/chatroom.2.0.0.manifest.json --only-changed
   "contracts": {
     "chatroom": {
       "version": "2.0.6",
-      "path": "contracts/2.0.0/chatroom.2.0.0.manifest.json"
+      "path": "dist/contracts/chatroom.2.0.6.manifest.json"
     },
     "group": {
       "version": "2.0.0",
-      "path": "contracts/2.0.0/group.2.0.0.manifest.json"
+      "path": "dist/contracts/group.2.0.0.manifest.json"
     }
   }
 }
