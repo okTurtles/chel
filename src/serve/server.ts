@@ -304,11 +304,8 @@ sbp('sbp/selectors/register', {
     })
   },
   'backend/server/updateContractFilesTotalSize': function (resourceID: string, size: number) {
-    const contractsIndex = sbp('okTurtles.data/get', 'contractsIndex')
-    for (const [,] of Object.entries(contractsIndex)) {
-      const sizeKey = `_private_contractFilesTotalSize_${resourceID}`
-      return updateSize(resourceID, sizeKey, size, true)
-    }
+    const sizeKey = `_private_contractFilesTotalSize_${resourceID}`
+    return updateSize(resourceID, sizeKey, size, true)
   },
   'backend/server/stop': function () {
     return hapi.stop()
@@ -348,8 +345,8 @@ sbp('sbp/selectors/register', {
     await sbp('chelonia.db/set', cid, '')
     await sbp('backend/server/updateContractFilesTotalSize', owner, -Number(size))
 
-    if (ultimateOwnerID && size && ownerSizeTotalWorker) {
-      await ownerSizeTotalWorker.rpcSbp('worker/updateSizeSideEffects', { resourceID: cid, size: -parseInt(size), ultimateOwnerID })
+    if (ultimateOwnerID && size) {
+      await ownerSizeTotalWorker?.rpcSbp('worker/updateSizeSideEffects', { resourceID: cid, size: -parseInt(size), ultimateOwnerID })
     }
   },
   async 'backend/deleteContract' (cid: string, ultimateOwnerID?: string | null, skipIfDeleted?: boolean | null): Promise<void> {
@@ -458,8 +455,8 @@ sbp('sbp/selectors/register', {
       await sbp('chelonia.db/set', cid, '')
       sbp('chelonia/private/removeImmediately', cid)
 
-      if (size && ownerSizeTotalWorker) {
-        await ownerSizeTotalWorker.rpcSbp('worker/updateSizeSideEffects', { resourceID: cid, size: -parseInt(size), ultimateOwnerID })
+      if (size) {
+        await ownerSizeTotalWorker?.rpcSbp('worker/updateSizeSideEffects', { resourceID: cid, size: -parseInt(size), ultimateOwnerID })
       }
 
       await sbp('chelonia.db/delete', `_private_cheloniaState_${cid}`)
@@ -535,7 +532,7 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
 
       if (handler) {
         try {
-          await (handler as (socket: unknown, payload: unknown) => Promise<void>)(socket, payload)
+          await (handler as (this: unknown, payload: unknown) => Promise<void>).call(socket, payload)
         } catch (error) {
           const message = (error as Record<string, unknown>)?.message || `push server failed to perform [${action}] action`
           console.warn(error, `[${(socket as Record<string, unknown>).ip}] Action '${action}' for '${REQUEST_TYPE.PUSH_ACTION}' handler failed: ${message}`)
@@ -578,8 +575,8 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
 
 ;(async function () {
   await initDB()
-  if (ownerSizeTotalWorker) await ownerSizeTotalWorker.ready
-  if (creditsWorker) await creditsWorker.ready
+  await ownerSizeTotalWorker?.ready
+  await creditsWorker?.ready
   await sbp('chelonia/configure', SERVER)
   sbp('chelonia.persistentActions/configure', {
     databaseKey: '_private_persistent_actions'

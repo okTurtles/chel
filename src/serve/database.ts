@@ -70,7 +70,7 @@ export const updateSize = async (resourceID: string, sizeKey: string, size: numb
 // Streams stored contract log entries since the given entry hash (inclusive!).
 export default sbp('sbp/selectors/register', {
   'backend/db/streamEntriesAfter': async function (contractID: string, height: number, requestedLimit?: number, options: { keyOps?: boolean } = {}): Promise<unknown> {
-    const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, parseInt(process.env.MAX_EVENTS_BATCH_SIZE!) || 500)
+    const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, process.env.MAX_EVENTS_BATCH_SIZE ? parseInt(process.env.MAX_EVENTS_BATCH_SIZE) : 500)
     const latestHEADinfo = await sbp('chelonia/db/latestHEADinfo', contractID)
     if (latestHEADinfo === '') {
       throw Boom.resourceGone(`contractID ${contractID} has been deleted!`)
@@ -324,9 +324,9 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
       .filter(k => {
         if (k.length !== HASH_LENGTH) return false
         const parsed = maybeParseCID(k)
-        return ([
+        return parsed && ([
           multicodes.SHELTER_CONTRACT_MANIFEST,
-          multicodes.SHELTER_CONTRACT_TEXT].includes(parsed?.code ?? -1)
+          multicodes.SHELTER_CONTRACT_TEXT].includes(parsed.code)
         )
       })
     const numKeys = keys.length

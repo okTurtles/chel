@@ -13,35 +13,24 @@ function logMethod (this: unknown, args: unknown[], method: (...args: unknown[])
   method.apply(this, args)
 }
 
-// Try to use pino-pretty transport, fall back to basic config if it fails
-let logger: {
+const logger = (pino as unknown as (config: unknown) => {
   level: string;
   levels: { values: Record<string, unknown> };
   debug: (...args: unknown[]) => void;
   info: (...args: unknown[]) => void;
   warn: (...args: unknown[]) => void;
   error: (...args: unknown[]) => void;
-}
-
-if (prettyPrint) {
-  try {
-    logger = (pino as unknown as (config: unknown) => typeof logger)({
-      hooks: { logMethod },
-      transport: {
-        target: 'pino-pretty',
-        options: {
-          colorize: true
-        }
+})(prettyPrint
+  ? {
+    hooks: { logMethod },
+    transport: {
+      target: 'pino-pretty',
+      options: {
+        colorize: true
       }
-    })
-  } catch (e) {
-    // Fall back to basic config if pino-pretty transport fails (e.g., in CI)
-    console.warn('pino-pretty transport unavailable, using basic logging', e)
-    logger = (pino as unknown as (config: unknown) => typeof logger)({ hooks: { logMethod } })
+    }
   }
-} else {
-  logger = (pino as unknown as (config: unknown) => typeof logger)({ hooks: { logMethod } })
-}
+  : { hooks: { logMethod } })
 
 const logLevel = process.env.LOG_LEVEL || (prettyPrint ? 'debug' : 'info')
 if (Object.keys(logger.levels.values).includes(logLevel)) {

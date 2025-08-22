@@ -518,24 +518,15 @@ var init_logger = __esm({
     "use strict";
     init_deps();
     prettyPrint = process2.env.NODE_ENV === "development" || process2.env.CI || process2.env.CYPRESS_RECORD_KEY || process2.env.PRETTY;
-    if (prettyPrint) {
-      try {
-        logger2 = default9({
-          hooks: { logMethod },
-          transport: {
-            target: "pino-pretty",
-            options: {
-              colorize: true
-            }
-          }
-        });
-      } catch (e) {
-        console.warn("pino-pretty transport unavailable, using basic logging", e);
-        logger2 = default9({ hooks: { logMethod } });
+    logger2 = default9(prettyPrint ? {
+      hooks: { logMethod },
+      transport: {
+        target: "pino-pretty",
+        options: {
+          colorize: true
+        }
       }
-    } else {
-      logger2 = default9({ hooks: { logMethod } });
-    }
+    } : { hooks: { logMethod } });
     logLevel = process2.env.LOG_LEVEL || (prettyPrint ? "debug" : "info");
     if (Object.keys(logger2.levels.values).includes(logLevel)) {
       logger2.level = logLevel;
@@ -1426,7 +1417,7 @@ var init_database = __esm({
     };
     database_default = default4("sbp/selectors/register", {
       "backend/db/streamEntriesAfter": async function(contractID, height, requestedLimit, options2 = {}) {
-        const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, parseInt(process7.env.MAX_EVENTS_BATCH_SIZE) || 500);
+        const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, process7.env.MAX_EVENTS_BATCH_SIZE ? parseInt(process7.env.MAX_EVENTS_BATCH_SIZE) : 500);
         const latestHEADinfo = await default4("chelonia/db/latestHEADinfo", contractID);
         if (latestHEADinfo === "") {
           throw default5.resourceGone(`contractID ${contractID} has been deleted!`);
@@ -1600,10 +1591,10 @@ var init_database = __esm({
         const keys = (await readdir2(dataFolder3)).filter((k) => {
           if (k.length !== HASH_LENGTH) return false;
           const parsed = maybeParseCID(k);
-          return [
+          return parsed && [
             multicodes.SHELTER_CONTRACT_MANIFEST,
             multicodes.SHELTER_CONTRACT_TEXT
-          ].includes(parsed?.code ?? -1);
+          ].includes(parsed.code);
         });
         const numKeys = keys.length;
         let numVisitedKeys = 0;
@@ -3431,11 +3422,8 @@ var init_server = __esm({
         });
       },
       "backend/server/updateContractFilesTotalSize": function(resourceID, size) {
-        const contractsIndex = default4("okTurtles.data/get", "contractsIndex");
-        for (const [,] of Object.entries(contractsIndex)) {
-          const sizeKey = `_private_contractFilesTotalSize_${resourceID}`;
-          return updateSize(resourceID, sizeKey, size, true);
-        }
+        const sizeKey = `_private_contractFilesTotalSize_${resourceID}`;
+        return updateSize(resourceID, sizeKey, size, true);
       },
       "backend/server/stop": function() {
         return hapi.stop();
@@ -3471,8 +3459,8 @@ var init_server = __esm({
         await default4("chelonia.db/delete", `_private_deletionTokenDgst_${cid}`);
         await default4("chelonia.db/set", cid, "");
         await default4("backend/server/updateContractFilesTotalSize", owner, -Number(size));
-        if (ultimateOwnerID && size && ownerSizeTotalWorker) {
-          await ownerSizeTotalWorker.rpcSbp("worker/updateSizeSideEffects", { resourceID: cid, size: -parseInt(size), ultimateOwnerID });
+        if (ultimateOwnerID && size) {
+          await ownerSizeTotalWorker?.rpcSbp("worker/updateSizeSideEffects", { resourceID: cid, size: -parseInt(size), ultimateOwnerID });
         }
       },
       async "backend/deleteContract"(cid, ultimateOwnerID, skipIfDeleted) {
@@ -3556,8 +3544,8 @@ var init_server = __esm({
           await default4("chelonia.db/delete", `_private_keyop_idx_${cid}_0`);
           await default4("chelonia.db/set", cid, "");
           default4("chelonia/private/removeImmediately", cid);
-          if (size && ownerSizeTotalWorker) {
-            await ownerSizeTotalWorker.rpcSbp("worker/updateSizeSideEffects", { resourceID: cid, size: -parseInt(size), ultimateOwnerID });
+          if (size) {
+            await ownerSizeTotalWorker?.rpcSbp("worker/updateSizeSideEffects", { resourceID: cid, size: -parseInt(size), ultimateOwnerID });
           }
           await default4("chelonia.db/delete", `_private_cheloniaState_${cid}`);
           await removeFromIndexFactory("_private_cheloniaState_index")(cid);
@@ -3625,7 +3613,7 @@ var init_server = __esm({
           const handler = pushServerActionhandlers[action];
           if (handler) {
             try {
-              await handler(socket, payload);
+              await handler.call(socket, payload);
             } catch (error) {
               const message = error?.message || `push server failed to perform [${action}] action`;
               console.warn(error, `[${socket.ip}] Action '${action}' for '${REQUEST_TYPE.PUSH_ACTION}' handler failed: ${message}`);
@@ -3666,8 +3654,8 @@ var init_server = __esm({
     }));
     (async function() {
       await initDB();
-      if (ownerSizeTotalWorker) await ownerSizeTotalWorker.ready;
-      if (creditsWorker) await creditsWorker.ready;
+      await ownerSizeTotalWorker?.ready;
+      await creditsWorker?.ready;
       await default4("chelonia/configure", SERVER);
       default4("chelonia.persistentActions/configure", {
         databaseKey: "_private_persistent_actions"
@@ -3734,12 +3722,13 @@ var init_server = __esm({
         Object.values(pubsub.pushSubscriptions || {}).filter(
           (pushSubscription) => !!pushSubscription.settings?.heartbeatInterval && pushSubscription.sockets.size === 0
         ).forEach((pushSubscription) => {
-          const last = map.get(pushSubscription) ?? Number.NEGATIVE_INFINITY;
-          if (now - last < pushSubscription.settings.heartbeatInterval) return;
-          postEvent(pushSubscription, notification).then(() => {
-            map.set(pushSubscription, now);
+          const subscription = pushSubscription;
+          const last = map.get(subscription) ?? Number.NEGATIVE_INFINITY;
+          if (now - last < subscription.settings.heartbeatInterval) return;
+          postEvent(subscription, notification).then(() => {
+            map.set(subscription, now);
           }).catch((e) => {
-            console.warn(e, "Error sending recurring message to web push client", pushSubscription.id);
+            console.warn(e, "Error sending recurring message to web push client", subscription.id);
           });
         });
       }, 1 * 60 * 60 * 1e3);

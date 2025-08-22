@@ -711,7 +711,7 @@ var updateSize = async (resourceID, sizeKey, size, skipIfDeleted) => {
 };
 var database_default = default4("sbp/selectors/register", {
   "backend/db/streamEntriesAfter": async function(contractID, height, requestedLimit, options2 = {}) {
-    const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, parseInt(process5.env.MAX_EVENTS_BATCH_SIZE) || 500);
+    const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, process5.env.MAX_EVENTS_BATCH_SIZE ? parseInt(process5.env.MAX_EVENTS_BATCH_SIZE) : 500);
     const latestHEADinfo = await default4("chelonia/db/latestHEADinfo", contractID);
     if (latestHEADinfo === "") {
       throw default5.resourceGone(`contractID ${contractID} has been deleted!`);
@@ -888,10 +888,10 @@ var initDB = async ({ skipDbPreloading } = {}) => {
     const keys = (await readdir2(dataFolder)).filter((k) => {
       if (k.length !== HASH_LENGTH) return false;
       const parsed = maybeParseCID(k);
-      return [
+      return parsed && [
         multicodes.SHELTER_CONTRACT_MANIFEST,
         multicodes.SHELTER_CONTRACT_TEXT
-      ].includes(parsed?.code ?? -1);
+      ].includes(parsed.code);
     });
     const numKeys = keys.length;
     let numVisitedKeys = 0;
@@ -1000,25 +1000,15 @@ function logMethod(args, method) {
   }
   method.apply(this, args);
 }
-var logger;
-if (prettyPrint) {
-  try {
-    logger = default9({
-      hooks: { logMethod },
-      transport: {
-        target: "pino-pretty",
-        options: {
-          colorize: true
-        }
-      }
-    });
-  } catch (e) {
-    console.warn("pino-pretty transport unavailable, using basic logging", e);
-    logger = default9({ hooks: { logMethod } });
+var logger = default9(prettyPrint ? {
+  hooks: { logMethod },
+  transport: {
+    target: "pino-pretty",
+    options: {
+      colorize: true
+    }
   }
-} else {
-  logger = default9({ hooks: { logMethod } });
-}
+} : { hooks: { logMethod } });
 var logLevel = process6.env.LOG_LEVEL || (prettyPrint ? "debug" : "info");
 if (Object.keys(logger.levels.values).includes(logLevel)) {
   logger.level = logLevel;
