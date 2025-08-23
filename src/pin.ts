@@ -59,8 +59,8 @@ class ContractPinner {
   }
 
   /**
-   * Main pin method - takes a manifest file directly as input
-   * @param version - The version to pin to
+   * Pin contracts with version validation - only pins if CLI version matches manifest version
+   * @param version - The version to pin to (must match manifest version)
    * @param manifestPath - Path to the manifest file (required)
    */
   async pin (version: string, manifestPath?: string) {
@@ -74,7 +74,7 @@ class ContractPinner {
       return
     }
 
-    console.log(colors.cyan(`📌 Pinning contract to version: ${version}`))
+    console.log(colors.cyan(`📌 Requesting pin to version: ${version}`))
     console.log(colors.gray(`Manifest: ${manifestPath}`))
 
     // Load existing chelonia.json configuration
@@ -86,9 +86,32 @@ class ContractPinner {
       throw new Error(`Manifest file not found: ${manifestPath}`)
     }
 
-    // Parse the manifest to get contract information
-    const { contractName, contractFiles } = await this.parseManifest(fullManifestPath)
+    // Parse the manifest to get contract information and version
+    const { contractName, contractFiles, version: manifestVersion } = await this.parseManifest(fullManifestPath)
     console.log(colors.blue(`Contract name: ${contractName}`))
+    console.log(colors.blue(`Manifest version: ${manifestVersion}`))
+
+    // VERSION VALIDATION: CLI version must match manifest version
+    if (version !== manifestVersion) {
+      console.log(colors.red(`❌ Version mismatch: CLI version (${version}) does not match manifest version (${manifestVersion})`))
+      console.log(colors.yellow(`💡 To pin this contract, use: chel pin ${manifestVersion} ${manifestPath}`))
+      return
+    }
+
+    console.log(colors.green(`✅ Version validation passed: ${version}`))
+
+    // Check if this contract is already pinned to the same version
+    const currentPinnedVersion = this.cheloniaConfig.contracts[contractName]?.version
+    if (currentPinnedVersion === version) {
+      console.log(colors.yellow(`✨ Contract ${contractName} is already pinned to version ${version} - no action needed`))
+      return
+    }
+
+    if (currentPinnedVersion) {
+      console.log(colors.cyan(`📌 Updating ${contractName} from version ${currentPinnedVersion} to ${version}`))
+    } else {
+      console.log(colors.cyan(`📌 Pinning ${contractName} to version ${version} (first time)`))
+    }
 
     // Check if this version already exists for this contract
     const contractVersionDir = join(this.projectRoot, 'contracts', contractName, version)
@@ -116,20 +139,21 @@ class ContractPinner {
   /**
    * Parse manifest file to extract contract information
    * @param manifestPath - Path to the manifest file
-   * @returns Object containing contract name and file information
+   * @returns Object containing contract name, version, and file information
    */
-  private async parseManifest (manifestPath: string): Promise<{ contractName: string, contractFiles: ContractFiles }> {
+  private async parseManifest (manifestPath: string): Promise<{ contractName: string, contractFiles: ContractFiles, version: string }> {
     try {
       const manifestContent = await readFile(manifestPath, 'utf8')
       const manifest = JSON.parse(manifestContent)
       const body = JSON.parse(manifest.body)
 
       const fullContractName = body.name
+      const version = body.version
       const mainFile = body.contract.file
       const slimFile = body.contractSlim?.file
 
-      if (!fullContractName || !mainFile) {
-        throw new Error('Invalid manifest: missing contract name or main file')
+      if (!fullContractName || !mainFile || !version) {
+        throw new Error('Invalid manifest: missing contract name, main file, or version')
       }
 
       // Extract just the contract name part (after the last slash)
@@ -138,6 +162,7 @@ class ContractPinner {
 
       return {
         contractName,
+        version,
         contractFiles: {
           main: mainFile,
           slim: slimFile
@@ -292,9 +317,12 @@ class ContractPinner {
    * Update chelonia.json with the new contract version
    * @param contractName - Name of the contract
    * @param version - Version being pinned
-   * @param manifestPath - Path to the manifest file
+   * @param manifestPath - Path to the original manifest file
    */
   private async updateCheloniaConfig (contractName: string, version: string, manifestPath: string) {
+    // Keep the original manifest path since we don't create manifests during pinning
+    // The manifest.ts command creates manifests in the source directory
+    
     // Update the contract configuration
     this.cheloniaConfig.contracts[contractName] = {
       version,
@@ -307,14 +335,13 @@ class ContractPinner {
 
     await writeFile(configPath, configContent, 'utf8')
     console.log(colors.green('✅ Updated chelonia.json'))
-    console.log(colors.gray(`Set ${contractName} to version ${version}`))
   }
 }
 
 /**
  * Main pin function that handles the pinning process
- * @param version - The version to pin to
- * @param manifestPath - Optional path to the manifest file
+ * @param version - The version to pin to (must match manifest version)
+ * @param manifestPath - Path to the manifest file
  * @param directory - Working directory (defaults to current directory)
  * @param options - Pin options (overwrite, only-changed)
  */
