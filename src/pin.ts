@@ -183,7 +183,7 @@ class ContractPinner {
     console.log()
     console.log(colors.yellow('📝 Note: Specify the full path to your manifest file.'))
     console.log(colors.gray('   Generate manifests first using: chel manifest <contract-file>'))
-    console.log(colors.gray('   Example: chel pin 1.0.0 ./contracts/chatroom.1.0.0.manifest.json'))
+    console.log(colors.gray('   Example: chel pin 1.0.0 ./dist/contracts/chatroom.1.0.0.manifest.json'))
     console.log()
 
     // Show current pinned contracts if any exist
