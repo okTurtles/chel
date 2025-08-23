@@ -1,5 +1,5 @@
 import { flags, colors } from './deps.ts'
-import { mkdir, readdir } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import { existsSync, watch } from 'node:fs'
 import { resolve, join } from 'node:path'
 import process from 'node:process'
@@ -15,6 +15,10 @@ interface DevOptions {
   'auto-test'?: boolean
   'interactive'?: boolean
   debug?: boolean
+}
+
+interface CheloniaConfig {
+  contracts: Record<string, { version: string, path: string }>
 }
 
 interface ContractChangeEvent {
@@ -49,6 +53,7 @@ class DevEnvironment {
   private metrics: DevMetrics
   private startTime: Date
   private contractChanges: ContractChangeEvent[] = []
+  private cheloniaConfig: CheloniaConfig = { contracts: {} }
 
   constructor (projectRoot: string, options: DevOptions) {
     this.projectRoot = resolve(projectRoot)
@@ -111,34 +116,80 @@ class DevEnvironment {
     console.log()
   }
 
+  private async loadCheloniaConfig () {
+    // Load chelonia.json to get known contracts and their manifest paths
+    const cheloniaConfigPath = join(this.projectRoot, 'chelonia.json')
+    if (existsSync(cheloniaConfigPath)) {
+      const cheloniaConfigContent = await readFile(cheloniaConfigPath, 'utf8')
+      this.cheloniaConfig = JSON.parse(cheloniaConfigContent)
+    } else {
+      console.log(colors.yellow('⚠️  No chelonia.json found'))
+      return
+    }
+  }
+
   private async startContractWatching () {
     console.log(colors.blue('👀 Setting up contract file watching...'))
-    const contractsDir = join(this.projectRoot, 'contracts')
 
-    if (!existsSync(contractsDir)) {
-      console.log(colors.yellow('⚠️  No contracts directory found, creating one...'))
-      await mkdir(contractsDir, { recursive: true })
+    // Load chelonia.json to get known contracts and their manifest paths
+    await this.loadCheloniaConfig()
+
+    const manifestPaths = Object.values(this.cheloniaConfig.contracts).map((contract: { version: string, path: string }) => contract.path)
+
+    if (manifestPaths.length === 0) {
+      console.log(colors.yellow('⚠️  No contracts found in chelonia.json'))
+      console.log(colors.gray('   Use `chel pin <version> <manifest-path>` to pin contracts first'))
       return
     }
 
     try {
-      // Watch for changes in contract files
-      const watcher = watch(contractsDir, { recursive: true }, (eventType, filename) => {
-        if (filename && (filename.endsWith('.js') || filename.endsWith('.json'))) {
-          this.handleContractChange(eventType, filename)
+      let totalWatchedFiles = 0
+
+      // Watch the specific manifest files from chelonia.json (no file extension scanning)
+      for (const manifestPath of manifestPaths) {
+        const fullManifestPath = join(this.projectRoot, manifestPath)
+        if (existsSync(fullManifestPath)) {
+          // Watch the manifest file itself
+          const manifestWatcher = watch(fullManifestPath, (eventType) => {
+            this.handleContractChange(eventType, manifestPath)
+          })
+          this.watchers.push(manifestWatcher)
+          totalWatchedFiles++
+
+          // Parse the manifest to get contract source files and watch them too
+          const contractInfo = await this.parseManifest(fullManifestPath)
+          if (contractInfo) {
+            const manifestDir = fullManifestPath.substring(0, fullManifestPath.lastIndexOf('/'))
+
+            // Watch main contract file
+            const mainContractPath = join(manifestDir, contractInfo.contractFiles.main)
+            if (existsSync(mainContractPath)) {
+              const mainWatcher = watch(mainContractPath, (eventType) => {
+                console.log(colors.yellow(`📝 Contract file ${eventType}: ${contractInfo.contractFiles.main}`))
+                this.handleContractChange(eventType, manifestPath) // Still trigger with manifest path
+              })
+              this.watchers.push(mainWatcher)
+              totalWatchedFiles++
+            }
+
+            // Watch slim contract file if it exists
+            if (contractInfo.contractFiles.slim) {
+              const slimContractPath = join(manifestDir, contractInfo.contractFiles.slim)
+              if (existsSync(slimContractPath)) {
+                const slimWatcher = watch(slimContractPath, (eventType) => {
+                  console.log(colors.yellow(`📝 Contract file ${eventType}: ${contractInfo.contractFiles.slim}`))
+                  this.handleContractChange(eventType, manifestPath) // Still trigger with manifest path
+                })
+                this.watchers.push(slimWatcher)
+                totalWatchedFiles++
+              }
+            }
+          }
         }
-      })
+      }
 
-      this.watchers.push(watcher)
-
-      // Count initial contracts by looking for manifest files
-      const entries = await readdir(contractsDir, { recursive: true })
-      const manifestFiles = (entries as unknown as string[]).filter((f) =>
-        typeof f === 'string' && f.endsWith('.manifest.json')
-      )
-      this.metrics.contractsWatched = manifestFiles.length
-
-      console.log(colors.green(`✅ Watching ${manifestFiles.length} contract files for changes`))
+      this.metrics.contractsWatched = totalWatchedFiles
+      console.log(colors.green(`✅ Watching ${totalWatchedFiles} files (manifests + contract sources) from chelonia.json`))
     } catch (error) {
       console.error(colors.red('❌ Error setting up file watching:'), error)
     }
@@ -181,6 +232,42 @@ class DevEnvironment {
       }
     } catch (error) {
       console.error(colors.red('❌ Hot reload failed:'), error)
+    }
+  }
+
+  /**
+   * Parse manifest file to extract contract information (similar to pin.ts)
+   */
+  private async parseManifest (manifestPath: string): Promise<{ contractName: string, contractFiles: { main: string, slim?: string }, version: string } | null> {
+    try {
+      const manifestContent = await readFile(manifestPath, 'utf8')
+      const manifest = JSON.parse(manifestContent)
+      const body = JSON.parse(manifest.body)
+
+      const fullContractName = body.name
+      const version = body.version
+      const mainFile = body.contract.file
+      const slimFile = body.contractSlim?.file
+
+      if (!fullContractName || !mainFile || !version) {
+        return null
+      }
+
+      // Extract just the contract name part (after the last slash)
+      // e.g., "gi.contracts/group" -> "group"
+      const contractName = fullContractName.split('/').pop() || fullContractName
+
+      return {
+        contractName,
+        version,
+        contractFiles: {
+          main: mainFile,
+          slim: slimFile
+        }
+      }
+    } catch (error) {
+      console.error(colors.red(`Failed to parse manifest ${manifestPath}:`), error)
+      return null
     }
   }
 
