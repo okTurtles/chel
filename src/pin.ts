@@ -1,7 +1,7 @@
 import { flags, colors } from './deps.ts'
 import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
-import { resolve, join, dirname } from 'node:path'
+import { resolve, join, dirname, basename } from 'node:path'
 import process from 'node:process'
 
 /**
@@ -320,13 +320,15 @@ class ContractPinner {
    * @param manifestPath - Path to the original manifest file
    */
   private async updateCheloniaConfig (contractName: string, version: string, manifestPath: string) {
-    // Keep the original manifest path since we don't create manifests during pinning
-    // The manifest.ts command creates manifests in the source directory
-    
+    // Generate the output path to the pinned contract's manifest in the contracts directory
+    // Structure: contracts/<contractName>/<version>/<contractName>.<version>.manifest.json
+    const manifestFileName = basename(manifestPath)
+    const pinnedManifestPath = `contracts/${contractName}/${version}/${manifestFileName}`
+
     // Update the contract configuration
     this.cheloniaConfig.contracts[contractName] = {
       version,
-      path: manifestPath
+      path: pinnedManifestPath
     }
 
     // Write the updated configuration back to chelonia.json

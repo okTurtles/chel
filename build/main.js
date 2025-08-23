@@ -3026,9 +3026,9 @@ var init_routes = __esm({
       }
     }, function(request, h) {
       const { subpath } = request.params;
-      const basename4 = path4.basename(subpath);
-      if (basename4.includes("-cached")) {
-        return h.file(subpath, { etagMethod: false }).etag(basename4).header("Cache-Control", "public,max-age=31536000,immutable");
+      const basename5 = path4.basename(subpath);
+      if (basename5.includes("-cached")) {
+        return h.file(subpath, { etagMethod: false }).etag(basename5).header("Cache-Control", "public,max-age=31536000,immutable");
       }
       return h.file(subpath);
     });
@@ -3050,9 +3050,9 @@ var init_routes = __esm({
         }
       }, function(request, h) {
         const { subpath } = request.params;
-        const basename4 = path4.basename(subpath);
-        if (basename4.includes("-cached")) {
-          return h.file(subpath, { etagMethod: false }).etag(basename4).header("Cache-Control", "public,max-age=31536000,immutable");
+        const basename5 = path4.basename(subpath);
+        if (basename5.includes("-cached")) {
+          return h.file(subpath, { etagMethod: false }).etag(basename5).header("Cache-Control", "public,max-age=31536000,immutable");
         }
         return h.file(subpath);
       });
@@ -4720,7 +4720,7 @@ function parseDevArgs(args) {
 init_deps();
 import { readFile as readFile5, writeFile as writeFile2, mkdir as mkdir4, copyFile } from "node:fs/promises";
 import { existsSync as existsSync3 } from "node:fs";
-import { resolve as resolve6, join as join6, dirname as dirname4 } from "node:path";
+import { resolve as resolve6, join as join6, dirname as dirname4, basename as basename4 } from "node:path";
 import process14 from "node:process";
 var ContractPinner = class {
   projectRoot;
@@ -4931,9 +4931,11 @@ var ContractPinner = class {
    * @param manifestPath - Path to the original manifest file
    */
   async updateCheloniaConfig(contractName, version2, manifestPath) {
+    const manifestFileName = basename4(manifestPath);
+    const pinnedManifestPath = `contracts/${contractName}/${version2}/${manifestFileName}`;
     this.cheloniaConfig.contracts[contractName] = {
       version: version2,
-      path: manifestPath
+      path: pinnedManifestPath
     };
     const configPath = join6(this.projectRoot, "chelonia.json");
     const configContent = JSON.stringify(this.cheloniaConfig, null, 2) + "\n";

@@ -62,11 +62,11 @@ chel pin 2.0.6 dist/contracts/chatroom.2.0.6.manifest.json --only-changed
   "contracts": {
     "chatroom": {
       "version": "2.0.6",
-      "path": "dist/contracts/chatroom.2.0.6.manifest.json"
+      "path": "contracts/chatroom/2.0.6/chatroom.2.0.6.manifest.json"
     },
     "group": {
       "version": "2.0.0",
-      "path": "dist/contracts/group.2.0.0.manifest.json"
+      "path": "contracts/group/2.0.0/group.2.0.0.manifest.json"
     }
   }
 }
