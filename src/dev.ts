@@ -219,25 +219,6 @@ class DevEnvironment {
     }
     this.watchers = []
   }
-
-  private printStatus () {
-    const uptime = Math.floor(performance.now() / 1000)
-    this.metrics.uptime = uptime
-
-    console.log(colors.bold('\n📊 Development Status'))
-    console.log(`   Contracts watched: ${colors.cyan(this.metrics.contractsWatched.toString())}`)
-    console.log(`   Changes detected: ${colors.yellow(this.metrics.changesDetected.toString())}`)
-    console.log(`   Hot reloads: ${colors.blue(this.metrics.hotReloads.toString())}`)
-    console.log(`   Uptime: ${colors.gray(this.formatUptime(uptime))}`)
-    console.log()
-  }
-
-  private formatUptime (seconds: number): string {
-    const h = Math.floor(seconds / 3600)
-    const m = Math.floor((seconds % 3600) / 60)
-    const s = seconds % 60
-    return `${h}h ${m}m ${s}s`
-  }
 }
 
 export async function dev (args: string[]) {
