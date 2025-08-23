@@ -4257,12 +4257,34 @@ async function migrate(args) {
 // src/serve.ts
 init_deps();
 import process12 from "node:process";
-import { readdir as readdir3, mkdir as mkdir3 } from "node:fs/promises";
+import { readdir as readdir3, mkdir as mkdir3, readFile as readFile4 } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join as join4, resolve as resolve4 } from "node:path";
 async function startDashboardServer(port) {
   const dashboardServer = await Promise.resolve().then(() => (init_dashboard_server(), dashboard_server_exports));
   await dashboardServer.startDashboard(port);
+}
+async function parseManifest(manifestPath) {
+  try {
+    const manifestContent = await readFile4(manifestPath, "utf8");
+    const manifest2 = JSON.parse(manifestContent);
+    const body = JSON.parse(manifest2.body);
+    const fullContractName = body.name;
+    const version2 = body.version;
+    const mainFile = body.contract.file;
+    if (!fullContractName || !mainFile || !version2) {
+      return null;
+    }
+    const contractName = fullContractName.split("/").pop() || fullContractName;
+    return {
+      contractName,
+      version: version2,
+      fullContractName
+    };
+  } catch (error) {
+    console.warn(colors.yellow(`\u26A0\uFE0F  Failed to parse manifest ${manifestPath}: ${error instanceof Error ? error.message : error}`));
+    return null;
+  }
 }
 async function preloadContracts(directory, dbLocation) {
   console.log(colors.blue("\u{1F4E6} Preloading contract manifests into database..."));
@@ -4273,6 +4295,7 @@ async function preloadContracts(directory, dbLocation) {
   }
   try {
     const manifestFiles = [];
+    const contractInfo = [];
     const contractNames = await readdir3(contractsDir, { withFileTypes: true });
     for (const contractEntry of contractNames) {
       if (contractEntry.isDirectory()) {
@@ -4284,17 +4307,30 @@ async function preloadContracts(directory, dbLocation) {
             const files = await readdir3(versionPath);
             const manifests = files.filter((f) => f.endsWith(".manifest.json"));
             for (const manifest2 of manifests) {
-              manifestFiles.push(join4(versionPath, manifest2));
+              const manifestPath = join4(versionPath, manifest2);
+              const parsed = await parseManifest(manifestPath);
+              if (parsed) {
+                manifestFiles.push(manifestPath);
+                contractInfo.push({
+                  path: manifestPath,
+                  contractName: parsed.contractName,
+                  version: parsed.version,
+                  fullContractName: parsed.fullContractName
+                });
+              }
             }
           }
         }
       }
     }
     if (manifestFiles.length === 0) {
-      console.log(colors.yellow("\u26A0\uFE0F  No contract manifest files found"));
+      console.log(colors.yellow("\u26A0\uFE0F  No valid contract manifest files found"));
       return;
     }
-    console.log(colors.blue(`\u{1F4CB} Found ${manifestFiles.length} contract manifest(s) to deploy`));
+    console.log(colors.blue(`\u{1F4CB} Found ${manifestFiles.length} valid contract manifest(s) to deploy:`));
+    for (const info of contractInfo) {
+      console.log(colors.gray(`   \u2022 ${info.fullContractName} v${info.version}`));
+    }
     const deployTarget = dbLocation || resolve4(join4(directory, "data"));
     if (!existsSync(deployTarget)) {
       console.log(colors.blue(`\u{1F4C1} Creating deploy target directory: ${deployTarget}`));
@@ -4470,7 +4506,7 @@ function version() {
 
 // src/dev.ts
 init_deps();
-import { readFile as readFile4 } from "node:fs/promises";
+import { readFile as readFile5 } from "node:fs/promises";
 import { existsSync as existsSync2, watch } from "node:fs";
 import { resolve as resolve5, join as join5 } from "node:path";
 import process13 from "node:process";
@@ -4539,7 +4575,7 @@ var DevEnvironment = class {
   async loadCheloniaConfig() {
     const cheloniaConfigPath = join5(this.projectRoot, "chelonia.json");
     if (existsSync2(cheloniaConfigPath)) {
-      const cheloniaConfigContent = await readFile4(cheloniaConfigPath, "utf8");
+      const cheloniaConfigContent = await readFile5(cheloniaConfigPath, "utf8");
       this.cheloniaConfig = JSON.parse(cheloniaConfigContent);
     } else {
       console.log(colors.yellow("\u26A0\uFE0F  No chelonia.json found"));
@@ -4627,7 +4663,7 @@ var DevEnvironment = class {
    */
   async parseManifest(manifestPath) {
     try {
-      const manifestContent = await readFile4(manifestPath, "utf8");
+      const manifestContent = await readFile5(manifestPath, "utf8");
       const manifest2 = JSON.parse(manifestContent);
       const body = JSON.parse(manifest2.body);
       const fullContractName = body.name;
@@ -4718,7 +4754,7 @@ function parseDevArgs(args) {
 
 // src/pin.ts
 init_deps();
-import { readFile as readFile5, writeFile as writeFile2, mkdir as mkdir4, copyFile } from "node:fs/promises";
+import { readFile as readFile6, writeFile as writeFile2, mkdir as mkdir4, copyFile } from "node:fs/promises";
 import { existsSync as existsSync3 } from "node:fs";
 import { resolve as resolve6, join as join6, dirname as dirname4, basename as basename4 } from "node:path";
 import process14 from "node:process";
@@ -4791,7 +4827,7 @@ var ContractPinner = class {
    */
   async parseManifest(manifestPath) {
     try {
-      const manifestContent = await readFile5(manifestPath, "utf8");
+      const manifestContent = await readFile6(manifestPath, "utf8");
       const manifest2 = JSON.parse(manifestContent);
       const body = JSON.parse(manifest2.body);
       const fullContractName = body.name;
@@ -4889,8 +4925,8 @@ var ContractPinner = class {
       return;
     }
     if (this.options["only-changed"]) {
-      const sourceContent = await readFile5(sourcePath, "utf8");
-      const targetContent = await readFile5(targetPath, "utf8");
+      const sourceContent = await readFile6(sourcePath, "utf8");
+      const targetContent = await readFile6(targetPath, "utf8");
       if (sourceContent === targetContent) {
         console.log(colors.gray(`\u23ED\uFE0F  Skipping: ${fileName} (unchanged)`));
         return;
@@ -4911,7 +4947,7 @@ var ContractPinner = class {
     const configPath = join6(this.projectRoot, "chelonia.json");
     if (existsSync3(configPath)) {
       try {
-        const configContent = await readFile5(configPath, "utf8");
+        const configContent = await readFile6(configPath, "utf8");
         this.cheloniaConfig = JSON.parse(configContent);
         console.log(colors.blue("\u{1F4C4} Loaded existing chelonia.json"));
       } catch (error) {

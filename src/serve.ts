@@ -1,7 +1,7 @@
 import { flags, colors } from './deps.ts'
 import process from 'node:process'
 import { deploy } from './deploy.ts'
-import { readdir, mkdir } from 'node:fs/promises'
+import { readdir, mkdir, readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 
@@ -18,6 +18,40 @@ async function startDashboardServer (port: number) {
   // Import and start the dashboard server
   const dashboardServer = await import('./serve/dashboard-server.ts')
   await dashboardServer.startDashboard(port)
+}
+
+/**
+ * Parse manifest file to extract contract information
+ * @param manifestPath - Path to the manifest file
+ * @returns Object containing contract name, version, and file information
+ */
+async function parseManifest (manifestPath: string): Promise<{ contractName: string, version: string, fullContractName: string } | null> {
+  try {
+    const manifestContent = await readFile(manifestPath, 'utf8')
+    const manifest = JSON.parse(manifestContent)
+    const body = JSON.parse(manifest.body)
+
+    const fullContractName = body.name
+    const version = body.version
+    const mainFile = body.contract.file
+
+    if (!fullContractName || !mainFile || !version) {
+      return null
+    }
+
+    // Extract just the contract name part (after the last slash)
+    // e.g., "gi.contracts/group" -> "group"
+    const contractName = fullContractName.split('/').pop() || fullContractName
+
+    return {
+      contractName,
+      version,
+      fullContractName
+    }
+  } catch (error) {
+    console.warn(colors.yellow(`⚠️  Failed to parse manifest ${manifestPath}: ${error instanceof Error ? error.message : error}`))
+    return null
+  }
 }
 
 /**
@@ -39,8 +73,9 @@ async function preloadContracts (directory: string, dbLocation?: string): Promis
   }
 
   try {
-    // Find all manifest files in the contracts directory structure
+    // Find and parse all manifest files in the contracts directory structure
     const manifestFiles: string[] = []
+    const contractInfo: Array<{ path: string, contractName: string, version: string, fullContractName: string }> = []
 
     // New structure: contracts/<name>/<version>/*.manifest.json
     const contractNames = await readdir(contractsDir, { withFileTypes: true })
@@ -58,7 +93,19 @@ async function preloadContracts (directory: string, dbLocation?: string): Promis
             // Find manifest files in this version directory
             const manifests = files.filter(f => f.endsWith('.manifest.json'))
             for (const manifest of manifests) {
-              manifestFiles.push(join(versionPath, manifest))
+              const manifestPath = join(versionPath, manifest)
+
+              // Parse the manifest to extract contract information
+              const parsed = await parseManifest(manifestPath)
+              if (parsed) {
+                manifestFiles.push(manifestPath)
+                contractInfo.push({
+                  path: manifestPath,
+                  contractName: parsed.contractName,
+                  version: parsed.version,
+                  fullContractName: parsed.fullContractName
+                })
+              }
             }
           }
         }
@@ -66,11 +113,16 @@ async function preloadContracts (directory: string, dbLocation?: string): Promis
     }
 
     if (manifestFiles.length === 0) {
-      console.log(colors.yellow('⚠️  No contract manifest files found'))
+      console.log(colors.yellow('⚠️  No valid contract manifest files found'))
       return
     }
 
-    console.log(colors.blue(`📋 Found ${manifestFiles.length} contract manifest(s) to deploy`))
+    console.log(colors.blue(`📋 Found ${manifestFiles.length} valid contract manifest(s) to deploy:`))
+
+    // Log contract information for better visibility
+    for (const info of contractInfo) {
+      console.log(colors.gray(`   • ${info.fullContractName} v${info.version}`))
+    }
 
     // Deploy all manifests to the database
     // Use the database location or default to 'data' directory
