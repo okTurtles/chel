@@ -1,9 +1,10 @@
 import { flags, colors } from './deps.ts'
 import { readFile } from 'node:fs/promises'
-import { existsSync, watch } from 'node:fs'
+import { readFileSync, existsSync, watch, readdirSync } from 'node:fs'
 import { resolve, join } from 'node:path'
 import process from 'node:process'
 import { serve } from './serve.ts'
+import { deploy } from './deploy.ts'
 
 /**
  * Sanitize contract name for filesystem safety
@@ -44,6 +45,11 @@ interface DevMetrics {
   uptime: number
 }
 
+interface RecentlyRegeneratedManifest {
+  path: string
+  timestamp: number
+}
+
 /**
  * Live Development Environment for Chelonia Contracts
  *
@@ -57,6 +63,7 @@ interface DevMetrics {
  */
 class DevEnvironment {
   private watchers: { close?: () => void }[] = []
+  close?: () => void
   private serverProcess?: unknown
   private options: DevOptions
   private projectRoot: string
@@ -64,6 +71,7 @@ class DevEnvironment {
   private startTime: Date
   private contractChanges: ContractChangeEvent[] = []
   private cheloniaConfig: CheloniaConfig = { contracts: {} }
+  private recentlyRegeneratedManifests: RecentlyRegeneratedManifest[] = []
 
   constructor (projectRoot: string, options: DevOptions) {
     this.projectRoot = resolve(projectRoot)
@@ -161,7 +169,9 @@ class DevEnvironment {
         if (existsSync(fullManifestPath)) {
           // Watch the manifest file itself
           const manifestWatcher = watch(fullManifestPath, (eventType) => {
-            this.handleContractChange(eventType, manifestPath)
+            this.handleContractChange(eventType, manifestPath).catch(error => {
+              console.error(colors.red('❌ Error handling manifest change:'), error)
+            })
           })
           this.watchers.push(manifestWatcher)
           totalWatchedFiles++
@@ -176,7 +186,9 @@ class DevEnvironment {
             if (existsSync(mainContractPath)) {
               const mainWatcher = watch(mainContractPath, (eventType) => {
                 console.log(colors.yellow(`📝 Contract file ${eventType}: ${contractInfo.contractFiles.main}`))
-                this.handleContractChange(eventType, manifestPath) // Still trigger with manifest path
+                this.handleContractChange(eventType, manifestPath).catch(error => {
+                  console.error(colors.red('❌ Error handling contract file change:'), error)
+                })
               })
               this.watchers.push(mainWatcher)
               totalWatchedFiles++
@@ -188,7 +200,9 @@ class DevEnvironment {
               if (existsSync(slimContractPath)) {
                 const slimWatcher = watch(slimContractPath, (eventType) => {
                   console.log(colors.yellow(`📝 Contract file ${eventType}: ${contractInfo.contractFiles.slim}`))
-                  this.handleContractChange(eventType, manifestPath) // Still trigger with manifest path
+                  this.handleContractChange(eventType, manifestPath).catch(error => {
+                    console.error(colors.red('❌ Error handling slim contract file change:'), error)
+                  })
                 })
                 this.watchers.push(slimWatcher)
                 totalWatchedFiles++
@@ -205,7 +219,7 @@ class DevEnvironment {
     }
   }
 
-  private handleContractChange (eventType: string, filename: string) {
+  private async handleContractChange (eventType: string, filename: string) {
     const changeEvent: ContractChangeEvent = {
       file: filename,
       type: eventType === 'rename' ? 'added' : 'changed',
@@ -215,14 +229,31 @@ class DevEnvironment {
     this.contractChanges.push(changeEvent)
     this.metrics.changesDetected++
 
-    console.log(colors.yellow(`📝 Contract ${eventType}: ${filename}`))
+    console.log(colors.yellow(`📝 Contract change: ${filename}`))
+
+    // Check if this is a recently regenerated manifest file to prevent infinite loops
+    if (filename.includes('manifest.json')) {
+      const now = Date.now()
+      const recentlyRegenerated = this.recentlyRegeneratedManifests.find(
+        manifest => manifest.path === filename && (now - manifest.timestamp) < 2000 // 2 second window
+      )
+
+      if (recentlyRegenerated) {
+        console.log(colors.gray('   → Skipping hot reload for recently regenerated manifest'))
+        // Clean up old entries while we're here
+        this.recentlyRegeneratedManifests = this.recentlyRegeneratedManifests.filter(
+          manifest => (now - manifest.timestamp) < 5000 // Keep entries for 5 seconds
+        )
+        return
+      }
+    }
 
     if (this.options['hot-reload'] !== false) {
-      this.triggerHotReload(filename)
+      await this.triggerHotReload(filename)
     }
   }
 
-  private triggerHotReload (filename: string) {
+  private async triggerHotReload (filename: string) {
     try {
       console.log(colors.blue(`🔄 Hot reloading contract: ${filename}`))
 
@@ -232,25 +263,199 @@ class DevEnvironment {
       // 3. Notify the dashboard of the change
       // Note: Development contracts are not pinned, only manifests are regenerated
 
-      if (filename.endsWith('.js') && !filename.includes('manifest')) {
-        console.log(colors.gray('   → Regenerating manifest and redeploying...'))
-        // TODO: Implement manifest regeneration and signing on the fly
-        // This should call the manifest generation logic from manifest.ts
-        // and then trigger redeployment to the running server
-        this.metrics.hotReloads++
-        console.log(colors.green('   ✅ Hot reload triggered (manifest regeneration pending)'))
+      // Find the manifest path that corresponds to this filename
+      const manifestPath = this.findManifestForFile(filename)
+      if (!manifestPath) {
+        console.log(colors.yellow('   ⚠️  No manifest found for changed file, skipping hot reload'))
+        return
       }
+
+      console.log(colors.gray('   → Regenerating manifest and redeploying...'))
+
+      // Step 1: Regenerate and re-sign the manifest using manifest.ts logic
+      await this.regenerateManifest(manifestPath)
+
+      // Step 2: Redeploy the updated manifest to the running server
+      await this.redeployContract(manifestPath)
+
+      this.metrics.hotReloads++
+      console.log(colors.green('   ✅ Hot reload completed - manifest regenerated, re-signed, and redeployed'))
     } catch (error) {
       console.error(colors.red('❌ Hot reload failed:'), error)
     }
   }
 
   /**
-   * Parse manifest file to extract contract information (similar to pin.ts)
+   * Find the manifest file that corresponds to a changed contract file
    */
-  private async parseManifest (manifestPath: string): Promise<{ contractName: string, contractFiles: { main: string, slim?: string }, version: string } | null> {
+  private findManifestForFile (changedFile: string): string | null {
+    // If the changed file is already a manifest, return it
+    if (changedFile.includes('manifest.json')) {
+      return changedFile
+    }
+
+    // Look through chelonia.json contracts to find which manifest references this file
+    for (const contract of Object.values(this.cheloniaConfig.contracts)) {
+      const manifestPath = contract.path
+      const fullManifestPath = join(this.projectRoot, manifestPath)
+
+      try {
+        // Check if this manifest references the changed file
+        const manifestDir = fullManifestPath.substring(0, fullManifestPath.lastIndexOf('/'))
+        const contractInfo = this.parseManifestSync(fullManifestPath)
+
+        if (contractInfo) {
+          const mainContractPath = join(manifestDir, contractInfo.contractFiles.main)
+          const slimContractPath = contractInfo.contractFiles.slim
+            ? join(manifestDir, contractInfo.contractFiles.slim)
+            : null
+
+          // Check if the changed file matches any of the contract files
+          const changedFilePath = resolve(this.projectRoot, changedFile)
+          if (changedFilePath === mainContractPath ||
+              (slimContractPath && changedFilePath === slimContractPath)) {
+            return manifestPath
+          }
+        }
+      } catch (error) {
+        console.error(colors.red('   ⚠️  Error parsing manifest:'), error)
+        // Skip this manifest if we can't parse it
+        continue
+      }
+    }
+
+    return null
+  }
+
+  /**
+   * Regenerate and re-sign a manifest file using the logic from manifest.ts
+   */
+  private async regenerateManifest (manifestPath: string) {
+    const fullManifestPath = join(this.projectRoot, manifestPath)
+    const manifestDir = fullManifestPath.substring(0, fullManifestPath.lastIndexOf('/'))
+
+    // Parse the existing manifest to get the contract info
+    const contractInfo = await this.parseManifest(fullManifestPath)
+    if (!contractInfo) {
+      throw new Error(`Failed to parse manifest: ${manifestPath}`)
+    }
+
+    // Look for a key file in the project root or manifest directory
+    const keyFile = this.findKeyFile(manifestDir)
+    if (!keyFile) {
+      console.log(colors.yellow('   ⚠️  No signing key found (key.json or chel keygen-generated), skipping manifest signing'))
+      return
+    }
+
+    // Use the manifest generation logic from manifest.ts
+    // We'll call the manifest function programmatically
+    const contractFile = join(manifestDir, contractInfo.contractFiles.main)
+    const slimFile = contractInfo.contractFiles.slim
+      ? join(manifestDir, contractInfo.contractFiles.slim)
+      : undefined
+
+    const args = [
+      keyFile,
+      contractFile,
+      '--version', contractInfo.version,
+      '--out', fullManifestPath
+    ]
+
+    if (slimFile) {
+      args.push('--slim', slimFile)
+    }
+
+    // Import and call the manifest function
+    const { manifest } = await import('./manifest.ts')
+    await manifest(args)
+
+    // Track this manifest as recently regenerated to prevent infinite loops
+    this.recentlyRegeneratedManifests.push({
+      path: manifestPath,
+      timestamp: Date.now()
+    })
+
+    console.log(colors.gray(`   → Manifest regenerated: ${manifestPath}`))
+  }
+
+  /**
+   * Redeploy a contract manifest to the running server
+   * This ensures the server has the latest version after hot reload
+   */
+  private async redeployContract (manifestPath: string) {
     try {
-      const manifestContent = await readFile(manifestPath, 'utf8')
+      const fullManifestPath = join(this.projectRoot, manifestPath)
+
+      // Deploy target is the data directory (same as serve.ts preloadContracts)
+      const deployTarget = resolve(join(this.projectRoot, 'data'))
+
+      console.log(colors.gray(`   → Redeploying contract to server: ${manifestPath}`))
+
+      // Use the same deploy function that serve.ts uses for preloading
+      await deploy([deployTarget, fullManifestPath])
+
+      console.log(colors.gray('   → Contract redeployed successfully'))
+    } catch (error) {
+      console.error(colors.red('   ❌ Failed to redeploy contract:'), error)
+      throw error // Re-throw so hot reload can handle the error
+    }
+  }
+
+  /**
+   * Find a key file for signing manifests
+   * Supports both legacy key.json and chel keygen-generated key files
+   */
+  private findKeyFile (manifestDir: string): string | null {
+    // Helper function to find key files in a directory
+    const findKeyInDir = (dir: string): string | null => {
+      try {
+        const files = readdirSync(dir)
+
+        // First, look for legacy key.json
+        if (files.includes('key.json')) {
+          return join(dir, 'key.json')
+        }
+
+        // Then look for chel keygen-generated key files (pattern: algorithm-id.json)
+        const keyFiles = files.filter((file: string) =>
+          file.endsWith('.json') &&
+          !file.endsWith('.pub.json') &&
+          file.includes('edwards25519sha512batch-')
+        )
+
+        if (keyFiles.length > 0) {
+          // Use the first matching key file (there should typically be only one)
+          return join(dir, keyFiles[0])
+        }
+
+        return null
+      } catch (error) {
+        console.error('Error reading directory:', error)
+        // Directory doesn't exist or can't be read
+        return null
+      }
+    }
+
+    // Look in project root first
+    const rootKeyFile = findKeyInDir(this.projectRoot)
+    if (rootKeyFile) {
+      return rootKeyFile
+    }
+
+    // Look in manifest directory
+    const manifestKeyFile = findKeyInDir(manifestDir)
+    if (manifestKeyFile) {
+      return manifestKeyFile
+    }
+
+    return null
+  }
+
+  /**
+   * Shared manifest parsing logic to avoid code duplication
+   */
+  private parseManifestContent (manifestContent: string, manifestPath: string): { contractName: string, contractFiles: { main: string, slim?: string }, version: string } | null {
+    try {
       const manifest = JSON.parse(manifestContent)
       const body = JSON.parse(manifest.body)
 
@@ -277,6 +482,32 @@ class DevEnvironment {
       }
     } catch (error) {
       console.error(colors.red(`Failed to parse manifest ${manifestPath}:`), error)
+      return null
+    }
+  }
+
+  /**
+   * Synchronous version of parseManifest for use in findManifestForFile
+   */
+  private parseManifestSync (manifestPath: string): { contractName: string, contractFiles: { main: string, slim?: string }, version: string } | null {
+    try {
+      const manifestContent = readFileSync(manifestPath, 'utf8')
+      return this.parseManifestContent(manifestContent, manifestPath)
+    } catch (error) {
+      console.error(colors.red('   ⚠️  Error reading manifest:'), error)
+      return null
+    }
+  }
+
+  /**
+   * Async version of parseManifest for use in regenerateManifest
+   */
+  private async parseManifest (manifestPath: string): Promise<{ contractName: string, contractFiles: { main: string, slim?: string }, version: string } | null> {
+    try {
+      const manifestContent = await readFile(manifestPath, 'utf8')
+      return this.parseManifestContent(manifestContent, manifestPath)
+    } catch (error) {
+      console.error(colors.red(`Failed to read manifest ${manifestPath}:`), error)
       return null
     }
   }

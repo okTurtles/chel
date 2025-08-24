@@ -417,6 +417,113 @@ var init_utils = __esm({
   }
 });
 
+// src/hash.ts
+async function hash2(args, multicode = multicodes2.RAW, internal = false) {
+  const [filename] = args;
+  if (!filename) {
+    console.error("please pass in a file");
+    Deno.exit(1);
+  }
+  const [cid] = await createEntryFromFile(filename, multicode);
+  if (!internal) {
+    console.log(`CID(${filename}):`, cid);
+  }
+  return cid;
+}
+var init_hash = __esm({
+  "src/hash.ts"() {
+    "use strict";
+    init_utils();
+  }
+});
+
+// src/manifest.ts
+var manifest_exports = {};
+__export(manifest_exports, {
+  manifest: () => manifest
+});
+function isSigningKeyDescriptor(obj) {
+  return obj !== null && typeof obj === "object" && typeof obj.privkey === "string";
+}
+async function manifest(args) {
+  await revokeNet();
+  const parsedArgs = flags.parse(args, { collect: ["key"], alias: { key: "k" } });
+  const [keyFileRaw, contractFileRaw] = parsedArgs._;
+  if (typeof keyFileRaw !== "string" || typeof contractFileRaw !== "string") {
+    exit("Missing or invalid key or contract file");
+  }
+  const keyFile = keyFileRaw;
+  const contractFile = contractFileRaw;
+  const parsedFilepath = path.parse(contractFile);
+  const { name: contractFileName, base: contractBasename, dir: contractDir } = parsedFilepath;
+  const name = parsedArgs.name || parsedArgs.n || contractFileName;
+  const version2 = parsedArgs.version || parsedArgs.v || "x";
+  const slim = parsedArgs.slim || parsedArgs.s;
+  const outFile = parsedArgs.out || path.join(contractDir, `${contractFileName}.${version2}.manifest.json`);
+  if (!keyFile) exit("Missing signing key file");
+  const signingKeyDescriptorRaw = await readJsonFile(keyFile);
+  if (!isSigningKeyDescriptor(signingKeyDescriptorRaw)) {
+    exit("Invalid signing key file: missing or invalid privkey", true);
+  }
+  const signingKeyDescriptor = signingKeyDescriptorRaw;
+  const signingKey = deserializeKey(signingKeyDescriptor.privkey);
+  const publicKeys = Array.from(new Set(
+    [serializeKey(signingKey, false)].concat(...await Promise.all(parsedArgs.key?.map(
+      async (kf) => {
+        if (typeof kf !== "string" && typeof kf !== "number") {
+          exit(`Invalid key file reference: ${String(kf)}`);
+        }
+        const descriptor = await readJsonFile(String(kf));
+        const key = deserializeKey(descriptor.pubkey);
+        if (key.type !== EDWARDS25519SHA512BATCH) {
+          exit(`Invalid key type ${key.type}; only ${EDWARDS25519SHA512BATCH} keys are supported.`);
+        }
+        return serializeKey(key, false);
+      }
+    ) || []))
+  ));
+  const body = {
+    name,
+    version: version2,
+    contract: {
+      hash: await hash2([contractFile], multicodes2.SHELTER_CONTRACT_TEXT, true),
+      file: contractBasename
+    },
+    signingKeys: publicKeys
+  };
+  if (typeof slim === "string" && slim !== "") {
+    body.contractSlim = {
+      file: path.basename(slim),
+      hash: await hash2([slim], multicodes2.SHELTER_CONTRACT_TEXT, true)
+    };
+  }
+  const serializedBody = JSON.stringify(body);
+  const head = { manifestVersion: "1.0.0" };
+  const serializedHead = JSON.stringify(head);
+  const manifest2 = JSON.stringify({
+    head: serializedHead,
+    body: serializedBody,
+    signature: {
+      keyId: keyId(signingKey),
+      value: sign(signingKey, serializedBody + serializedHead)
+    }
+  });
+  if (parsedArgs.out === "-") {
+    console.log(manifest2);
+  } else {
+    Deno.writeTextFileSync(outFile, manifest2);
+    console.log(colors.green("wrote:"), outFile);
+  }
+}
+var init_manifest = __esm({
+  "src/manifest.ts"() {
+    "use strict";
+    init_deps();
+    init_hash();
+    init_utils();
+  }
+});
+
 // src/serve/dashboard-server.ts
 var dashboard_server_exports = {};
 __export(dashboard_server_exports, {
@@ -4010,20 +4117,8 @@ async function get(args) {
   }
 }
 
-// src/hash.ts
-init_utils();
-async function hash2(args, multicode = multicodes2.RAW, internal = false) {
-  const [filename] = args;
-  if (!filename) {
-    console.error("please pass in a file");
-    Deno.exit(1);
-  }
-  const [cid] = await createEntryFromFile(filename, multicode);
-  if (!internal) {
-    console.log(`CID(${filename}):`, cid);
-  }
-  return cid;
-}
+// src/commands.ts
+init_hash();
 
 // src/help.ts
 function help(args) {
@@ -4138,82 +4233,8 @@ var keygen2 = async (args) => {
   console.log(colors.green("wrote:"), pubOutFile, colors.blue("(public)"));
 };
 
-// src/manifest.ts
-init_deps();
-init_utils();
-function isSigningKeyDescriptor(obj) {
-  return obj !== null && typeof obj === "object" && typeof obj.privkey === "string";
-}
-async function manifest(args) {
-  await revokeNet();
-  const parsedArgs = flags.parse(args, { collect: ["key"], alias: { key: "k" } });
-  const [keyFileRaw, contractFileRaw] = parsedArgs._;
-  if (typeof keyFileRaw !== "string" || typeof contractFileRaw !== "string") {
-    exit("Missing or invalid key or contract file");
-  }
-  const keyFile = keyFileRaw;
-  const contractFile = contractFileRaw;
-  const parsedFilepath = path.parse(contractFile);
-  const { name: contractFileName, base: contractBasename, dir: contractDir } = parsedFilepath;
-  const name = parsedArgs.name || parsedArgs.n || contractFileName;
-  const version2 = parsedArgs.version || parsedArgs.v || "x";
-  const slim = parsedArgs.slim || parsedArgs.s;
-  const outFile = parsedArgs.out || path.join(contractDir, `${contractFileName}.${version2}.manifest.json`);
-  if (!keyFile) exit("Missing signing key file");
-  const signingKeyDescriptorRaw = await readJsonFile(keyFile);
-  if (!isSigningKeyDescriptor(signingKeyDescriptorRaw)) {
-    exit("Invalid signing key file: missing or invalid privkey", true);
-  }
-  const signingKeyDescriptor = signingKeyDescriptorRaw;
-  const signingKey = deserializeKey(signingKeyDescriptor.privkey);
-  const publicKeys = Array.from(new Set(
-    [serializeKey(signingKey, false)].concat(...await Promise.all(parsedArgs.key?.map(
-      async (kf) => {
-        if (typeof kf !== "string" && typeof kf !== "number") {
-          exit(`Invalid key file reference: ${String(kf)}`);
-        }
-        const descriptor = await readJsonFile(String(kf));
-        const key = deserializeKey(descriptor.pubkey);
-        if (key.type !== EDWARDS25519SHA512BATCH) {
-          exit(`Invalid key type ${key.type}; only ${EDWARDS25519SHA512BATCH} keys are supported.`);
-        }
-        return serializeKey(key, false);
-      }
-    ) || []))
-  ));
-  const body = {
-    name,
-    version: version2,
-    contract: {
-      hash: await hash2([contractFile], multicodes2.SHELTER_CONTRACT_TEXT, true),
-      file: contractBasename
-    },
-    signingKeys: publicKeys
-  };
-  if (typeof slim === "string" && slim !== "") {
-    body.contractSlim = {
-      file: path.basename(slim),
-      hash: await hash2([slim], multicodes2.SHELTER_CONTRACT_TEXT, true)
-    };
-  }
-  const serializedBody = JSON.stringify(body);
-  const head = { manifestVersion: "1.0.0" };
-  const serializedHead = JSON.stringify(head);
-  const manifest2 = JSON.stringify({
-    head: serializedHead,
-    body: serializedBody,
-    signature: {
-      keyId: keyId(signingKey),
-      value: sign(signingKey, serializedBody + serializedHead)
-    }
-  });
-  if (parsedArgs.out === "-") {
-    console.log(manifest2);
-  } else {
-    Deno.writeTextFileSync(outFile, manifest2);
-    console.log(colors.green("wrote:"), outFile);
-  }
-}
+// src/commands.ts
+init_manifest();
 
 // src/migrate.ts
 init_deps();
@@ -4510,7 +4531,7 @@ function version() {
 // src/dev.ts
 init_deps();
 import { readFile as readFile5 } from "node:fs/promises";
-import { existsSync as existsSync2, watch } from "node:fs";
+import { readFileSync, existsSync as existsSync2, watch, readdirSync } from "node:fs";
 import { resolve as resolve5, join as join5 } from "node:path";
 import process13 from "node:process";
 function sanitizeContractName2(contractName) {
@@ -4518,6 +4539,7 @@ function sanitizeContractName2(contractName) {
 }
 var DevEnvironment = class {
   watchers = [];
+  close;
   serverProcess;
   options;
   projectRoot;
@@ -4525,6 +4547,7 @@ var DevEnvironment = class {
   startTime;
   contractChanges = [];
   cheloniaConfig = { contracts: {} };
+  recentlyRegeneratedManifests = [];
   constructor(projectRoot, options2) {
     this.projectRoot = resolve5(projectRoot);
     this.options = options2;
@@ -4603,7 +4626,9 @@ var DevEnvironment = class {
         const fullManifestPath = join5(this.projectRoot, manifestPath);
         if (existsSync2(fullManifestPath)) {
           const manifestWatcher = watch(fullManifestPath, (eventType) => {
-            this.handleContractChange(eventType, manifestPath);
+            this.handleContractChange(eventType, manifestPath).catch((error) => {
+              console.error(colors.red("\u274C Error handling manifest change:"), error);
+            });
           });
           this.watchers.push(manifestWatcher);
           totalWatchedFiles++;
@@ -4614,7 +4639,9 @@ var DevEnvironment = class {
             if (existsSync2(mainContractPath)) {
               const mainWatcher = watch(mainContractPath, (eventType) => {
                 console.log(colors.yellow(`\u{1F4DD} Contract file ${eventType}: ${contractInfo.contractFiles.main}`));
-                this.handleContractChange(eventType, manifestPath);
+                this.handleContractChange(eventType, manifestPath).catch((error) => {
+                  console.error(colors.red("\u274C Error handling contract file change:"), error);
+                });
               });
               this.watchers.push(mainWatcher);
               totalWatchedFiles++;
@@ -4624,7 +4651,9 @@ var DevEnvironment = class {
               if (existsSync2(slimContractPath)) {
                 const slimWatcher = watch(slimContractPath, (eventType) => {
                   console.log(colors.yellow(`\u{1F4DD} Contract file ${eventType}: ${contractInfo.contractFiles.slim}`));
-                  this.handleContractChange(eventType, manifestPath);
+                  this.handleContractChange(eventType, manifestPath).catch((error) => {
+                    console.error(colors.red("\u274C Error handling slim contract file change:"), error);
+                  });
                 });
                 this.watchers.push(slimWatcher);
                 totalWatchedFiles++;
@@ -4639,7 +4668,7 @@ var DevEnvironment = class {
       console.error(colors.red("\u274C Error setting up file watching:"), error);
     }
   }
-  handleContractChange(eventType, filename) {
+  async handleContractChange(eventType, filename) {
     const changeEvent = {
       file: filename,
       type: eventType === "rename" ? "added" : "changed",
@@ -4647,29 +4676,161 @@ var DevEnvironment = class {
     };
     this.contractChanges.push(changeEvent);
     this.metrics.changesDetected++;
-    console.log(colors.yellow(`\u{1F4DD} Contract ${eventType}: ${filename}`));
+    console.log(colors.yellow(`\u{1F4DD} Contract change: ${filename}`));
+    if (filename.includes("manifest.json")) {
+      const now = Date.now();
+      const recentlyRegenerated = this.recentlyRegeneratedManifests.find(
+        (manifest2) => manifest2.path === filename && now - manifest2.timestamp < 2e3
+        // 2 second window
+      );
+      if (recentlyRegenerated) {
+        console.log(colors.gray("   \u2192 Skipping hot reload for recently regenerated manifest"));
+        this.recentlyRegeneratedManifests = this.recentlyRegeneratedManifests.filter(
+          (manifest2) => now - manifest2.timestamp < 5e3
+          // Keep entries for 5 seconds
+        );
+        return;
+      }
+    }
     if (this.options["hot-reload"] !== false) {
-      this.triggerHotReload(filename);
+      await this.triggerHotReload(filename);
     }
   }
-  triggerHotReload(filename) {
+  async triggerHotReload(filename) {
     try {
       console.log(colors.blue(`\u{1F504} Hot reloading contract: ${filename}`));
-      if (filename.endsWith(".js") && !filename.includes("manifest")) {
-        console.log(colors.gray("   \u2192 Regenerating manifest and redeploying..."));
-        this.metrics.hotReloads++;
-        console.log(colors.green("   \u2705 Hot reload triggered (manifest regeneration pending)"));
+      const manifestPath = this.findManifestForFile(filename);
+      if (!manifestPath) {
+        console.log(colors.yellow("   \u26A0\uFE0F  No manifest found for changed file, skipping hot reload"));
+        return;
       }
+      console.log(colors.gray("   \u2192 Regenerating manifest and redeploying..."));
+      await this.regenerateManifest(manifestPath);
+      await this.redeployContract(manifestPath);
+      this.metrics.hotReloads++;
+      console.log(colors.green("   \u2705 Hot reload completed - manifest regenerated, re-signed, and redeployed"));
     } catch (error) {
       console.error(colors.red("\u274C Hot reload failed:"), error);
     }
   }
   /**
-   * Parse manifest file to extract contract information (similar to pin.ts)
+   * Find the manifest file that corresponds to a changed contract file
    */
-  async parseManifest(manifestPath) {
+  findManifestForFile(changedFile) {
+    if (changedFile.includes("manifest.json")) {
+      return changedFile;
+    }
+    for (const contract of Object.values(this.cheloniaConfig.contracts)) {
+      const manifestPath = contract.path;
+      const fullManifestPath = join5(this.projectRoot, manifestPath);
+      try {
+        const manifestDir = fullManifestPath.substring(0, fullManifestPath.lastIndexOf("/"));
+        const contractInfo = this.parseManifestSync(fullManifestPath);
+        if (contractInfo) {
+          const mainContractPath = join5(manifestDir, contractInfo.contractFiles.main);
+          const slimContractPath = contractInfo.contractFiles.slim ? join5(manifestDir, contractInfo.contractFiles.slim) : null;
+          const changedFilePath = resolve5(this.projectRoot, changedFile);
+          if (changedFilePath === mainContractPath || slimContractPath && changedFilePath === slimContractPath) {
+            return manifestPath;
+          }
+        }
+      } catch (error) {
+        console.error(colors.red("   \u26A0\uFE0F  Error parsing manifest:"), error);
+        continue;
+      }
+    }
+    return null;
+  }
+  /**
+   * Regenerate and re-sign a manifest file using the logic from manifest.ts
+   */
+  async regenerateManifest(manifestPath) {
+    const fullManifestPath = join5(this.projectRoot, manifestPath);
+    const manifestDir = fullManifestPath.substring(0, fullManifestPath.lastIndexOf("/"));
+    const contractInfo = await this.parseManifest(fullManifestPath);
+    if (!contractInfo) {
+      throw new Error(`Failed to parse manifest: ${manifestPath}`);
+    }
+    const keyFile = this.findKeyFile(manifestDir);
+    if (!keyFile) {
+      console.log(colors.yellow("   \u26A0\uFE0F  No signing key found (key.json or chel keygen-generated), skipping manifest signing"));
+      return;
+    }
+    const contractFile = join5(manifestDir, contractInfo.contractFiles.main);
+    const slimFile = contractInfo.contractFiles.slim ? join5(manifestDir, contractInfo.contractFiles.slim) : void 0;
+    const args = [
+      keyFile,
+      contractFile,
+      "--version",
+      contractInfo.version,
+      "--out",
+      fullManifestPath
+    ];
+    if (slimFile) {
+      args.push("--slim", slimFile);
+    }
+    const { manifest: manifest2 } = await Promise.resolve().then(() => (init_manifest(), manifest_exports));
+    await manifest2(args);
+    this.recentlyRegeneratedManifests.push({
+      path: manifestPath,
+      timestamp: Date.now()
+    });
+    console.log(colors.gray(`   \u2192 Manifest regenerated: ${manifestPath}`));
+  }
+  /**
+   * Redeploy a contract manifest to the running server
+   * This ensures the server has the latest version after hot reload
+   */
+  async redeployContract(manifestPath) {
     try {
-      const manifestContent = await readFile5(manifestPath, "utf8");
+      const fullManifestPath = join5(this.projectRoot, manifestPath);
+      const deployTarget = resolve5(join5(this.projectRoot, "data"));
+      console.log(colors.gray(`   \u2192 Redeploying contract to server: ${manifestPath}`));
+      await deploy([deployTarget, fullManifestPath]);
+      console.log(colors.gray("   \u2192 Contract redeployed successfully"));
+    } catch (error) {
+      console.error(colors.red("   \u274C Failed to redeploy contract:"), error);
+      throw error;
+    }
+  }
+  /**
+   * Find a key file for signing manifests
+   * Supports both legacy key.json and chel keygen-generated key files
+   */
+  findKeyFile(manifestDir) {
+    const findKeyInDir = (dir) => {
+      try {
+        const files = readdirSync(dir);
+        if (files.includes("key.json")) {
+          return join5(dir, "key.json");
+        }
+        const keyFiles = files.filter(
+          (file) => file.endsWith(".json") && !file.endsWith(".pub.json") && file.includes("edwards25519sha512batch-")
+        );
+        if (keyFiles.length > 0) {
+          return join5(dir, keyFiles[0]);
+        }
+        return null;
+      } catch (error) {
+        console.error("Error reading directory:", error);
+        return null;
+      }
+    };
+    const rootKeyFile = findKeyInDir(this.projectRoot);
+    if (rootKeyFile) {
+      return rootKeyFile;
+    }
+    const manifestKeyFile = findKeyInDir(manifestDir);
+    if (manifestKeyFile) {
+      return manifestKeyFile;
+    }
+    return null;
+  }
+  /**
+   * Shared manifest parsing logic to avoid code duplication
+   */
+  parseManifestContent(manifestContent, manifestPath) {
+    try {
       const manifest2 = JSON.parse(manifestContent);
       const body = JSON.parse(manifest2.body);
       const fullContractName = body.name;
@@ -4690,6 +4851,30 @@ var DevEnvironment = class {
       };
     } catch (error) {
       console.error(colors.red(`Failed to parse manifest ${manifestPath}:`), error);
+      return null;
+    }
+  }
+  /**
+   * Synchronous version of parseManifest for use in findManifestForFile
+   */
+  parseManifestSync(manifestPath) {
+    try {
+      const manifestContent = readFileSync(manifestPath, "utf8");
+      return this.parseManifestContent(manifestContent, manifestPath);
+    } catch (error) {
+      console.error(colors.red("   \u26A0\uFE0F  Error reading manifest:"), error);
+      return null;
+    }
+  }
+  /**
+   * Async version of parseManifest for use in regenerateManifest
+   */
+  async parseManifest(manifestPath) {
+    try {
+      const manifestContent = await readFile5(manifestPath, "utf8");
+      return this.parseManifestContent(manifestContent, manifestPath);
+    } catch (error) {
+      console.error(colors.red(`Failed to read manifest ${manifestPath}:`), error);
       return null;
     }
   }
