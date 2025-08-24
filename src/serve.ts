@@ -5,6 +5,16 @@ import { readdir, mkdir, readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 
+/**
+ * Sanitize contract name for filesystem safety
+ * Replaces characters that are not allowed in directory names
+ * @param contractName - Full contract name (e.g., "gi.contracts/group")
+ * @returns Sanitized name safe for filesystem use
+ */
+function sanitizeContractName (contractName: string): string {
+  return contractName.replace(/[/\\:*?"<>|]/g, '_')
+}
+
 interface ServeOptions {
   dp?: number
   port?: number
@@ -39,9 +49,9 @@ async function parseManifest (manifestPath: string): Promise<{ contractName: str
       return null
     }
 
-    // Extract just the contract name part (after the last slash)
-    // e.g., "gi.contracts/group" -> "group"
-    const contractName = fullContractName.split('/').pop() || fullContractName
+    // Use the full contract name (sanitized for filesystem safety)
+    // e.g., "gi.contracts/group" -> "gi.contracts_group"
+    const contractName = sanitizeContractName(fullContractName)
 
     return {
       contractName,

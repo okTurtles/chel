@@ -5,6 +5,16 @@ import { resolve, join } from 'node:path'
 import process from 'node:process'
 import { serve } from './serve.ts'
 
+/**
+ * Sanitize contract name for filesystem safety
+ * Replaces characters that are not allowed in directory names
+ * @param contractName - Full contract name (e.g., "gi.contracts/group")
+ * @returns Sanitized name safe for filesystem use
+ */
+function sanitizeContractName (contractName: string): string {
+  return contractName.replace(/[/\\:*?"<>|]/g, '_')
+}
+
 interface DevOptions {
   port?: number
   dashboardPort?: number
@@ -253,9 +263,9 @@ class DevEnvironment {
         return null
       }
 
-      // Extract just the contract name part (after the last slash)
-      // e.g., "gi.contracts/group" -> "group"
-      const contractName = fullContractName.split('/').pop() || fullContractName
+      // Use the full contract name (sanitized for filesystem safety)
+      // e.g., "gi.contracts/group" -> "gi.contracts_group"
+      const contractName = sanitizeContractName(fullContractName)
 
       return {
         contractName,

@@ -47,11 +47,11 @@ Note: in many (if not all) instances, the `<url>` parameter can refer to a local
 chel pin <version> <manifest-file-path>
 
 # Pin specific contract to a version using its manifest (from dist/contracts)
-chel pin 2.0.5 dist/contracts/chatroom.2.0.5.manifest.json
-chel pin 2.0.0 dist/contracts/group.2.0.0.manifest.json
+chel pin 2.0.5 dist/contracts/2.0.5/chatroom.2.0.5.manifest.json
+chel pin 2.0.0 dist/contracts/2.0.0/group.2.0.0.manifest.json
 
 # Switch versions efficiently with --only-changed
-chel pin 2.0.6 dist/contracts/chatroom.2.0.6.manifest.json --only-changed
+chel pin 2.0.6 dist/contracts/2.0.6/chatroom.2.0.6.manifest.json --only-changed
 
 # Note: Contracts are pinned to the contracts/ output directory
 ```
@@ -62,11 +62,11 @@ chel pin 2.0.6 dist/contracts/chatroom.2.0.6.manifest.json --only-changed
   "contracts": {
     "chatroom": {
       "version": "2.0.6",
-      "path": "contracts/chatroom/2.0.6/chatroom.2.0.6.manifest.json"
+      "path": "contracts/gi.contracts_chatroom/2.0.6/chatroom.2.0.6.manifest.json"
     },
     "group": {
       "version": "2.0.0",
-      "path": "contracts/group/2.0.0/group.2.0.0.manifest.json"
+      "path": "contracts/gi.contracts_group/2.0.0/group.2.0.0.manifest.json"
     }
   }
 }
@@ -75,14 +75,14 @@ chel pin 2.0.6 dist/contracts/chatroom.2.0.6.manifest.json --only-changed
 **Directory Structure Created:**
 ```
 contracts/
-├── chatroom/
+├── gi.contracts_chatroom/
 │   ├── 2.0.5/
 │   │   ├── chatroom.js
 │   │   └── chatroom-slim.js
 │   └── 2.0.6/
 │       ├── chatroom.js
 │       └── chatroom-slim.js
-└── group/
+└── gi.contracts_group/
     └── 2.0.0/
         ├── group.js
         └── group-slim.js
@@ -109,7 +109,7 @@ This creates:
 ```bash
 chel manifest [-k|--key <pubkey1> [-k|--key <pubkey2> ...]] [--out=<manifest.json>] [-s|--slim <contract-slim.js>] [-v|--version <version>] <key.json> <contract-bundle.js>
 
-chel manifest --slim contracts/chatroom/2.0.10/chatroom-slim.js --version 2.0.10 --out contracts/chatroom/2.0.10/chatroom.2.0.10.manifest.json key.json contracts/chatroom/2.0.10/chatroom.js
+chel manifest --slim contracts/gi.contracts_chatroom/2.0.10/chatroom-slim.js --version 2.0.10 --out contracts/gi.contracts_chatroom/2.0.10/chatroom.2.0.10.manifest.json key.json contracts/gi.contracts_chatroom/2.0.10/chatroom.js
 ```
 
 This replaces the placeholder values with actual cryptographic hashes and signatures required for secure contract deployment.
@@ -141,8 +141,8 @@ $ chel serve
 🚀 Starting Chelonia app server...
 📦 Step 1: Preloading contracts...
 📋 Found 4 contract manifest(s) to deploy
-contracts/chatroom/2.0.6/chatroom.js: /data/zLAeVmpcc88g...
-contracts/group/2.0.0/group.js: /data/zLAeVmpcc88g...
+contracts/gi.contracts_chatroom/2.0.6/chatroom.js: /data/zLAeVmpcc88g...
+contracts/gi.contracts_group/2.0.0/group.js: /data/zLAeVmpcc88g...
 ✅ Successfully preloaded 4 contract(s) into database
 🚀 Step 2: Starting dashboard server...
 📊 Dashboard server running at: http://localhost:8888

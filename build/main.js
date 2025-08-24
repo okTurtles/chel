@@ -4260,6 +4260,9 @@ import process12 from "node:process";
 import { readdir as readdir3, mkdir as mkdir3, readFile as readFile4 } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join as join4, resolve as resolve4 } from "node:path";
+function sanitizeContractName(contractName) {
+  return contractName.replace(/[/\\:*?"<>|]/g, "_");
+}
 async function startDashboardServer(port) {
   const dashboardServer = await Promise.resolve().then(() => (init_dashboard_server(), dashboard_server_exports));
   await dashboardServer.startDashboard(port);
@@ -4275,7 +4278,7 @@ async function parseManifest(manifestPath) {
     if (!fullContractName || !mainFile || !version2) {
       return null;
     }
-    const contractName = fullContractName.split("/").pop() || fullContractName;
+    const contractName = sanitizeContractName(fullContractName);
     return {
       contractName,
       version: version2,
@@ -4510,6 +4513,9 @@ import { readFile as readFile5 } from "node:fs/promises";
 import { existsSync as existsSync2, watch } from "node:fs";
 import { resolve as resolve5, join as join5 } from "node:path";
 import process13 from "node:process";
+function sanitizeContractName2(contractName) {
+  return contractName.replace(/[/\\:*?"<>|]/g, "_");
+}
 var DevEnvironment = class {
   watchers = [];
   serverProcess;
@@ -4673,7 +4679,7 @@ var DevEnvironment = class {
       if (!fullContractName || !mainFile || !version2) {
         return null;
       }
-      const contractName = fullContractName.split("/").pop() || fullContractName;
+      const contractName = sanitizeContractName2(fullContractName);
       return {
         contractName,
         version: version2,
@@ -4758,6 +4764,9 @@ import { readFile as readFile6, writeFile as writeFile2, mkdir as mkdir4, copyFi
 import { existsSync as existsSync3 } from "node:fs";
 import { resolve as resolve6, join as join6, dirname as dirname4, basename as basename4 } from "node:path";
 import process14 from "node:process";
+function sanitizeContractName3(contractName) {
+  return contractName.replace(/[/\\:*?"<>|]/g, "_");
+}
 var ContractPinner = class {
   projectRoot;
   options;
@@ -4837,7 +4846,7 @@ var ContractPinner = class {
       if (!fullContractName || !mainFile || !version2) {
         throw new Error("Invalid manifest: missing contract name, main file, or version");
       }
-      const contractName = fullContractName.split("/").pop() || fullContractName;
+      const contractName = sanitizeContractName3(fullContractName);
       return {
         contractName,
         version: version2,
