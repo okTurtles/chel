@@ -168,6 +168,22 @@ chel serve --dp 8888 --port 8000 --db-type sqlite --db-location ./app.db ./my-ap
 4. **Server Startup** - Starts dashboard and application servers
 5. **Ready for Development** - All historical contracts available for message processing
 
+### 🚀 Quick Start
+
+Try the TodoMVC example to see Chelonia in action:
+
+```bash
+# Run the TodoMVC example app
+chel serve todomvc
+```
+
+Then open http://localhost:8000/app/ to see a fully functional TodoMVC app built with:
+- **Identity contracts** for user management
+- **Direct KV store operations** for TODO persistence
+- **No service worker** - simple browser-based architecture
+
+Build your own decentralized apps on Chelonia!
+
 ### `chel dev` - Live Development Environment
 
 🧪 **Live-testing environment with hot reload and contract interaction**
