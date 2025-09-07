@@ -1,11 +1,11 @@
-import { Hapi, Request, ResponseToolkit, Boom, verifyShelterAuthorizationHeader } from '~/deps.ts'
+import { type Hapi, type Request, type ResponseToolkit, Boom, verifyShelterAuthorizationHeader } from '~/deps.ts'
 
-const plugin = {
+const plugin: Hapi = {
   name: 'chel-auth',
-  register (server: Hapi) {
+  register: function (server: Hapi) {
     server.auth.scheme('chel-bearer', () => {
       return {
-        authenticate (request: Request, h: ResponseToolkit) {
+        authenticate: function (request: Request, h: ResponseToolkit) {
           const { authorization } = request.headers
           if (!authorization) {
             return h.unauthenticated(Boom.unauthorized(null, 'bearer'))
@@ -22,7 +22,7 @@ const plugin = {
 
     server.auth.scheme ('chel-shelter', () => {
       return {
-        authenticate (request: Request, h: ResponseToolkit) {
+        authenticate: function (request: Request, h: ResponseToolkit) {
           const { authorization } = request.headers
           if (!authorization) {
             return h.unauthenticated(Boom.unauthorized(null, 'shelter'))

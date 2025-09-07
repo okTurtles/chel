@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-this-alias
 import { Buffer } from 'node:buffer'
 import { appendToIndexFactory, removeFromIndexFactory } from './database.ts'
 import { PUBSUB_INSTANCE } from './instance-keys.ts'
@@ -10,7 +11,7 @@ import {
   REQUEST_TYPE,
   createMessage,
   aes128gcm,
-  rfc8188Encrypt
+  rfc8188Encrypt as encrypt
 } from '~/deps.ts'
 
 // TypeScript interfaces for push server types
@@ -48,9 +49,9 @@ export interface PushSubscriptionInfo {
 }
 
 interface PushServerActionHandlers {
-  [PUSH_SERVER_ACTION_TYPE.SEND_PUBLIC_KEY]: (socket: WebSocketConnection) => void;
-  [PUSH_SERVER_ACTION_TYPE.STORE_SUBSCRIPTION]: (socket: WebSocketConnection, payload: StoreSubscriptionPayload) => Promise<void>;
-  [PUSH_SERVER_ACTION_TYPE.DELETE_SUBSCRIPTION]: (socket: WebSocketConnection) => Promise<void> | void;
+  [PUSH_SERVER_ACTION_TYPE.SEND_PUBLIC_KEY]: (this: WebSocketConnection) => void;
+  [PUSH_SERVER_ACTION_TYPE.STORE_SUBSCRIPTION]: (this: WebSocketConnection, payload: StoreSubscriptionPayload) => Promise<void>;
+  [PUSH_SERVER_ACTION_TYPE.DELETE_SUBSCRIPTION]: (this: WebSocketConnection) => Promise<void> | void;
 }
 
 // Note: aes128gcm and encrypt imports will be handled via deps.ts if needed
@@ -192,7 +193,7 @@ const encryptPayload = async (subscription: { encryptionKeys: Promise<[Buffer, B
   if (!readableStream) throw new Error('Failed to create readable stream')
   const [asPublic, IKM] = await subscription.encryptionKeys
 
-  return rfc8188Encrypt(aes128gcm, readableStream as unknown as ReadableStream<BufferSource>, 32768, asPublic.buffer as Readonly<ArrayBufferLike>, IKM.buffer as Readonly<ArrayBufferLike>).then(async (bodyStream: ReadableStream<ArrayBufferLike>) => {
+  return encrypt(aes128gcm, readableStream as unknown as ReadableStream<BufferSource>, 32768, asPublic.buffer as Readonly<ArrayBufferLike>, IKM.buffer as Readonly<ArrayBufferLike>).then(async (bodyStream: ReadableStream<ArrayBufferLike>) => {
     const chunks: Uint8Array[] = []
     const reader = bodyStream.getReader()
     for (;;) {
@@ -216,19 +217,19 @@ export const postEvent = async (subscription: PushSubscriptionInfo, event: strin
 
   const req = await fetch(subscription.endpoint, {
     method: 'POST',
-    headers: new Headers([
+    headers: [
       ['authorization', authorization],
       ...(body
-        ? [['content-encoding', 'aes128gcm'] as [string, string],
+        ? [['content-encoding', 'aes128gcm'],
           [
             'content-type',
             'application/octet-stream'
-          ] as [string, string]
+          ]
         ]
         : []),
       // ['push-receipt', ''],
-      ['ttl', '60'] as [string, string]
-    ] as [string, string][]),
+      ['ttl', '60']
+    ],
     body
   })
 
@@ -252,10 +253,12 @@ export const postEvent = async (subscription: PushSubscriptionInfo, event: strin
 }
 
 export const pushServerActionhandlers: PushServerActionHandlers = {
-  [PUSH_SERVER_ACTION_TYPE.SEND_PUBLIC_KEY] (socket: WebSocketConnection) {
+  [PUSH_SERVER_ACTION_TYPE.SEND_PUBLIC_KEY] () {
+    const socket = this
     socket.send(createMessage(REQUEST_TYPE.PUSH_ACTION, { type: PUSH_SERVER_ACTION_TYPE.SEND_PUBLIC_KEY, data: getVapidPublicKey() }))
   },
-  async [PUSH_SERVER_ACTION_TYPE.STORE_SUBSCRIPTION] (socket: WebSocketConnection, payload: StoreSubscriptionPayload) {
+  async [PUSH_SERVER_ACTION_TYPE.STORE_SUBSCRIPTION] (payload) {
+    const socket = this
     const { server } = socket
     const { applicationServerKey, settings, subscriptionInfo } = payload
     if (applicationServerKey) {
@@ -364,9 +367,9 @@ export const pushServerActionhandlers: PushServerActionHandlers = {
       throw e // rethrow
     }
   },
-  [PUSH_SERVER_ACTION_TYPE.DELETE_SUBSCRIPTION] (socket: WebSocketConnection) {
-    const subscriptionId = socket.pushSubscriptionId
-
+  [PUSH_SERVER_ACTION_TYPE.DELETE_SUBSCRIPTION] () {
+    const socket = this
+    const { pushSubscriptionId: subscriptionId } = socket
     if (subscriptionId) {
       return removeSubscription(subscriptionId)
     }

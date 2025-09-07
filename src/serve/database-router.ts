@@ -3,7 +3,6 @@ import { resolve } from 'node:path'
 import { readFile } from 'node:fs/promises'
 import process from 'node:process'
 import DatabaseBackend from './DatabaseBackend.ts'
-import type { IDatabaseBackend } from './DatabaseBackend.ts'
 
 type ConfigEntry = { name: string; options: Record<string, unknown> }
 type Config = {
@@ -19,8 +18,8 @@ const {
   GI_PERSIST_ROUTER_CONFIG_PATH = './database-router-config.json'
 } = process.env
 
-export default class RouterBackend extends DatabaseBackend implements IDatabaseBackend {
-  backends!: { [key: string]: IDatabaseBackend }
+export default class RouterBackend extends DatabaseBackend {
+  backends!: { [key: string]: DatabaseBackend }
   config!: Config
 
   constructor (options: { config?: Config } = {}) {
@@ -28,7 +27,7 @@ export default class RouterBackend extends DatabaseBackend implements IDatabaseB
     if (options.config) this.config = options.config
   }
 
-  lookupBackend (key: string): IDatabaseBackend {
+  lookupBackend (key: string): DatabaseBackend {
     const { backends, config } = this
     const keyPrefixes = Object.keys(config)
     for (let i = 0; i < keyPrefixes.length; i++) {
@@ -78,7 +77,7 @@ export default class RouterBackend extends DatabaseBackend implements IDatabaseB
       throw new Error(`[${this.constructor.name}] ${errors.length} error(s) found in your config.`, { cause: errors })
     }
     // Init backends
-    this.backends = Object.create(null) as { [key: string]: IDatabaseBackend }
+    this.backends = Object.create(null) as { [key: string]: DatabaseBackend }
     const entries = Object.entries(this.config)
     await Promise.all(entries.map(async entry => {
       const [keyPrefix, { name, options }] = entry
@@ -104,11 +103,9 @@ export default class RouterBackend extends DatabaseBackend implements IDatabaseB
   async clear (): Promise<void> {
     for (const backend of new Set(Object.values(this.backends))) {
       try {
-        // $FlowFixMe[incompatible-use]
         await backend.clear()
       } catch (e) {
-        // $FlowFixMe[incompatible-use]
-        const prefix = Object.entries(this.backends).find(([, b]) => b === backend)?.[0]
+        const prefix = Object.entries(this.backends).find(([, b]) => b === backend)![0]
         console.error(e, `Error clearing DB for prefix ${prefix}`)
       }
     }
@@ -117,11 +114,9 @@ export default class RouterBackend extends DatabaseBackend implements IDatabaseB
   async close () {
     for (const backend of new Set(Object.values(this.backends))) {
       try {
-        // $FlowFixMe[incompatible-use]
         await backend.close()
       } catch (e) {
-        // $FlowFixMe[incompatible-use]
-        const prefix = Object.entries(this.backends).find(([, b]) => b === backend)?.[0]
+        const prefix = Object.entries(this.backends).find(([, b]) => b === backend)![0]
         console.error(e, `Error closing DB for prefix ${prefix}`)
       }
     }

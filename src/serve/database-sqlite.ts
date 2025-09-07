@@ -1,12 +1,10 @@
 import { Buffer } from 'node:buffer'
 import { mkdir } from 'node:fs/promises'
 import { basename, dirname, join, resolve } from 'node:path'
-import process from 'node:process'
 import { sqlite, SQLiteDB } from '~/deps.ts'
 import DatabaseBackend from './DatabaseBackend.ts'
-import type { IDatabaseBackend } from './DatabaseBackend.ts'
 
-export default class SqliteBackend extends DatabaseBackend implements IDatabaseBackend {
+export default class SqliteBackend extends DatabaseBackend {
   dataFolder: string = ''
   db: SQLiteDB | null = null
   filename: string = ''
@@ -35,7 +33,6 @@ export default class SqliteBackend extends DatabaseBackend implements IDatabaseB
       throw new Error(`The ${filename} SQLite database is already open.`)
     }
     this.db = new sqlite.Database(join(dataFolder, filename))
-    process.on('exit', () => this.db?.close())
     this.run('CREATE TABLE IF NOT EXISTS Data(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)')
     console.info(`Connected to the ${filename} SQLite database.`)
     this.readStatement = this.db.prepare('SELECT value FROM Data WHERE key = ?')
@@ -44,16 +41,18 @@ export default class SqliteBackend extends DatabaseBackend implements IDatabaseB
   }
 
   // Useful in test hooks.
+  // deno-lint-ignore require-await
   async clear (): Promise<void> {
-    await this.run('DELETE FROM Data')
+    this.run('DELETE FROM Data')
   }
 
+  // deno-lint-ignore require-await
   async readData (key: string): Promise<Buffer | string | void> {
     const row = this.readStatement!.get(key)
     // 'row' will be undefined if the key was not found.
     // Note: sqlite remembers the type of every stored value, therefore we
     // can return the value as-is.
-    return await row?.value
+    return row?.value
   }
 
   async writeData (key: string, value: Buffer | string): Promise<void> {
@@ -65,6 +64,6 @@ export default class SqliteBackend extends DatabaseBackend implements IDatabaseB
   }
 
   close () {
-    this.db?.close()
+    this.db!.close()
   }
 }

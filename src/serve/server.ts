@@ -1,3 +1,4 @@
+// deno-lint-ignore-file no-this-alias
 import { Hapi, Inert, sbp, chalk, SPMessage, SERVER, multicodes, parseCID } from '~/deps.ts'
 // import type { SubMessage, UnsubMessage } from './pubsub.ts' // TODO: Use for type checking
 import { basename, join, dirname } from 'node:path'
@@ -137,19 +138,15 @@ hapi.ext({
       // Hapi Boom error responses don't have `.header()`,
       // but custom headers can be manually added using `.output.headers`.
       // See https://hapi.dev/module/boom/api/.
-      const req = request as Record<string, unknown>
-      const response = req.response as Record<string, unknown>
-      if (typeof response.header === 'function') {
-        (response.header as (key: string, value: string) => void)('X-Frame-Options', 'deny')
+      if (typeof request.response.header === 'function') {
+        request.response.header('X-Frame-Options', 'DENY')
       } else {
-        const output = response.output as Record<string, unknown>
-        const headers = output.headers as Record<string, string>
-        headers['X-Frame-Options'] = 'deny'
+        request.response.output.headers['X-Frame-Options'] = 'DENY'
       }
     } catch (err: unknown) {
       console.warn(chalk.yellow('[backend] Could not set X-Frame-Options header:', (err as Error).message))
     }
-    return (h as Record<string, unknown>).continue
+    return h.continue
   }
 })
 
@@ -300,7 +297,7 @@ sbp('sbp/selectors/register', {
     const sizeKey = `_private_size_${resourceID}`
     return updateSize(resourceID, sizeKey, size).then(() => {
       // Because this is relevant key for size accounting, call updateSizeSideEffects
-      return ownerSizeTotalWorker ? ownerSizeTotalWorker.rpcSbp('worker/updateSizeSideEffects', { resourceID, size, ultimateOwnerID }) : Promise.resolve()
+      return ownerSizeTotalWorker?.rpcSbp('worker/updateSizeSideEffects', { resourceID, size, ultimateOwnerID })
     })
   },
   'backend/server/updateContractFilesTotalSize': function (resourceID: string, size: number) {
@@ -475,13 +472,9 @@ sbp('sbp/selectors/register', {
 })
 
 if (process.env.NODE_ENV === 'development' && !process.env.CI) {
-  hapi.events.on('response', (request: unknown) => {
-    const req = request as Record<string, unknown>
-    const headers = req.headers as Record<string, string>
-    const info = req.info as Record<string, unknown>
-    const ip = headers['x-real-ip'] || info.remoteAddress
-    const response = req.response as Record<string, unknown>
-    console.debug(chalk`{grey ${ip}: ${req.method} ${req.path} --> ${response.statusCode}}`)
+  hapi.events.on('response', (req) => {
+    const ip = req.headers['x-real-ip'] || req.info.remoteAddress
+    console.debug(chalk`{grey ${ip}: ${req.method} ${req.path} --> ${req.response.statusCode}}`)
   })
 }
 
@@ -492,7 +485,7 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
         GI_VERSION: GI_VERSION || null,
         CONTRACTS_VERSION: CONTRACTS_VERSION || null
       }
-      ;((socket as Record<string, unknown>).send as (msg: unknown) => void)(createNotification(NOTIFICATION_TYPE.VERSION_INFO, versionInfo))
+      socket.send(createNotification(NOTIFICATION_TYPE.VERSION_INFO, versionInfo))
     }
   },
   socketHandlers: {
@@ -519,13 +512,13 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
     }
   },
   messageHandlers: {
-    [REQUEST_TYPE.PUSH_ACTION]: (async function (this: unknown, { data }: { data: unknown }) {
-      const socket = this as Record<string, unknown>
-      const dataObj = data as Record<string, unknown>
+    [REQUEST_TYPE.PUSH_ACTION]: async function ({ data }) {
+      const socket = this
+      const dataObj = data
       const { action, payload } = dataObj
 
       if (!action) {
-        ((socket as Record<string, unknown>).send as (msg: unknown) => void)(createPushErrorResponse({ message: '\'action\' field is required' }))
+        socket.send(createPushErrorResponse({ message: '\'action\' field is required' }))
       }
 
       const handler = pushServerActionhandlers[action as keyof typeof pushServerActionhandlers]
@@ -539,13 +532,13 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
           ;((socket as Record<string, unknown>).send as (msg: unknown) => void)(createPushErrorResponse({ actionType: action as string, message: message as string }))
         }
       } else {
-        ;((socket as Record<string, unknown>).send as (msg: unknown) => void)(createPushErrorResponse({ message: `No handler for the '${action}' action` }))
+        socket.send(createPushErrorResponse({ message: `No handler for the '${action}' action` }))
       }
-    }) as (...args: unknown[]) => unknown,
+    },
     // This handler adds subscribed channels to the web push subscription
     // associated with the WS, so that when the WS is closed we can continue
     // sending messages as web push notifications.
-    [NOTIFICATION_TYPE.SUB]: (function (this: unknown, { channelID }: { channelID: string }) {
+    [NOTIFICATION_TYPE.SUB] ({ channelID }) {
       const socket = this as Record<string, unknown>
       const { server } = this as { server: { pushSubscriptions: Record<string, unknown> } }
       if (!socket.pushSubscriptionId) return
@@ -555,11 +548,11 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
       }
 
       addChannelToSubscription(server as { pushSubscriptions: Record<string, { settings?: unknown; subscriptions: Set<string> }> }, socket.pushSubscriptionId as string, channelID)
-    }) as (...args: unknown[]) => unknown,
+    },
     // This handler removes subscribed channels from the web push subscription
     // associated with the WS, so that when the WS is closed we don't send
     // messages as web push notifications.
-    [NOTIFICATION_TYPE.UNSUB]: (function (this: unknown, { channelID }: { channelID: string }) {
+    [NOTIFICATION_TYPE.UNSUB] ({ channelID }) {
       const socket = this as Record<string, unknown>
       const { server } = this as { server: { pushSubscriptions: Record<string, unknown> } }
       if (!socket.pushSubscriptionId) return
@@ -569,7 +562,7 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
       }
 
       deleteChannelFromSubscription(server as { pushSubscriptions: Record<string, { settings?: unknown; subscriptions: Set<string> }> }, socket.pushSubscriptionId as string, channelID)
-    }) as (...args: unknown[]) => unknown
+    }
   }
 }))
 
@@ -657,18 +650,14 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
     // that are 'asleep' and that might be woken up by the push event
     Object.values(pubsub.pushSubscriptions || {})
       .filter((pushSubscription: unknown) =>
-        !!((pushSubscription as PushSubscriptionInfo).settings as { heartbeatInterval?: number })?.heartbeatInterval &&
-        (pushSubscription as PushSubscriptionInfo).sockets.size === 0
+        !!pushSubscription.settings.heartbeatInterval && pushSubscription.sockets.size === 0
       ).forEach((pushSubscription: unknown) => {
-        const subscription = pushSubscription as PushSubscriptionInfo
-        const last = map.get(subscription) ?? Number.NEGATIVE_INFINITY
-        // If we've recently sent a recurring notification, skip it
-        if ((now - last) < (subscription.settings as { heartbeatInterval: number }).heartbeatInterval) return
-
-        postEvent(subscription, notification).then(() => {
-          map.set(subscription, now)
-        }).catch((e) => {
-          console.warn(e, 'Error sending recurring message to web push client', subscription.id)
+        const last = map.get(pushSubscription) ?? Number.NEGATIVE_INFINITY
+        if (now - last < pushSubscription.settings.heartbeatInterval) return
+        postEvent(pushSubscription, notification).then(() => {
+          map.set(pushSubscription, now)
+         }).catch((e) => {
+          console.warn(e, 'Error sending recurring message to web push client', pushSubscription.id)
         })
       })
     // Repeat every 1 hour

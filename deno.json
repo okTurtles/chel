@@ -45,10 +45,8 @@
     "singleQuote": true
   },
   "lint": {
-    "exclude": ["node_modules/", "vendor/", "dist/", "build/", "test/assets/"],
-    "rules": {
-      "exclude": ["no-window", "no-window-prefix"]
-    }
+    "exclude": ["node_modules/", "vendor/", "dist/", "build/", "test/assets/"]
   },
-  "vendor": true
+  "vendor": true,
+  "workspace": ["./src/serve/dashboard"]
 }
