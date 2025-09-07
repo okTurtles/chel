@@ -514,8 +514,7 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
   messageHandlers: {
     [REQUEST_TYPE.PUSH_ACTION]: async function ({ data }) {
       const socket = this
-      const dataObj = data
-      const { action, payload } = dataObj
+      const { action, payload } = data
 
       if (!action) {
         socket.send(createPushErrorResponse({ message: '\'action\' field is required' }))

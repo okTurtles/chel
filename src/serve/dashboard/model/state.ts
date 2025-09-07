@@ -16,8 +16,8 @@ const mutations = {
 }
 
 const getters = {
-  colors (state: { theme: string }) {
-    return (Colors as Record<string, unknown>)[state.theme]
+  colors (state: { theme: keyof typeof Colors }) {
+    return Colors[state.theme]
   }
 }
 

@@ -261,20 +261,8 @@ const defaultSocketEventHandlers = {
   },
 
   message (data: Buffer | ArrayBuffer | Buffer[]) {
-    const socket = this as WebSocket & {
-      subscriptions: Set<string>;
-      kvFilter: Map<string, unknown>;
-      server: unknown;
-      activeSinceLastPing: boolean;
-      ip?: string;
-    }
-    const { server } = socket as { server: {
-      subscribersByChannelID: Record<string, Set<WebSocket>>;
-      kvFiltersByChannelID: Record<string, Map<WebSocket, Map<string, unknown>>>;
-      rejectMessageAndTerminateSocket: (socket: WebSocket, reason: string) => void;
-      options: { maxMessageSizeBytes?: number; logPongMessages?: boolean };
-      customMessageHandlers: Record<string, (socket: WebSocket, msg: Message) => void>;
-    }}
+    const socket = this
+    const { server } = this
     const text = data.toString()
     let msg: Message = { type: '' }
 
@@ -296,8 +284,8 @@ const defaultSocketEventHandlers = {
 
     if (defaultHandler || customHandler) {
       try {
-        defaultHandler?.call(server, msg)
-        customHandler?.call(server, msg)
+        defaultHandler?.call(socket, msg)
+        customHandler?.call(socket, msg)
       } catch (error: unknown) {
         // Log the error message and stack trace but do not send it to the client.
         log.error(error, 'onMessage')
@@ -326,8 +314,8 @@ const defaultMessageHandlers = {
   },
 
   [SUB] ({ channelID, kvFilter }: SubMessage) {
-    const socket = this as WebSocket & { subscriptions: Set<string>; kvFilter: Map<string, unknown>; send: (data: unknown) => void }
-    const { server } = socket as { server: { channels: Set<string>; subscribersByChannelID: Record<string, Set<WebSocket>>; kvFiltersByChannelID: Record<string, Map<WebSocket, Map<string, unknown>>> } }
+    const socket = this
+    const { server } = this
 
     if (!server.channels.has(channelID)) {
       socket.send(createErrorResponse(
@@ -355,8 +343,8 @@ const defaultMessageHandlers = {
   },
 
   [KV_FILTER] ({ channelID, kvFilter }: SubMessage) {
-    const socket = this as WebSocket & { subscriptions: Set<string>; kvFilter: Map<string, unknown>; send: (data: unknown) => void }
-    const { server } = socket as { server: { channels: Set<string> } }
+    const socket = this
+    const { server } = this
 
     if (!server.channels.has(channelID)) {
       socket.send(createErrorResponse(
@@ -377,8 +365,8 @@ const defaultMessageHandlers = {
     socket.send(createOkResponse({ type: KV_FILTER, channelID, kvFilter } as unknown as SubMessage))
   },
   [UNSUB] ({ channelID }: UnsubMessage) {
-    const socket = this as WebSocket & { subscriptions: Set<string>; kvFilter: Map<string, unknown>; send: (data: unknown) => void }
-    const { server } = socket as { server: { channels: Set<string>; subscribersByChannelID: Record<string, Set<WebSocket>> } }
+    const socket = this
+    const { server } = this
 
     if (!server.channels.has(channelID)) {
       socket.send(createErrorResponse(
