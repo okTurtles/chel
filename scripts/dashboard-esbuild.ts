@@ -86,35 +86,6 @@ async function copyIndexHtml (outDir: string) {
   }
 }
 
-// Extract CSS from Vue components and create combined-styles.scss
-export async function extractAndCreateCSS (outDir: string) {
-  try {
-    const vueFiles = await findVueFiles(dashboardDir)
-    let combinedCSS = ''
-
-    for (const vueFile of vueFiles) {
-      const source = await readFile(vueFile, 'utf-8')
-      const styleMatch = source.match(/<style[^>]*scoped[^>]*>([\s\S]*?)<\/style>/)
-
-      if (styleMatch) {
-        const componentName = basename(vueFile, '.vue')
-        combinedCSS += `\n/* Styles from ${componentName}.vue */\n${styleMatch[1]}\n`
-      }
-    }
-
-    if (combinedCSS) {
-      const cssDir = join(outDir, 'assets', 'css')
-      await mkdir(cssDir, { recursive: true })
-
-      const cssPath = join(cssDir, 'combined-styles.css')
-      await writeFile(cssPath, combinedCSS)
-      console.log(`📄 Created combined styles: ${cssPath}`)
-    }
-  } catch (error) {
-    console.error('❌ Failed to extract CSS:', error)
-  }
-}
-
 // Vue plugin adapted from Group Income's approach with proper SCSS extraction
 function vuePlugin ({ aliases = {} } = {}) {
   const aliasReplacer = Object.keys(aliases).length > 0 ? createAliasReplacer(aliases) : null
