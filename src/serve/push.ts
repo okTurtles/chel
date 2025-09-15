@@ -229,7 +229,7 @@ export const postEvent = async (subscription: PushSubscriptionInfo, event: strin
         : []),
       // ['push-receipt', ''],
       ['ttl', '60']
-    ],
+    ] as [string, string][],
     body
   })
 
@@ -358,7 +358,7 @@ export const pushServerActionhandlers: PushServerActionHandlers = {
         subscriptionWrapper!.subscriptions.add(channelID)
       })
       await saveSubscription(server, subscriptionId!)
-    } catch (e: unknown) {
+    } catch (e) {
       console.error(e, `[${socket.ip}] Failed to store subscription '${subscriptionId || '??'}' (${host}), removing it!`)
       subscriptionId && removeSubscription(subscriptionId)
       throw e // rethrow

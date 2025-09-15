@@ -2,28 +2,29 @@
 // This file replaces src/deps.ts for dashboard builds to avoid server-side imports
 
 // Vue ecosystem - using full build with template compiler for dashboard
-export { default as Vue } from 'vue/dist/vue.esm.js'
-export { default as Vuex } from 'vuex'
-export { default as VueRouter } from 'vue-router'
-export { default as VueClickaway, mixin as clickaway } from 'vue-clickaway'
-export * as Three from 'three'
+export { default as Vue } from 'npm:vue/dist/vue.esm.js'
+export { default as Vuex } from 'npm:vuex'
+export { default as VueRouter } from 'npm:vue-router'
+export { default as VueClickaway, mixin as clickaway } from 'npm:vue-clickaway'
+// @deno-types="npm:@types/three@0.179.0"
+export * as Three from 'npm:three'
 
 // Browser-compatible utilities
-export { default as dompurify } from 'dompurify'
-export { validationMixin } from 'vuelidate'
+export { default as dompurify } from 'npm:dompurify'
+export { validationMixin } from 'npm:vuelidate'
 // Note: pug is build-time only, not included in browser bundle
 
 // SBP for dashboard functionality
-import sbpDefault from '@sbp/sbp'
+import sbpDefault from 'npm:@sbp/sbp'
 export { sbpDefault as sbp }
 export default sbpDefault
 
 // Import SBP selector implementations needed by dashboard
-import '@sbp/okturtles.data'
-import '@sbp/okturtles.events'
+import 'npm:@sbp/okturtles.data'
+import 'npm:@sbp/okturtles.events'
 
 // Additional SBP selectors needed for dashboard functionality
-import '@sbp/okturtles.eventqueue'
+import 'npm:@sbp/okturtles.eventqueue'
 
 // Stub out server-side dependencies that dashboard shouldn't use
 export const chalk = { green: (s: string) => s, red: (s: string) => s, yellow: (s: string) => s }

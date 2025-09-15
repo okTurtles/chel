@@ -1,6 +1,6 @@
 // TODO: Use logger for debug output if needed
 
-import { sbp, chalk, SPMessage, maybeParseCID, multicodes, createCID, Boom, Joi, Bottleneck, blake32Hash, Request, ResponseToolkit } from '~/deps.ts'
+import { sbp, chalk, SPMessage, maybeParseCID, multicodes, createCID, Boom, Joi, Bottleneck, blake32Hash, Request, ResponseToolkit, type Hapi } from '~/deps.ts'
 import { Buffer } from 'node:buffer'
 // TODO: Use logger for debugging route handlers
 // import { logger } from './logger.ts'
@@ -183,7 +183,7 @@ interface RouteProxy {
 const route = new Proxy({} as RouteProxy, {
   get: function (_obj: RouteProxy, prop: string | symbol): RouteHandler {
     return function (path: string, options: Record<string, unknown>, handler: unknown): void {
-      sbp('okTurtles.data/apply', SERVER_INSTANCE, function (server: { route: (config: { path: string; method: string | symbol; options: Record<string, unknown>; handler: unknown }) => void }) {
+      sbp('okTurtles.data/apply', SERVER_INSTANCE, function (server: Hapi) {
         server.route({ path, method: prop, options, handler })
       })
     }

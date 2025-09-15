@@ -1,5 +1,5 @@
 // deno-lint-ignore-file no-this-alias
-import { Hapi, Inert, sbp, chalk, SPMessage, SERVER, multicodes, parseCID } from '~/deps.ts'
+import { Hapi, Inert, sbp, chalk, SPMessage, SERVER, multicodes, parseCID, Boom } from '~/deps.ts'
 // import type { SubMessage, UnsubMessage } from './pubsub.ts' // TODO: Use for type checking
 import { basename, join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -14,13 +14,14 @@ import { PUBSUB_INSTANCE, SERVER_INSTANCE } from './instance-keys.ts'
 import {
   NOTIFICATION_TYPE,
   REQUEST_TYPE,
+  type WSS,
   createKvMessage,
   createMessage,
   createNotification,
   createPushErrorResponse,
   createServer
 } from './pubsub.ts'
-import { addChannelToSubscription, deleteChannelFromSubscription, postEvent, pushServerActionhandlers, subscriptionInfoWrapper, type PushSubscriptionInfo } from './push.ts'
+import { addChannelToSubscription, deleteChannelFromSubscription, postEvent, pushServerActionhandlers, subscriptionInfoWrapper } from './push.ts'
 
 // ES module equivalent of __dirname
 const __filename = fileURLToPath(import.meta.url)
@@ -111,7 +112,7 @@ const creditsWorker = process.env.CHELONIA_ARCHIVE_MODE || !CREDITS_WORKER_TASK_
 const { CONTRACTS_VERSION, GI_VERSION } = process.env
 
 // Dynamic runtime import to bypass bundling issues with npm: specifier
-const hapi = new Hapi({
+const hapi = new Hapi.Server({
   // debug: false, // <- Hapi v16 was outputing too many unnecessary debug statements
   //               // v17 doesn't seem to do this anymore so I've re-enabled the logging
   // debug: { log: ['error'], request: ['error'] },
@@ -133,17 +134,17 @@ const hapi = new Hapi({
 // See https://stackoverflow.com/questions/26213255/hapi-set-header-before-sending-response
 hapi.ext({
   type: 'onPreResponse',
-  method: function (request: unknown, h: unknown) {
+  method: function (request, h) {
     try {
       // Hapi Boom error responses don't have `.header()`,
       // but custom headers can be manually added using `.output.headers`.
       // See https://hapi.dev/module/boom/api/.
-      if (typeof request.response.header === 'function') {
+      if (!(request.response instanceof Boom.Boom)) {
         request.response.header('X-Frame-Options', 'DENY')
       } else {
         request.response.output.headers['X-Frame-Options'] = 'DENY'
       }
-    } catch (err: unknown) {
+    } catch (err) {
       console.warn(chalk.yellow('[backend] Could not set X-Frame-Options header:', (err as Error).message))
     }
     return h.continue
@@ -474,13 +475,14 @@ sbp('sbp/selectors/register', {
 if (process.env.NODE_ENV === 'development' && !process.env.CI) {
   hapi.events.on('response', (req) => {
     const ip = req.headers['x-real-ip'] || req.info.remoteAddress
-    console.debug(chalk`{grey ${ip}: ${req.method} ${req.path} --> ${req.response.statusCode}}`)
+    const statusCode = req.response instanceof Boom.Boom ? req.response.output.statusCode : req.response.statusCode
+    console.debug(chalk`{grey ${ip}: ${req.method} ${req.path} --> ${statusCode}}`)
   })
 }
 
 sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
   serverHandlers: {
-    connection (socket: unknown) {
+    connection (socket) {
       const versionInfo = {
         GI_VERSION: GI_VERSION || null,
         CONTRACTS_VERSION: CONTRACTS_VERSION || null
@@ -493,20 +495,20 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
     // that subsequent messages to subscribed channels should now be sent to its
     // associated web push subscription, if it exists.
     close () {
-      const socket = this as Record<string, unknown>
-      const { server } = (this as unknown) as { server: Record<string, unknown> }
+      const socket = this
+      const { server } = this
       const subscriptionId = socket.pushSubscriptionId
       if (!subscriptionId) return
-      if (!(server.pushSubscriptions as Record<string, unknown>)[subscriptionId as string]) return
-      (((server.pushSubscriptions as Record<string, unknown>)[subscriptionId as string] as Record<string, unknown>).sockets as Set<unknown>).delete(socket)
+      if (!server.pushSubscriptions[subscriptionId]) return
+      server.pushSubscriptions[subscriptionId].sockets.delete(socket)
       delete socket.pushSubscriptionId
 
-      if ((((server.pushSubscriptions as Record<string, unknown>)[subscriptionId as string] as Record<string, unknown>).sockets as Set<unknown>).size === 0) {
-        (((server.pushSubscriptions as Record<string, unknown>)[subscriptionId as string] as Record<string, unknown>).subscriptions as Set<unknown>).forEach((channelID: unknown) => {
-          if (!(server.subscribersByChannelID as Record<string, unknown>)[channelID as string]) {
-            (server.subscribersByChannelID as Record<string, unknown>)[channelID as string] = new Set()
+      if (server.pushSubscriptions[subscriptionId].sockets.size === 0) {
+        server.pushSubscriptions[subscriptionId].subscriptions.forEach((channelID) => {
+          if (!server.subscribersByChannelID[channelID]) {
+            server.subscribersByChannelID[channelID] = new Set()
           }
-          ((server.subscribersByChannelID as Record<string, unknown>)[channelID as string] as Set<unknown>).add((server.pushSubscriptions as Record<string, unknown>)[subscriptionId as string])
+          server.subscribersByChannelID[channelID].add(server.pushSubscriptions[subscriptionId ])
         })
       }
     }
@@ -526,9 +528,9 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
         try {
           await (handler as (this: unknown, payload: unknown) => Promise<void>).call(socket, payload)
         } catch (error) {
-          const message = (error as Record<string, unknown>)?.message || `push server failed to perform [${action}] action`
-          console.warn(error, `[${(socket as Record<string, unknown>).ip}] Action '${action}' for '${REQUEST_TYPE.PUSH_ACTION}' handler failed: ${message}`)
-          ;((socket as Record<string, unknown>).send as (msg: unknown) => void)(createPushErrorResponse({ actionType: action as string, message: message as string }))
+          const message = (error as Error)?.message || `push server failed to perform [${action}] action`
+          console.warn(error, `[${socket.ip}] Action '${action}' for '${REQUEST_TYPE.PUSH_ACTION}' handler failed: ${message}`)
+          socket.send(createPushErrorResponse({ actionType: action, message: message }))
         }
       } else {
         socket.send(createPushErrorResponse({ message: `No handler for the '${action}' action` }))
@@ -538,29 +540,29 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
     // associated with the WS, so that when the WS is closed we can continue
     // sending messages as web push notifications.
     [NOTIFICATION_TYPE.SUB] ({ channelID }) {
-      const socket = this as Record<string, unknown>
-      const { server } = this as { server: { pushSubscriptions: Record<string, unknown> } }
+      const socket = this
+      const { server } = this
       if (!socket.pushSubscriptionId) return
-      if (!server.pushSubscriptions[socket.pushSubscriptionId as string]) {
+      if (!server.pushSubscriptions[socket.pushSubscriptionId]) {
         delete socket.pushSubscriptionId
         return
       }
 
-      addChannelToSubscription(server as { pushSubscriptions: Record<string, { settings?: unknown; subscriptions: Set<string> }> }, socket.pushSubscriptionId as string, channelID)
+      addChannelToSubscription(server, socket.pushSubscriptionId, channelID)
     },
     // This handler removes subscribed channels from the web push subscription
     // associated with the WS, so that when the WS is closed we don't send
     // messages as web push notifications.
     [NOTIFICATION_TYPE.UNSUB] ({ channelID }) {
-      const socket = this as Record<string, unknown>
-      const { server } = this as { server: { pushSubscriptions: Record<string, unknown> } }
+      const socket = this
+      const { server } = this
       if (!socket.pushSubscriptionId) return
-      if (!server.pushSubscriptions[socket.pushSubscriptionId as string]) {
+      if (!server.pushSubscriptions[socket.pushSubscriptionId]) {
         delete socket.pushSubscriptionId
         return
       }
 
-      deleteChannelFromSubscription(server as { pushSubscriptions: Record<string, { settings?: unknown; subscriptions: Set<string> }> }, socket.pushSubscriptionId as string, channelID)
+      deleteChannelFromSubscription(server, socket.pushSubscriptionId, channelID)
     }
   }
 }))
@@ -642,15 +644,15 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
 
   setInterval(() => {
     const now = Date.now()
-    const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE)
+    const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE) || {} as WSS
     // Notification text
     const notification = JSON.stringify({ type: 'recurring' })
     // Find push subscriptions that do _not_ have a WS open. This means clients
     // that are 'asleep' and that might be woken up by the push event
-    Object.values(pubsub.pushSubscriptions || {})
-      .filter((pushSubscription: unknown) =>
+    Object.values(pubsub.pushSubscriptions)
+      .filter((pushSubscription) =>
         !!pushSubscription.settings.heartbeatInterval && pushSubscription.sockets.size === 0
-      ).forEach((pushSubscription: unknown) => {
+      ).forEach((pushSubscription) => {
         const last = map.get(pushSubscription) ?? Number.NEGATIVE_INFINITY
         if (now - last < pushSubscription.settings.heartbeatInterval) return
         postEvent(pushSubscription, notification).then(() => {

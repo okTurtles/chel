@@ -37,6 +37,7 @@
     "npm:vuex": "npm:vuex@3.6.0"
     },
   "compilerOptions": {
+    "lib": ["deno.window"]
   },
   "nodeModulesDir": "auto",
   "fmt": {

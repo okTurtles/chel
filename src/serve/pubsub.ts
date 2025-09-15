@@ -38,6 +38,7 @@ import { postEvent } from './push.ts'
 // TODO: Use logger for debugging WebSocket events
 // import { logger } from './logger.ts'
 import { chalk, WebSocket, WebSocketServer } from '~/deps.ts'
+import { IncomingMessage } from 'node:http'
 
 const { bold } = chalk
 
@@ -98,6 +99,105 @@ export function createOkResponse (data: JSONType): string {
   return JSON.stringify({ type: OK, data })
 }
 
+type BufferLike =
+    | string
+    | Buffer
+    | DataView
+    | number
+    | ArrayBufferView
+    | Uint8Array
+    | ArrayBuffer
+    | SharedArrayBuffer
+    | readonly number[]
+    | { valueOf(): ArrayBuffer }
+    | { valueOf(): SharedArrayBuffer }
+    | { valueOf(): Uint8Array }
+    | { valueOf(): readonly number[] }
+    | { valueOf(): string }
+    | { [Symbol.toPrimitive](hint: string): string };
+
+interface WS extends Exclude<WebSocket, 'send'> {
+  server: WSS;
+  pinged: boolean;
+  activeSinceLastPing: boolean;
+  id: string;
+  subscriptions: Set<string>;
+  kvFilter: Map<string, unknown>;
+  ip?: string;
+  pushSubscriptionId?: string;
+  send(msg: {
+    type: string;
+    data: JSONType;
+    [x: string]: unknown
+  }, cb?: (err?: Error) => void): void;
+  send(data: BufferLike, cb?: (err?: Error) => void): void;
+  send(
+      data: BufferLike,
+      options: {
+          mask?: boolean | undefined;
+          binary?: boolean | undefined;
+          compress?: boolean | undefined;
+          fin?: boolean | undefined;
+      },
+      cb?: (err?: Error) => void,
+  ): void;
+}
+interface ServerHandlers {
+  close: (this: WSS) => void;
+  connection: (this: WSS, socket: WS, request: IncomingMessage) => void;
+  error: (this: WSS, error: Error) => void;
+  headers: (this: WSS) => void;
+  listening: (this: WSS) => void;
+}
+
+interface SocketHandlers {
+  close: (this: WS) => void;
+  message: (this: WS, data: Buffer | ArrayBuffer | Buffer[]) => void;
+}
+
+interface PushActionMessage {
+  data: {
+    action: string,
+    payload?: unknown;
+  }
+}
+
+interface MessageHandlers {
+  [PONG]: (this: WS) => void;
+  [PUB]: (this: WS, msg: PubMessage) => void;
+  [SUB]: (this: WS, msg: SubMessage) => void;
+  [KV_FILTER]: (this: WS, msg: SubMessage) => void;
+  [UNSUB]: (this: WS, msg: UnsubMessage) => void;
+  [REQUEST_TYPE.PUSH_ACTION]: (this: WS, msg: PushActionMessage) => void;
+}
+
+type BaseOptions = Exclude<ConstructorParameters<typeof WebSocketServer>[0], undefined>
+interface ServerOptions extends BaseOptions {
+  serverHandlers?: Partial<ServerHandlers>;
+  socketHandlers?: Partial<SocketHandlers>;
+  messageHandlers?: Partial<MessageHandlers>;
+  pingInterval?: number;
+  logPingRounds?: boolean;
+}
+
+export interface WSS extends Exclude<WebSocketServer, "clients" | "options"> {
+  clients: Set<WS>;
+  channels: Set<string>;
+  customServerEventHandlers: Partial<ServerHandlers>;
+  customSocketEventHandlers: Partial<SocketHandlers>;
+  customMessageHandlers: Partial<MessageHandlers>;
+  pingIntervalID?: ReturnType<typeof setTimeout>
+  subscribersByChannelID: Record<string, Set<unknown>>
+  pushSubscriptions: Record<string, {
+    sockets: Set<unknown>;
+    subscriptions: Set<string>; // channelID
+  }>;
+  options: ServerOptions
+  broadcast: (this: WSS, message: Message | string, param?: { to?: Iterable<WS>, except?: unknown, wsOnly?: boolean }) => void;
+  enumerateSubscribers: (channelID: string, kvKey?: string) => Generator<WebSocket>;
+  rejectMessageAndTerminateSocket: (this: WSS, request: IncomingMessage, socket: WS) => void;
+}
+
 /**
  * Creates a pubsub server instance.
  *
@@ -116,54 +216,41 @@ export function createOkResponse (data: JSONType): string {
  * {number?} pingInterval=30_000 - The time to wait between successive pings.
  * @returns {Object}
  */
-interface ServerOptions {
-  logPingRounds?: boolean;
-  logPongMessages?: boolean;
-  messageHandlers?: Record<string, (this: unknown, ...args: unknown[]) => unknown>;
-  serverHandlers?: Record<string, (...args: unknown[]) => unknown>;
-  socketHandlers?: Record<string, (...args: unknown[]) => unknown>;
-  backlog?: number;
-  handleProtocols?: (...args: unknown[]) => unknown;
-  maxPayload?: number;
-  path?: string;
-  perMessageDeflate?: boolean | object;
-  pingInterval?: number;
-}
-
-export function createServer (httpServer: unknown, options: ServerOptions = {}): unknown {
+export function createServer (httpServer: import('node:http').Server, options: ServerOptions = {}): unknown {
   const server = new WebSocketServer({
     ...defaultOptions,
     ...options,
     ...{ clientTracking: true },
     server: httpServer
-  })
+  }) as WSS
   server.channels = new Set<string>()
   server.customServerEventHandlers = { ...options.serverHandlers }
   server.customSocketEventHandlers = { ...options.socketHandlers }
   server.customMessageHandlers = { ...options.messageHandlers }
   server.pingIntervalID = undefined
-  server.subscribersByChannelID = Object.create(null) as Record<string, Set<unknown>>
-  server.pushSubscriptions = Object.create(null) as Record<string, unknown>
+  server.subscribersByChannelID = Object.create(null)
+  server.pushSubscriptions = Object.create(null)
 
   // Add listeners for server events, i.e. events emitted on the server object.
-  Object.keys(defaultServerHandlers).forEach((name: string) => {
-    server.on(name, (...args: unknown[]) => {
+  const handlers = (Object.keys(defaultServerHandlers) as (keyof ServerHandlers)[])
+  handlers.forEach(<T extends keyof ServerHandlers>(name: T) => {
+    server.on(name, (...args: Parameters<ServerHandlers[T]>) => {
       try {
         // Always call the default handler first.
-        (defaultServerHandlers as Record<string, (...args: unknown[]) => void>)[name]?.call(server, ...args)
-        server.customServerEventHandlers[name]?.call(server, ...args)
+        defaultServerHandlers[name].apply(server, args)
+        server.customServerEventHandlers[name]?.apply(server, args)
       } catch (error) {
         server.emit('error', error)
       }
     })
   })
   // Setup a ping interval if required.
-  if (server.options.pingInterval > 0) {
+  if (server.options.pingInterval! > 0) {
     server.pingIntervalID = setInterval(() => {
       if (server.clients.size && server.options.logPingRounds) {
         log.debug('Pinging clients')
       }
-      server.clients.forEach((client: WebSocket & { pinged?: boolean; activeSinceLastPing?: boolean; id?: string }) => {
+      server.clients.forEach((client: WS) => {
         if (client.pinged && !client.activeSinceLastPing) {
           log(`Disconnecting irresponsive client ${client.id}`)
           return client.terminate()
@@ -182,7 +269,7 @@ export function createServer (httpServer: unknown, options: ServerOptions = {}):
 
 // Default handlers for server events.
 // The `this` binding refers to the server object.
-const defaultServerHandlers = {
+const defaultServerHandlers: ServerHandlers = {
   close () {
     log('Server closed')
   },
@@ -193,10 +280,10 @@ const defaultServerHandlers = {
    * @param {ws.WebSocket} socket - The client socket that connected.
    * @param {http.IncomingMessage} request - The underlying Node http GET request.
    */
-  connection (socket: WebSocket, request: { url: string; headers: Record<string, string | string[]>; socket: { remoteAddress?: string } }) {
-    const server = this as unknown
+  connection (socket, request) {
+    const server = this
     const url = request.url
-    const urlSearch = url.includes('?') ? url.slice(url.lastIndexOf('?')) : ''
+    const urlSearch = url?.includes('?') ? url.slice(url.lastIndexOf('?')) : ''
     const debugID = new URLSearchParams(urlSearch).get('debugID') || ''
     const send = socket.send.bind(socket)
     socket.id = generateSocketID(debugID)
@@ -214,7 +301,7 @@ const defaultServerHandlers = {
       if (typeof data === 'object' && data !== null && typeof (data as { [Symbol.toPrimitive]?: () => string })[Symbol.toPrimitive] === 'function') {
         return send((data as { [Symbol.toPrimitive]: () => string })[Symbol.toPrimitive]())
       }
-      return send(data)
+      return send(data as BufferLike)
     }
 
     log.bold(`Socket ${socket.id} connected. Total: ${(this as unknown as { clients: Set<WebSocket> }).clients.size}`)
@@ -236,7 +323,7 @@ const defaultServerHandlers = {
       })
     })
   },
-  error (error: Error) {
+  error (error) {
     log.error(error, 'Server error')
   },
   headers () {
@@ -248,7 +335,7 @@ const defaultServerHandlers = {
 
 // Default handlers for server-side client socket events.
 // The `this` binding refers to the connected `ws` socket object.
-const defaultSocketEventHandlers = {
+const defaultSocketEventHandlers: SocketHandlers = {
   close () {
     const socket = this
     const { server } = this
@@ -299,16 +386,16 @@ const defaultSocketEventHandlers = {
 }
 
 // These handlers receive the connected `ws` socket through the `this` binding.
-const defaultMessageHandlers = {
+const defaultMessageHandlers: MessageHandlers = {
   [PONG] () {
-    const socket = this as WebSocket & { activeSinceLastPing: boolean }
+    const socket = this
     // const timestamp = Number(msg.data)
     // const latency = Date.now() - timestamp
     socket.activeSinceLastPing = true
   },
 
   [PUB] (msg: PubMessage) {
-    const { server } = (this as WebSocket & { server: unknown }) as { server: { subscribersByChannelID: Record<string, Set<WebSocket>>; broadcast: (msg: unknown, options: { to: WebSocket[] }) => void } }
+    const { server } = this
     const subscribers = server.subscribersByChannelID[msg.channelID]
     server.broadcast(msg, { to: subscribers ?? [] })
   },
@@ -386,7 +473,7 @@ const defaultMessageHandlers = {
   }
 }
 
-const publicMethods = {
+const publicMethods: Partial<WSS> = {
   /**
    * Broadcasts a message, ignoring clients which are not open.
    *
@@ -395,8 +482,8 @@ const publicMethods = {
    * @param except - A recipient to exclude. Optional.
    */
   broadcast (
-    message: Message | string,
-    { to, except, wsOnly }: { to?: Iterable<unknown>, except?: unknown, wsOnly?: boolean } = {}
+    message,
+    { to, except, wsOnly } = {}
   ) {
     const server = this
     const msg = typeof message === 'string' ? message : JSON.stringify(message)
@@ -455,14 +542,14 @@ const publicMethods = {
   },
 
   // Enumerates the subscribers of a given channel.
-  * enumerateSubscribers (channelID: string, kvKey?: string): Iterable<WebSocket> {
+  * enumerateSubscribers (channelID, kvKey) {
     const server = this
     if (channelID in server.subscribersByChannelID) {
       const subscribers = server.subscribersByChannelID[channelID]
       if (!kvKey) {
         yield * subscribers
       } else {
-        for (const subscriber of subscribers as Set<WebSocket & { kvFilter?: Map<string, Set<string>> }>) {
+        for (const subscriber of subscribers) {
           // kvFilter may be undefined for push subscriptions
           const kvFilter = subscriber.kvFilter?.get(channelID)
           if (!kvFilter || kvFilter.has(kvKey)) yield subscriber
@@ -471,7 +558,7 @@ const publicMethods = {
     }
   },
 
-  rejectMessageAndTerminateSocket (request: Message, socket: WebSocket & { send: (data: unknown, callback?: () => void) => void; terminate: () => void }) {
+  rejectMessageAndTerminateSocket (request, socket) {
     socket.send(createErrorResponse({ ...request }), () => socket.terminate())
   }
 }

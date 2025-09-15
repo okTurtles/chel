@@ -104,7 +104,7 @@ export default sbp('sbp/selectors/register', {
         const value = index?.find((h, i) => {
           if (Number(h) >= currentHeight) {
             // Remove values that no longer are relevant from the index
-            index = (index as string[]).slice(i + 1)
+            index = index!.slice(i + 1)
             return true
           } else {
             return false
@@ -187,7 +187,7 @@ export default sbp('sbp/selectors/register', {
           }
           await fetchMeta()
         } catch (e) {
-          console.error(`[backend] streamEntriesAfter: read(): ${(e as Error).message}:`, (e as Error).stack)
+          console.error(e, '[backend] streamEntriesAfter: read()')
           break
         }
       }
@@ -204,7 +204,7 @@ export default sbp('sbp/selectors/register', {
   // =======================
   // wrapper methods to add / lookup names
   // =======================
-  'backend/db/registerName': async function (name: string, value: string): Promise<unknown> {
+  'backend/db/registerName': async function (name: string, value: string): Promise<{ name: string, value: string }> {
     const exists = await sbp('backend/db/lookupName', name)
     if (exists) {
       throw Boom.conflict('exists')
@@ -215,7 +215,7 @@ export default sbp('sbp/selectors/register', {
 
     return { name, value }
   },
-  'backend/db/lookupName': async function (name: string): Promise<string> {
+  'backend/db/lookupName': async function (name: string): Promise<string | undefined> {
     const value = await sbp('chelonia.db/get', namespaceKey(name))
     return value
   }
@@ -245,7 +245,7 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
     })
 
     // https://github.com/isaacs/node-lru-cache#usage
-    const cache = new LRU({
+    const cache = new LRU<string, Buffer | string>({
       max: Number(process.env.GI_LRU_NUM_ITEMS) || 10000
     })
 
@@ -254,8 +254,8 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
       'chelonia.db/get': async function (prefixableKey: string, { bypassCache }: { bypassCache?: boolean } = {}): Promise<Buffer | string | void> {
         if (!bypassCache) {
           const lookupValue = cache.get(prefixableKey)
-          if (lookupValue !== void 0) {
-            return lookupValue as Buffer | string | void
+          if (lookupValue !== undefined) {
+            return lookupValue
           }
         }
         const [prefix, key] = parsePrefixableKey(prefixableKey)

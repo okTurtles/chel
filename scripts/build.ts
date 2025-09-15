@@ -4,7 +4,7 @@ import { colors, esbuild } from '../src/deps.ts'
 
 const { default: { version } } = await import('../package.json', { with: { type: 'json' } })
 
-const options = {
+const options: esbuild.BuildOptions = {
   entryPoints: [
     './src/main.ts',
     './src/serve/ownerSizeTotalWorker.ts',

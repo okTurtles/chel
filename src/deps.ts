@@ -19,9 +19,8 @@ export { CID } from 'npm:multiformats@11.0.2/cid'
 
 // Serve command dependencies (pinned to Group Income versions)
 export { default as sbp } from 'npm:@sbp/sbp@2.4.1'
-export { Server as Hapi } from 'npm:@hapi/hapi@20.1.2'
-export type { Request, ResponseToolkit } from 'npm:@hapi/hapi@20.1.2'
-export { default as Boom } from 'npm:@hapi/boom@9.1.0'
+export  * as Hapi from 'npm:@hapi/hapi@21.4.3'
+export { default as Boom } from 'npm:@hapi/boom@10.0.1'
 export { default as Joi } from 'npm:@hapi/joi@17.1.1'
 export { default as Inert } from 'npm:@hapi/inert@6.0.3'
 export { default as chalk } from 'npm:chalk@4.1.0'

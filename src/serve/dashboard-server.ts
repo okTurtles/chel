@@ -1,5 +1,4 @@
 import { Hapi, Inert } from '~/deps.ts'
-import type { Request, ResponseToolkit } from '~/deps.ts'
 import path from 'node:path'
 import process from 'node:process'
 
@@ -11,7 +10,7 @@ const getDashboardPath = () => {
 
 export async function startDashboard (port: number): Promise<void> {
   // Create a separate Hapi server for the dashboard
-  const dashboardServer = new Hapi({
+  const dashboardServer = new Hapi.Server({
     port: port,
     host: 'localhost',
     routes: {
@@ -40,13 +39,13 @@ export async function startDashboard (port: number): Promise<void> {
   dashboardServer.route({
     method: 'GET',
     path: '/dashboard',
-    handler: (_request: Request, h: ResponseToolkit) => h.file('index.html')
+    handler: (_request: Hapi.Request, h: Hapi.ResponseToolkit) => h.file('index.html')
   })
 
   dashboardServer.route({
     method: 'GET',
     path: '/dashboard/',
-    handler: (_request: Request, h: ResponseToolkit) => h.file('index.html')
+    handler: (_request: Hapi.Request, h: Hapi.ResponseToolkit) => h.file('index.html')
   })
 
   // Catch-all route for root and other paths (serves index.html)

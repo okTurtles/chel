@@ -5,12 +5,14 @@ import { cloneDeep } from '../common/cdLodash.ts'
 Vue.use(Vuex)
 
 const defaultTheme = THEME_LIGHT
-const initialState = {
+const initialState: {
+  theme: keyof typeof Colors
+} = {
   theme: defaultTheme
 }
 
 const mutations = {
-  setTheme (state: { theme: string }, theme: string) {
+  setTheme (state: { theme: keyof typeof Colors }, theme: keyof typeof Colors) {
     state.theme = theme
   }
 }
