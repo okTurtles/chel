@@ -34,7 +34,7 @@ import type {
 // Define JSON types locally since they're not exported from the module
 type JSONType = string | number | boolean | null | JSONObject | JSONType[]
 type JSONObject = { [key: string]: JSONType }
-import { postEvent } from './push.ts'
+import { postEvent, PushSubscriptionInfo } from './push.ts'
 // TODO: Use logger for debugging WebSocket events
 // import { logger } from './logger.ts'
 import { chalk, WebSocket, WebSocketServer } from '~/deps.ts'
@@ -116,13 +116,13 @@ type BufferLike =
     | { valueOf(): string }
     | { [Symbol.toPrimitive](hint: string): string };
 
-interface WS extends Exclude<WebSocket, 'send'> {
+export interface WS extends Exclude<WebSocket, 'send'> {
   server: WSS;
   pinged: boolean;
   activeSinceLastPing: boolean;
   id: string;
   subscriptions: Set<string>;
-  kvFilter: Map<string, unknown>;
+  kvFilter: Map<string, Set<string>>;
   ip?: string;
   pushSubscriptionId?: string;
   send(msg: {
@@ -178,24 +178,22 @@ interface ServerOptions extends BaseOptions {
   messageHandlers?: Partial<MessageHandlers>;
   pingInterval?: number;
   logPingRounds?: boolean;
+  logPongMessages?: boolean;
 }
 
 export interface WSS extends Exclude<WebSocketServer, "clients" | "options"> {
-  clients: Set<WS>;
+  clients: Set<WS | PushSubscriptionInfo>;
   channels: Set<string>;
   customServerEventHandlers: Partial<ServerHandlers>;
   customSocketEventHandlers: Partial<SocketHandlers>;
   customMessageHandlers: Partial<MessageHandlers>;
   pingIntervalID?: ReturnType<typeof setTimeout>
-  subscribersByChannelID: Record<string, Set<unknown>>
-  pushSubscriptions: Record<string, {
-    sockets: Set<unknown>;
-    subscriptions: Set<string>; // channelID
-  }>;
+  subscribersByChannelID: Record<string, Set<WS | PushSubscriptionInfo>>
+  pushSubscriptions: Record<string, PushSubscriptionInfo>;
   options: ServerOptions
-  broadcast: (this: WSS, message: Message | string, param?: { to?: Iterable<WS>, except?: unknown, wsOnly?: boolean }) => void;
-  enumerateSubscribers: (channelID: string, kvKey?: string) => Generator<WebSocket>;
-  rejectMessageAndTerminateSocket: (this: WSS, request: IncomingMessage, socket: WS) => void;
+  broadcast: (this: WSS, message: Message | string, param?: { to?: Iterable<WS | PushSubscriptionInfo>, except?: unknown, wsOnly?: boolean }) => void;
+  enumerateSubscribers: (channelID: string, kvKey?: string) => Generator<WS | PushSubscriptionInfo>;
+  rejectMessageAndTerminateSocket: (this: WSS, request: Message, socket: WS) => void;
 }
 
 /**
@@ -250,7 +248,8 @@ export function createServer (httpServer: import('node:http').Server, options: S
       if (server.clients.size && server.options.logPingRounds) {
         log.debug('Pinging clients')
       }
-      server.clients.forEach((client: WS) => {
+      (server.clients as Set<unknown> as Set<WS>).forEach((client) => {
+        if ((client as unknown as PushSubscriptionInfo).endpoint) return
         if (client.pinged && !client.activeSinceLastPing) {
           log(`Disconnecting irresponsive client ${client.id}`)
           return client.terminate()
@@ -290,8 +289,8 @@ const defaultServerHandlers: ServerHandlers = {
     socket.activeSinceLastPing = true
     socket.pinged = false
     socket.server = server
-    socket.subscriptions = new Set<string>()
-    socket.kvFilter = new Map<string, unknown>()
+    socket.subscriptions = new Set()
+    socket.kvFilter = new Map()
     socket.ip = request.headers['x-real-ip'] || request.headers['x-forwarded-for']?.split(',')[0].trim() || request.socket.remoteAddress
     // Sometimes (like when using `createMessage`), we want to send objects that
     // are serialized as strings. The `ws` library sends these as binary data,
@@ -314,7 +313,7 @@ const defaultServerHandlers: ServerHandlers = {
           log.debug(`Event '${eventName}' on socket ${socket.id}`, ...args.map(arg => String(arg)))
         }
         try {
-          (defaultSocketEventHandlers as Record<string, (this: WebSocket, ...args: unknown[]) => void>)[eventName]?.call(socket, ...args)
+          defaultSocketEventHandlers[eventName]?.call(socket, ...args)
           socket.server.customSocketEventHandlers[eventName]?.call(socket, ...args)
         } catch (error: unknown) {
           socket.server.emit('error', error)
@@ -355,7 +354,7 @@ const defaultSocketEventHandlers: SocketHandlers = {
 
     try {
       msg = messageParser(text)
-    } catch (error: unknown) {
+    } catch (error) {
       log.error(error, `Malformed message: ${(error as Error).message}`)
       server.rejectMessageAndTerminateSocket(msg, socket)
       return
@@ -366,14 +365,14 @@ const defaultSocketEventHandlers: SocketHandlers = {
     }
     // The socket can be marked as active since it just received a message.
     socket.activeSinceLastPing = true
-    const defaultHandler = (defaultMessageHandlers as Record<string, (socket: WebSocket, message: Message) => void>)[msg.type]
+    const defaultHandler = defaultMessageHandlers[msg.type]
     const customHandler = server.customMessageHandlers[msg.type]
 
     if (defaultHandler || customHandler) {
       try {
         defaultHandler?.call(socket, msg)
         customHandler?.call(socket, msg)
-      } catch (error: unknown) {
+      } catch (error) {
         // Log the error message and stack trace but do not send it to the client.
         log.error(error, 'onMessage')
         server.rejectMessageAndTerminateSocket(msg, socket)
@@ -386,7 +385,7 @@ const defaultSocketEventHandlers: SocketHandlers = {
 }
 
 // These handlers receive the connected `ws` socket through the `this` binding.
-const defaultMessageHandlers: MessageHandlers = {
+const defaultMessageHandlers: Partial<MessageHandlers> = {
   [PONG] () {
     const socket = this
     // const timestamp = Number(msg.data)
@@ -505,7 +504,7 @@ const publicMethods: Partial<WSS> = {
       // Duplicate message sending (over both WS and push) is handled on the
       // WS logic, for the `close` event (to remove the WS and send over push)
       // and for the `STORE_SUBSCRIPTION` WS action.
-      if (!wsOnly && client.endpoint) {
+      if (!wsOnly && (client as PushSubscriptionInfo).endpoint) {
         // `client.endpoint` means the client is a subscription info object
         // The max length for push notifications in many providers is 4 KiB.
         // However, encrypting adds a slight overhead of 17 bytes at the end
@@ -516,7 +515,7 @@ const publicMethods: Partial<WSS> = {
             continue
           }
         }
-        postEvent(client, shortMsg || msg).catch((e: unknown) => {
+        postEvent(client as PushSubscriptionInfo, shortMsg || msg).catch((e) => {
           // If we have an error posting due to too large of a payload and the
           // message wasn't already shortened, try again
           if ((e as Error)?.message === 'Payload too large') {
@@ -525,7 +524,7 @@ const publicMethods: Partial<WSS> = {
               console.info('Skipping too large of a payload for', client.id)
               return
             }
-            postEvent(client, shortMsg!).catch((e: unknown) => {
+            postEvent(client as PushSubscriptionInfo, shortMsg!).catch((e) => {
               console.error(e, 'Error posting push notification')
             })
             return
@@ -534,9 +533,9 @@ const publicMethods: Partial<WSS> = {
         })
         continue
       }
-      if (client.readyState === WebSocket.OPEN && client !== except) {
+      if ((client as WS).readyState === WebSocket.OPEN && client !== except) {
         // In this branch, we're dealing with a WebSocket
-        client.send(msg)
+        (client as WS).send(msg)
       }
     }
   },
@@ -544,15 +543,15 @@ const publicMethods: Partial<WSS> = {
   // Enumerates the subscribers of a given channel.
   * enumerateSubscribers (channelID, kvKey) {
     const server = this
-    if (channelID in server.subscribersByChannelID) {
-      const subscribers = server.subscribersByChannelID[channelID]
+    if (channelID in server.subscribersByChannelID!) {
+      const subscribers = server.subscribersByChannelID![channelID]
       if (!kvKey) {
         yield * subscribers
       } else {
         for (const subscriber of subscribers) {
           // kvFilter may be undefined for push subscriptions
-          const kvFilter = subscriber.kvFilter?.get(channelID)
-          if (!kvFilter || kvFilter.has(kvKey)) yield subscriber
+          const kvFilter = (subscriber as WS).kvFilter?.get(channelID)
+          if (!kvFilter || kvFilter.has(kvKey)) yield subscriber as WS
         }
       }
     }

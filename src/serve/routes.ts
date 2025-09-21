@@ -1,6 +1,6 @@
 // TODO: Use logger for debug output if needed
 
-import { sbp, chalk, SPMessage, maybeParseCID, multicodes, createCID, Boom, Joi, Bottleneck, blake32Hash, Request, ResponseToolkit, type Hapi } from '~/deps.ts'
+import { sbp, chalk, SPMessage, maybeParseCID, multicodes, createCID, Boom, Joi, Bottleneck, blake32Hash, type Hapi } from '~/deps.ts'
 import { Buffer } from 'node:buffer'
 // TODO: Use logger for debugging route handlers
 // import { logger } from './logger.ts'
@@ -173,17 +173,15 @@ const errorMapper = (e: Error): ReturnType<typeof Boom.notFound> => {
 // dynamically get the HAPI server object from the `SERVER_INSTANCE`, which is
 // defined in `server.js`.
 interface RouteHandler {
-  (path: string, options: Record<string, unknown>, handler: unknown): void;
+  (path: string, options: Hapi.RouteOptions, handler: Hapi.Lifecycle.Method | Hapi.HandlerDecorations): void;
 }
 
-interface RouteProxy {
-  [method: string]: RouteHandler;
-}
+type RouteProxy = Record<Hapi.RouteDefMethods, RouteHandler>
 
 const route = new Proxy({} as RouteProxy, {
-  get: function (_obj: RouteProxy, prop: string | symbol): RouteHandler {
-    return function (path: string, options: Record<string, unknown>, handler: unknown): void {
-      sbp('okTurtles.data/apply', SERVER_INSTANCE, function (server: Hapi) {
+  get: function (_obj, prop: Hapi.RouteDefMethods): RouteHandler {
+    return function (path, options, handler): void {
+      sbp('okTurtles.data/apply', SERVER_INSTANCE, function (server: Hapi.Server) {
         server.route({ path, method: prop, options, handler })
       })
     }
@@ -192,7 +190,7 @@ const route = new Proxy({} as RouteProxy, {
 
 // helper function that returns 404 and prevents client from caching the 404 response
 // which can sometimes break things: https://github.com/okTurtles/group-income/issues/2608
-function notFoundNoCache (h: ResponseToolkit): ReturnType<typeof h.response> {
+function notFoundNoCache (h: Hapi.ResponseToolkit): ReturnType<typeof h.response> {
   return h.response().code(404).header('Cache-Control', 'no-store')
 }
 
@@ -215,13 +213,13 @@ route.POST('/event', {
     },
     payload: Joi.string().required()
   }
-}, async function (request: Request): Promise<unknown> {
+}, async function (request) {
   if (process.env.CHELONIA_ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
   // IMPORTANT: IT IS A REQUIREMENT THAT ANY PROXY SERVERS (E.G. nginx) IN FRONT OF US SET THE
   // X-Real-IP HEADER! OTHERWISE THIS IS EASILY SPOOFED!
   const ip = request.headers['x-real-ip'] || request.info.remoteAddress
   try {
-    const deserializedHEAD = SPMessage.deserializeHEAD(request.payload)
+    const deserializedHEAD = SPMessage.deserializeHEAD(request.payload as string)
     try {
       const parsed = maybeParseCID(deserializedHEAD.head.manifest)
       if (parsed?.code !== multicodes.SHELTER_CONTRACT_MANIFEST) {
@@ -299,7 +297,7 @@ route.POST('/event', {
         }
       }
       // Store size information
-      await sbp('backend/server/updateSize', deserializedHEAD.contractID, Buffer.byteLength(request.payload), deserializedHEAD.isFirstMessage && !credentials?.billableContractID ? deserializedHEAD.contractID : undefined)
+      await sbp('backend/server/updateSize', deserializedHEAD.contractID, Buffer.byteLength(request.payload as Buffer), deserializedHEAD.isFirstMessage && !credentials?.billableContractID ? deserializedHEAD.contractID : undefined)
     } catch (err: unknown) {
       console.error(err, chalk.bold.yellow((err as Error).name))
       if ((err as Error).name === 'ChelErrorDBBadPreviousHEAD' || (err as Error).name === 'ChelErrorAlreadyProcessed') {
@@ -336,7 +334,7 @@ route.GET('/eventsAfter/{contractID}/{since}/{limit?}', {
       keyOps: Joi.boolean()
     })
   }
-}, async function (request: Request): Promise<object[] | Boom.Boom<unknown>> {
+}, async function (request) {
   const { contractID, since, limit } = request.params
   const ip = request.headers['x-real-ip'] || request.info.remoteAddress
   try {
@@ -373,7 +371,7 @@ route.GET('/ownResources', {
     strategies: ['chel-shelter'],
     mode: 'required'
   }
-}, async function (request: Request): Promise<string[]> {
+}, async function (request): Promise<string[]> {
   const billableContractID = request.auth.credentials.billableContractID
   const resources = (await sbp('chelonia.db/get', `_private_resources_${billableContractID}`))?.split('\x00')
 
@@ -395,11 +393,11 @@ if (process.env.NODE_ENV === 'development') {
         value: Joi.string().required()
       })
     }
-  }, function (request: Request, h: ResponseToolkit) {
+  }, function (request, h) {
     if (process.env.CHELONIA_ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
     const ip = request.headers['x-real-ip'] || request.info.remoteAddress
-    const log = (levelToColor as Record<string, (text: string) => string>)[request.payload.level]
-    console.debug(chalk.bold.yellow(`REMOTE LOG (${ip}): `) + log(`[${request.payload.level}] ${request.payload.value}`))
+    const log = (levelToColor as Record<string, (text: string) => string>)[(request.payload as { level: string }).level]
+    console.debug(chalk.bold.yellow(`REMOTE LOG (${ip}): `) + log(`[${(request.payload as { level: string }).level}] ${(request.payload as { value: string }).value}`))
     return h.response().code(200)
   })
 }
@@ -415,7 +413,7 @@ route.POST('/name', {
       value: Joi.string().required()
     })
   }
-}, async function (request: Request, h: ResponseToolkit): Promise<unknown> {
+}, async function (request, h): Promise<unknown> {
   try {
     const { name, value } = request.payload
     if (value.startsWith('_private')) return Boom.badData()
@@ -433,7 +431,7 @@ route.GET('/name/{name}', {
       name: Joi.string().regex(NAME_REGEX).required()
     })
   }
-}, async function (request: Request, h: ResponseToolkit): Promise<unknown> {
+}, async function (request, h): Promise<unknown> {
   const { name } = request.params
   try {
     const lookupResult = await sbp('backend/db/lookupName', name)
@@ -453,7 +451,7 @@ route.GET('/latestHEADinfo/{contractID}', {
       contractID: Joi.string().regex(CID_REGEX).required()
     })
   }
-}, async function (request: Request, h: ResponseToolkit): Promise<unknown> {
+}, async function (request, h): Promise<unknown> {
   const { contractID } = request.params
   try {
     const parsed = maybeParseCID(contractID)
@@ -474,7 +472,7 @@ route.GET('/latestHEADinfo/{contractID}', {
   }
 })
 
-route.GET('/time', {}, function (_request: Request, h: ResponseToolkit) {
+route.GET('/time', {}, function (_request, h) {
   return h
     .response(new Date().toISOString())
     .header('cache-control', 'no-store')
@@ -488,13 +486,13 @@ route.GET('/time', {}, function (_request: Request, h: ResponseToolkit) {
 // API endpoint to check for streams support
 route.POST('/streams-test', {
   payload: {
-    parse: 'false'
+    parse: false
   }
 },
-function (request: Request, h: ResponseToolkit) {
+function (request, h) {
   if (
-    request.payload.byteLength === 2 &&
-    Buffer.from(request.payload).toString() === 'ok'
+    (request.payload as Buffer).byteLength === 2 &&
+    Buffer.from(request.payload as Buffer).toString() === 'ok'
   ) {
     return h.response().code(204)
   } else {
@@ -513,18 +511,18 @@ if (process.env.NODE_ENV === 'development') {
       output: 'data',
       multipart: true,
       allow: 'multipart/form-data',
-      failAction: function (_request: Request, _h: ResponseToolkit, err: Error) {
+      failAction: function (_request, _h, err) {
         console.error('failAction error:', err)
-        return err
+        return Boom.isBoom(err) ? err : Boom.boomify(err || new Error())
       },
       maxBytes: 6 * MEGABYTE, // TODO: make this a configurable setting
       timeout: 10 * SECOND // TODO: make this a configurable setting
     }
-  }, async function (request: Request): Promise<unknown> {
+  }, async function (request): Promise<unknown> {
     if (process.env.CHELONIA_ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
     try {
       console.log('FILE UPLOAD!')
-      const { hash, data } = request.payload
+      const { hash, data } = request.payload as ({hash: string, data: string})
       if (!hash) return Boom.badRequest('missing hash')
       if (!data) return Boom.badRequest('missing data')
 
@@ -557,14 +555,14 @@ route.POST('/file', {
     output: 'stream',
     multipart: { output: 'annotated' },
     allow: 'multipart/form-data',
-    failAction: function (_request: Request, _h: ResponseToolkit, err: unknown) {
+    failAction: function (_request, _h, err) {
       console.error(err, 'failAction error')
-      return err
+      return Boom.isBoom(err) ? err : Boom.boomify(err || new Error())
     },
     maxBytes: FILE_UPLOAD_MAX_BYTES,
     timeout: 10 * SECOND // TODO: make this a configurable setting
   }
-}, async function (request: Request, h: ResponseToolkit): Promise<unknown> {
+}, async function (request, h): Promise<unknown> {
   if (process.env.CHELONIA_ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
   try {
     console.info('FILE UPLOAD!')
@@ -572,7 +570,7 @@ route.POST('/file', {
     if (!credentials?.billableContractID) {
       return Boom.unauthorized('Uploading files requires ownership information', 'shelter')
     }
-    const manifestMeta = request.payload['manifest']
+    const manifestMeta = (request.payload as { manifest: Record<string, unknown> })['manifest']
     if (typeof manifestMeta !== 'object') return Boom.badRequest('missing manifest')
     if (manifestMeta.filename !== 'manifest.json') return Boom.badRequest('wrong manifest filename')
     if (!(manifestMeta.payload instanceof Uint8Array)) return Boom.badRequest('wrong manifest format')
@@ -602,11 +600,11 @@ route.POST('/file', {
       ) {
         throw Boom.badData('bad chunk description')
       }
-      if (!request.payload[i] || !(request.payload[i].payload instanceof Uint8Array)) {
+      if (!(request.payload as unknown[])[i] || !((request.payload as { payload: unknown }[])[i].payload instanceof Uint8Array)) {
         throw Boom.badRequest('chunk missing in submitted data')
       }
-      const ourHash = createCID(request.payload[i].payload, multicodes.SHELTER_FILE_CHUNK)
-      if (request.payload[i].payload.byteLength !== chunk[0]) {
+      const ourHash = createCID((request.payload as { payload: Uint8Array }[])[i].payload, multicodes.SHELTER_FILE_CHUNK)
+      if ((request.payload as { payload: Uint8Array }[])[i].payload.byteLength !== chunk[0]) {
         throw Boom.badRequest('bad chunk size')
       }
       if (ourHash !== chunk[1]) {
@@ -614,7 +612,7 @@ route.POST('/file', {
       }
       // We're done validating the chunk
       ourSize += chunk[0]
-      return [ourHash, request.payload[i].payload]
+      return [ourHash, (request.payload as { payload: Uint8Array }[])[i].payload]
     })
     // Finally, verify the size is correct
     if (ourSize !== manifest.size) return Boom.badRequest('Mismatched total size')
@@ -667,7 +665,7 @@ route.GET('/file/{hash}', {
       hash: Joi.string().regex(CID_REGEX).required()
     })
   }
-}, async function (request: Request, h: ResponseToolkit): Promise<unknown> {
+}, async function (request, h): Promise<unknown> {
   const { hash } = request.params
 
   const parsed = maybeParseCID(hash)
@@ -710,7 +708,7 @@ route.POST('/deleteFile/{hash}', {
       hash: Joi.string().regex(CID_REGEX).required()
     })
   }
-}, async function (request: Request, h: ResponseToolkit): Promise<unknown> {
+}, async function (request, h): Promise<unknown> {
   if (process.env.CHELONIA_ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
   const { hash } = request.params
   const strategy = request.auth.strategy
@@ -729,7 +727,7 @@ route.POST('/deleteFile/{hash}', {
       const ultimateOwner = await lookupUltimateOwner(owner)
       // Check that the user making the request is the ultimate owner (i.e.,
       // that they have permission to delete this file)
-      if (!ctEq(request.auth.credentials.billableContractID, ultimateOwner)) {
+      if (!ctEq(request.auth.credentials.billableContractID as string, ultimateOwner)) {
         return Boom.unauthorized('Invalid shelter auth', 'shelter')
       }
       break
@@ -739,7 +737,7 @@ route.POST('/deleteFile/{hash}', {
       if (!expectedTokenDgst) {
         return Boom.notFound()
       }
-      const tokenDgst = blake32Hash(request.auth.credentials.token)
+      const tokenDgst = blake32Hash(request.auth.credentials.token as string)
       // Constant-time comparison
       // Check that the token provided matches the deletion token for this file
       if (!ctEq(expectedTokenDgst, tokenDgst)) {
@@ -768,7 +766,7 @@ route.POST('/deleteContract/{hash}', {
     strategies: ['chel-shelter', 'chel-bearer'],
     mode: 'required'
   }
-}, async function (request: Request, h: ResponseToolkit): Promise<unknown> {
+}, async function (request, h): Promise<unknown> {
   if (process.env.CHELONIA_ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
   const { hash } = request.params
   const strategy = request.auth.strategy
@@ -784,7 +782,7 @@ route.POST('/deleteContract/{hash}', {
       const ultimateOwner = await lookupUltimateOwner(owner)
       // Check that the user making the request is the ultimate owner (i.e.,
       // that they have permission to delete this file)
-      if (!ctEq(request.auth.credentials.billableContractID, ultimateOwner)) {
+      if (!ctEq(request.auth.credentials.billableContractID as string, ultimateOwner)) {
         return Boom.unauthorized('Invalid shelter auth', 'shelter')
       }
       break
@@ -794,7 +792,7 @@ route.POST('/deleteContract/{hash}', {
       if (!expectedTokenDgst) {
         return Boom.notFound()
       }
-      const tokenDgst = blake32Hash(request.auth.credentials.token)
+      const tokenDgst = blake32Hash(request.auth.credentials.token as string)
       // Constant-time comparison
       // Check that the token provided matches the deletion token for this contract
       if (!ctEq(expectedTokenDgst, tokenDgst)) {
@@ -839,7 +837,7 @@ route.POST('/kv/{contractID}/{key}', {
       key: Joi.string().regex(KV_KEY_REGEX).required()
     })
   }
-}, function (request: Request, h: ResponseToolkit) {
+}, function (request, h) {
   if (process.env.CHELONIA_ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
   const { contractID, key } = request.params
 
@@ -848,7 +846,7 @@ route.POST('/kv/{contractID}/{key}', {
     return Boom.badRequest()
   }
 
-  if (!ctEq(request.auth.credentials.billableContractID, contractID)) {
+  if (!ctEq(request.auth.credentials.billableContractID as string, contractID)) {
     return Boom.unauthorized(null, 'shelter')
   }
 
@@ -913,7 +911,7 @@ route.POST('/kv/{contractID}/{key}', {
 
     const existingSize = existing ? Buffer.from(existing).byteLength : 0
     await sbp('chelonia.db/set', `_private_kv_${contractID}_${key}`, request.payload)
-    await sbp('backend/server/updateSize', contractID, request.payload.byteLength - existingSize)
+    await sbp('backend/server/updateSize', contractID, (request.payload as Buffer).byteLength - existingSize)
     await appendToIndexFactory(`_private_kvIdx_${contractID}`)(key)
     // No await on broadcast for faster responses
     sbp('backend/server/broadcastKV', contractID, key, request.payload.toString()).catch((e: Error) => console.error(e, 'Error broadcasting KV update', contractID, key))
@@ -934,7 +932,7 @@ route.GET('/kv/{contractID}/{key}', {
       key: Joi.string().regex(KV_KEY_REGEX).required()
     })
   }
-}, async function (request: Request, h: ResponseToolkit): Promise<unknown> {
+}, async function (request, h): Promise<unknown> {
   const { contractID, key } = request.params
 
   const parsed = maybeParseCID(contractID)
@@ -942,7 +940,7 @@ route.GET('/kv/{contractID}/{key}', {
     return Boom.badRequest()
   }
 
-  if (!ctEq(request.auth.credentials.billableContractID, contractID)) {
+  if (!ctEq(request.auth.credentials.billableContractID as string, contractID)) {
     return Boom.unauthorized(null, 'shelter')
   }
 
@@ -955,7 +953,7 @@ route.GET('/kv/{contractID}/{key}', {
   return h.response(result).etag(cid).header('x-cid', `"${cid}"`)
 })
 
-route.GET('/serverMessages', { cache: { otherwise: 'no-store' } }, (_request: Request, h: ResponseToolkit) => {
+route.GET('/serverMessages', { cache: { otherwise: 'no-store' } }, (_request, h) => {
   if (!process.env.CHELONIA_SERVER_MESSAGES) return []
   return h.response(process.env.CHELONIA_SERVER_MESSAGES).type('application/json')
 })
@@ -965,14 +963,18 @@ route.GET('/serverMessages', { cache: { otherwise: 'no-store' } }, (_request: Re
 route.GET('/assets/{subpath*}', {
   ext: {
     onPostHandler: {
-      method (request: Request, h: ResponseToolkit) {
+      method (request, h) {
         // since our JS is placed under /assets/ and since service workers
         // have their scope limited by where they are, we must add this
         // header to allow the service worker to function. Details:
         // https://w3c.github.io/ServiceWorker/#service-worker-allowed
         if (request.path.includes('assets/js/sw-')) {
           console.debug('adding header: Service-Worker-Allowed /')
-          request.response.header('Service-Worker-Allowed', '/')
+          if (request.response instanceof Boom.Boom) {
+            request.response.output.headers['Service-Worker-Allowed'] = '/'
+          } else {
+            request.response.header('Service-Worker-Allowed', '/')
+          }
         }
         return h.continue
       }
@@ -981,7 +983,7 @@ route.GET('/assets/{subpath*}', {
   files: {
     relativeTo: staticServeConfig.distAssets
   }
-}, function (request: Request, h: ResponseToolkit) {
+}, function (request, h) {
   const { subpath } = request.params
   const basename = path.basename(subpath)
   // In the build config we told our bundler to use the `[name]-[hash]-cached` template
@@ -1002,14 +1004,18 @@ if (isCheloniaDashboard) {
   route.GET('/dashboard/assets/{subpath*}', {
     ext: {
       onPostHandler: {
-        method (request: Request, h: ResponseToolkit) {
+        method (request, h) {
           // since our JS is placed under /assets/ and since service workers
           // have their scope limited by where they are, we must add this
           // header to allow the service worker to function. Details:
           // https://w3c.github.io/ServiceWorker/#service-worker-allowed
           if (request.path.includes('assets/js/sw-')) {
             console.debug('adding header: Service-Worker-Allowed /')
-            request.response.header('Service-Worker-Allowed', '/')
+            if (request.response instanceof Boom.Boom) {
+              request.response.output.headers['Service-Worker-Allowed'] = '/'
+            } else {
+              request.response.header('Service-Worker-Allowed', '/')
+            }
           }
           return h.continue
         }
@@ -1018,7 +1024,7 @@ if (isCheloniaDashboard) {
     files: {
       relativeTo: staticServeConfig.distAssets
     }
-  }, function (request: Request, h: ResponseToolkit) {
+  }, function (request, h) {
     const { subpath } = request.params
     const basename = path.basename(subpath)
     // In the build config we told our bundler to use the `[name]-[hash]-cached` template
@@ -1039,7 +1045,7 @@ route.GET(staticServeConfig.routePath, {}, {
   file: staticServeConfig.distIndexHtml
 })
 
-route.GET('/', {}, function (_req: Request, h: ResponseToolkit) {
+route.GET('/', {}, function (_req, h) {
   return h.redirect(staticServeConfig.redirect)
 })
 
@@ -1071,7 +1077,7 @@ route.POST('/zkpp/register/{name}', {
       }
     ])
   }
-}, async function (req: Request): Promise<unknown> {
+}, async function (req) {
   if (process.env.CHELONIA_ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
   const lookupResult = await sbp('backend/db/lookupName', req.params['name'])
   if (lookupResult) {
@@ -1079,21 +1085,22 @@ route.POST('/zkpp/register/{name}', {
     return Boom.conflict()
   }
   try {
-    if (req.payload['b']) {
-      const result = registrationKey(req.params['name'], req.payload['b'])
+    const { payload } = req as { payload: { b: string, r: string, s: string, sig: string, Eh: string } }
+    if (payload['b']) {
+      const result = registrationKey(req.params['name'], payload['b'])
 
       if (result) {
         return result
       }
     } else {
-      const result = register(req.params['name'], req.payload['r'], req.payload['s'], req.payload['sig'], req.payload['Eh'])
+      const result = register(req.params['name'], payload['r'], payload['s'], payload['sig'], payload['Eh'])
 
       if (result) {
         return result
       }
     }
   } catch (e) {
-    (e as unknown as { ip: string }).ip = req.headers['x-real-ip'] || req.info.remoteAddress
+    (e as { ip: string }).ip = req.headers['x-real-ip'] || req.info.remoteAddress
     console.error(e, 'Error at POST /zkpp/{name}: ' + (e as Error).message)
   }
 
@@ -1107,7 +1114,7 @@ route.GET('/zkpp/{contractID}/auth_hash', {
     }),
     query: Joi.object({ b: Joi.string().required() })
   }
-}, async function (req: Request, h: ResponseToolkit): Promise<unknown> {
+}, async function (req, h) {
   try {
     const challenge = await getChallenge(req.params['contractID'], req.query['b'])
 
@@ -1132,7 +1139,7 @@ route.GET('/zkpp/{contractID}/contract_hash', {
       hc: Joi.string().required()
     })
   }
-}, async function (req: Request): Promise<unknown> {
+}, async function (req) {
   try {
     const salt = await getContractSalt(req.params['contractID'], req.query['r'], req.query['s'], req.query['sig'], req.query['hc'])
 
@@ -1140,7 +1147,7 @@ route.GET('/zkpp/{contractID}/contract_hash', {
       return salt
     }
   } catch (e) {
-    (e as unknown as { ip: string }).ip = req.headers['x-real-ip'] || req.info.remoteAddress
+    (e as { ip: string }).ip = req.headers['x-real-ip'] || req.info.remoteAddress
     console.error(e, 'Error at GET /zkpp/{contractID}/contract_hash: ' + (e as Error).message)
   }
 
@@ -1160,10 +1167,11 @@ route.POST('/zkpp/{contractID}/updatePasswordHash', {
       Ea: Joi.string().required()
     })
   }
-}, async function (req: Request): Promise<unknown> {
+}, async function (req) {
   if (process.env.CHELONIA_ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
   try {
-    const result = await updateContractSalt(req.params['contractID'], req.payload['r'], req.payload['s'], req.payload['sig'], req.payload['hc'], req.payload['Ea'])
+    const { payload } = req as { payload: { r: string, s: string, sig: string, hc: string, Ea: string } }
+    const result = await updateContractSalt(req.params['contractID'], payload['r'], payload['s'], payload['sig'], payload['hc'], payload['Ea'])
 
     if (result) {
       return result

@@ -508,7 +508,7 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
           if (!server.subscribersByChannelID[channelID]) {
             server.subscribersByChannelID[channelID] = new Set()
           }
-          server.subscribersByChannelID[channelID].add(server.pushSubscriptions[subscriptionId ])
+          server.subscribersByChannelID[channelID].add(server.pushSubscriptions[subscriptionId])
         })
       }
     }
@@ -644,7 +644,7 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
 
   setInterval(() => {
     const now = Date.now()
-    const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE) || {} as WSS
+    const pubsub = (sbp('okTurtles.data/get', PUBSUB_INSTANCE) || {}) as WSS
     // Notification text
     const notification = JSON.stringify({ type: 'recurring' })
     // Find push subscriptions that do _not_ have a WS open. This means clients
@@ -654,7 +654,7 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
         !!pushSubscription.settings.heartbeatInterval && pushSubscription.sockets.size === 0
       ).forEach((pushSubscription) => {
         const last = map.get(pushSubscription) ?? Number.NEGATIVE_INFINITY
-        if (now - last < pushSubscription.settings.heartbeatInterval) return
+        if (now - last < pushSubscription.settings.heartbeatInterval!) return
         postEvent(pushSubscription, notification).then(() => {
           map.set(pushSubscription, now)
          }).catch((e) => {
