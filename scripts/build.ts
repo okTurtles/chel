@@ -10,14 +10,24 @@ const options: esbuild.BuildOptions = {
     './src/serve/ownerSizeTotalWorker.ts',
     './src/serve/creditsWorker.ts'
   ],
-  bundle: false,
+  bundle: true,
   define: {
     '__build__.VERSION': JSON.stringify(version)
   },
   format: 'esm',
   platform: 'node',
   outdir: 'build',
-  splitting: false
+  splitting: false,
+  plugins: [
+    {
+      name: 'skip',
+      setup(build) {
+        build.onResolve({ filter: /^[\w\d]+:/, namespace: 'file' }, () => ({
+          external: true
+        }))
+      }
+    }
+  ]
 }
 const result = await esbuild.build(options)
 if (result.errors.length) {
