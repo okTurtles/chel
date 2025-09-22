@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-this-alias
+/* eslint-disable @typescript-eslint/no-this-alias */
 import { Hapi, Inert, sbp, chalk, SPMessage, SERVER, multicodes, parseCID, Boom } from '~/deps.ts'
 // import type { SubMessage, UnsubMessage } from './pubsub.ts' // TODO: Use for type checking
 import { basename, join, dirname } from 'node:path'
@@ -657,7 +658,7 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
         if (now - last < pushSubscription.settings.heartbeatInterval!) return
         postEvent(pushSubscription, notification).then(() => {
           map.set(pushSubscription, now)
-         }).catch((e) => {
+        }).catch((e) => {
           console.warn(e, 'Error sending recurring message to web push client', pushSubscription.id)
         })
       })

@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-this-alias
+/* eslint-disable @typescript-eslint/no-this-alias */
 // TODO: Use logger for debug output if needed
 
 import { Buffer } from 'node:buffer'
@@ -181,7 +182,7 @@ interface ServerOptions extends BaseOptions {
   logPongMessages?: boolean;
 }
 
-export interface WSS extends Exclude<WebSocketServer, "clients" | "options"> {
+export interface WSS extends Exclude<WebSocketServer, 'clients' | 'options'> {
   clients: Set<WS | PushSubscriptionInfo>;
   channels: Set<string>;
   customServerEventHandlers: Partial<ServerHandlers>;

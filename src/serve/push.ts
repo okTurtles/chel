@@ -1,4 +1,5 @@
 // deno-lint-ignore-file no-this-alias
+/* eslint-disable @typescript-eslint/no-this-alias */
 import { Buffer } from 'node:buffer'
 import { appendToIndexFactory, removeFromIndexFactory } from './database.ts'
 import { PUBSUB_INSTANCE } from './instance-keys.ts'

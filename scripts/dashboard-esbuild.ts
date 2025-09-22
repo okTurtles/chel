@@ -3,8 +3,8 @@
 
 import { sassPlugin } from 'npm:esbuild-sass-plugin@3.3.1'
 import fs from 'node:fs'
-import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
-import { basename, dirname, join, relative, resolve } from 'node:path'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { dirname, join, relative, resolve } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import componentCompiler, { type SFCCompiler, type StyleCompileResult, type DescriptorCompileResult } from 'npm:@vue/component-compiler'
@@ -118,28 +118,6 @@ function vuePlugin ({ aliases = {} } = {}) {
       })
     }
   } as esbuild.Plugin
-}
-
-// Helper function to find all Vue files
-async function findVueFiles (dir: string) {
-  const files: string[] = []
-
-  async function walk (currentDir: string) {
-    const entries = await readdir(currentDir, { withFileTypes: true })
-
-    for (const entry of entries) {
-      const fullPath = join(currentDir, entry.name)
-
-      if (entry.isDirectory()) {
-        await walk(fullPath)
-      } else if (entry.name.endsWith('.vue')) {
-        files.push(fullPath)
-      }
-    }
-  }
-
-  await walk(dir)
-  return files
 }
 
 function compile ({ filename, source, compiler }: { filename: string, source: string, compiler: SFCCompiler, extractedStyles?: string[] }) {
