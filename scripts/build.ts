@@ -21,7 +21,7 @@ const options: esbuild.BuildOptions = {
   plugins: [
     {
       name: 'skip',
-      setup(build) {
+      setup (build) {
         build.onResolve({ filter: /^[\w\d]+:/, namespace: 'file' }, () => ({
           external: true
         }))

@@ -35,9 +35,6 @@
     "npm:vue-router": "npm:vue-router@3.6.5",
     "npm:vuelidate": "npm:vuelidate@0.7.6",
     "npm:vuex": "npm:vuex@3.6.0"
-    },
-  "compilerOptions": {
-    "lib": ["deno.window"]
   },
   "nodeModulesDir": "auto",
   "fmt": {
