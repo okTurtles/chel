@@ -42,8 +42,11 @@
     "semiColons": false,
     "singleQuote": true
   },
+  "exclude": [
+    "test/assets/"
+  ],
   "lint": {
-    "exclude": ["node_modules/", "vendor/", "dist/", "build/", "test/assets/"]
+    "exclude": ["node_modules/", "vendor/", "dist/", "build/"]
   },
   "vendor": true,
   "workspace": ["./src/serve/dashboard"]

@@ -151,17 +151,17 @@ import { default as default12 } from "npm:bottleneck@2.19.5";
 import { default as default13 } from "npm:scrypt-async@2.0.1";
 import { aes128gcm } from "npm:@apeleghq/rfc8188@1.0.7/encodings";
 import { default as default14 } from "npm:@apeleghq/rfc8188@1.0.7/encrypt";
-import * as lib_1_2_star from "npm:@chelonia/lib@1.2.2";
-import "npm:@chelonia/lib@1.2.2/persistent-actions";
-import { blake32Hash, createCID, maybeParseCID, multicodes, strToB64, getSubscriptionId, parseCID } from "npm:@chelonia/lib@1.2.2/functions";
-import { checkKey, parsePrefixableKey, prefixHandlers } from "npm:@chelonia/lib@1.2.2/db";
-import { SPMessage } from "npm:@chelonia/lib@1.2.2/SPMessage";
-import { SERVER } from "npm:@chelonia/lib@1.2.2/presets";
-import { ChelErrorGenerator } from "npm:@chelonia/lib@1.2.2/errors";
-import { PUSH_SERVER_ACTION_TYPE, REQUEST_TYPE, RESPONSE_TYPE, NOTIFICATION_TYPE, createMessage, createClient, createKvMessage, messageParser } from "npm:@chelonia/lib@1.2.2/pubsub";
-import { verifyShelterAuthorizationHeader } from "npm:@chelonia/lib@1.2.2/utils";
-import { base64ToBase64url, base64urlToBase64, boxKeyPair, computeCAndHc, decryptSaltUpdate, encryptContractSalt, encryptSaltUpdate, hash, hashRawStringArray, hashStringArray, parseRegisterSalt, randomNonce } from "npm:@chelonia/lib@1.2.2/zkpp";
-import { AUTHSALT, CONTRACTSALT, CS, SALT_LENGTH_IN_OCTETS, SU } from "npm:@chelonia/lib@1.2.2/zkppConstants";
+import * as chelonia_star from "npm:@chelonia/lib@1.2.4/chelonia";
+import "npm:@chelonia/lib@1.2.4/persistent-actions";
+import { blake32Hash, createCID, maybeParseCID, multicodes, strToB64, getSubscriptionId, parseCID } from "npm:@chelonia/lib@1.2.4/functions";
+import { checkKey, parsePrefixableKey, prefixHandlers } from "npm:@chelonia/lib@1.2.4/db";
+import { SPMessage } from "npm:@chelonia/lib@1.2.4/SPMessage";
+import { SERVER } from "npm:@chelonia/lib@1.2.4/presets";
+import { ChelErrorGenerator } from "npm:@chelonia/lib@1.2.4/errors";
+import { PUSH_SERVER_ACTION_TYPE, REQUEST_TYPE, RESPONSE_TYPE, NOTIFICATION_TYPE, createMessage, createClient, createKvMessage, messageParser } from "npm:@chelonia/lib@1.2.4/pubsub";
+import { verifyShelterAuthorizationHeader } from "npm:@chelonia/lib@1.2.4/utils";
+import { base64ToBase64url, base64urlToBase64, boxKeyPair, computeCAndHc, decryptSaltUpdate, encryptContractSalt, encryptSaltUpdate, hash, hashRawStringArray, hashStringArray, parseRegisterSalt, randomNonce } from "npm:@chelonia/lib@1.2.4/zkpp";
+import { AUTHSALT, CONTRACTSALT, CS, SALT_LENGTH_IN_OCTETS, SU } from "npm:@chelonia/lib@1.2.4/zkppConstants";
 import { EDWARDS25519SHA512BATCH, CURVE25519XSALSA20POLY1305, XSALSA20POLY1305 } from "npm:@chelonia/crypto@1.0.1";
 import { keygen, serializeKey, deserializeKey, keygenOfSameType, keyId, generateSalt, deriveKeyFromPassword } from "npm:@chelonia/crypto@1.0.1";
 import { sign, verifySignature, encrypt, decrypt } from "npm:@chelonia/crypto@1.0.1";
@@ -169,7 +169,7 @@ import { validationMixin } from "npm:vuelidate@0.7.6";
 var init_deps = __esm({
   "src/deps.ts"() {
     "use strict";
-    __reExport(deps_exports, lib_1_2_star);
+    __reExport(deps_exports, chelonia_star);
   }
 });
 

@@ -117,7 +117,7 @@ type BufferLike =
     | { valueOf(): string }
     | { [Symbol.toPrimitive](hint: string): string };
 
-export interface WS extends Exclude<WebSocket, 'send'> {
+export interface WS extends Omit<WebSocket, 'send'> {
   server: WSS;
   pinged: boolean;
   activeSinceLastPing: boolean;
@@ -154,6 +154,9 @@ interface ServerHandlers {
 interface SocketHandlers {
   close: (this: WS) => void;
   message: (this: WS, data: Buffer | ArrayBuffer | Buffer[]) => void;
+  error: (this: WS, message: Message) => void;
+  ping: (this: WS, message: Message) => void;
+  pong: (this: WS, message: Message) => void;
 }
 
 interface PushActionMessage {
@@ -182,7 +185,7 @@ interface ServerOptions extends BaseOptions {
   logPongMessages?: boolean;
 }
 
-export interface WSS extends Exclude<WebSocketServer, 'clients' | 'options'> {
+export interface WSS extends Omit<WebSocketServer, 'clients' | 'options'> {
   clients: Set<WS | PushSubscriptionInfo>;
   channels: Set<string>;
   customServerEventHandlers: Partial<ServerHandlers>;
@@ -236,8 +239,8 @@ export function createServer (httpServer: import('node:http').Server, options: S
     server.on(name, (...args: Parameters<ServerHandlers[T]>) => {
       try {
         // Always call the default handler first.
-        defaultServerHandlers[name].apply(server, args)
-        server.customServerEventHandlers[name]?.apply(server, args)
+        ;(defaultServerHandlers[name] as unknown as (this: WSS, ...args: Parameters<ServerHandlers[T]>) => void).apply(server, args)
+        ;(server.customServerEventHandlers[name]  as unknown as (this: WSS, ...args: Parameters<ServerHandlers[T]>) => void)?.apply(server, args)
       } catch (error) {
         server.emit('error', error)
       }
@@ -292,7 +295,7 @@ const defaultServerHandlers: ServerHandlers = {
     socket.server = server
     socket.subscriptions = new Set()
     socket.kvFilter = new Map()
-    socket.ip = request.headers['x-real-ip'] || request.headers['x-forwarded-for']?.split(',')[0].trim() || request.socket.remoteAddress
+    socket.ip = (request.headers['x-real-ip'] as unknown as string) || (request.headers['x-forwarded-for'] as unknown as string)?.split(',')[0].trim() || request.socket.remoteAddress
     // Sometimes (like when using `createMessage`), we want to send objects that
     // are serialized as strings. The `ws` library sends these as binary data,
     // whereas the client expects strings. This avoids having to manually
@@ -307,15 +310,15 @@ const defaultServerHandlers: ServerHandlers = {
     log.bold(`Socket ${socket.id} connected. Total: ${(this as unknown as { clients: Set<WebSocket> }).clients.size}`)
 
     // Add listeners for socket events, i.e. events emitted on a socket object.
-    ;['close', 'error', 'message', 'ping', 'pong'].forEach((eventName: string) => {
-      socket.on(eventName, (...args: unknown[]) => {
+    ;(['close', 'error', 'message', 'ping', 'pong'] as const).forEach((eventName) => {
+      socket.on(eventName, (...args: Parameters<SocketHandlers[typeof eventName]>) => {
         // Logging of 'message' events is handled in the default 'message' event handler.
         if (eventName !== 'message') {
           log.debug(`Event '${eventName}' on socket ${socket.id}`, ...args.map(arg => String(arg)))
         }
         try {
-          defaultSocketEventHandlers[eventName]?.call(socket, ...args)
-          socket.server.customSocketEventHandlers[eventName]?.call(socket, ...args)
+          ;(defaultSocketEventHandlers as unknown as Record<string, (this: WS, ...args: Parameters<SocketHandlers[typeof eventName]>) => void>)[eventName]?.call(socket, ...args)
+          ;(socket.server.customSocketEventHandlers as unknown as Record<string, (this: WS, ...args: Parameters<SocketHandlers[typeof eventName]>) => void>)[eventName]?.call(socket, ...args)
         } catch (error: unknown) {
           socket.server.emit('error', error)
           socket.terminate()
@@ -335,7 +338,7 @@ const defaultServerHandlers: ServerHandlers = {
 
 // Default handlers for server-side client socket events.
 // The `this` binding refers to the connected `ws` socket object.
-const defaultSocketEventHandlers: SocketHandlers = {
+const defaultSocketEventHandlers: Partial<SocketHandlers> = {
   close () {
     const socket = this
     const { server } = this
@@ -366,13 +369,13 @@ const defaultSocketEventHandlers: SocketHandlers = {
     }
     // The socket can be marked as active since it just received a message.
     socket.activeSinceLastPing = true
-    const defaultHandler = defaultMessageHandlers[msg.type]
-    const customHandler = server.customMessageHandlers[msg.type]
+    const defaultHandler = defaultMessageHandlers[msg.type as keyof MessageHandlers]
+    const customHandler = server.customMessageHandlers[msg.type as keyof MessageHandlers]
 
     if (defaultHandler || customHandler) {
       try {
-        defaultHandler?.call(socket, msg)
-        customHandler?.call(socket, msg)
+        ;(defaultHandler as unknown as (this: WS, msg: Message) => void)?.call(socket, msg)
+        ;(customHandler as unknown as (this: WS, msg: Message) => void)?.call(socket, msg)
       } catch (error) {
         // Log the error message and stack trace but do not send it to the client.
         log.error(error, 'onMessage')

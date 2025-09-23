@@ -152,17 +152,17 @@ import { default as default12 } from "npm:bottleneck@2.19.5";
 import { default as default13 } from "npm:scrypt-async@2.0.1";
 import { aes128gcm } from "npm:@apeleghq/rfc8188@1.0.7/encodings";
 import { default as default14 } from "npm:@apeleghq/rfc8188@1.0.7/encrypt";
-import * as lib_1_2_star from "npm:@chelonia/lib@1.2.2";
-import "npm:@chelonia/lib@1.2.2/persistent-actions";
-import { blake32Hash, createCID, maybeParseCID, multicodes, strToB64, getSubscriptionId, parseCID } from "npm:@chelonia/lib@1.2.2/functions";
-import { checkKey, parsePrefixableKey, prefixHandlers } from "npm:@chelonia/lib@1.2.2/db";
-import { SPMessage } from "npm:@chelonia/lib@1.2.2/SPMessage";
-import { SERVER } from "npm:@chelonia/lib@1.2.2/presets";
-import { ChelErrorGenerator } from "npm:@chelonia/lib@1.2.2/errors";
-import { PUSH_SERVER_ACTION_TYPE, REQUEST_TYPE, RESPONSE_TYPE, NOTIFICATION_TYPE, createMessage, createClient, createKvMessage, messageParser } from "npm:@chelonia/lib@1.2.2/pubsub";
-import { verifyShelterAuthorizationHeader } from "npm:@chelonia/lib@1.2.2/utils";
-import { base64ToBase64url, base64urlToBase64, boxKeyPair, computeCAndHc, decryptSaltUpdate, encryptContractSalt, encryptSaltUpdate, hash, hashRawStringArray, hashStringArray, parseRegisterSalt, randomNonce } from "npm:@chelonia/lib@1.2.2/zkpp";
-import { AUTHSALT, CONTRACTSALT, CS, SALT_LENGTH_IN_OCTETS, SU } from "npm:@chelonia/lib@1.2.2/zkppConstants";
+import * as chelonia_star from "npm:@chelonia/lib@1.2.4/chelonia";
+import "npm:@chelonia/lib@1.2.4/persistent-actions";
+import { blake32Hash, createCID, maybeParseCID, multicodes, strToB64, getSubscriptionId, parseCID } from "npm:@chelonia/lib@1.2.4/functions";
+import { checkKey, parsePrefixableKey, prefixHandlers } from "npm:@chelonia/lib@1.2.4/db";
+import { SPMessage } from "npm:@chelonia/lib@1.2.4/SPMessage";
+import { SERVER } from "npm:@chelonia/lib@1.2.4/presets";
+import { ChelErrorGenerator } from "npm:@chelonia/lib@1.2.4/errors";
+import { PUSH_SERVER_ACTION_TYPE, REQUEST_TYPE, RESPONSE_TYPE, NOTIFICATION_TYPE, createMessage, createClient, createKvMessage, messageParser } from "npm:@chelonia/lib@1.2.4/pubsub";
+import { verifyShelterAuthorizationHeader } from "npm:@chelonia/lib@1.2.4/utils";
+import { base64ToBase64url, base64urlToBase64, boxKeyPair, computeCAndHc, decryptSaltUpdate, encryptContractSalt, encryptSaltUpdate, hash, hashRawStringArray, hashStringArray, parseRegisterSalt, randomNonce } from "npm:@chelonia/lib@1.2.4/zkpp";
+import { AUTHSALT, CONTRACTSALT, CS, SALT_LENGTH_IN_OCTETS, SU } from "npm:@chelonia/lib@1.2.4/zkppConstants";
 import { EDWARDS25519SHA512BATCH, CURVE25519XSALSA20POLY1305, XSALSA20POLY1305 } from "npm:@chelonia/crypto@1.0.1";
 import { keygen, serializeKey, deserializeKey, keygenOfSameType, keyId, generateSalt, deriveKeyFromPassword } from "npm:@chelonia/crypto@1.0.1";
 import { sign, verifySignature, encrypt, decrypt } from "npm:@chelonia/crypto@1.0.1";
@@ -170,7 +170,7 @@ import { validationMixin } from "npm:vuelidate@0.7.6";
 var init_deps = __esm({
   "src/deps.ts"() {
     "use strict";
-    __reExport(deps_exports, lib_1_2_star);
+    __reExport(deps_exports, chelonia_star);
   }
 });
 
@@ -2043,6 +2043,7 @@ function createServer(httpServer, options2 = {}) {
   handlers.forEach((name) => {
     server.on(name, (...args) => {
       try {
+        ;
         defaultServerHandlers[name].apply(server, args);
         server.customServerEventHandlers[name]?.apply(server, args);
       } catch (error) {
@@ -2134,6 +2135,7 @@ var init_pubsub = __esm({
               log.debug(`Event '${eventName}' on socket ${socket.id}`, ...args.map((arg) => String(arg)));
             }
             try {
+              ;
               defaultSocketEventHandlers[eventName]?.call(socket, ...args);
               socket.server.customSocketEventHandlers[eventName]?.call(socket, ...args);
             } catch (error) {
@@ -2181,6 +2183,7 @@ var init_pubsub = __esm({
         const customHandler = server.customMessageHandlers[msg.type];
         if (defaultHandler || customHandler) {
           try {
+            ;
             defaultHandler?.call(socket, msg);
             customHandler?.call(socket, msg);
           } catch (error) {
@@ -3461,7 +3464,7 @@ var init_server = __esm({
           const manifest2 = JSON.parse(rawManifest);
           if (!manifest2 || typeof manifest2 !== "object") throw new BackendErrorBadData("manifest format is invalid");
           if (manifest2.version !== "1.0.0") throw new BackendErrorBadData("unsupported manifest version");
-          if (!Array.isArray(manifest2.chunks) || !manifest2.chunks.length) throw BackendErrorBadData("missing chunks");
+          if (!Array.isArray(manifest2.chunks) || !manifest2.chunks.length) throw new BackendErrorBadData("missing chunks");
           await Promise.all(manifest2.chunks.map(([, cid2]) => default4("chelonia.db/delete", cid2)));
         } catch (e) {
           console.warn(e, `Error parsing manifest for ${cid}. It's probably not a file manifest.`);
