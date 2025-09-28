@@ -3,7 +3,7 @@
 
 // Fix for Deno's __proto__ issue with buble (used by @vue/component-compiler)
 // See: https://github.com/denoland/deno/issues/20618
-if (({}as Record<string, unknown>).__proto__ !== Object.prototype) {
+if (({} as Record<string, unknown>).__proto__ !== Object.prototype) {
   Object.defineProperty(Object.prototype, '__proto__', {
     get () {
       return Object.getPrototypeOf(this)
@@ -20,11 +20,12 @@ import process from 'node:process'
 import { createAliasReplacer } from './utils.ts'
 
 // @vue/component-compiler for Vue 2 SFC compilation
-import * as componentCompiler from '@vue/component-compiler'
+import * as componentCompiler from 'npm:@vue/component-compiler@4.2.4'
+import type * as esbuild from 'npm:esbuild@0.25.6'
 
 interface VuePluginOptions {
   aliases?: Record<string, string>
-  cache?: Map<string, unknown> | null
+  cache?: Map<string, esbuild.OnLoadResult> | null
   debug?: boolean
   flowtype?: unknown
 }
@@ -40,12 +41,12 @@ export function vuePlugin ({ aliases = {}, cache = null, debug = false, flowtype
 
   return {
     name: 'vue',
-    setup (build: { onLoad: (options: { filter: RegExp }, callback: (args: { path: string }) => Promise<{ contents?: string; errors?: unknown[] }>) => void }) {
-      build.onLoad({ filter: /[^/]\.vue$/ }, async ({ path }: { path: string }): Promise<{ contents?: string; errors?: unknown[] }> => {
+    setup (build) {
+      build.onLoad({ filter: /[^/]\.vue$/ }, async ({ path }) => {
         const filename = relative(process.cwd(), path)
         if (cache && cache.has(filename)) {
           if (debug) console.log('vue plugin: reading from cache:', filename)
-          return cache.get(filename) as { contents?: string; errors?: unknown[] }
+          return cache.get(filename)
         }
 
         let source = await readFile(path, 'utf8')
@@ -54,18 +55,18 @@ export function vuePlugin ({ aliases = {}, cache = null, debug = false, flowtype
         }
 
         if (debug) console.log('vue plugin: compiling', filename)
-        const result = await compile({ filename, source, options: { flowtype } })
+        const result = compile({ filename, source, options: { flowtype } })
 
         if (cache && result.contents) cache.set(filename, result)
         return result
       })
     }
-  }
+  } satisfies esbuild.Plugin
 }
 
 const compiler = componentCompiler.createDefaultCompiler()
 
-function compile ({ filename, source, options }: CompileOptions) {
+function compile ({ filename, source, options }: CompileOptions): esbuild.OnLoadResult {
   try {
     if (/^\s*$/.test(source)) {
       throw new Error('File is empty')

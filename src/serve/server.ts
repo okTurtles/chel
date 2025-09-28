@@ -2,8 +2,7 @@
 /* eslint-disable @typescript-eslint/no-this-alias */
 import { Hapi, Inert, sbp, chalk, SPMessage, SERVER, multicodes, parseCID, Boom } from '~/deps.ts'
 // import type { SubMessage, UnsubMessage } from './pubsub.ts' // TODO: Use for type checking
-import { basename, join, dirname } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { basename, join } from 'node:path'
 import { Worker } from 'node:worker_threads'
 import process from 'node:process'
 import authPlugin from './auth.ts'
@@ -23,10 +22,6 @@ import {
   createServer
 } from './pubsub.ts'
 import { addChannelToSubscription, deleteChannelFromSubscription, postEvent, pushServerActionhandlers, subscriptionInfoWrapper } from './push.ts'
-
-// ES module equivalent of __dirname
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
 
 type WorkerType = {
   ready: Promise<void>,
@@ -105,10 +100,10 @@ if (CREDITS_WORKER_TASK_TIME_INTERVAL && OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTER
 // Initialize workers for size calculation and credits processing
 const ownerSizeTotalWorker = process.env.CHELONIA_ARCHIVE_MODE || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL
   ? undefined
-  : createWorker(join(__dirname, 'serve', 'ownerSizeTotalWorker.js'))
+  : createWorker(join(import.meta.dirname || '/', 'serve', 'ownerSizeTotalWorker.js'))
 const creditsWorker = process.env.CHELONIA_ARCHIVE_MODE || !CREDITS_WORKER_TASK_TIME_INTERVAL
   ? undefined
-  : createWorker(join(__dirname, 'serve', 'creditsWorker.js'))
+  : createWorker(join(import.meta.dirname || '/', 'serve', 'creditsWorker.js'))
 
 const { CONTRACTS_VERSION, GI_VERSION } = process.env
 

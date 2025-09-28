@@ -5,10 +5,11 @@ import process from 'node:process'
 // Get the current directory for dashboard assets
 const getDashboardPath = () => {
   // In development, use relative path from serve directory
-  return path.resolve(process.cwd(), 'dist-dashboard')
+  return path.resolve(import.meta.dirname || process.cwd(), 'dist-dashboard')
 }
 
 export async function startDashboard (port: number): Promise<void> {
+  console.error('@@@@@getDashboardPath', getDashboardPath())
   // Create a separate Hapi server for the dashboard
   const dashboardServer = new Hapi.Server({
     port: port,

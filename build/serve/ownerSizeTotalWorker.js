@@ -80,7 +80,6 @@ __export(deps_exports, {
   encrypt: () => encrypt,
   encryptContractSalt: () => encryptContractSalt,
   encryptSaltUpdate: () => encryptSaltUpdate,
-  esbuild: () => esbuild,
   flags: () => flags,
   fs: () => fs,
   generateSalt: () => generateSalt,
@@ -130,7 +129,6 @@ import * as streams from "jsr:@std/streams@1.0.10";
 import * as util from "jsr:@std/io@0.225.2";
 import { copy, readAll, writeAll } from "jsr:@std/io@0.225.2";
 import * as sqlite from "jsr:@db/sqlite@0.12.0";
-import * as esbuild from "npm:esbuild@0.25.6";
 import { z } from "npm:zod@4.0.5";
 import { default as default2 } from "npm:tweetnacl@1.0.3";
 import { base58btc } from "npm:multiformats@11.0.2/bases/base58";

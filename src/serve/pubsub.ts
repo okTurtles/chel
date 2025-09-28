@@ -5,13 +5,6 @@
 import { Buffer } from 'node:buffer'
 import process from 'node:process'
 
-// Declare logger as a global variable for TypeScript
-declare const logger: {
-  debug: (...args: unknown[]) => void;
-  info: (...args: unknown[]) => void;
-  warn: (...args: unknown[]) => void;
-  error: (...args: unknown[]) => void;
-}
 /*
  * Pub/Sub server implementation using the `ws` library.
  * See https://github.com/websockets/ws#api-docs

@@ -1,6 +1,7 @@
 #!/usr/bin/env -S deno run --allow-run --allow-read --allow-env --allow-write=./build --allow-net
 
-import { colors, esbuild } from '../src/deps.ts'
+import * as esbuild from 'npm:esbuild@0.25.6'
+import { colors } from '../src/deps.ts'
 
 const { default: { version } } = await import('../package.json', { with: { type: 'json' } })
 
@@ -12,7 +13,7 @@ const options: esbuild.BuildOptions = {
   ],
   bundle: true,
   define: {
-    '__build__.VERSION': JSON.stringify(version)
+    'import.meta.VERSION': JSON.stringify(version)
   },
   format: 'esm',
   platform: 'node',

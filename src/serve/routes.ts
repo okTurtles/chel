@@ -7,17 +7,6 @@ import { Buffer } from 'node:buffer'
 import { isIP } from 'node:net'
 import path from 'node:path'
 import process from 'node:process'
-const logger: {
-  info: (...args: unknown[]) => void;
-  warn: (...args: unknown[]) => void;
-  error: (...args: unknown[]) => void;
-  debug: (...args: unknown[]) => void;
-} = {
-  info: console.log,
-  warn: console.warn,
-  error: console.error,
-  debug: console.debug
-}
 import { appendToIndexFactory, lookupUltimateOwner } from './database.ts'
 import { SERVER_INSTANCE } from './instance-keys.ts'
 import { getChallenge, getContractSalt, redeemSaltRegistrationToken, redeemSaltUpdateToken, register, registrationKey, updateContractSalt } from './zkppSalt.ts'
@@ -147,10 +136,11 @@ const ctEq = (expected: string, actual: string): boolean => {
 // Boom and Joi already imported above
 const isCheloniaDashboard = process.env.IS_CHELONIA_DASHBOARD_DEV
 const appDir = process.env.CHELONIA_APP_DIR || '.'
+const dashboardDir = import.meta.dirname || './build/dist-dashboard'
 const staticServeConfig = {
   routePath: isCheloniaDashboard ? '/dashboard/{path*}' : '/app/{path*}',
-  distAssets: path.resolve(isCheloniaDashboard ? 'dist-dashboard/assets' : path.join(appDir, 'assets')),
-  distIndexHtml: path.resolve(isCheloniaDashboard ? './dist-dashboard/index.html' : path.join(appDir, 'index.html')),
+  distAssets: path.resolve(path.join(isCheloniaDashboard ? dashboardDir : appDir, 'assets')),
+  distIndexHtml: path.resolve(path.join(isCheloniaDashboard ? dashboardDir : appDir, 'index.html')),
   redirect: isCheloniaDashboard ? '/dashboard/' : '/app/'
 }
 

@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-read=./ --allow-write=./  --allow-net --no-remote --import-map=vendor/import_map.json
+#!/usr/bin/env -S deno run --allow-net --allow-read=. --allow-write=. --allow-sys --allow-env
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -81,7 +81,6 @@ __export(deps_exports, {
   encrypt: () => encrypt,
   encryptContractSalt: () => encryptContractSalt,
   encryptSaltUpdate: () => encryptSaltUpdate,
-  esbuild: () => esbuild,
   flags: () => flags,
   fs: () => fs,
   generateSalt: () => generateSalt,
@@ -131,7 +130,6 @@ import * as streams from "jsr:@std/streams@1.0.10";
 import * as util from "jsr:@std/io@0.225.2";
 import { copy, readAll, writeAll } from "jsr:@std/io@0.225.2";
 import * as sqlite from "jsr:@db/sqlite@0.12.0";
-import * as esbuild from "npm:esbuild@0.25.6";
 import { z } from "npm:zod@4.0.5";
 import { default as default2 } from "npm:tweetnacl@1.0.3";
 import { base58btc } from "npm:multiformats@11.0.2/bases/base58";
@@ -256,8 +254,8 @@ __export(database_sqlite_exports, {
   writeDataOnce: () => writeDataOnce2
 });
 async function initStorage2(options2 = {}) {
-  const { dirname: dirname4, filename } = options2;
-  dataFolder2 = path.resolve(dirname4);
+  const { dirname: dirname3, filename } = options2;
+  dataFolder2 = path.resolve(dirname3);
   const filepath = path.join(dataFolder2, filename);
   if (db !== void 0) {
     if (filepath === dbPath) {
@@ -426,6 +424,7 @@ __export(dashboard_server_exports, {
 import path2 from "node:path";
 import process from "node:process";
 async function startDashboard(port) {
+  console.error("@@@@@getDashboardPath", getDashboardPath());
   const dashboardServer = new Hapi.Server({
     port,
     host: "localhost",
@@ -475,7 +474,7 @@ var init_dashboard_server = __esm({
     "use strict";
     init_deps();
     getDashboardPath = () => {
-      return path2.resolve(process.cwd(), "dist-dashboard");
+      return path2.resolve(import.meta.dirname || process.cwd(), "dist-dashboard");
     };
     dashboard_server_default = startDashboard;
   }
@@ -2345,7 +2344,7 @@ import process8 from "node:process";
 function notFoundNoCache(h) {
   return h.response().code(404).header("Cache-Control", "no-store");
 }
-var logger3, MEGABYTE, SECOND, CID_REGEX, KV_KEY_REGEX, NAME_REGEX, POSITIVE_INTEGER_REGEX, FILE_UPLOAD_MAX_BYTES, SIGNUP_LIMIT_MIN, SIGNUP_LIMIT_HOUR, SIGNUP_LIMIT_DAY, SIGNUP_LIMIT_DISABLED, limiterPerMinute, limiterPerHour, limiterPerDay, cidLookupTable, limiterKey, ctEq, isCheloniaDashboard, appDir, staticServeConfig, errorMapper, route;
+var MEGABYTE, SECOND, CID_REGEX, KV_KEY_REGEX, NAME_REGEX, POSITIVE_INTEGER_REGEX, FILE_UPLOAD_MAX_BYTES, SIGNUP_LIMIT_MIN, SIGNUP_LIMIT_HOUR, SIGNUP_LIMIT_DAY, SIGNUP_LIMIT_DISABLED, limiterPerMinute, limiterPerHour, limiterPerDay, cidLookupTable, limiterKey, ctEq, isCheloniaDashboard, appDir, dashboardDir, staticServeConfig, errorMapper, route;
 var init_routes = __esm({
   "src/serve/routes.ts"() {
     "use strict";
@@ -2353,12 +2352,6 @@ var init_routes = __esm({
     init_database();
     init_instance_keys();
     init_zkppSalt();
-    logger3 = {
-      info: console.log,
-      warn: console.warn,
-      error: console.error,
-      debug: console.debug
-    };
     MEGABYTE = 1048576;
     SECOND = 1e3;
     CID_REGEX = /^z[1-9A-HJ-NP-Za-km-z]{8,72}$/;
@@ -2448,10 +2441,11 @@ var init_routes = __esm({
     };
     isCheloniaDashboard = process8.env.IS_CHELONIA_DASHBOARD_DEV;
     appDir = process8.env.CHELONIA_APP_DIR || ".";
+    dashboardDir = import.meta.dirname || "./build/dist-dashboard";
     staticServeConfig = {
       routePath: isCheloniaDashboard ? "/dashboard/{path*}" : "/app/{path*}",
-      distAssets: path4.resolve(isCheloniaDashboard ? "dist-dashboard/assets" : path4.join(appDir, "assets")),
-      distIndexHtml: path4.resolve(isCheloniaDashboard ? "./dist-dashboard/index.html" : path4.join(appDir, "index.html")),
+      distAssets: path4.resolve(path4.join(isCheloniaDashboard ? dashboardDir : appDir, "assets")),
+      distIndexHtml: path4.resolve(path4.join(isCheloniaDashboard ? dashboardDir : appDir, "index.html")),
       redirect: isCheloniaDashboard ? "/dashboard/" : "/app/"
     };
     errorMapper = (e) => {
@@ -2577,7 +2571,7 @@ var init_routes = __esm({
         return deserializedHEAD.hash;
       } catch (err) {
         err.ip = ip;
-        logger3.error(err, "POST /event", err.message);
+        logger.error(err, "POST /event", err.message);
         return err;
       }
     });
@@ -2605,7 +2599,7 @@ var init_routes = __esm({
         return stream;
       } catch (err) {
         err.ip = ip;
-        logger3.error(err, `GET /eventsAfter/${contractID}/${since}`, err.message);
+        logger.error(err, `GET /eventsAfter/${contractID}/${since}`, err.message);
         return err;
       }
     });
@@ -2654,7 +2648,7 @@ var init_routes = __esm({
         const lookupResult = await default4("backend/db/lookupName", name);
         return lookupResult ? h.response(lookupResult).type("text/plain") : notFoundNoCache(h);
       } catch (err) {
-        logger3.error(err, `GET /name/${name}`, err.message);
+        logger.error(err, `GET /name/${name}`, err.message);
         return err;
       }
     });
@@ -2680,7 +2674,7 @@ var init_routes = __esm({
         }
         return HEADinfo;
       } catch (err) {
-        logger3.error(err, `GET /latestHEADinfo/${contractID}`, err.message);
+        logger.error(err, `GET /latestHEADinfo/${contractID}`, err.message);
         return err;
       }
     });
@@ -2734,7 +2728,7 @@ var init_routes = __esm({
           await default4("chelonia.db/set", hash3, data);
           return "/file/" + hash3;
         } catch (err) {
-          logger3.error(err);
+          logger.error(err);
           return default5.internal("File upload failed");
         }
       });
@@ -2821,7 +2815,7 @@ var init_routes = __esm({
         }
         return h.response(manifestHash);
       } catch (err) {
-        logger3.error(err, "POST /file", err.message);
+        logger.error(err, "POST /file", err.message);
         return err;
       }
     });
@@ -3232,11 +3226,10 @@ var init_routes = __esm({
 
 // src/serve/server.ts
 var server_exports = {};
-import { basename as basename3, join as join3, dirname as dirname3 } from "node:path";
-import { fileURLToPath } from "node:url";
+import { basename as basename3, join as join3 } from "node:path";
 import { Worker } from "node:worker_threads";
 import process9 from "node:process";
-var __filename, __dirname, createWorker, ownerSizeTotalWorker, creditsWorker, CONTRACTS_VERSION, GI_VERSION, hapi, appendToOrphanedNamesIndex;
+var createWorker, ownerSizeTotalWorker, creditsWorker, CONTRACTS_VERSION, GI_VERSION, hapi, appendToOrphanedNamesIndex;
 var init_server = __esm({
   "src/serve/server.ts"() {
     "use strict";
@@ -3249,8 +3242,6 @@ var init_server = __esm({
     init_instance_keys();
     init_pubsub();
     init_push();
-    __filename = fileURLToPath(import.meta.url);
-    __dirname = dirname3(__filename);
     createWorker = (path5) => {
       let worker;
       let ready;
@@ -3308,8 +3299,8 @@ var init_server = __esm({
       process9.stderr.write("The size calculation worker must run more frequently than the credits worker for accurate billing");
       process9.exit(1);
     }
-    ownerSizeTotalWorker = process9.env.CHELONIA_ARCHIVE_MODE || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker(join3(__dirname, "serve", "ownerSizeTotalWorker.js"));
-    creditsWorker = process9.env.CHELONIA_ARCHIVE_MODE || !CREDITS_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker(join3(__dirname, "serve", "creditsWorker.js"));
+    ownerSizeTotalWorker = process9.env.CHELONIA_ARCHIVE_MODE || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker(join3(import.meta.dirname || "/", "serve", "ownerSizeTotalWorker.js"));
+    creditsWorker = process9.env.CHELONIA_ARCHIVE_MODE || !CREDITS_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker(join3(import.meta.dirname || "/", "serve", "creditsWorker.js"));
     ({ CONTRACTS_VERSION, GI_VERSION } = process9.env);
     hapi = new Hapi.Server({
       // debug: false, // <- Hapi v16 was outputing too many unnecessary debug statements
@@ -3948,10 +3939,10 @@ async function deploy(args) {
   for (const manifestPath of manifests) {
     const json = JSON.parse(Deno.readTextFileSync(manifestPath));
     const body = ContractBodySchema.parse(JSON.parse(json.body));
-    const dirname4 = path.dirname(manifestPath);
-    toUpload.push(CONTRACT_TEXT_PREFIX + path.join(dirname4, body.contract.file));
+    const dirname3 = path.dirname(manifestPath);
+    toUpload.push(CONTRACT_TEXT_PREFIX + path.join(dirname3, body.contract.file));
     if (body.contractSlim) {
-      toUpload.push(CONTRACT_TEXT_PREFIX + path.join(dirname4, body.contractSlim.file));
+      toUpload.push(CONTRACT_TEXT_PREFIX + path.join(dirname3, body.contractSlim.file));
     }
     toUpload.push(CONTRACT_MANIFEST_PREFIX + manifestPath);
   }
