@@ -424,7 +424,6 @@ __export(dashboard_server_exports, {
 import path2 from "node:path";
 import process from "node:process";
 async function startDashboard(port) {
-  console.error("@@@@@getDashboardPath", getDashboardPath());
   const dashboardServer = new Hapi.Server({
     port,
     host: "localhost",
