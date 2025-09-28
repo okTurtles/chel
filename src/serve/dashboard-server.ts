@@ -9,7 +9,6 @@ const getDashboardPath = () => {
 }
 
 export async function startDashboard (port: number): Promise<void> {
-  console.error('@@@@@getDashboardPath', getDashboardPath())
   // Create a separate Hapi server for the dashboard
   const dashboardServer = new Hapi.Server({
     port: port,
