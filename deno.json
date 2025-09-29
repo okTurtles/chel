@@ -1,10 +1,10 @@
 {
   "tasks": {
     "chel": "deno task lint && deno task build && deno run --allow-net --allow-read=. --allow-write=. --allow-sys --allow-env build/main.js",
-    "lint": "deno run --allow-env --allow-read --allow-sys --deny-sys=\"networkInterfaces\" npm:eslint@9.31.0 ./src ./scripts",
-    "compile": "deno run --allow-run --allow-read=. --allow-write=./dist scripts/compile.ts",
-    "build": "deno scripts/dashboard-esbuild.ts && deno run --node-modules-dir --allow-run --allow-read --allow-env --allow-write=./build,./dist-dashboard --allow-net --allow-sys scripts/build.ts",
-    "dist": "deno task lint && deno task lint && deno task build && deno task compile",
+    "lint": "deno run --allow-env --allow-read --allow-sys='cpus' npm:eslint@9.31.0 ./src ./scripts",
+    "compile": "deno run --allow-env --allow-ffi --allow-sys='hostname' --allow-run --allow-read --allow-write=./dist scripts/compile.ts",
+    "build": "deno run --node-modules-dir --allow-ffi --allow-run --allow-read --allow-env --allow-write=./build --allow-sys='cpus,homedir' scripts/dashboard-esbuild.ts && deno run --node-modules-dir --allow-ffi --allow-run --allow-read --allow-env --allow-write=./build --allow-sys='cpus,homedir,hostname' scripts/build.ts",
+    "dist": "deno task lint && deno task build && deno task compile",
     "test": "deno task lint && SKIP_DB_FS_CASE_SENSITIVITY_CHECK=true deno test --unstable-worker-options --allow-read=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-write=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-env --allow-ffi --allow-net --allow-sys"
   },
   "imports": {
