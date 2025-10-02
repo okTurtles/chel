@@ -1,4 +1,5 @@
 import { flags, colors } from './deps.ts'
+import { exit } from './utils.ts'
 import { readFile, readdir, stat } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { resolve, join } from 'node:path'
@@ -121,19 +122,19 @@ async function runPublish (directory: string, options: PublishOptions) {
 
     // For chel, we work with existing contracts, not built ones
     if (!existsSync(contractsDir)) {
-      console.log(colors.yellow('No contracts directory found.'))
-      console.log(colors.gray('Chel publish works with existing contract versions.'))
-      console.log(colors.gray('Use "chel pin <version>" to create contract versions first.'))
-      return
+      console.error(colors.red('❌ No contracts directory found.'))
+      console.error(colors.gray('Chel publish works with existing contract versions.'))
+      console.error(colors.gray('Use "chel pin <version>" to create contract versions first.'))
+      exit('No contracts directory found')
     }
 
     // Check if we have the current version to publish
     const versionDir = join(contractsDir, contractsVersion)
     if (!existsSync(versionDir)) {
-      console.log(colors.yellow(`Contract version ${contractsVersion} not found.`))
-      console.log(colors.gray(`Available versions: ${await getExistingVersions().then(v => v.join(', ')) || 'none'}`))
-      console.log(colors.gray(`Use "chel pin ${contractsVersion}" to create this version first.`))
-      return
+      console.error(colors.red(`❌ Contract version ${contractsVersion} not found.`))
+      console.error(colors.gray(`Available versions: ${await getExistingVersions().then(v => v.join(', ')) || 'none'}`))
+      console.error(colors.gray(`Use "chel pin ${contractsVersion}" to create this version first.`))
+      exit(`Contract version ${contractsVersion} not found`)
     }
 
     // List contracts in the version to publish
@@ -141,8 +142,8 @@ async function runPublish (directory: string, options: PublishOptions) {
     const contracts = contractFiles.filter(file => file.endsWith('.js') || file.endsWith('.manifest.json'))
 
     if (contracts.length === 0) {
-      console.log(colors.yellow(`No contracts found in version ${contractsVersion}`))
-      return
+      console.error(colors.red(`❌ No contracts found in version ${contractsVersion}`))
+      exit(`No contracts found in version ${contractsVersion}`)
     }
 
     console.log(colors.gray(`Found ${contracts.length} contracts in version ${contractsVersion}:`))
@@ -195,19 +196,19 @@ async function runPublish (directory: string, options: PublishOptions) {
               console.log(colors.gray(`Skipping empty manifest file: ${file}`))
             }
           } catch (error) {
-            console.warn(colors.yellow(`Could not read manifest file ${file}: ${error}`))
+            console.error(colors.red(`Could not read manifest file ${file}: ${error}`))
           }
         }
       }
     } else {
-      console.log(colors.yellow(`Version directory ${contractsVersion} not found.`))
-      console.log(colors.gray(`Use "chel pin ${contractsVersion}" to create this version first.`))
-      return
+      console.error(colors.red(`❌ Version directory ${contractsVersion} not found.`))
+      console.error(colors.gray(`Use "chel pin ${contractsVersion}" to create this version first.`))
+      exit(`Version directory ${contractsVersion} not found`)
     }
 
     if (manifestFiles.length === 0) {
-      console.warn(colors.yellow('No manifest files found to deploy'))
-      return
+      console.error(colors.red('❌ No manifest files found to deploy'))
+      exit('No manifest files found to deploy')
     }
 
     console.log(colors.gray(`Found ${manifestFiles.length} manifest files to deploy`))
@@ -217,7 +218,8 @@ async function runPublish (directory: string, options: PublishOptions) {
       await runDeployCommand(destination, manifestFiles)
       console.log(colors.green('Contracts deployed successfully'))
     } catch (error) {
-      throw new Error(`Contract deployment failed: ${error}`)
+      console.error(colors.red(`❌ Contract deployment failed: ${error}`))
+      exit(`Contract deployment failed: ${error}`)
     }
   }
 

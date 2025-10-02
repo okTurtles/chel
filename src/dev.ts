@@ -1,4 +1,5 @@
 import { flags, colors } from './deps.ts'
+import { exit } from './utils.ts'
 import { readFile } from 'node:fs/promises'
 import { readFileSync, existsSync, watch, readdirSync } from 'node:fs'
 import { resolve, join } from 'node:path'
@@ -361,7 +362,8 @@ async function runDev (directory: string, options: DevOptions) {
     // Parse the existing manifest to get the contract info
     const contractInfo = await parseManifest(fullManifestPath)
     if (!contractInfo) {
-      throw new Error(`Failed to parse manifest: ${manifestPath}`)
+      console.error(colors.red(`❌ Failed to parse manifest: ${manifestPath}`))
+      exit(`Failed to parse manifest: ${manifestPath}`)
     }
 
     // Look for a key file in the project root or manifest directory

@@ -59,9 +59,9 @@ export async function pin (args: string[]): Promise<void> {
     console.log(colors.blue(`Manifest version: ${manifestVersion}`))
 
     if (version !== manifestVersion) {
-      console.log(colors.red(`❌ Version mismatch: CLI version (${version}) does not match manifest version (${manifestVersion})`))
-      console.log(colors.yellow(`💡 To pin this contract, use: chel pin ${manifestVersion} ${manifestPath}`))
-      return
+      console.error(colors.red(`❌ Version mismatch: CLI version (${version}) does not match manifest version (${manifestVersion})`))
+      console.error(colors.yellow(`💡 To pin this contract, use: chel pin ${manifestVersion} ${manifestPath}`))
+      exit('Version mismatch between CLI and manifest')
     }
 
     console.log(colors.green(`✅ Version validation passed: ${version}`))
@@ -110,7 +110,8 @@ async function parseManifest (manifestPath: string) {
   const slimFile = body.contractSlim?.file
 
   if (!fullContractName || !mainFile || !manifestVersion) {
-    throw new Error('Invalid manifest: missing contract name, main file, or version')
+    console.error(colors.red('❌ Invalid manifest: missing contract name, main file, or version'))
+    exit('Invalid manifest: missing contract name, main file, or version')
   }
 
   const contractName = sanitizeContractName(fullContractName)
@@ -175,7 +176,7 @@ async function copyContractFiles (
       await copyFileIfNeeded(slimSource, slimTarget, contractFiles.slim, options)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
-      console.log(colors.yellow(`⚠️  Could not copy slim file: ${errorMessage}`))
+      console.error(colors.yellow(`⚠️  Could not copy slim file: ${errorMessage}`))
     }
   }
 }

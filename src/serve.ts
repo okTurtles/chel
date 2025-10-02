@@ -1,4 +1,5 @@
 import { flags, colors } from './deps.ts'
+import { exit } from './utils.ts'
 import process from 'node:process'
 import { deploy } from './deploy.ts'
 import { readdir, mkdir, readFile } from 'node:fs/promises'
@@ -220,7 +221,7 @@ export async function serve (args: string[]) {
     await new Promise(() => {})
   } catch (error) {
     console.error(colors.red('❌ Failed to start server:'), error)
-    process.exit(1)
+    exit('Failed to start server')
   }
 }
 
