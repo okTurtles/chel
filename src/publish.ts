@@ -16,46 +16,58 @@ interface ProjectConfig {
   version: string
 }
 
-class Publisher {
-  private projectRoot: string
-  private options: PublishOptions
-  private projectConfig: ProjectConfig
-
-  constructor (projectRoot: string, options: PublishOptions) {
-    this.projectRoot = resolve(projectRoot)
-    this.options = options
-    this.projectConfig = { contractsVersion: '1.0.0', version: '1.0.0' }
-  }
-
-  async publish () {
-    console.log(colors.cyan('🚀 Publishing project...'))
-
-    // Load project configuration
-    await this.loadProjectConfig()
-
-    // Setup environment for production
-    this.setupProductionEnvironment()
-
-    // Build for production if not skipped
-    if (!this.options['skip-build']) {
-      this.buildForProduction()
+export async function publish (args: string[]) {
+  const parsed = flags.parse(args, {
+    boolean: ['production', 'skip-build'],
+    string: ['destination'],
+    default: {
+      production: true, // Default to production for publish
+      'skip-build': false,
+      destination: ''
+    },
+    alias: {
+      p: 'production',
+      d: 'destination'
     }
+  })
 
-    // Copy and move contracts to final structure
-    await this.organizeContracts()
-
-    // Deploy contracts to destination
-    await this.deployContracts()
-
-    console.log(colors.green('✅ Project published successfully!'))
+  const directory = parsed._[0]?.toString() || '.'
+  const options: PublishOptions = {
+    production: parsed.production,
+    'skip-build': parsed['skip-build'],
+    destination: parsed.destination || undefined
   }
 
-  private async loadProjectConfig () {
+  await runPublish(directory, options)
+}
+
+/**
+ * Main publish function that handles the publishing process
+ * @param directory - Working directory (defaults to current directory)
+ * @param options - Publish options (production, skip-build, destination)
+ */
+async function runPublish (directory: string, options: PublishOptions) {
+  const projectRoot = resolve(directory)
+  let projectConfig: ProjectConfig = { contractsVersion: '1.0.0', version: '1.0.0' }
+
+  console.log(colors.cyan('🚀 Publishing project...'))
+
+  await loadProjectConfig()
+  setupProductionEnvironment()
+  if (!options['skip-build']) {
+    buildForProduction()
+  }
+  await organizeContracts()
+  await deployContracts()
+
+  console.log(colors.green('✅ Project published successfully!'))
+
+  async function loadProjectConfig () {
     try {
-      const packageJsonPath = join(this.projectRoot, 'package.json')
+      const packageJsonPath = join(projectRoot, 'package.json')
       if (existsSync(packageJsonPath)) {
         const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf8'))
-        this.projectConfig = {
+        projectConfig = {
           contractsVersion: packageJson.contractsVersion || '1.0.0',
           version: packageJson.version || '1.0.0'
         }
@@ -65,20 +77,20 @@ class Publisher {
     }
   }
 
-  private setupProductionEnvironment () {
+  function setupProductionEnvironment () {
     console.log(colors.blue('🔧 Setting up production environment...'))
 
     Object.assign(process.env, {
       NODE_ENV: 'production',
-      CONTRACTS_VERSION: this.projectConfig.contractsVersion,
-      GI_VERSION: this.projectConfig.version, // No timestamp for production
+      CONTRACTS_VERSION: projectConfig.contractsVersion,
+      GI_VERSION: projectConfig.version, // No timestamp for production
       LIGHTWEIGHT_CLIENT: 'true',
       EXPOSE_SBP: '',
       ENABLE_UNSAFE_NULL_CRYPTO: 'false',
       UNSAFE_TRUST_ALL_MANIFEST_SIGNING_KEYS: 'false'
     })
 
-    if (this.options.production !== false) {
+    if (options.production !== false) {
       console.log(colors.green('Production environment configured'))
     } else {
       console.log(colors.yellow('⚠️  You should probably run with --production'))
@@ -91,7 +103,7 @@ class Publisher {
    * In a full implementation, this could be replaced with direct calls to the build system.
    * For now, we'll keep this as-is since the build system is complex and external.
    */
-  private buildForProduction () {
+  function buildForProduction () {
     console.log(colors.blue('📦 Building for production...'))
     console.log(colors.yellow('⚠️  Build step temporarily disabled - assuming contracts are already built'))
     console.log(colors.gray('In a full implementation, this would run the production build process'))
@@ -101,11 +113,11 @@ class Publisher {
     // This avoids the process spawning issue while maintaining functionality
   }
 
-  private async organizeContracts () {
+  async function organizeContracts () {
     console.log(colors.blue('📋 Organizing contracts...'))
 
-    const contractsDir = join(this.projectRoot, 'contracts')
-    const { contractsVersion } = this.projectConfig
+    const contractsDir = join(projectRoot, 'contracts')
+    const { contractsVersion } = projectConfig
 
     // For chel, we work with existing contracts, not built ones
     if (!existsSync(contractsDir)) {
@@ -119,7 +131,7 @@ class Publisher {
     const versionDir = join(contractsDir, contractsVersion)
     if (!existsSync(versionDir)) {
       console.log(colors.yellow(`Contract version ${contractsVersion} not found.`))
-      console.log(colors.gray(`Available versions: ${await this.getExistingVersions().then(v => v.join(', ')) || 'none'}`))
+      console.log(colors.gray(`Available versions: ${await getExistingVersions().then(v => v.join(', ')) || 'none'}`))
       console.log(colors.gray(`Use "chel pin ${contractsVersion}" to create this version first.`))
       return
     }
@@ -138,14 +150,14 @@ class Publisher {
 
     // All previously pinned versions are already in the contracts directory
     // No need to copy since we're working directly with contracts/ directory
-    const existingVersions = await this.getExistingVersions()
+    const existingVersions = await getExistingVersions()
     console.log(colors.gray(`Available contract versions: ${existingVersions.join(', ')}`))
 
     console.log(colors.green('Contracts organized successfully'))
   }
 
-  private async getExistingVersions (): Promise<string[]> {
-    const contractsDir = join(this.projectRoot, 'contracts')
+  async function getExistingVersions (): Promise<string[]> {
+    const contractsDir = join(projectRoot, 'contracts')
 
     if (!existsSync(contractsDir)) {
       return []
@@ -158,12 +170,12 @@ class Publisher {
       .sort()
   }
 
-  private async deployContracts () {
+  async function deployContracts () {
     console.log(colors.blue('🚀 Deploying contracts...'))
 
-    const destination = this.options.destination || process.env.DB_PATH || './data'
-    const { contractsVersion } = this.projectConfig
-    const versionDir = join(this.projectRoot, 'contracts', contractsVersion)
+    const destination = options.destination || process.env.DB_PATH || './data'
+    const { contractsVersion } = projectConfig
+    const versionDir = join(projectRoot, 'contracts', contractsVersion)
 
     // Find manifest files to deploy from the specific version
     const manifestFiles: string[] = []
@@ -202,7 +214,7 @@ class Publisher {
 
     // Deploy using chel deploy command (similar to Gruntfile.js exec:chelProdDeploy)
     try {
-      await this.runDeployCommand(destination, manifestFiles)
+      await runDeployCommand(destination, manifestFiles)
       console.log(colors.green('Contracts deployed successfully'))
     } catch (error) {
       throw new Error(`Contract deployment failed: ${error}`)
@@ -214,7 +226,7 @@ class Publisher {
    * This calls the deploy function directly instead of spawning a new process,
    * which is required for binary distribution compatibility
    */
-  private async runDeployCommand (destination: string, manifestFiles: string[]): Promise<void> {
+  async function runDeployCommand (destination: string, manifestFiles: string[]): Promise<void> {
     try {
       // Call deploy function directly with the same arguments that would be passed via CLI
       const args = [destination, ...manifestFiles]
@@ -228,43 +240,4 @@ class Publisher {
       throw error
     }
   }
-
-}
-
-export async function publish (args: string[]) {
-  const { directory, options } = parsePublishArgs(args)
-
-  const publisher = new Publisher(directory, options)
-
-  try {
-    await publisher.publish()
-  } catch (error) {
-    console.error(colors.red('Publish failed:'), error)
-    process.exit(1)
-  }
-}
-
-function parsePublishArgs (args: string[]): { directory: string; options: PublishOptions } {
-  const parsed = flags.parse(args, {
-    boolean: ['production', 'skip-build'],
-    string: ['destination'],
-    default: {
-      production: true, // Default to production for publish
-      'skip-build': false,
-      destination: ''
-    },
-    alias: {
-      p: 'production',
-      d: 'destination'
-    }
-  })
-
-  const directory = parsed._[0]?.toString() || '.'
-  const options: PublishOptions = {
-    production: parsed.production,
-    'skip-build': parsed['skip-build'],
-    destination: parsed.destination || undefined
-  }
-
-  return { directory, options }
 }

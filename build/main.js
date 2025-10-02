@@ -3318,7 +3318,7 @@ var init_server = __esm({
       let ready;
       const launchWorker = () => {
         worker = new Worker(path5);
-        return new Promise((resolve7, reject) => {
+        return new Promise((resolve6, reject) => {
           const msgHandler = (msg) => {
             if (msg === "ready") {
               worker.off("error", reject);
@@ -3330,7 +3330,7 @@ var init_server = __esm({
                   process10.exit(1);
                 });
               });
-              resolve7();
+              resolve6();
             }
           };
           worker.on("message", msgHandler);
@@ -3339,7 +3339,7 @@ var init_server = __esm({
       };
       ready = launchWorker();
       const rpcSbp = (...args) => {
-        return ready.then(() => new Promise((resolve7, reject) => {
+        return ready.then(() => new Promise((resolve6, reject) => {
           const mc = new MessageChannel();
           const cleanup = /* @__PURE__ */ ((worker2) => () => {
             worker2.off("error", reject);
@@ -3349,7 +3349,7 @@ var init_server = __esm({
           mc.port2.onmessage = (event) => {
             cleanup();
             const [success, result] = event.data;
-            if (success) return resolve7(result);
+            if (success) return resolve6(result);
             reject(result);
           };
           mc.port2.onmessageerror = () => {
@@ -3872,10 +3872,10 @@ var init_serve = __esm({
     };
     ["backend"].forEach((domain) => default4("sbp/filters/domain/add", domain, logSBP));
     [].forEach((sel) => default4("sbp/filters/selector/add", sel, logSBP));
-    serve_default = new Promise((resolve7, reject) => {
+    serve_default = new Promise((resolve6, reject) => {
       default4("okTurtles.events/on", SERVER_RUNNING, function() {
         console.info(default8.bold("backend startup sequence complete."));
-        resolve7();
+        resolve6();
       });
       Promise.resolve().then(() => (init_server(), server_exports)).catch(reject);
     });
@@ -4537,384 +4537,7 @@ import process13 from "node:process";
 function sanitizeContractName2(contractName) {
   return contractName.replace(/[/\\:*?"<>|]/g, "_");
 }
-var DevEnvironment = class {
-  watchers = [];
-  close;
-  serverProcess;
-  options;
-  projectRoot;
-  metrics;
-  startTime;
-  contractChanges = [];
-  cheloniaConfig = { contracts: {} };
-  recentlyRegeneratedManifests = [];
-  constructor(projectRoot, options2) {
-    this.projectRoot = resolve5(projectRoot);
-    this.options = options2;
-    this.metrics = {
-      contractsWatched: 0,
-      changesDetected: 0,
-      hotReloads: 0,
-      uptime: 0
-    };
-    this.startTime = /* @__PURE__ */ new Date();
-  }
-  async start() {
-    this.printWelcomeBanner();
-    await this.startServer();
-    await this.startContractWatching();
-    await this.startInteractiveMode();
-  }
-  async startServer() {
-    console.log(colors.blue("\u{1F680} Starting development server with hot reload..."));
-    const serverArgs = [
-      "--dp",
-      String(this.options.dashboardPort || 3e3),
-      "--port",
-      String(this.options.port || 8e3),
-      "--db-type",
-      this.options.dbType || "mem",
-      // Use memory for faster dev iterations by default
-      this.projectRoot
-    ];
-    try {
-      this.serverProcess = serve(serverArgs).catch((error) => {
-        console.error(colors.red("\u274C Server error:"), error);
-        process13.exit(1);
-      });
-      await new Promise((resolve7) => setTimeout(resolve7, 2e3));
-      console.log(colors.green("\u2705 Development server started"));
-      console.log(colors.gray(`   Dashboard: http://localhost:${this.options.dashboardPort || 3e3}`));
-      console.log(colors.gray(`   Application: http://0.0.0.0:${this.options.port || 8e3} (all interfaces)`));
-    } catch (error) {
-      console.error(colors.red("\u274C Failed to start development server:"), error);
-      throw error;
-    }
-  }
-  printWelcomeBanner() {
-    console.log(colors.cyan("\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557"));
-    console.log(colors.cyan("\u2551") + colors.bold(colors.white("               \u{1F9EA} CHEL LIVE DEVELOPMENT                     ")) + colors.cyan("  \u2551"));
-    console.log(colors.cyan("\u2551") + colors.white("           Live-testing with Hot Reload & Interaction        ") + colors.cyan(" \u2551"));
-    console.log(colors.cyan("\u255A\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255D"));
-    console.log();
-    console.log(colors.gray("Provides live-testing environment with automatic contract"));
-    console.log(colors.gray("redeployment and interactive testing capabilities."));
-    console.log();
-  }
-  async loadCheloniaConfig() {
-    const cheloniaConfigPath = join5(this.projectRoot, "chelonia.json");
-    if (existsSync2(cheloniaConfigPath)) {
-      const cheloniaConfigContent = await readFile5(cheloniaConfigPath, "utf8");
-      this.cheloniaConfig = JSON.parse(cheloniaConfigContent);
-    } else {
-      console.log(colors.yellow("\u26A0\uFE0F  No chelonia.json found"));
-      return;
-    }
-  }
-  async startContractWatching() {
-    console.log(colors.blue("\u{1F440} Setting up contract file watching..."));
-    await this.loadCheloniaConfig();
-    const manifestPaths = Object.values(this.cheloniaConfig.contracts).map((contract) => contract.path);
-    if (manifestPaths.length === 0) {
-      console.log(colors.yellow("\u26A0\uFE0F  No contracts found in chelonia.json"));
-      console.log(colors.gray("   Use `chel pin <version> <manifest-path>` to pin contracts first"));
-      return;
-    }
-    try {
-      let totalWatchedFiles = 0;
-      for (const manifestPath of manifestPaths) {
-        const fullManifestPath = join5(this.projectRoot, manifestPath);
-        if (existsSync2(fullManifestPath)) {
-          const manifestWatcher = watch(fullManifestPath, (eventType) => {
-            this.handleContractChange(eventType, manifestPath).catch((error) => {
-              console.error(colors.red("\u274C Error handling manifest change:"), error);
-            });
-          });
-          this.watchers.push(manifestWatcher);
-          totalWatchedFiles++;
-          const contractInfo = await this.parseManifest(fullManifestPath);
-          if (contractInfo) {
-            const manifestDir = fullManifestPath.substring(0, fullManifestPath.lastIndexOf("/"));
-            const mainContractPath = join5(manifestDir, contractInfo.contractFiles.main);
-            if (existsSync2(mainContractPath)) {
-              const mainWatcher = watch(mainContractPath, (eventType) => {
-                console.log(colors.yellow(`\u{1F4DD} Contract file ${eventType}: ${contractInfo.contractFiles.main}`));
-                this.handleContractChange(eventType, manifestPath).catch((error) => {
-                  console.error(colors.red("\u274C Error handling contract file change:"), error);
-                });
-              });
-              this.watchers.push(mainWatcher);
-              totalWatchedFiles++;
-            }
-            if (contractInfo.contractFiles.slim) {
-              const slimContractPath = join5(manifestDir, contractInfo.contractFiles.slim);
-              if (existsSync2(slimContractPath)) {
-                const slimWatcher = watch(slimContractPath, (eventType) => {
-                  console.log(colors.yellow(`\u{1F4DD} Contract file ${eventType}: ${contractInfo.contractFiles.slim}`));
-                  this.handleContractChange(eventType, manifestPath).catch((error) => {
-                    console.error(colors.red("\u274C Error handling slim contract file change:"), error);
-                  });
-                });
-                this.watchers.push(slimWatcher);
-                totalWatchedFiles++;
-              }
-            }
-          }
-        }
-      }
-      this.metrics.contractsWatched = totalWatchedFiles;
-      console.log(colors.green(`\u2705 Watching ${totalWatchedFiles} files (manifests + contract sources) from chelonia.json`));
-    } catch (error) {
-      console.error(colors.red("\u274C Error setting up file watching:"), error);
-    }
-  }
-  async handleContractChange(eventType, filename) {
-    const changeEvent = {
-      file: filename,
-      type: eventType === "rename" ? "added" : "changed",
-      timestamp: /* @__PURE__ */ new Date()
-    };
-    this.contractChanges.push(changeEvent);
-    this.metrics.changesDetected++;
-    console.log(colors.yellow(`\u{1F4DD} Contract change: ${filename}`));
-    if (filename.includes("manifest.json")) {
-      const now = Date.now();
-      const recentlyRegenerated = this.recentlyRegeneratedManifests.find(
-        (manifest2) => manifest2.path === filename && now - manifest2.timestamp < 2e3
-        // 2 second window
-      );
-      if (recentlyRegenerated) {
-        console.log(colors.gray("   \u2192 Skipping hot reload for recently regenerated manifest"));
-        this.recentlyRegeneratedManifests = this.recentlyRegeneratedManifests.filter(
-          (manifest2) => now - manifest2.timestamp < 5e3
-          // Keep entries for 5 seconds
-        );
-        return;
-      }
-    }
-    if (this.options["hot-reload"] !== false) {
-      await this.triggerHotReload(filename);
-    }
-  }
-  async triggerHotReload(filename) {
-    try {
-      console.log(colors.blue(`\u{1F504} Hot reloading contract: ${filename}`));
-      const manifestPath = this.findManifestForFile(filename);
-      if (!manifestPath) {
-        console.log(colors.yellow("   \u26A0\uFE0F  No manifest found for changed file, skipping hot reload"));
-        return;
-      }
-      console.log(colors.gray("   \u2192 Regenerating manifest and redeploying..."));
-      await this.regenerateManifest(manifestPath);
-      await this.redeployContract(manifestPath);
-      this.metrics.hotReloads++;
-      console.log(colors.green("   \u2705 Hot reload completed - manifest regenerated, re-signed, and redeployed"));
-    } catch (error) {
-      console.error(colors.red("\u274C Hot reload failed:"), error);
-    }
-  }
-  /**
-   * Find the manifest file that corresponds to a changed contract file
-   */
-  findManifestForFile(changedFile) {
-    if (changedFile.includes("manifest.json")) {
-      return changedFile;
-    }
-    for (const contract of Object.values(this.cheloniaConfig.contracts)) {
-      const manifestPath = contract.path;
-      const fullManifestPath = join5(this.projectRoot, manifestPath);
-      try {
-        const manifestDir = fullManifestPath.substring(0, fullManifestPath.lastIndexOf("/"));
-        const contractInfo = this.parseManifestSync(fullManifestPath);
-        if (contractInfo) {
-          const mainContractPath = join5(manifestDir, contractInfo.contractFiles.main);
-          const slimContractPath = contractInfo.contractFiles.slim ? join5(manifestDir, contractInfo.contractFiles.slim) : null;
-          const changedFilePath = resolve5(this.projectRoot, changedFile);
-          if (changedFilePath === mainContractPath || slimContractPath && changedFilePath === slimContractPath) {
-            return manifestPath;
-          }
-        }
-      } catch (error) {
-        console.error(colors.red("   \u26A0\uFE0F  Error parsing manifest:"), error);
-        continue;
-      }
-    }
-    return null;
-  }
-  /**
-   * Regenerate and re-sign a manifest file using the logic from manifest.ts
-   */
-  async regenerateManifest(manifestPath) {
-    const fullManifestPath = join5(this.projectRoot, manifestPath);
-    const manifestDir = fullManifestPath.substring(0, fullManifestPath.lastIndexOf("/"));
-    const contractInfo = await this.parseManifest(fullManifestPath);
-    if (!contractInfo) {
-      throw new Error(`Failed to parse manifest: ${manifestPath}`);
-    }
-    const keyFile = this.findKeyFile(manifestDir);
-    if (!keyFile) {
-      console.log(colors.yellow("   \u26A0\uFE0F  No signing key found (key.json or chel keygen-generated), skipping manifest signing"));
-      return;
-    }
-    const contractFile = join5(manifestDir, contractInfo.contractFiles.main);
-    const slimFile = contractInfo.contractFiles.slim ? join5(manifestDir, contractInfo.contractFiles.slim) : void 0;
-    const args = [
-      keyFile,
-      contractFile,
-      "--version",
-      contractInfo.version,
-      "--out",
-      fullManifestPath
-    ];
-    if (slimFile) {
-      args.push("--slim", slimFile);
-    }
-    const { manifest: manifest2 } = await Promise.resolve().then(() => (init_manifest(), manifest_exports));
-    await manifest2(args);
-    this.recentlyRegeneratedManifests.push({
-      path: manifestPath,
-      timestamp: Date.now()
-    });
-    console.log(colors.gray(`   \u2192 Manifest regenerated: ${manifestPath}`));
-  }
-  /**
-   * Redeploy a contract manifest to the running server
-   * This ensures the server has the latest version after hot reload
-   */
-  async redeployContract(manifestPath) {
-    try {
-      const fullManifestPath = join5(this.projectRoot, manifestPath);
-      const deployTarget = resolve5(join5(this.projectRoot, "data"));
-      console.log(colors.gray(`   \u2192 Redeploying contract to server: ${manifestPath}`));
-      await deploy([deployTarget, fullManifestPath]);
-      console.log(colors.gray("   \u2192 Contract redeployed successfully"));
-    } catch (error) {
-      console.error(colors.red("   \u274C Failed to redeploy contract:"), error);
-      throw error;
-    }
-  }
-  /**
-   * Find a key file for signing manifests
-   * Supports both legacy key.json and chel keygen-generated key files
-   */
-  findKeyFile(manifestDir) {
-    const findKeyInDir = (dir) => {
-      try {
-        const files = readdirSync(dir);
-        if (files.includes("key.json")) {
-          return join5(dir, "key.json");
-        }
-        const keyFiles = files.filter(
-          (file) => file.endsWith(".json") && !file.endsWith(".pub.json") && file.includes("edwards25519sha512batch-")
-        );
-        if (keyFiles.length > 0) {
-          return join5(dir, keyFiles[0]);
-        }
-        return null;
-      } catch (error) {
-        console.error("Error reading directory:", error);
-        return null;
-      }
-    };
-    const rootKeyFile = findKeyInDir(this.projectRoot);
-    if (rootKeyFile) {
-      return rootKeyFile;
-    }
-    const manifestKeyFile = findKeyInDir(manifestDir);
-    if (manifestKeyFile) {
-      return manifestKeyFile;
-    }
-    return null;
-  }
-  /**
-   * Shared manifest parsing logic to avoid code duplication
-   */
-  parseManifestContent(manifestContent, manifestPath) {
-    try {
-      const manifest2 = JSON.parse(manifestContent);
-      const body = JSON.parse(manifest2.body);
-      const fullContractName = body.name;
-      const version2 = body.version;
-      const mainFile = body.contract.file;
-      const slimFile = body.contractSlim?.file;
-      if (!fullContractName || !mainFile || !version2) {
-        return null;
-      }
-      const contractName = sanitizeContractName2(fullContractName);
-      return {
-        contractName,
-        version: version2,
-        contractFiles: {
-          main: mainFile,
-          slim: slimFile
-        }
-      };
-    } catch (error) {
-      console.error(colors.red(`Failed to parse manifest ${manifestPath}:`), error);
-      return null;
-    }
-  }
-  /**
-   * Synchronous version of parseManifest for use in findManifestForFile
-   */
-  parseManifestSync(manifestPath) {
-    try {
-      const manifestContent = readFileSync(manifestPath, "utf8");
-      return this.parseManifestContent(manifestContent, manifestPath);
-    } catch (error) {
-      console.error(colors.red("   \u26A0\uFE0F  Error reading manifest:"), error);
-      return null;
-    }
-  }
-  /**
-   * Async version of parseManifest for use in regenerateManifest
-   */
-  async parseManifest(manifestPath) {
-    try {
-      const manifestContent = await readFile5(manifestPath, "utf8");
-      return this.parseManifestContent(manifestContent, manifestPath);
-    } catch (error) {
-      console.error(colors.red(`Failed to read manifest ${manifestPath}:`), error);
-      return null;
-    }
-  }
-  async startInteractiveMode() {
-    console.log(colors.blue("\u{1F39B}\uFE0F  Starting interactive mode..."));
-    console.log(colors.gray("Interactive commands:"));
-    console.log(colors.gray("  - Press Ctrl+C to exit"));
-    console.log(colors.gray("  - File changes will trigger hot reload automatically"));
-    console.log(colors.gray("  - Check the dashboard for live contract status"));
-    console.log();
-    const signals = ["SIGINT", "SIGTERM", "SIGQUIT", "SIGHUP"];
-    signals.forEach((signal) => {
-      process13.on(signal, () => {
-        console.log(colors.yellow(`
-\u{1F6D1} Received ${signal}, shutting down development environment...`));
-        this.cleanup();
-        process13.exit(0);
-      });
-    });
-    console.log(colors.green("\u{1F3AF} Live development environment ready!"));
-    console.log(colors.gray("Watching for contract changes..."));
-    await new Promise(() => {
-    });
-  }
-  cleanup() {
-    console.log(colors.blue("\u{1F9F9} Cleaning up watchers..."));
-    for (const watcher of this.watchers) {
-      if (watcher && typeof watcher.close === "function") {
-        watcher.close();
-      }
-    }
-    this.watchers = [];
-  }
-};
 async function dev(args) {
-  const { directory, options: options2 } = parseDevArgs(args);
-  const devEnv = new DevEnvironment(directory, options2);
-  await devEnv.start();
-}
-function parseDevArgs(args) {
   const parsed = flags.parse(args, {
     string: ["port", "dp", "dashboard-port"],
     boolean: ["watch-contracts", "hot-reload", "auto-test", "interactive", "debug"],
@@ -4940,88 +4563,279 @@ function parseDevArgs(args) {
     interactive: parsed.interactive,
     debug: parsed.debug
   };
-  return { directory, options: options2 };
+  await runDev(directory, options2);
 }
-
-// src/pin.ts
-init_deps();
-import { readFile as readFile6, writeFile as writeFile2, mkdir as mkdir4, copyFile } from "node:fs/promises";
-import { existsSync as existsSync3 } from "node:fs";
-import { resolve as resolve6, join as join6, dirname as dirname4, basename as basename4 } from "node:path";
-import process14 from "node:process";
-function sanitizeContractName3(contractName) {
-  return contractName.replace(/[/\\:*?"<>|]/g, "_");
-}
-var ContractPinner = class {
-  projectRoot;
-  options;
-  cheloniaConfig;
-  constructor(projectRoot, options2) {
-    this.projectRoot = resolve6(projectRoot);
-    this.options = options2;
-    this.cheloniaConfig = { contracts: {} };
+async function runDev(directory, options2) {
+  const projectRoot2 = resolve5(directory);
+  const metrics = {
+    contractsWatched: 0,
+    changesDetected: 0,
+    hotReloads: 0,
+    uptime: 0
+  };
+  const contractChanges = [];
+  let cheloniaConfig2 = { contracts: {} };
+  const recentlyRegeneratedManifests = [];
+  const watchers = [];
+  printWelcomeBanner();
+  await startServer();
+  await startContractWatching();
+  await startInteractiveMode();
+  function printWelcomeBanner() {
+    console.log(colors.cyan("\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557"));
+    console.log(colors.cyan("\u2551") + colors.bold(colors.white("               \u{1F9EA} CHEL LIVE DEVELOPMENT                     ")) + colors.cyan("  \u2551"));
+    console.log(colors.cyan("\u2551") + colors.white("           Live-testing with Hot Reload & Interaction        ") + colors.cyan(" \u2551"));
+    console.log(colors.cyan("\u255A\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255D"));
+    console.log();
+    console.log(colors.gray("Provides live-testing environment with automatic contract"));
+    console.log(colors.gray("redeployment and interactive testing capabilities."));
+    console.log();
   }
-  /**
-   * Pin contracts with version validation - only pins if CLI version matches manifest version
-   * @param version - The version to pin to (must match manifest version)
-   * @param manifestPath - Path to the manifest file (required)
-   */
-  async pin(version2, manifestPath) {
-    if (!version2 || typeof version2 !== "string") {
-      throw new Error("Usage: chel pin <version> <manifest-file-path>");
-    }
-    if (!manifestPath) {
-      await this.showUsage();
-      return;
-    }
-    console.log(colors.cyan(`\u{1F4CC} Requesting pin to version: ${version2}`));
-    console.log(colors.gray(`Manifest: ${manifestPath}`));
-    await this.loadCheloniaConfig();
-    const fullManifestPath = join6(this.projectRoot, manifestPath);
-    if (!existsSync3(fullManifestPath)) {
-      throw new Error(`Manifest file not found: ${manifestPath}`);
-    }
-    const { contractName, contractFiles, version: manifestVersion } = await this.parseManifest(fullManifestPath);
-    console.log(colors.blue(`Contract name: ${contractName}`));
-    console.log(colors.blue(`Manifest version: ${manifestVersion}`));
-    if (version2 !== manifestVersion) {
-      console.log(colors.red(`\u274C Version mismatch: CLI version (${version2}) does not match manifest version (${manifestVersion})`));
-      console.log(colors.yellow(`\u{1F4A1} To pin this contract, use: chel pin ${manifestVersion} ${manifestPath}`));
-      return;
-    }
-    console.log(colors.green(`\u2705 Version validation passed: ${version2}`));
-    const currentPinnedVersion = this.cheloniaConfig.contracts[contractName]?.version;
-    if (currentPinnedVersion === version2) {
-      console.log(colors.yellow(`\u2728 Contract ${contractName} is already pinned to version ${version2} - no action needed`));
-      return;
-    }
-    if (currentPinnedVersion) {
-      console.log(colors.cyan(`\u{1F4CC} Updating ${contractName} from version ${currentPinnedVersion} to ${version2}`));
-    } else {
-      console.log(colors.cyan(`\u{1F4CC} Pinning ${contractName} to version ${version2} (first time)`));
-    }
-    const contractVersionDir = join6(this.projectRoot, "contracts", contractName, version2);
-    if (existsSync3(contractVersionDir)) {
-      if (!this.options.overwrite && !this.options["only-changed"]) {
-        throw new Error(`Version ${version2} already exists for contract ${contractName}. Use --overwrite to replace it, or --only-changed to update only changed files`);
-      }
-      console.log(colors.yellow(`Version ${version2} already exists for ${contractName} - checking files...`));
-    } else {
-      await this.createVersionDirectory(contractName, version2);
-    }
-    await this.copyContractFiles(manifestPath, contractFiles, contractName, version2);
-    await this.updateCheloniaConfig(contractName, version2, manifestPath);
-    console.log(colors.green(`\u2705 Successfully pinned ${contractName} to version ${version2}`));
-    console.log(colors.gray(`Location: contracts/${contractName}/${version2}/`));
-  }
-  /**
-   * Parse manifest file to extract contract information
-   * @param manifestPath - Path to the manifest file
-   * @returns Object containing contract name, version, and file information
-   */
-  async parseManifest(manifestPath) {
+  async function startServer() {
+    console.log(colors.blue("\u{1F680} Starting development server with hot reload..."));
+    const serverArgs = [
+      "--dp",
+      String(options2.dashboardPort || 3e3),
+      "--port",
+      String(options2.port || 8e3),
+      "--db-type",
+      options2.dbType || "mem",
+      // Use memory for faster dev iterations by default
+      projectRoot2
+    ];
     try {
-      const manifestContent = await readFile6(manifestPath, "utf8");
+      serve(serverArgs).catch((error) => {
+        console.error(colors.red("\u274C Server error:"), error);
+        process13.exit(1);
+      });
+      await new Promise((resolve6) => setTimeout(resolve6, 2e3));
+      console.log(colors.green("\u2705 Development server started"));
+      console.log(colors.gray(`   Dashboard: http://localhost:${options2.dashboardPort || 3e3}`));
+      console.log(colors.gray(`   Application: http://0.0.0.0:${options2.port || 8e3} (all interfaces)`));
+    } catch (error) {
+      console.error(colors.red("\u274C Failed to start development server:"), error);
+      throw error;
+    }
+  }
+  async function loadCheloniaConfig2() {
+    const cheloniaConfigPath = join5(projectRoot2, "chelonia.json");
+    if (existsSync2(cheloniaConfigPath)) {
+      const cheloniaConfigContent = await readFile5(cheloniaConfigPath, "utf8");
+      cheloniaConfig2 = JSON.parse(cheloniaConfigContent);
+    } else {
+      console.log(colors.yellow("\u26A0\uFE0F  No chelonia.json found"));
+      return;
+    }
+  }
+  async function startContractWatching() {
+    console.log(colors.blue("\u{1F440} Setting up contract file watching..."));
+    await loadCheloniaConfig2();
+    const manifestPaths = Object.values(cheloniaConfig2.contracts).map((contract) => contract.path);
+    if (manifestPaths.length === 0) {
+      console.log(colors.yellow("\u26A0\uFE0F  No contracts found in chelonia.json"));
+      console.log(colors.gray("   Use `chel pin <version> <manifest-path>` to pin contracts first"));
+      return;
+    }
+    try {
+      let totalWatchedFiles = 0;
+      for (const manifestPath of manifestPaths) {
+        const fullManifestPath = join5(projectRoot2, manifestPath);
+        if (existsSync2(fullManifestPath)) {
+          const manifestWatcher = watch(fullManifestPath, (eventType) => {
+            handleContractChange(eventType, manifestPath).catch((error) => {
+              console.error(colors.red("\u274C Error handling manifest change:"), error);
+            });
+          });
+          watchers.push(manifestWatcher);
+          totalWatchedFiles++;
+          const contractInfo = await parseManifest3(fullManifestPath);
+          if (contractInfo) {
+            const manifestDir = fullManifestPath.substring(0, fullManifestPath.lastIndexOf("/"));
+            const mainContractPath = join5(manifestDir, contractInfo.contractFiles.main);
+            if (existsSync2(mainContractPath)) {
+              const mainWatcher = watch(mainContractPath, (eventType) => {
+                console.log(colors.yellow(`\u{1F4DD} Contract file ${eventType}: ${contractInfo.contractFiles.main}`));
+                handleContractChange(eventType, manifestPath).catch((error) => {
+                  console.error(colors.red("\u274C Error handling contract file change:"), error);
+                });
+              });
+              watchers.push(mainWatcher);
+              totalWatchedFiles++;
+            }
+            if (contractInfo.contractFiles.slim) {
+              const slimContractPath = join5(manifestDir, contractInfo.contractFiles.slim);
+              if (existsSync2(slimContractPath)) {
+                const slimWatcher = watch(slimContractPath, (eventType) => {
+                  console.log(colors.yellow(`\u{1F4DD} Contract file ${eventType}: ${contractInfo.contractFiles.slim}`));
+                  handleContractChange(eventType, manifestPath).catch((error) => {
+                    console.error(colors.red("\u274C Error handling slim contract file change:"), error);
+                  });
+                });
+                watchers.push(slimWatcher);
+                totalWatchedFiles++;
+              }
+            }
+          }
+        }
+      }
+      metrics.contractsWatched = totalWatchedFiles;
+      console.log(colors.green(`\u2705 Watching ${totalWatchedFiles} files (manifests + contract sources) from chelonia.json`));
+    } catch (error) {
+      console.error(colors.red("\u274C Error setting up file watching:"), error);
+    }
+  }
+  async function handleContractChange(eventType, filename) {
+    const changeEvent = {
+      file: filename,
+      type: eventType === "rename" ? "added" : "changed",
+      timestamp: /* @__PURE__ */ new Date()
+    };
+    contractChanges.push(changeEvent);
+    metrics.changesDetected++;
+    console.log(colors.yellow(`\u{1F4DD} Contract change: ${filename}`));
+    if (filename.includes("manifest.json")) {
+      const now = Date.now();
+      const recentlyRegenerated = recentlyRegeneratedManifests.find(
+        (manifest2) => manifest2.path === filename && now - manifest2.timestamp < 2e3
+        // 2 second window
+      );
+      if (recentlyRegenerated) {
+        console.log(colors.gray("   \u2192 Skipping hot reload for recently regenerated manifest"));
+        const oldEntries = recentlyRegeneratedManifests.filter(
+          (manifest2) => now - manifest2.timestamp >= 5e3
+          // Remove entries older than 5 seconds
+        );
+        oldEntries.forEach((entry) => {
+          const index = recentlyRegeneratedManifests.indexOf(entry);
+          if (index > -1) {
+            recentlyRegeneratedManifests.splice(index, 1);
+          }
+        });
+        return;
+      }
+    }
+    if (options2["hot-reload"] !== false) {
+      await triggerHotReload(filename);
+    }
+  }
+  async function triggerHotReload(filename) {
+    try {
+      console.log(colors.blue(`\u{1F504} Hot reloading contract: ${filename}`));
+      const manifestPath = findManifestForFile(filename);
+      if (!manifestPath) {
+        console.log(colors.yellow("   \u26A0\uFE0F  No manifest found for changed file, skipping hot reload"));
+        return;
+      }
+      console.log(colors.gray("   \u2192 Regenerating manifest and redeploying..."));
+      await regenerateManifest(manifestPath);
+      await redeployContract(manifestPath);
+      metrics.hotReloads++;
+      console.log(colors.green("   \u2705 Hot reload completed - manifest regenerated, re-signed, and redeployed"));
+    } catch (error) {
+      console.error(colors.red("\u274C Hot reload failed:"), error);
+    }
+  }
+  function findManifestForFile(changedFile) {
+    if (changedFile.includes("manifest.json")) {
+      return changedFile;
+    }
+    for (const contract of Object.values(cheloniaConfig2.contracts)) {
+      const manifestPath = contract.path;
+      const fullManifestPath = join5(projectRoot2, manifestPath);
+      try {
+        const manifestDir = fullManifestPath.substring(0, fullManifestPath.lastIndexOf("/"));
+        const contractInfo = parseManifestSync(fullManifestPath);
+        if (contractInfo) {
+          const mainContractPath = join5(manifestDir, contractInfo.contractFiles.main);
+          const slimContractPath = contractInfo.contractFiles.slim ? join5(manifestDir, contractInfo.contractFiles.slim) : null;
+          const changedFilePath = resolve5(projectRoot2, changedFile);
+          if (changedFilePath === mainContractPath || slimContractPath && changedFilePath === slimContractPath) {
+            return manifestPath;
+          }
+        }
+      } catch (error) {
+        console.error(colors.red("   \u26A0\uFE0F  Error parsing manifest:"), error);
+        continue;
+      }
+    }
+    return null;
+  }
+  async function regenerateManifest(manifestPath) {
+    const fullManifestPath = join5(projectRoot2, manifestPath);
+    const manifestDir = fullManifestPath.substring(0, fullManifestPath.lastIndexOf("/"));
+    const contractInfo = await parseManifest3(fullManifestPath);
+    if (!contractInfo) {
+      throw new Error(`Failed to parse manifest: ${manifestPath}`);
+    }
+    const keyFile = findKeyFile(manifestDir);
+    if (!keyFile) {
+      console.log(colors.yellow("   \u26A0\uFE0F  No signing key found (key.json or chel keygen-generated), skipping manifest signing"));
+      return;
+    }
+    const contractFile = join5(manifestDir, contractInfo.contractFiles.main);
+    const slimFile = contractInfo.contractFiles.slim ? join5(manifestDir, contractInfo.contractFiles.slim) : void 0;
+    const args = [
+      keyFile,
+      contractFile,
+      "--version",
+      contractInfo.version,
+      "--out",
+      fullManifestPath
+    ];
+    if (slimFile) {
+      args.push("--slim", slimFile);
+    }
+    const { manifest: manifest2 } = await Promise.resolve().then(() => (init_manifest(), manifest_exports));
+    await manifest2(args);
+    recentlyRegeneratedManifests.push({
+      path: manifestPath,
+      timestamp: Date.now()
+    });
+    console.log(colors.gray(`   \u2192 Manifest regenerated: ${manifestPath}`));
+  }
+  async function redeployContract(manifestPath) {
+    try {
+      const fullManifestPath = join5(projectRoot2, manifestPath);
+      const deployTarget = resolve5(join5(projectRoot2, "data"));
+      console.log(colors.gray(`   \u2192 Redeploying contract to server: ${manifestPath}`));
+      await deploy([deployTarget, fullManifestPath]);
+      console.log(colors.gray("   \u2192 Contract redeployed successfully"));
+    } catch (error) {
+      console.error(colors.red("   \u274C Failed to redeploy contract:"), error);
+      throw error;
+    }
+  }
+  function findKeyFile(manifestDir) {
+    const findKeyInDir = (dir) => {
+      try {
+        const files = readdirSync(dir);
+        if (files.includes("key.json")) {
+          return join5(dir, "key.json");
+        }
+        const keyFiles = files.filter(
+          (file) => file.endsWith(".json") && !file.endsWith(".pub.json") && file.includes("edwards25519sha512batch-")
+        );
+        if (keyFiles.length > 0) {
+          return join5(dir, keyFiles[0]);
+        }
+        return null;
+      } catch (error) {
+        console.error("Error reading directory:", error);
+        return null;
+      }
+    };
+    const rootKeyFile = findKeyInDir(projectRoot2);
+    if (rootKeyFile) {
+      return rootKeyFile;
+    }
+    const manifestKeyFile = findKeyInDir(manifestDir);
+    if (manifestKeyFile) {
+      return manifestKeyFile;
+    }
+    return null;
+  }
+  function parseManifestContent(manifestContent, manifestPath) {
+    try {
       const manifest2 = JSON.parse(manifestContent);
       const body = JSON.parse(manifest2.body);
       const fullContractName = body.name;
@@ -5029,9 +4843,9 @@ var ContractPinner = class {
       const mainFile = body.contract.file;
       const slimFile = body.contractSlim?.file;
       if (!fullContractName || !mainFile || !version2) {
-        throw new Error("Invalid manifest: missing contract name, main file, or version");
+        return null;
       }
-      const contractName = sanitizeContractName3(fullContractName);
+      const contractName = sanitizeContractName2(fullContractName);
       return {
         contractName,
         version: version2,
@@ -5041,176 +4855,259 @@ var ContractPinner = class {
         }
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      throw new Error(`Failed to parse manifest file: ${errorMessage}`);
+      console.error(colors.red(`Failed to parse manifest ${manifestPath}:`), error);
+      return null;
     }
   }
-  /**
-   * Show usage information and currently pinned contracts
-   */
-  showUsage() {
-    console.log(colors.cyan("\u{1F4CB} Contract Pinning Usage:"));
-    console.log(colors.gray("Usage: chel pin <version> <manifest-file-path>"));
+  function parseManifestSync(manifestPath) {
+    try {
+      const manifestContent = readFileSync(manifestPath, "utf8");
+      return parseManifestContent(manifestContent, manifestPath);
+    } catch (error) {
+      console.error(colors.red("   \u26A0\uFE0F  Error reading manifest:"), error);
+      return null;
+    }
+  }
+  async function parseManifest3(manifestPath) {
+    try {
+      const manifestContent = await readFile5(manifestPath, "utf8");
+      return parseManifestContent(manifestContent, manifestPath);
+    } catch (error) {
+      console.error(colors.red(`Failed to read manifest ${manifestPath}:`), error);
+      return null;
+    }
+  }
+  async function startInteractiveMode() {
+    console.log(colors.blue("\u{1F39B}\uFE0F  Starting interactive mode..."));
+    console.log(colors.gray("Interactive commands:"));
+    console.log(colors.gray("  - Press Ctrl+C to exit"));
+    console.log(colors.gray("  - File changes will trigger hot reload automatically"));
+    console.log(colors.gray("  - Check the dashboard for live contract status"));
     console.log();
-    console.log(colors.yellow("\u{1F4DD} Note: Specify the full path to your manifest file."));
-    console.log(colors.gray("   Generate manifests first using: chel manifest <contract-file>"));
-    console.log(colors.gray("   Example: chel pin 1.0.0 ./dist/contracts/chatroom.1.0.0.manifest.json"));
-    console.log();
-    if (Object.keys(this.cheloniaConfig.contracts).length > 0) {
-      console.log(colors.cyan("\u{1F4CC} Currently pinned contracts:"));
-      for (const [name, config] of Object.entries(this.cheloniaConfig.contracts)) {
-        console.log(`  ${colors.green(name)} - ${colors.blue(config.version)} (${colors.gray(config.path)})`);
-      }
-      console.log();
-    } else {
-      console.log(colors.gray("No contracts currently pinned."));
-      console.log();
-    }
+    const signals = ["SIGINT", "SIGTERM", "SIGQUIT", "SIGHUP"];
+    signals.forEach((signal) => {
+      process13.on(signal, () => {
+        console.log(colors.yellow(`
+\u{1F6D1} Received ${signal}, shutting down development environment...`));
+        cleanup();
+        process13.exit(0);
+      });
+    });
+    console.log(colors.green("\u{1F3AF} Live development environment ready!"));
+    console.log(colors.gray("Watching for contract changes..."));
+    await new Promise(() => {
+    });
   }
-  /**
-   * Create the directory structure for a contract version
-   * Structure: contracts/<contractName>/<version>/
-   */
-  async createVersionDirectory(contractName, version2) {
-    const versionDir = join6(this.projectRoot, "contracts", contractName, version2);
-    console.log(colors.blue(`\u{1F4C1} Creating directory: contracts/${contractName}/${version2}/`));
-    await mkdir4(versionDir, { recursive: true });
-  }
-  /**
-   * Copy contract files from manifest to target directory
-   * @param manifestPath - Path to the manifest file
-   * @param contractFiles - Contract file information from manifest
-   * @param contractName - Name of the contract
-   * @param version - Version to pin to
-   */
-  async copyContractFiles(manifestPath, contractFiles, contractName, version2) {
-    const sourceDir = dirname4(join6(this.projectRoot, manifestPath));
-    const targetDir = join6(this.projectRoot, "contracts", contractName, version2);
-    console.log(colors.gray(`\u{1F4CB} Copying files from manifest: ${contractFiles.main}${contractFiles.slim ? `, ${contractFiles.slim}` : ""}`));
-    const mainSource = join6(sourceDir, contractFiles.main);
-    const mainTarget = join6(targetDir, contractFiles.main);
-    await this.copyFileIfNeeded(mainSource, mainTarget, contractFiles.main);
-    if (contractFiles.slim) {
-      const slimSource = join6(sourceDir, contractFiles.slim);
-      const slimTarget = join6(targetDir, contractFiles.slim);
-      try {
-        await this.copyFileIfNeeded(slimSource, slimTarget, contractFiles.slim);
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        console.log(colors.yellow(`\u26A0\uFE0F  Could not copy slim file: ${errorMessage}`));
+  function cleanup() {
+    console.log(colors.blue("\u{1F9F9} Cleaning up watchers..."));
+    for (const watcher of watchers) {
+      if (watcher && typeof watcher.close === "function") {
+        watcher.close();
       }
     }
-  }
-  /**
-   * Copy a file only if needed based on --overwrite and --only-changed flags
-   * @param sourcePath - Source file path
-   * @param targetPath - Target file path
-   * @param fileName - File name for logging
-   */
-  async copyFileIfNeeded(sourcePath, targetPath, fileName) {
-    const targetExists = existsSync3(targetPath);
-    if (!targetExists) {
-      console.log(colors.blue(`\u{1F4C4} Copying: ${fileName} (new file)`));
-      await copyFile(sourcePath, targetPath);
-      return;
-    }
-    if (targetExists && !this.options.overwrite) {
-      console.log(colors.yellow(`\u23ED\uFE0F  Skipping: ${fileName} (already exists, use --overwrite to replace)`));
-      return;
-    }
-    if (this.options["only-changed"]) {
-      const sourceContent = await readFile6(sourcePath, "utf8");
-      const targetContent = await readFile6(targetPath, "utf8");
-      if (sourceContent === targetContent) {
-        console.log(colors.gray(`\u23ED\uFE0F  Skipping: ${fileName} (unchanged)`));
-        return;
-      } else {
-        console.log(colors.blue(`\u{1F4C4} Copying: ${fileName} (changed)`));
-        await copyFile(sourcePath, targetPath);
-        return;
-      }
-    }
-    console.log(colors.blue(`\u{1F4C4} Copying: ${fileName} (overwriting)`));
-    await copyFile(sourcePath, targetPath);
-  }
-  /**
-   * Load chelonia.json configuration file
-   * Creates a default one if it doesn't exist
-   */
-  async loadCheloniaConfig() {
-    const configPath = join6(this.projectRoot, "chelonia.json");
-    if (existsSync3(configPath)) {
-      try {
-        const configContent = await readFile6(configPath, "utf8");
-        this.cheloniaConfig = JSON.parse(configContent);
-        console.log(colors.blue("\u{1F4C4} Loaded existing chelonia.json"));
-      } catch (error) {
-        console.warn(colors.yellow(`Warning: Could not parse chelonia.json: ${error}`));
-      }
-    } else {
-      console.log(colors.blue("\u{1F4C4} Creating new chelonia.json"));
-    }
-    if (!this.cheloniaConfig.contracts) {
-      this.cheloniaConfig.contracts = {};
-    }
-  }
-  /**
-   * Update chelonia.json with the new contract version
-   * @param contractName - Name of the contract
-   * @param version - Version being pinned
-   * @param manifestPath - Path to the original manifest file
-   */
-  async updateCheloniaConfig(contractName, version2, manifestPath) {
-    const manifestFileName = basename4(manifestPath);
-    const pinnedManifestPath = `contracts/${contractName}/${version2}/${manifestFileName}`;
-    this.cheloniaConfig.contracts[contractName] = {
-      version: version2,
-      path: pinnedManifestPath
-    };
-    const configPath = join6(this.projectRoot, "chelonia.json");
-    const configContent = JSON.stringify(this.cheloniaConfig, null, 2) + "\n";
-    await writeFile2(configPath, configContent, "utf8");
-    console.log(colors.green("\u2705 Updated chelonia.json"));
-  }
-};
-async function pinContracts(version2, manifestPath, directory, options2) {
-  try {
-    const pinner = new ContractPinner(directory, options2);
-    await pinner.pin(version2, manifestPath);
-  } catch (error) {
-    console.error(colors.red("\u274C Pin failed:"), error instanceof Error ? error.message : error);
-    process14.exit(1);
+    watchers.length = 0;
   }
 }
-function parsePinArgs(args) {
-  const parsed = flags.parse(args, {
+
+// src/pin.ts
+init_deps();
+init_utils();
+import { readFile as readFile6, writeFile as writeFile2, mkdir as mkdir4, copyFile } from "node:fs/promises";
+import { existsSync as existsSync3 } from "node:fs";
+import { join as join6, dirname as dirname4, basename as basename4 } from "node:path";
+import process14 from "node:process";
+var projectRoot;
+var cheloniaConfig;
+function sanitizeContractName3(contractName) {
+  return contractName.replace(/[/\\:*?"<>|]/g, "_");
+}
+async function pin(args) {
+  const parsedArgs = flags.parse(args, {
     boolean: ["overwrite", "only-changed"],
     alias: {
       o: "overwrite",
       c: "only-changed"
     }
   });
-  const version2 = parsed._[0]?.toString();
-  const manifestPath = parsed._[1]?.toString();
-  const directory = process14.cwd();
+  const version2 = parsedArgs._[0]?.toString();
+  const manifestPath = parsedArgs._[1]?.toString();
+  projectRoot = process14.cwd();
   if (!version2) {
-    throw new Error("Usage: chel pin <version> <manifest-file-path>");
-  }
-  const options2 = {
-    overwrite: parsed.overwrite,
-    "only-changed": parsed["only-changed"]
-  };
-  return { version: version2, manifestPath, directory, options: options2 };
-}
-async function pin(args) {
-  if (args.length === 0) {
-    const pinner = new ContractPinner(process14.cwd(), {});
-    await pinner.loadCheloniaConfig();
-    pinner.showUsage();
+    await loadCheloniaConfig();
+    showUsage();
     return;
   }
-  const { version: version2, manifestPath, directory, options: options2 } = parsePinArgs(args);
-  await pinContracts(version2, manifestPath, directory, options2);
+  const options2 = {
+    overwrite: parsedArgs.overwrite,
+    onlyChanged: parsedArgs["only-changed"]
+  };
+  try {
+    if (!manifestPath) {
+      await loadCheloniaConfig();
+      showUsage();
+      return;
+    }
+    console.log(colors.cyan(`\u{1F4CC} Requesting pin to version: ${version2}`));
+    console.log(colors.gray(`Manifest: ${manifestPath}`));
+    await loadCheloniaConfig();
+    const fullManifestPath = join6(projectRoot, manifestPath);
+    if (!existsSync3(fullManifestPath)) {
+      exit(`Manifest file not found: ${manifestPath}`);
+    }
+    const { contractName, contractFiles, manifestVersion } = await parseManifest2(fullManifestPath);
+    console.log(colors.blue(`Contract name: ${contractName}`));
+    console.log(colors.blue(`Manifest version: ${manifestVersion}`));
+    if (version2 !== manifestVersion) {
+      console.log(colors.red(`\u274C Version mismatch: CLI version (${version2}) does not match manifest version (${manifestVersion})`));
+      console.log(colors.yellow(`\u{1F4A1} To pin this contract, use: chel pin ${manifestVersion} ${manifestPath}`));
+      return;
+    }
+    console.log(colors.green(`\u2705 Version validation passed: ${version2}`));
+    const currentPinnedVersion = cheloniaConfig.contracts[contractName]?.version;
+    if (currentPinnedVersion === version2) {
+      console.log(colors.yellow(`\u2728 Contract ${contractName} is already pinned to version ${version2} - no action needed`));
+      return;
+    }
+    if (currentPinnedVersion) {
+      console.log(colors.cyan(`\u{1F4CC} Updating ${contractName} from version ${currentPinnedVersion} to ${version2}`));
+    } else {
+      console.log(colors.cyan(`\u{1F4CC} Pinning ${contractName} to version ${version2} (first time)`));
+    }
+    const contractVersionDir = join6(projectRoot, "contracts", contractName, version2);
+    if (existsSync3(contractVersionDir)) {
+      if (!options2.overwrite && !options2.onlyChanged) {
+        exit(`Version ${version2} already exists for contract ${contractName}. Use --overwrite to replace it, or --only-changed to update only changed files`);
+      }
+      console.log(colors.yellow(`Version ${version2} already exists for ${contractName} - checking files...`));
+    } else {
+      await createVersionDirectory(contractName, version2);
+    }
+    await copyContractFiles(manifestPath, contractFiles, contractName, version2, options2);
+    await updateCheloniaConfig(contractName, version2, manifestPath);
+    console.log(colors.green(`\u2705 Successfully pinned ${contractName} to version ${version2}`));
+    console.log(colors.gray(`Location: contracts/${contractName}/${version2}/`));
+  } catch (error) {
+    exit(error);
+  }
+}
+async function parseManifest2(manifestPath) {
+  const manifestContent = await readFile6(manifestPath, "utf8");
+  const manifest2 = JSON.parse(manifestContent);
+  const body = JSON.parse(manifest2.body);
+  const fullContractName = body.name;
+  const manifestVersion = body.version;
+  const mainFile = body.contract.file;
+  const slimFile = body.contractSlim?.file;
+  if (!fullContractName || !mainFile || !manifestVersion) {
+    throw new Error("Invalid manifest: missing contract name, main file, or version");
+  }
+  const contractName = sanitizeContractName3(fullContractName);
+  return {
+    contractName,
+    manifestVersion,
+    contractFiles: {
+      main: mainFile,
+      slim: slimFile
+    }
+  };
+}
+function showUsage() {
+  console.log(colors.cyan("\u{1F4CB} Contract Pinning Usage:"));
+  console.log(colors.gray("Usage: chel pin <version> <manifest-file-path>"));
+  console.log();
+  console.log(colors.yellow("\u{1F4DD} Note: Specify the full path to your manifest file."));
+  console.log(colors.gray("   Generate manifests first using: chel manifest <contract-file>"));
+  console.log(colors.gray("   Example: chel pin 1.0.0 ./dist/contracts/chatroom.1.0.0.manifest.json"));
+  console.log();
+  if (Object.keys(cheloniaConfig.contracts).length > 0) {
+    console.log(colors.cyan("\u{1F4CC} Currently pinned contracts:"));
+    for (const [name, config] of Object.entries(cheloniaConfig.contracts)) {
+      console.log(`  ${colors.green(name)} - ${colors.blue(config.version)} (${colors.gray(config.path)})`);
+    }
+    console.log();
+  } else {
+    console.log(colors.gray("No contracts currently pinned."));
+    console.log();
+  }
+}
+async function createVersionDirectory(contractName, version2) {
+  const versionDir = join6(projectRoot, "contracts", contractName, version2);
+  console.log(colors.blue(`\u{1F4C1} Creating directory: contracts/${contractName}/${version2}/`));
+  await mkdir4(versionDir, { recursive: true });
+}
+async function copyContractFiles(manifestPath, contractFiles, contractName, version2, options2) {
+  const sourceDir = dirname4(join6(projectRoot, manifestPath));
+  const targetDir = join6(projectRoot, "contracts", contractName, version2);
+  console.log(colors.gray(`\u{1F4CB} Copying files from manifest: ${contractFiles.main}${contractFiles.slim ? `, ${contractFiles.slim}` : ""}`));
+  const mainSource = join6(sourceDir, contractFiles.main);
+  const mainTarget = join6(targetDir, contractFiles.main);
+  await copyFileIfNeeded(mainSource, mainTarget, contractFiles.main, options2);
+  if (contractFiles.slim) {
+    const slimSource = join6(sourceDir, contractFiles.slim);
+    const slimTarget = join6(targetDir, contractFiles.slim);
+    try {
+      await copyFileIfNeeded(slimSource, slimTarget, contractFiles.slim, options2);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.log(colors.yellow(`\u26A0\uFE0F  Could not copy slim file: ${errorMessage}`));
+    }
+  }
+}
+async function copyFileIfNeeded(sourcePath, targetPath, fileName, options2) {
+  const targetExists = existsSync3(targetPath);
+  if (!targetExists) {
+    console.log(colors.blue(`\u{1F4C4} Copying: ${fileName} (new file)`));
+    await copyFile(sourcePath, targetPath);
+    return;
+  }
+  if (targetExists && !options2.overwrite) {
+    console.log(colors.yellow(`\u23ED\uFE0F  Skipping: ${fileName} (already exists, use --overwrite to replace)`));
+    return;
+  }
+  if (options2.onlyChanged) {
+    const sourceContent = await readFile6(sourcePath, "utf8");
+    const targetContent = await readFile6(targetPath, "utf8");
+    if (sourceContent === targetContent) {
+      console.log(colors.gray(`\u23ED\uFE0F  Skipping: ${fileName} (unchanged)`));
+      return;
+    } else {
+      console.log(colors.blue(`\u{1F4C4} Copying: ${fileName} (changed)`));
+      await copyFile(sourcePath, targetPath);
+      return;
+    }
+  }
+  console.log(colors.blue(`\u{1F4C4} Copying: ${fileName} (overwriting)`));
+  await copyFile(sourcePath, targetPath);
+}
+async function loadCheloniaConfig() {
+  const configPath = join6(projectRoot, "chelonia.json");
+  cheloniaConfig = { contracts: {} };
+  if (existsSync3(configPath)) {
+    try {
+      const configContent = await readFile6(configPath, "utf8");
+      cheloniaConfig = JSON.parse(configContent);
+      console.log(colors.blue("\u{1F4C4} Loaded existing chelonia.json"));
+    } catch (error) {
+      console.warn(colors.yellow(`Warning: Could not parse chelonia.json: ${error}`));
+    }
+  } else {
+    console.log(colors.blue("\u{1F4C4} Creating new chelonia.json"));
+  }
+  if (!cheloniaConfig.contracts) {
+    cheloniaConfig.contracts = {};
+  }
+}
+async function updateCheloniaConfig(contractName, version2, manifestPath) {
+  const manifestFileName = basename4(manifestPath);
+  const pinnedManifestPath = `contracts/${contractName}/${version2}/${manifestFileName}`;
+  cheloniaConfig.contracts[contractName] = {
+    version: version2,
+    path: pinnedManifestPath
+  };
+  const configPath = join6(projectRoot, "chelonia.json");
+  const configContent = JSON.stringify(cheloniaConfig, null, 2) + "\n";
+  await writeFile2(configPath, configContent, "utf8");
+  console.log(colors.green("\u2705 Updated chelonia.json"));
 }
 
 // src/main.ts

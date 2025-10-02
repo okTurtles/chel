@@ -50,6 +50,37 @@ interface RecentlyRegeneratedManifest {
   timestamp: number
 }
 
+export async function dev (args: string[]) {
+  const parsed = flags.parse(args, {
+    string: ['port', 'dp', 'dashboard-port'],
+    boolean: ['watch-contracts', 'hot-reload', 'auto-test', 'interactive', 'debug'],
+    default: {
+      'watch-contracts': true,
+      'hot-reload': true,
+      'auto-test': false,
+      interactive: true,
+      debug: false
+    },
+    alias: {
+      p: 'port',
+      dp: 'dashboard-port'
+    }
+  })
+
+  const directory = parsed._[0] as string || '.'
+  const options: DevOptions = {
+    port: parsed.port ? parseInt(parsed.port) : 8000,
+    dashboardPort: parsed['dashboard-port'] ? parseInt(parsed['dashboard-port']) : 3000,
+    'watch-contracts': parsed['watch-contracts'],
+    'hot-reload': parsed['hot-reload'],
+    'auto-test': parsed['auto-test'],
+    interactive: parsed.interactive,
+    debug: parsed.debug
+  }
+
+  await runDev(directory, options)
+}
+
 /**
  * Live Development Environment for Chelonia Contracts
  *
@@ -61,69 +92,25 @@ interface RecentlyRegeneratedManifest {
  *
  * This leverages the robust chel serve infrastructure for reliability.
  */
-class DevEnvironment {
-  private watchers: { close?: () => void }[] = []
-  close?: () => void
-  private serverProcess?: unknown
-  private options: DevOptions
-  private projectRoot: string
-  private metrics: DevMetrics
-  private startTime: Date
-  private contractChanges: ContractChangeEvent[] = []
-  private cheloniaConfig: CheloniaConfig = { contracts: {} }
-  private recentlyRegeneratedManifests: RecentlyRegeneratedManifest[] = []
-
-  constructor (projectRoot: string, options: DevOptions) {
-    this.projectRoot = resolve(projectRoot)
-    this.options = options
-    this.metrics = {
-      contractsWatched: 0,
-      changesDetected: 0,
-      hotReloads: 0,
-      uptime: 0
-    }
-    this.startTime = new Date()
+async function runDev (directory: string, options: DevOptions) {
+  const projectRoot = resolve(directory)
+  const metrics: DevMetrics = {
+    contractsWatched: 0,
+    changesDetected: 0,
+    hotReloads: 0,
+    uptime: 0
   }
+  const contractChanges: ContractChangeEvent[] = []
+  let cheloniaConfig: CheloniaConfig = { contracts: {} }
+  const recentlyRegeneratedManifests: RecentlyRegeneratedManifest[] = []
+  const watchers: { close?: () => void }[] = []
 
-  async start () {
-    this.printWelcomeBanner()
-    await this.startServer()
-    await this.startContractWatching()
-    await this.startInteractiveMode()
-  }
+  printWelcomeBanner()
+  await startServer()
+  await startContractWatching()
+  await startInteractiveMode()
 
-  private async startServer () {
-    console.log(colors.blue('🚀 Starting development server with hot reload...'))
-
-    // Start the server in the background using our robust serve infrastructure
-    const serverArgs = [
-      '--dp', String(this.options.dashboardPort || 3000),
-      '--port', String(this.options.port || 8000),
-      '--db-type', this.options.dbType || 'mem', // Use memory for faster dev iterations by default
-      this.projectRoot
-    ]
-
-    try {
-      // Start the serve function in the background
-      // Don't await it here as it runs indefinitely
-      this.serverProcess = serve(serverArgs).catch(error => {
-        console.error(colors.red('❌ Server error:'), error)
-        process.exit(1)
-      })
-
-      // Give the server a moment to start
-      await new Promise(resolve => setTimeout(resolve, 2000))
-
-      console.log(colors.green('✅ Development server started'))
-      console.log(colors.gray(`   Dashboard: http://localhost:${this.options.dashboardPort || 3000}`))
-      console.log(colors.gray(`   Application: http://0.0.0.0:${this.options.port || 8000} (all interfaces)`))
-    } catch (error) {
-      console.error(colors.red('❌ Failed to start development server:'), error)
-      throw error
-    }
-  }
-
-  private printWelcomeBanner () {
+  function printWelcomeBanner () {
     console.log(colors.cyan('╔══════════════════════════════════════════════════════════════╗'))
     console.log(colors.cyan('║') + colors.bold(colors.white('               🧪 CHEL LIVE DEVELOPMENT                     ')) + colors.cyan('  ║'))
     console.log(colors.cyan('║') + colors.white('           Live-testing with Hot Reload & Interaction        ') + colors.cyan(' ║'))
@@ -134,25 +121,56 @@ class DevEnvironment {
     console.log()
   }
 
-  private async loadCheloniaConfig () {
+  async function startServer () {
+    console.log(colors.blue('🚀 Starting development server with hot reload...'))
+
+    // Start the server in the background using our robust serve infrastructure
+    const serverArgs = [
+      '--dp', String(options.dashboardPort || 3000),
+      '--port', String(options.port || 8000),
+      '--db-type', options.dbType || 'mem', // Use memory for faster dev iterations by default
+      projectRoot
+    ]
+
+    try {
+      // Start the serve function in the background
+      // Don't await it here as it runs indefinitely
+      serve(serverArgs).catch(error => {
+        console.error(colors.red('❌ Server error:'), error)
+        process.exit(1)
+      })
+
+      // Give the server a moment to start
+      await new Promise(resolve => setTimeout(resolve, 2000))
+
+      console.log(colors.green('✅ Development server started'))
+      console.log(colors.gray(`   Dashboard: http://localhost:${options.dashboardPort || 3000}`))
+      console.log(colors.gray(`   Application: http://0.0.0.0:${options.port || 8000} (all interfaces)`))
+    } catch (error) {
+      console.error(colors.red('❌ Failed to start development server:'), error)
+      throw error
+    }
+  }
+
+  async function loadCheloniaConfig () {
     // Load chelonia.json to get known contracts and their manifest paths
-    const cheloniaConfigPath = join(this.projectRoot, 'chelonia.json')
+    const cheloniaConfigPath = join(projectRoot, 'chelonia.json')
     if (existsSync(cheloniaConfigPath)) {
       const cheloniaConfigContent = await readFile(cheloniaConfigPath, 'utf8')
-      this.cheloniaConfig = JSON.parse(cheloniaConfigContent)
+      cheloniaConfig = JSON.parse(cheloniaConfigContent)
     } else {
       console.log(colors.yellow('⚠️  No chelonia.json found'))
       return
     }
   }
 
-  private async startContractWatching () {
+  async function startContractWatching () {
     console.log(colors.blue('👀 Setting up contract file watching...'))
 
     // Load chelonia.json to get known contracts and their manifest paths
-    await this.loadCheloniaConfig()
+    await loadCheloniaConfig()
 
-    const manifestPaths = Object.values(this.cheloniaConfig.contracts).map((contract: { version: string, path: string }) => contract.path)
+    const manifestPaths = Object.values(cheloniaConfig.contracts).map((contract: { version: string, path: string }) => contract.path)
 
     if (manifestPaths.length === 0) {
       console.log(colors.yellow('⚠️  No contracts found in chelonia.json'))
@@ -165,19 +183,19 @@ class DevEnvironment {
 
       // Watch the specific manifest files from chelonia.json (no file extension scanning)
       for (const manifestPath of manifestPaths) {
-        const fullManifestPath = join(this.projectRoot, manifestPath)
+        const fullManifestPath = join(projectRoot, manifestPath)
         if (existsSync(fullManifestPath)) {
           // Watch the manifest file itself
           const manifestWatcher = watch(fullManifestPath, (eventType) => {
-            this.handleContractChange(eventType, manifestPath).catch(error => {
+            handleContractChange(eventType, manifestPath).catch(error => {
               console.error(colors.red('❌ Error handling manifest change:'), error)
             })
           })
-          this.watchers.push(manifestWatcher)
+          watchers.push(manifestWatcher)
           totalWatchedFiles++
 
           // Parse the manifest to get contract source files and watch them too
-          const contractInfo = await this.parseManifest(fullManifestPath)
+          const contractInfo = await parseManifest(fullManifestPath)
           if (contractInfo) {
             const manifestDir = fullManifestPath.substring(0, fullManifestPath.lastIndexOf('/'))
 
@@ -186,11 +204,11 @@ class DevEnvironment {
             if (existsSync(mainContractPath)) {
               const mainWatcher = watch(mainContractPath, (eventType) => {
                 console.log(colors.yellow(`📝 Contract file ${eventType}: ${contractInfo.contractFiles.main}`))
-                this.handleContractChange(eventType, manifestPath).catch(error => {
+                handleContractChange(eventType, manifestPath).catch(error => {
                   console.error(colors.red('❌ Error handling contract file change:'), error)
                 })
               })
-              this.watchers.push(mainWatcher)
+              watchers.push(mainWatcher)
               totalWatchedFiles++
             }
 
@@ -200,11 +218,11 @@ class DevEnvironment {
               if (existsSync(slimContractPath)) {
                 const slimWatcher = watch(slimContractPath, (eventType) => {
                   console.log(colors.yellow(`📝 Contract file ${eventType}: ${contractInfo.contractFiles.slim}`))
-                  this.handleContractChange(eventType, manifestPath).catch(error => {
+                  handleContractChange(eventType, manifestPath).catch(error => {
                     console.error(colors.red('❌ Error handling slim contract file change:'), error)
                   })
                 })
-                this.watchers.push(slimWatcher)
+                watchers.push(slimWatcher)
                 totalWatchedFiles++
               }
             }
@@ -212,48 +230,54 @@ class DevEnvironment {
         }
       }
 
-      this.metrics.contractsWatched = totalWatchedFiles
+      metrics.contractsWatched = totalWatchedFiles
       console.log(colors.green(`✅ Watching ${totalWatchedFiles} files (manifests + contract sources) from chelonia.json`))
     } catch (error) {
       console.error(colors.red('❌ Error setting up file watching:'), error)
     }
   }
 
-  private async handleContractChange (eventType: string, filename: string) {
+  async function handleContractChange (eventType: string, filename: string) {
     const changeEvent: ContractChangeEvent = {
       file: filename,
       type: eventType === 'rename' ? 'added' : 'changed',
       timestamp: new Date()
     }
 
-    this.contractChanges.push(changeEvent)
-    this.metrics.changesDetected++
+    contractChanges.push(changeEvent)
+    metrics.changesDetected++
 
     console.log(colors.yellow(`📝 Contract change: ${filename}`))
 
     // Check if this is a recently regenerated manifest file to prevent infinite loops
     if (filename.includes('manifest.json')) {
       const now = Date.now()
-      const recentlyRegenerated = this.recentlyRegeneratedManifests.find(
+      const recentlyRegenerated = recentlyRegeneratedManifests.find(
         manifest => manifest.path === filename && (now - manifest.timestamp) < 2000 // 2 second window
       )
 
       if (recentlyRegenerated) {
         console.log(colors.gray('   → Skipping hot reload for recently regenerated manifest'))
         // Clean up old entries while we're here
-        this.recentlyRegeneratedManifests = this.recentlyRegeneratedManifests.filter(
-          manifest => (now - manifest.timestamp) < 5000 // Keep entries for 5 seconds
+        const oldEntries = recentlyRegeneratedManifests.filter(
+          manifest => (now - manifest.timestamp) >= 5000 // Remove entries older than 5 seconds
         )
+        oldEntries.forEach(entry => {
+          const index = recentlyRegeneratedManifests.indexOf(entry)
+          if (index > -1) {
+            recentlyRegeneratedManifests.splice(index, 1)
+          }
+        })
         return
       }
     }
 
-    if (this.options['hot-reload'] !== false) {
-      await this.triggerHotReload(filename)
+    if (options['hot-reload'] !== false) {
+      await triggerHotReload(filename)
     }
   }
 
-  private async triggerHotReload (filename: string) {
+  async function triggerHotReload (filename: string) {
     try {
       console.log(colors.blue(`🔄 Hot reloading contract: ${filename}`))
 
@@ -264,7 +288,7 @@ class DevEnvironment {
       // Note: Development contracts are not pinned, only manifests are regenerated
 
       // Find the manifest path that corresponds to this filename
-      const manifestPath = this.findManifestForFile(filename)
+      const manifestPath = findManifestForFile(filename)
       if (!manifestPath) {
         console.log(colors.yellow('   ⚠️  No manifest found for changed file, skipping hot reload'))
         return
@@ -273,12 +297,12 @@ class DevEnvironment {
       console.log(colors.gray('   → Regenerating manifest and redeploying...'))
 
       // Step 1: Regenerate and re-sign the manifest using manifest.ts logic
-      await this.regenerateManifest(manifestPath)
+      await regenerateManifest(manifestPath)
 
       // Step 2: Redeploy the updated manifest to the running server
-      await this.redeployContract(manifestPath)
+      await redeployContract(manifestPath)
 
-      this.metrics.hotReloads++
+      metrics.hotReloads++
       console.log(colors.green('   ✅ Hot reload completed - manifest regenerated, re-signed, and redeployed'))
     } catch (error) {
       console.error(colors.red('❌ Hot reload failed:'), error)
@@ -288,21 +312,21 @@ class DevEnvironment {
   /**
    * Find the manifest file that corresponds to a changed contract file
    */
-  private findManifestForFile (changedFile: string): string | null {
+  function findManifestForFile (changedFile: string): string | null {
     // If the changed file is already a manifest, return it
     if (changedFile.includes('manifest.json')) {
       return changedFile
     }
 
     // Look through chelonia.json contracts to find which manifest references this file
-    for (const contract of Object.values(this.cheloniaConfig.contracts)) {
+    for (const contract of Object.values(cheloniaConfig.contracts)) {
       const manifestPath = contract.path
-      const fullManifestPath = join(this.projectRoot, manifestPath)
+      const fullManifestPath = join(projectRoot, manifestPath)
 
       try {
         // Check if this manifest references the changed file
         const manifestDir = fullManifestPath.substring(0, fullManifestPath.lastIndexOf('/'))
-        const contractInfo = this.parseManifestSync(fullManifestPath)
+        const contractInfo = parseManifestSync(fullManifestPath)
 
         if (contractInfo) {
           const mainContractPath = join(manifestDir, contractInfo.contractFiles.main)
@@ -311,7 +335,7 @@ class DevEnvironment {
             : null
 
           // Check if the changed file matches any of the contract files
-          const changedFilePath = resolve(this.projectRoot, changedFile)
+          const changedFilePath = resolve(projectRoot, changedFile)
           if (changedFilePath === mainContractPath ||
               (slimContractPath && changedFilePath === slimContractPath)) {
             return manifestPath
@@ -330,18 +354,18 @@ class DevEnvironment {
   /**
    * Regenerate and re-sign a manifest file using the logic from manifest.ts
    */
-  private async regenerateManifest (manifestPath: string) {
-    const fullManifestPath = join(this.projectRoot, manifestPath)
+  async function regenerateManifest (manifestPath: string) {
+    const fullManifestPath = join(projectRoot, manifestPath)
     const manifestDir = fullManifestPath.substring(0, fullManifestPath.lastIndexOf('/'))
 
     // Parse the existing manifest to get the contract info
-    const contractInfo = await this.parseManifest(fullManifestPath)
+    const contractInfo = await parseManifest(fullManifestPath)
     if (!contractInfo) {
       throw new Error(`Failed to parse manifest: ${manifestPath}`)
     }
 
     // Look for a key file in the project root or manifest directory
-    const keyFile = this.findKeyFile(manifestDir)
+    const keyFile = findKeyFile(manifestDir)
     if (!keyFile) {
       console.log(colors.yellow('   ⚠️  No signing key found (key.json or chel keygen-generated), skipping manifest signing'))
       return
@@ -370,7 +394,7 @@ class DevEnvironment {
     await manifest(args)
 
     // Track this manifest as recently regenerated to prevent infinite loops
-    this.recentlyRegeneratedManifests.push({
+    recentlyRegeneratedManifests.push({
       path: manifestPath,
       timestamp: Date.now()
     })
@@ -382,12 +406,12 @@ class DevEnvironment {
    * Redeploy a contract manifest to the running server
    * This ensures the server has the latest version after hot reload
    */
-  private async redeployContract (manifestPath: string) {
+  async function redeployContract (manifestPath: string) {
     try {
-      const fullManifestPath = join(this.projectRoot, manifestPath)
+      const fullManifestPath = join(projectRoot, manifestPath)
 
       // Deploy target is the data directory (same as serve.ts preloadContracts)
-      const deployTarget = resolve(join(this.projectRoot, 'data'))
+      const deployTarget = resolve(join(projectRoot, 'data'))
 
       console.log(colors.gray(`   → Redeploying contract to server: ${manifestPath}`))
 
@@ -405,7 +429,7 @@ class DevEnvironment {
    * Find a key file for signing manifests
    * Supports both legacy key.json and chel keygen-generated key files
    */
-  private findKeyFile (manifestDir: string): string | null {
+  function findKeyFile (manifestDir: string): string | null {
     // Helper function to find key files in a directory
     const findKeyInDir = (dir: string): string | null => {
       try {
@@ -437,7 +461,7 @@ class DevEnvironment {
     }
 
     // Look in project root first
-    const rootKeyFile = findKeyInDir(this.projectRoot)
+    const rootKeyFile = findKeyInDir(projectRoot)
     if (rootKeyFile) {
       return rootKeyFile
     }
@@ -454,7 +478,7 @@ class DevEnvironment {
   /**
    * Shared manifest parsing logic to avoid code duplication
    */
-  private parseManifestContent (manifestContent: string, manifestPath: string): { contractName: string, contractFiles: { main: string, slim?: string }, version: string } | null {
+  function parseManifestContent (manifestContent: string, manifestPath: string): { contractName: string, contractFiles: { main: string, slim?: string }, version: string } | null {
     try {
       const manifest = JSON.parse(manifestContent)
       const body = JSON.parse(manifest.body)
@@ -489,10 +513,10 @@ class DevEnvironment {
   /**
    * Synchronous version of parseManifest for use in findManifestForFile
    */
-  private parseManifestSync (manifestPath: string): { contractName: string, contractFiles: { main: string, slim?: string }, version: string } | null {
+  function parseManifestSync (manifestPath: string): { contractName: string, contractFiles: { main: string, slim?: string }, version: string } | null {
     try {
       const manifestContent = readFileSync(manifestPath, 'utf8')
-      return this.parseManifestContent(manifestContent, manifestPath)
+      return parseManifestContent(manifestContent, manifestPath)
     } catch (error) {
       console.error(colors.red('   ⚠️  Error reading manifest:'), error)
       return null
@@ -502,17 +526,17 @@ class DevEnvironment {
   /**
    * Async version of parseManifest for use in regenerateManifest
    */
-  private async parseManifest (manifestPath: string): Promise<{ contractName: string, contractFiles: { main: string, slim?: string }, version: string } | null> {
+  async function parseManifest (manifestPath: string): Promise<{ contractName: string, contractFiles: { main: string, slim?: string }, version: string } | null> {
     try {
       const manifestContent = await readFile(manifestPath, 'utf8')
-      return this.parseManifestContent(manifestContent, manifestPath)
+      return parseManifestContent(manifestContent, manifestPath)
     } catch (error) {
       console.error(colors.red(`Failed to read manifest ${manifestPath}:`), error)
       return null
     }
   }
 
-  private async startInteractiveMode () {
+  async function startInteractiveMode () {
     console.log(colors.blue('🎛️  Starting interactive mode...'))
     console.log(colors.gray('Interactive commands:'))
     console.log(colors.gray('  - Press Ctrl+C to exit'))
@@ -525,7 +549,7 @@ class DevEnvironment {
     signals.forEach(signal => {
       process.on(signal, () => {
         console.log(colors.yellow(`\n🛑 Received ${signal}, shutting down development environment...`))
-        this.cleanup()
+        cleanup()
         process.exit(0)
       })
     })
@@ -538,50 +562,13 @@ class DevEnvironment {
     await new Promise(() => {})
   }
 
-  private cleanup () {
+  function cleanup () {
     console.log(colors.blue('🧹 Cleaning up watchers...'))
-    for (const watcher of this.watchers) {
+    for (const watcher of watchers) {
       if (watcher && typeof watcher.close === 'function') {
         watcher.close()
       }
     }
-    this.watchers = []
+    watchers.length = 0
   }
-}
-
-export async function dev (args: string[]) {
-  const { directory, options } = parseDevArgs(args)
-  const devEnv = new DevEnvironment(directory, options)
-  await devEnv.start()
-}
-
-function parseDevArgs (args: string[]): { directory: string; options: DevOptions } {
-  const parsed = flags.parse(args, {
-    string: ['port', 'dp', 'dashboard-port'],
-    boolean: ['watch-contracts', 'hot-reload', 'auto-test', 'interactive', 'debug'],
-    default: {
-      'watch-contracts': true,
-      'hot-reload': true,
-      'auto-test': false,
-      interactive: true,
-      debug: false
-    },
-    alias: {
-      p: 'port',
-      dp: 'dashboard-port'
-    }
-  })
-
-  const directory = parsed._[0] as string || '.'
-  const options: DevOptions = {
-    port: parsed.port ? parseInt(parsed.port) : 8000,
-    dashboardPort: parsed['dashboard-port'] ? parseInt(parsed['dashboard-port']) : 3000,
-    'watch-contracts': parsed['watch-contracts'],
-    'hot-reload': parsed['hot-reload'],
-    'auto-test': parsed['auto-test'],
-    interactive: parsed.interactive,
-    debug: parsed.debug
-  }
-
-  return { directory, options }
 }
