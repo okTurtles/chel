@@ -97,14 +97,14 @@ class ContractPinner {
     }
 
     // Parse the manifest to get contract information and version
-    const { contractName, contractFiles, version: manifestVersion } = await this.parseManifest(fullManifestPath)
+    const { contractName, contractFiles, version: contractVersion } = await this.parseManifest(fullManifestPath)
     console.log(colors.blue(`Contract name: ${contractName}`))
-    console.log(colors.blue(`Manifest version: ${manifestVersion}`))
+    console.log(colors.blue(`Contract version: ${contractVersion}`))
 
-    // VERSION VALIDATION: CLI version must match manifest version
-    if (version !== manifestVersion) {
-      console.log(colors.red(`❌ Version mismatch: CLI version (${version}) does not match manifest version (${manifestVersion})`))
-      console.log(colors.yellow(`💡 To pin this contract, use: chel pin ${manifestVersion} ${manifestPath}`))
+    // Validate that the CLI version matches the contract version from manifest
+    if (version !== contractVersion) {
+      console.log(colors.red(`❌ Version mismatch: CLI version (${version}) does not match contract version (${contractVersion})`))
+      console.log(colors.yellow(`💡 To pin this contract, use: chel pin ${contractVersion} ${manifestPath}`))
       return
     }
 
