@@ -10,7 +10,7 @@ chel help [command]
 chel version
 chel dev [--dp <port>] [--port <port>] [--debug]
 chel build
-chel pin <version> <manifest-file-path> [--only-changed | --overwrite]
+chel pin <version> <manifest-file-path> [--only-changed | --overwrite] [--key <keyfile>]
 chel test
 chel keygen [--out=<key.json>]
 chel manifest [-k|--key <pubkey1> [-k|--key <pubkey2> ...]] [--out=<manifest.json>] [-s|--slim <contract-slim.js>] [-v|--version <version>] <key.json> <contract-bundle.js>
@@ -38,17 +38,25 @@ Note: in many (if not all) instances, the `<url>` parameter can refer to a local
 - ✅ **Ecosystem-agnostic** - no coupling to Node.js/npm
 
 **Workflow:**
-1. **Generate manifest first**: Use `chel manifest` to create `.manifest.json` files
+1. **Generate keys**: Use `chel keygen` to create cryptographic key files (required for production)
 2. **Pin from manifest**: Use `chel pin` with the manifest file path
-3. **Contract files copied**: Only contract files (main/slim) are copied to new structure
+3. **Re-sign**: Use `--key` flag to re-sign manifest after copying contract files
+4. **Contract files copied**: Contract files (main/slim) and manifest are copied to new structure
+
+**Why Re-signing is Important:**
+Contract manifests contain contract hashes and original signing keys - re-signing with `--key` is required for further operations with your own cryptographic keys.
 
 **Usage Examples:**
 ```bash
-chel pin <version> <manifest-file-path>
+# First, generate cryptographic keys (required for production)
+chel keygen
+
+# Then pin contracts with re-signing
+chel pin <version> <manifest-file-path> --key <keyfile>
 
 # Pin specific contract to a version using its manifest (from dist/contracts)
-chel pin 2.0.5 dist/contracts/2.0.5/chatroom.2.0.5.manifest.json
-chel pin 2.0.0 dist/contracts/2.0.0/group.2.0.0.manifest.json
+chel pin 2.0.5 dist/contracts/2.0.5/chatroom.2.0.5.manifest.json --key edwards25519sha512batch-xxxxx.json
+chel pin 2.0.0 dist/contracts/2.0.0/group.2.0.0.manifest.json --key edwards25519sha512batch-yyyyy.json
 
 # Switch versions efficiently with --only-changed
 chel pin 2.0.6 dist/contracts/2.0.6/chatroom.2.0.6.manifest.json --only-changed
@@ -87,27 +95,6 @@ contracts/
         ├── group.js
         └── group-slim.js
 ```
-
-For production deployment, you must generate proper cryptographic signatures using the following workflow:
-
-**Step 1: Generate cryptographic keys**
-```bash
-# Generate private and public key files in the root directory
-chel keygen
-```
-
-This creates:
-- `key.json` - Private key file (keep secure!)
-- `key.pub.json` - Public key file
-
-**Step 2: Generate production manifest with proper signatures**
-```bash
-chel manifest [-k|--key <pubkey1> [-k|--key <pubkey2> ...]] [--out=<manifest.json>] [-s|--slim <contract-slim.js>] [-v|--version <version>] <key.json> <contract-bundle.js>
-
-chel manifest --slim contracts/gi.contracts_chatroom/2.0.10/chatroom-slim.js --version 2.0.10 --out contracts/gi.contracts_chatroom/2.0.10/chatroom.2.0.10.manifest.json key.json contracts/gi.contracts_chatroom/2.0.10/chatroom.js
-```
-
-This replaces the placeholder values with actual cryptographic hashes and signatures required for secure contract deployment.
 
 **Command Options:**
 - **`--only-changed`**: Efficiently switch versions or create new versions

@@ -1,9 +1,78 @@
-import { flags, colors } from './deps.ts'
-import { exit } from './utils.ts'
+import { flags, colors, deserializeKey, keyId, serializeKey, sign } from './deps.ts'
+import { exit, readJsonFile } from './utils.ts'
 import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
 import { join, dirname, basename } from 'node:path'
 import process from 'node:process'
+import { hash } from './hash.ts'
+
+interface SigningKeyDescriptor {
+  privkey: string
+}
+
+function isSigningKeyDescriptor (obj: unknown): obj is SigningKeyDescriptor {
+  return obj !== null && typeof obj === 'object' && typeof (obj as Record<string, unknown>).privkey === 'string'
+}
+
+/**
+ * Re-sign a manifest file with a new key
+ */
+async function resignManifest (
+  manifestSource: string,
+  manifestTarget: string,
+  keyFile: string,
+  contractFiles: { main: string, slim?: string },
+  targetDir: string
+) {
+  // Read the existing manifest
+  const existingManifest = JSON.parse(await readFile(manifestSource, 'utf8'))
+  const existingBody = JSON.parse(existingManifest.body)
+
+  // Read the signing key
+  const signingKeyDescriptorRaw = await readJsonFile(keyFile)
+  if (!isSigningKeyDescriptor(signingKeyDescriptorRaw)) {
+    exit('Invalid signing key file: missing or invalid privkey')
+  }
+  const signingKey = deserializeKey(signingKeyDescriptorRaw.privkey)
+
+  // Update the body with new hashes for the contract files in the target directory
+  const mainFilePath = join(targetDir, contractFiles.main)
+  const body = {
+    ...existingBody,
+    contract: {
+      ...existingBody.contract,
+      hash: await hash([mainFilePath], 0x511e01, true) // SHELTER_CONTRACT_TEXT
+    },
+    signingKeys: [serializeKey(signingKey, false)]
+  }
+
+  // Update slim contract hash if it exists
+  if (contractFiles.slim) {
+    const slimFilePath = join(targetDir, contractFiles.slim)
+    body.contractSlim = {
+      ...existingBody.contractSlim,
+      file: contractFiles.slim,
+      hash: await hash([slimFilePath], 0x511e01, true) // SHELTER_CONTRACT_TEXT
+    }
+  }
+
+  // Create new signature
+  const serializedBody = JSON.stringify(body)
+  const head = { manifestVersion: '1.0.0' }
+  const serializedHead = JSON.stringify(head)
+  const newManifest = JSON.stringify({
+    head: serializedHead,
+    body: serializedBody,
+    signature: {
+      keyId: keyId(signingKey),
+      value: sign(signingKey, serializedBody + serializedHead)
+    }
+  })
+
+  // Write the re-signed manifest
+  await writeFile(manifestTarget, newManifest)
+  console.log(colors.green(`✅ Re-signed manifest: ${basename(manifestTarget)}`))
+}
 
 let projectRoot: string
 let cheloniaConfig: { contracts: Record<string, { version: string, path: string }> }
@@ -34,7 +103,8 @@ export async function pin (args: string[]): Promise<void> {
 
   const options = {
     overwrite: parsedArgs.overwrite as boolean,
-    onlyChanged: parsedArgs['only-changed'] as boolean
+    onlyChanged: parsedArgs['only-changed'] as boolean,
+    keyFile: parsedArgs.key as string | undefined
   }
 
   try {
@@ -89,7 +159,7 @@ export async function pin (args: string[]): Promise<void> {
       await createVersionDirectory(contractName, version)
     }
 
-    await copyContractFiles(manifestPath, contractFiles, contractName, version, options)
+    await copyContractFiles(contractFiles, manifestPath, contractName, version, options)
     await updateCheloniaConfig(contractName, version, manifestPath)
 
     console.log(colors.green(`✅ Successfully pinned ${contractName} to version ${version}`))
@@ -128,11 +198,18 @@ async function parseManifest (manifestPath: string) {
 
 function showUsage () {
   console.log(colors.cyan('📋 Contract Pinning Usage:'))
-  console.log(colors.gray('Usage: chel pin <version> <manifest-file-path>'))
+  console.log(colors.gray('Usage: chel pin <version> <manifest-file-path> [--key <key-file>]'))
   console.log()
-  console.log(colors.yellow('📝 Note: Specify the full path to your manifest file.'))
-  console.log(colors.gray('   Generate manifests first using: chel manifest <contract-file>'))
-  console.log(colors.gray('   Example: chel pin 1.0.0 ./dist/contracts/chatroom.1.0.0.manifest.json'))
+  console.log(colors.yellow('📝 Options:'))
+  console.log(colors.gray('   --key <key-file>     Re-sign manifest with your own key during pinning'))
+  console.log(colors.gray('   --overwrite          Overwrite existing files'))
+  console.log(colors.gray('   --only-changed       Only copy changed files'))
+  console.log()
+  console.log(colors.yellow('📝 Examples:'))
+  console.log(colors.gray('   # Pin with existing signature:'))
+  console.log(colors.gray('   chel pin 1.0.0 ./contracts/chatroom.1.0.0.manifest.json'))
+  console.log(colors.gray('   # Pin and re-sign with your key:'))
+  console.log(colors.gray('   chel pin 1.0.0 ./contracts/chatroom.1.0.0.manifest.json --key key.json'))
   console.log()
 
   if (Object.keys(cheloniaConfig.contracts).length > 0) {
@@ -154,17 +231,18 @@ async function createVersionDirectory (contractName: string, version: string) {
 }
 
 async function copyContractFiles (
-  manifestPath: string,
   contractFiles: { main: string, slim?: string },
+  manifestPath: string,
   contractName: string,
   version: string,
-  options: { overwrite: boolean, onlyChanged: boolean }
+  options: { overwrite: boolean, onlyChanged: boolean, keyFile?: string }
 ) {
   const sourceDir = dirname(join(projectRoot, manifestPath))
   const targetDir = join(projectRoot, 'contracts', contractName, version)
 
-  console.log(colors.gray(`📋 Copying files from manifest: ${contractFiles.main}${contractFiles.slim ? `, ${contractFiles.slim}` : ''}`))
+  console.log(colors.gray(`📋 Copying files from manifest: ${contractFiles.main}${contractFiles.slim ? `, ${contractFiles.slim}` : ''}, manifest`))
 
+  // First, copy the contract files to the target directory
   const mainSource = join(sourceDir, contractFiles.main)
   const mainTarget = join(targetDir, contractFiles.main)
   await copyFileIfNeeded(mainSource, mainTarget, contractFiles.main, options)
@@ -178,6 +256,19 @@ async function copyContractFiles (
       const errorMessage = error instanceof Error ? error.message : String(error)
       console.error(colors.yellow(`⚠️  Could not copy slim file: ${errorMessage}`))
     }
+  }
+
+  // Then, copy or re-sign the manifest file (after contract files are in place)
+  const manifestSource = join(projectRoot, manifestPath)
+  const manifestTarget = join(targetDir, basename(manifestPath))
+
+  if (options.keyFile) {
+    // Re-sign the manifest with the provided key
+    console.log(colors.blue(`🔐 Re-signing manifest with key: ${options.keyFile}`))
+    await resignManifest(manifestSource, manifestTarget, options.keyFile, contractFiles, targetDir)
+  } else {
+    // Just copy the existing signed manifest
+    await copyFileIfNeeded(manifestSource, manifestTarget, basename(manifestPath), options)
   }
 }
 

@@ -4277,6 +4277,7 @@ async function migrate(args) {
 
 // src/serve.ts
 init_deps();
+init_utils();
 import process12 from "node:process";
 import { readdir as readdir3, mkdir as mkdir3, readFile as readFile4 } from "node:fs/promises";
 import { existsSync } from "node:fs";
@@ -4416,7 +4417,7 @@ async function serve(args) {
     });
   } catch (error) {
     console.error(colors.red("\u274C Failed to start server:"), error);
-    process12.exit(1);
+    exit("Failed to start server");
   }
 }
 function parseServeArgs(args) {
@@ -4530,6 +4531,7 @@ function version() {
 
 // src/dev.ts
 init_deps();
+init_utils();
 import { readFile as readFile5 } from "node:fs/promises";
 import { readFileSync, existsSync as existsSync2, watch, readdirSync } from "node:fs";
 import { resolve as resolve5, join as join5 } from "node:path";
@@ -4765,7 +4767,8 @@ async function runDev(directory, options2) {
     const manifestDir = fullManifestPath.substring(0, fullManifestPath.lastIndexOf("/"));
     const contractInfo = await parseManifest3(fullManifestPath);
     if (!contractInfo) {
-      throw new Error(`Failed to parse manifest: ${manifestPath}`);
+      console.error(colors.red(`\u274C Failed to parse manifest: ${manifestPath}`));
+      exit(`Failed to parse manifest: ${manifestPath}`);
     }
     const keyFile = findKeyFile(manifestDir);
     if (!keyFile) {
@@ -4912,10 +4915,55 @@ async function runDev(directory, options2) {
 // src/pin.ts
 init_deps();
 init_utils();
+init_hash();
 import { readFile as readFile6, writeFile as writeFile2, mkdir as mkdir4, copyFile } from "node:fs/promises";
 import { existsSync as existsSync3 } from "node:fs";
 import { join as join6, dirname as dirname4, basename as basename4 } from "node:path";
 import process14 from "node:process";
+function isSigningKeyDescriptor2(obj) {
+  return obj !== null && typeof obj === "object" && typeof obj.privkey === "string";
+}
+async function resignManifest(manifestSource, manifestTarget, keyFile, contractFiles, targetDir) {
+  const existingManifest = JSON.parse(await readFile6(manifestSource, "utf8"));
+  const existingBody = JSON.parse(existingManifest.body);
+  const signingKeyDescriptorRaw = await readJsonFile(keyFile);
+  if (!isSigningKeyDescriptor2(signingKeyDescriptorRaw)) {
+    exit("Invalid signing key file: missing or invalid privkey");
+  }
+  const signingKey = deserializeKey(signingKeyDescriptorRaw.privkey);
+  const mainFilePath = join6(targetDir, contractFiles.main);
+  const body = {
+    ...existingBody,
+    contract: {
+      ...existingBody.contract,
+      hash: await hash2([mainFilePath], 5316097, true)
+      // SHELTER_CONTRACT_TEXT
+    },
+    signingKeys: [serializeKey(signingKey, false)]
+  };
+  if (contractFiles.slim) {
+    const slimFilePath = join6(targetDir, contractFiles.slim);
+    body.contractSlim = {
+      ...existingBody.contractSlim,
+      file: contractFiles.slim,
+      hash: await hash2([slimFilePath], 5316097, true)
+      // SHELTER_CONTRACT_TEXT
+    };
+  }
+  const serializedBody = JSON.stringify(body);
+  const head = { manifestVersion: "1.0.0" };
+  const serializedHead = JSON.stringify(head);
+  const newManifest = JSON.stringify({
+    head: serializedHead,
+    body: serializedBody,
+    signature: {
+      keyId: keyId(signingKey),
+      value: sign(signingKey, serializedBody + serializedHead)
+    }
+  });
+  await writeFile2(manifestTarget, newManifest);
+  console.log(colors.green(`\u2705 Re-signed manifest: ${basename4(manifestTarget)}`));
+}
 var projectRoot;
 var cheloniaConfig;
 function sanitizeContractName3(contractName) {
@@ -4939,7 +4987,8 @@ async function pin(args) {
   }
   const options2 = {
     overwrite: parsedArgs.overwrite,
-    onlyChanged: parsedArgs["only-changed"]
+    onlyChanged: parsedArgs["only-changed"],
+    keyFile: parsedArgs.key
   };
   try {
     if (!manifestPath) {
@@ -4958,9 +5007,9 @@ async function pin(args) {
     console.log(colors.blue(`Contract name: ${contractName}`));
     console.log(colors.blue(`Manifest version: ${manifestVersion}`));
     if (version2 !== manifestVersion) {
-      console.log(colors.red(`\u274C Version mismatch: CLI version (${version2}) does not match manifest version (${manifestVersion})`));
-      console.log(colors.yellow(`\u{1F4A1} To pin this contract, use: chel pin ${manifestVersion} ${manifestPath}`));
-      return;
+      console.error(colors.red(`\u274C Version mismatch: CLI version (${version2}) does not match manifest version (${manifestVersion})`));
+      console.error(colors.yellow(`\u{1F4A1} To pin this contract, use: chel pin ${manifestVersion} ${manifestPath}`));
+      exit("Version mismatch between CLI and manifest");
     }
     console.log(colors.green(`\u2705 Version validation passed: ${version2}`));
     const currentPinnedVersion = cheloniaConfig.contracts[contractName]?.version;
@@ -4982,7 +5031,7 @@ async function pin(args) {
     } else {
       await createVersionDirectory(contractName, version2);
     }
-    await copyContractFiles(manifestPath, contractFiles, contractName, version2, options2);
+    await copyContractFiles(contractFiles, manifestPath, contractName, version2, options2);
     await updateCheloniaConfig(contractName, version2, manifestPath);
     console.log(colors.green(`\u2705 Successfully pinned ${contractName} to version ${version2}`));
     console.log(colors.gray(`Location: contracts/${contractName}/${version2}/`));
@@ -4999,7 +5048,8 @@ async function parseManifest2(manifestPath) {
   const mainFile = body.contract.file;
   const slimFile = body.contractSlim?.file;
   if (!fullContractName || !mainFile || !manifestVersion) {
-    throw new Error("Invalid manifest: missing contract name, main file, or version");
+    console.error(colors.red("\u274C Invalid manifest: missing contract name, main file, or version"));
+    exit("Invalid manifest: missing contract name, main file, or version");
   }
   const contractName = sanitizeContractName3(fullContractName);
   return {
@@ -5013,11 +5063,18 @@ async function parseManifest2(manifestPath) {
 }
 function showUsage() {
   console.log(colors.cyan("\u{1F4CB} Contract Pinning Usage:"));
-  console.log(colors.gray("Usage: chel pin <version> <manifest-file-path>"));
+  console.log(colors.gray("Usage: chel pin <version> <manifest-file-path> [--key <key-file>]"));
   console.log();
-  console.log(colors.yellow("\u{1F4DD} Note: Specify the full path to your manifest file."));
-  console.log(colors.gray("   Generate manifests first using: chel manifest <contract-file>"));
-  console.log(colors.gray("   Example: chel pin 1.0.0 ./dist/contracts/chatroom.1.0.0.manifest.json"));
+  console.log(colors.yellow("\u{1F4DD} Options:"));
+  console.log(colors.gray("   --key <key-file>     Re-sign manifest with your own key during pinning"));
+  console.log(colors.gray("   --overwrite          Overwrite existing files"));
+  console.log(colors.gray("   --only-changed       Only copy changed files"));
+  console.log();
+  console.log(colors.yellow("\u{1F4DD} Examples:"));
+  console.log(colors.gray("   # Pin with existing signature:"));
+  console.log(colors.gray("   chel pin 1.0.0 ./contracts/chatroom.1.0.0.manifest.json"));
+  console.log(colors.gray("   # Pin and re-sign with your key:"));
+  console.log(colors.gray("   chel pin 1.0.0 ./contracts/chatroom.1.0.0.manifest.json --key key.json"));
   console.log();
   if (Object.keys(cheloniaConfig.contracts).length > 0) {
     console.log(colors.cyan("\u{1F4CC} Currently pinned contracts:"));
@@ -5035,10 +5092,10 @@ async function createVersionDirectory(contractName, version2) {
   console.log(colors.blue(`\u{1F4C1} Creating directory: contracts/${contractName}/${version2}/`));
   await mkdir4(versionDir, { recursive: true });
 }
-async function copyContractFiles(manifestPath, contractFiles, contractName, version2, options2) {
+async function copyContractFiles(contractFiles, manifestPath, contractName, version2, options2) {
   const sourceDir = dirname4(join6(projectRoot, manifestPath));
   const targetDir = join6(projectRoot, "contracts", contractName, version2);
-  console.log(colors.gray(`\u{1F4CB} Copying files from manifest: ${contractFiles.main}${contractFiles.slim ? `, ${contractFiles.slim}` : ""}`));
+  console.log(colors.gray(`\u{1F4CB} Copying files from manifest: ${contractFiles.main}${contractFiles.slim ? `, ${contractFiles.slim}` : ""}, manifest`));
   const mainSource = join6(sourceDir, contractFiles.main);
   const mainTarget = join6(targetDir, contractFiles.main);
   await copyFileIfNeeded(mainSource, mainTarget, contractFiles.main, options2);
@@ -5049,8 +5106,16 @@ async function copyContractFiles(manifestPath, contractFiles, contractName, vers
       await copyFileIfNeeded(slimSource, slimTarget, contractFiles.slim, options2);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      console.log(colors.yellow(`\u26A0\uFE0F  Could not copy slim file: ${errorMessage}`));
+      console.error(colors.yellow(`\u26A0\uFE0F  Could not copy slim file: ${errorMessage}`));
     }
+  }
+  const manifestSource = join6(projectRoot, manifestPath);
+  const manifestTarget = join6(targetDir, basename4(manifestPath));
+  if (options2.keyFile) {
+    console.log(colors.blue(`\u{1F510} Re-signing manifest with key: ${options2.keyFile}`));
+    await resignManifest(manifestSource, manifestTarget, options2.keyFile, contractFiles, targetDir);
+  } else {
+    await copyFileIfNeeded(manifestSource, manifestTarget, basename4(manifestPath), options2);
   }
 }
 async function copyFileIfNeeded(sourcePath, targetPath, fileName, options2) {
