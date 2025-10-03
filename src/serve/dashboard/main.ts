@@ -2,18 +2,18 @@ import { sbp, Vue } from './deps.ts'
 import router from './controller/router.ts'
 import store from './model/state.ts'
 import { initTheme } from './model/themes.ts'
-import './views/utils/vStyle.js'
-import './views/utils/vError.js'
-import './views/utils/vSafeHtml.js'
+import './views/utils/vStyle.ts'
+import './views/utils/vError.ts'
+import './views/utils/vSafeHtml.ts'
 import './views/utils/ui.ts'
 import './controller/backend.ts'
 import '@common/translations.ts'
 
 // custom directive declarations
-import './views/utils/custom-directives/index.js'
+import './views/utils/custom-directives/index.ts'
 
 // register lazy components
-import './views/utils/lazyLoadComponents.js'
+import './views/utils/lazyLoadComponents.ts'
 
 // vue-components
 import Modal from '@containers/modal/Modal.vue'
@@ -28,7 +28,11 @@ Vue.config.errorHandler = function (err: Error, _vm: unknown, info: string) {
 async function startApp () {
   // deno-lint-ignore no-window
   sbp('okTurtles.data/set', 'API_URL', window.location.origin)
-  await sbp('translations/init', 'en-US') // TODO!: switch back to navigator.language once the development is complete..!
+  await sbp(
+    'translations/init',
+    'en-US'
+    /* TODO!: switch back to navigator.language once the development is complete..! */
+  )
 
   new Vue({
     router,

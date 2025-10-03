@@ -36,7 +36,7 @@ __export(deps_exports, {
   CURVE25519XSALSA20POLY1305: () => CURVE25519XSALSA20POLY1305,
   ChelErrorGenerator: () => ChelErrorGenerator,
   EDWARDS25519SHA512BATCH: () => EDWARDS25519SHA512BATCH,
-  Hapi: () => Server,
+  Hapi: () => Hapi,
   Inert: () => default7,
   Joi: () => default6,
   LRU: () => default10,
@@ -80,7 +80,6 @@ __export(deps_exports, {
   encrypt: () => encrypt,
   encryptContractSalt: () => encryptContractSalt,
   encryptSaltUpdate: () => encryptSaltUpdate,
-  esbuild: () => esbuild,
   flags: () => flags,
   fs: () => fs,
   generateSalt: () => generateSalt,
@@ -130,17 +129,16 @@ import * as streams from "jsr:@std/streams@1.0.10";
 import * as util from "jsr:@std/io@0.225.2";
 import { copy, readAll, writeAll } from "jsr:@std/io@0.225.2";
 import * as sqlite from "jsr:@db/sqlite@0.12.0";
-import * as esbuild from "npm:esbuild@0.25.6";
 import { z } from "npm:zod@4.0.5";
 import { default as default2 } from "npm:tweetnacl@1.0.3";
 import { base58btc } from "npm:multiformats@11.0.2/bases/base58";
 import { default as default3 } from "npm:@multiformats/blake2@1.0.13";
 import { CID } from "npm:multiformats@11.0.2/cid";
 import { default as default4 } from "npm:@sbp/sbp@2.4.1";
-import { Server } from "npm:@hapi/hapi@20.1.2";
-import { default as default5 } from "npm:@hapi/boom@9.1.0";
-import { default as default6 } from "npm:@hapi/joi@17.1.1";
-import { default as default7 } from "npm:@hapi/inert@6.0.3";
+import * as Hapi from "npm:@hapi/hapi@21.4.3";
+import { default as default5 } from "npm:@hapi/boom@10.0.1";
+import { default as default6 } from "npm:joi@18.0.1";
+import { default as default7 } from "npm:@hapi/inert@7.1.0";
 import { default as default8 } from "npm:chalk@4.1.0";
 import { default as default9 } from "npm:pino@8.19.0";
 import { default as default10 } from "npm:lru-cache@7.14.0";
@@ -151,17 +149,17 @@ import { default as default12 } from "npm:bottleneck@2.19.5";
 import { default as default13 } from "npm:scrypt-async@2.0.1";
 import { aes128gcm } from "npm:@apeleghq/rfc8188@1.0.7/encodings";
 import { default as default14 } from "npm:@apeleghq/rfc8188@1.0.7/encrypt";
-import * as lib_1_2_star from "npm:@chelonia/lib@1.2.2";
-import "npm:@chelonia/lib@1.2.2/persistent-actions";
-import { blake32Hash, createCID, maybeParseCID, multicodes, strToB64, getSubscriptionId, parseCID } from "npm:@chelonia/lib@1.2.2/functions";
-import { checkKey, parsePrefixableKey, prefixHandlers } from "npm:@chelonia/lib@1.2.2/db";
-import { SPMessage } from "npm:@chelonia/lib@1.2.2/SPMessage";
-import { SERVER } from "npm:@chelonia/lib@1.2.2/presets";
-import { ChelErrorGenerator } from "npm:@chelonia/lib@1.2.2/errors";
-import { PUSH_SERVER_ACTION_TYPE, REQUEST_TYPE, RESPONSE_TYPE, NOTIFICATION_TYPE, createMessage, createClient, createKvMessage, messageParser } from "npm:@chelonia/lib@1.2.2/pubsub";
-import { verifyShelterAuthorizationHeader } from "npm:@chelonia/lib@1.2.2/utils";
-import { base64ToBase64url, base64urlToBase64, boxKeyPair, computeCAndHc, decryptSaltUpdate, encryptContractSalt, encryptSaltUpdate, hash, hashRawStringArray, hashStringArray, parseRegisterSalt, randomNonce } from "npm:@chelonia/lib@1.2.2/zkpp";
-import { AUTHSALT, CONTRACTSALT, CS, SALT_LENGTH_IN_OCTETS, SU } from "npm:@chelonia/lib@1.2.2/zkppConstants";
+import * as chelonia_star from "npm:@chelonia/lib@1.2.4/chelonia";
+import "npm:@chelonia/lib@1.2.4/persistent-actions";
+import { blake32Hash, createCID, maybeParseCID, multicodes, strToB64, getSubscriptionId, parseCID } from "npm:@chelonia/lib@1.2.4/functions";
+import { checkKey, parsePrefixableKey, prefixHandlers } from "npm:@chelonia/lib@1.2.4/db";
+import { SPMessage } from "npm:@chelonia/lib@1.2.4/SPMessage";
+import { SERVER } from "npm:@chelonia/lib@1.2.4/presets";
+import { ChelErrorGenerator } from "npm:@chelonia/lib@1.2.4/errors";
+import { PUSH_SERVER_ACTION_TYPE, REQUEST_TYPE, RESPONSE_TYPE, NOTIFICATION_TYPE, createMessage, createClient, createKvMessage, messageParser } from "npm:@chelonia/lib@1.2.4/pubsub";
+import { verifyShelterAuthorizationHeader } from "npm:@chelonia/lib@1.2.4/utils";
+import { base64ToBase64url, base64urlToBase64, boxKeyPair, computeCAndHc, decryptSaltUpdate, encryptContractSalt, encryptSaltUpdate, hash, hashRawStringArray, hashStringArray, parseRegisterSalt, randomNonce } from "npm:@chelonia/lib@1.2.4/zkpp";
+import { AUTHSALT, CONTRACTSALT, CS, SALT_LENGTH_IN_OCTETS, SU } from "npm:@chelonia/lib@1.2.4/zkppConstants";
 import { EDWARDS25519SHA512BATCH, CURVE25519XSALSA20POLY1305, XSALSA20POLY1305 } from "npm:@chelonia/crypto@1.0.1";
 import { keygen, serializeKey, deserializeKey, keygenOfSameType, keyId, generateSalt, deriveKeyFromPassword } from "npm:@chelonia/crypto@1.0.1";
 import { sign, verifySignature, encrypt, decrypt } from "npm:@chelonia/crypto@1.0.1";
@@ -169,7 +167,7 @@ import { validationMixin } from "npm:vuelidate@0.7.6";
 var init_deps = __esm({
   "src/deps.ts"() {
     "use strict";
-    __reExport(deps_exports, lib_1_2_star);
+    __reExport(deps_exports, chelonia_star);
   }
 });
 
@@ -178,17 +176,17 @@ var requiredMethodNames, DatabaseBackend;
 var init_DatabaseBackend = __esm({
   "src/serve/DatabaseBackend.ts"() {
     "use strict";
-    requiredMethodNames = ["init", "clear", "readData", "writeData", "deleteData"];
+    requiredMethodNames = ["init", "clear", "readData", "writeData", "deleteData", "close"];
     DatabaseBackend = class _DatabaseBackend {
       constructor() {
         if (new.target === _DatabaseBackend) {
           throw new Error("Class DatabaseBackend cannot be instantiated directly.");
         }
+        const bindMethod = (name) => {
+          this[name] = this[name].bind(this);
+        };
         for (const name of requiredMethodNames) {
-          const method = this[name];
-          if (typeof method === "function") {
-            this[name] = method.bind(this);
-          }
+          bindMethod(name);
         }
       }
     };
@@ -285,6 +283,8 @@ var init_database_fs = __esm({
           throw e;
         });
       }
+      close() {
+      }
     };
   }
 });
@@ -296,7 +296,6 @@ __export(database_sqlite_exports, {
 });
 import { mkdir as mkdir2 } from "node:fs/promises";
 import { basename as basename2, dirname as dirname2, join as join2, resolve as resolve2 } from "node:path";
-import process3 from "node:process";
 var SqliteBackend;
 var init_database_sqlite = __esm({
   "src/serve/database-sqlite.ts"() {
@@ -327,7 +326,6 @@ var init_database_sqlite = __esm({
           throw new Error(`The ${filename} SQLite database is already open.`);
         }
         this.db = new sqlite.Database(join2(dataFolder2, filename));
-        process3.on("exit", () => this.db?.close());
         this.run("CREATE TABLE IF NOT EXISTS Data(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)");
         console.info(`Connected to the ${filename} SQLite database.`);
         this.readStatement = this.db.prepare("SELECT value FROM Data WHERE key = ?");
@@ -335,18 +333,23 @@ var init_database_sqlite = __esm({
         this.deleteStatement = this.db.prepare("DELETE FROM Data WHERE key = ?");
       }
       // Useful in test hooks.
+      // deno-lint-ignore require-await
       async clear() {
-        await this.run("DELETE FROM Data");
+        this.run("DELETE FROM Data");
       }
+      // deno-lint-ignore require-await
       async readData(key) {
         const row = this.readStatement.get(key);
-        return await row?.value;
+        return row?.value;
       }
       async writeData(key, value) {
         await this.writeStatement.run(key, value);
       }
       async deleteData(key) {
         await this.deleteStatement.run(key);
+      }
+      close() {
+        this.db.close();
       }
     };
   }
@@ -372,7 +375,7 @@ __export(database_router_exports, {
 });
 import { resolve as resolve3 } from "node:path";
 import { readFile as readFile2 } from "node:fs/promises";
-import process4 from "node:process";
+import process3 from "node:process";
 var GI_PERSIST_ROUTER_CONFIG, GI_PERSIST_ROUTER_CONFIG_PATH, RouterBackend;
 var init_database_router = __esm({
   "src/serve/database-router.ts"() {
@@ -390,7 +393,7 @@ var init_database_router = __esm({
         // Define this if your config comes from a JSON file.
         GI_PERSIST_ROUTER_CONFIG_PATH
       ) = "./database-router-config.json"
-    } = process4.env);
+    } = process3.env);
     RouterBackend = class extends DatabaseBackend {
       backends;
       config;
@@ -463,7 +466,22 @@ var init_database_router = __esm({
       }
       async clear() {
         for (const backend of new Set(Object.values(this.backends))) {
-          await backend.clear();
+          try {
+            await backend.clear();
+          } catch (e) {
+            const prefix = Object.entries(this.backends).find(([, b]) => b === backend)[0];
+            console.error(e, `Error clearing DB for prefix ${prefix}`);
+          }
+        }
+      }
+      async close() {
+        for (const backend of new Set(Object.values(this.backends))) {
+          try {
+            await backend.close();
+          } catch (e) {
+            const prefix = Object.entries(this.backends).find(([, b]) => b === backend)[0];
+            console.error(e, `Error closing DB for prefix ${prefix}`);
+          }
         }
       }
     };
@@ -567,7 +585,7 @@ import { Readable } from "node:stream";
 import fs2 from "node:fs";
 import { readdir as readdir2, readFile as readFile3 } from "node:fs/promises";
 import path2 from "node:path";
-import process5 from "node:process";
+import process4 from "node:process";
 
 // src/serve/vapid.ts
 init_deps();
@@ -645,6 +663,9 @@ var initZkpp = async () => {
   hashUpdateSecret = Buffer3.from(hashStringArray("private/hashUpdateSecret", IKM)).toString("base64");
 };
 
+// src/serve/events.ts
+var SERVER_EXITING = "server-exiting";
+
 // import("./database-*.ts") in src/serve/database.ts
 var globImport_database_ts2 = __glob({
   "./database-fs.ts": () => Promise.resolve().then(() => (init_database_fs(), database_fs_exports)),
@@ -654,9 +675,9 @@ var globImport_database_ts2 = __glob({
 });
 
 // src/serve/database.ts
-var production = process5.env.NODE_ENV === "production";
-var persistence = process5.env.GI_PERSIST || (production ? "fs" : void 0);
-var dbRootPath = process5.env.DB_PATH || "./data";
+var production = process4.env.NODE_ENV === "production";
+var persistence = process4.env.GI_PERSIST || (production ? "fs" : void 0);
+var dbRootPath = process4.env.DB_PATH || "./data";
 var options = {
   fs: {
     depth: 0,
@@ -674,7 +695,7 @@ if (!fs2.existsSync(dataFolder)) {
 }
 var database_default = default4("sbp/selectors/register", {
   "backend/db/streamEntriesAfter": async function(contractID, height, requestedLimit, options2 = {}) {
-    const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, parseInt(process5.env.MAX_EVENTS_BATCH_SIZE) || 500);
+    const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, process4.env.MAX_EVENTS_BATCH_SIZE ? parseInt(process4.env.MAX_EVENTS_BATCH_SIZE) : 500);
     const latestHEADinfo = await default4("chelonia/db/latestHEADinfo", contractID);
     if (latestHEADinfo === "") {
       throw default5.resourceGone(`contractID ${contractID} has been deleted!`);
@@ -749,7 +770,7 @@ var database_default = default4("sbp/selectors/register", {
           }
           await fetchMeta();
         } catch (e) {
-          console.error(`[backend] streamEntriesAfter: read(): ${e.message}:`, e.stack);
+          console.error(e, "[backend] streamEntriesAfter: read()");
           break;
         }
       }
@@ -785,10 +806,19 @@ function namespaceKey(name) {
 var initDB = async ({ skipDbPreloading } = {}) => {
   if (persistence) {
     const Ctor = (await globImport_database_ts2(`./database-${persistence}.ts`)).default;
-    const { init, readData, writeData, deleteData } = new Ctor(options[persistence]);
+    const { init, readData, writeData, deleteData, close } = new Ctor(options[persistence]);
     await init();
+    default4("okTurtles.events/once", SERVER_EXITING, () => {
+      default4("okTurtles.eventQueue/queueEvent", SERVER_EXITING, async () => {
+        try {
+          await close();
+        } catch (e) {
+          console.error(e, `Error closing DB ${persistence}`);
+        }
+      });
+    });
     const cache = new default10({
-      max: Number(process5.env.GI_LRU_NUM_ITEMS) || 1e4
+      max: Number(process4.env.GI_LRU_NUM_ITEMS) || 1e4
     });
     const prefixes = Object.keys(prefixHandlers);
     default4("sbp/selectors/overwrite", {
@@ -809,7 +839,7 @@ var initDB = async ({ skipDbPreloading } = {}) => {
         return value;
       },
       "chelonia.db/set": async function(key, value) {
-        if (process5.env.CHELONIA_ARCHIVE_MODE) throw new Error("Unable to write in archive mode");
+        if (process4.env.CHELONIA_ARCHIVE_MODE) throw new Error("Unable to write in archive mode");
         checkKey(key);
         if (key.startsWith("_private_immutable")) {
           const existingValue = await readData(key);
@@ -823,7 +853,7 @@ var initDB = async ({ skipDbPreloading } = {}) => {
         });
       },
       "chelonia.db/delete": async function(key) {
-        if (process5.env.CHELONIA_ARCHIVE_MODE) throw new Error("Unable to write in archive mode");
+        if (process4.env.CHELONIA_ARCHIVE_MODE) throw new Error("Unable to write in archive mode");
         checkKey(key);
         if (key.startsWith("_private_immutable")) {
           throw new Error("Cannot delete immutable key");
@@ -842,10 +872,10 @@ var initDB = async ({ skipDbPreloading } = {}) => {
     const keys = (await readdir2(dataFolder)).filter((k) => {
       if (k.length !== HASH_LENGTH) return false;
       const parsed = maybeParseCID(k);
-      return [
+      return parsed && [
         multicodes.SHELTER_CONTRACT_MANIFEST,
         multicodes.SHELTER_CONTRACT_TEXT
-      ].includes(parsed?.code ?? -1);
+      ].includes(parsed.code);
     });
     const numKeys = keys.length;
     let numVisitedKeys = 0;
@@ -894,8 +924,8 @@ var appendToNamesIndex = appendToIndexFactory("_private_names_index");
 
 // src/serve/logger.ts
 init_deps();
-import process6 from "node:process";
-var prettyPrint = process6.env.NODE_ENV === "development" || process6.env.CI || process6.env.CYPRESS_RECORD_KEY || process6.env.PRETTY;
+import process5 from "node:process";
+var prettyPrint = process5.env.NODE_ENV === "development" || process5.env.CI || process5.env.CYPRESS_RECORD_KEY || process5.env.PRETTY;
 function logMethod(args, method) {
   const stringIdx = typeof args[0] === "string" ? 0 : 1;
   if (args.length > 1) {
@@ -924,7 +954,7 @@ if (prettyPrint) {
 } else {
   logger = default9({ hooks: { logMethod } });
 }
-var logLevel = process6.env.LOG_LEVEL || (prettyPrint ? "debug" : "info");
+var logLevel = process5.env.LOG_LEVEL || (prettyPrint ? "debug" : "info");
 if (Object.keys(logger.levels.values).includes(logLevel)) {
   logger.level = logLevel;
 } else {
@@ -945,8 +975,7 @@ parentPort.on("message", ([port, ...msg]) => {
       try {
         port?.postMessage([true, await default4(...msg)]);
       } catch (e) {
-        const err = e;
-        port?.postMessage([false, { message: err.message, stack: err.stack }]);
+        port?.postMessage([false, e]);
       }
     })();
   });

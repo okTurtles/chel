@@ -1,7 +1,8 @@
-import { Hapi, Inert, sbp, chalk, SPMessage, SERVER, multicodes, parseCID } from '~/deps.ts'
+// deno-lint-ignore-file no-this-alias
+/* eslint-disable @typescript-eslint/no-this-alias */
+import { Hapi, Inert, sbp, chalk, SPMessage, SERVER, multicodes, parseCID, Boom } from '~/deps.ts'
 // import type { SubMessage, UnsubMessage } from './pubsub.ts' // TODO: Use for type checking
-import { basename, join, dirname } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { basename, join } from 'node:path'
 import { Worker } from 'node:worker_threads'
 import process from 'node:process'
 import authPlugin from './auth.ts'
@@ -13,17 +14,14 @@ import { PUBSUB_INSTANCE, SERVER_INSTANCE } from './instance-keys.ts'
 import {
   NOTIFICATION_TYPE,
   REQUEST_TYPE,
+  type WSS,
   createKvMessage,
   createMessage,
   createNotification,
   createPushErrorResponse,
   createServer
 } from './pubsub.ts'
-import { addChannelToSubscription, deleteChannelFromSubscription, postEvent, pushServerActionhandlers, subscriptionInfoWrapper, type PushSubscriptionInfo } from './push.ts'
-
-// ES module equivalent of __dirname
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
+import { addChannelToSubscription, deleteChannelFromSubscription, postEvent, pushServerActionhandlers, subscriptionInfoWrapper } from './push.ts'
 
 type WorkerType = {
   ready: Promise<void>,
@@ -102,15 +100,15 @@ if (CREDITS_WORKER_TASK_TIME_INTERVAL && OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTER
 // Initialize workers for size calculation and credits processing
 const ownerSizeTotalWorker = process.env.CHELONIA_ARCHIVE_MODE || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL
   ? undefined
-  : createWorker(join(__dirname, 'serve', 'ownerSizeTotalWorker.js'))
+  : createWorker(join(import.meta.dirname || '/', 'serve', 'ownerSizeTotalWorker.js'))
 const creditsWorker = process.env.CHELONIA_ARCHIVE_MODE || !CREDITS_WORKER_TASK_TIME_INTERVAL
   ? undefined
-  : createWorker(join(__dirname, 'serve', 'creditsWorker.js'))
+  : createWorker(join(import.meta.dirname || '/', 'serve', 'creditsWorker.js'))
 
 const { CONTRACTS_VERSION, GI_VERSION } = process.env
 
 // Dynamic runtime import to bypass bundling issues with npm: specifier
-const hapi = new Hapi({
+const hapi = new Hapi.Server({
   // debug: false, // <- Hapi v16 was outputing too many unnecessary debug statements
   //               // v17 doesn't seem to do this anymore so I've re-enabled the logging
   // debug: { log: ['error'], request: ['error'] },
@@ -132,24 +130,20 @@ const hapi = new Hapi({
 // See https://stackoverflow.com/questions/26213255/hapi-set-header-before-sending-response
 hapi.ext({
   type: 'onPreResponse',
-  method: function (request: unknown, h: unknown) {
+  method: function (request, h) {
     try {
       // Hapi Boom error responses don't have `.header()`,
       // but custom headers can be manually added using `.output.headers`.
       // See https://hapi.dev/module/boom/api/.
-      const req = request as Record<string, unknown>
-      const response = req.response as Record<string, unknown>
-      if (typeof response.header === 'function') {
-        (response.header as (key: string, value: string) => void)('X-Frame-Options', 'deny')
+      if (!(request.response instanceof Boom.Boom)) {
+        request.response.header('X-Frame-Options', 'DENY')
       } else {
-        const output = response.output as Record<string, unknown>
-        const headers = output.headers as Record<string, string>
-        headers['X-Frame-Options'] = 'deny'
+        request.response.output.headers['X-Frame-Options'] = 'DENY'
       }
-    } catch (err: unknown) {
+    } catch (err) {
       console.warn(chalk.yellow('[backend] Could not set X-Frame-Options header:', (err as Error).message))
     }
-    return (h as Record<string, unknown>).continue
+    return h.continue
   }
 })
 
@@ -300,15 +294,12 @@ sbp('sbp/selectors/register', {
     const sizeKey = `_private_size_${resourceID}`
     return updateSize(resourceID, sizeKey, size).then(() => {
       // Because this is relevant key for size accounting, call updateSizeSideEffects
-      return ownerSizeTotalWorker ? ownerSizeTotalWorker.rpcSbp('worker/updateSizeSideEffects', { resourceID, size, ultimateOwnerID }) : Promise.resolve()
+      return ownerSizeTotalWorker?.rpcSbp('worker/updateSizeSideEffects', { resourceID, size, ultimateOwnerID })
     })
   },
   'backend/server/updateContractFilesTotalSize': function (resourceID: string, size: number) {
-    const contractsIndex = sbp('okTurtles.data/get', 'contractsIndex')
-    for (const [,] of Object.entries(contractsIndex)) {
-      const sizeKey = `_private_contractFilesTotalSize_${resourceID}`
-      return updateSize(resourceID, sizeKey, size, true)
-    }
+    const sizeKey = `_private_contractFilesTotalSize_${resourceID}`
+    return updateSize(resourceID, sizeKey, size, true)
   },
   'backend/server/stop': function () {
     return hapi.stop()
@@ -328,7 +319,7 @@ sbp('sbp/selectors/register', {
       const manifest = JSON.parse(rawManifest)
       if (!manifest || typeof manifest !== 'object') throw new BackendErrorBadData('manifest format is invalid')
       if (manifest.version !== '1.0.0') throw new BackendErrorBadData('unsupported manifest version')
-      if (!Array.isArray(manifest.chunks) || !manifest.chunks.length) throw BackendErrorBadData('missing chunks')
+      if (!Array.isArray(manifest.chunks) || !manifest.chunks.length) throw new BackendErrorBadData('missing chunks')
       // Delete all chunks
       await Promise.all(manifest.chunks.map(([, cid]: [unknown, string]) => sbp('chelonia.db/delete', cid)))
     } catch (e: unknown) {
@@ -348,8 +339,8 @@ sbp('sbp/selectors/register', {
     await sbp('chelonia.db/set', cid, '')
     await sbp('backend/server/updateContractFilesTotalSize', owner, -Number(size))
 
-    if (ultimateOwnerID && size && ownerSizeTotalWorker) {
-      await ownerSizeTotalWorker.rpcSbp('worker/updateSizeSideEffects', { resourceID: cid, size: -parseInt(size), ultimateOwnerID })
+    if (ultimateOwnerID && size) {
+      await ownerSizeTotalWorker?.rpcSbp('worker/updateSizeSideEffects', { resourceID: cid, size: -parseInt(size), ultimateOwnerID })
     }
   },
   async 'backend/deleteContract' (cid: string, ultimateOwnerID?: string | null, skipIfDeleted?: boolean | null): Promise<void> {
@@ -458,8 +449,8 @@ sbp('sbp/selectors/register', {
       await sbp('chelonia.db/set', cid, '')
       sbp('chelonia/private/removeImmediately', cid)
 
-      if (size && ownerSizeTotalWorker) {
-        await ownerSizeTotalWorker.rpcSbp('worker/updateSizeSideEffects', { resourceID: cid, size: -parseInt(size), ultimateOwnerID })
+      if (size) {
+        await ownerSizeTotalWorker?.rpcSbp('worker/updateSizeSideEffects', { resourceID: cid, size: -parseInt(size), ultimateOwnerID })
       }
 
       await sbp('chelonia.db/delete', `_private_cheloniaState_${cid}`)
@@ -478,24 +469,21 @@ sbp('sbp/selectors/register', {
 })
 
 if (process.env.NODE_ENV === 'development' && !process.env.CI) {
-  hapi.events.on('response', (request: unknown) => {
-    const req = request as Record<string, unknown>
-    const headers = req.headers as Record<string, string>
-    const info = req.info as Record<string, unknown>
-    const ip = headers['x-real-ip'] || info.remoteAddress
-    const response = req.response as Record<string, unknown>
-    console.debug(chalk`{grey ${ip}: ${req.method} ${req.path} --> ${response.statusCode}}`)
+  hapi.events.on('response', (req) => {
+    const ip = req.headers['x-real-ip'] || req.info.remoteAddress
+    const statusCode = req.response instanceof Boom.Boom ? req.response.output.statusCode : req.response.statusCode
+    console.debug(chalk`{grey ${ip}: ${req.method} ${req.path} --> ${statusCode}}`)
   })
 }
 
 sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
   serverHandlers: {
-    connection (socket: unknown) {
+    connection (socket) {
       const versionInfo = {
         GI_VERSION: GI_VERSION || null,
         CONTRACTS_VERSION: CONTRACTS_VERSION || null
       }
-      ;((socket as Record<string, unknown>).send as (msg: unknown) => void)(createNotification(NOTIFICATION_TYPE.VERSION_INFO, versionInfo))
+      socket.send(createNotification(NOTIFICATION_TYPE.VERSION_INFO, versionInfo))
     }
   },
   socketHandlers: {
@@ -503,94 +491,82 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
     // that subsequent messages to subscribed channels should now be sent to its
     // associated web push subscription, if it exists.
     close () {
-      const socket = this as Record<string, unknown>
-      const { server } = socket as { server: Record<string, unknown> }
+      const socket = this
+      const { server } = this
       const subscriptionId = socket.pushSubscriptionId
       if (!subscriptionId) return
-      if (!(server.pushSubscriptions as Record<string, unknown>)[subscriptionId as string]) return
-      (((server.pushSubscriptions as Record<string, unknown>)[subscriptionId as string] as Record<string, unknown>).sockets as Set<unknown>).delete(socket)
+      if (!server.pushSubscriptions[subscriptionId]) return
+      server.pushSubscriptions[subscriptionId].sockets.delete(socket)
       delete socket.pushSubscriptionId
 
-      if ((((server.pushSubscriptions as Record<string, unknown>)[subscriptionId as string] as Record<string, unknown>).sockets as Set<unknown>).size === 0) {
-        (((server.pushSubscriptions as Record<string, unknown>)[subscriptionId as string] as Record<string, unknown>).subscriptions as Set<unknown>).forEach((channelID: unknown) => {
-          if (!(server.subscribersByChannelID as Record<string, unknown>)[channelID as string]) {
-            (server.subscribersByChannelID as Record<string, unknown>)[channelID as string] = new Set()
+      if (server.pushSubscriptions[subscriptionId].sockets.size === 0) {
+        server.pushSubscriptions[subscriptionId].subscriptions.forEach((channelID) => {
+          if (!server.subscribersByChannelID[channelID]) {
+            server.subscribersByChannelID[channelID] = new Set()
           }
-          ((server.subscribersByChannelID as Record<string, unknown>)[channelID as string] as Set<unknown>).add((server.pushSubscriptions as Record<string, unknown>)[subscriptionId as string])
+          server.subscribersByChannelID[channelID].add(server.pushSubscriptions[subscriptionId])
         })
       }
     }
   },
   messageHandlers: {
-    [REQUEST_TYPE.PUSH_ACTION]: async function (...args: unknown[]) {
-      const { data } = args[0] as { data: unknown }
-      const socket = this as Record<string, unknown>
-      const dataObj = data as Record<string, unknown>
-      const { action, payload } = dataObj
+    [REQUEST_TYPE.PUSH_ACTION]: async function ({ data }) {
+      const socket = this
+      const { action, payload } = data
 
       if (!action) {
-        ((socket as Record<string, unknown>).send as (msg: unknown) => void)(createPushErrorResponse({ message: '\'action\' field is required' }))
+        socket.send(createPushErrorResponse({ message: '\'action\' field is required' }))
       }
 
       const handler = pushServerActionhandlers[action as keyof typeof pushServerActionhandlers]
 
       if (handler) {
         try {
-          await (handler as (socket: unknown, payload: unknown) => Promise<void>)(socket, payload)
+          await (handler as (this: unknown, payload: unknown) => Promise<void>).call(socket, payload)
         } catch (error) {
-          const message = (error as Record<string, unknown>)?.message || `push server failed to perform [${action}] action`
-          console.warn(error, `[${(socket as Record<string, unknown>).ip}] Action '${action}' for '${REQUEST_TYPE.PUSH_ACTION}' handler failed: ${message}`)
-          ;((socket as Record<string, unknown>).send as (msg: unknown) => void)(createPushErrorResponse({ actionType: action as string, message: message as string }))
+          const message = (error as Error)?.message || `push server failed to perform [${action}] action`
+          console.warn(error, `[${socket.ip}] Action '${action}' for '${REQUEST_TYPE.PUSH_ACTION}' handler failed: ${message}`)
+          socket.send(createPushErrorResponse({ actionType: action, message: message }))
         }
       } else {
-        ;((socket as Record<string, unknown>).send as (msg: unknown) => void)(createPushErrorResponse({ message: `No handler for the '${action}' action` }))
+        socket.send(createPushErrorResponse({ message: `No handler for the '${action}' action` }))
       }
     },
     // This handler adds subscribed channels to the web push subscription
     // associated with the WS, so that when the WS is closed we can continue
     // sending messages as web push notifications.
-    [NOTIFICATION_TYPE.SUB] (...args: unknown[]) {
-      const { channelID } = args[0] as { channelID: string }
-      const socket = this as Record<string, unknown>
-
-      // If the WS doesn't have an associated push subscription, we're done
+    [NOTIFICATION_TYPE.SUB] ({ channelID }) {
+      const socket = this
+      const { server } = this
       if (!socket.pushSubscriptionId) return
-      // If the WS has an associated push subscription that's since been
-      // removed, delete the association and return.
-      const { server } = socket as { server: { pushSubscriptions: Record<string, unknown> } }
-      if (!server.pushSubscriptions[socket.pushSubscriptionId as string]) {
+      if (!server.pushSubscriptions[socket.pushSubscriptionId]) {
         delete socket.pushSubscriptionId
         return
       }
 
-      addChannelToSubscription(server as { pushSubscriptions: Record<string, { settings?: unknown; subscriptions: Set<string> }> }, socket.pushSubscriptionId as string, channelID)
+      addChannelToSubscription(server, socket.pushSubscriptionId, channelID)
     },
     // This handler removes subscribed channels from the web push subscription
     // associated with the WS, so that when the WS is closed we don't send
     // messages as web push notifications.
-    [NOTIFICATION_TYPE.UNSUB] (...args: unknown[]) {
-      const { channelID } = args[0] as { channelID: string }
-      const socket = this as Record<string, unknown>
-
-      // If the WS doesn't have an associated push subscription, we're done
+    [NOTIFICATION_TYPE.UNSUB] ({ channelID }) {
+      const socket = this
+      const { server } = this
       if (!socket.pushSubscriptionId) return
-      // If the WS has an associated push subscription that's since been
-      // removed, delete the association and return.
-      const { server } = socket as { server: { pushSubscriptions: Record<string, unknown> } }
-      if (!server.pushSubscriptions[socket.pushSubscriptionId as string]) {
+      if (!server.pushSubscriptions[socket.pushSubscriptionId]) {
         delete socket.pushSubscriptionId
         return
       }
 
-      deleteChannelFromSubscription(server as { pushSubscriptions: Record<string, { settings?: unknown; subscriptions: Set<string> }> }, socket.pushSubscriptionId as string, channelID)
+      deleteChannelFromSubscription(server, socket.pushSubscriptionId, channelID)
     }
   }
 }))
 
 ;(async function () {
   await initDB()
-  if (ownerSizeTotalWorker) await ownerSizeTotalWorker.ready
-  if (creditsWorker) await creditsWorker.ready
+  await ownerSizeTotalWorker?.ready
+  await creditsWorker?.ready
   await sbp('chelonia/configure', SERVER)
   sbp('chelonia.persistentActions/configure', {
     databaseKey: '_private_persistent_actions'
@@ -664,40 +640,23 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
 
   setInterval(() => {
     const now = Date.now()
-    const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE)
+    const pubsub = (sbp('okTurtles.data/get', PUBSUB_INSTANCE) || {}) as WSS
     // Notification text
     const notification = JSON.stringify({ type: 'recurring' })
     // Find push subscriptions that do _not_ have a WS open. This means clients
     // that are 'asleep' and that might be woken up by the push event
-    Object.values(pubsub.pushSubscriptions || {}).filter(
-      (pushSubscription: unknown) => !!(pushSubscription as { settings?: { heartbeatInterval?: number }; sockets: { size: number } }).settings?.heartbeatInterval && (pushSubscription as { settings?: { heartbeatInterval?: number }; sockets: { size: number } }).sockets.size === 0
-    ).forEach((pushSubscription: unknown) => {
-      const subscription = pushSubscription as PushSubscriptionInfo
-      const last = map.get(subscription) ?? Number.NEGATIVE_INFINITY
-      if (now - last < (subscription.settings as { heartbeatInterval: number }).heartbeatInterval) return
-      postEvent(subscription, notification).then(() => {
-        map.set(subscription, now)
-      }).catch((e: unknown) => {
-        console.warn(e, 'Error sending recurring message to web push client', subscription.id)
+    Object.values(pubsub.pushSubscriptions)
+      .filter((pushSubscription) =>
+        !!pushSubscription.settings.heartbeatInterval && pushSubscription.sockets.size === 0
+      ).forEach((pushSubscription) => {
+        const last = map.get(pushSubscription) ?? Number.NEGATIVE_INFINITY
+        if (now - last < pushSubscription.settings.heartbeatInterval!) return
+        postEvent(pushSubscription, notification).then(() => {
+          map.set(pushSubscription, now)
+        }).catch((e) => {
+          console.warn(e, 'Error sending recurring message to web push client', pushSubscription.id)
+        })
       })
-    })
     // Repeat every 1 hour
   }, 1 * 60 * 60 * 1000)
 })()
-
-const handleSignal = (signal: string, code: number) => {
-  process.on(signal, () => {
-    console.error(`Exiting upon receiving ${signal} (${code})`)
-    process.exit(128 + code)
-  })
-}
-
-// Codes from <signal.h>
-([
-  ['SIGHUP', 1],
-  ['SIGINT', 2],
-  ['SIGQUIT', 3],
-  ['SIGTERM', 15],
-  ['SIGUSR1', 10],
-  ['SIGUSR2', 11]
-] as [string, number][]).forEach(([signal, code]) => handleSignal(signal, code))

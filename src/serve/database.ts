@@ -7,6 +7,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { initVapid } from './vapid.ts'
 import { initZkpp } from './zkppSalt.ts'
+import { SERVER_EXITING } from './events.ts'
 
 const production = process.env.NODE_ENV === 'production'
 // Defaults to `fs` in production.
@@ -69,7 +70,7 @@ export const updateSize = async (resourceID: string, sizeKey: string, size: numb
 // Streams stored contract log entries since the given entry hash (inclusive!).
 export default sbp('sbp/selectors/register', {
   'backend/db/streamEntriesAfter': async function (contractID: string, height: number, requestedLimit?: number, options: { keyOps?: boolean } = {}): Promise<unknown> {
-    const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, parseInt(process.env.MAX_EVENTS_BATCH_SIZE!) || 500)
+    const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, process.env.MAX_EVENTS_BATCH_SIZE ? parseInt(process.env.MAX_EVENTS_BATCH_SIZE) : 500)
     const latestHEADinfo = await sbp('chelonia/db/latestHEADinfo', contractID)
     if (latestHEADinfo === '') {
       throw Boom.resourceGone(`contractID ${contractID} has been deleted!`)
@@ -103,7 +104,7 @@ export default sbp('sbp/selectors/register', {
         const value = index?.find((h, i) => {
           if (Number(h) >= currentHeight) {
             // Remove values that no longer are relevant from the index
-            index = (index as string[]).slice(i + 1)
+            index = index!.slice(i + 1)
             return true
           } else {
             return false
@@ -186,7 +187,7 @@ export default sbp('sbp/selectors/register', {
           }
           await fetchMeta()
         } catch (e) {
-          console.error(`[backend] streamEntriesAfter: read(): ${(e as Error).message}:`, (e as Error).stack)
+          console.error(e, '[backend] streamEntriesAfter: read()')
           break
         }
       }
@@ -203,7 +204,7 @@ export default sbp('sbp/selectors/register', {
   // =======================
   // wrapper methods to add / lookup names
   // =======================
-  'backend/db/registerName': async function (name: string, value: string): Promise<unknown> {
+  'backend/db/registerName': async function (name: string, value: string): Promise<{ name: string, value: string }> {
     const exists = await sbp('backend/db/lookupName', name)
     if (exists) {
       throw Boom.conflict('exists')
@@ -214,7 +215,7 @@ export default sbp('sbp/selectors/register', {
 
     return { name, value }
   },
-  'backend/db/lookupName': async function (name: string): Promise<string> {
+  'backend/db/lookupName': async function (name: string): Promise<string | undefined> {
     const value = await sbp('chelonia.db/get', namespaceKey(name))
     return value
   }
@@ -231,11 +232,20 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
   if (persistence) {
     const Ctor = (await import(`./database-${persistence}.ts`)).default
     // Destructuring is safe because these methods have been bound using rebindMethods().
-    const { init, readData, writeData, deleteData } = new Ctor(options[persistence])
+    const { init, readData, writeData, deleteData, close } = new Ctor(options[persistence])
     await init()
+    sbp('okTurtles.events/once', SERVER_EXITING, () => {
+      sbp('okTurtles.eventQueue/queueEvent', SERVER_EXITING, async () => {
+        try {
+          await close()
+        } catch (e) {
+          console.error(e, `Error closing DB ${persistence}`)
+        }
+      })
+    })
 
     // https://github.com/isaacs/node-lru-cache#usage
-    const cache = new LRU({
+    const cache = new LRU<string, Buffer | string>({
       max: Number(process.env.GI_LRU_NUM_ITEMS) || 10000
     })
 
@@ -244,8 +254,8 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
       'chelonia.db/get': async function (prefixableKey: string, { bypassCache }: { bypassCache?: boolean } = {}): Promise<Buffer | string | void> {
         if (!bypassCache) {
           const lookupValue = cache.get(prefixableKey)
-          if (lookupValue !== void 0) {
-            return lookupValue as Buffer | string | void
+          if (lookupValue !== undefined) {
+            return lookupValue
           }
         }
         const [prefix, key] = parsePrefixableKey(prefixableKey)
@@ -314,9 +324,9 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
       .filter(k => {
         if (k.length !== HASH_LENGTH) return false
         const parsed = maybeParseCID(k)
-        return ([
+        return parsed && ([
           multicodes.SHELTER_CONTRACT_MANIFEST,
-          multicodes.SHELTER_CONTRACT_TEXT].includes(parsed?.code ?? -1)
+          multicodes.SHELTER_CONTRACT_TEXT].includes(parsed.code)
         )
       })
     const numKeys = keys.length

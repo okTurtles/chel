@@ -1,3 +1,5 @@
+// deno-lint-ignore-file no-this-alias
+/* eslint-disable @typescript-eslint/no-this-alias */
 import { Buffer } from 'node:buffer'
 import { appendToIndexFactory, removeFromIndexFactory } from './database.ts'
 import { PUBSUB_INSTANCE } from './instance-keys.ts'
@@ -10,30 +12,22 @@ import {
   REQUEST_TYPE,
   createMessage,
   aes128gcm,
-  rfc8188Encrypt
+  rfc8188Encrypt as encrypt
 } from '~/deps.ts'
+import type { WS, WSS } from './pubsub.ts'
 
 // TypeScript interfaces for push server types
-interface WebSocketConnection {
-  send: (message: unknown) => void;
-  pushSubscriptionId?: string;
-  subscriptions?: Set<string>;
-  ip?: string;
-  server: {
-    pushSubscriptions: Record<string, {
-      settings?: unknown;
-      subscriptions: Set<string>;
-    }>;
-    subscribersByChannelID: Record<string, Set<WebSocketConnection>>;
-  };
-}
-
 interface StoreSubscriptionPayload {
   applicationServerKey?: string;
-  settings?: unknown;
+  settings?: object;
   subscriptionInfo?: unknown;
 }
 
+export interface PushSubscriptionJSON {
+  endpoint?: string;
+  expirationTime?: number | null;
+  keys?: Record<string, string>;
+}
 export interface PushSubscriptionInfo {
   endpoint: URL;
   keys: {
@@ -42,15 +36,17 @@ export interface PushSubscriptionInfo {
   };
   id: string;
   encryptionKeys: Promise<[Buffer, Buffer]>;
-  settings: unknown;
-  sockets: Set<WebSocketConnection>;
+  settings: {
+    heartbeatInterval?: number,
+  };
+  sockets: Set<WS>;
   subscriptions: Set<string>;
 }
 
 interface PushServerActionHandlers {
-  [PUSH_SERVER_ACTION_TYPE.SEND_PUBLIC_KEY]: (socket: WebSocketConnection) => void;
-  [PUSH_SERVER_ACTION_TYPE.STORE_SUBSCRIPTION]: (socket: WebSocketConnection, payload: StoreSubscriptionPayload) => Promise<void>;
-  [PUSH_SERVER_ACTION_TYPE.DELETE_SUBSCRIPTION]: (socket: WebSocketConnection) => Promise<void> | void;
+  [PUSH_SERVER_ACTION_TYPE.SEND_PUBLIC_KEY]: (this: WS) => void;
+  [PUSH_SERVER_ACTION_TYPE.STORE_SUBSCRIPTION]: (this: WS, payload: StoreSubscriptionPayload) => Promise<void>;
+  [PUSH_SERVER_ACTION_TYPE.DELETE_SUBSCRIPTION]: (this: WS) => Promise<void> | void;
 }
 
 // Note: aes128gcm and encrypt imports will be handled via deps.ts if needed
@@ -59,7 +55,7 @@ interface PushServerActionHandlers {
 const addSubscriptionToIndex = appendToIndexFactory('_private_webpush_index')
 const deleteSubscriptionFromIndex = removeFromIndexFactory('_private_webpush_index')
 
-const saveSubscription = (server: { pushSubscriptions: Record<string, { settings?: unknown; subscriptions: Set<string> }> }, subscriptionId: string): Promise<void> => {
+const saveSubscription = (server: WSS, subscriptionId: string): Promise<void> => {
   return sbp('chelonia.db/set', `_private_webpush_${subscriptionId}`, JSON.stringify({
     settings: server.pushSubscriptions[subscriptionId].settings,
     subscriptionInfo: server.pushSubscriptions[subscriptionId],
@@ -70,12 +66,12 @@ const saveSubscription = (server: { pushSubscriptions: Record<string, { settings
   })
 }
 
-export const addChannelToSubscription = (server: { pushSubscriptions: Record<string, { settings?: unknown; subscriptions: Set<string> }> }, subscriptionId: string, channelID: string): Promise<void> => {
+export const addChannelToSubscription = (server: WSS, subscriptionId: string, channelID: string): Promise<void> => {
   server.pushSubscriptions[subscriptionId].subscriptions.add(channelID)
   return saveSubscription(server, subscriptionId)
 }
 
-export const deleteChannelFromSubscription = (server: { pushSubscriptions: Record<string, { settings?: unknown; subscriptions: Set<string> }> }, subscriptionId: string, channelID: string): Promise<void> => {
+export const deleteChannelFromSubscription = (server: WSS, subscriptionId: string, channelID: string): Promise<void> => {
   server.pushSubscriptions[subscriptionId].subscriptions.delete(channelID)
   return saveSubscription(server, subscriptionId)
 }
@@ -100,7 +96,7 @@ const removeSubscription = async (subscriptionId: string): Promise<void> => {
     }
     await sbp('chelonia.db/delete', `_private_webpush_${subscriptionId}`)
     await deleteSubscriptionFromIndex(subscriptionId)
-  } catch (e: unknown) {
+  } catch (e) {
     console.error(e, 'Error removing subscription', subscriptionId)
     // swallow error
   }
@@ -108,8 +104,8 @@ const removeSubscription = async (subscriptionId: string): Promise<void> => {
 
 // Wrap a SubscriptionInfo object to include a subscription ID and encryption
 // keys
-export const subscriptionInfoWrapper = (subscriptionId: string, subscriptionInfo: { endpoint: string; keys: { auth: string; p256dh: string } }, extra: { channelIDs?: string[], settings?: unknown }): PushSubscriptionInfo => {
-  (subscriptionInfo as { endpoint: string | URL; keys: { auth: string; p256dh: string } }).endpoint = new URL(subscriptionInfo.endpoint)
+export const subscriptionInfoWrapper = (subscriptionId: string, subscriptionInfo: PushSubscriptionJSON, extra: { channelIDs?: string[], settings?: unknown }): PushSubscriptionInfo => {
+  (subscriptionInfo as unknown as PushSubscriptionInfo).endpoint = new URL(subscriptionInfo.endpoint || '')
 
   Object.defineProperties(subscriptionInfo, {
     'id': {
@@ -192,7 +188,7 @@ const encryptPayload = async (subscription: { encryptionKeys: Promise<[Buffer, B
   if (!readableStream) throw new Error('Failed to create readable stream')
   const [asPublic, IKM] = await subscription.encryptionKeys
 
-  return rfc8188Encrypt(aes128gcm, readableStream as unknown as ReadableStream<BufferSource>, 32768, asPublic.buffer as Readonly<ArrayBufferLike>, IKM.buffer as Readonly<ArrayBufferLike>).then(async (bodyStream: ReadableStream<ArrayBufferLike>) => {
+  return encrypt(aes128gcm, readableStream as unknown as ReadableStream<BufferSource>, 32768, asPublic.buffer as Readonly<ArrayBufferLike>, IKM.buffer as Readonly<ArrayBufferLike>).then(async (bodyStream: ReadableStream<ArrayBufferLike>) => {
     const chunks: Uint8Array[] = []
     const reader = bodyStream.getReader()
     for (;;) {
@@ -216,26 +212,26 @@ export const postEvent = async (subscription: PushSubscriptionInfo, event: strin
 
   const req = await fetch(subscription.endpoint, {
     method: 'POST',
-    headers: new Headers([
+    headers: [
       ['authorization', authorization],
       ...(body
-        ? [['content-encoding', 'aes128gcm'] as [string, string],
+        ? [['content-encoding', 'aes128gcm'],
           [
             'content-type',
             'application/octet-stream'
-          ] as [string, string]
+          ]
         ]
         : []),
       // ['push-receipt', ''],
-      ['ttl', '60'] as [string, string]
-    ] as [string, string][]),
+      ['ttl', '60']
+    ] as [string, string][],
     body
   })
 
   if (!req.ok) {
     const endpointHost = new URL(subscription.endpoint).host
     console.info(
-      await req.text().then(response => ({ response })).catch((e: unknown) => `ERR: ${(e as Error)?.message}`),
+      await req.text().then(response => ({ response })).catch((e) => `ERR: ${(e as Error)?.message}`),
       `Error ${req.status} sending push notification to '${subscription.id}' via ${endpointHost}`
     )
     // If the response was 401 (Unauthorized), 404 (Not found) or 410 (Gone),
@@ -252,10 +248,12 @@ export const postEvent = async (subscription: PushSubscriptionInfo, event: strin
 }
 
 export const pushServerActionhandlers: PushServerActionHandlers = {
-  [PUSH_SERVER_ACTION_TYPE.SEND_PUBLIC_KEY] (socket: WebSocketConnection) {
+  [PUSH_SERVER_ACTION_TYPE.SEND_PUBLIC_KEY] () {
+    const socket = this
     socket.send(createMessage(REQUEST_TYPE.PUSH_ACTION, { type: PUSH_SERVER_ACTION_TYPE.SEND_PUBLIC_KEY, data: getVapidPublicKey() }))
   },
-  async [PUSH_SERVER_ACTION_TYPE.STORE_SUBSCRIPTION] (socket: WebSocketConnection, payload: StoreSubscriptionPayload) {
+  async [PUSH_SERVER_ACTION_TYPE.STORE_SUBSCRIPTION] (payload) {
+    const socket = this
     const { server } = socket
     const { applicationServerKey, settings, subscriptionInfo } = payload
     if (applicationServerKey) {
@@ -282,16 +280,13 @@ export const pushServerActionhandlers: PushServerActionHandlers = {
     let host = ''
     let subscriptionWrapper: PushSubscriptionInfo | null = null
     try {
-      subscriptionId = await getSubscriptionId(subscriptionInfo as { endpoint: string; keys: { auth: string; p256dh: string } })
-      if (!subscriptionId) {
-        throw new Error('Failed to generate subscription ID')
-      }
+      subscriptionId = await getSubscriptionId(subscriptionInfo as PushSubscriptionJSON)
       subscriptionWrapper = server.pushSubscriptions[subscriptionId] as unknown as PushSubscriptionInfo
 
       if (!subscriptionWrapper) {
         console.debug(`saving new push subscription '${subscriptionId}':`, subscriptionInfo)
         // If this is a new subscription, we call `subscriptionInfoWrapper` and store it in memory.
-        server.pushSubscriptions[subscriptionId] = subscriptionInfoWrapper(subscriptionId, subscriptionInfo as { endpoint: string; keys: { auth: string; p256dh: string } }, { settings })
+        server.pushSubscriptions[subscriptionId] = subscriptionInfoWrapper(subscriptionId, subscriptionInfo as PushSubscriptionJSON, { settings })
         subscriptionWrapper = server.pushSubscriptions[subscriptionId] as unknown as PushSubscriptionInfo
         host = subscriptionWrapper.endpoint.host
         await addSubscriptionToIndex(subscriptionId)
@@ -314,7 +309,7 @@ export const pushServerActionhandlers: PushServerActionHandlers = {
         if (subscriptionWrapper.sockets.size === 0) {
           subscriptionWrapper.subscriptions.forEach((channelID: string) => {
             if (!server.subscribersByChannelID[channelID]) return
-            server.subscribersByChannelID[channelID].delete(subscriptionWrapper as unknown as WebSocketConnection)
+            server.subscribersByChannelID[channelID].delete(subscriptionWrapper!)
           })
         }
       }
@@ -350,7 +345,7 @@ export const pushServerActionhandlers: PushServerActionHandlers = {
       // WS is closed, see the `close` () function in socketHandlers in server.js)
       socket.pushSubscriptionId = subscriptionId
       subscriptionWrapper.subscriptions.forEach((channelID: string) => {
-        server.subscribersByChannelID[channelID]?.delete(subscriptionWrapper as unknown as WebSocketConnection)
+        server.subscribersByChannelID[channelID]?.delete(subscriptionWrapper!)
       })
       subscriptionWrapper.sockets.add(socket)
       socket.subscriptions?.forEach((channelID: string) => {
@@ -358,15 +353,15 @@ export const pushServerActionhandlers: PushServerActionHandlers = {
         subscriptionWrapper!.subscriptions.add(channelID)
       })
       await saveSubscription(server, subscriptionId!)
-    } catch (e: unknown) {
+    } catch (e) {
       console.error(e, `[${socket.ip}] Failed to store subscription '${subscriptionId || '??'}' (${host}), removing it!`)
       subscriptionId && removeSubscription(subscriptionId)
       throw e // rethrow
     }
   },
-  [PUSH_SERVER_ACTION_TYPE.DELETE_SUBSCRIPTION] (socket: WebSocketConnection) {
-    const subscriptionId = socket.pushSubscriptionId
-
+  [PUSH_SERVER_ACTION_TYPE.DELETE_SUBSCRIPTION] () {
+    const socket = this
+    const { pushSubscriptionId: subscriptionId } = socket
     if (subscriptionId) {
       return removeSubscription(subscriptionId)
     }

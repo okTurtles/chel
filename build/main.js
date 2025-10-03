@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-read=./ --allow-write=./  --allow-net --no-remote --import-map=vendor/import_map.json
+#!/usr/bin/env -S deno run --allow-net --allow-read=. --allow-write=. --allow-sys --allow-env
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
@@ -37,7 +37,7 @@ __export(deps_exports, {
   CURVE25519XSALSA20POLY1305: () => CURVE25519XSALSA20POLY1305,
   ChelErrorGenerator: () => ChelErrorGenerator,
   EDWARDS25519SHA512BATCH: () => EDWARDS25519SHA512BATCH,
-  Hapi: () => Server,
+  Hapi: () => Hapi,
   Inert: () => default7,
   Joi: () => default6,
   LRU: () => default10,
@@ -81,7 +81,6 @@ __export(deps_exports, {
   encrypt: () => encrypt,
   encryptContractSalt: () => encryptContractSalt,
   encryptSaltUpdate: () => encryptSaltUpdate,
-  esbuild: () => esbuild,
   flags: () => flags,
   fs: () => fs,
   generateSalt: () => generateSalt,
@@ -131,17 +130,16 @@ import * as streams from "jsr:@std/streams@1.0.10";
 import * as util from "jsr:@std/io@0.225.2";
 import { copy, readAll, writeAll } from "jsr:@std/io@0.225.2";
 import * as sqlite from "jsr:@db/sqlite@0.12.0";
-import * as esbuild from "npm:esbuild@0.25.6";
 import { z } from "npm:zod@4.0.5";
 import { default as default2 } from "npm:tweetnacl@1.0.3";
 import { base58btc } from "npm:multiformats@11.0.2/bases/base58";
 import { default as default3 } from "npm:@multiformats/blake2@1.0.13";
 import { CID } from "npm:multiformats@11.0.2/cid";
 import { default as default4 } from "npm:@sbp/sbp@2.4.1";
-import { Server } from "npm:@hapi/hapi@20.1.2";
-import { default as default5 } from "npm:@hapi/boom@9.1.0";
-import { default as default6 } from "npm:@hapi/joi@17.1.1";
-import { default as default7 } from "npm:@hapi/inert@6.0.3";
+import * as Hapi from "npm:@hapi/hapi@21.4.3";
+import { default as default5 } from "npm:@hapi/boom@10.0.1";
+import { default as default6 } from "npm:joi@18.0.1";
+import { default as default7 } from "npm:@hapi/inert@7.1.0";
 import { default as default8 } from "npm:chalk@4.1.0";
 import { default as default9 } from "npm:pino@8.19.0";
 import { default as default10 } from "npm:lru-cache@7.14.0";
@@ -152,17 +150,17 @@ import { default as default12 } from "npm:bottleneck@2.19.5";
 import { default as default13 } from "npm:scrypt-async@2.0.1";
 import { aes128gcm } from "npm:@apeleghq/rfc8188@1.0.7/encodings";
 import { default as default14 } from "npm:@apeleghq/rfc8188@1.0.7/encrypt";
-import * as lib_1_2_star from "npm:@chelonia/lib@1.2.2";
-import "npm:@chelonia/lib@1.2.2/persistent-actions";
-import { blake32Hash, createCID, maybeParseCID, multicodes, strToB64, getSubscriptionId, parseCID } from "npm:@chelonia/lib@1.2.2/functions";
-import { checkKey, parsePrefixableKey, prefixHandlers } from "npm:@chelonia/lib@1.2.2/db";
-import { SPMessage } from "npm:@chelonia/lib@1.2.2/SPMessage";
-import { SERVER } from "npm:@chelonia/lib@1.2.2/presets";
-import { ChelErrorGenerator } from "npm:@chelonia/lib@1.2.2/errors";
-import { PUSH_SERVER_ACTION_TYPE, REQUEST_TYPE, RESPONSE_TYPE, NOTIFICATION_TYPE, createMessage, createClient, createKvMessage, messageParser } from "npm:@chelonia/lib@1.2.2/pubsub";
-import { verifyShelterAuthorizationHeader } from "npm:@chelonia/lib@1.2.2/utils";
-import { base64ToBase64url, base64urlToBase64, boxKeyPair, computeCAndHc, decryptSaltUpdate, encryptContractSalt, encryptSaltUpdate, hash, hashRawStringArray, hashStringArray, parseRegisterSalt, randomNonce } from "npm:@chelonia/lib@1.2.2/zkpp";
-import { AUTHSALT, CONTRACTSALT, CS, SALT_LENGTH_IN_OCTETS, SU } from "npm:@chelonia/lib@1.2.2/zkppConstants";
+import * as chelonia_star from "npm:@chelonia/lib@1.2.4/chelonia";
+import "npm:@chelonia/lib@1.2.4/persistent-actions";
+import { blake32Hash, createCID, maybeParseCID, multicodes, strToB64, getSubscriptionId, parseCID } from "npm:@chelonia/lib@1.2.4/functions";
+import { checkKey, parsePrefixableKey, prefixHandlers } from "npm:@chelonia/lib@1.2.4/db";
+import { SPMessage } from "npm:@chelonia/lib@1.2.4/SPMessage";
+import { SERVER } from "npm:@chelonia/lib@1.2.4/presets";
+import { ChelErrorGenerator } from "npm:@chelonia/lib@1.2.4/errors";
+import { PUSH_SERVER_ACTION_TYPE, REQUEST_TYPE, RESPONSE_TYPE, NOTIFICATION_TYPE, createMessage, createClient, createKvMessage, messageParser } from "npm:@chelonia/lib@1.2.4/pubsub";
+import { verifyShelterAuthorizationHeader } from "npm:@chelonia/lib@1.2.4/utils";
+import { base64ToBase64url, base64urlToBase64, boxKeyPair, computeCAndHc, decryptSaltUpdate, encryptContractSalt, encryptSaltUpdate, hash, hashRawStringArray, hashStringArray, parseRegisterSalt, randomNonce } from "npm:@chelonia/lib@1.2.4/zkpp";
+import { AUTHSALT, CONTRACTSALT, CS, SALT_LENGTH_IN_OCTETS, SU } from "npm:@chelonia/lib@1.2.4/zkppConstants";
 import { EDWARDS25519SHA512BATCH, CURVE25519XSALSA20POLY1305, XSALSA20POLY1305 } from "npm:@chelonia/crypto@1.0.1";
 import { keygen, serializeKey, deserializeKey, keygenOfSameType, keyId, generateSalt, deriveKeyFromPassword } from "npm:@chelonia/crypto@1.0.1";
 import { sign, verifySignature, encrypt, decrypt } from "npm:@chelonia/crypto@1.0.1";
@@ -170,7 +168,7 @@ import { validationMixin } from "npm:vuelidate@0.7.6";
 var init_deps = __esm({
   "src/deps.ts"() {
     "use strict";
-    __reExport(deps_exports, lib_1_2_star);
+    __reExport(deps_exports, chelonia_star);
   }
 });
 
@@ -256,8 +254,8 @@ __export(database_sqlite_exports, {
   writeDataOnce: () => writeDataOnce2
 });
 async function initStorage2(options2 = {}) {
-  const { dirname: dirname5, filename } = options2;
-  dataFolder2 = path.resolve(dirname5);
+  const { dirname: dirname3, filename } = options2;
+  dataFolder2 = path.resolve(dirname3);
   const filepath = path.join(dataFolder2, filename);
   if (db !== void 0) {
     if (filepath === dbPath) {
@@ -533,7 +531,7 @@ __export(dashboard_server_exports, {
 import path2 from "node:path";
 import process from "node:process";
 async function startDashboard(port) {
-  const dashboardServer = new Server({
+  const dashboardServer = new Hapi.Server({
     port,
     host: "localhost",
     routes: {
@@ -582,17 +580,18 @@ var init_dashboard_server = __esm({
     "use strict";
     init_deps();
     getDashboardPath = () => {
-      return path2.resolve(process.cwd(), "dist-dashboard");
+      return path2.resolve(import.meta.dirname || process.cwd(), "dist-dashboard");
     };
     dashboard_server_default = startDashboard;
   }
 });
 
 // src/serve/events.ts
-var SERVER_RUNNING;
+var SERVER_EXITING, SERVER_RUNNING;
 var init_events = __esm({
   "src/serve/events.ts"() {
     "use strict";
+    SERVER_EXITING = "server-exiting";
     SERVER_RUNNING = "server-running";
   }
 });
@@ -665,10 +664,10 @@ var init_auth = __esm({
     init_deps();
     plugin = {
       name: "chel-auth",
-      register(server) {
+      register: function(server) {
         server.auth.scheme("chel-bearer", () => {
           return {
-            authenticate(request, h) {
+            authenticate: function(request, h) {
               const { authorization } = request.headers;
               if (!authorization) {
                 return h.unauthenticated(default5.unauthorized(null, "bearer"));
@@ -684,7 +683,7 @@ var init_auth = __esm({
         });
         server.auth.scheme("chel-shelter", () => {
           return {
-            authenticate(request, h) {
+            authenticate: function(request, h) {
               const { authorization } = request.headers;
               if (!authorization) {
                 return h.unauthenticated(default5.unauthorized(null, "shelter"));
@@ -1070,17 +1069,17 @@ var requiredMethodNames, DatabaseBackend;
 var init_DatabaseBackend = __esm({
   "src/serve/DatabaseBackend.ts"() {
     "use strict";
-    requiredMethodNames = ["init", "clear", "readData", "writeData", "deleteData"];
+    requiredMethodNames = ["init", "clear", "readData", "writeData", "deleteData", "close"];
     DatabaseBackend = class _DatabaseBackend {
       constructor() {
         if (new.target === _DatabaseBackend) {
           throw new Error("Class DatabaseBackend cannot be instantiated directly.");
         }
+        const bindMethod = (name) => {
+          this[name] = this[name].bind(this);
+        };
         for (const name of requiredMethodNames) {
-          const method = this[name];
-          if (typeof method === "function") {
-            this[name] = method.bind(this);
-          }
+          bindMethod(name);
         }
       }
     };
@@ -1177,6 +1176,8 @@ var init_database_fs2 = __esm({
           throw e;
         });
       }
+      close() {
+      }
     };
   }
 });
@@ -1188,7 +1189,6 @@ __export(database_sqlite_exports2, {
 });
 import { mkdir as mkdir2 } from "node:fs/promises";
 import { basename as basename2, dirname as dirname2, join as join2, resolve as resolve2 } from "node:path";
-import process5 from "node:process";
 var SqliteBackend;
 var init_database_sqlite2 = __esm({
   "src/serve/database-sqlite.ts"() {
@@ -1219,7 +1219,6 @@ var init_database_sqlite2 = __esm({
           throw new Error(`The ${filename} SQLite database is already open.`);
         }
         this.db = new sqlite.Database(join2(dataFolder4, filename));
-        process5.on("exit", () => this.db?.close());
         this.run("CREATE TABLE IF NOT EXISTS Data(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)");
         console.info(`Connected to the ${filename} SQLite database.`);
         this.readStatement = this.db.prepare("SELECT value FROM Data WHERE key = ?");
@@ -1227,18 +1226,23 @@ var init_database_sqlite2 = __esm({
         this.deleteStatement = this.db.prepare("DELETE FROM Data WHERE key = ?");
       }
       // Useful in test hooks.
+      // deno-lint-ignore require-await
       async clear() {
-        await this.run("DELETE FROM Data");
+        this.run("DELETE FROM Data");
       }
+      // deno-lint-ignore require-await
       async readData(key) {
         const row = this.readStatement.get(key);
-        return await row?.value;
+        return row?.value;
       }
       async writeData(key, value) {
         await this.writeStatement.run(key, value);
       }
       async deleteData(key) {
         await this.deleteStatement.run(key);
+      }
+      close() {
+        this.db.close();
       }
     };
   }
@@ -1264,7 +1268,7 @@ __export(database_router_exports, {
 });
 import { resolve as resolve3 } from "node:path";
 import { readFile as readFile2 } from "node:fs/promises";
-import process6 from "node:process";
+import process5 from "node:process";
 var GI_PERSIST_ROUTER_CONFIG, GI_PERSIST_ROUTER_CONFIG_PATH, RouterBackend;
 var init_database_router = __esm({
   "src/serve/database-router.ts"() {
@@ -1282,7 +1286,7 @@ var init_database_router = __esm({
         // Define this if your config comes from a JSON file.
         GI_PERSIST_ROUTER_CONFIG_PATH
       ) = "./database-router-config.json"
-    } = process6.env);
+    } = process5.env);
     RouterBackend = class extends DatabaseBackend {
       backends;
       config;
@@ -1355,7 +1359,22 @@ var init_database_router = __esm({
       }
       async clear() {
         for (const backend2 of new Set(Object.values(this.backends))) {
-          await backend2.clear();
+          try {
+            await backend2.clear();
+          } catch (e) {
+            const prefix = Object.entries(this.backends).find(([, b]) => b === backend2)[0];
+            console.error(e, `Error clearing DB for prefix ${prefix}`);
+          }
+        }
+      }
+      async close() {
+        for (const backend2 of new Set(Object.values(this.backends))) {
+          try {
+            await backend2.close();
+          } catch (e) {
+            const prefix = Object.entries(this.backends).find(([, b]) => b === backend2)[0];
+            console.error(e, `Error closing DB for prefix ${prefix}`);
+          }
         }
       }
     };
@@ -1461,7 +1480,7 @@ import { Readable } from "node:stream";
 import fs2 from "node:fs";
 import { readdir as readdir2, readFile as readFile3 } from "node:fs/promises";
 import path3 from "node:path";
-import process7 from "node:process";
+import process6 from "node:process";
 function namespaceKey(name) {
   return "name=" + name;
 }
@@ -1472,10 +1491,11 @@ var init_database = __esm({
     init_deps();
     init_vapid();
     init_zkppSalt();
+    init_events();
     init_2();
-    production = process7.env.NODE_ENV === "production";
-    persistence = process7.env.GI_PERSIST || (production ? "fs" : void 0);
-    dbRootPath = process7.env.DB_PATH || "./data";
+    production = process6.env.NODE_ENV === "production";
+    persistence = process6.env.GI_PERSIST || (production ? "fs" : void 0);
+    dbRootPath = process6.env.DB_PATH || "./data";
     options = {
       fs: {
         depth: 0,
@@ -1511,7 +1531,7 @@ var init_database = __esm({
     };
     database_default = default4("sbp/selectors/register", {
       "backend/db/streamEntriesAfter": async function(contractID, height, requestedLimit, options2 = {}) {
-        const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, parseInt(process7.env.MAX_EVENTS_BATCH_SIZE) || 500);
+        const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, process6.env.MAX_EVENTS_BATCH_SIZE ? parseInt(process6.env.MAX_EVENTS_BATCH_SIZE) : 500);
         const latestHEADinfo = await default4("chelonia/db/latestHEADinfo", contractID);
         if (latestHEADinfo === "") {
           throw default5.resourceGone(`contractID ${contractID} has been deleted!`);
@@ -1586,7 +1606,7 @@ var init_database = __esm({
               }
               await fetchMeta();
             } catch (e) {
-              console.error(`[backend] streamEntriesAfter: read(): ${e.message}:`, e.stack);
+              console.error(e, "[backend] streamEntriesAfter: read()");
               break;
             }
           }
@@ -1619,10 +1639,19 @@ var init_database = __esm({
     initDB = async ({ skipDbPreloading } = {}) => {
       if (persistence) {
         const Ctor = (await globImport_database_ts2(`./database-${persistence}.ts`)).default;
-        const { init, readData: readData3, writeData: writeData3, deleteData } = new Ctor(options[persistence]);
+        const { init, readData: readData3, writeData: writeData3, deleteData, close } = new Ctor(options[persistence]);
         await init();
+        default4("okTurtles.events/once", SERVER_EXITING, () => {
+          default4("okTurtles.eventQueue/queueEvent", SERVER_EXITING, async () => {
+            try {
+              await close();
+            } catch (e) {
+              console.error(e, `Error closing DB ${persistence}`);
+            }
+          });
+        });
         const cache = new default10({
-          max: Number(process7.env.GI_LRU_NUM_ITEMS) || 1e4
+          max: Number(process6.env.GI_LRU_NUM_ITEMS) || 1e4
         });
         const prefixes = Object.keys(prefixHandlers);
         default4("sbp/selectors/overwrite", {
@@ -1643,7 +1672,7 @@ var init_database = __esm({
             return value;
           },
           "chelonia.db/set": async function(key, value) {
-            if (process7.env.CHELONIA_ARCHIVE_MODE) throw new Error("Unable to write in archive mode");
+            if (process6.env.CHELONIA_ARCHIVE_MODE) throw new Error("Unable to write in archive mode");
             checkKey(key);
             if (key.startsWith("_private_immutable")) {
               const existingValue = await readData3(key);
@@ -1657,7 +1686,7 @@ var init_database = __esm({
             });
           },
           "chelonia.db/delete": async function(key) {
-            if (process7.env.CHELONIA_ARCHIVE_MODE) throw new Error("Unable to write in archive mode");
+            if (process6.env.CHELONIA_ARCHIVE_MODE) throw new Error("Unable to write in archive mode");
             checkKey(key);
             if (key.startsWith("_private_immutable")) {
               throw new Error("Cannot delete immutable key");
@@ -1676,10 +1705,10 @@ var init_database = __esm({
         const keys = (await readdir2(dataFolder3)).filter((k) => {
           if (k.length !== HASH_LENGTH) return false;
           const parsed = maybeParseCID(k);
-          return [
+          return parsed && [
             multicodes.SHELTER_CONTRACT_MANIFEST,
             multicodes.SHELTER_CONTRACT_TEXT
-          ].includes(parsed?.code ?? -1);
+          ].includes(parsed.code);
         });
         const numKeys = keys.length;
         let numVisitedKeys = 0;
@@ -1916,7 +1945,7 @@ var init_push = __esm({
       }
     };
     subscriptionInfoWrapper = (subscriptionId, subscriptionInfo, extra) => {
-      subscriptionInfo.endpoint = new URL(subscriptionInfo.endpoint);
+      subscriptionInfo.endpoint = new URL(subscriptionInfo.endpoint || "");
       Object.defineProperties(subscriptionInfo, {
         "id": {
           get() {
@@ -1981,7 +2010,7 @@ var init_push = __esm({
       const body = event ? await encryptPayload(subscription, event) : void 0;
       const req = await fetch(subscription.endpoint, {
         method: "POST",
-        headers: new Headers([
+        headers: [
           ["authorization", authorization],
           ...body ? [
             ["content-encoding", "aes128gcm"],
@@ -1992,7 +2021,7 @@ var init_push = __esm({
           ] : [],
           // ['push-receipt', ''],
           ["ttl", "60"]
-        ]),
+        ],
         body
       });
       if (!req.ok) {
@@ -2011,10 +2040,12 @@ var init_push = __esm({
       }
     };
     pushServerActionhandlers = {
-      [PUSH_SERVER_ACTION_TYPE.SEND_PUBLIC_KEY](socket) {
+      [PUSH_SERVER_ACTION_TYPE.SEND_PUBLIC_KEY]() {
+        const socket = this;
         socket.send(createMessage(REQUEST_TYPE.PUSH_ACTION, { type: PUSH_SERVER_ACTION_TYPE.SEND_PUBLIC_KEY, data: getVapidPublicKey() }));
       },
-      async [PUSH_SERVER_ACTION_TYPE.STORE_SUBSCRIPTION](socket, payload) {
+      async [PUSH_SERVER_ACTION_TYPE.STORE_SUBSCRIPTION](payload) {
+        const socket = this;
         const { server } = socket;
         const { applicationServerKey, settings, subscriptionInfo } = payload;
         if (applicationServerKey) {
@@ -2031,9 +2062,6 @@ var init_push = __esm({
         let subscriptionWrapper = null;
         try {
           subscriptionId = await getSubscriptionId(subscriptionInfo);
-          if (!subscriptionId) {
-            throw new Error("Failed to generate subscription ID");
-          }
           subscriptionWrapper = server.pushSubscriptions[subscriptionId];
           if (!subscriptionWrapper) {
             console.debug(`saving new push subscription '${subscriptionId}':`, subscriptionInfo);
@@ -2071,8 +2099,9 @@ var init_push = __esm({
           throw e;
         }
       },
-      [PUSH_SERVER_ACTION_TYPE.DELETE_SUBSCRIPTION](socket) {
-        const subscriptionId = socket.pushSubscriptionId;
+      [PUSH_SERVER_ACTION_TYPE.DELETE_SUBSCRIPTION]() {
+        const socket = this;
+        const { pushSubscriptionId: subscriptionId } = socket;
         if (subscriptionId) {
           return removeSubscription(subscriptionId);
         }
@@ -2082,7 +2111,7 @@ var init_push = __esm({
 });
 
 // src/serve/pubsub.ts
-import process8 from "node:process";
+import process7 from "node:process";
 function createErrorResponse(data) {
   return JSON.stringify({ type: ERROR, data });
 }
@@ -2115,11 +2144,13 @@ function createServer(httpServer, options2 = {}) {
   server.pingIntervalID = void 0;
   server.subscribersByChannelID = /* @__PURE__ */ Object.create(null);
   server.pushSubscriptions = /* @__PURE__ */ Object.create(null);
-  Object.keys(defaultServerHandlers).forEach((name) => {
+  const handlers = Object.keys(defaultServerHandlers);
+  handlers.forEach((name) => {
     server.on(name, (...args) => {
       try {
-        defaultServerHandlers[name]?.call(server, ...args);
-        server.customServerEventHandlers[name]?.call(server, ...args);
+        ;
+        defaultServerHandlers[name].apply(server, args);
+        server.customServerEventHandlers[name]?.apply(server, args);
       } catch (error) {
         server.emit("error", error);
       }
@@ -2131,6 +2162,7 @@ function createServer(httpServer, options2 = {}) {
         log.debug("Pinging clients");
       }
       server.clients.forEach((client) => {
+        if (client.endpoint) return;
         if (client.pinged && !client.activeSinceLastPing) {
           log(`Disconnecting irresponsive client ${client.id}`);
           return client.terminate();
@@ -2157,7 +2189,7 @@ var init_pubsub = __esm({
     ({ PING, PONG, PUB, SUB, UNSUB, KV_FILTER } = NOTIFICATION_TYPE);
     ({ ERROR, OK } = RESPONSE_TYPE);
     defaultOptions = {
-      logPingRounds: process8.env.NODE_ENV !== "production" && !process8.env.CI,
+      logPingRounds: process7.env.NODE_ENV !== "production" && !process7.env.CI,
       logPongMessages: false,
       maxPayload: 6 * 1024 * 1024,
       pingInterval: 3e4
@@ -2185,7 +2217,7 @@ var init_pubsub = __esm({
       connection(socket, request) {
         const server = this;
         const url = request.url;
-        const urlSearch = url.includes("?") ? url.slice(url.lastIndexOf("?")) : "";
+        const urlSearch = url?.includes("?") ? url.slice(url.lastIndexOf("?")) : "";
         const debugID = new URLSearchParams(urlSearch).get("debugID") || "";
         const send = socket.send.bind(socket);
         socket.id = generateSocketID(debugID);
@@ -2194,7 +2226,7 @@ var init_pubsub = __esm({
         socket.server = server;
         socket.subscriptions = /* @__PURE__ */ new Set();
         socket.kvFilter = /* @__PURE__ */ new Map();
-        socket.ip = request.headers["x-real-ip"] || (typeof request.headers["x-forwarded-for"] === "string" ? request.headers["x-forwarded-for"].split(",")[0].trim() : void 0) || request.socket.remoteAddress;
+        socket.ip = request.headers["x-real-ip"] || request.headers["x-forwarded-for"]?.split(",")[0].trim() || request.socket.remoteAddress;
         socket.send = function(data) {
           if (typeof data === "object" && data !== null && typeof data[Symbol.toPrimitive] === "function") {
             return send(data[Symbol.toPrimitive]());
@@ -2208,6 +2240,7 @@ var init_pubsub = __esm({
               log.debug(`Event '${eventName}' on socket ${socket.id}`, ...args.map((arg) => String(arg)));
             }
             try {
+              ;
               defaultSocketEventHandlers[eventName]?.call(socket, ...args);
               socket.server.customSocketEventHandlers[eventName]?.call(socket, ...args);
             } catch (error) {
@@ -2229,7 +2262,7 @@ var init_pubsub = __esm({
     defaultSocketEventHandlers = {
       close() {
         const socket = this;
-        const { server } = socket;
+        const { server } = this;
         for (const channelID of socket.subscriptions) {
           server.subscribersByChannelID[channelID].delete(socket);
         }
@@ -2237,7 +2270,7 @@ var init_pubsub = __esm({
       },
       message(data) {
         const socket = this;
-        const { server } = socket;
+        const { server } = this;
         const text = data.toString();
         let msg = { type: "" };
         try {
@@ -2255,8 +2288,9 @@ var init_pubsub = __esm({
         const customHandler = server.customMessageHandlers[msg.type];
         if (defaultHandler || customHandler) {
           try {
-            defaultHandler?.call(server, socket, msg);
-            customHandler?.call(server, socket, msg);
+            ;
+            defaultHandler?.call(socket, msg);
+            customHandler?.call(socket, msg);
           } catch (error) {
             log.error(error, "onMessage");
             server.rejectMessageAndTerminateSocket(msg, socket);
@@ -2275,11 +2309,11 @@ var init_pubsub = __esm({
       [PUB](msg) {
         const { server } = this;
         const subscribers = server.subscribersByChannelID[msg.channelID];
-        server.broadcast(msg, { to: Array.from(subscribers ?? []) });
+        server.broadcast(msg, { to: subscribers ?? [] });
       },
       [SUB]({ channelID, kvFilter }) {
         const socket = this;
-        const { server } = socket;
+        const { server } = this;
         if (!server.channels.has(channelID)) {
           socket.send(createErrorResponse(
             { type: SUB, channelID, reason: `Unknown channel id: ${channelID}` }
@@ -2302,7 +2336,7 @@ var init_pubsub = __esm({
       },
       [KV_FILTER]({ channelID, kvFilter }) {
         const socket = this;
-        const { server } = socket;
+        const { server } = this;
         if (!server.channels.has(channelID)) {
           socket.send(createErrorResponse(
             { type: SUB, channelID, reason: `Unknown channel id: ${channelID}` }
@@ -2322,7 +2356,7 @@ var init_pubsub = __esm({
       },
       [UNSUB]({ channelID }) {
         const socket = this;
-        const { server } = socket;
+        const { server } = this;
         if (!server.channels.has(channelID)) {
           socket.send(createErrorResponse(
             { type: UNSUB, channelID, reason: `Unknown channel id: ${channelID}` }
@@ -2347,7 +2381,7 @@ var init_pubsub = __esm({
        * @param except - A recipient to exclude. Optional.
        */
       broadcast(message, { to, except, wsOnly } = {}) {
-        const { clients } = this;
+        const server = this;
         const msg = typeof message === "string" ? message : JSON.stringify(message);
         let shortMsg;
         const shortenPayload = () => {
@@ -2357,8 +2391,7 @@ var init_pubsub = __esm({
           }
           return shortMsg;
         };
-        const recipients = to || clients;
-        for (const client of recipients) {
+        for (const client of to || server.clients) {
           if (!wsOnly && client.endpoint) {
             if (msg.length > 4096 - 86 - 17) {
               if (!shortenPayload()) {
@@ -2388,9 +2421,9 @@ var init_pubsub = __esm({
       },
       // Enumerates the subscribers of a given channel.
       *enumerateSubscribers(channelID, kvKey) {
-        const { subscribersByChannelID } = this;
-        if (channelID in subscribersByChannelID) {
-          const subscribers = subscribersByChannelID[channelID];
+        const server = this;
+        if (channelID in server.subscribersByChannelID) {
+          const subscribers = server.subscribersByChannelID[channelID];
           if (!kvKey) {
             yield* subscribers;
           } else {
@@ -2413,11 +2446,11 @@ var routes_exports = {};
 import { Buffer as Buffer5 } from "node:buffer";
 import { isIP } from "node:net";
 import path4 from "node:path";
-import process9 from "node:process";
+import process8 from "node:process";
 function notFoundNoCache(h) {
   return h.response().code(404).header("Cache-Control", "no-store");
 }
-var logger3, MEGABYTE, SECOND, CID_REGEX, KV_KEY_REGEX, NAME_REGEX, POSITIVE_INTEGER_REGEX, FILE_UPLOAD_MAX_BYTES, SIGNUP_LIMIT_MIN, SIGNUP_LIMIT_HOUR, SIGNUP_LIMIT_DAY, SIGNUP_LIMIT_DISABLED, limiterPerMinute, limiterPerHour, limiterPerDay, cidLookupTable, limiterKey, ctEq, isCheloniaDashboard, appDir, staticServeConfig, errorMapper, route;
+var MEGABYTE, SECOND, CID_REGEX, KV_KEY_REGEX, NAME_REGEX, POSITIVE_INTEGER_REGEX, FILE_UPLOAD_MAX_BYTES, SIGNUP_LIMIT_MIN, SIGNUP_LIMIT_HOUR, SIGNUP_LIMIT_DAY, SIGNUP_LIMIT_DISABLED, limiterPerMinute, limiterPerHour, limiterPerDay, cidLookupTable, limiterKey, ctEq, isCheloniaDashboard, appDir, dashboardDir, staticServeConfig, errorMapper, route;
 var init_routes = __esm({
   "src/serve/routes.ts"() {
     "use strict";
@@ -2425,23 +2458,17 @@ var init_routes = __esm({
     init_database();
     init_instance_keys();
     init_zkppSalt();
-    logger3 = {
-      info: console.log,
-      warn: console.warn,
-      error: console.error,
-      debug: console.debug
-    };
     MEGABYTE = 1048576;
     SECOND = 1e3;
     CID_REGEX = /^z[1-9A-HJ-NP-Za-km-z]{8,72}$/;
     KV_KEY_REGEX = /^(?!_private)[^\x00]{1,256}$/;
     NAME_REGEX = /^(?![_-])((?!([_-])\2)[a-z\d_-]){1,80}(?<![_-])$/;
     POSITIVE_INTEGER_REGEX = /^\d{1,16}$/;
-    FILE_UPLOAD_MAX_BYTES = parseInt(process9.env.FILE_UPLOAD_MAX_BYTES) || 30 * MEGABYTE;
-    SIGNUP_LIMIT_MIN = parseInt(process9.env.SIGNUP_LIMIT_MIN) || 2;
-    SIGNUP_LIMIT_HOUR = parseInt(process9.env.SIGNUP_LIMIT_HOUR) || 10;
-    SIGNUP_LIMIT_DAY = parseInt(process9.env.SIGNUP_LIMIT_DAY) || 50;
-    SIGNUP_LIMIT_DISABLED = process9.env.NODE_ENV !== "production" || process9.env.SIGNUP_LIMIT_DISABLED === "true";
+    FILE_UPLOAD_MAX_BYTES = parseInt(process8.env.FILE_UPLOAD_MAX_BYTES) || 30 * MEGABYTE;
+    SIGNUP_LIMIT_MIN = parseInt(process8.env.SIGNUP_LIMIT_MIN) || 2;
+    SIGNUP_LIMIT_HOUR = parseInt(process8.env.SIGNUP_LIMIT_HOUR) || 10;
+    SIGNUP_LIMIT_DAY = parseInt(process8.env.SIGNUP_LIMIT_DAY) || 50;
+    SIGNUP_LIMIT_DISABLED = process8.env.NODE_ENV !== "production" || process8.env.SIGNUP_LIMIT_DISABLED === "true";
     limiterPerMinute = new default12.Group({
       strategy: default12.strategy.LEAK,
       highWater: 0,
@@ -2518,12 +2545,13 @@ var init_routes = __esm({
       }
       return r === 0;
     };
-    isCheloniaDashboard = process9.env.IS_CHELONIA_DASHBOARD_DEV;
-    appDir = process9.env.CHELONIA_APP_DIR || ".";
+    isCheloniaDashboard = process8.env.IS_CHELONIA_DASHBOARD_DEV;
+    appDir = process8.env.CHELONIA_APP_DIR || ".";
+    dashboardDir = import.meta.dirname || "./build/dist-dashboard";
     staticServeConfig = {
       routePath: isCheloniaDashboard ? "/dashboard/{path*}" : "/app/{path*}",
-      distAssets: path4.resolve(isCheloniaDashboard ? "dist-dashboard/assets" : path4.join(appDir, "assets")),
-      distIndexHtml: path4.resolve(isCheloniaDashboard ? "./dist-dashboard/index.html" : path4.join(appDir, "index.html")),
+      distAssets: path4.resolve(path4.join(isCheloniaDashboard ? dashboardDir : appDir, "assets")),
+      distIndexHtml: path4.resolve(path4.join(isCheloniaDashboard ? dashboardDir : appDir, "index.html")),
       redirect: isCheloniaDashboard ? "/dashboard/" : "/app/"
     };
     errorMapper = (e) => {
@@ -2563,7 +2591,7 @@ var init_routes = __esm({
         payload: default6.string().required()
       }
     }, async function(request) {
-      if (process9.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
+      if (process8.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
       const ip = request.headers["x-real-ip"] || request.info.remoteAddress;
       try {
         const deserializedHEAD = SPMessage.deserializeHEAD(request.payload);
@@ -2580,7 +2608,7 @@ var init_routes = __esm({
             if (name !== "gi.contracts/identity") {
               return default5.unauthorized("This contract type requires ownership information", "shelter");
             }
-            if (process9.env.CHELONIA_REGISTRATION_DISABLED) {
+            if (process8.env.CHELONIA_REGISTRATION_DISABLED) {
               return default5.forbidden("Registration disabled");
             }
             if (!SIGNUP_LIMIT_DISABLED) {
@@ -2649,7 +2677,7 @@ var init_routes = __esm({
         return deserializedHEAD.hash;
       } catch (err) {
         err.ip = ip;
-        logger3.error(err, "POST /event", err.message);
+        logger.error(err, "POST /event", err.message);
         return err;
       }
     });
@@ -2677,7 +2705,7 @@ var init_routes = __esm({
         return stream;
       } catch (err) {
         err.ip = ip;
-        logger3.error(err, `GET /eventsAfter/${contractID}/${since}`, err.message);
+        logger.error(err, `GET /eventsAfter/${contractID}/${since}`, err.message);
         return err;
       }
     });
@@ -2691,7 +2719,7 @@ var init_routes = __esm({
       const resources = (await default4("chelonia.db/get", `_private_resources_${billableContractID}`))?.split("\0");
       return resources || [];
     });
-    if (process9.env.NODE_ENV === "development") {
+    if (process8.env.NODE_ENV === "development") {
       const levelToColor = {
         error: default8.bold.red,
         warn: default8.yellow,
@@ -2707,7 +2735,7 @@ var init_routes = __esm({
           })
         }
       }, function(request, h) {
-        if (process9.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
+        if (process8.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
         const ip = request.headers["x-real-ip"] || request.info.remoteAddress;
         const log2 = levelToColor[request.payload.level];
         console.debug(default8.bold.yellow(`REMOTE LOG (${ip}): `) + log2(`[${request.payload.level}] ${request.payload.value}`));
@@ -2726,7 +2754,7 @@ var init_routes = __esm({
         const lookupResult = await default4("backend/db/lookupName", name);
         return lookupResult ? h.response(lookupResult).type("text/plain") : notFoundNoCache(h);
       } catch (err) {
-        logger3.error(err, `GET /name/${name}`, err.message);
+        logger.error(err, `GET /name/${name}`, err.message);
         return err;
       }
     });
@@ -2752,7 +2780,7 @@ var init_routes = __esm({
         }
         return HEADinfo;
       } catch (err) {
-        logger3.error(err, `GET /latestHEADinfo/${contractID}`, err.message);
+        logger.error(err, `GET /latestHEADinfo/${contractID}`, err.message);
         return err;
       }
     });
@@ -2763,7 +2791,7 @@ var init_routes = __esm({
       "/streams-test",
       {
         payload: {
-          parse: "false"
+          parse: false
         }
       },
       function(request, h) {
@@ -2774,7 +2802,7 @@ var init_routes = __esm({
         }
       }
     );
-    if (process9.env.NODE_ENV === "development") {
+    if (process8.env.NODE_ENV === "development") {
       route.POST("/dev-file", {
         payload: {
           output: "data",
@@ -2782,7 +2810,7 @@ var init_routes = __esm({
           allow: "multipart/form-data",
           failAction: function(_request, _h, err) {
             console.error("failAction error:", err);
-            return err;
+            return default5.isBoom(err) ? err : default5.boomify(err || new Error());
           },
           maxBytes: 6 * MEGABYTE,
           // TODO: make this a configurable setting
@@ -2790,7 +2818,7 @@ var init_routes = __esm({
           // TODO: make this a configurable setting
         }
       }, async function(request) {
-        if (process9.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
+        if (process8.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
         try {
           console.log("FILE UPLOAD!");
           const { hash: hash3, data } = request.payload;
@@ -2806,7 +2834,7 @@ var init_routes = __esm({
           await default4("chelonia.db/set", hash3, data);
           return "/file/" + hash3;
         } catch (err) {
-          logger3.error(err);
+          logger.error(err);
           return default5.internal("File upload failed");
         }
       });
@@ -2823,14 +2851,14 @@ var init_routes = __esm({
         allow: "multipart/form-data",
         failAction: function(_request, _h, err) {
           console.error(err, "failAction error");
-          return err;
+          return default5.isBoom(err) ? err : default5.boomify(err || new Error());
         },
         maxBytes: FILE_UPLOAD_MAX_BYTES,
         timeout: 10 * SECOND
         // TODO: make this a configurable setting
       }
     }, async function(request, h) {
-      if (process9.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
+      if (process8.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
       try {
         console.info("FILE UPLOAD!");
         const credentials = request.auth.credentials;
@@ -2893,7 +2921,7 @@ var init_routes = __esm({
         }
         return h.response(manifestHash);
       } catch (err) {
-        logger3.error(err, "POST /file", err.message);
+        logger.error(err, "POST /file", err.message);
         return err;
       }
     });
@@ -2931,7 +2959,7 @@ var init_routes = __esm({
         })
       }
     }, async function(request, h) {
-      if (process9.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
+      if (process8.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
       const { hash: hash3 } = request.params;
       const strategy = request.auth.strategy;
       const parsed = maybeParseCID(hash3);
@@ -2979,7 +3007,7 @@ var init_routes = __esm({
         mode: "required"
       }
     }, async function(request, h) {
-      if (process9.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
+      if (process8.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
       const { hash: hash3 } = request.params;
       const strategy = request.auth.strategy;
       if (!hash3 || hash3.startsWith("_private")) return default5.notFound();
@@ -3040,7 +3068,7 @@ var init_routes = __esm({
         })
       }
     }, function(request, h) {
-      if (process9.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
+      if (process8.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
       const { contractID, key } = request.params;
       const parsed = maybeParseCID(contractID);
       if (parsed?.code !== multicodes.SHELTER_CONTRACT_DATA) {
@@ -3113,8 +3141,8 @@ var init_routes = __esm({
       return h.response(result).etag(cid).header("x-cid", `"${cid}"`);
     });
     route.GET("/serverMessages", { cache: { otherwise: "no-store" } }, (_request, h) => {
-      if (!process9.env.CHELONIA_SERVER_MESSAGES) return [];
-      return h.response(process9.env.CHELONIA_SERVER_MESSAGES).type("application/json");
+      if (!process8.env.CHELONIA_SERVER_MESSAGES) return [];
+      return h.response(process8.env.CHELONIA_SERVER_MESSAGES).type("application/json");
     });
     route.GET("/assets/{subpath*}", {
       ext: {
@@ -3122,7 +3150,11 @@ var init_routes = __esm({
           method(request, h) {
             if (request.path.includes("assets/js/sw-")) {
               console.debug("adding header: Service-Worker-Allowed /");
-              request.response.header("Service-Worker-Allowed", "/");
+              if (request.response instanceof default5.Boom) {
+                request.response.output.headers["Service-Worker-Allowed"] = "/";
+              } else {
+                request.response.header("Service-Worker-Allowed", "/");
+              }
             }
             return h.continue;
           }
@@ -3146,7 +3178,11 @@ var init_routes = __esm({
             method(request, h) {
               if (request.path.includes("assets/js/sw-")) {
                 console.debug("adding header: Service-Worker-Allowed /");
-                request.response.header("Service-Worker-Allowed", "/");
+                if (request.response instanceof default5.Boom) {
+                  request.response.output.headers["Service-Worker-Allowed"] = "/";
+                } else {
+                  request.response.header("Service-Worker-Allowed", "/");
+                }
               }
               return h.continue;
             }
@@ -3199,19 +3235,20 @@ var init_routes = __esm({
         ])
       }
     }, async function(req) {
-      if (process9.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
+      if (process8.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
       const lookupResult = await default4("backend/db/lookupName", req.params["name"]);
       if (lookupResult) {
         return default5.conflict();
       }
       try {
-        if (req.payload["b"]) {
-          const result = registrationKey(req.params["name"], req.payload["b"]);
+        const { payload } = req;
+        if (payload["b"]) {
+          const result = registrationKey(req.params["name"], payload["b"]);
           if (result) {
             return result;
           }
         } else {
-          const result = register(req.params["name"], req.payload["r"], req.payload["s"], req.payload["sig"], req.payload["Eh"]);
+          const result = register(req.params["name"], payload["r"], payload["s"], payload["sig"], payload["Eh"]);
           if (result) {
             return result;
           }
@@ -3277,9 +3314,10 @@ var init_routes = __esm({
         })
       }
     }, async function(req) {
-      if (process9.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
+      if (process8.env.CHELONIA_ARCHIVE_MODE) return default5.notImplemented("Server in archive mode");
       try {
-        const result = await updateContractSalt(req.params["contractID"], req.payload["r"], req.payload["s"], req.payload["sig"], req.payload["hc"], req.payload["Ea"]);
+        const { payload } = req;
+        const result = await updateContractSalt(req.params["contractID"], payload["r"], payload["s"], payload["sig"], payload["hc"], payload["Ea"]);
         if (result) {
           return result;
         }
@@ -3294,11 +3332,10 @@ var init_routes = __esm({
 
 // src/serve/server.ts
 var server_exports = {};
-import { basename as basename3, join as join3, dirname as dirname3 } from "node:path";
-import { fileURLToPath } from "node:url";
+import { basename as basename3, join as join3 } from "node:path";
 import { Worker } from "node:worker_threads";
-import process10 from "node:process";
-var __filename, __dirname, createWorker, ownerSizeTotalWorker, creditsWorker, CONTRACTS_VERSION, GI_VERSION, hapi, appendToOrphanedNamesIndex, handleSignal;
+import process9 from "node:process";
+var createWorker, ownerSizeTotalWorker, creditsWorker, CONTRACTS_VERSION, GI_VERSION, hapi, appendToOrphanedNamesIndex;
 var init_server = __esm({
   "src/serve/server.ts"() {
     "use strict";
@@ -3311,8 +3348,6 @@ var init_server = __esm({
     init_instance_keys();
     init_pubsub();
     init_push();
-    __filename = fileURLToPath(import.meta.url);
-    __dirname = dirname3(__filename);
     createWorker = (path5) => {
       let worker;
       let ready;
@@ -3327,7 +3362,7 @@ var init_server = __esm({
                 worker.off("message", msgHandler);
                 ready = launchWorker().catch((e2) => {
                   console.error(e2, `Error on worker ${basename3(path5)} relaunch`);
-                  process10.exit(1);
+                  process9.exit(1);
                 });
               });
               resolve6();
@@ -3367,17 +3402,17 @@ var init_server = __esm({
       };
     };
     if (CREDITS_WORKER_TASK_TIME_INTERVAL && OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL > CREDITS_WORKER_TASK_TIME_INTERVAL) {
-      process10.stderr.write("The size calculation worker must run more frequently than the credits worker for accurate billing");
-      process10.exit(1);
+      process9.stderr.write("The size calculation worker must run more frequently than the credits worker for accurate billing");
+      process9.exit(1);
     }
-    ownerSizeTotalWorker = process10.env.CHELONIA_ARCHIVE_MODE || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker(join3(__dirname, "serve", "ownerSizeTotalWorker.js"));
-    creditsWorker = process10.env.CHELONIA_ARCHIVE_MODE || !CREDITS_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker(join3(__dirname, "serve", "creditsWorker.js"));
-    ({ CONTRACTS_VERSION, GI_VERSION } = process10.env);
-    hapi = new Server({
+    ownerSizeTotalWorker = process9.env.CHELONIA_ARCHIVE_MODE || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker(join3(import.meta.dirname || "/", "serve", "ownerSizeTotalWorker.js"));
+    creditsWorker = process9.env.CHELONIA_ARCHIVE_MODE || !CREDITS_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker(join3(import.meta.dirname || "/", "serve", "creditsWorker.js"));
+    ({ CONTRACTS_VERSION, GI_VERSION } = process9.env);
+    hapi = new Hapi.Server({
       // debug: false, // <- Hapi v16 was outputing too many unnecessary debug statements
       //               // v17 doesn't seem to do this anymore so I've re-enabled the logging
       // debug: { log: ['error'], request: ['error'] },
-      port: process10.env.API_PORT,
+      port: process9.env.API_PORT,
       // See: https://github.com/hapijs/discuss/issues/262#issuecomment-204616831
       routes: {
         cors: {
@@ -3395,14 +3430,10 @@ var init_server = __esm({
       type: "onPreResponse",
       method: function(request, h) {
         try {
-          const req = request;
-          const response = req.response;
-          if (typeof response.header === "function") {
-            response.header("X-Frame-Options", "deny");
+          if (!(request.response instanceof default5.Boom)) {
+            request.response.header("X-Frame-Options", "DENY");
           } else {
-            const output = response.output;
-            const headers = output.headers;
-            headers["X-Frame-Options"] = "deny";
+            request.response.output.headers["X-Frame-Options"] = "DENY";
           }
         } catch (err) {
           console.warn(default8.yellow("[backend] Could not set X-Frame-Options header:", err.message));
@@ -3503,15 +3534,12 @@ var init_server = __esm({
       "backend/server/updateSize": function(resourceID, size, ultimateOwnerID) {
         const sizeKey = `_private_size_${resourceID}`;
         return updateSize(resourceID, sizeKey, size).then(() => {
-          return ownerSizeTotalWorker ? ownerSizeTotalWorker.rpcSbp("worker/updateSizeSideEffects", { resourceID, size, ultimateOwnerID }) : Promise.resolve();
+          return ownerSizeTotalWorker?.rpcSbp("worker/updateSizeSideEffects", { resourceID, size, ultimateOwnerID });
         });
       },
       "backend/server/updateContractFilesTotalSize": function(resourceID, size) {
-        const contractsIndex = default4("okTurtles.data/get", "contractsIndex");
-        for (const [,] of Object.entries(contractsIndex)) {
-          const sizeKey = `_private_contractFilesTotalSize_${resourceID}`;
-          return updateSize(resourceID, sizeKey, size, true);
-        }
+        const sizeKey = `_private_contractFilesTotalSize_${resourceID}`;
+        return updateSize(resourceID, sizeKey, size, true);
       },
       "backend/server/stop": function() {
         return hapi.stop();
@@ -3533,7 +3561,7 @@ var init_server = __esm({
           const manifest2 = JSON.parse(rawManifest);
           if (!manifest2 || typeof manifest2 !== "object") throw new BackendErrorBadData("manifest format is invalid");
           if (manifest2.version !== "1.0.0") throw new BackendErrorBadData("unsupported manifest version");
-          if (!Array.isArray(manifest2.chunks) || !manifest2.chunks.length) throw BackendErrorBadData("missing chunks");
+          if (!Array.isArray(manifest2.chunks) || !manifest2.chunks.length) throw new BackendErrorBadData("missing chunks");
           await Promise.all(manifest2.chunks.map(([, cid2]) => default4("chelonia.db/delete", cid2)));
         } catch (e) {
           console.warn(e, `Error parsing manifest for ${cid}. It's probably not a file manifest.`);
@@ -3547,8 +3575,8 @@ var init_server = __esm({
         await default4("chelonia.db/delete", `_private_deletionTokenDgst_${cid}`);
         await default4("chelonia.db/set", cid, "");
         await default4("backend/server/updateContractFilesTotalSize", owner, -Number(size));
-        if (ultimateOwnerID && size && ownerSizeTotalWorker) {
-          await ownerSizeTotalWorker.rpcSbp("worker/updateSizeSideEffects", { resourceID: cid, size: -parseInt(size), ultimateOwnerID });
+        if (ultimateOwnerID && size) {
+          await ownerSizeTotalWorker?.rpcSbp("worker/updateSizeSideEffects", { resourceID: cid, size: -parseInt(size), ultimateOwnerID });
         }
       },
       async "backend/deleteContract"(cid, ultimateOwnerID, skipIfDeleted) {
@@ -3632,8 +3660,8 @@ var init_server = __esm({
           await default4("chelonia.db/delete", `_private_keyop_idx_${cid}_0`);
           await default4("chelonia.db/set", cid, "");
           default4("chelonia/private/removeImmediately", cid);
-          if (size && ownerSizeTotalWorker) {
-            await ownerSizeTotalWorker.rpcSbp("worker/updateSizeSideEffects", { resourceID: cid, size: -parseInt(size), ultimateOwnerID });
+          if (size) {
+            await ownerSizeTotalWorker?.rpcSbp("worker/updateSizeSideEffects", { resourceID: cid, size: -parseInt(size), ultimateOwnerID });
           }
           await default4("chelonia.db/delete", `_private_cheloniaState_${cid}`);
           await removeFromIndexFactory("_private_cheloniaState_index")(cid);
@@ -3648,14 +3676,11 @@ var init_server = __esm({
         });
       }
     });
-    if (process10.env.NODE_ENV === "development" && !process10.env.CI) {
-      hapi.events.on("response", (request) => {
-        const req = request;
-        const headers = req.headers;
-        const info = req.info;
-        const ip = headers["x-real-ip"] || info.remoteAddress;
-        const response = req.response;
-        console.debug(default8`{grey ${ip}: ${req.method} ${req.path} --> ${response.statusCode}}`);
+    if (process9.env.NODE_ENV === "development" && !process9.env.CI) {
+      hapi.events.on("response", (req) => {
+        const ip = req.headers["x-real-ip"] || req.info.remoteAddress;
+        const statusCode = req.response instanceof default5.Boom ? req.response.output.statusCode : req.response.statusCode;
+        console.debug(default8`{grey ${ip}: ${req.method} ${req.path} --> ${statusCode}}`);
       });
     }
     default4("okTurtles.data/set", PUBSUB_INSTANCE, createServer(hapi.listener, {
@@ -3674,7 +3699,7 @@ var init_server = __esm({
         // associated web push subscription, if it exists.
         close() {
           const socket = this;
-          const { server } = socket;
+          const { server } = this;
           const subscriptionId = socket.pushSubscriptionId;
           if (!subscriptionId) return;
           if (!server.pushSubscriptions[subscriptionId]) return;
@@ -3691,36 +3716,32 @@ var init_server = __esm({
         }
       },
       messageHandlers: {
-        [REQUEST_TYPE.PUSH_ACTION]: async function(...args) {
-          const { data } = args[0];
+        [REQUEST_TYPE.PUSH_ACTION]: async function({ data }) {
           const socket = this;
-          const dataObj = data;
-          const { action, payload } = dataObj;
+          const { action, payload } = data;
           if (!action) {
             socket.send(createPushErrorResponse({ message: "'action' field is required" }));
           }
           const handler = pushServerActionhandlers[action];
           if (handler) {
             try {
-              await handler(socket, payload);
+              await handler.call(socket, payload);
             } catch (error) {
               const message = error?.message || `push server failed to perform [${action}] action`;
               console.warn(error, `[${socket.ip}] Action '${action}' for '${REQUEST_TYPE.PUSH_ACTION}' handler failed: ${message}`);
               socket.send(createPushErrorResponse({ actionType: action, message }));
             }
           } else {
-            ;
             socket.send(createPushErrorResponse({ message: `No handler for the '${action}' action` }));
           }
         },
         // This handler adds subscribed channels to the web push subscription
         // associated with the WS, so that when the WS is closed we can continue
         // sending messages as web push notifications.
-        [NOTIFICATION_TYPE.SUB](...args) {
-          const { channelID } = args[0];
+        [NOTIFICATION_TYPE.SUB]({ channelID }) {
           const socket = this;
+          const { server } = this;
           if (!socket.pushSubscriptionId) return;
-          const { server } = socket;
           if (!server.pushSubscriptions[socket.pushSubscriptionId]) {
             delete socket.pushSubscriptionId;
             return;
@@ -3730,11 +3751,10 @@ var init_server = __esm({
         // This handler removes subscribed channels from the web push subscription
         // associated with the WS, so that when the WS is closed we don't send
         // messages as web push notifications.
-        [NOTIFICATION_TYPE.UNSUB](...args) {
-          const { channelID } = args[0];
+        [NOTIFICATION_TYPE.UNSUB]({ channelID }) {
           const socket = this;
+          const { server } = this;
           if (!socket.pushSubscriptionId) return;
-          const { server } = socket;
           if (!server.pushSubscriptions[socket.pushSubscriptionId]) {
             delete socket.pushSubscriptionId;
             return;
@@ -3745,8 +3765,8 @@ var init_server = __esm({
     }));
     (async function() {
       await initDB();
-      if (ownerSizeTotalWorker) await ownerSizeTotalWorker.ready;
-      if (creditsWorker) await creditsWorker.ready;
+      await ownerSizeTotalWorker?.ready;
+      await creditsWorker?.ready;
       await default4("chelonia/configure", SERVER);
       default4("chelonia.persistentActions/configure", {
         databaseKey: "_private_persistent_actions"
@@ -3808,36 +3828,21 @@ var init_server = __esm({
       const map = /* @__PURE__ */ new WeakMap();
       setInterval(() => {
         const now = Date.now();
-        const pubsub = default4("okTurtles.data/get", PUBSUB_INSTANCE);
+        const pubsub = default4("okTurtles.data/get", PUBSUB_INSTANCE) || {};
         const notification = JSON.stringify({ type: "recurring" });
-        Object.values(pubsub.pushSubscriptions || {}).filter(
-          (pushSubscription) => !!pushSubscription.settings?.heartbeatInterval && pushSubscription.sockets.size === 0
+        Object.values(pubsub.pushSubscriptions).filter(
+          (pushSubscription) => !!pushSubscription.settings.heartbeatInterval && pushSubscription.sockets.size === 0
         ).forEach((pushSubscription) => {
-          const subscription = pushSubscription;
-          const last = map.get(subscription) ?? Number.NEGATIVE_INFINITY;
-          if (now - last < subscription.settings.heartbeatInterval) return;
-          postEvent(subscription, notification).then(() => {
-            map.set(subscription, now);
+          const last = map.get(pushSubscription) ?? Number.NEGATIVE_INFINITY;
+          if (now - last < pushSubscription.settings.heartbeatInterval) return;
+          postEvent(pushSubscription, notification).then(() => {
+            map.set(pushSubscription, now);
           }).catch((e) => {
-            console.warn(e, "Error sending recurring message to web push client", subscription.id);
+            console.warn(e, "Error sending recurring message to web push client", pushSubscription.id);
           });
         });
       }, 1 * 60 * 60 * 1e3);
     })();
-    handleSignal = (signal, code) => {
-      process10.on(signal, () => {
-        console.error(`Exiting upon receiving ${signal} (${code})`);
-        process10.exit(128 + code);
-      });
-    };
-    [
-      ["SIGHUP", 1],
-      ["SIGINT", 2],
-      ["SIGQUIT", 3],
-      ["SIGTERM", 15],
-      ["SIGUSR1", 10],
-      ["SIGUSR2", 11]
-    ].forEach(([signal, code]) => handleSignal(signal, code));
   }
 });
 
@@ -3846,7 +3851,7 @@ var serve_exports = {};
 __export(serve_exports, {
   default: () => serve_default
 });
-import process11 from "node:process";
+import process10 from "node:process";
 function logSBP(_domain, selector, data) {
   if (!dontLog[selector]) {
     if (selector === "backend/server/handleEntry") {
@@ -3856,7 +3861,7 @@ function logSBP(_domain, selector, data) {
     }
   }
 }
-var dontLog, serve_default, shutdownFn;
+var dontLog, serve_default, exit2, handleSignal;
 var init_serve = __esm({
   "src/serve/index.ts"() {
     "use strict";
@@ -3864,7 +3869,7 @@ var init_serve = __esm({
     init_events();
     init_instance_keys();
     init_logger();
-    console.info("NODE_ENV =", process11.env.NODE_ENV);
+    console.info("NODE_ENV =", process10.env.NODE_ENV);
     dontLog = {
       "backend/server/broadcastEntry": true,
       "backend/server/broadcastDeletion": true,
@@ -3879,33 +3884,60 @@ var init_serve = __esm({
       });
       Promise.resolve().then(() => (init_server(), server_exports)).catch(reject);
     });
-    shutdownFn = function(message) {
+    default4("okTurtles.events/once", SERVER_EXITING, () => {
       default4("okTurtles.data/apply", PUBSUB_INSTANCE, function(pubsub) {
-        console.info("message received in child, shutting down...", message);
-        pubsub.on("close", async function() {
-          try {
-            await default4("backend/server/stop");
-            console.info("Hapi server down");
-            process11.send?.({});
-            process11.nextTick(() => process11.exit(0));
-          } catch (err) {
-            console.error(err, "Error during shutdown");
-            process11.exit(1);
-          }
+        default4("okTurtles.eventQueue/queueEvent", SERVER_EXITING, () => {
+          return new Promise((resolve4) => {
+            pubsub.on("close", async function() {
+              try {
+                await default4("backend/server/stop");
+                console.info("Hapi server down");
+              } catch (err) {
+                console.error(err, "Error during shutdown");
+              } finally {
+                resolve4();
+              }
+            });
+            pubsub.close();
+            pubsub.clients.forEach((client) => client.terminate());
+          });
         });
-        pubsub.close();
-        pubsub.clients.forEach((client) => client.terminate());
+      });
+    });
+    process10.on("uncaughtException", (err) => {
+      console.error(err, "[server] Unhandled exception");
+      process10.exit(1);
+    });
+    process10.on("unhandledRejection", (reason) => {
+      console.error(reason, "[server] Unhandled promise rejection:", reason);
+      process10.exit(1);
+    });
+    exit2 = (code) => {
+      default4("okTurtles.events/once", SERVER_EXITING, () => {
+        default4("okTurtles.eventQueue/queueEvent", SERVER_EXITING, () => {
+          process10.send?.({});
+          process10.nextTick(() => process10.exit(code));
+        });
+      });
+      default4("okTurtles.events/emit", SERVER_EXITING);
+    };
+    handleSignal = (signal, code) => {
+      process10.on(signal, () => {
+        console.error(`Exiting upon receiving ${signal} (${code})`);
+        exit2(128 + code);
       });
     };
-    process11.on("SIGUSR2", shutdownFn);
-    process11.on("message", shutdownFn);
-    process11.on("uncaughtException", (err) => {
-      console.error(err, "[server] Unhandled exception");
-      process11.exit(1);
-    });
-    process11.on("unhandledRejection", (reason) => {
-      console.error(reason, "[server] Unhandled promise rejection:", reason);
-      process11.exit(1);
+    [
+      ["SIGHUP", 1],
+      ["SIGINT", 2],
+      ["SIGQUIT", 3],
+      ["SIGTERM", 15],
+      ["SIGUSR1", 10],
+      ["SIGUSR2", 11]
+    ].forEach(([signal, code]) => handleSignal(signal, code));
+    process10.on("message", (message) => {
+      console.info("message received in child, shutting down...", message);
+      exit2(0);
     });
   }
 });
@@ -4015,10 +4047,10 @@ async function deploy(args) {
   for (const manifestPath of manifests) {
     const json = JSON.parse(Deno.readTextFileSync(manifestPath));
     const body = ContractBodySchema.parse(JSON.parse(json.body));
-    const dirname5 = path.dirname(manifestPath);
-    toUpload.push(CONTRACT_TEXT_PREFIX + path.join(dirname5, body.contract.file));
+    const dirname3 = path.dirname(manifestPath);
+    toUpload.push(CONTRACT_TEXT_PREFIX + path.join(dirname3, body.contract.file));
     if (body.contractSlim) {
-      toUpload.push(CONTRACT_TEXT_PREFIX + path.join(dirname5, body.contractSlim.file));
+      toUpload.push(CONTRACT_TEXT_PREFIX + path.join(dirname3, body.contractSlim.file));
     }
     toUpload.push(CONTRACT_MANIFEST_PREFIX + manifestPath);
   }
@@ -4277,14 +4309,7 @@ async function migrate(args) {
 
 // src/serve.ts
 init_deps();
-init_utils();
-import process12 from "node:process";
-import { readdir as readdir3, mkdir as mkdir3, readFile as readFile4 } from "node:fs/promises";
-import { existsSync } from "node:fs";
-import { join as join4, resolve as resolve4 } from "node:path";
-function sanitizeContractName(contractName) {
-  return contractName.replace(/[/\\:*?"<>|]/g, "_");
-}
+import process11 from "node:process";
 async function startDashboardServer(port) {
   const dashboardServer = await Promise.resolve().then(() => (init_dashboard_server(), dashboard_server_exports));
   await dashboardServer.startDashboard(port);
@@ -4370,8 +4395,8 @@ async function preloadContracts(directory, dbLocation) {
   }
 }
 async function startApplicationServer(port, directory) {
-  process12.env.API_PORT = port.toString();
-  process12.env.CHELONIA_APP_DIR = directory;
+  process11.env.API_PORT = port.toString();
+  process11.env.CHELONIA_APP_DIR = directory;
   const startServer = await Promise.resolve().then(() => (init_serve(), serve_exports));
   await startServer.default;
 }
@@ -4417,7 +4442,7 @@ async function serve(args) {
     });
   } catch (error) {
     console.error(colors.red("\u274C Failed to start server:"), error);
-    exit("Failed to start server");
+    process11.exit(1);
   }
 }
 function parseServeArgs(args) {

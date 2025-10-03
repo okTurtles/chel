@@ -4,13 +4,12 @@ import process from 'node:process'
 import { Buffer } from 'node:buffer'
 import { checkKey } from '~/deps.ts'
 import DatabaseBackend from './DatabaseBackend.ts'
-import type { IDatabaseBackend } from './DatabaseBackend.ts'
 
 // Some operating systems (such as macOS and Windows) use case-insensitive
 // filesystems by default. This can be problematic for Chelonia / Group Income,
 // as we rely on keys being case-sensitive. This is especially relevant for CIDs,
 // where collisions could lead to DoS or data corruption.
-async function testCaseSensitivity (backend: IDatabaseBackend) {
+async function testCaseSensitivity (backend: DatabaseBackend) {
   const { readData, writeData, deleteData } = backend
   const date = new Date()
   const dateString = date.toISOString()
@@ -42,7 +41,7 @@ const splitAndGroup = (input: string, chunkLength: number, depth: number): strin
   return acc
 }, [])
 
-export default class FsBackend extends DatabaseBackend implements IDatabaseBackend {
+export default class FsBackend extends DatabaseBackend {
   dataFolder: string = ''
   depth: number = 0
   keyChunkLength: number = 2
@@ -108,4 +107,6 @@ export default class FsBackend extends DatabaseBackend implements IDatabaseBacke
       throw e
     })
   }
+
+  close () {}
 }

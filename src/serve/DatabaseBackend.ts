@@ -1,26 +1,25 @@
 import { Buffer } from 'node:buffer'
 
-export interface IDatabaseBackend {
-  init (): Promise<void>;
-  clear (): Promise<void>;
-  readData (key: string): Promise<Buffer | string | void>;
-  writeData (key: string, value: Buffer | string): Promise<void>;
-  deleteData (key: string): Promise<void>;
-}
+const requiredMethodNames = ['init', 'clear', 'readData', 'writeData', 'deleteData', 'close'] as const
 
-const requiredMethodNames = ['init', 'clear', 'readData', 'writeData', 'deleteData']
+export default abstract class DatabaseBackend {
+  abstract init (): Promise<void>
+  abstract clear (): Promise<void>
+  abstract readData (key: string): Promise<Buffer | string | void>
+  abstract writeData (key: string, value: Buffer | string): Promise<void>
+  abstract deleteData (key: string): Promise<void>
+  abstract close (): Promise<void> | void
 
-export default class DatabaseBackend {
   constructor () {
     if (new.target === DatabaseBackend) {
       throw new Error('Class DatabaseBackend cannot be instantiated directly.')
     }
     // Also rebind them to the instance so as to make them usable with destructuring.
+    const bindMethod = <K extends typeof requiredMethodNames[number]>(name: K) => {
+      this[name] = this[name].bind(this) as typeof this[K]
+    }
     for (const name of requiredMethodNames) {
-      const method = (this as Record<string, unknown>)[name]
-      if (typeof method === 'function') {
-        (this as Record<string, unknown>)[name] = method.bind(this)
-      }
+      bindMethod(name)
     }
   }
 }

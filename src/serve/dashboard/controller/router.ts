@@ -1,5 +1,4 @@
-import { Vue } from '../deps.ts'
-import VueRouter from 'vue-router'
+import { Vue, VueRouter as Router } from '../deps.ts'
 
 // This will be replaced by esbuild at build time via define: { 'NODE_ENV': '...' }
 declare const NODE_ENV: string
@@ -15,9 +14,9 @@ const lazyBilling = lazyPage(() => import('@pages/Billing.vue'))
 const lazyAccounts = lazyPage(() => import('@pages/Accounts.vue'))
 const lazyDesignSystem = lazyPage(() => import('@pages/design-system/CheloniaDesignSystem.vue'))
 
-Vue.use(VueRouter)
+Vue.use(Router)
 
-const router = new (VueRouter as unknown as new (options: {
+const router = new (Router as unknown as new (options: {
   mode: string;
   base: string;
   scrollBehavior: () => { x: number; y: number };

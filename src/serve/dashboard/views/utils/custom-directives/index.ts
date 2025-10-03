@@ -1,2 +1,2 @@
-import './vSafeHtml.js'
-import './vFocus.js'
+import './vSafeHtml.ts'
+import './vFocus.ts'

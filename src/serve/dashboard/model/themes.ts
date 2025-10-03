@@ -1,4 +1,4 @@
-import { sbp } from '../deps.ts'
+import store from './state.ts'
 
 const common = {
   black: '#000000',
@@ -60,7 +60,7 @@ export const initTheme = () => {
   // check if there is a value in local-storage that was stored from user previously toggling the theme in the app.
   // if not, fallback to system preference, and lastly default to light-theme in case of no system preference in the browser.
   const fromStorage = window.localStorage.getItem(THEME_STORAGE_KEY)
-  sbp('state/vuex/commit', 'setTheme', fromStorage || checkSystemTheme())
+  store.commit('setTheme', fromStorage || checkSystemTheme())
 }
 export const storeThemeToLocalStorage = (theme: string) => {
   window.localStorage.setItem(THEME_STORAGE_KEY, theme)

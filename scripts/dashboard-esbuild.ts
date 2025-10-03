@@ -3,12 +3,12 @@
 
 import { sassPlugin } from 'npm:esbuild-sass-plugin@3.3.1'
 import fs from 'node:fs'
-import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
-import { basename, dirname, join, relative, resolve } from 'node:path'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
-import componentCompiler, { type SFCCompiler, type StyleCompileResult, type DescriptorCompileResult } from 'npm:@vue/component-compiler'
 import esbuild from 'npm:esbuild'
+import { vuePlugin } from './esbuild-plugins/vue-plugin.ts'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -23,11 +23,6 @@ const {
   UNSAFE_TRUST_ALL_MANIFEST_SIGNING_KEYS = 'false'
 } = process.env
 
-// Read package.json for version info
-const packageJSON = JSON.parse(fs.readFileSync(join(__dirname, '../package.json'), 'utf8'))
-const CONTRACTS_VERSION = packageJSON.contractsVersion || '2.0.0'
-const CHEL_VERSION = packageJSON.version
-
 // Fix for __proto__ issue with buble (used by @vue/component-compiler)
 // See: https://github.com/denoland/deno/issues/20618
 if (({} as Record<PropertyKey, unknown>).__proto__ !== Object.prototype) {
@@ -39,33 +34,6 @@ if (({} as Record<PropertyKey, unknown>).__proto__ !== Object.prototype) {
       Object.setPrototypeOf(this, v)
     }
   })
-}
-
-// Alias replacer function (adapted from Group Income's utils.js)
-function createAliasReplacer (aliases: Record<string, string>) {
-  if (Object.keys(aliases).some(alias => alias.includes('/'))) {
-    throw new Error('Path aliases may not include slash characters.')
-  }
-
-  const cwd = process.cwd()
-  const escapeForRegExp = (string: string) => string.replace(/[.*+?^${}()|\\[\]]/g, '\\$&')
-  const escapedAndSortedAliases = Object.keys(aliases).map(escapeForRegExp).sort().reverse()
-  const re = new RegExp(
-    `(?:^import[ (]|\\bimport[ (]|import .+? from |^\\} from )['"](${ escapedAndSortedAliases.join('|')})(?:['"]|/[^'"]+?['"])`,
-    'gm'
-  )
-
-  return function aliasReplacer ({ path, source }: { path: string, source: string }) {
-    const relativeDirPath = relative(dirname(path), cwd)
-
-    return source.replace(re, (match, capture) => {
-      const resolvedPathSegment = aliases[capture]
-      const replacement = join(relativeDirPath, resolvedPathSegment)
-        .replace(/\\/g, '/')
-
-      return match.replace(capture, replacement)
-    })
-  }
 }
 
 // Copy index.html to output directory
@@ -86,139 +54,8 @@ async function copyIndexHtml (outDir: string) {
   }
 }
 
-// Extract CSS from Vue components and create combined-styles.scss
-export async function extractAndCreateCSS (outDir: string) {
-  try {
-    const vueFiles = await findVueFiles(dashboardDir)
-    let combinedCSS = ''
-
-    for (const vueFile of vueFiles) {
-      const source = await readFile(vueFile, 'utf-8')
-      const styleMatch = source.match(/<style[^>]*scoped[^>]*>([\s\S]*?)<\/style>/)
-
-      if (styleMatch) {
-        const componentName = basename(vueFile, '.vue')
-        combinedCSS += `\n/* Styles from ${componentName}.vue */\n${styleMatch[1]}\n`
-      }
-    }
-
-    if (combinedCSS) {
-      const cssDir = join(outDir, 'assets', 'css')
-      await mkdir(cssDir, { recursive: true })
-
-      const cssPath = join(cssDir, 'combined-styles.css')
-      await writeFile(cssPath, combinedCSS)
-      console.log(`📄 Created combined styles: ${cssPath}`)
-    }
-  } catch (error) {
-    console.error('❌ Failed to extract CSS:', error)
-  }
-}
-
-// Vue plugin adapted from Group Income's approach with proper SCSS extraction
-function vuePlugin ({ aliases = {} } = {}) {
-  const aliasReplacer = Object.keys(aliases).length > 0 ? createAliasReplacer(aliases) : null
-  const extractedStyles: string[] = []
-  const compiler = componentCompiler.createDefaultCompiler()
-
-  return {
-    name: 'vue',
-    setup (build) {
-      build.onLoad({ filter: /[^/]\.vue$/ }, async ({ path }) => {
-        let source = await readFile(path, 'utf8')
-
-        if (aliasReplacer) {
-          source = aliasReplacer({ path, source })
-        }
-
-        // Handle @assets alias in SCSS imports with context-aware relative paths
-        const assetsPath = resolve(__dirname, '../src/serve/dashboard/assets')
-        const componentDir = dirname(path)
-        const relativePath = relative(componentDir, assetsPath).replace(/\\/g, '/')
-        source = source.replace(/@import\s+["']@assets\//g, `@import "${relativePath}/`)
-
-        try {
-          const result = await compile({ filename: path, source, compiler, extractedStyles })
-
-          return { contents: result.contents }
-        } catch (error) {
-          return { errors: [convertError(error)] }
-        }
-      })
-    }
-  } as esbuild.Plugin
-}
-
-// Helper function to find all Vue files
-async function findVueFiles (dir: string) {
-  const files: string[] = []
-
-  async function walk (currentDir: string) {
-    const entries = await readdir(currentDir, { withFileTypes: true })
-
-    for (const entry of entries) {
-      const fullPath = join(currentDir, entry.name)
-
-      if (entry.isDirectory()) {
-        await walk(fullPath)
-      } else if (entry.name.endsWith('.vue')) {
-        files.push(fullPath)
-      }
-    }
-  }
-
-  await walk(dir)
-  return files
-}
-
-function compile ({ filename, source, compiler }: { filename: string, source: string, compiler: SFCCompiler, extractedStyles?: string[] }) {
-  try {
-    if (/^\s*$/.test(source)) {
-      throw new Error('File is empty')
-    }
-
-    const descriptor = compiler.compileToDescriptor(filename, source)
-    const errors = combineErrors(descriptor.template, ...descriptor.styles)
-
-    if (errors.length > 0) {
-      return { errors }
-    }
-
-    const output = componentCompiler.assemble(compiler, source, descriptor, {})
-    return { contents: output.code }
-  } catch (error) {
-    return {
-      errors: [
-        {
-          text: `Could not compile Vue single-file component: ${error}`,
-          detail: error
-        }
-      ]
-    }
-  }
-}
-
-function combineErrors (...outputs: (DescriptorCompileResult['template'] | StyleCompileResult)[]) {
-  return outputs.map((output) => {
-    if (!output || !output.errors) {
-      return []
-    }
-    return output.errors.map((error) => convertError(error))
-  }).flat()
-}
-
-function convertError (error: unknown) {
-  if (typeof error === 'string') {
-    return { text: error }
-  }
-  if (error instanceof Error) {
-    return { text: error.message }
-  }
-  throw new Error(`Cannot convert Vue compiler error: ${error}`)
-}
-
 const dashboardDir = 'src/serve/dashboard'
-const outDir = 'dist-dashboard'
+const outDir = 'build/dist-dashboard'
 
 // Path aliases are defined inline in the esbuild config
 
@@ -231,6 +68,20 @@ async function build () {
     join(dashboardDir, 'main.ts'),
     mainScssPath
   ]
+
+  const alias = {
+    '@common': './src/serve/dashboard/common',
+    '@model': './src/serve/dashboard/model',
+    '@controller': './src/serve/dashboard/controller',
+    '@view-utils': './src/serve/dashboard/views/utils',
+    '@views': './src/serve/dashboard/views',
+    '@components': './src/serve/dashboard/views/components',
+    '@containers': './src/serve/dashboard/views/containers',
+    '@pages': './src/serve/dashboard/views/pages',
+    '@forms': './src/serve/dashboard/views/components/forms',
+    '@validators': './src/serve/dashboard/views/utils/validators',
+    '@assets': './src/serve/dashboard/assets'
+  }
 
   try {
     const result = await esbuild.build({
@@ -249,8 +100,6 @@ async function build () {
       define: {
         'process.env.BUILD': 'web', // Required by Vuelidate
         'process.env.CI': `'${CI}'`,
-        'process.env.CONTRACTS_VERSION': `'${CONTRACTS_VERSION}'`,
-        'process.env.CHEL_VERSION': `'${CHEL_VERSION}'`,
         'process.env.LIGHTWEIGHT_CLIENT': `'${LIGHTWEIGHT_CLIENT}'`,
         'process.env.NODE_ENV': `'${NODE_ENV}'`,
         'process.env.EXPOSE_SBP': `'${EXPOSE_SBP}'`,
@@ -259,19 +108,7 @@ async function build () {
         // Define NODE_ENV directly for router.ts
         'NODE_ENV': `'${NODE_ENV}'`
       },
-      alias: {
-        '@common': './src/serve/dashboard/common',
-        '@model': './src/serve/dashboard/model',
-        '@controller': './src/serve/dashboard/controller',
-        '@view-utils': './src/serve/dashboard/views/utils',
-        '@views': './src/serve/dashboard/views',
-        '@components': './src/serve/dashboard/views/components',
-        '@containers': './src/serve/dashboard/views/containers',
-        '@pages': './src/serve/dashboard/views/pages',
-        '@forms': './src/serve/dashboard/views/components/forms',
-        '@validators': './src/serve/dashboard/views/utils/validators',
-        '@assets': './src/serve/dashboard/assets'
-      },
+      alias,
       loader: {
         '.vue': 'js', // Will be handled by our Vue plugin
         '.png': 'file',
@@ -291,7 +128,7 @@ async function build () {
         sassPlugin({
           type: 'css',
         }),
-        vuePlugin({ aliases: {} }),
+        vuePlugin({ aliases: alias }),
         // Plugin to resolve npm: prefixes (as suggested by @corrideat)
         {
           name: 'npm-prefix-resolver',
