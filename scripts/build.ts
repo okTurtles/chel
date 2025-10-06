@@ -52,7 +52,7 @@ for (const outfile of result.outputFiles!) {
     if (!output.success) {
       Deno.stdout.writeSync(output.stdout)
       Deno.stderr.writeSync(output.stderr)
-      throw new Error(`Failed to call 'deno bundle'`);
+      throw new Error('Failed to call \'deno bundle\'')
     }
   } finally {
     Deno.removeSync(tmpFile)
