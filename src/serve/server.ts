@@ -78,7 +78,7 @@ const createWorker = (path: string): WorkerType => {
         cleanup()
         reject(Error('Message error'))
       }
-      worker.postMessage([mc.port1, ...args], [mc.port1] as unknown as readonly import('node:worker_threads').Transferable[])
+      worker.postMessage([mc.port1, ...args], [mc.port1] as unknown as readonly import('node:worker_threads').TransferListItem[])
       // If the worker itself breaks during an SBP call, we want to make sure
       // this promise immediately rejects
       worker.once('error', reject)

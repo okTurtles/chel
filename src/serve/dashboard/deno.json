@@ -1,9 +1,13 @@
 {
   "compilerOptions": {
-    "lib": ["dom", "dom.iterable"]
+    "lib": ["es2019", "dom", "dom.iterable"]
   },
   "imports": {
     "~/": "./src/",
+    "@common/": "./common/",
+    "@components/": "./views/components/",
+    "@containers/": "./views/containers/",
+    "@pages/": "./views/pages/",
     "npm:@types/node": "npm:@types/node@24.0.13",
     "npm:@vue/component-compiler": "npm:@vue/component-compiler@4.2.4",
     "npm:@sbp/sbp": "npm:@sbp/sbp@2.4.1",

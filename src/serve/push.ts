@@ -119,8 +119,8 @@ export const subscriptionInfoWrapper = (subscriptionId: string, subscriptionInfo
       get: (() => {
         let count = 0
         let resultPromise: Promise<unknown> | undefined
-        let salt: Buffer
-        let uaPublic: Buffer
+        let salt: Buffer<ArrayBuffer>
+        let uaPublic: Buffer<ArrayBuffer>
 
         return function (this: PushSubscriptionInfo) {
           // Rotate encryption keys every 2**32 messages
@@ -183,7 +183,7 @@ export const subscriptionInfoWrapper = (subscriptionId: string, subscriptionInfo
 // push notifications that isn't already public or could be derived from other
 // public sources. The main concern if the encryption is compromised would be
 // the ability to infer which channels a client is subscribed to.
-const encryptPayload = async (subscription: { encryptionKeys: Promise<[Buffer, Buffer]> }, data: string): Promise<Buffer> => {
+const encryptPayload = async (subscription: { encryptionKeys: Promise<[Buffer, Buffer]> }, data: string): Promise<Buffer<ArrayBuffer>> => {
   const readableStream = new Response(data).body
   if (!readableStream) throw new Error('Failed to create readable stream')
   const [asPublic, IKM] = await subscription.encryptionKeys
