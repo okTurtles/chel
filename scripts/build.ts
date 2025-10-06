@@ -19,6 +19,7 @@ const options: esbuild.BuildOptions = {
   platform: 'node',
   outdir: 'build',
   splitting: false,
+  write: false,
   plugins: [
     {
       name: 'skip',
@@ -39,5 +40,23 @@ if (result.errors.length) {
   console.warn(colors.yellow('build warnings:'), result.warnings)
 }
 console.log(colors.green('built:'), options.outdir)
+
+for (const outfile of result.outputFiles!) {
+  const tmpFile = outfile.path + '-tmp'
+  try {
+    Deno.writeFileSync(tmpFile, outfile.contents)
+    Deno.removeSync(outfile.path)
+    const output = await new Deno.Command(Deno.execPath(), {
+      args: ['bundle', '-o', outfile.path, tmpFile]
+    }).output()
+    if (!output.success) {
+      Deno.stdout.writeSync(output.stdout)
+      Deno.stderr.writeSync(output.stderr)
+      throw new Error(`Failed to call 'deno bundle'`);
+    }
+  } finally {
+    Deno.removeSync(tmpFile)
+  }
+}
 
 esbuild.stop()
