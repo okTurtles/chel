@@ -86,7 +86,7 @@ class CombineWithEdge extends Three.Group {
 }
 
 class Edgify extends LineSegments {
-  data: { geometry: Three.EdgesGeometry, material: Three.LineBasicMaterial }
+  data: { geometry?: Three.BufferGeometry | null, material: Three.LineBasicMaterial }
 
   constructor ({
     color = '#000000', geometry = null
@@ -98,7 +98,7 @@ class Edgify extends LineSegments {
     const material = new LineBasicMaterial({ color })
 
     super(edgeGeometry, material)
-    this.data = { geometry: edgeGeometry, material }
+    this.data = { geometry, material }
   }
 }
 
