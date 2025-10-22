@@ -1,5 +1,4 @@
-import { Three } from '../../../../deps.ts'
-import { throttle } from '../../../../common/cdLodash.ts'
+import { throttle, Three } from '../../../../deps.ts'
 import {
   resizeRendererToDisplaySize, adjustCameraAspect, degreeToRadian, Edgify
 } from '../animation-utils.ts'

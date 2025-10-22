@@ -26,7 +26,7 @@
 </template>
 
 <script>
-import { cloneDeep } from '@common/cdLodash.js'
+import { cloneDeep } from '../../deps.ts'
 import Dropdown from '@forms/Dropdown.vue'
 
 const genRandomId = () => Math.random().toString(20).slice(2)

@@ -1,5 +1,4 @@
-import { dompurify, Vue } from '../../deps.ts'
-import { cloneDeep } from '../../common/cdLodash.ts'
+import { cloneDeep, dompurify, Vue } from '../../deps.ts'
 
 // TypeScript interfaces for Vue directive
 interface SafeHtmlBinding {

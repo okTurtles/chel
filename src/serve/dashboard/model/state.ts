@@ -1,6 +1,5 @@
-import { sbp, Vue, Vuex } from '../deps.ts'
+import { cloneDeep, sbp, Vue, Vuex } from '../deps.ts'
 import Colors, { THEME_LIGHT, storeThemeToLocalStorage } from './themes.ts'
-import { cloneDeep } from '../common/cdLodash.ts'
 
 Vue.use(Vuex)
 

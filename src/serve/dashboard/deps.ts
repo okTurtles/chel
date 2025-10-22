@@ -19,6 +19,8 @@ import sbpDefault from 'npm:@sbp/sbp'
 export { sbpDefault as sbp }
 export default sbpDefault
 
+export * from 'npm:turtledash'
+
 // Import SBP selector implementations needed by dashboard
 import 'npm:@sbp/okturtles.data'
 import 'npm:@sbp/okturtles.events'

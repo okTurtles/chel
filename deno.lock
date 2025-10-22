@@ -3060,6 +3060,7 @@
       "npm:esbuild-sass-plugin@3.3.1",
       "npm:esbuild@0.25.8",
       "npm:three@0.151.3",
+      "npm:turtledash@1.0.3",
       "npm:typescript-eslint@8.37.0",
       "npm:vue-clickaway@2.2.2",
       "npm:vue-router@3.6.5",
