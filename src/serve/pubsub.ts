@@ -122,7 +122,7 @@ export interface WS extends Omit<WebSocket, 'send'> {
   send(msg: {
     type: string;
     data: JSONType;
-    [x: string]: unknown
+    [x: string]: JSONType
   }, cb?: (err?: Error) => void): void;
   send(data: BufferLike, cb?: (err?: Error) => void): void;
   send(
