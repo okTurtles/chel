@@ -105,7 +105,7 @@ const removeSubscription = async (subscriptionId: string): Promise<void> => {
 // Wrap a SubscriptionInfo object to include a subscription ID and encryption
 // keys
 export const subscriptionInfoWrapper = (subscriptionId: string, subscriptionInfo: PushSubscriptionJSON, extra: { channelIDs?: string[], settings?: unknown }): PushSubscriptionInfo => {
-  (subscriptionInfo as unknown as PushSubscriptionInfo).endpoint = new URL(subscriptionInfo.endpoint || '')
+  (subscriptionInfo as unknown as PushSubscriptionInfo).endpoint = new URL(subscriptionInfo.endpoint!)
 
   Object.defineProperties(subscriptionInfo, {
     'id': {

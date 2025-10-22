@@ -100,10 +100,10 @@ if (CREDITS_WORKER_TASK_TIME_INTERVAL && OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTER
 // Initialize workers for size calculation and credits processing
 const ownerSizeTotalWorker = process.env.CHELONIA_ARCHIVE_MODE || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL
   ? undefined
-  : createWorker(join(import.meta.dirname || '/', 'serve', 'ownerSizeTotalWorker.js'))
+  : createWorker(join(import.meta.dirname || '.', 'serve', 'ownerSizeTotalWorker.js'))
 const creditsWorker = process.env.CHELONIA_ARCHIVE_MODE || !CREDITS_WORKER_TASK_TIME_INTERVAL
   ? undefined
-  : createWorker(join(import.meta.dirname || '/', 'serve', 'creditsWorker.js'))
+  : createWorker(join(import.meta.dirname || '.', 'serve', 'creditsWorker.js'))
 
 const { CONTRACTS_VERSION, GI_VERSION } = process.env
 
@@ -214,38 +214,38 @@ sbp('sbp/selectors/register', {
   },
   'backend/server/appendToContractIndex': appendToIndexFactory('_private_cheloniaState_index'),
   'backend/server/broadcastKV': async function (contractID: string, key: string, entry: string) {
-    const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE)
+    const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE) as WSS
     const pubsubMessage = createKvMessage(contractID, key, entry)
     const subscribers = pubsub.enumerateSubscribers(contractID, key)
     console.debug(chalk.blue.bold(`[pubsub] Broadcasting KV change on ${contractID} to key ${key}`))
     await pubsub.broadcast(pubsubMessage, { to: subscribers, wsOnly: true })
   },
-  'backend/server/broadcastEntry': async function (deserializedHEAD: unknown, entry: string) {
-    const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE)
-    const contractID = (deserializedHEAD as Record<string, unknown>).contractID
+  'backend/server/broadcastEntry': async function (deserializedHEAD: ReturnType<typeof SPMessage.deserializeHEAD>, entry: string) {
+    const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE) as WSS
+    const contractID = deserializedHEAD.contractID
     const contractType = sbp('chelonia/rootState').contracts[contractID as string]?.type
     const pubsubMessage = createMessage(NOTIFICATION_TYPE.ENTRY, entry, { contractID, contractType })
-    const subscribers = ((pubsub as Record<string, unknown>).enumerateSubscribers as (id: string) => unknown)(contractID as string)
-    console.debug(chalk.blue.bold(`[pubsub] Broadcasting ${((deserializedHEAD as Record<string, unknown>).description as () => string)()}`))
-    await ((pubsub as Record<string, unknown>).broadcast as (msg: unknown, opts: unknown) => Promise<void>)(pubsubMessage, { to: subscribers })
+    const subscribers = pubsub.enumerateSubscribers(contractID)
+    console.debug(chalk.blue.bold(`[pubsub] Broadcasting ${deserializedHEAD.description()}`))
+    await pubsub.broadcast(pubsubMessage, { to: subscribers })
   },
   'backend/server/broadcastDeletion': async function (contractID: string) {
-    const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE)
+    const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE) as WSS
     const pubsubMessage = createMessage(NOTIFICATION_TYPE.DELETION, contractID)
-    const subscribers = ((pubsub as Record<string, unknown>).enumerateSubscribers as (id: string) => unknown)(contractID)
+    const subscribers = pubsub.enumerateSubscribers(contractID)
     console.debug(chalk.blue.bold(`[pubsub] Broadcasting deletion of ${contractID}`))
-    await ((pubsub as Record<string, unknown>).broadcast as (msg: unknown, opts: unknown) => Promise<void>)(pubsubMessage, { to: subscribers })
+    await pubsub.broadcast(pubsubMessage, { to: subscribers })
   },
-  'backend/server/handleEntry': async function (deserializedHEAD: unknown, entry: string) {
-    const contractID = (deserializedHEAD as Record<string, unknown>).contractID
-    if (((deserializedHEAD as Record<string, unknown>).head as Record<string, unknown>).op === SPMessage.OP_CONTRACT) {
+  'backend/server/handleEntry': async function (deserializedHEAD: ReturnType<typeof SPMessage.deserializeHEAD>, entry: string) {
+    const contractID = deserializedHEAD.contractID
+    if (deserializedHEAD.head.op === SPMessage.OP_CONTRACT) {
       sbp('okTurtles.data/get', PUBSUB_INSTANCE).channels.add(contractID)
     }
     await sbp('chelonia/private/in/enqueueHandleEvent', contractID, entry)
     // Persist the Chelonia state after processing a message
     await sbp('backend/server/persistState', deserializedHEAD, entry)
     // No await on broadcast for faster responses
-    sbp('backend/server/broadcastEntry', deserializedHEAD, entry).catch((e: unknown) => console.error(e, 'Error broadcasting entry', contractID, (deserializedHEAD as Record<string, unknown>).hash))
+    sbp('backend/server/broadcastEntry', deserializedHEAD, entry).catch((e: unknown) => console.error(e, 'Error broadcasting entry', contractID, deserializedHEAD.hash))
   },
   'backend/server/saveOwner': async function (ownerID: string, resourceID: string) {
     // Store the owner for the current resource
@@ -464,6 +464,7 @@ sbp('sbp/selectors/register', {
       contractsPendingDeletion.delete(cid)
     }).catch((e: unknown) => {
       console.error(e, 'Error in contract deletion cleanup')
+      throw e
     })
   }
 })
@@ -522,7 +523,7 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
 
       if (handler) {
         try {
-          await (handler as (this: unknown, payload: unknown) => Promise<void>).call(socket, payload)
+          await (handler as (this: typeof socket, payload: unknown) => Promise<void>).call(socket, payload)
         } catch (error) {
           const message = (error as Error)?.message || `push server failed to perform [${action}] action`
           console.warn(error, `[${socket.ip}] Action '${action}' for '${REQUEST_TYPE.PUSH_ACTION}' handler failed: ${message}`)
@@ -640,12 +641,12 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
 
   setInterval(() => {
     const now = Date.now()
-    const pubsub = (sbp('okTurtles.data/get', PUBSUB_INSTANCE) || {}) as WSS
+    const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE) as WSS | undefined
     // Notification text
     const notification = JSON.stringify({ type: 'recurring' })
     // Find push subscriptions that do _not_ have a WS open. This means clients
     // that are 'asleep' and that might be woken up by the push event
-    Object.values(pubsub.pushSubscriptions)
+    Object.values(pubsub?.pushSubscriptions || {})
       .filter((pushSubscription) =>
         !!pushSubscription.settings.heartbeatInterval && pushSubscription.sockets.size === 0
       ).forEach((pushSubscription) => {
