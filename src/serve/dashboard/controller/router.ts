@@ -1,6 +1,6 @@
 import { Vue, VueRouter as Router } from '../deps.ts'
 
-declare const process: { env: Record<string, string | undefined> };
+declare const process: { env: Record<string, string | undefined> }
 
 import Landing from '@pages/miscellaneous/Landing.vue'
 import L from '../common/translations.ts'
