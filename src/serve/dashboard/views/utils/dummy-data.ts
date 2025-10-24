@@ -42,7 +42,7 @@ const fakeUsers: string[] = ['Flex Kubin', 'Attila Hun', 'Childish Gambino', 'Ke
 const PAST_THREE_MONTHS: number = -3 * MONTHS_MILLIS
 const randomPastDate = (): Date => addTimeToDate(new Date(), Math.floor(Math.random() * PAST_THREE_MONTHS))
 const randomFromArray = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)]
-const randomHash = (): string => createCID()
+const randomHash = (): string => createCID(Math.random().toString(16).slice(2))
 
 // Contracts.vue //
 const contractDummyData: ContractItem[] = []
