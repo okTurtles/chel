@@ -18,7 +18,5 @@ jobs:
     - uses: denoland/setup-deno@e95548e56dfa95d4e1a28d6f422fafe75c4c26fb
       with:
         deno-version: v2.5.3
-    - run: deno cache --lock=deno.lock src/deps.ts
-
     - name: Run tests
       run: deno task test
