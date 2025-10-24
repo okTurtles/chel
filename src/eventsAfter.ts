@@ -1,6 +1,7 @@
 // chel eventsAfter [--limit N] <url-or-localpath> <contractID> <hash>
 
-import { base64, flags } from './deps.ts'
+import * as base64 from 'jsr:@std/encoding/base64'
+import * as flags from 'jsr:@std/flags/'
 import { type Backend, exit, isArrayLength, getBackend, isURL } from './utils.ts'
 
 let backend: Backend

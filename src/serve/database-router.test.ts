@@ -1,6 +1,9 @@
-// import { assert } from '~/deps.ts' // TODO: Add tests using assert
+// import { assert } from 'jsr:@std/assert' // TODO: Add tests using assert
+// 'jsr:@db/sqlite' loaded to prevent memory leak checker from failing test
+// (otherwise, it'll complain that the sqlite dynamic library wasn't unloaded)
+import 'jsr:@db/sqlite'
+import { cloneDeep, omit } from 'npm:turtledash'
 import RouterBackend from './database-router.ts'
-import { cloneDeep, omit } from '~/deps.ts'
 
 // CID for shelter-contract-text.
 const CID = '\x51\x1e\x01'

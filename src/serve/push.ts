@@ -1,20 +1,16 @@
 // deno-lint-ignore-file no-this-alias
 /* eslint-disable @typescript-eslint/no-this-alias */
 import { Buffer } from 'node:buffer'
+import { aes128gcm } from 'npm:@apeleghq/rfc8188/encodings'
+import encrypt from 'npm:@apeleghq/rfc8188/encrypt'
+import { getSubscriptionId } from 'npm:@chelonia/lib/functions'
+import { PUSH_SERVER_ACTION_TYPE, REQUEST_TYPE, createMessage } from 'npm:@chelonia/lib/pubsub'
+import sbp from 'npm:@sbp/sbp'
 import { appendToIndexFactory, removeFromIndexFactory } from './database.ts'
 import { PUBSUB_INSTANCE } from './instance-keys.ts'
+import type { WS, WSS } from './pubsub.ts'
 import rfc8291Ikm from './rfc8291Ikm.ts'
 import { getVapidPublicKey, vapidAuthorization } from './vapid.ts'
-import {
-  sbp,
-  getSubscriptionId,
-  PUSH_SERVER_ACTION_TYPE,
-  REQUEST_TYPE,
-  createMessage,
-  aes128gcm,
-  rfc8188Encrypt as encrypt
-} from '~/deps.ts'
-import type { WS, WSS } from './pubsub.ts'
 
 // TypeScript interfaces for push server types
 interface StoreSubscriptionPayload {

@@ -2,7 +2,7 @@ import { mkdir, readdir, readFile, rm, unlink, writeFile } from 'node:fs/promise
 import { basename, dirname, join, normalize, resolve } from 'node:path'
 import process from 'node:process'
 import { Buffer } from 'node:buffer'
-import { checkKey } from '~/deps.ts'
+import { checkKey } from 'npm:@chelonia/lib/db'
 import DatabaseBackend from './DatabaseBackend.ts'
 
 // Some operating systems (such as macOS and Windows) use case-insensitive

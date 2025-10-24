@@ -1,6 +1,7 @@
-import { Hapi, Inert } from '~/deps.ts'
 import path from 'node:path'
 import process from 'node:process'
+import * as Hapi from 'npm:@hapi/hapi'
+import Inert from 'npm:@hapi/inert'
 
 // Get the current directory for dashboard assets
 const getDashboardPath = () => {

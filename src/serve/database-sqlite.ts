@@ -1,7 +1,8 @@
+import type { Database as SQLiteDB } from 'jsr:@db/sqlite'
+import * as sqlite from 'jsr:@db/sqlite'
 import { Buffer } from 'node:buffer'
 import { mkdir } from 'node:fs/promises'
 import { basename, dirname, join, resolve } from 'node:path'
-import { sqlite, SQLiteDB } from '~/deps.ts'
 import DatabaseBackend from './DatabaseBackend.ts'
 
 export default class SqliteBackend extends DatabaseBackend {

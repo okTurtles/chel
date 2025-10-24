@@ -11,28 +11,31 @@ import process from 'node:process'
  */
 
 import {
+  createClient,
+  createKvMessage,
+  createMessage,
+  messageParser,
   NOTIFICATION_TYPE,
   REQUEST_TYPE,
-  RESPONSE_TYPE,
-  createClient,
-  createMessage,
-  createKvMessage,
-  messageParser
-} from '~/deps.ts'
+  RESPONSE_TYPE
+} from 'npm:@chelonia/lib/pubsub'
 
 import type {
-  Message, PubMessage, SubMessage, UnsubMessage,
-  NotificationTypeEnum
-} from '~/deps.ts'
+  Message,
+  NotificationTypeEnum,
+  PubMessage, SubMessage, UnsubMessage
+} from 'npm:@chelonia/lib/pubsub'
+import { postEvent, PushSubscriptionInfo } from './push.ts'
 
 // Define JSON types locally since they're not exported from the module
 type JSONType = string | number | boolean | null | JSONObject | JSONType[]
 type JSONObject = { [key: string]: JSONType }
-import { postEvent, PushSubscriptionInfo } from './push.ts'
 // TODO: Use logger for debugging WebSocket events
 // import { logger } from './logger.ts'
-import { chalk, WebSocket, WebSocketServer } from '~/deps.ts'
-import { IncomingMessage } from 'node:http'
+import type { IncomingMessage } from 'node:http'
+import chalk from 'npm:chalk'
+// @deno-types="npm:@types/ws"
+import WebSocket, { WebSocketServer } from 'npm:ws'
 
 const { bold } = chalk
 
@@ -69,7 +72,7 @@ log.error = (error: unknown, ...args: unknown[]) => logger.error(error, bold.red
 // ====== API ====== //
 
 // Re-export some useful things from the shared module.
-export { createClient, createMessage, createKvMessage, NOTIFICATION_TYPE, REQUEST_TYPE, RESPONSE_TYPE }
+export { createClient, createKvMessage, createMessage, NOTIFICATION_TYPE, REQUEST_TYPE, RESPONSE_TYPE }
 
 export function createErrorResponse (data: JSONType): string {
   return JSON.stringify({ type: ERROR, data })

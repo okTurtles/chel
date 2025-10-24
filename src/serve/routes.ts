@@ -1,7 +1,15 @@
 // TODO: Use logger for debug output if needed
 
-import { sbp, chalk, SPMessage, maybeParseCID, multicodes, createCID, Boom, Joi, Bottleneck, blake32Hash, type Hapi } from '~/deps.ts'
 import { Buffer } from 'node:buffer'
+import { SPMessage } from 'npm:@chelonia/lib/SPMessage'
+import { blake32Hash, createCID, maybeParseCID } from 'npm:@chelonia/lib/functions'
+import { multicodes } from 'npm:@chelonia/lib@1.2.7/functions'
+import Boom from 'npm:@hapi/boom'
+import * as Hapi from 'npm:@hapi/hapi'
+import sbp from 'npm:@sbp/sbp'
+import Bottleneck from 'npm:bottleneck'
+import chalk from 'npm:chalk'
+import Joi from 'npm:joi'
 // TODO: Use logger for debugging route handlers
 // import { logger } from './logger.ts'
 import { isIP } from 'node:net'

@@ -1,6 +1,5 @@
-import { assertRejects } from '../src/deps.ts'
+import { assertRejects } from 'jsr:@std/assert'
 import { verifySignature } from '../src/verifySignature.ts'
-// import { CID, assertEquals, base58btc } from '../src/deps.ts'
 
 Deno.test({
     name: "Verify signature tests",

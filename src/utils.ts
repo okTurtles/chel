@@ -1,4 +1,8 @@
-import { CID, base58btc, blake, colors, path } from './deps.ts'
+import * as colors from 'jsr:@std/fmt/colors'
+import * as path from 'jsr:@std/path/'
+import blake from 'npm:@multiformats/blake2'
+import { base58btc } from 'npm:multiformats/bases/base58'
+import { CID } from 'npm:multiformats/cid'
 import * as fs from './database-fs.ts'
 import * as sqlite from './database-sqlite.ts'
 

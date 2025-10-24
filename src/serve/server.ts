@@ -1,10 +1,17 @@
 // deno-lint-ignore-file no-this-alias
 /* eslint-disable @typescript-eslint/no-this-alias */
-import { Hapi, Inert, sbp, chalk, SPMessage, SERVER, multicodes, parseCID, Boom } from '~/deps.ts'
+import { SPMessage } from 'npm:@chelonia/lib/SPMessage'
+import { SERVER } from 'npm:@chelonia/lib/presets'
+import { multicodes, parseCID } from 'npm:@chelonia/lib@1.2.7/functions'
+import Boom from 'npm:@hapi/boom'
+import * as Hapi from 'npm:@hapi/hapi'
+import Inert from 'npm:@hapi/inert'
+import sbp from 'npm:@sbp/sbp'
+import chalk from 'npm:chalk'
 // import type { SubMessage, UnsubMessage } from './pubsub.ts' // TODO: Use for type checking
 import { basename, join } from 'node:path'
-import { Worker } from 'node:worker_threads'
 import process from 'node:process'
+import { Worker } from 'node:worker_threads'
 import authPlugin from './auth.ts'
 import { CREDITS_WORKER_TASK_TIME_INTERVAL, OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL } from './constants.ts'
 import { KEYOP_SEGMENT_LENGTH, appendToIndexFactory, initDB, lookupUltimateOwner, removeFromIndexFactory, updateSize } from './database.ts'
@@ -14,12 +21,12 @@ import { PUBSUB_INSTANCE, SERVER_INSTANCE } from './instance-keys.ts'
 import {
   NOTIFICATION_TYPE,
   REQUEST_TYPE,
-  type WSS,
   createKvMessage,
   createMessage,
   createNotification,
   createPushErrorResponse,
-  createServer
+  createServer,
+  type WSS
 } from './pubsub.ts'
 import { addChannelToSubscription, deleteChannelFromSubscription, postEvent, pushServerActionhandlers, subscriptionInfoWrapper } from './push.ts'
 

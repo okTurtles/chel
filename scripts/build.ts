@@ -1,7 +1,7 @@
 #!/usr/bin/env -S deno run --allow-run --allow-read --allow-env --allow-write=./build --allow-net
 
 import * as esbuild from 'npm:esbuild@0.25.6'
-import { colors } from '../src/deps.ts'
+import * as colors from 'jsr:@std/fmt/colors'
 
 const { default: { version } } = await import('../package.json', { with: { type: 'json' } })
 

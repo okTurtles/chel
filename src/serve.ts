@@ -1,4 +1,5 @@
-import { flags, colors } from './deps.ts'
+import * as flags from 'jsr:@std/flags/'
+import * as colors from 'jsr:@std/fmt/colors'
 import process from 'node:process'
 
 interface ServeOptions {

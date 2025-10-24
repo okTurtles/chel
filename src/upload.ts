@@ -1,5 +1,6 @@
-import { path, colors } from './deps.ts'
-import { type Entry, createEntryFromFile, isDir, multicodes, revokeNet } from './utils.ts'
+import * as colors from 'jsr:@std/fmt/colors'
+import * as path from 'jsr:@std/path/'
+import { createEntryFromFile, isDir, multicodes, revokeNet, type Entry } from './utils.ts'
 
 // chel upload <url-or-dir-or-sqlitedb> <file1> [<file2> [<file3> ...]]
 

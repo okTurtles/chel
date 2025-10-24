@@ -1,4 +1,5 @@
-import { Three } from '../../../deps.ts'
+// @deno-types="npm:@types/three"
+import * as Three from 'npm:three'
 const {
   LineBasicMaterial, LineDashedMaterial, BufferGeometry, CircleGeometry, CylinderGeometry,
   Group, Line, Vector3, MeshLambertMaterial, Mesh, EdgesGeometry, LineSegments, DoubleSide
@@ -164,13 +165,7 @@ function degreeToRadian (deg: number): number {
 }
 
 export {
-  resizeRendererToDisplaySize,
-  adjustCameraAspect,
-  randomFromMinMax,
-  degreeToRadian,
-  LineMesh,
-  CombineWithEdge,
-  Edgify,
-  Column,
-  Axes
+  Axes, Column, CombineWithEdge,
+  Edgify, LineMesh, adjustCameraAspect, degreeToRadian, randomFromMinMax, resizeRendererToDisplaySize
 }
+

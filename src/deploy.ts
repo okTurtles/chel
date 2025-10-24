@@ -1,6 +1,7 @@
 // chel deploy <url-or-dir-or-sqlitedb> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
 
-import { path, z } from './deps.ts'
+import * as path from 'jsr:@std/path/'
+import * as z from 'npm:zod'
 import { upload } from './upload.ts'
 
 // Prefixes to use to select the correct CID to use

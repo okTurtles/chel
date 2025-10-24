@@ -1,4 +1,3 @@
-<template lang='pug'>
 .c-payment-methods-container
   .c-entry(
     v-for='item in ephemeral.paymentMethods'
@@ -26,8 +25,8 @@
 </template>
 
 <script>
-import { cloneDeep } from '../../deps.ts'
 import Dropdown from '@forms/Dropdown.vue'
+import { cloneDeep } from 'npm:turtledash'
 
 const genRandomId = () => Math.random().toString(20).slice(2)
 

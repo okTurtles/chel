@@ -15,7 +15,9 @@
  * `Vue.directive()` rather than exporting it, consistently with our other
  * custom Vue directives.
  */
-import { cloneDeep, dompurify, Vue } from '../../../deps.ts'
+import dompurify from 'npm:dompurify'
+import { cloneDeep } from 'npm:turtledash'
+import Vue from 'npm:vue'
 
 // TypeScript interfaces for Vue directive
 interface SafeHtmlBinding {

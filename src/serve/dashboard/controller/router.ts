@@ -1,4 +1,5 @@
-import { Vue, VueRouter as Router } from '../deps.ts'
+import Router from 'npm:vue-router'
+import Vue from 'npm:vue'
 
 declare const process: { env: Record<string, string | undefined> }
 

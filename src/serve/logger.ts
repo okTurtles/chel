@@ -1,5 +1,5 @@
-import { pino } from '~/deps.ts'
 import process from 'node:process'
+import pino from 'npm:pino'
 
 const prettyPrint = process.env.NODE_ENV === 'development' || process.env.CI || process.env.CYPRESS_RECORD_KEY || process.env.PRETTY
 

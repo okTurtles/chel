@@ -1,4 +1,6 @@
-import { type Hapi, Boom, verifyShelterAuthorizationHeader } from '~/deps.ts'
+import { verifyShelterAuthorizationHeader } from 'npm:@chelonia/lib/utils'
+import Boom from 'npm:@hapi/boom'
+import type * as Hapi from 'npm:@hapi/hapi'
 
 const plugin: Hapi.NamedPlugin<void> = {
   name: 'chel-auth',

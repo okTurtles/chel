@@ -1,5 +1,5 @@
-import { sbp } from '~/deps.ts'
 import { parentPort } from 'node:worker_threads'
+import sbp from 'npm:@sbp/sbp'
 import { initDB } from './database.ts'
 import './logger.ts'
 

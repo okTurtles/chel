@@ -1,7 +1,8 @@
-import { CID, assertEquals, base58btc } from '../src/deps.ts'
+import { assertEquals } from 'jsr:@std/assert'
+import { base58btc } from 'npm:multiformats/bases/base58'
+import { CID } from 'npm:multiformats/cid'
 import { hash } from '../src/hash.ts'
 import { multicodes } from '../src/utils.ts'
-
 
 Deno.test({
     name: "Hash command tests",

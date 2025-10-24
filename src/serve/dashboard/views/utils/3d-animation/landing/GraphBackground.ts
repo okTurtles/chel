@@ -1,9 +1,11 @@
-import { Three } from '../../../../deps.ts'
+// @deno-types="npm:@types/three"
+import * as Three from 'npm:three'
+import { CombineWithEdge } from '../animation-utils.ts'
+
 const {
   BoxGeometry, Group, MeshLambertMaterial, Mesh, Vector3,
   LineDashedMaterial, BufferGeometry, Line, DoubleSide
 } = Three
-import { CombineWithEdge } from '../animation-utils.ts'
 
 export default class GraphBackground extends Group {
   constructor ({

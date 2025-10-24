@@ -1,4 +1,5 @@
-import { sbp, Vue } from './deps.ts'
+import sbp from 'npm:@sbp/sbp'
+import Vue from 'npm:vue'
 import router from './controller/router.ts'
 import store from './model/state.ts'
 import { initTheme } from './model/themes.ts'

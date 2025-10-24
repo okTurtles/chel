@@ -7,7 +7,8 @@ If it's a binary file, for example an image, the command will be used like this:
 chel get https://url.com mygreatlongkey > file.png
 */
 
-import { flags, writeAll } from './deps.ts'
+import * as flags from 'jsr:@std/flags/'
+import { writeAll } from 'jsr:@std/io/'
 import { exit, getBackend, isURL, readRemoteData } from './utils.ts'
 
 export async function get (args: string[]): Promise<void> {

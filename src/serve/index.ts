@@ -1,7 +1,8 @@
-import { sbp, chalk } from '~/deps.ts'
+import process from 'node:process'
+import sbp from 'npm:@sbp/sbp'
+import chalk from 'npm:chalk'
 import { SERVER_EXITING, SERVER_RUNNING } from './events.ts'
 import { PUBSUB_INSTANCE } from './instance-keys.ts'
-import process from 'node:process'
 import './logger.ts'
 
 console.info('NODE_ENV =', process.env.NODE_ENV)

@@ -1,6 +1,8 @@
 // chel migrate --from fs --to sqlite --out ./database.db ./data
 
-import { colors, flags, path } from './deps.ts'
+import * as flags from 'jsr:@std/flags/'
+import * as colors from 'jsr:@std/fmt/colors'
+import * as path from 'jsr:@std/path/'
 import { exit, getBackend, isNotHashKey, isValidKey, revokeNet } from './utils.ts'
 
 export async function migrate (args: string[]): Promise<void> {

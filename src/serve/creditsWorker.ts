@@ -1,3 +1,7 @@
+import sbp from 'npm:@sbp/sbp'
+import { CREDITS_WORKER_TASK_TIME_INTERVAL as TASK_TIME_INTERVAL } from './constants.ts'
+import { readyQueueName } from './genericWorker.ts'
+
 // Type definitions for credit history entries
 interface GranularHistoryEntryBase {
   type: 'charge' | 'credit';
@@ -29,10 +33,6 @@ interface CoarseHistoryEntry {
   period: string; // ISO period string
   balancePicocreditAmount: string; // BigInt string
 }
-
-import { sbp } from '~/deps.ts'
-import { CREDITS_WORKER_TASK_TIME_INTERVAL as TASK_TIME_INTERVAL } from './constants.ts'
-import { readyQueueName } from './genericWorker.ts'
 
 // Rate: How many credits are charged per byte stored per second.
 // Using BigInt for precision. Using 'picocredits' so that ~1k 'credits' cover
