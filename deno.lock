@@ -25,8 +25,7 @@
     "jsr:@std/streams@1.0.10": "1.0.10",
     "npm:@apeleghq/rfc8188@1.0.7": "1.0.7",
     "npm:@chelonia/crypto@1.0.1": "1.0.1",
-    "npm:@chelonia/lib@1.2.2": "1.2.2_@sbp+sbp@2.4.1",
-    "npm:@chelonia/lib@1.2.4": "1.2.4_@sbp+sbp@2.4.1",
+    "npm:@chelonia/lib@1.2.7": "1.2.7_@sbp+sbp@2.4.1",
     "npm:@eslint/js@9.31.0": "9.31.0",
     "npm:@hapi/boom@10.0.1": "10.0.1",
     "npm:@hapi/hapi@21.4.3": "21.4.3",
@@ -189,8 +188,8 @@
         "tweetnacl"
       ]
     },
-    "@chelonia/lib@1.2.2_@sbp+sbp@2.4.1": {
-      "integrity": "sha512-d5PeLgkUVYXoYwoP2h3io67ybJsgST9ASP7FL89SvIzQca+SA9958Bx+49ArRIuQt+/5wzX+o5beae9EJ47E9w==",
+    "@chelonia/lib@1.2.7_@sbp+sbp@2.4.1": {
+      "integrity": "sha512-2hz1fp/XoypjthOJT7KvmMQgy+l0dMP4lAeIrx8+nOs3xcPpC7vRQKrMhMyimd1CDXqiXL8TjJweSKxvAIW3wQ==",
       "dependencies": [
         "@apeleghq/multipart-parser",
         "@apeleghq/rfc8188@1.0.8",
@@ -201,23 +200,7 @@
         "@sbp/okturtles.events@1.0.1_@sbp+sbp@2.4.1",
         "@sbp/sbp",
         "scrypt-async",
-        "turtledash@1.0.2",
-        "tweetnacl"
-      ]
-    },
-    "@chelonia/lib@1.2.4_@sbp+sbp@2.4.1": {
-      "integrity": "sha512-lRf5q0Qoj8vAyesGRtGTxBWH/+3O07EfI1dB4CHU+FjCwM+2qaYuh+YIdHFfnpVG95lqSywF5uEqxTpn+Ii0QA==",
-      "dependencies": [
-        "@apeleghq/multipart-parser",
-        "@apeleghq/rfc8188@1.0.8",
-        "@chelonia/crypto",
-        "@chelonia/serdes",
-        "@sbp/okturtles.data@0.1.6_@sbp+sbp@2.4.1",
-        "@sbp/okturtles.eventqueue@1.2.1_@sbp+sbp@2.4.1",
-        "@sbp/okturtles.events@1.0.1_@sbp+sbp@2.4.1",
-        "@sbp/sbp",
-        "scrypt-async",
-        "turtledash@1.0.2",
+        "turtledash",
         "tweetnacl"
       ]
     },
@@ -2904,9 +2887,6 @@
     "tslib@2.8.1": {
       "integrity": "sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w=="
     },
-    "turtledash@1.0.2": {
-      "integrity": "sha512-hLmeevYrlFlLxeB4lYZOtV6TlRe0NQ6YxTVotWXVL9ubqSm2UgZaoSTpQjBJz3Ag27oHJA3iIi017CkubPp37w=="
-    },
     "turtledash@1.0.3": {
       "integrity": "sha512-Z7LIPDSvnl0U53DyJ7YxLxG/yQac/NK0OwGNOM37SjE87S5KtybFEwHVhevUWtK8iaEzYHWyC5/vEd1GKm5iQw=="
     },
@@ -3070,7 +3050,7 @@
     ],
     "packageJson": {
       "dependencies": [
-        "npm:@chelonia/lib@1.2.4",
+        "npm:@chelonia/lib@1.2.7",
         "npm:@hapi/boom@10.0.1",
         "npm:@hapi/hapi@21.4.3",
         "npm:@hapi/inert@7.1.0",

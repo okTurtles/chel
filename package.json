@@ -20,7 +20,7 @@
     "scripts/**/*"
   ],
   "dependencies": {
-    "@chelonia/lib": "1.2.4",
+    "@chelonia/lib": "1.2.7",
     "@hapi/boom": "10.0.1",
     "@hapi/hapi": "21.4.3",
     "@hapi/inert": "7.1.0",
