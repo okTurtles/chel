@@ -22,6 +22,12 @@ const options: esbuild.BuildOptions = {
   write: false,
   plugins: [
     {
+      name: 'npm',
+      setup (build) {
+        build.onResolve({ filter: /^npm:/, namespace: 'file' }, ({ path, ...args }) => build.resolve(path.slice(4), args))
+      }
+    },
+    {
       name: 'skip',
       setup (build) {
         build.onResolve({ filter: /^[\w\d]+:/, namespace: 'file' }, () => ({
@@ -45,7 +51,11 @@ for (const outfile of result.outputFiles!) {
   const tmpFile = outfile.path + '-tmp'
   try {
     Deno.writeFileSync(tmpFile, outfile.contents)
-    Deno.removeSync(outfile.path)
+    try {
+      Deno.removeSync(outfile.path)
+    } catch (e) {
+      if (e instanceof Error && e.name !== 'NotFound') throw e
+    }
     const output = await new Deno.Command(Deno.execPath(), {
       args: ['bundle', '-o', outfile.path, tmpFile]
     }).output()

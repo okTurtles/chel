@@ -1,5 +1,5 @@
 import { debounce } from 'npm:turtledash'
-import vuelidateSetup from 'npm:vuelidate'
+import { validationMixin as vuelidateSetup } from 'npm:vuelidate'
 
 // TypeScript interfaces for Vue component with vuelidate
 interface VuelidateField {

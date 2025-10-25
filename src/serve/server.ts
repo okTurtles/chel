@@ -1,8 +1,10 @@
 // deno-lint-ignore-file no-this-alias
 /* eslint-disable @typescript-eslint/no-this-alias */
+import '@chelonia/lib/chelonia'
+import '@chelonia/lib/persistent-actions'
 import { SPMessage } from 'npm:@chelonia/lib/SPMessage'
 import { SERVER } from 'npm:@chelonia/lib/presets'
-import { multicodes, parseCID } from 'npm:@chelonia/lib@1.2.7/functions'
+import { multicodes, parseCID } from 'npm:@chelonia/lib/functions'
 import Boom from 'npm:@hapi/boom'
 import * as Hapi from 'npm:@hapi/hapi'
 import Inert from 'npm:@hapi/inert'

@@ -9,6 +9,7 @@
   },
   "imports": {
     "~/": "./src/",
+    "buffer": "node:buffer",
     "jsr:@std/assert": "jsr:@std/assert@1.0.13",
     "jsr:@std/encoding/": "jsr:@std/encoding@1.0.10/",
     "jsr:@std/flags/": "jsr:@std/flags@0.224.0/",
