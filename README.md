@@ -10,6 +10,7 @@ chel keygen [--out=<key.json>]
 chel manifest [-k|--key <pubkey1> [-k|--key <pubkey2> ...]] [--out=<manifest.json>] [-s|--slim <contract-slim.js>] [-v|--version <version>] <key.json> <contract-bundle.js>
 chel deploy <url-or-dir-or-sqlitedb> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
 chel upload <url-or-dir-or-sqlitedb> <file1> [<file2> [<file3> ...]]
+chel serve [options] <directory>
 chel latestState <url> <contractID>
 chel eventsAfter [--limit N] <url> <contractID> <hash>
 chel eventsBefore [--limit N] <url> <contractID> <hash>
@@ -33,6 +34,35 @@ Note: in many (if not all) instances, the `<url>` parameter can refer to a local
 
 If `"encrypted"` doesn't exist - it means the `"privkey"` was saved in the clear.
 
+### `chel serve`
+
+Starts a local development server for Chelonia applications.
+
+```
+chel serve [options] <directory>
+
+OPTIONS
+
+--dp <port>        set dashboard port (default: 8888)
+--port <port>      set application port (default: 8000)
+--db-type <type>   one of: files, sqlite, mem (default: mem)
+--db-location <loc>  for "files", a directory, for "sqlite", path to sqlite database
+```
+
+**Example:**
+```bash
+# Serve Group Income app from extracted directory
+chel serve ./gi-v2.0.0
+
+# Serve with custom ports and SQLite database
+chel serve --dp 8888 --port 8000 --db-type sqlite --db-location ./app.db ./my-app
+```
+
+The serve command will:
+- Start a dashboard server (default: http://localhost:8888)
+- Start an application server (default: http://localhost:8000)
+- Serve static assets and handle API routes
+- Support different database backends (memory, filesystem, SQLite)
 
 ### `chel manifest`
 
@@ -85,7 +115,7 @@ Outputs the hash(es) corresponding to the manifest(s).
 Useful command:
 
 ```
-cp -r path/to/contracts/* test/assets/ && ls ./test/assets/*-slim.js | sed -En 's/.*\/(.*)-slim.js/\1/p' | xargs -I {} ./src/main.ts manifest --out=test/assets/{}.manifest.json --slim test/assets/{}-slim.js key.json test/assets/{}.js && ls ./test/assets/*.manifest.json | xargs ./src/main.ts deploy http://127.0.0.1:3000
+cp -r path/to/contracts/* test/assets/ && ls ./test/assets/*-slim.js | sed -En 's/.*\/(.*)-slim.js/\1/p' | xargs -I {} ./src/main.ts manifest --out=test/assets/{}.manifest.json --slim test/assets/{}-slim.js key.json test/assets/{}.js && ls ./test/assets/*.manifest.json | xargs ./src/main.ts deploy http://127.0.0.1:8888
 ```
 
 ### sha256sum

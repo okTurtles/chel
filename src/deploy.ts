@@ -1,10 +1,8 @@
-'use strict'
-
 // chel deploy <url-or-dir-or-sqlitedb> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
 
-import { path } from './deps.ts'
+import * as path from 'jsr:@std/path/'
+import * as z from 'npm:zod'
 import { upload } from './upload.ts'
-import { z } from 'zod'
 
 // Prefixes to use to select the correct CID to use
 const CONTRACT_TEXT_PREFIX = 't|'

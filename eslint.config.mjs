@@ -1,6 +1,6 @@
 // @ts-check
-import eslint from "@eslint/js"
-import tseslint from "typescript-eslint"
+import eslint from "npm:@eslint/js"
+import tseslint from "npm:typescript-eslint"
 
 export default tseslint.config(
   eslint.configs.recommended,
@@ -30,11 +30,6 @@ export default tseslint.config(
       'indent': ['error', 2, { SwitchCase: 1 }],
       'eol-last': ['error', 'always'],
       'no-multiple-empty-lines': ['error', { max: 1 }],
-      "@typescript-eslint/only-throw-error": "off",
-      "no-console": "off",
-      "no-constant-condition": "off",
-      "@typescript-eslint/no-unused-vars": "off",
-      "no-constant-binary-expression": "off",
       "@typescript-eslint/no-unused-expressions": "off",
       "no-control-regex": "off",
     },

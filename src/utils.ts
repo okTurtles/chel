@@ -1,6 +1,8 @@
-'use strict'
-
-import { CID, base58btc, blake, colors, path } from './deps.ts'
+import * as colors from 'jsr:@std/fmt/colors'
+import * as path from 'jsr:@std/path/'
+import blake from 'npm:@multiformats/blake2'
+import { base58btc } from 'npm:multiformats/bases/base58'
+import { CID } from 'npm:multiformats/cid'
 import * as fs from './database-fs.ts'
 import * as sqlite from './database-sqlite.ts'
 
@@ -21,7 +23,7 @@ const multihasher = blake.blake2b.blake2b256
 
 export type Backend = typeof backends.sqlite | typeof backends.fs
 // For now our entry keys are CIDs serialized to base58btc and our values are always Uint8Array instances.
-export type Entry = [string, Uint8Array]
+export type Entry = [string, Uint8Array<ArrayBuffer>]
 
 export function checkKey (key: string): void {
   if (!isValidKey(key)) {

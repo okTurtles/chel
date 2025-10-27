@@ -20,12 +20,15 @@
     "scripts/**/*"
   ],
   "dependencies": {
+    "@chelonia/lib": "1.2.7",
+    "@hapi/boom": "10.0.1",
+    "@hapi/hapi": "21.4.3",
+    "@hapi/inert": "7.1.0",
+    "@types/ws": "8.5.10",
+    "joi": "18.0.1",
+    "pino-pretty": "^13.1.1",
     "rimraf": "3.0.2",
-    "tar": "6.1.11",
-    "zod": "4.0.5"
+    "tar": "6.1.11"
   },
-  "devDependencies": {
-    "@eslint/js": "9.31.0",
-    "typescript-eslint": "8.37.0"
-  }
+  "devDependencies": {}
 }

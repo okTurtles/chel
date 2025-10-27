@@ -1,11 +1,12 @@
-'use strict'
-
 // chel manifest [-k|--key <pubkey1> [-k|--key <pubkey2> ...]] [--out=<manifest.json>] [-s|--slim <contract-slim.js>] [-v|--version <version>] <key.json> <contract-bundle.js>
 
 // TODO: consider a --copy-files option that works with --out which copies version-stamped
 //       contracts to the same folder as --out.
 
-import { flags, path, colors, EDWARDS25519SHA512BATCH, deserializeKey, keyId, serializeKey, sign } from './deps.ts'
+import * as flags from 'jsr:@std/flags/'
+import * as colors from 'jsr:@std/fmt/colors'
+import * as path from 'jsr:@std/path/'
+import { EDWARDS25519SHA512BATCH, deserializeKey, keyId, serializeKey, sign } from 'npm:@chelonia/crypto'
 import { hash } from './hash.ts'
 import { exit, multicodes, readJsonFile, revokeNet } from './utils.ts'
 

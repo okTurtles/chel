@@ -1,4 +1,6 @@
-import { path, sqlite, type SQLiteDB } from './deps.ts'
+import type { Database as SQLiteDB } from 'jsr:@db/sqlite'
+import * as sqlite from 'jsr:@db/sqlite'
+import * as path from 'jsr:@std/path/'
 import { checkKey } from './utils.ts'
 
 const DB = sqlite.Database

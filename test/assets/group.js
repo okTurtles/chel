@@ -199,7 +199,7 @@ var require_purify = __commonJS({
         var DOMPurify = function DOMPurify2(root) {
           return createDOMPurify(root);
         };
-        DOMPurify.version = "2.2.7";
+        DOMPurify.version = "2.4.2";
         DOMPurify.removed = [];
         if (!window2 || !window2.document || window2.document.nodeType !== 9) {
           DOMPurify.isSupported = false;

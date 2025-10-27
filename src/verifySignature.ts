@@ -1,5 +1,8 @@
+import * as flags from 'jsr:@std/flags/'
+import * as colors from 'jsr:@std/fmt/colors'
+import * as path from 'jsr:@std/path/'
+import { verifySignature as cryptoVerifySignature, deserializeKey, keyId } from 'npm:@chelonia/crypto'
 import { hash } from './commands.ts'
-import { colors, flags, path, verifySignature as cryptoVerifySignature, deserializeKey, keyId } from './deps.ts'
 import { exit, multicodes, readJsonFile, revokeNet } from './utils.ts'
 
 interface ExternalKeyDescriptor {

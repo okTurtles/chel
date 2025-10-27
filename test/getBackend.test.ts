@@ -1,6 +1,5 @@
-'use strict'
-
-import { assert, assertRejects, path } from '../src/deps.ts'
+import { assert, assertRejects } from 'jsr:@std/assert'
+import * as path from 'jsr:@std/path/'
 import { getBackend } from '../src/utils.ts'
 
 const exists = (path: string): Promise<boolean> => Deno.stat(path).then(() => true).catch(() => false)

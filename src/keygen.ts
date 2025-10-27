@@ -1,4 +1,6 @@
-import { colors, flags, EDWARDS25519SHA512BATCH, keygen as cryptoKeygen, keyId, serializeKey } from './deps.ts'
+import * as flags from 'jsr:@std/flags/'
+import * as colors from 'jsr:@std/fmt/colors'
+import { EDWARDS25519SHA512BATCH, keygen as cryptoKeygen, keyId, serializeKey } from 'npm:@chelonia/crypto'
 import { revokeNet } from './utils.ts'
 
 export const keygen = async (args: string[]): Promise<void> => {

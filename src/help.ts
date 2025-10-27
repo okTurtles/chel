@@ -1,5 +1,3 @@
-'use strict'
-
 export function help (args?: string[]): void {
   if ((args == null) || args.length === 0) {
     console.log(`

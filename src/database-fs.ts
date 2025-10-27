@@ -1,6 +1,4 @@
-'use strict'
-
-import { path } from './deps.ts'
+import * as path from 'jsr:@std/path/'
 import { checkKey } from './utils.ts'
 
 // Initialized in `initStorage()`.

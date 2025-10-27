@@ -1,7 +1,7 @@
-'use strict'
 // chel eventsAfter [--limit N] <url-or-localpath> <contractID> <hash>
 
-import { base64, flags } from './deps.ts'
+import * as base64 from 'jsr:@std/encoding/base64'
+import * as flags from 'jsr:@std/flags/'
 import { type Backend, exit, isArrayLength, getBackend, isURL } from './utils.ts'
 
 let backend: Backend
@@ -68,7 +68,7 @@ async function getRemoteMessagesSince (src: string, contractID: string, sinceHei
   const response = await fetch(`${src}/eventsAfter/${contractID}/${sinceHeight}`)
   if (!response.ok) {
     // The response body may contain some useful error info if we got a Boom error response.
-    const bodyText = await response.text().catch(_ => '') || ''
+    const bodyText = await response.text().catch(() => '') || ''
     throw new Error(`failed network request to ${src}: ${response.status} - ${response.statusText} - '${bodyText}'`)
   }
   const b64messages: string[] = await response.json()

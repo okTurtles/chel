@@ -1,0 +1,69 @@
+import process from 'node:process'
+import pino from 'npm:pino'
+
+const prettyPrint = process.env.NODE_ENV === 'development' || process.env.CI || process.env.CYPRESS_RECORD_KEY || process.env.PRETTY
+
+/* module globalThis {
+  logger: {
+    level: string;
+    levels: {
+        values: Record<string, unknown>;
+    };
+    debug: (...args: unknown[]) => void;
+    info: (...args: unknown[]) => void;
+    warn: (...args: unknown[]) => void;
+    error: (...args: unknown[]) => void;
+  }
+} */
+
+function logMethod (this: unknown, args: unknown[], method: (...args: unknown[]) => void): void {
+  const stringIdx = typeof args[0] === 'string' ? 0 : 1
+  if (args.length > 1) {
+    for (let i = stringIdx + 1; i < args.length; ++i) {
+      (args[stringIdx] as string) += typeof args[i] === 'string' ? ' %s' : ' %o'
+    }
+  }
+  method.apply(this, args)
+}
+
+let logger: {
+  level: string;
+  levels: { values: Record<string, unknown> };
+  debug: (...args: unknown[]) => void;
+  info: (...args: unknown[]) => void;
+  warn: (...args: unknown[]) => void;
+  error: (...args: unknown[]) => void;
+}
+
+if (prettyPrint) {
+  try {
+    logger = (pino as unknown as (config: unknown) => typeof logger)({
+      hooks: { logMethod },
+      transport: {
+        target: 'pino-pretty',
+        options: {
+          colorize: true
+        }
+      }
+    })
+  } catch (e) {
+    console.warn('pino-pretty transport unavailable, using basic logging', e)
+    logger = (pino as unknown as (config: unknown) => typeof logger)({ hooks: { logMethod } })
+  }
+} else {
+  logger = (pino as unknown as (config: unknown) => typeof logger)({ hooks: { logMethod } })
+}
+
+const logLevel = process.env.LOG_LEVEL || (prettyPrint ? 'debug' : 'info')
+if (Object.keys(logger.levels.values).includes(logLevel)) {
+  logger.level = logLevel
+} else {
+  logger.warn(`Unknown log level: ${logLevel}`)
+}
+
+(globalThis as unknown as { logger: typeof logger }).logger = logger // TypeScript global assignment
+console.debug = logger.debug.bind(logger)
+console.info = logger.info.bind(logger)
+console.log = logger.info.bind(logger)
+console.warn = logger.warn.bind(logger)
+console.error = logger.error.bind(logger)

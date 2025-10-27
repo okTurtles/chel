@@ -1,39 +1,41 @@
 #!/usr/bin/env -S deno run --allow-run --allow-read --allow-env --allow-write=./build --allow-net
 
-'use strict'
-
-import { colors, esbuild } from '../src/deps.ts'
+import * as esbuild from 'npm:esbuild@0.25.6'
+import * as colors from 'jsr:@std/fmt/colors'
 
 const { default: { version } } = await import('../package.json', { with: { type: 'json' } })
 
-const options = {
-  entryPoints: ['./src/main.ts'],
+const options: esbuild.BuildOptions = {
+  entryPoints: [
+    './src/main.ts',
+    './src/serve/ownerSizeTotalWorker.ts',
+    './src/serve/creditsWorker.ts'
+  ],
   bundle: true,
   define: {
-    '__build__.VERSION': JSON.stringify(version)
+    'import.meta.VERSION': JSON.stringify(version)
   },
-  external: [
-    'node:process',
-    'jsr:@std/assert@1.0.13',
-    'jsr:@std/encoding@1.0.10/base64',
-    'jsr:@std/flags@0.224.0',
-    'jsr:@std/fmt@1.0.8/colors',
-    'jsr:@std/fs@1.0.19',
-    'jsr:@std/path@1.1.1',
-    'jsr:@std/streams@1.0.10',
-    'jsr:@std/io@0.225.2',
-    'jsr:@db/sqlite@0.12.0',
-    'npm:esbuild@0.25.6',
-    'npm:tweetnacl@1.0.3',
-    'npm:multiformats@11.0.2/cid',
-    'npm:multiformats@11.0.2/bases/base58',
-    'npm:multiformats@11.0.2',
-    'npm:@multiformats/blake2@1.0.13',
-    'npm:@chelonia/crypto@1.0.1'
-  ],
   format: 'esm',
+  platform: 'node',
   outdir: 'build',
-  splitting: false
+  splitting: false,
+  write: false,
+  plugins: [
+    {
+      name: 'npm',
+      setup (build) {
+        build.onResolve({ filter: /^npm:/, namespace: 'file' }, ({ path, ...args }) => build.resolve(path.slice(4), args))
+      }
+    },
+    {
+      name: 'skip',
+      setup (build) {
+        build.onResolve({ filter: /^[\w\d]+:/, namespace: 'file' }, () => ({
+          external: true
+        }))
+      }
+    }
+  ]
 }
 const result = await esbuild.build(options)
 if (result.errors.length) {
@@ -44,4 +46,27 @@ if (result.errors.length) {
   console.warn(colors.yellow('build warnings:'), result.warnings)
 }
 console.log(colors.green('built:'), options.outdir)
+
+for (const outfile of result.outputFiles!) {
+  const tmpFile = outfile.path + '-tmp'
+  try {
+    Deno.writeFileSync(tmpFile, outfile.contents)
+    try {
+      Deno.removeSync(outfile.path)
+    } catch (e) {
+      if (e instanceof Error && e.name !== 'NotFound') throw e
+    }
+    const output = await new Deno.Command(Deno.execPath(), {
+      args: ['bundle', '-o', outfile.path, tmpFile]
+    }).output()
+    if (!output.success) {
+      Deno.stdout.writeSync(output.stdout)
+      Deno.stderr.writeSync(output.stderr)
+      throw new Error('Failed to call \'deno bundle\'')
+    }
+  } finally {
+    Deno.removeSync(tmpFile)
+  }
+}
+
 esbuild.stop()
