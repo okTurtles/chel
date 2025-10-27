@@ -78264,7 +78264,6 @@ async function serve(args) {
     await new Promise(() => {
     });
   } catch (error) {
-    console.error(error);
     console.error(red("\u274C Failed to start server:"), error);
     process12.exit(1);
   }
