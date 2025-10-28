@@ -8,17 +8,18 @@ export default class RedisBackend extends DatabaseBackend {
 
   constructor (options: { url?: string } = {}) {
     super()
-    this.url = url
+    this.url = options.url
   }
 
   async init () {
-    this.db = createClient({
+    const db = createClient({
       RESP: 3,
       url: this.url
     }).withTypeMapping({
       [RESP_TYPES.BLOB_STRING]: Buffer
     })
-    await this.db!.connect()
+    await db.connect()
+    this.db = db as unknown as RedisClientType
   }
 
   // Useful in test hooks.
