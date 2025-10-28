@@ -1,6 +1,6 @@
 {
   "tasks": {
-    "chel": "deno task lint && deno task build && deno run --allow-net --allow-read=. --allow-write=. --allow-sys --allow-env build/main.js",
+    "chel": "deno task lint && deno task build && deno run --allow-net --allow-read=.,$HOME/.cache/deno,$HOME/Library/Caches/deno --allow-ffi --allow-write=. --allow-sys --allow-env build/main.js",
     "lint": "deno run --allow-env --allow-read --allow-sys='cpus' npm:eslint@9.31.0 ./src ./scripts",
     "compile": "deno run --allow-env --allow-ffi --allow-sys='hostname' --allow-run --allow-read --allow-write=./dist scripts/compile.ts",
     "build": "deno run --node-modules-dir --allow-ffi --allow-run --allow-read --allow-env --allow-write=./build --allow-sys='cpus,homedir' scripts/dashboard-esbuild.ts && deno run --node-modules-dir --allow-ffi --allow-run --allow-read --allow-env --allow-write=./build --allow-sys='cpus,homedir,hostname' scripts/build.ts",
