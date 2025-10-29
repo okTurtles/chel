@@ -9,6 +9,7 @@ import { mkdir, readdir, readFile, rm, unlink, writeFile } from "node:fs/promise
 import { basename as basename6, dirname as dirname6, join as join6, normalize as normalize6, resolve as resolve6 } from "node:path";
 import process3 from "node:process";
 import { Buffer as Buffer10 } from "node:buffer";
+import { Buffer as Buffer11 } from "node:buffer";
 
 // deno:https://jsr.io/@db/sqlite/0.12.0/deno.json
 var deno_default = {
@@ -57,28 +58,28 @@ var deno_default = {
 };
 
 // deno:https://jsr.io/@std/path/0.217.0/_common/from_file_url.ts
-function assertArg3(url2) {
-  url2 = url2 instanceof URL ? url2 : new URL(url2);
-  if (url2.protocol !== "file:") {
+function assertArg3(url) {
+  url = url instanceof URL ? url : new URL(url);
+  if (url.protocol !== "file:") {
     throw new TypeError("Must be a file URL.");
   }
-  return url2;
+  return url;
 }
 
 // deno:https://jsr.io/@std/path/0.217.0/windows/from_file_url.ts
-function fromFileUrl(url2) {
-  url2 = assertArg3(url2);
-  let path2 = decodeURIComponent(url2.pathname.replace(/\//g, "\\").replace(/%(?![0-9A-Fa-f]{2})/g, "%25")).replace(/^\\*([A-Za-z]:)(\\|$)/, "$1\\");
-  if (url2.hostname !== "") {
-    path2 = `\\\\${url2.hostname}${path2}`;
+function fromFileUrl(url) {
+  url = assertArg3(url);
+  let path2 = decodeURIComponent(url.pathname.replace(/\//g, "\\").replace(/%(?![0-9A-Fa-f]{2})/g, "%25")).replace(/^\\*([A-Za-z]:)(\\|$)/, "$1\\");
+  if (url.hostname !== "") {
+    path2 = `\\\\${url.hostname}${path2}`;
   }
   return path2;
 }
 
 // deno:https://jsr.io/@std/path/0.217.0/posix/from_file_url.ts
-function fromFileUrl2(url2) {
-  url2 = assertArg3(url2);
-  return decodeURIComponent(url2.pathname.replace(/%(?![0-9A-Fa-f]{2})/g, "%25"));
+function fromFileUrl2(url) {
+  url = assertArg3(url);
+  return decodeURIComponent(url.pathname.replace(/%(?![0-9A-Fa-f]{2})/g, "%25"));
 }
 
 // deno:https://jsr.io/@std/path/0.217.0/_os.ts
@@ -96,8 +97,8 @@ var osType = (() => {
 var isWindows = osType === "windows";
 
 // deno:https://jsr.io/@std/path/0.217.0/from_file_url.ts
-function fromFileUrl3(url2) {
-  return isWindows ? fromFileUrl(url2) : fromFileUrl2(url2);
+function fromFileUrl3(url) {
+  return isWindows ? fromFileUrl(url) : fromFileUrl2(url);
 }
 
 // deno:https://jsr.io/@std/internal/1.0.10/_os.ts
@@ -118,18 +119,18 @@ function assertPath2(path2) {
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/_common/from_file_url.ts
-function assertArg5(url2) {
-  url2 = url2 instanceof URL ? url2 : new URL(url2);
-  if (url2.protocol !== "file:") {
-    throw new TypeError(`URL must be a file URL: received "${url2.protocol}"`);
+function assertArg5(url) {
+  url = url instanceof URL ? url : new URL(url);
+  if (url.protocol !== "file:") {
+    throw new TypeError(`URL must be a file URL: received "${url.protocol}"`);
   }
-  return url2;
+  return url;
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/posix/from_file_url.ts
-function fromFileUrl4(url2) {
-  url2 = assertArg5(url2);
-  return decodeURIComponent(url2.pathname.replace(/%(?![0-9A-Fa-f]{2})/g, "%25"));
+function fromFileUrl4(url) {
+  url = assertArg5(url);
+  return decodeURIComponent(url.pathname.replace(/%(?![0-9A-Fa-f]{2})/g, "%25"));
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/_common/strip_trailing_separators.ts
@@ -175,11 +176,11 @@ function isWindowsDeviceRoot2(code2) {
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/windows/from_file_url.ts
-function fromFileUrl5(url2) {
-  url2 = assertArg5(url2);
-  let path2 = decodeURIComponent(url2.pathname.replace(/\//g, "\\").replace(/%(?![0-9A-Fa-f]{2})/g, "%25")).replace(/^\\*([A-Za-z]:)(\\|$)/, "$1\\");
-  if (url2.hostname !== "") {
-    path2 = `\\\\${url2.hostname}${path2}`;
+function fromFileUrl5(url) {
+  url = assertArg5(url);
+  let path2 = decodeURIComponent(url.pathname.replace(/\//g, "\\").replace(/%(?![0-9A-Fa-f]{2})/g, "%25")).replace(/^\\*([A-Za-z]:)(\\|$)/, "$1\\");
+  if (url.hostname !== "") {
+    path2 = `\\\\${url.hostname}${path2}`;
   }
   return path2;
 }
@@ -375,8 +376,8 @@ function extname5(path2) {
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/from_file_url.ts
-function fromFileUrl6(url2) {
-  return isWindows2 ? fromFileUrl5(url2) : fromFileUrl4(url2);
+function fromFileUrl6(url) {
+  return isWindows2 ? fromFileUrl5(url) : fromFileUrl4(url);
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/posix/is_absolute.ts
@@ -777,9 +778,9 @@ function toFileUrl3(path2) {
   if (!isAbsolute3(path2)) {
     throw new TypeError(`Path must be absolute: received "${path2}"`);
   }
-  const url2 = new URL("file:///");
-  url2.pathname = encodeWhitespace2(path2.replace(/%/g, "%25").replace(/\\/g, "%5C"));
-  return url2;
+  const url = new URL("file:///");
+  url.pathname = encodeWhitespace2(path2.replace(/%/g, "%25").replace(/\\/g, "%5C"));
+  return url;
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/windows/to_file_url.ts
@@ -788,15 +789,15 @@ function toFileUrl4(path2) {
     throw new TypeError(`Path must be absolute: received "${path2}"`);
   }
   const [, hostname, pathname] = path2.match(/^(?:[/\\]{2}([^/\\]+)(?=[/\\](?:[^/\\]|$)))?(.*)/);
-  const url2 = new URL("file:///");
-  url2.pathname = encodeWhitespace2(pathname.replace(/%/g, "%25"));
+  const url = new URL("file:///");
+  url.pathname = encodeWhitespace2(pathname.replace(/%/g, "%25"));
   if (hostname !== void 0 && hostname !== "localhost") {
-    url2.hostname = hostname;
-    if (!url2.hostname) {
-      throw new TypeError(`Invalid hostname: "${url2.hostname}"`);
+    url.hostname = hostname;
+    if (!url.hostname) {
+      throw new TypeError(`Invalid hostname: "${url.hostname}"`);
     }
   }
-  return url2;
+  return url;
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/to_file_url.ts
@@ -880,9 +881,9 @@ function calcSizeHex(originalSize) {
 }
 function encode(buffer, i2, o2, alphabet3) {
   for (; i2 < buffer.length; ++i2) {
-    const x2 = buffer[i2];
-    buffer[o2++] = alphabet3[x2 >> 4];
-    buffer[o2++] = alphabet3[x2 & 15];
+    const x3 = buffer[i2];
+    buffer[o2++] = alphabet3[x3 >> 4];
+    buffer[o2++] = alphabet3[x3 & 15];
   }
   return o2;
 }
@@ -920,15 +921,15 @@ function encodeHex(src2) {
 
 // deno:https://jsr.io/@denosaurs/plug/1.1.0/util.ts
 var encoder = new TextEncoder();
-function baseUrlToFilename(url2) {
+function baseUrlToFilename(url) {
   const out = [];
-  const protocol = url2.protocol.replace(":", "");
+  const protocol = url.protocol.replace(":", "");
   out.push(protocol);
   switch (protocol) {
     case "http":
     case "https": {
-      const host = url2.hostname;
-      const hostPort = url2.port;
+      const host = url.hostname;
+      const hostPort = url.port;
       out.push(hostPort ? `${host}_PORT${hostPort}` : host);
       break;
     }
@@ -941,15 +942,15 @@ function baseUrlToFilename(url2) {
   }
   return join5(...out);
 }
-function stringToURL(url2) {
-  return url2.startsWith("file://") || url2.startsWith("http://") || url2.startsWith("https://") ? new URL(url2) : toFileUrl5(resolve5(url2));
+function stringToURL(url) {
+  return url.startsWith("file://") || url.startsWith("http://") || url.startsWith("https://") ? new URL(url) : toFileUrl5(resolve5(url));
 }
 async function hash(value) {
   return encodeHex(new Uint8Array(await crypto.subtle.digest("SHA-256", encoder.encode(value))));
 }
-async function urlToFilename(url2) {
-  const cacheFilename = baseUrlToFilename(url2);
-  const hashedFilename = await hash(url2.pathname + url2.search);
+async function urlToFilename(url) {
+  const cacheFilename = baseUrlToFilename(url);
+  const hashedFilename = await hash(url.pathname + url.search);
   return join5(cacheFilename, hashedFilename);
 }
 async function isFile(filePath) {
@@ -1092,25 +1093,25 @@ function createDownloadURL(options2) {
       options2.extensions[os] = options2.extensions[os].replace(/\.?(.+)/, "$1");
     }
   }
-  let url2;
+  let url;
   if (options2.url instanceof URL) {
-    url2 = options2.url;
+    url = options2.url;
   } else if (typeof options2.url === "string") {
-    url2 = stringToURL(options2.url);
+    url = stringToURL(options2.url);
   } else {
     const tmpUrl = getCrossOption(options2.url);
     if (tmpUrl === void 0) {
       throw new TypeError(`An URL for the "${Deno.build.os}-${Deno.build.arch}" target was not provided.`);
     }
     if (typeof tmpUrl === "string") {
-      url2 = stringToURL(tmpUrl);
+      url = stringToURL(tmpUrl);
     } else {
-      url2 = tmpUrl;
+      url = tmpUrl;
     }
   }
-  if ("name" in options2 && !Object.values(options2.extensions).includes(extname5(url2.pathname))) {
-    if (!url2.pathname.endsWith("/")) {
-      url2.pathname = `${url2.pathname}/`;
+  if ("name" in options2 && !Object.values(options2.extensions).includes(extname5(url.pathname))) {
+    if (!url.pathname.endsWith("/")) {
+      url.pathname = `${url.pathname}/`;
     }
     const prefix = getCrossOption(options2.prefixes) ?? "";
     const suffix = getCrossOption(options2.suffixes) ?? "";
@@ -1119,9 +1120,9 @@ function createDownloadURL(options2) {
       throw new TypeError(`Expected the "name" property for an automatically assembled URL.`);
     }
     const filename = `${prefix}${options2.name}${suffix}.${extension}`;
-    url2 = new URL(filename, url2);
+    url = new URL(filename, url);
   }
-  return url2;
+  return url;
 }
 async function ensureCacheLocation(location = "deno") {
   if (location === "deno") {
@@ -1157,25 +1158,25 @@ async function ensureCacheLocation(location = "deno") {
 async function download(options2) {
   const location = (typeof options2 === "object" && "location" in options2 ? options2.location : void 0) ?? "deno";
   const setting = (typeof options2 === "object" && "cache" in options2 ? options2.cache : void 0) ?? "use";
-  const url2 = createDownloadURL(options2);
+  const url = createDownloadURL(options2);
   const directory = await ensureCacheLocation(location);
-  const cacheBasePath = join5(directory, await urlToFilename(url2));
-  const cacheFilePath = `${cacheBasePath}${extname5(url2.pathname)}`;
+  const cacheBasePath = join5(directory, await urlToFilename(url));
+  const cacheFilePath = `${cacheBasePath}${extname5(url.pathname)}`;
   const cacheMetaPath = `${cacheBasePath}.metadata.json`;
   const cached = setting === "use" ? await isFile(cacheFilePath) : setting === "only" || setting !== "reloadAll";
   await ensureDir(dirname5(cacheBasePath));
   if (!cached) {
     const meta = {
-      url: url2
+      url
     };
-    switch (url2.protocol) {
+    switch (url.protocol) {
       case "http:":
       case "https:": {
-        console.log(`${green("Downloading")} ${url2}`);
-        const response = await fetch(url2.toString());
+        console.log(`${green("Downloading")} ${url}`);
+        const response = await fetch(url.toString());
         if (!response.ok) {
           if (response.status === 404) {
-            throw new Error(`Could not find ${url2}`);
+            throw new Error(`Could not find ${url}`);
           } else {
             throw new Deno.errors.Http(`${response.status} ${response.statusText}`);
           }
@@ -1184,21 +1185,21 @@ async function download(options2) {
         break;
       }
       case "file:": {
-        console.log(`${green("Copying")} ${url2}`);
-        await Deno.copyFile(fromFileUrl6(url2), cacheFilePath);
+        console.log(`${green("Copying")} ${url}`);
+        await Deno.copyFile(fromFileUrl6(url), cacheFilePath);
         if (Deno.build.os !== "windows") {
           await Deno.chmod(cacheFilePath, 420);
         }
         break;
       }
       default: {
-        throw new TypeError(`Cannot fetch to cache using the "${url2.protocol}" protocol`);
+        throw new TypeError(`Cannot fetch to cache using the "${url.protocol}" protocol`);
       }
     }
     await Deno.writeTextFile(cacheMetaPath, JSON.stringify(meta));
   }
   if (!await isFile(cacheFilePath)) {
-    throw new Error(`Could not find "${url2}" in cache.`);
+    throw new Error(`Could not find "${url}" in cache.`);
   }
   return cacheFilePath;
 }
@@ -3038,11 +3039,11 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __require2 = /* @__PURE__ */ ((x2) => typeof __require !== "undefined" ? __require : typeof Proxy !== "undefined" ? new Proxy(x2, {
+var __require2 = /* @__PURE__ */ ((x3) => typeof __require !== "undefined" ? __require : typeof Proxy !== "undefined" ? new Proxy(x3, {
   get: (a, b) => (typeof __require !== "undefined" ? __require : a)[b]
-}) : x2)(function(x2) {
+}) : x3)(function(x3) {
   if (typeof __require !== "undefined") return __require.apply(this, arguments);
-  throw Error('Dynamic require of "' + x2 + '" is not supported');
+  throw Error('Dynamic require of "' + x3 + '" is not supported');
 });
 var __glob = (map) => (path2) => {
   var fn = map[path2];
@@ -3326,22 +3327,22 @@ var init_esm3 = __esm({
   }
 });
 function pick(o2, props) {
-  const x2 = /* @__PURE__ */ Object.create(null);
+  const x3 = /* @__PURE__ */ Object.create(null);
   for (const k of props) {
     if (has(o2, k)) {
-      x2[k] = o2[k];
+      x3[k] = o2[k];
     }
   }
-  return x2;
+  return x3;
 }
 function omit(o2, props) {
-  const x2 = /* @__PURE__ */ Object.create(null);
+  const x3 = /* @__PURE__ */ Object.create(null);
   for (const k in o2) {
     if (!props.includes(k)) {
-      x2[k] = o2[k];
+      x3[k] = o2[k];
     }
   }
-  return x2;
+  return x3;
 }
 function cloneDeep(obj) {
   return JSON.parse(JSON.stringify(obj));
@@ -3354,9 +3355,9 @@ function merge(obj, src2) {
   const res = obj;
   for (const key in src2) {
     const clone = isMergeableObject(src2[key]) ? cloneDeep(src2[key]) : void 0;
-    let x2;
-    if (clone && has(obj, key) && isMergeableObject(x2 = res[key])) {
-      merge(x2, clone);
+    let x3;
+    if (clone && has(obj, key) && isMergeableObject(x3 = res[key])) {
+      merge(x3, clone);
       continue;
     }
     Object.defineProperty(res, key, {
@@ -3487,10 +3488,10 @@ function base(ALPHABET, name) {
     BASE_MAP[j] = 255;
   }
   for (var i2 = 0; i2 < ALPHABET.length; i2++) {
-    var x2 = ALPHABET.charAt(i2);
-    var xc = x2.charCodeAt(0);
+    var x3 = ALPHABET.charAt(i2);
+    var xc = x3.charCodeAt(0);
     if (BASE_MAP[xc] !== 255) {
-      throw new TypeError(x2 + " is ambiguous");
+      throw new TypeError(x3 + " is ambiguous");
     }
     BASE_MAP[xc] = i2;
   }
@@ -4136,8 +4137,8 @@ var require_blake2b = __commonJS({
       3
     ];
     var SIGMA82 = new Uint8Array(
-      SIGMA8.map(function(x2) {
-        return x2 * 2;
+      SIGMA8.map(function(x3) {
+        return x3 * 2;
       })
     );
     var v2 = new Uint32Array(32);
@@ -4346,8 +4347,8 @@ var require_blake2s = __commonJS({
     function B2S_GET32(v3, i2) {
       return v3[i2] ^ v3[i2 + 1] << 8 ^ v3[i2 + 2] << 16 ^ v3[i2 + 3] << 24;
     }
-    function B2S_G(a, b, c, d, x2, y) {
-      v2[a] = v2[a] + v2[b] + x2;
+    function B2S_G(a, b, c, d, x3, y) {
+      v2[a] = v2[a] + v2[b] + x3;
       v2[d] = ROTR32(v2[d] ^ v2[a], 16);
       v2[c] = v2[c] + v2[d];
       v2[b] = ROTR32(v2[b] ^ v2[c], 12);
@@ -4356,8 +4357,8 @@ var require_blake2s = __commonJS({
       v2[c] = v2[c] + v2[d];
       v2[b] = ROTR32(v2[b] ^ v2[c], 7);
     }
-    function ROTR32(x2, y) {
-      return x2 >>> y ^ x2 << 32 - y;
+    function ROTR32(x3, y) {
+      return x3 >>> y ^ x3 << 32 - y;
     }
     var BLAKE2S_IV = new Uint32Array([
       1779033703,
@@ -5946,7 +5947,7 @@ var require_scrypt_async = __commonJS({
       }
       function salsaXOR(tmp2, B4, bin, bout) {
         var j0 = tmp2[0] ^ B4[bin++], j1 = tmp2[1] ^ B4[bin++], j2 = tmp2[2] ^ B4[bin++], j3 = tmp2[3] ^ B4[bin++], j4 = tmp2[4] ^ B4[bin++], j5 = tmp2[5] ^ B4[bin++], j6 = tmp2[6] ^ B4[bin++], j7 = tmp2[7] ^ B4[bin++], j8 = tmp2[8] ^ B4[bin++], j9 = tmp2[9] ^ B4[bin++], j10 = tmp2[10] ^ B4[bin++], j11 = tmp2[11] ^ B4[bin++], j12 = tmp2[12] ^ B4[bin++], j13 = tmp2[13] ^ B4[bin++], j14 = tmp2[14] ^ B4[bin++], j15 = tmp2[15] ^ B4[bin++], u2, i2;
-        var x0 = j0, x1 = j1, x2 = j2, x3 = j3, x4 = j4, x5 = j5, x6 = j6, x7 = j7, x8 = j8, x9 = j9, x10 = j10, x11 = j11, x12 = j12, x13 = j13, x14 = j14, x15 = j15;
+        var x0 = j0, x1 = j1, x22 = j2, x3 = j3, x4 = j4, x5 = j5, x6 = j6, x7 = j7, x8 = j8, x9 = j9, x10 = j10, x11 = j11, x12 = j12, x13 = j13, x14 = j14, x15 = j15;
         for (i2 = 0; i2 < 8; i2 += 2) {
           u2 = x0 + x12;
           x4 ^= u2 << 7 | u2 >>> 32 - 7;
@@ -5967,10 +5968,10 @@ var require_scrypt_async = __commonJS({
           u2 = x10 + x6;
           x14 ^= u2 << 7 | u2 >>> 32 - 7;
           u2 = x14 + x10;
-          x2 ^= u2 << 9 | u2 >>> 32 - 9;
-          u2 = x2 + x14;
+          x22 ^= u2 << 9 | u2 >>> 32 - 9;
+          u2 = x22 + x14;
           x6 ^= u2 << 13 | u2 >>> 32 - 13;
-          u2 = x6 + x2;
+          u2 = x6 + x22;
           x10 ^= u2 << 18 | u2 >>> 32 - 18;
           u2 = x15 + x11;
           x3 ^= u2 << 7 | u2 >>> 32 - 7;
@@ -5983,10 +5984,10 @@ var require_scrypt_async = __commonJS({
           u2 = x0 + x3;
           x1 ^= u2 << 7 | u2 >>> 32 - 7;
           u2 = x1 + x0;
-          x2 ^= u2 << 9 | u2 >>> 32 - 9;
-          u2 = x2 + x1;
+          x22 ^= u2 << 9 | u2 >>> 32 - 9;
+          u2 = x22 + x1;
           x3 ^= u2 << 13 | u2 >>> 32 - 13;
-          u2 = x3 + x2;
+          u2 = x3 + x22;
           x0 ^= u2 << 18 | u2 >>> 32 - 18;
           u2 = x5 + x4;
           x6 ^= u2 << 7 | u2 >>> 32 - 7;
@@ -6015,7 +6016,7 @@ var require_scrypt_async = __commonJS({
         }
         B4[bout++] = tmp2[0] = x0 + j0 | 0;
         B4[bout++] = tmp2[1] = x1 + j1 | 0;
-        B4[bout++] = tmp2[2] = x2 + j2 | 0;
+        B4[bout++] = tmp2[2] = x22 + j2 | 0;
         B4[bout++] = tmp2[3] = x3 + j3 | 0;
         B4[bout++] = tmp2[4] = x4 + j4 | 0;
         B4[bout++] = tmp2[5] = x5 + j5 | 0;
@@ -6263,30 +6264,30 @@ var require_nacl_fast = __commonJS({
       var _9 = new Uint8Array(32);
       _9[0] = 9;
       var gf0 = gf(), gf1 = gf([1]), _121665 = gf([56129, 1]), D = gf([30883, 4953, 19914, 30187, 55467, 16705, 2637, 112, 59544, 30585, 16505, 36039, 65139, 11119, 27886, 20995]), D2 = gf([61785, 9906, 39828, 60374, 45398, 33411, 5274, 224, 53552, 61171, 33010, 6542, 64743, 22239, 55772, 9222]), X = gf([54554, 36645, 11616, 51542, 42930, 38181, 51040, 26924, 56412, 64982, 57905, 49316, 21502, 52590, 14035, 8553]), Y = gf([26200, 26214, 26214, 26214, 26214, 26214, 26214, 26214, 26214, 26214, 26214, 26214, 26214, 26214, 26214, 26214]), I2 = gf([41136, 18958, 6951, 50414, 58488, 44335, 6150, 12099, 55207, 15867, 153, 11085, 57099, 20417, 9344, 11139]);
-      function ts64(x2, i2, h2, l) {
-        x2[i2] = h2 >> 24 & 255;
-        x2[i2 + 1] = h2 >> 16 & 255;
-        x2[i2 + 2] = h2 >> 8 & 255;
-        x2[i2 + 3] = h2 & 255;
-        x2[i2 + 4] = l >> 24 & 255;
-        x2[i2 + 5] = l >> 16 & 255;
-        x2[i2 + 6] = l >> 8 & 255;
-        x2[i2 + 7] = l & 255;
+      function ts64(x3, i2, h2, l) {
+        x3[i2] = h2 >> 24 & 255;
+        x3[i2 + 1] = h2 >> 16 & 255;
+        x3[i2 + 2] = h2 >> 8 & 255;
+        x3[i2 + 3] = h2 & 255;
+        x3[i2 + 4] = l >> 24 & 255;
+        x3[i2 + 5] = l >> 16 & 255;
+        x3[i2 + 6] = l >> 8 & 255;
+        x3[i2 + 7] = l & 255;
       }
-      function vn(x2, xi, y, yi, n) {
+      function vn(x3, xi, y, yi, n) {
         var i2, d = 0;
-        for (i2 = 0; i2 < n; i2++) d |= x2[xi + i2] ^ y[yi + i2];
+        for (i2 = 0; i2 < n; i2++) d |= x3[xi + i2] ^ y[yi + i2];
         return (1 & d - 1 >>> 8) - 1;
       }
-      function crypto_verify_16(x2, xi, y, yi) {
-        return vn(x2, xi, y, yi, 16);
+      function crypto_verify_16(x3, xi, y, yi) {
+        return vn(x3, xi, y, yi, 16);
       }
-      function crypto_verify_32(x2, xi, y, yi) {
-        return vn(x2, xi, y, yi, 32);
+      function crypto_verify_32(x3, xi, y, yi) {
+        return vn(x3, xi, y, yi, 32);
       }
       function core_salsa20(o2, p, k, c) {
         var j0 = c[0] & 255 | (c[1] & 255) << 8 | (c[2] & 255) << 16 | (c[3] & 255) << 24, j1 = k[0] & 255 | (k[1] & 255) << 8 | (k[2] & 255) << 16 | (k[3] & 255) << 24, j2 = k[4] & 255 | (k[5] & 255) << 8 | (k[6] & 255) << 16 | (k[7] & 255) << 24, j3 = k[8] & 255 | (k[9] & 255) << 8 | (k[10] & 255) << 16 | (k[11] & 255) << 24, j4 = k[12] & 255 | (k[13] & 255) << 8 | (k[14] & 255) << 16 | (k[15] & 255) << 24, j5 = c[4] & 255 | (c[5] & 255) << 8 | (c[6] & 255) << 16 | (c[7] & 255) << 24, j6 = p[0] & 255 | (p[1] & 255) << 8 | (p[2] & 255) << 16 | (p[3] & 255) << 24, j7 = p[4] & 255 | (p[5] & 255) << 8 | (p[6] & 255) << 16 | (p[7] & 255) << 24, j8 = p[8] & 255 | (p[9] & 255) << 8 | (p[10] & 255) << 16 | (p[11] & 255) << 24, j9 = p[12] & 255 | (p[13] & 255) << 8 | (p[14] & 255) << 16 | (p[15] & 255) << 24, j10 = c[8] & 255 | (c[9] & 255) << 8 | (c[10] & 255) << 16 | (c[11] & 255) << 24, j11 = k[16] & 255 | (k[17] & 255) << 8 | (k[18] & 255) << 16 | (k[19] & 255) << 24, j12 = k[20] & 255 | (k[21] & 255) << 8 | (k[22] & 255) << 16 | (k[23] & 255) << 24, j13 = k[24] & 255 | (k[25] & 255) << 8 | (k[26] & 255) << 16 | (k[27] & 255) << 24, j14 = k[28] & 255 | (k[29] & 255) << 8 | (k[30] & 255) << 16 | (k[31] & 255) << 24, j15 = c[12] & 255 | (c[13] & 255) << 8 | (c[14] & 255) << 16 | (c[15] & 255) << 24;
-        var x0 = j0, x1 = j1, x2 = j2, x3 = j3, x4 = j4, x5 = j5, x6 = j6, x7 = j7, x8 = j8, x9 = j9, x10 = j10, x11 = j11, x12 = j12, x13 = j13, x14 = j14, x15 = j15, u2;
+        var x0 = j0, x1 = j1, x22 = j2, x3 = j3, x4 = j4, x5 = j5, x6 = j6, x7 = j7, x8 = j8, x9 = j9, x10 = j10, x11 = j11, x12 = j12, x13 = j13, x14 = j14, x15 = j15, u2;
         for (var i2 = 0; i2 < 20; i2 += 2) {
           u2 = x0 + x12 | 0;
           x4 ^= u2 << 7 | u2 >>> 32 - 7;
@@ -6307,10 +6308,10 @@ var require_nacl_fast = __commonJS({
           u2 = x10 + x6 | 0;
           x14 ^= u2 << 7 | u2 >>> 32 - 7;
           u2 = x14 + x10 | 0;
-          x2 ^= u2 << 9 | u2 >>> 32 - 9;
-          u2 = x2 + x14 | 0;
+          x22 ^= u2 << 9 | u2 >>> 32 - 9;
+          u2 = x22 + x14 | 0;
           x6 ^= u2 << 13 | u2 >>> 32 - 13;
-          u2 = x6 + x2 | 0;
+          u2 = x6 + x22 | 0;
           x10 ^= u2 << 18 | u2 >>> 32 - 18;
           u2 = x15 + x11 | 0;
           x3 ^= u2 << 7 | u2 >>> 32 - 7;
@@ -6323,10 +6324,10 @@ var require_nacl_fast = __commonJS({
           u2 = x0 + x3 | 0;
           x1 ^= u2 << 7 | u2 >>> 32 - 7;
           u2 = x1 + x0 | 0;
-          x2 ^= u2 << 9 | u2 >>> 32 - 9;
-          u2 = x2 + x1 | 0;
+          x22 ^= u2 << 9 | u2 >>> 32 - 9;
+          u2 = x22 + x1 | 0;
           x3 ^= u2 << 13 | u2 >>> 32 - 13;
-          u2 = x3 + x2 | 0;
+          u2 = x3 + x22 | 0;
           x0 ^= u2 << 18 | u2 >>> 32 - 18;
           u2 = x5 + x4 | 0;
           x6 ^= u2 << 7 | u2 >>> 32 - 7;
@@ -6355,7 +6356,7 @@ var require_nacl_fast = __commonJS({
         }
         x0 = x0 + j0 | 0;
         x1 = x1 + j1 | 0;
-        x2 = x2 + j2 | 0;
+        x22 = x22 + j2 | 0;
         x3 = x3 + j3 | 0;
         x4 = x4 + j4 | 0;
         x5 = x5 + j5 | 0;
@@ -6377,10 +6378,10 @@ var require_nacl_fast = __commonJS({
         o2[5] = x1 >>> 8 & 255;
         o2[6] = x1 >>> 16 & 255;
         o2[7] = x1 >>> 24 & 255;
-        o2[8] = x2 >>> 0 & 255;
-        o2[9] = x2 >>> 8 & 255;
-        o2[10] = x2 >>> 16 & 255;
-        o2[11] = x2 >>> 24 & 255;
+        o2[8] = x22 >>> 0 & 255;
+        o2[9] = x22 >>> 8 & 255;
+        o2[10] = x22 >>> 16 & 255;
+        o2[11] = x22 >>> 24 & 255;
         o2[12] = x3 >>> 0 & 255;
         o2[13] = x3 >>> 8 & 255;
         o2[14] = x3 >>> 16 & 255;
@@ -6436,7 +6437,7 @@ var require_nacl_fast = __commonJS({
       }
       function core_hsalsa20(o2, p, k, c) {
         var j0 = c[0] & 255 | (c[1] & 255) << 8 | (c[2] & 255) << 16 | (c[3] & 255) << 24, j1 = k[0] & 255 | (k[1] & 255) << 8 | (k[2] & 255) << 16 | (k[3] & 255) << 24, j2 = k[4] & 255 | (k[5] & 255) << 8 | (k[6] & 255) << 16 | (k[7] & 255) << 24, j3 = k[8] & 255 | (k[9] & 255) << 8 | (k[10] & 255) << 16 | (k[11] & 255) << 24, j4 = k[12] & 255 | (k[13] & 255) << 8 | (k[14] & 255) << 16 | (k[15] & 255) << 24, j5 = c[4] & 255 | (c[5] & 255) << 8 | (c[6] & 255) << 16 | (c[7] & 255) << 24, j6 = p[0] & 255 | (p[1] & 255) << 8 | (p[2] & 255) << 16 | (p[3] & 255) << 24, j7 = p[4] & 255 | (p[5] & 255) << 8 | (p[6] & 255) << 16 | (p[7] & 255) << 24, j8 = p[8] & 255 | (p[9] & 255) << 8 | (p[10] & 255) << 16 | (p[11] & 255) << 24, j9 = p[12] & 255 | (p[13] & 255) << 8 | (p[14] & 255) << 16 | (p[15] & 255) << 24, j10 = c[8] & 255 | (c[9] & 255) << 8 | (c[10] & 255) << 16 | (c[11] & 255) << 24, j11 = k[16] & 255 | (k[17] & 255) << 8 | (k[18] & 255) << 16 | (k[19] & 255) << 24, j12 = k[20] & 255 | (k[21] & 255) << 8 | (k[22] & 255) << 16 | (k[23] & 255) << 24, j13 = k[24] & 255 | (k[25] & 255) << 8 | (k[26] & 255) << 16 | (k[27] & 255) << 24, j14 = k[28] & 255 | (k[29] & 255) << 8 | (k[30] & 255) << 16 | (k[31] & 255) << 24, j15 = c[12] & 255 | (c[13] & 255) << 8 | (c[14] & 255) << 16 | (c[15] & 255) << 24;
-        var x0 = j0, x1 = j1, x2 = j2, x3 = j3, x4 = j4, x5 = j5, x6 = j6, x7 = j7, x8 = j8, x9 = j9, x10 = j10, x11 = j11, x12 = j12, x13 = j13, x14 = j14, x15 = j15, u2;
+        var x0 = j0, x1 = j1, x22 = j2, x3 = j3, x4 = j4, x5 = j5, x6 = j6, x7 = j7, x8 = j8, x9 = j9, x10 = j10, x11 = j11, x12 = j12, x13 = j13, x14 = j14, x15 = j15, u2;
         for (var i2 = 0; i2 < 20; i2 += 2) {
           u2 = x0 + x12 | 0;
           x4 ^= u2 << 7 | u2 >>> 32 - 7;
@@ -6457,10 +6458,10 @@ var require_nacl_fast = __commonJS({
           u2 = x10 + x6 | 0;
           x14 ^= u2 << 7 | u2 >>> 32 - 7;
           u2 = x14 + x10 | 0;
-          x2 ^= u2 << 9 | u2 >>> 32 - 9;
-          u2 = x2 + x14 | 0;
+          x22 ^= u2 << 9 | u2 >>> 32 - 9;
+          u2 = x22 + x14 | 0;
           x6 ^= u2 << 13 | u2 >>> 32 - 13;
-          u2 = x6 + x2 | 0;
+          u2 = x6 + x22 | 0;
           x10 ^= u2 << 18 | u2 >>> 32 - 18;
           u2 = x15 + x11 | 0;
           x3 ^= u2 << 7 | u2 >>> 32 - 7;
@@ -6473,10 +6474,10 @@ var require_nacl_fast = __commonJS({
           u2 = x0 + x3 | 0;
           x1 ^= u2 << 7 | u2 >>> 32 - 7;
           u2 = x1 + x0 | 0;
-          x2 ^= u2 << 9 | u2 >>> 32 - 9;
-          u2 = x2 + x1 | 0;
+          x22 ^= u2 << 9 | u2 >>> 32 - 9;
+          u2 = x22 + x1 | 0;
           x3 ^= u2 << 13 | u2 >>> 32 - 13;
-          u2 = x3 + x2 | 0;
+          u2 = x3 + x22 | 0;
           x0 ^= u2 << 18 | u2 >>> 32 - 18;
           u2 = x5 + x4 | 0;
           x6 ^= u2 << 7 | u2 >>> 32 - 7;
@@ -6544,13 +6545,13 @@ var require_nacl_fast = __commonJS({
       }
       var sigma = new Uint8Array([101, 120, 112, 97, 110, 100, 32, 51, 50, 45, 98, 121, 116, 101, 32, 107]);
       function crypto_stream_salsa20_xor(c, cpos, m3, mpos, b, n, k) {
-        var z = new Uint8Array(16), x2 = new Uint8Array(64);
+        var z = new Uint8Array(16), x3 = new Uint8Array(64);
         var u2, i2;
         for (i2 = 0; i2 < 16; i2++) z[i2] = 0;
         for (i2 = 0; i2 < 8; i2++) z[i2] = n[i2];
         while (b >= 64) {
-          crypto_core_salsa20(x2, z, k, sigma);
-          for (i2 = 0; i2 < 64; i2++) c[cpos + i2] = m3[mpos + i2] ^ x2[i2];
+          crypto_core_salsa20(x3, z, k, sigma);
+          for (i2 = 0; i2 < 64; i2++) c[cpos + i2] = m3[mpos + i2] ^ x3[i2];
           u2 = 1;
           for (i2 = 8; i2 < 16; i2++) {
             u2 = u2 + (z[i2] & 255) | 0;
@@ -6562,19 +6563,19 @@ var require_nacl_fast = __commonJS({
           mpos += 64;
         }
         if (b > 0) {
-          crypto_core_salsa20(x2, z, k, sigma);
-          for (i2 = 0; i2 < b; i2++) c[cpos + i2] = m3[mpos + i2] ^ x2[i2];
+          crypto_core_salsa20(x3, z, k, sigma);
+          for (i2 = 0; i2 < b; i2++) c[cpos + i2] = m3[mpos + i2] ^ x3[i2];
         }
         return 0;
       }
       function crypto_stream_salsa20(c, cpos, b, n, k) {
-        var z = new Uint8Array(16), x2 = new Uint8Array(64);
+        var z = new Uint8Array(16), x3 = new Uint8Array(64);
         var u2, i2;
         for (i2 = 0; i2 < 16; i2++) z[i2] = 0;
         for (i2 = 0; i2 < 8; i2++) z[i2] = n[i2];
         while (b >= 64) {
-          crypto_core_salsa20(x2, z, k, sigma);
-          for (i2 = 0; i2 < 64; i2++) c[cpos + i2] = x2[i2];
+          crypto_core_salsa20(x3, z, k, sigma);
+          for (i2 = 0; i2 < 64; i2++) c[cpos + i2] = x3[i2];
           u2 = 1;
           for (i2 = 8; i2 < 16; i2++) {
             u2 = u2 + (z[i2] & 255) | 0;
@@ -6585,8 +6586,8 @@ var require_nacl_fast = __commonJS({
           cpos += 64;
         }
         if (b > 0) {
-          crypto_core_salsa20(x2, z, k, sigma);
-          for (i2 = 0; i2 < b; i2++) c[cpos + i2] = x2[i2];
+          crypto_core_salsa20(x3, z, k, sigma);
+          for (i2 = 0; i2 < b; i2++) c[cpos + i2] = x3[i2];
         }
         return 0;
       }
@@ -6947,9 +6948,9 @@ var require_nacl_fast = __commonJS({
         return 0;
       }
       function crypto_onetimeauth_verify(h2, hpos, m3, mpos, n, k) {
-        var x2 = new Uint8Array(16);
-        crypto_onetimeauth(x2, 0, m3, mpos, n, k);
-        return crypto_verify_16(h2, hpos, x2, 0);
+        var x3 = new Uint8Array(16);
+        crypto_onetimeauth(x3, 0, m3, mpos, n, k);
+        return crypto_verify_16(h2, hpos, x3, 0);
       }
       function crypto_secretbox(c, m3, d, n, k) {
         var i2;
@@ -6961,10 +6962,10 @@ var require_nacl_fast = __commonJS({
       }
       function crypto_secretbox_open(m3, c, d, n, k) {
         var i2;
-        var x2 = new Uint8Array(32);
+        var x3 = new Uint8Array(32);
         if (d < 32) return -1;
-        crypto_stream(x2, 0, 32, n, k);
-        if (crypto_onetimeauth_verify(c, 16, c, 32, d - 32, x2) !== 0) return -1;
+        crypto_stream(x3, 0, 32, n, k);
+        if (crypto_onetimeauth_verify(c, 16, c, 32, d - 32, x3) !== 0) return -1;
         crypto_stream_xor(m3, 0, c, 0, d, n, k);
         for (i2 = 0; i2 < 32; i2++) m3[i2] = 0;
         return 0;
@@ -7466,14 +7467,14 @@ var require_nacl_fast = __commonJS({
       }
       function crypto_scalarmult(q, n, p) {
         var z = new Uint8Array(32);
-        var x2 = new Float64Array(80), r, i2;
+        var x3 = new Float64Array(80), r, i2;
         var a = gf(), b = gf(), c = gf(), d = gf(), e2 = gf(), f = gf();
         for (i2 = 0; i2 < 31; i2++) z[i2] = n[i2];
         z[31] = n[31] & 127 | 64;
         z[0] &= 248;
-        unpack25519(x2, p);
+        unpack25519(x3, p);
         for (i2 = 0; i2 < 16; i2++) {
-          b[i2] = x2[i2];
+          b[i2] = x3[i2];
           d[i2] = a[i2] = c[i2] = 0;
         }
         a[0] = d[0] = 1;
@@ -7497,19 +7498,19 @@ var require_nacl_fast = __commonJS({
           A2(a, a, d);
           M2(c, c, a);
           M2(a, d, f);
-          M2(d, b, x2);
+          M2(d, b, x3);
           S2(b, e2);
           sel25519(a, b, r);
           sel25519(c, d, r);
         }
         for (i2 = 0; i2 < 16; i2++) {
-          x2[i2 + 16] = a[i2];
-          x2[i2 + 32] = c[i2];
-          x2[i2 + 48] = b[i2];
-          x2[i2 + 64] = d[i2];
+          x3[i2 + 16] = a[i2];
+          x3[i2 + 32] = c[i2];
+          x3[i2 + 48] = b[i2];
+          x3[i2 + 64] = d[i2];
         }
-        var x32 = x2.subarray(32);
-        var x16 = x2.subarray(16);
+        var x32 = x3.subarray(32);
+        var x16 = x3.subarray(16);
         inv25519(x32, x32);
         M2(x16, x16, x32);
         pack25519(q, x16);
@@ -7518,25 +7519,25 @@ var require_nacl_fast = __commonJS({
       function crypto_scalarmult_base(q, n) {
         return crypto_scalarmult(q, n, _9);
       }
-      function crypto_box_keypair(y, x2) {
-        randombytes(x2, 32);
-        return crypto_scalarmult_base(y, x2);
+      function crypto_box_keypair(y, x3) {
+        randombytes(x3, 32);
+        return crypto_scalarmult_base(y, x3);
       }
-      function crypto_box_beforenm(k, y, x2) {
+      function crypto_box_beforenm(k, y, x3) {
         var s = new Uint8Array(32);
-        crypto_scalarmult(s, x2, y);
+        crypto_scalarmult(s, x3, y);
         return crypto_core_hsalsa20(k, _0, s, sigma);
       }
       var crypto_box_afternm = crypto_secretbox;
       var crypto_box_open_afternm = crypto_secretbox_open;
-      function crypto_box(c, m3, d, n, y, x2) {
+      function crypto_box(c, m3, d, n, y, x3) {
         var k = new Uint8Array(32);
-        crypto_box_beforenm(k, y, x2);
+        crypto_box_beforenm(k, y, x3);
         return crypto_box_afternm(c, m3, d, n, k);
       }
-      function crypto_box_open(m3, c, d, n, y, x2) {
+      function crypto_box_open(m3, c, d, n, y, x3) {
         var k = new Uint8Array(32);
-        crypto_box_beforenm(k, y, x2);
+        crypto_box_beforenm(k, y, x3);
         return crypto_box_open_afternm(m3, c, d, n, k);
       }
       var K2 = [
@@ -7999,7 +8000,7 @@ var require_nacl_fast = __commonJS({
         return n;
       }
       function crypto_hash(out, m3, n) {
-        var hh = new Int32Array(8), hl = new Int32Array(8), x2 = new Uint8Array(256), i2, b = n;
+        var hh = new Int32Array(8), hl = new Int32Array(8), x3 = new Uint8Array(256), i2, b = n;
         hh[0] = 1779033703;
         hh[1] = 3144134277;
         hh[2] = 1013904242;
@@ -8018,12 +8019,12 @@ var require_nacl_fast = __commonJS({
         hl[7] = 327033209;
         crypto_hashblocks_hl(hh, hl, m3, n);
         n %= 128;
-        for (i2 = 0; i2 < n; i2++) x2[i2] = m3[b - n + i2];
-        x2[n] = 128;
+        for (i2 = 0; i2 < n; i2++) x3[i2] = m3[b - n + i2];
+        x3[n] = 128;
         n = 256 - 128 * (n < 112 ? 1 : 0);
-        x2[n - 9] = 0;
-        ts64(x2, n - 8, b / 536870912 | 0, b << 3);
-        crypto_hashblocks_hl(hh, hl, x2, n);
+        x3[n - 9] = 0;
+        ts64(x3, n - 8, b / 536870912 | 0, b << 3);
+        crypto_hashblocks_hl(hh, hl, x3, n);
         for (i2 = 0; i2 < 8; i2++) ts64(out, 8 * i2, hh[i2], hl[i2]);
         return 0;
       }
@@ -8099,39 +8100,39 @@ var require_nacl_fast = __commonJS({
         return 0;
       }
       var L = new Float64Array([237, 211, 245, 92, 26, 99, 18, 88, 214, 156, 247, 162, 222, 249, 222, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 16]);
-      function modL(r, x2) {
+      function modL(r, x3) {
         var carry, i2, j, k;
         for (i2 = 63; i2 >= 32; --i2) {
           carry = 0;
           for (j = i2 - 32, k = i2 - 12; j < k; ++j) {
-            x2[j] += carry - 16 * x2[i2] * L[j - (i2 - 32)];
-            carry = Math.floor((x2[j] + 128) / 256);
-            x2[j] -= carry * 256;
+            x3[j] += carry - 16 * x3[i2] * L[j - (i2 - 32)];
+            carry = Math.floor((x3[j] + 128) / 256);
+            x3[j] -= carry * 256;
           }
-          x2[j] += carry;
-          x2[i2] = 0;
+          x3[j] += carry;
+          x3[i2] = 0;
         }
         carry = 0;
         for (j = 0; j < 32; j++) {
-          x2[j] += carry - (x2[31] >> 4) * L[j];
-          carry = x2[j] >> 8;
-          x2[j] &= 255;
+          x3[j] += carry - (x3[31] >> 4) * L[j];
+          carry = x3[j] >> 8;
+          x3[j] &= 255;
         }
-        for (j = 0; j < 32; j++) x2[j] -= carry * L[j];
+        for (j = 0; j < 32; j++) x3[j] -= carry * L[j];
         for (i2 = 0; i2 < 32; i2++) {
-          x2[i2 + 1] += x2[i2] >> 8;
-          r[i2] = x2[i2] & 255;
+          x3[i2 + 1] += x3[i2] >> 8;
+          r[i2] = x3[i2] & 255;
         }
       }
       function reduce(r) {
-        var x2 = new Float64Array(64), i2;
-        for (i2 = 0; i2 < 64; i2++) x2[i2] = r[i2];
+        var x3 = new Float64Array(64), i2;
+        for (i2 = 0; i2 < 64; i2++) x3[i2] = r[i2];
         for (i2 = 0; i2 < 64; i2++) r[i2] = 0;
-        modL(r, x2);
+        modL(r, x3);
       }
       function crypto_sign(sm, m3, n, sk) {
         var d = new Uint8Array(64), h2 = new Uint8Array(64), r = new Uint8Array(64);
-        var i2, j, x2 = new Float64Array(64);
+        var i2, j, x3 = new Float64Array(64);
         var p = [gf(), gf(), gf(), gf()];
         crypto_hash(d, sk, 32);
         d[0] &= 248;
@@ -8147,14 +8148,14 @@ var require_nacl_fast = __commonJS({
         for (i2 = 32; i2 < 64; i2++) sm[i2] = sk[i2];
         crypto_hash(h2, sm, n + 64);
         reduce(h2);
-        for (i2 = 0; i2 < 64; i2++) x2[i2] = 0;
-        for (i2 = 0; i2 < 32; i2++) x2[i2] = r[i2];
+        for (i2 = 0; i2 < 64; i2++) x3[i2] = 0;
+        for (i2 = 0; i2 < 32; i2++) x3[i2] = r[i2];
         for (i2 = 0; i2 < 32; i2++) {
           for (j = 0; j < 32; j++) {
-            x2[i2 + j] += h2[i2] * d[j];
+            x3[i2 + j] += h2[i2] * d[j];
           }
         }
-        modL(sm.subarray(32), x2);
+        modL(sm.subarray(32), x3);
         return smlen;
       }
       function unpackneg(r, p) {
@@ -8434,11 +8435,11 @@ var require_nacl_fast = __commonJS({
         return h2;
       };
       nacl3.hash.hashLength = crypto_hash_BYTES;
-      nacl3.verify = function(x2, y) {
-        checkArrayTypes(x2, y);
-        if (x2.length === 0 || y.length === 0) return false;
-        if (x2.length !== y.length) return false;
-        return vn(x2, 0, y, 0, x2.length) === 0 ? true : false;
+      nacl3.verify = function(x3, y) {
+        checkArrayTypes(x3, y);
+        if (x3.length === 0 || y.length === 0) return false;
+        if (x3.length !== y.length) return false;
+        return vn(x3, 0, y, 0, x3.length) === 0 ? true : false;
       };
       nacl3.setPRNG = function(fn) {
         randombytes = fn;
@@ -8447,20 +8448,20 @@ var require_nacl_fast = __commonJS({
         var crypto2 = typeof self !== "undefined" ? self.crypto || self.msCrypto : null;
         if (crypto2 && crypto2.getRandomValues) {
           var QUOTA = 65536;
-          nacl3.setPRNG(function(x2, n) {
+          nacl3.setPRNG(function(x3, n) {
             var i2, v2 = new Uint8Array(n);
             for (i2 = 0; i2 < n; i2 += QUOTA) {
               crypto2.getRandomValues(v2.subarray(i2, i2 + Math.min(n - i2, QUOTA)));
             }
-            for (i2 = 0; i2 < n; i2++) x2[i2] = v2[i2];
+            for (i2 = 0; i2 < n; i2++) x3[i2] = v2[i2];
             cleanup(v2);
           });
         } else if (typeof __require2 !== "undefined") {
           crypto2 = __require2("crypto");
           if (crypto2 && crypto2.randomBytes) {
-            nacl3.setPRNG(function(x2, n) {
+            nacl3.setPRNG(function(x3, n) {
               var i2, v2 = crypto2.randomBytes(n);
-              for (i2 = 0; i2 < n; i2++) x2[i2] = v2[i2];
+              for (i2 = 0; i2 < n; i2++) x3[i2] = v2[i2];
               cleanup(v2);
             });
           }
@@ -25330,9 +25331,9 @@ var require_enterprise_maintenance_manager = __commonJS({
         switch (type) {
           case PN.MOVING: {
             const afterSeconds = push[2];
-            const url2 = push[3] ? String(push[3]) : null;
-            (0, exports.dbgMaintenance)("Received MOVING:", afterSeconds, url2);
-            this.#onMoving(afterSeconds, url2);
+            const url = push[3] ? String(push[3]) : null;
+            (0, exports.dbgMaintenance)("Received MOVING:", afterSeconds, url);
+            this.#onMoving(afterSeconds, url);
             return true;
           }
           case PN.MIGRATING:
@@ -25362,11 +25363,11 @@ var require_enterprise_maintenance_manager = __commonJS({
       //  4. [EVENT] In-flight commands completed
       //  5. [ACTION] Destroy old socket
       //  6. [ACTION] Resume writing -> we are going to write to the new socket from now on
-      #onMoving = async (afterSeconds, url2) => {
+      #onMoving = async (afterSeconds, url) => {
         this.#onMigrating();
         let host;
         let port;
-        if (url2 === null) {
+        if (url === null) {
           (0, node_assert_1.default)(this.#options.maintEndpointType === "none");
           (0, node_assert_1.default)(this.#options.socket !== void 0);
           (0, node_assert_1.default)("host" in this.#options.socket);
@@ -25378,7 +25379,7 @@ var require_enterprise_maintenance_manager = __commonJS({
           (0, exports.dbgMaintenance)(`Wait for ${waitTime}ms`);
           await (0, promises_2.setTimeout)(waitTime);
         } else {
-          const split = url2.split(":");
+          const split = url.split(":");
           host = split[0];
           port = Number(split[1]);
         }
@@ -26551,7 +26552,7 @@ var require_pub_sub = __commonJS({
         const channelString = pattern ? channel.toString() : keyString, messageString = channelString === "__redis__:invalidate" ? (
           // https://github.com/redis/redis/pull/7469
           // https://github.com/redis/redis/issues/7463
-          message === null ? null : message.map((x2) => x2.toString())
+          message === null ? null : message.map((x3) => x3.toString())
         ) : message.toString();
         for (const listener of listeners.strings) {
           listener(messageString, channelString);
@@ -28376,8 +28377,8 @@ var require_client = __commonJS({
         }
         return options2;
       }
-      static parseURL(url2) {
-        const { hostname, port, protocol, username, password, pathname } = new node_url_1.URL(url2), parsed = {
+      static parseURL(url) {
+        const { hostname, port, protocol, username, password, pathname } = new node_url_1.URL(url), parsed = {
           socket: {
             host: hostname,
             tls: false
@@ -30794,8 +30795,8 @@ var require_SENTINEL_REPLICAS = __commonJS({
         2: (reply, preserve, typeMapping) => {
           const inferred = reply;
           const initial = [];
-          return inferred.reduce((sentinels, x2) => {
-            sentinels.push((0, generic_transformers_1.transformTuplesReply)(x2, void 0, typeMapping));
+          return inferred.reduce((sentinels, x3) => {
+            sentinels.push((0, generic_transformers_1.transformTuplesReply)(x3, void 0, typeMapping));
             return sentinels;
           }, initial);
         },
@@ -30822,8 +30823,8 @@ var require_SENTINEL_SENTINELS = __commonJS({
         2: (reply, preserve, typeMapping) => {
           const inferred = reply;
           const initial = [];
-          return inferred.reduce((sentinels, x2) => {
-            sentinels.push((0, generic_transformers_1.transformTuplesReply)(x2, void 0, typeMapping));
+          return inferred.reduce((sentinels, x3) => {
+            sentinels.push((0, generic_transformers_1.transformTuplesReply)(x3, void 0, typeMapping));
             return sentinels;
           }, initial);
         },
@@ -38068,16 +38069,17 @@ var init_database_redis = __esm({
       url;
       constructor(options2 = {}) {
         super();
-        this.url = url;
+        this.url = options2.url;
       }
       async init() {
-        this.db = (0, import_npm_redis.createClient)({
+        const db2 = (0, import_npm_redis.createClient)({
           RESP: 3,
           url: this.url
         }).withTypeMapping({
           [import_npm_redis.RESP_TYPES.BLOB_STRING]: Buffer10
         });
-        await this.db.connect();
+        await db2.connect();
+        this.db = db2;
       }
       // Useful in test hooks.
       async clear() {
@@ -38097,6 +38099,24 @@ var init_database_redis = __esm({
         this.db.destroy();
       }
     };
+  }
+});
+var database_redis_x_exports = {};
+var x2;
+var init_database_redis_x = __esm({
+  async "src/serve/database-redis-x.ts"() {
+    "use strict";
+    init_database_redis();
+    x2 = new RedisBackend();
+    await x2.init();
+    await x2.writeData("xxxx", "1234");
+    await x2.writeData("yyyy", Buffer11.from([1, 2, 3]));
+    console.error("xxxx", await x2.readData("xxxx"));
+    console.error("yyyy", await x2.readData("yyyy"));
+    await x2.deleteData("xxxx");
+    await x2.deleteData("yyyy");
+    console.error("xxxx", await x2.readData("xxxx"));
+    console.error("yyyy", await x2.readData("yyyy"));
   }
 });
 var database_sqlite_exports = {};
@@ -38165,6 +38185,7 @@ var init_ = __esm({
   'import("./database-*.ts") in src/serve/database-router.ts'() {
     globImport_database_ts = __glob({
       "./database-fs.ts": () => Promise.resolve().then(() => (init_database_fs(), database_fs_exports)),
+      "./database-redis-x.ts": () => init_database_redis_x().then(() => database_redis_x_exports),
       "./database-redis.ts": () => Promise.resolve().then(() => (init_database_redis(), database_redis_exports)),
       "./database-router.test.ts": () => Promise.resolve().then(() => (init_database_router_test(), database_router_test_exports)),
       "./database-router.ts": () => Promise.resolve().then(() => (init_database_router(), database_router_exports)),
@@ -42677,14 +42698,14 @@ var PUBSUB_RECONNECTION_FAILED = "pubsub-reconnection-failed";
 var PUBSUB_RECONNECTION_SCHEDULED = "pubsub-reconnection-scheduled";
 var PUBSUB_RECONNECTION_SUCCEEDED = "pubsub-reconnection-succeeded";
 var PUBSUB_SUBSCRIPTION_SUCCEEDED = "pubsub-subscription-succeeded";
-function createClient(url2, options2 = {}) {
+function createClient(url, options2 = {}) {
   const client = {
     customEventHandlers: options2.handlers || {},
     // The current number of connection attempts that failed.
     // Reset to 0 upon successful connection.
     // Used to compute how long to wait before the next reconnection attempt.
     failedConnectionAttempts: 0,
-    isLocal: /\/\/(localhost|127\.0\.0\.1)([:?/]|$)/.test(url2),
+    isLocal: /\/\/(localhost|127\.0\.0\.1)([:?/]|$)/.test(url),
     // True if this client has never been connected yet.
     isNew: true,
     listeners: /* @__PURE__ */ Object.create(null),
@@ -42702,7 +42723,7 @@ function createClient(url2, options2 = {}) {
     subscriptionSet: /* @__PURE__ */ new Set(),
     kvFilter: /* @__PURE__ */ new Map(),
     connectionTimeoutID: void 0,
-    url: url2.replace(/^http/, "ws"),
+    url: url.replace(/^http/, "ws"),
     ...publicMethods
   };
   for (const name of Object.keys(defaultClientEventHandlers)) {
@@ -47130,8 +47151,8 @@ var chelonia_default = esm_default("sbp/selectors/register", {
     const local = await esm_default("chelonia.db/get", cid);
     if (local != null)
       return local;
-    const url2 = `${this.config.connectionURL}/file/${cid}`;
-    const data = await this.config.fetch(url2, { signal: this.abortController.signal }).then(handleFetchResult("text"));
+    const url = `${this.config.connectionURL}/file/${cid}`;
+    const data = await this.config.fetch(url, { signal: this.abortController.signal }).then(handleFetchResult("text"));
     const ourHash = createCID(data, parsedCID.code);
     if (ourHash !== cid) {
       throw new Error(`expected hash ${cid}. Got: ${ourHash}`);
@@ -47209,7 +47230,7 @@ var chelonia_default = esm_default("sbp/selectors/register", {
     if (rootState.contracts[contractID] === null) {
       throw new ChelErrorResourceGone("Permanently deleted contract " + contractID);
     }
-    if (!options2.forceSync && rootState[contractID] && Object.keys(rootState[contractID]).some((x2) => x2 !== "_volatile")) {
+    if (!options2.forceSync && rootState[contractID] && Object.keys(rootState[contractID]).some((x3) => x3 !== "_volatile")) {
       return cloneDeep(rootState[contractID]);
     }
     let state = /* @__PURE__ */ Object.create(null);
@@ -47671,7 +47692,7 @@ var chelonia_default = esm_default("sbp/selectors/register", {
   // the `onconflict` handler will be called.
   "chelonia/kv/set": async function(contractID, key, data, { ifMatch, innerSigningKeyId, encryptionKeyId, signingKeyId, maxAttempts, onconflict }) {
     maxAttempts = maxAttempts ?? 3;
-    const url2 = `${this.config.connectionURL}/kv/${encodeURIComponent(contractID)}/${encodeURIComponent(key)}`;
+    const url = `${this.config.connectionURL}/kv/${encodeURIComponent(contractID)}/${encodeURIComponent(key)}`;
     const hasOnconflict = typeof onconflict === "function";
     let response;
     const resolveData = async () => {
@@ -47717,7 +47738,7 @@ var chelonia_default = esm_default("sbp/selectors/register", {
           data,
           meta: key
         });
-        response = await this.config.fetch(url2, {
+        response = await this.config.fetch(url, {
           headers: new Headers([
             ["authorization", buildShelterAuthorizationHeader.call(this, contractID)],
             ["if-match", ifMatch || '""']
@@ -47730,7 +47751,7 @@ var chelonia_default = esm_default("sbp/selectors/register", {
         if (!hasOnconflict) {
           throw TypeError("onconflict required with empty data");
         }
-        response = await this.config.fetch(url2, {
+        response = await this.config.fetch(url, {
           headers: new Headers([
             ["authorization", buildShelterAuthorizationHeader.call(this, contractID)]
           ]),
@@ -48027,6 +48048,7 @@ var initZkpp = async () => {
 };
 var globImport_database_ts2 = __glob({
   "./database-fs.ts": () => Promise.resolve().then(() => (init_database_fs(), database_fs_exports)),
+  "./database-redis-x.ts": () => init_database_redis_x().then(() => database_redis_x_exports),
   "./database-redis.ts": () => Promise.resolve().then(() => (init_database_redis(), database_redis_exports)),
   "./database-router.test.ts": () => Promise.resolve().then(() => (init_database_router_test(), database_router_test_exports)),
   "./database-router.ts": () => Promise.resolve().then(() => (init_database_router(), database_router_exports)),

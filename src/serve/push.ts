@@ -31,7 +31,7 @@ export interface PushSubscriptionInfo {
     p256dh: string; // base64url encoded
   };
   id: string;
-  encryptionKeys: Promise<[Buffer, Buffer]>;
+  encryptionKeys: Promise<[ArrayBuffer, ArrayBuffer]>;
   settings: {
     heartbeatInterval?: number,
   };
@@ -114,7 +114,7 @@ export const subscriptionInfoWrapper = (subscriptionId: string, subscriptionInfo
     'encryptionKeys': {
       get: (() => {
         let count = 0
-        let resultPromise: Promise<unknown> | undefined
+        let resultPromise: Promise<[ArrayBuffer, ArrayBuffer]> | undefined
         let salt: Buffer<ArrayBuffer>
         let uaPublic: Buffer<ArrayBuffer>
 
@@ -179,12 +179,12 @@ export const subscriptionInfoWrapper = (subscriptionId: string, subscriptionInfo
 // push notifications that isn't already public or could be derived from other
 // public sources. The main concern if the encryption is compromised would be
 // the ability to infer which channels a client is subscribed to.
-const encryptPayload = async (subscription: { encryptionKeys: Promise<[Buffer, Buffer]> }, data: string): Promise<Buffer<ArrayBuffer>> => {
+const encryptPayload = async (subscription: PushSubscriptionInfo, data: string): Promise<Buffer<ArrayBuffer>> => {
   const readableStream = new Response(data).body
   if (!readableStream) throw new Error('Failed to create readable stream')
   const [asPublic, IKM] = await subscription.encryptionKeys
 
-  return encrypt(aes128gcm, readableStream as unknown as ReadableStream<BufferSource>, 32768, asPublic.buffer as Readonly<ArrayBufferLike>, IKM.buffer as Readonly<ArrayBufferLike>).then(async (bodyStream: ReadableStream<ArrayBufferLike>) => {
+  return encrypt(aes128gcm, readableStream, 32768, asPublic, IKM).then(async (bodyStream) => {
     const chunks: Uint8Array[] = []
     const reader = bodyStream.getReader()
     for (;;) {
