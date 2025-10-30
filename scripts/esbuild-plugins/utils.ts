@@ -20,7 +20,7 @@ export function createAliasReplacer (aliases: Record<string, string>) {
   const cwd = process.cwd()
   const escapedAndSortedAliases = Object.keys(aliases).map(escapeForRegExp).sort().reverse()
   const re = new RegExp(
-    `(?:^import[ (]|\\bimport[ (]|import .+? from |^\\} from )['"](${ escapedAndSortedAliases.join('|')})(?:['"]|/[^'"]+?['"])`,
+    `(?:^import[ (]|\\bimport[ (]|import .+? from |^\\} from |^@use )['"](${ escapedAndSortedAliases.join('|')})(?:['"]|/[^'"]+?['"])`,
     'gm'
   )
 

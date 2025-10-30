@@ -74,7 +74,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import "@assets/style/_variables.scss";
+@use "@assets/style/_variables.scss" as *;
 
 @mixin sidePadding {
   padding-left: 1rem;
@@ -98,11 +98,11 @@ export default {
 }
 
 .c-page-header {
-  @include sidePadding;
   padding-top: 1.75rem;
   padding-bottom: 1.75rem;
   margin-bottom: 2rem;
   border-bottom: 1px solid $border;
+  @include sidePadding;
 
   .c-page-title {
     display: flex;
@@ -168,8 +168,8 @@ button.c-menu-btn {
 }
 
 .c-main {
-  @include sidePadding;
   width: 100%;
   overflow-x: hidden;
+  @include sidePadding;
 }
 </style>

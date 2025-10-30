@@ -64,7 +64,15 @@ export function vuePlugin ({ aliases = {}, cache = null, debug = false, flowtype
   } satisfies esbuild.Plugin
 }
 
-const compiler = componentCompiler.createDefaultCompiler()
+const compiler = componentCompiler.createDefaultCompiler({
+  style: { 
+    preprocessOptions: {
+      scss: {
+        silenceDeprecations: ["legacy-js-api"]
+      }
+    }
+  }
+})
 
 function compile ({ filename, source, options }: CompileOptions): esbuild.OnLoadResult {
   try {

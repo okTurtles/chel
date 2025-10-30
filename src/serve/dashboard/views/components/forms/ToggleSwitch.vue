@@ -26,7 +26,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import "@assets/style/_variables.scss";
+@use "@assets/style/_variables.scss" as *;
 
 $thumb-side: 1.25rem;
 $track-width: $thumb-side * 2 + 0.125rem;
