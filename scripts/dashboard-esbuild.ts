@@ -124,7 +124,7 @@ async function build () {
       ],
       plugins: [
         sassPlugin({
-          type: 'css',
+          type: 'css'
         }),
         vuePlugin({ aliases: alias }),
         // Plugin to resolve npm: prefixes (as suggested by @corrideat)

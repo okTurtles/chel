@@ -58,7 +58,7 @@ export default {
 </script>
 
 <style style lang='scss' scoped>
-@import "@assets/style/_variables.scss";
+@use "@assets/style/_variables.scss" as *;
 
 .c-modal-simple {
   display: flex;

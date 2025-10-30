@@ -94,7 +94,7 @@ export default {
 </script>
 
 <style lang='scss' scoped>
-@import "@assets/style/_variables.scss";
+@use "@assets/style/_variables.scss" as *;
 
 @mixin button-common {
   border: 1px solid rgba(0, 0, 0, 0);
