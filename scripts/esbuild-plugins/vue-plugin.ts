@@ -65,10 +65,10 @@ export function vuePlugin ({ aliases = {}, cache = null, debug = false, flowtype
 }
 
 const compiler = componentCompiler.createDefaultCompiler({
-  style: { 
+  style: {
     preprocessOptions: {
       scss: {
-        silenceDeprecations: ["legacy-js-api"]
+        silenceDeprecations: ['legacy-js-api']
       }
     }
   }
