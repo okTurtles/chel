@@ -1,11 +1,10 @@
 // TODO: Use logger for debug output if needed
 
-import '@chelonia/lib/chelonia'
-import '@chelonia/lib/persistent-actions'
 import { Buffer } from 'node:buffer'
 import { SPMessage } from 'npm:@chelonia/lib/SPMessage'
-import { blake32Hash, createCID, maybeParseCID } from 'npm:@chelonia/lib/functions'
-import { multicodes } from 'npm:@chelonia/lib/functions'
+import 'npm:@chelonia/lib/chelonia'
+import { blake32Hash, createCID, maybeParseCID, multicodes } from 'npm:@chelonia/lib/functions'
+import 'npm:@chelonia/lib/persistent-actions'
 import Boom from 'npm:@hapi/boom'
 import * as Hapi from 'npm:@hapi/hapi'
 import sbp from 'npm:@sbp/sbp'

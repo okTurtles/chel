@@ -109,4 +109,14 @@ export default class FsBackend extends DatabaseBackend {
   }
 
   close () {}
+
+  async * iterKeys () {
+    const entries = await readdir(this.dataFolder, { withFileTypes: true })
+    for await (const entry of entries) {
+      // Skip subfolders and symlinks.
+      if (entry.isFile()) {
+        yield entry.name
+      }
+    }
+  }
 }
