@@ -1,18 +1,23 @@
 import * as colors from 'jsr:@std/fmt/colors'
 import * as path from 'jsr:@std/path/'
+import sbp from 'npm:@sbp/sbp'
+import { initDB } from './serve/database.ts'
 import { createEntryFromFile, isDir, multicodes, revokeNet, type Entry } from './utils.ts'
 
-// chel upload <url-or-dir-or-sqlitedb> <file1> [<file2> [<file3> ...]]
+void sbp, initDB
 
-export async function upload (args: string[], internal = false): Promise<[string, string][]> {
-  const [urlOrDirOrSqliteFile, ...files] = args
+// chel upload [<url>] <file1> [<file2> [<file3> ...]]
+
+export async function upload (files: string[], internal = false): Promise<[string, string][]> {
+  const url = URL.canParse(files[0]) ? files[0] : null
+  if (url) {
+    files.shift()
+  }
   if (files.length === 0) throw new Error('missing files!')
   const uploaded: Array<[string, string]> = []
-  const uploaderFn = await isDir(urlOrDirOrSqliteFile)
-    ? uploadEntryToDir
-    : urlOrDirOrSqliteFile.endsWith('.db')
-      ? uploadEntryToSQLite
-      : uploadEntryToURL
+  const uploaderFn = url
+    ? uploadEntryToURL
+    : uploadEntryToDB
   for (const filepath_ of files) {
     let type = multicodes.RAW
     let filepath = filepath_
@@ -35,7 +40,7 @@ export async function upload (args: string[], internal = false): Promise<[string
       filepath = filepath_.slice(2)
     }
     const entry = await createEntryFromFile(filepath, type)
-    const destination = await uploaderFn(entry, urlOrDirOrSqliteFile)
+    const destination = await uploaderFn(entry, url!)
     if (!internal) {
       console.log(colors.green('uploaded:'), destination)
     } else {
@@ -60,19 +65,8 @@ async function uploadEntryToURL ([cid, buffer]: Entry, url: string): Promise<str
     })
 }
 
-async function uploadEntryToDir ([cid, buffer]: Entry, dir: string): Promise<string> {
-  await revokeNet()
-  const destination = path.join(dir, cid)
-  await Deno.writeFile(destination, buffer)
-  return destination
-}
-
-async function uploadEntryToSQLite ([cid, buffer]: Entry, sqlitedb: string): Promise<string> {
-  await revokeNet()
-  const { initStorage, writeData } = await import('./database-sqlite.ts')
-  await initStorage({ dirname: path.dirname(sqlitedb), filename: path.basename(sqlitedb) })
-  await writeData(cid, buffer)
-  return cid
+function uploadEntryToDB ([cid, buffer]: Entry): Promise<string> {
+  return sbp('chelonia.db/set', cid, buffer).then(() => cid)
 }
 
 type ResponseTypeFn = 'arrayBuffer' | 'blob' | 'clone' | 'formData' | 'json' | 'text'

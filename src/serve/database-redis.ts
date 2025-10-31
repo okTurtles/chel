@@ -27,7 +27,6 @@ export default class RedisBackend extends DatabaseBackend {
     await this.db!.flushAll()
   }
 
-  // deno-lint-ignore require-await
   async readData (key: string): Promise<Buffer | string | void> {
     return await this.db!.get(key) ?? undefined
   }
