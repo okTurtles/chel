@@ -6,7 +6,7 @@ const languageFileMap = new Map([
   ['ko', 'korean.json']
 ])
 
-export function handleFetchResult <T extends 'json' | 'text' | 'blob'>(type: T): ((r: Response) => ReturnType<Response[T]>) {
+export function handleFetchResult <T extends 'json' | 'text' | 'blob'> (type: T): ((r: Response) => ReturnType<Response[T]>) {
   return function (r: Response) {
     if (!r.ok) throw new Error(`${r.status}: ${r.statusText}`)
     return r[type]() as ReturnType<Response[T]>
