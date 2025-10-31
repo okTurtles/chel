@@ -4,8 +4,6 @@ import sbp from 'npm:@sbp/sbp'
 import { initDB } from './serve/database.ts'
 import { createEntryFromFile, multicodes, type Entry } from './utils.ts'
 
-void sbp, initDB
-
 // chel upload [<url>] <file1> [<file2> [<file3> ...]]
 
 export async function upload (files: string[], internal = false): Promise<[string, string][]> {
