@@ -32,7 +32,6 @@ export const initVapid = async () => {
       const serializedKeyPair = await Promise.all([
         crypto.subtle.exportKey('jwk', keyPair.privateKey),
         crypto.subtle.exportKey('raw', keyPair.publicKey).then((key) =>
-
           Buffer.from(key).toString('base64url')
         )
       ])

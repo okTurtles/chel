@@ -46296,8 +46296,9 @@ function logMethod(args, method) {
 }
 var import_npm_pino;
 var prettyPrint;
-var logger2;
+var logger;
 var logLevel;
+var logger_default;
 var init_logger = __esm({
   "src/serve/logger.ts"() {
     "use strict";
@@ -46305,7 +46306,7 @@ var init_logger = __esm({
     prettyPrint = process3.env.NODE_ENV === "development" || process3.env.CI || process3.env.CYPRESS_RECORD_KEY || process3.env.PRETTY;
     if (prettyPrint) {
       try {
-        logger2 = (0, import_npm_pino.default)({
+        logger = (0, import_npm_pino.default)({
           hooks: { logMethod },
           transport: {
             target: "pino-pretty",
@@ -46316,23 +46317,23 @@ var init_logger = __esm({
         });
       } catch (e2) {
         console.warn("pino-pretty transport unavailable, using basic logging", e2);
-        logger2 = (0, import_npm_pino.default)({ hooks: { logMethod } });
+        logger = (0, import_npm_pino.default)({ hooks: { logMethod } });
       }
     } else {
-      logger2 = (0, import_npm_pino.default)({ hooks: { logMethod } });
+      logger = (0, import_npm_pino.default)({ hooks: { logMethod } });
     }
     logLevel = process3.env.LOG_LEVEL || (prettyPrint ? "debug" : "info");
-    if (Object.keys(logger2.levels.values).includes(logLevel)) {
-      logger2.level = logLevel;
+    if (Object.keys(logger.levels.values).includes(logLevel)) {
+      logger.level = logLevel;
     } else {
-      logger2.warn(`Unknown log level: ${logLevel}`);
+      logger.warn(`Unknown log level: ${logLevel}`);
     }
-    globalThis.logger = logger2;
-    console.debug = logger2.debug.bind(logger2);
-    console.info = logger2.info.bind(logger2);
-    console.log = logger2.info.bind(logger2);
-    console.warn = logger2.warn.bind(logger2);
-    console.error = logger2.error.bind(logger2);
+    console.debug = logger.debug.bind(logger);
+    console.info = logger.info.bind(logger);
+    console.log = logger.info.bind(logger);
+    console.warn = logger.warn.bind(logger);
+    console.error = logger.error.bind(logger);
+    logger_default = logger;
   }
 });
 var isEventQueueSbpEvent2;
@@ -81238,7 +81239,7 @@ var init_database = __esm({
     };
     database_default = esm_default("sbp/selectors/register", {
       "backend/db/streamEntriesAfter": async function(contractID, height, requestedLimit, options3 = {}) {
-        const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, process7.env.MAX_EVENTS_BATCH_SIZE ? parseInt(process7.env.MAX_EVENTS_BATCH_SIZE) : 500);
+        const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, process7.env.MAX_EVENTS_BATCH_SIZE ? parseInt(process7.env.MAX_EVENTS_BATCH_SIZE) || 500 : 500);
         const latestHEADinfo = await esm_default("chelonia/db/latestHEADinfo", contractID);
         if (latestHEADinfo === "") {
           throw import_boom2.default.resourceGone(`contractID ${contractID} has been deleted!`);
@@ -85264,7 +85265,7 @@ function createServer(httpServer, options3 = {}) {
         log.debug("Pinging clients");
       }
       server.clients.forEach((client) => {
-        if (client.endpoint) return;
+        if (isPushSubscriptionInfo(client)) return;
         if (client.pinged && !client.activeSinceLastPing) {
           log(`Disconnecting irresponsive client ${client.id}`);
           return client.terminate();
@@ -85281,6 +85282,7 @@ function createServer(httpServer, options3 = {}) {
   return Object.assign(server, publicMethods2);
 }
 var import_npm_chalk;
+var isPushSubscriptionInfo;
 var bold;
 var PING;
 var PONG;
@@ -85301,10 +85303,15 @@ var publicMethods2;
 var init_pubsub2 = __esm({
   "src/serve/pubsub.ts"() {
     "use strict";
+    init_esm9();
     init_pubsub();
     init_push();
+    init_logger();
     import_npm_chalk = __toESM(require_source());
     init_wrapper();
+    isPushSubscriptionInfo = (x4) => {
+      return has(x4, "endpoint");
+    };
     ({ bold } = import_npm_chalk.default);
     ({ PING, PONG, PUB, SUB, UNSUB, KV_FILTER } = NOTIFICATION_TYPE);
     ({ ERROR, OK } = RESPONSE_TYPE);
@@ -85319,10 +85326,10 @@ var init_pubsub2 = __esm({
       let counter = 0;
       return (debugID) => String(counter++) + (debugID ? "-" + debugID : "");
     })();
-    log = logger.info.bind(logger, tag2);
-    log.bold = (...args) => logger.debug(bold(tag2, ...args));
-    log.debug = logger.debug.bind(logger, tag2);
-    log.error = (error, ...args) => logger.error(error, bold.red(tag2, ...args));
+    log = logger_default.info.bind(logger_default, tag2);
+    log.bold = (...args) => logger_default.debug(bold(tag2, ...args));
+    log.debug = logger_default.debug.bind(logger_default, tag2);
+    log.error = (error, ...args) => logger_default.error(error, bold.red(tag2, ...args));
     defaultServerHandlers = {
       close() {
         log("Server closed");
@@ -85512,7 +85519,7 @@ var init_pubsub2 = __esm({
           return shortMsg;
         };
         for (const client of to || server.clients) {
-          if (!wsOnly && client.endpoint) {
+          if (!wsOnly && isPushSubscriptionInfo(client)) {
             if (msg.length > 4096 - 86 - 17) {
               if (!shortenPayload()) {
                 console.info("Skipping too large of a payload for", client.id);
@@ -98877,6 +98884,7 @@ var init_routes = __esm({
     import_npm_bottleneck = __toESM(require_lib36());
     import_npm_chalk2 = __toESM(require_source());
     import_npm_joi = __toESM(require_lib39());
+    init_logger();
     init_database();
     init_instance_keys();
     init_zkppSalt();
@@ -99099,7 +99107,7 @@ var init_routes = __esm({
         return deserializedHEAD.hash;
       } catch (err) {
         err.ip = ip;
-        logger.error(err, "POST /event", err.message);
+        logger_default.error(err, "POST /event", err.message);
         return err;
       }
     });
@@ -99127,7 +99135,7 @@ var init_routes = __esm({
         return stream;
       } catch (err) {
         err.ip = ip;
-        logger.error(err, `GET /eventsAfter/${contractID}/${since}`, err.message);
+        logger_default.error(err, `GET /eventsAfter/${contractID}/${since}`, err.message);
         return err;
       }
     });
@@ -99176,7 +99184,7 @@ var init_routes = __esm({
         const lookupResult = await esm_default("backend/db/lookupName", name);
         return lookupResult ? h2.response(lookupResult).type("text/plain") : notFoundNoCache(h2);
       } catch (err) {
-        logger.error(err, `GET /name/${name}`, err.message);
+        logger_default.error(err, `GET /name/${name}`, err.message);
         return err;
       }
     });
@@ -99202,7 +99210,7 @@ var init_routes = __esm({
         }
         return HEADinfo;
       } catch (err) {
-        logger.error(err, `GET /latestHEADinfo/${contractID}`, err.message);
+        logger_default.error(err, `GET /latestHEADinfo/${contractID}`, err.message);
         return err;
       }
     });
@@ -99232,7 +99240,7 @@ var init_routes = __esm({
           allow: "multipart/form-data",
           failAction: function(_request, _h, err) {
             console.error("failAction error:", err);
-            return import_boom3.default.isBoom(err) ? err : import_boom3.default.boomify(err || new Error());
+            return import_boom3.default.isBoom(err) ? err : import_boom3.default.boomify(err instanceof Error ? err : new Error(err));
           },
           maxBytes: 6 * MEGABYTE,
           // TODO: make this a configurable setting
@@ -99256,7 +99264,7 @@ var init_routes = __esm({
           await esm_default("chelonia.db/set", hash32, data);
           return "/file/" + hash32;
         } catch (err) {
-          logger.error(err);
+          logger_default.error(err);
           return import_boom3.default.internal("File upload failed");
         }
       });
@@ -99273,7 +99281,7 @@ var init_routes = __esm({
         allow: "multipart/form-data",
         failAction: function(_request, _h, err) {
           console.error(err, "failAction error");
-          return import_boom3.default.isBoom(err) ? err : import_boom3.default.boomify(err || new Error());
+          return import_boom3.default.isBoom(err) ? err : import_boom3.default.boomify(err instanceof Error ? err : new Error(err));
         },
         maxBytes: FILE_UPLOAD_MAX_BYTES,
         timeout: 10 * SECOND
@@ -99343,7 +99351,7 @@ var init_routes = __esm({
         }
         return h2.response(manifestHash);
       } catch (err) {
-        logger.error(err, "POST /file", err.message);
+        logger_default.error(err, "POST /file", err.message);
         return err;
       }
     });
@@ -99571,10 +99579,8 @@ var init_routes = __esm({
         onPostHandler: {
           method(request, h2) {
             if (request.path.includes("assets/js/sw-")) {
-              console.debug("adding header: Service-Worker-Allowed /");
-              if (request.response instanceof import_boom3.default.Boom) {
-                request.response.output.headers["Service-Worker-Allowed"] = "/";
-              } else {
+              if (!(request.response instanceof import_boom3.default.Boom)) {
+                console.debug("adding header: Service-Worker-Allowed /");
                 request.response.header("Service-Worker-Allowed", "/");
               }
             }
@@ -99599,10 +99605,8 @@ var init_routes = __esm({
           onPostHandler: {
             method(request, h2) {
               if (request.path.includes("assets/js/sw-")) {
-                console.debug("adding header: Service-Worker-Allowed /");
-                if (request.response instanceof import_boom3.default.Boom) {
-                  request.response.output.headers["Service-Worker-Allowed"] = "/";
-                } else {
+                if (!(request.response instanceof import_boom3.default.Boom)) {
+                  console.debug("adding header: Service-Worker-Allowed /");
                   request.response.header("Service-Worker-Allowed", "/");
                 }
               }

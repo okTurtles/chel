@@ -6,10 +6,10 @@ const languageFileMap = new Map([
   ['ko', 'korean.json']
 ])
 
-export function handleFetchResult (type: string): ((r: Response) => Promise<unknown>) {
+export function handleFetchResult <T extends 'json' | 'text' | 'blob'> (type: T): ((r: Response) => ReturnType<Response[T]>) {
   return function (r: Response) {
     if (!r.ok) throw new Error(`${r.status}: ${r.statusText}`)
-    return (r as unknown as { [key: string]: () => Promise<unknown> })[type]()
+    return r[type]() as ReturnType<Response[T]>
   }
 }
 
@@ -21,7 +21,7 @@ sbp('sbp/selectors/register', {
 
     if (languageFileName !== '') {
       return await fetch(`${sbp('okTurtles.data/get', 'API_URL')}/assets/strings/${languageFileName}`)
-        .then(handleFetchResult('json')) as Record<string, unknown>
+        .then(handleFetchResult('json'))
     }
     return null
   }
