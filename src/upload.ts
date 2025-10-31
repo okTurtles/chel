@@ -12,6 +12,8 @@ export async function upload (files: string[], internal = false): Promise<[strin
   const url = URL.canParse(files[0]) ? files[0] : null
   if (url) {
     files.shift()
+  } else {
+    await initDB({ skipDbPreloading: true })
   }
   if (files.length === 0) throw new Error('missing files!')
   const uploaded: Array<[string, string]> = []
