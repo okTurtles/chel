@@ -9,6 +9,7 @@ export default abstract class DatabaseBackend {
   abstract writeData (key: string, value: Buffer | string): Promise<void>
   abstract deleteData (key: string): Promise<void>
   abstract close (): Promise<void> | void
+  abstract iterKeys (): AsyncGenerator<string>
 
   constructor () {
     if (new.target === DatabaseBackend) {

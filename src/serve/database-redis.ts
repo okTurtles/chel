@@ -43,4 +43,11 @@ export default class RedisBackend extends DatabaseBackend {
   close () {
     this.db!.destroy()
   }
+
+  async * iterKeys () {
+    const keys = await this.db!.keys('*')
+    for (const key of keys) {
+      yield key
+    }
+  }
 }

@@ -12,6 +12,7 @@ export default class SqliteBackend extends DatabaseBackend {
   readStatement: { get: (key: string) => { value?: Buffer | string } | undefined } | null = null
   writeStatement: { run: (key: string, value: Buffer | string) => unknown } | null = null
   deleteStatement: { run: (key: string) => unknown } | null = null
+  iterKeysStatement: { iter: () => Iterable<[string]> } | null = null
 
   constructor (options: { filepath?: string } = {}) {
     super()
@@ -39,6 +40,7 @@ export default class SqliteBackend extends DatabaseBackend {
     this.readStatement = this.db.prepare('SELECT value FROM Data WHERE key = ?')
     this.writeStatement = this.db.prepare('REPLACE INTO Data(key, value) VALUES(?, ?)')
     this.deleteStatement = this.db.prepare('DELETE FROM Data WHERE key = ?')
+    this.iterKeysStatement = this.db.prepare('SELECT key FROM Data')
   }
 
   // Useful in test hooks.
@@ -66,5 +68,11 @@ export default class SqliteBackend extends DatabaseBackend {
 
   close () {
     this.db!.close()
+  }
+
+  async * iterKeys () {
+    for (const row of this.iterKeysStatement!.iter()) {
+      yield row[0]
+    }
   }
 }
