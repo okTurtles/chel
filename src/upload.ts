@@ -2,7 +2,7 @@ import * as colors from 'jsr:@std/fmt/colors'
 import * as path from 'jsr:@std/path/'
 import sbp from 'npm:@sbp/sbp'
 import { initDB } from './serve/database.ts'
-import { createEntryFromFile, isDir, multicodes, revokeNet, type Entry } from './utils.ts'
+import { createEntryFromFile, multicodes, type Entry } from './utils.ts'
 
 void sbp, initDB
 
