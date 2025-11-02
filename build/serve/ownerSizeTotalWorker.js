@@ -48095,7 +48095,7 @@ var updateSize = async (resourceID, sizeKey, size, skipIfDeleted) => {
 };
 var database_default = esm_default("sbp/selectors/register", {
   "backend/db/streamEntriesAfter": async function(contractID, height, requestedLimit, options2 = {}) {
-    const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, process5.env.MAX_EVENTS_BATCH_SIZE ? parseInt(process5.env.MAX_EVENTS_BATCH_SIZE) : 500);
+    const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, process5.env.MAX_EVENTS_BATCH_SIZE ? parseInt(process5.env.MAX_EVENTS_BATCH_SIZE) || 500 : 500);
     const latestHEADinfo = await esm_default("chelonia/db/latestHEADinfo", contractID);
     if (latestHEADinfo === "") {
       throw import_boom.default.resourceGone(`contractID ${contractID} has been deleted!`);
@@ -48403,7 +48403,6 @@ if (Object.keys(logger.levels.values).includes(logLevel)) {
 } else {
   logger.warn(`Unknown log level: ${logLevel}`);
 }
-globalThis.logger = logger;
 console.debug = logger.debug.bind(logger);
 console.info = logger.info.bind(logger);
 console.log = logger.info.bind(logger);

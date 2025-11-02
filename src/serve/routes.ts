@@ -12,7 +12,7 @@ import Bottleneck from 'npm:bottleneck'
 import chalk from 'npm:chalk'
 import Joi from 'npm:joi'
 // TODO: Use logger for debugging route handlers
-// import { logger } from './logger.ts'
+import logger from './logger.ts'
 import { isIP } from 'node:net'
 import path from 'node:path'
 import process from 'node:process'
@@ -512,7 +512,7 @@ if (process.env.NODE_ENV === 'development') {
       allow: 'multipart/form-data',
       failAction: function (_request, _h, err) {
         console.error('failAction error:', err)
-        return Boom.isBoom(err) ? err : Boom.boomify(err || new Error())
+        return Boom.isBoom(err) ? err : Boom.boomify(err instanceof Error ? err : new Error(err))
       },
       maxBytes: 6 * MEGABYTE, // TODO: make this a configurable setting
       timeout: 10 * SECOND // TODO: make this a configurable setting
@@ -556,7 +556,7 @@ route.POST('/file', {
     allow: 'multipart/form-data',
     failAction: function (_request, _h, err) {
       console.error(err, 'failAction error')
-      return Boom.isBoom(err) ? err : Boom.boomify(err || new Error())
+      return Boom.isBoom(err) ? err : Boom.boomify(err instanceof Error ? err : new Error(err))
     },
     maxBytes: FILE_UPLOAD_MAX_BYTES,
     timeout: 10 * SECOND // TODO: make this a configurable setting
@@ -968,10 +968,9 @@ route.GET('/assets/{subpath*}', {
         // header to allow the service worker to function. Details:
         // https://w3c.github.io/ServiceWorker/#service-worker-allowed
         if (request.path.includes('assets/js/sw-')) {
-          console.debug('adding header: Service-Worker-Allowed /')
-          if (request.response instanceof Boom.Boom) {
-            request.response.output.headers['Service-Worker-Allowed'] = '/'
-          } else {
+          // If `response` is an error, then no SW is being served
+          if (!(request.response instanceof Boom.Boom)) {
+            console.debug('adding header: Service-Worker-Allowed /')
             request.response.header('Service-Worker-Allowed', '/')
           }
         }
@@ -1009,10 +1008,9 @@ if (isCheloniaDashboard) {
           // header to allow the service worker to function. Details:
           // https://w3c.github.io/ServiceWorker/#service-worker-allowed
           if (request.path.includes('assets/js/sw-')) {
-            console.debug('adding header: Service-Worker-Allowed /')
-            if (request.response instanceof Boom.Boom) {
-              request.response.output.headers['Service-Worker-Allowed'] = '/'
-            } else {
+            // If `response` is an error, then no SW is being served
+            if (!(request.response instanceof Boom.Boom)) {
+              console.debug('adding header: Service-Worker-Allowed /')
               request.response.header('Service-Worker-Allowed', '/')
             }
           }
