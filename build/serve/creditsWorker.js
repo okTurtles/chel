@@ -3012,6 +3012,7 @@ var wrapTransaction = (fn, db2, { begin, commit, rollback, savepoint, release, r
 };
 
 // build/serve/creditsWorker.js-tmp
+import { Buffer as Buffer11 } from "node:buffer";
 import { mkdir as mkdir2 } from "node:fs/promises";
 import { basename as basename22, dirname as dirname22, join as join22, resolve as resolve22 } from "node:path";
 import { resolve as resolve32 } from "node:path";
@@ -12447,7 +12448,7 @@ var DatabaseBackend;
 var init_DatabaseBackend = __esm({
   "src/serve/DatabaseBackend.ts"() {
     "use strict";
-    requiredMethodNames = ["init", "clear", "readData", "writeData", "deleteData", "close"];
+    requiredMethodNames = ["init", "clear", "readData", "writeData", "deleteData", "close", "iterKeys"];
     DatabaseBackend = class _DatabaseBackend {
       constructor() {
         if (new.target === _DatabaseBackend) {
@@ -38162,7 +38163,10 @@ var init_database_sqlite = __esm({
       // deno-lint-ignore require-await
       async readData(key) {
         const row = this.readStatement.get(key);
-        return row?.value;
+        const value = row?.value;
+        if (ArrayBuffer.isView(value) && !Buffer11.isBuffer(value)) {
+          return Buffer11.from(value);
+        }
       }
       async writeData(key, value) {
         await this.writeStatement.run(key, value);
@@ -38175,7 +38179,7 @@ var init_database_sqlite = __esm({
       }
       async *iterKeys() {
         for (const row of this.iterKeysStatement.iter()) {
-          yield row[0];
+          yield row.key;
         }
       }
     };
@@ -48189,7 +48193,7 @@ function namespaceKey(name) {
 var initDB = async ({ skipDbPreloading } = {}) => {
   if (persistence) {
     const Ctor = (await globImport_database_ts2(`./database-${persistence}.ts`)).default;
-    const { init: init2, readData, writeData, deleteData, close } = new Ctor(options[persistence]);
+    const { init: init2, readData, writeData, deleteData, iterKeys, close } = new Ctor(options[persistence]);
     await init2();
     esm_default("okTurtles.events/once", SERVER_EXITING, () => {
       esm_default("okTurtles.eventQueue/queueEvent", SERVER_EXITING, async () => {
@@ -48204,6 +48208,11 @@ var initDB = async ({ skipDbPreloading } = {}) => {
       max: Number(process5.env.GI_LRU_NUM_ITEMS) || 1e4
     });
     const prefixes = Object.keys(prefixHandlers);
+    esm_default("sbp/selectors/register", {
+      "chelonia.db/iterKeys": () => {
+        return iterKeys();
+      }
+    });
     esm_default("sbp/selectors/overwrite", {
       "chelonia.db/get": async function(prefixableKey, { bypassCache } = {}) {
         if (!bypassCache) {
@@ -48246,8 +48255,11 @@ var initDB = async ({ skipDbPreloading } = {}) => {
           cache2.delete(prefix + key);
         });
       }
+      /* 'chelonia.db/iterKeys': () => {
+        return iterKeys()
+      } */
     });
-    esm_default("sbp/selectors/lock", ["chelonia.db/get", "chelonia.db/set", "chelonia.db/delete"]);
+    esm_default("sbp/selectors/lock", ["chelonia.db/get", "chelonia.db/set", "chelonia.db/delete", "chelonia.db/iterKeys"]);
   }
   if (skipDbPreloading) return;
   if (persistence !== "fs" || options.fs.dirname !== dbRootPath) {

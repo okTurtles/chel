@@ -55,7 +55,10 @@ export default class SqliteBackend extends DatabaseBackend {
     // 'row' will be undefined if the key was not found.
     // Note: sqlite remembers the type of every stored value, therefore we
     // can return the value as-is.
-    return row?.value
+    const value = row?.value
+    if (ArrayBuffer.isView(value) && !Buffer.isBuffer(value)) {
+      return Buffer.from(value)
+    }
   }
 
   async writeData (key: string, value: Buffer | string): Promise<void> {
@@ -72,7 +75,7 @@ export default class SqliteBackend extends DatabaseBackend {
 
   async * iterKeys () {
     for (const row of this.iterKeysStatement!.iter()) {
-      yield row[0]
+      yield row.key
     }
   }
 }

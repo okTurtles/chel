@@ -1,6 +1,6 @@
 import { Buffer } from 'node:buffer'
 
-const requiredMethodNames = ['init', 'clear', 'readData', 'writeData', 'deleteData', 'close'] as const
+const requiredMethodNames = ['init', 'clear', 'readData', 'writeData', 'deleteData', 'close', 'iterKeys'] as const
 
 export default abstract class DatabaseBackend {
   abstract init (): Promise<void>

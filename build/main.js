@@ -2241,12 +2241,12 @@ var SqliteError = class extends Error {
     super(`${code2}: ${message}`), this.code = code2, this.name = "SqliteError";
   }
 };
-function unwrap(code2, db3) {
+function unwrap(code2, db2) {
   if (code2 === SQLITE3_OK || code2 === SQLITE3_DONE) return;
   if (code2 === SQLITE3_MISUSE) {
     throw new SqliteError(code2, "SQLite3 API misuse");
-  } else if (db3 !== void 0) {
-    const errmsg = sqlite3_errmsg(db3);
+  } else if (db2 !== void 0) {
+    const errmsg = sqlite3_errmsg(db2);
     if (errmsg === null) throw new SqliteError(code2);
     throw new Error(Deno.UnsafePointerView.getCString(errmsg));
   } else {
@@ -2368,18 +2368,18 @@ var Statement = class {
   get bindParameterCount() {
     return this.#bindParameterCount;
   }
-  constructor(db3, sql) {
-    this.db = db3;
+  constructor(db2, sql) {
+    this.db = db2;
     this.#bound = false;
     this.#hasNoArgs = false;
     this.callback = false;
     this.#bindRefs = /* @__PURE__ */ new Set();
     this.#rowObject = {};
     const pHandle = new BigUint64Array(1);
-    unwrap(sqlite3_prepare_v2(db3.unsafeHandle, toCString(sql), sql.length, pHandle, null), db3.unsafeHandle);
+    unwrap(sqlite3_prepare_v2(db2.unsafeHandle, toCString(sql), sql.length, pHandle, null), db2.unsafeHandle);
     this.#handle = Deno.UnsafePointer.create(pHandle[0]);
-    STATEMENTS_TO_DB.set(this.#handle, db3.unsafeHandle);
-    this.#unsafeConcurrency = db3.unsafeConcurrency;
+    STATEMENTS_TO_DB.set(this.#handle, db2.unsafeHandle);
+    this.#unsafeConcurrency = db2.unsafeConcurrency;
     this.#finalizerToken = {
       handle: this.#handle
     };
@@ -2785,13 +2785,13 @@ var { sqlite3_blob_open, sqlite3_blob_bytes, sqlite3_blob_close, sqlite3_blob_re
 _computedKey3 = Symbol.iterator, _computedKey12 = Symbol.for("Deno.customInspect");
 var SQLBlob = class {
   #handle;
-  constructor(db3, options3) {
+  constructor(db2, options3) {
     options3 = Object.assign({
       readonly: true,
       db: "main"
     }, options3);
     const pHandle = new BigUint64Array(1);
-    unwrap(sqlite3_blob_open(db3.unsafeHandle, toCString(options3.db ?? "main"), toCString(options3.table), toCString(options3.column), BigInt(options3.row), options3.readonly === false ? 1 : 0, pHandle));
+    unwrap(sqlite3_blob_open(db2.unsafeHandle, toCString(options3.db ?? "main"), toCString(options3.table), toCString(options3.column), BigInt(options3.row), options3.readonly === false ? 1 : 0, pHandle));
     this.#handle = Deno.UnsafePointer.create(pHandle[0]);
   }
   /** Byte size of the Blob */
@@ -3364,8 +3364,8 @@ var Database = class {
    */
   close() {
     if (!this.#open) return;
-    for (const [stmt, db3] of STATEMENTS_TO_DB) {
-      if (db3 === this.#handle) {
+    for (const [stmt, db2] of STATEMENTS_TO_DB) {
+      if (db2 === this.#handle) {
         sqlite3_finalize2(stmt);
         STATEMENTS_TO_DB.delete(stmt);
       }
@@ -3395,37 +3395,37 @@ var Database = class {
   }
 };
 var controllers = /* @__PURE__ */ new WeakMap();
-var getController = (db3) => {
-  let controller = controllers.get(db3);
+var getController = (db2) => {
+  let controller = controllers.get(db2);
   if (!controller) {
     const shared = {
-      commit: db3.prepare("COMMIT"),
-      rollback: db3.prepare("ROLLBACK"),
-      savepoint: db3.prepare("SAVEPOINT `	_bs3.	`"),
-      release: db3.prepare("RELEASE `	_bs3.	`"),
-      rollbackTo: db3.prepare("ROLLBACK TO `	_bs3.	`")
+      commit: db2.prepare("COMMIT"),
+      rollback: db2.prepare("ROLLBACK"),
+      savepoint: db2.prepare("SAVEPOINT `	_bs3.	`"),
+      release: db2.prepare("RELEASE `	_bs3.	`"),
+      rollbackTo: db2.prepare("ROLLBACK TO `	_bs3.	`")
     };
-    controllers.set(db3, controller = {
+    controllers.set(db2, controller = {
       default: Object.assign({
-        begin: db3.prepare("BEGIN")
+        begin: db2.prepare("BEGIN")
       }, shared),
       deferred: Object.assign({
-        begin: db3.prepare("BEGIN DEFERRED")
+        begin: db2.prepare("BEGIN DEFERRED")
       }, shared),
       immediate: Object.assign({
-        begin: db3.prepare("BEGIN IMMEDIATE")
+        begin: db2.prepare("BEGIN IMMEDIATE")
       }, shared),
       exclusive: Object.assign({
-        begin: db3.prepare("BEGIN EXCLUSIVE")
+        begin: db2.prepare("BEGIN EXCLUSIVE")
       }, shared)
     });
   }
   return controller;
 };
-var wrapTransaction = (fn, db3, { begin, commit, rollback, savepoint, release, rollbackTo }) => function sqliteTransaction(...args) {
+var wrapTransaction = (fn, db2, { begin, commit, rollback, savepoint, release, rollbackTo }) => function sqliteTransaction(...args) {
   const { apply } = Function.prototype;
   let before, after, undo;
-  if (db3.inTransaction) {
+  if (db2.inTransaction) {
     before = savepoint;
     after = release;
     undo = rollbackTo;
@@ -3440,7 +3440,7 @@ var wrapTransaction = (fn, db3, { begin, commit, rollback, savepoint, release, r
     after.run();
     return result;
   } catch (ex) {
-    if (!db3.autocommit) {
+    if (!db2.autocommit) {
       undo.run();
       if (undo !== rollback) after.run();
     }
@@ -3449,6 +3449,7 @@ var wrapTransaction = (fn, db3, { begin, commit, rollback, savepoint, release, r
 };
 
 // build/main.js-tmp
+import { Buffer as Buffer11 } from "node:buffer";
 import { mkdir as mkdir2 } from "node:fs/promises";
 import { basename as basename22, dirname as dirname22, join as join22, resolve as resolve22 } from "node:path";
 import { resolve as resolve32 } from "node:path";
@@ -3462,9 +3463,9 @@ import { Readable } from "node:stream";
 import path9 from "node:path";
 import process6 from "node:process";
 import process7 from "node:process";
-import { Buffer as Buffer11 } from "node:buffer";
-import process8 from "node:process";
 import { Buffer as Buffer12 } from "node:buffer";
+import process8 from "node:process";
+import { Buffer as Buffer13 } from "node:buffer";
 import { isIP } from "node:net";
 import path10 from "node:path";
 import process9 from "node:process";
@@ -11889,7 +11890,7 @@ function eventsAfter(contractID, { sinceHeight, limit, sinceHash, stream = true 
   let latestHeight;
   let state = "fetch";
   let requestLimit;
-  let count3;
+  let count;
   let buffer = "";
   let currentEvent;
   const s = new ReadableStream({
@@ -11904,7 +11905,7 @@ function eventsAfter(contractID, { sinceHeight, limit, sinceHash, stream = true 
             case "fetch": {
               eventsStreamReader = await fetchEventsStreamReader();
               state = "read-new-response";
-              count3 = 0;
+              count = 0;
               break;
             }
             case "read-eos":
@@ -11951,11 +11952,11 @@ function eventsAfter(contractID, { sinceHeight, limit, sinceHash, stream = true 
               try {
                 const eventValue = buffer.slice(0, nextIdx).trim();
                 if (eventValue) {
-                  if (count3 === requestLimit) {
+                  if (count === requestLimit) {
                     throw new Error("Received too many events");
                   }
                   currentEvent = JSON.parse(b64ToStr(JSON.parse(eventValue))).message;
-                  if (count3 === 0) {
+                  if (count === 0) {
                     const hash3 = SPMessage.deserializeHEAD(currentEvent).hash;
                     const height = SPMessage.deserializeHEAD(currentEvent).head.height;
                     if (height !== sinceHeight || sinceHash && sinceHash !== hash3) {
@@ -11966,7 +11967,7 @@ function eventsAfter(contractID, { sinceHeight, limit, sinceHash, stream = true 
                       }
                     }
                   }
-                  if (count3++ !== 0 || requestCount !== 0) {
+                  if (count++ !== 0 || requestCount !== 0) {
                     controller.enqueue(currentEvent);
                     enqueued = true;
                     remainingEvents--;
@@ -19369,7 +19370,7 @@ var DatabaseBackend;
 var init_DatabaseBackend = __esm({
   "src/serve/DatabaseBackend.ts"() {
     "use strict";
-    requiredMethodNames = ["init", "clear", "readData", "writeData", "deleteData", "close"];
+    requiredMethodNames = ["init", "clear", "readData", "writeData", "deleteData", "close", "iterKeys"];
     DatabaseBackend = class _DatabaseBackend {
       constructor() {
         if (new.target === _DatabaseBackend) {
@@ -19390,15 +19391,15 @@ __export(database_fs_exports, {
   default: () => FsBackend
 });
 async function testCaseSensitivity(backend) {
-  const { readData: readData3, writeData: writeData3, deleteData } = backend;
+  const { readData, writeData, deleteData } = backend;
   const date3 = /* @__PURE__ */ new Date();
   const dateString = date3.toISOString();
   const originalKey = `_private_testCaseSensitivity_${date3.getTime()}_${(0, Math.random)().toFixed(8).slice(2)}`;
   const differentlyCasedKey = "_P" + originalKey.slice(2);
-  await writeData3(originalKey, dateString);
+  await writeData(originalKey, dateString);
   try {
-    const valueOriginalCase = await readData3(originalKey);
-    const valueDifferentCase = await readData3(differentlyCasedKey);
+    const valueOriginalCase = await readData(originalKey);
+    const valueDifferentCase = await readData(differentlyCasedKey);
     if (valueOriginalCase?.toString() !== dateString) {
       console.error(`Unexpected value on case-sensitivity test; expected ${dateString}`);
       throw new Error("Unexpected value: original key does not have the correct value");
@@ -21046,10 +21047,10 @@ var require_ACL_LOG = __commonJS({
        * @param parser - The Redis command parser
        * @param count - Optional maximum number of entries to return
        */
-      parseCommand(parser2, count3) {
+      parseCommand(parser2, count) {
         parser2.push("ACL", "LOG");
-        if (count3 != void 0) {
-          parser2.push(count3.toString());
+        if (count != void 0) {
+          parser2.push(count.toString());
         }
       },
       transformReply: {
@@ -22395,8 +22396,8 @@ var require_CLUSTER_GETKEYSINSLOT = __commonJS({
        * @param slot - The hash slot to get keys from
        * @param count - Maximum number of keys to return
        */
-      parseCommand(parser2, slot, count3) {
-        parser2.push("CLUSTER", "GETKEYSINSLOT", slot.toString(), count3.toString());
+      parseCommand(parser2, slot, count) {
+        parser2.push("CLUSTER", "GETKEYSINSLOT", slot.toString(), count.toString());
       },
       transformReply: void 0
     };
@@ -25146,10 +25147,10 @@ var require_HRANDFIELD_COUNT_WITHVALUES = __commonJS({
        * @param count - The number of fields to return (positive: unique fields, negative: may repeat fields)
        * @see https://redis.io/commands/hrandfield/
        */
-      parseCommand(parser2, key, count3) {
+      parseCommand(parser2, key, count) {
         parser2.push("HRANDFIELD");
         parser2.pushKey(key);
-        parser2.push(count3.toString(), "WITHVALUES");
+        parser2.push(count.toString(), "WITHVALUES");
       },
       transformReply: {
         2: (rawReply) => {
@@ -25190,10 +25191,10 @@ var require_HRANDFIELD_COUNT = __commonJS({
        * @param count - The number of fields to return (positive: unique fields, negative: may repeat fields)
        * @see https://redis.io/commands/hrandfield/
        */
-      parseCommand(parser2, key, count3) {
+      parseCommand(parser2, key, count) {
         parser2.push("HRANDFIELD");
         parser2.pushKey(key);
-        parser2.push(count3.toString());
+        parser2.push(count.toString());
       },
       transformReply: void 0
     };
@@ -26103,9 +26104,9 @@ var require_LPOP_COUNT = __commonJS({
        * @param count - The number of elements to pop
        * @see https://redis.io/commands/lpop/
        */
-      parseCommand(parser2, key, count3) {
+      parseCommand(parser2, key, count) {
         LPOP_1.default.parseCommand(parser2, key);
-        parser2.push(count3.toString());
+        parser2.push(count.toString());
       },
       transformReply: void 0
     };
@@ -26163,9 +26164,9 @@ var require_LPOS_COUNT = __commonJS({
        * @param options - Optional parameters for RANK and MAXLEN
        * @see https://redis.io/commands/lpos/
        */
-      parseCommand(parser2, key, element, count3, options3) {
+      parseCommand(parser2, key, element, count, options3) {
         LPOS_1.default.parseCommand(parser2, key, element, options3);
-        parser2.push("COUNT", count3.toString());
+        parser2.push("COUNT", count.toString());
       },
       transformReply: void 0
     };
@@ -26255,10 +26256,10 @@ var require_LREM = __commonJS({
        * @param element - The element to remove
        * @see https://redis.io/commands/lrem/
        */
-      parseCommand(parser2, key, count3, element) {
+      parseCommand(parser2, key, count, element) {
         parser2.push("LREM");
         parser2.pushKey(key);
-        parser2.push(count3.toString());
+        parser2.push(count.toString());
         parser2.push(element);
       },
       transformReply: void 0
@@ -26600,10 +26601,10 @@ var require_MOVE = __commonJS({
        * @param db - The destination database index
        * @see https://redis.io/commands/move/
        */
-      parseCommand(parser2, key, db3) {
+      parseCommand(parser2, key, db2) {
         parser2.push("MOVE");
         parser2.pushKey(key);
-        parser2.push(db3.toString());
+        parser2.push(db2.toString());
       },
       transformReply: void 0
     };
@@ -27398,10 +27399,10 @@ var require_RPOP_COUNT = __commonJS({
        * @param count - The number of elements to pop
        * @see https://redis.io/commands/rpop/
        */
-      parseCommand(parser2, key, count3) {
+      parseCommand(parser2, key, count) {
         parser2.push("RPOP");
         parser2.pushKey(key);
-        parser2.push(count3.toString());
+        parser2.push(count.toString());
       },
       transformReply: void 0
     };
@@ -28135,10 +28136,10 @@ var require_SPOP_COUNT = __commonJS({
        * @param count - The number of members to pop
        * @see https://redis.io/commands/spop/
        */
-      parseCommand(parser2, key, count3) {
+      parseCommand(parser2, key, count) {
         parser2.push("SPOP");
         parser2.pushKey(key);
-        parser2.push(count3.toString());
+        parser2.push(count.toString());
       },
       transformReply: void 0
     };
@@ -28227,9 +28228,9 @@ var require_SRANDMEMBER_COUNT = __commonJS({
        * @param count - The number of members to return. If negative, may return the same member multiple times
        * @see https://redis.io/commands/srandmember/
        */
-      parseCommand(parser2, key, count3) {
+      parseCommand(parser2, key, count) {
         SRANDMEMBER_1.default.parseCommand(parser2, key);
-        parser2.push(count3.toString());
+        parser2.push(count.toString());
       },
       transformReply: void 0
     };
@@ -29205,14 +29206,14 @@ var require_XPENDING_RANGE = __commonJS({
        * @returns Array of pending message details
        * @see https://redis.io/commands/xpending/
        */
-      parseCommand(parser2, key, group, start, end, count3, options3) {
+      parseCommand(parser2, key, group, start, end, count, options3) {
         parser2.push("XPENDING");
         parser2.pushKey(key);
         parser2.push(group);
         if (options3?.IDLE !== void 0) {
           parser2.push("IDLE", options3.IDLE.toString());
         }
-        parser2.push(start, end, count3.toString());
+        parser2.push(start, end, count.toString());
         if (options3?.consumer) {
           parser2.push(options3.consumer);
         }
@@ -29923,10 +29924,10 @@ var require_ZPOPMAX_COUNT = __commonJS({
        * @param key - Key of the sorted set.
        * @param count - Number of members to pop.
        */
-      parseCommand(parser2, key, count3) {
+      parseCommand(parser2, key, count) {
         parser2.push("ZPOPMAX");
         parser2.pushKey(key);
-        parser2.push(count3.toString());
+        parser2.push(count.toString());
       },
       transformReply: generic_transformers_1.transformSortedSetReply
     };
@@ -29982,10 +29983,10 @@ var require_ZPOPMIN_COUNT = __commonJS({
        * @param key - Key of the sorted set.
        * @param count - Number of members to pop.
        */
-      parseCommand(parser2, key, count3) {
+      parseCommand(parser2, key, count) {
         parser2.push("ZPOPMIN");
         parser2.pushKey(key);
-        parser2.push(count3.toString());
+        parser2.push(count.toString());
       },
       transformReply: generic_transformers_1.transformSortedSetReply
     };
@@ -30049,9 +30050,9 @@ var require_ZRANDMEMBER_COUNT = __commonJS({
        * @param key - Key of the sorted set.
        * @param count - Number of members to return.
        */
-      parseCommand(parser2, key, count3) {
+      parseCommand(parser2, key, count) {
         ZRANDMEMBER_1.default.parseCommand(parser2, key);
-        parser2.push(count3.toString());
+        parser2.push(count.toString());
       },
       transformReply: void 0
     };
@@ -30074,8 +30075,8 @@ var require_ZRANDMEMBER_COUNT_WITHSCORES = __commonJS({
        * @param key - Key of the sorted set.
        * @param count - Number of members to return.
        */
-      parseCommand(parser2, key, count3) {
-        ZRANDMEMBER_COUNT_1.default.parseCommand(parser2, key, count3);
+      parseCommand(parser2, key, count) {
+        ZRANDMEMBER_COUNT_1.default.parseCommand(parser2, key, count);
         parser2.push("WITHSCORES");
       },
       transformReply: generic_transformers_1.transformSortedSetReply
@@ -30864,11 +30865,11 @@ var require_VRANDMEMBER = __commonJS({
        * @param count - Optional number of elements to return
        * @see https://redis.io/commands/vrandmember/
        */
-      parseCommand(parser2, key, count3) {
+      parseCommand(parser2, key, count) {
         parser2.push("VRANDMEMBER");
         parser2.pushKey(key);
-        if (count3 !== void 0) {
-          parser2.push(count3.toString());
+        if (count !== void 0) {
+          parser2.push(count.toString());
         }
       },
       transformReply: void 0
@@ -34098,9 +34099,9 @@ var require_multi_command2 = __commonJS({
         this.#executeMulti = executeMulti;
         this.#executePipeline = executePipeline;
       }
-      SELECT(db3, transformReply) {
-        this.#selectedDB = db3;
-        this.#multi.addCommand(["SELECT", db3.toString()], transformReply);
+      SELECT(db2, transformReply) {
+        this.#selectedDB = db2;
+        this.#multi.addCommand(["SELECT", db2.toString()], transformReply);
         return this;
       }
       select = this.SELECT;
@@ -34376,15 +34377,15 @@ var require_cache = __commonJS({
       static INSTANCE = new _DisabledStatsCounter();
       constructor() {
       }
-      recordHits(count3) {
+      recordHits(count) {
       }
-      recordMisses(count3) {
+      recordMisses(count) {
       }
       recordLoadSuccess(loadTime) {
       }
       recordLoadFailure(loadTime) {
       }
-      recordEvictions(count3) {
+      recordEvictions(count) {
       }
       snapshot() {
         return CacheStats.empty();
@@ -34405,16 +34406,16 @@ var require_cache = __commonJS({
        *
        * @param count - The number of hits to record
        */
-      recordHits(count3) {
-        this.#hitCount += count3;
+      recordHits(count) {
+        this.#hitCount += count;
       }
       /**
        * Records cache misses.
        *
        * @param count - The number of misses to record
        */
-      recordMisses(count3) {
-        this.#missCount += count3;
+      recordMisses(count) {
+        this.#missCount += count;
       }
       /**
        * Records the successful load of a new entry.
@@ -34439,8 +34440,8 @@ var require_cache = __commonJS({
        *
        * @param count - The number of evictions to record
        */
-      recordEvictions(count3) {
-        this.#evictionCount += count3;
+      recordEvictions(count) {
+        this.#evictionCount += count;
       }
       /**
        * Returns a snapshot of the current statistics.
@@ -34514,14 +34515,14 @@ var require_cache = __commonJS({
       maxEntries;
       lru;
       #statsCounter;
-      recordEvictions(count3) {
-        this.#statsCounter.recordEvictions(count3);
+      recordEvictions(count) {
+        this.#statsCounter.recordEvictions(count);
       }
-      recordHits(count3) {
-        this.#statsCounter.recordHits(count3);
+      recordHits(count) {
+        this.#statsCounter.recordHits(count);
       }
-      recordMisses(count3) {
-        this.#statsCounter.recordMisses(count3);
+      recordMisses(count) {
+        this.#statsCounter.recordMisses(count);
       }
       constructor(config2) {
         super();
@@ -34657,13 +34658,13 @@ var require_cache = __commonJS({
         return this.#cacheKeyToEntryMap.has(cacheKey);
       }
       set(cacheKey, cacheEntry, keys) {
-        let count3 = this.#cacheKeyToEntryMap.size;
+        let count = this.#cacheKeyToEntryMap.size;
         const oldEntry = this.#cacheKeyToEntryMap.get(cacheKey);
         if (oldEntry) {
-          count3--;
+          count--;
           oldEntry.invalidate();
         }
-        if (this.maxEntries > 0 && count3 >= this.maxEntries) {
+        if (this.maxEntries > 0 && count >= this.maxEntries) {
           this.deleteOldest();
           this.#statsCounter.recordEvictions(1);
         }
@@ -35824,9 +35825,9 @@ var require_client = __commonJS({
         this._self.#scheduleWrite();
         return promise;
       }
-      async SELECT(db3) {
-        await this.sendCommand(["SELECT", db3.toString()]);
-        this._self.#selectedDB = db3;
+      async SELECT(db2) {
+        await this.sendCommand(["SELECT", db2.toString()]);
+        this._self.#selectedDB = db2;
       }
       select = this.SELECT;
       #pubSubCommand(promise) {
@@ -38350,10 +38351,10 @@ var require_sentinel = __commonJS({
         }
       }
       async #connect() {
-        let count3 = 0;
+        let count = 0;
         while (true) {
           this.#trace("starting connect loop");
-          count3 += 1;
+          count += 1;
           if (this.#destroy) {
             this.#trace("in #connect and want to destroy");
             return;
@@ -38369,7 +38370,7 @@ var require_sentinel = __commonJS({
             return;
           } catch (e2) {
             this.#trace(`#connect: exception ${e2.message}`);
-            if (!this.#isReady && count3 > this.#maxCommandRediscovers) {
+            if (!this.#isReady && count > this.#maxCommandRediscovers) {
               throw e2;
             }
             if (e2.message !== "no valid master node") {
@@ -45001,14 +45002,14 @@ var init_database_redis = __esm({
         this.url = options3.url;
       }
       async init() {
-        const db3 = (0, import_npm_redis.createClient)({
+        const db2 = (0, import_npm_redis.createClient)({
           RESP: 3,
           url: this.url
         }).withTypeMapping({
           [import_npm_redis.RESP_TYPES.BLOB_STRING]: Buffer10
         });
-        await db3.connect();
-        this.db = db3;
+        await db2.connect();
+        this.db = db2;
       }
       // Useful in test hooks.
       async clear() {
@@ -45063,12 +45064,12 @@ var init_database_sqlite = __esm({
         this.db.prepare(sql).run();
       }
       async init() {
-        const { dataFolder: dataFolder4, filename } = this;
-        await mkdir2(dataFolder4, { mode: 488, recursive: true });
+        const { dataFolder: dataFolder2, filename } = this;
+        await mkdir2(dataFolder2, { mode: 488, recursive: true });
         if (this.db) {
           throw new Error(`The ${filename} SQLite database is already open.`);
         }
-        this.db = new Database(join22(dataFolder4, filename));
+        this.db = new Database(join22(dataFolder2, filename));
         this.run("CREATE TABLE IF NOT EXISTS Data(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)");
         console.info(`Connected to the ${filename} SQLite database.`);
         this.readStatement = this.db.prepare("SELECT value FROM Data WHERE key = ?");
@@ -45084,7 +45085,10 @@ var init_database_sqlite = __esm({
       // deno-lint-ignore require-await
       async readData(key) {
         const row = this.readStatement.get(key);
-        return row?.value;
+        const value = row?.value;
+        if (ArrayBuffer.isView(value) && !Buffer11.isBuffer(value)) {
+          return Buffer11.from(value);
+        }
       }
       async writeData(key, value) {
         await this.writeStatement.run(key, value);
@@ -45097,7 +45101,7 @@ var init_database_sqlite = __esm({
       }
       async *iterKeys() {
         for (const row of this.iterKeysStatement.iter()) {
-          yield row[0];
+          yield row.key;
         }
       }
     };
@@ -45147,14 +45151,14 @@ var init_database_router = __esm({
         if (options3.config) this.config = options3.config;
       }
       lookupBackend(key) {
-        const { backends: backends2, config: config2 } = this;
+        const { backends, config: config2 } = this;
         const keyPrefixes = Object.keys(config2);
         for (let i2 = 0; i2 < keyPrefixes.length; i2++) {
           if (key.startsWith(keyPrefixes[i2])) {
-            return backends2[keyPrefixes[i2]];
+            return backends[keyPrefixes[i2]];
           }
         }
-        return backends2["*"];
+        return backends["*"];
       }
       async readConfig() {
         if (GI_PERSIST_ROUTER_CONFIG) {
@@ -45509,7 +45513,7 @@ var init_database = __esm({
     initDB = async ({ skipDbPreloading } = {}) => {
       if (persistence) {
         const Ctor = (await globImport_database_ts2(`./database-${persistence}.ts`)).default;
-        const { init: init2, readData: readData3, writeData: writeData3, deleteData, close } = new Ctor(options2[persistence]);
+        const { init: init2, readData, writeData, deleteData, iterKeys, close } = new Ctor(options2[persistence]);
         await init2();
         esm_default("okTurtles.events/once", SERVER_EXITING, () => {
           esm_default("okTurtles.eventQueue/queueEvent", SERVER_EXITING, async () => {
@@ -45524,6 +45528,11 @@ var init_database = __esm({
           max: Number(process5.env.GI_LRU_NUM_ITEMS) || 1e4
         });
         const prefixes = Object.keys(prefixHandlers);
+        esm_default("sbp/selectors/register", {
+          "chelonia.db/iterKeys": () => {
+            return iterKeys();
+          }
+        });
         esm_default("sbp/selectors/overwrite", {
           "chelonia.db/get": async function(prefixableKey, { bypassCache } = {}) {
             if (!bypassCache) {
@@ -45533,7 +45542,7 @@ var init_database = __esm({
               }
             }
             const [prefix, key] = parsePrefixableKey(prefixableKey);
-            let value = await readData3(key);
+            let value = await readData(key);
             if (value === void 0) {
               return;
             }
@@ -45545,12 +45554,12 @@ var init_database = __esm({
             if (process5.env.CHELONIA_ARCHIVE_MODE) throw new Error("Unable to write in archive mode");
             checkKey(key);
             if (key.startsWith("_private_immutable")) {
-              const existingValue = await readData3(key);
+              const existingValue = await readData(key);
               if (existingValue !== void 0) {
                 throw new Error("Cannot set already set immutable key");
               }
             }
-            await writeData3(key, value);
+            await writeData(key, value);
             prefixes.forEach((prefix) => {
               cache3.delete(prefix + key);
             });
@@ -45566,8 +45575,11 @@ var init_database = __esm({
               cache3.delete(prefix + key);
             });
           }
+          /* 'chelonia.db/iterKeys': () => {
+            return iterKeys()
+          } */
         });
-        esm_default("sbp/selectors/lock", ["chelonia.db/get", "chelonia.db/set", "chelonia.db/delete"]);
+        esm_default("sbp/selectors/lock", ["chelonia.db/get", "chelonia.db/set", "chelonia.db/delete", "chelonia.db/iterKeys"]);
       }
       if (skipDbPreloading) return;
       if (persistence !== "fs" || options2.fs.dirname !== dbRootPath) {
@@ -49696,7 +49708,7 @@ var require_keys = __commonJS({
       and(schema, dep, value, state, prefs) {
         const missing = [];
         const present = [];
-        const count3 = dep.peers.length;
+        const count = dep.peers.length;
         for (const peer of dep.peers) {
           if (peer.resolve(value, state, prefs, null, { shadow: false }) === void 0) {
             missing.push(peer.key);
@@ -49704,7 +49716,7 @@ var require_keys = __commonJS({
             present.push(peer.key);
           }
         }
-        if (missing.length !== count3 && present.length !== count3) {
+        if (missing.length !== count && present.length !== count) {
           return {
             code: "object.and",
             context: {
@@ -53229,14 +53241,14 @@ var require_lib14 = __commonJS({
     };
     internals.parseParams = function(segment) {
       const parts = [];
-      segment.replace(internals.pathRegex.parseParam, ($0, literal, name, wildcard, count3, empty4) => {
+      segment.replace(internals.pathRegex.parseParam, ($0, literal, name, wildcard, count, empty4) => {
         if (literal) {
           parts.push(literal);
         } else {
           parts.push({
             name,
             wildcard: !!wildcard,
-            count: count3 && parseInt(count3, 10),
+            count: count && parseInt(count, 10),
             empty: !!empty4
           });
         }
@@ -63583,26 +63595,26 @@ var require_lib19 = __commonJS({
         }
       }
     };
-    internals.insertEntry = function(type, entry, db3) {
-      db3.byType.set(type, entry);
+    internals.insertEntry = function(type, entry, db2) {
+      db2.byType.set(type, entry);
       for (const ext of entry.extensions) {
-        db3.byExtension.set(ext, entry);
-        if (ext.length > db3.maxExtLength) {
-          db3.maxExtLength = ext.length;
+        db2.byExtension.set(ext, entry);
+        if (ext.length > db2.maxExtLength) {
+          db2.maxExtLength = ext.length;
         }
       }
     };
     internals.compile = function(mimedb) {
-      const db3 = {
+      const db2 = {
         byType: /* @__PURE__ */ new Map(),
         byExtension: /* @__PURE__ */ new Map(),
         maxExtLength: 0
       };
       for (const type in mimedb) {
         const entry = new exports2.MimosEntry(type, mimedb[type]);
-        internals.insertEntry(type, entry, db3);
+        internals.insertEntry(type, entry, db2);
       }
-      return db3;
+      return db2;
     };
     internals.getTypePart = function(fulltype) {
       const splitAt = fulltype.indexOf(";");
@@ -68492,14 +68504,14 @@ var require_auth = __commonJS({
       if (!scope[type]) {
         return true;
       }
-      const count3 = typeof credentials.scope === "string" ? scope[type].indexOf(credentials.scope) !== -1 ? 1 : 0 : Hoek.intersect(scope[type], credentials.scope).length;
+      const count = typeof credentials.scope === "string" ? scope[type].indexOf(credentials.scope) !== -1 ? 1 : 0 : Hoek.intersect(scope[type], credentials.scope).length;
       if (type === "forbidden") {
-        return count3 === 0;
+        return count === 0;
       }
       if (type === "required") {
-        return count3 === scope.required.length;
+        return count === scope.required.length;
       }
-      return !!count3;
+      return !!count;
     };
   }
 });
@@ -69295,9 +69307,9 @@ var require_response2 = __commonJS({
         this.settings.stringify.replacer = method;
         return this;
       }
-      spaces(count3) {
+      spaces(count) {
         this.settings.stringify = this.settings.stringify ?? {};
-        this.settings.stringify.space = count3;
+        this.settings.stringify.space = count;
         return this;
       }
       suffix(suffix) {
@@ -74704,11 +74716,11 @@ var require_restorer = __commonJS({
         const { circle, escPath, leadingBracket } = secret[path12];
         const delim = leadingBracket ? "" : ".";
         const reset = circle ? `o.${circle} = secret[${escPath}].val` : `o${delim}${path12} = secret[${escPath}].val`;
-        const clear2 = `secret[${escPath}].val = undefined`;
+        const clear = `secret[${escPath}].val = undefined`;
         return `
       if (secret[${escPath}].val !== undefined) {
         try { ${reset} } catch (e) {}
-        ${clear2}
+        ${clear}
       }
     `;
       }).join("");
@@ -75681,7 +75693,7 @@ var require_on_exit_leak_free = __commonJS({
     var registry2;
     function ensureRegistry() {
       if (registry2 === void 0) {
-        registry2 = new FinalizationRegistry(clear2);
+        registry2 = new FinalizationRegistry(clear);
       }
     }
     function install(event) {
@@ -75715,7 +75727,7 @@ var require_on_exit_leak_free = __commonJS({
       }
       refs[event] = [];
     }
-    function clear2(ref) {
+    function clear(ref) {
       for (const event of ["exit", "beforeExit"]) {
         const index = refs[event].indexOf(ref);
         refs[event].splice(index, index + 1);
@@ -78687,22 +78699,22 @@ var init_push = __esm({
         // and are unrelated to VAPID, which is used for provenance.
         "encryptionKeys": {
           get: /* @__PURE__ */ (() => {
-            let count3 = 0;
+            let count = 0;
             let resultPromise;
             let salt;
             let uaPublic;
             return function() {
-              if ((count3 | 0) === 0) {
+              if ((count | 0) === 0) {
                 if (!salt) {
-                  salt = Buffer11.from(this.keys.auth, "base64url");
+                  salt = Buffer12.from(this.keys.auth, "base64url");
                 }
                 if (!uaPublic) {
-                  uaPublic = Buffer11.from(this.keys.p256dh, "base64url");
+                  uaPublic = Buffer12.from(this.keys.p256dh, "base64url");
                 }
                 resultPromise = rfc8291Ikm_default(uaPublic, salt);
-                count3 = 1;
+                count = 1;
               } else {
-                count3++;
+                count++;
               }
               return resultPromise;
             };
@@ -78733,7 +78745,7 @@ var init_push = __esm({
           if (done) break;
           chunks.push(new Uint8Array(value));
         }
-        return Buffer11.concat(chunks);
+        return Buffer12.concat(chunks);
       });
     };
     postEvent = async (subscription, event) => {
@@ -78781,7 +78793,7 @@ var init_push = __esm({
         const { applicationServerKey, settings, subscriptionInfo } = payload;
         if (applicationServerKey) {
           const ourVapidPublicKey = getVapidPublicKey();
-          const theirVapidPublicKey = Buffer11.from(applicationServerKey, "base64").toString("base64url");
+          const theirVapidPublicKey = Buffer12.from(applicationServerKey, "base64").toString("base64url");
           if (ourVapidPublicKey !== theirVapidPublicKey) {
             socket.send(createMessage(REQUEST_TYPE.PUSH_ACTION, { type: PUSH_SERVER_ACTION_TYPE.SEND_PUBLIC_KEY, data: getVapidPublicKey() }));
             console.warn({ ourVapidPublicKey, theirVapidPublicKey }, "Refusing to store subscription because the associated public VAPID key does not match ours");
@@ -84224,7 +84236,7 @@ var require_RedisDatastore = __commonJS({
         }
         return arr;
       }
-      prepareInitSettings(clear2) {
+      prepareInitSettings(clear) {
         var args;
         args = this.prepareObject(Object.assign({}, this.storeOptions, {
           id: this.originalId,
@@ -84232,7 +84244,7 @@ var require_RedisDatastore = __commonJS({
           groupTimeout: this.timeout,
           clientTimeout: this.clientTimeout
         }));
-        args.unshift(clear2 ? 1 : 0, this.instance.version);
+        args.unshift(clear ? 1 : 0, this.instance.version);
         return args;
       }
       convertBool(b) {
@@ -91658,7 +91670,7 @@ var require_keys2 = __commonJS({
       and(schema, dep, value, state, prefs) {
         const missing = [];
         const present = [];
-        const count3 = dep.peers.length;
+        const count = dep.peers.length;
         const isPresent = internals.isPresent(dep.options);
         for (const peer of dep.peers) {
           if (isPresent(peer.resolve(value, state, prefs, null, { shadow: false })) === false) {
@@ -91667,7 +91679,7 @@ var require_keys2 = __commonJS({
             present.push(peer.key);
           }
         }
-        if (missing.length !== count3 && present.length !== count3) {
+        if (missing.length !== count && present.length !== count) {
           return {
             code: "object.and",
             context: {
@@ -96021,7 +96033,7 @@ var init_routes = __esm({
               await esm_default("chelonia.db/set", `_private_deletionTokenDgst_${deserializedHEAD.contractID}`, deletionTokenDgst);
             }
           }
-          await esm_default("backend/server/updateSize", deserializedHEAD.contractID, Buffer12.byteLength(request.payload), deserializedHEAD.isFirstMessage && !credentials?.billableContractID ? deserializedHEAD.contractID : void 0);
+          await esm_default("backend/server/updateSize", deserializedHEAD.contractID, Buffer13.byteLength(request.payload), deserializedHEAD.isFirstMessage && !credentials?.billableContractID ? deserializedHEAD.contractID : void 0);
         } catch (err) {
           console.error(err, import_npm_chalk2.default.bold.yellow(err.name));
           if (err.name === "ChelErrorDBBadPreviousHEAD" || err.name === "ChelErrorAlreadyProcessed") {
@@ -96160,7 +96172,7 @@ var init_routes = __esm({
         }
       },
       function(request, h2) {
-        if (request.payload.byteLength === 2 && Buffer12.from(request.payload).toString() === "ok") {
+        if (request.payload.byteLength === 2 && Buffer13.from(request.payload).toString() === "ok") {
           return h2.response().code(204);
         } else {
           return import_boom3.default.badRequest();
@@ -96236,7 +96248,7 @@ var init_routes = __esm({
         if (!(manifestMeta.payload instanceof Uint8Array)) return import_boom3.default.badRequest("wrong manifest format");
         const manifest2 = (() => {
           try {
-            return JSON.parse(Buffer12.from(manifestMeta.payload).toString());
+            return JSON.parse(Buffer13.from(manifestMeta.payload).toString());
           } catch {
             throw import_boom3.default.badData("Error parsing manifest");
           }
@@ -96469,7 +96481,7 @@ var init_routes = __esm({
         } catch {
           return import_boom3.default.badData();
         }
-        const existingSize = existing ? Buffer12.from(existing).byteLength : 0;
+        const existingSize = existing ? Buffer13.from(existing).byteLength : 0;
         await esm_default("chelonia.db/set", `_private_kv_${contractID}_${key}`, request.payload);
         await esm_default("backend/server/updateSize", contractID, request.payload.byteLength - existingSize);
         await appendToIndexFactory(`_private_kvIdx_${contractID}`)(key);
@@ -102765,126 +102777,6 @@ var encodeCID3 = (version4, code2, multihash) => {
   return bytes;
 };
 var cidSymbol3 = Symbol.for("@ipld/js-cid/CID");
-var database_fs_exports2 = {};
-__export(database_fs_exports2, {
-  clear: () => clear,
-  count: () => count,
-  dataFolder: () => dataFolder2,
-  initStorage: () => initStorage,
-  iterKeys: () => iterKeys,
-  readData: () => readData,
-  writeData: () => writeData,
-  writeDataOnce: () => writeDataOnce
-});
-var dataFolder2 = "";
-async function initStorage(options3 = {}) {
-  dataFolder2 = resolve5(options3.dirname);
-  await Deno.mkdir(dataFolder2, { mode: 488, recursive: true });
-}
-async function clear() {
-  for await (const key of iterKeys()) {
-    await Deno.remove(join5(dataFolder2, key));
-  }
-}
-async function count() {
-  let n = 0;
-  for await (const entry of Deno.readDir(dataFolder2)) {
-    if (entry.isFile) {
-      n++;
-    }
-  }
-  return n;
-}
-async function* iterKeys() {
-  for await (const entry of Deno.readDir(dataFolder2)) {
-    if (entry.isFile) {
-      yield entry.name;
-    }
-  }
-}
-function readData(key) {
-  checkKey2(key);
-  return Deno.readFile(join5(dataFolder2, key)).catch(() => void 0);
-}
-async function writeData(key, value) {
-  if (typeof value === "string") {
-    await Deno.writeTextFile(join5(dataFolder2, key), value);
-  } else {
-    await Deno.writeFile(join5(dataFolder2, key), value);
-  }
-}
-async function writeDataOnce(key, value) {
-  const options3 = { createNew: true };
-  try {
-    if (typeof value === "string") {
-      await Deno.writeTextFile(join5(dataFolder2, key), value, options3);
-    } else {
-      await Deno.writeFile(join5(dataFolder2, key), value, options3);
-    }
-  } catch (err) {
-    if (err instanceof Error && err.name !== "AlreadyExists") throw err;
-  }
-}
-var database_sqlite_exports2 = {};
-__export(database_sqlite_exports2, {
-  count: () => count2,
-  dataFolder: () => dataFolder3,
-  initStorage: () => initStorage2,
-  iterKeys: () => iterKeys2,
-  readData: () => readData2,
-  writeData: () => writeData2,
-  writeDataOnce: () => writeDataOnce2
-});
-var DB = Database;
-var db2;
-var dbPath;
-var iterKeysStatement;
-var readStatement;
-var writeOnceStatement;
-var writeStatement;
-var dataFolder3 = "";
-async function initStorage2(options3 = {}) {
-  const { dirname: dirname52, filename } = options3;
-  dataFolder3 = resolve5(dirname52);
-  const filepath = join5(dataFolder3, filename);
-  if (db2 !== void 0) {
-    if (filepath === dbPath) {
-      return;
-    }
-    db2.close();
-  }
-  db2 = new DB(filepath);
-  db2.run("CREATE TABLE IF NOT EXISTS Data(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)");
-  dbPath = filepath;
-  if (!options3.internal) {
-    console.log("Connected to the %s SQLite database.", filepath);
-  }
-  iterKeysStatement = db2.prepare("SELECT key FROM Data");
-  readStatement = db2.prepare("SELECT value FROM Data WHERE key = ?");
-  writeOnceStatement = db2.prepare("INSERT INTO Data(key, value) VALUES(?, ?) ON CONFLICT (key) DO NOTHING");
-  writeStatement = db2.prepare("REPLACE INTO Data(key, value) VALUES(?, ?)");
-}
-function count2() {
-  return db2.prepare("SELECT COUNT(*) FROM Data").all()[0][0];
-}
-async function readData2(key) {
-  const maybeRow = readStatement.all([key])[0];
-  return maybeRow === void 0 ? void 0 : maybeRow[0] ?? new Uint8Array();
-}
-async function* iterKeys2() {
-  for (const row of iterKeysStatement.iter()) {
-    yield row[0];
-  }
-}
-async function writeData2(key, value) {
-  checkKey2(key);
-  writeStatement.run([key, value]);
-}
-async function writeDataOnce2(key, value) {
-  checkKey2(key);
-  writeOnceStatement.run([key, value]);
-}
-var backends = { fs: database_fs_exports2, sqlite: database_sqlite_exports2 };
 var multibase = base58btc3;
 var multicodes2 = {
   RAW: 0,
@@ -102896,11 +102788,6 @@ var multicodes2 = {
   SHELTER_FILE_CHUNK: 5316100
 };
 var multihasher = blake2_default.blake2b.blake2b256;
-function checkKey2(key) {
-  if (!isValidKey(key)) {
-    throw new Error(`bad key: ${JSON.stringify(key)}`);
-  }
-}
 async function createEntryFromFile(filepath, multicode) {
   const buffer = await Deno.readFile(filepath);
   const key = createCID2(buffer, multicode);
@@ -102917,54 +102804,8 @@ function exit(x3, internal = false) {
   console.error("[chel]", red("Error:"), msg);
   Deno.exit(1);
 }
-async function getBackend(src4, { type, create: create4 } = { type: "", create: false }) {
-  const fsOptions = { internal: true, dirname: src4 };
-  const sqliteOptions = { internal: true, dirname: dirname5(src4), filename: basename5(src4) };
-  if (!create4 && !await isDir(src4) && !await isFile2(src4)) throw new Error(`not found: "${src4}"`);
-  let from6 = type;
-  if (!from6) {
-    if (await isDir(src4)) from6 = "fs";
-    else if (await isFile2(src4)) from6 = "sqlite";
-    else throw new Error(`could not infer backend type. Not found: "${src4}"`);
-  }
-  let initOptions;
-  switch (from6) {
-    case "fs":
-      initOptions = fsOptions;
-      break;
-    case "sqlite":
-      initOptions = sqliteOptions;
-      break;
-    default:
-      throw new Error(`unknown backend type: "${from6}"`);
-  }
-  const backend = backends[from6];
-  try {
-    await backend.initStorage(initOptions);
-  } catch (error) {
-    throw new Error(`could not init '${from6}' storage backend at "${src4}": ${error.message}`);
-  }
-  return backend;
-}
 function isArrayLength(arg) {
   return Number.isInteger(arg) && arg >= 0 && arg <= 2 ** 32 - 1;
-}
-async function isDir(path12) {
-  try {
-    return (await Deno.stat(path12)).isDirectory;
-  } catch {
-    return false;
-  }
-}
-async function isFile2(path12) {
-  try {
-    return (await Deno.stat(path12)).isFile;
-  } catch {
-    return false;
-  }
-}
-function isNotHashKey(key) {
-  return key.startsWith("head=") || key.startsWith("name=");
 }
 function isValidKey(key) {
   return !/[\x00-\x1f\x7f\t\\/]/.test(key);
@@ -103331,40 +103172,41 @@ async function manifest(args) {
     console.log(green("wrote:"), outFile);
   }
 }
+init_esm();
+init_database();
+var globImport_serve_database_ts = __glob({
+  "./serve/database-fs.ts": () => Promise.resolve().then(() => (init_database_fs(), database_fs_exports)),
+  "./serve/database-redis.ts": () => Promise.resolve().then(() => (init_database_redis(), database_redis_exports)),
+  "./serve/database-router.test.ts": () => Promise.resolve().then(() => (init_database_router_test(), database_router_test_exports)),
+  "./serve/database-router.ts": () => Promise.resolve().then(() => (init_database_router(), database_router_exports)),
+  "./serve/database-sqlite.ts": () => Promise.resolve().then(() => (init_database_sqlite(), database_sqlite_exports))
+});
 async function migrate(args) {
-  await revokeNet();
   const parsedArgs = parse6(args);
-  const { from: from6, to, out } = parsedArgs;
+  const { to } = parsedArgs;
   const src4 = resolve5(parsedArgs._[0] ? String(parsedArgs._[0]) : ".");
-  if (!from6) exit("missing argument: --from");
+  await initDB({ skipDbPreloading: true });
   if (!to) exit("missing argument: --to");
-  if (!out) exit("missing argument: --out");
-  if (from6 === to) exit("arguments --from and --to must be different");
-  let backendFrom;
   let backendTo;
   try {
-    backendFrom = await getBackend(src4, { type: from6, create: false });
-    backendTo = await getBackend(out, { type: to, create: true });
+    const Ctor = (await globImport_serve_database_ts(`./serve/database-${to}.ts`)).default;
+    backendTo = new Ctor();
+    await backendTo.init();
   } catch (error) {
     exit(error);
   }
-  const numKeys2 = await backendFrom.count();
   let numVisitedKeys = 0;
-  for await (const key of backendFrom.iterKeys()) {
+  for await (const key of esm_default("chelonia.db/iterKeys")) {
     if (!isValidKey(key)) continue;
-    const value = await backendFrom.readData(key);
+    const value = await esm_default("chelonia.db/get", key);
     if (value === void 0) continue;
-    if (isNotHashKey(key)) {
-      await backendTo.writeData(key, value);
-    } else {
-      await backendTo.writeDataOnce(key, value);
-    }
+    await backendTo.writeData(key, value);
     ++numVisitedKeys;
-    if (numVisitedKeys % (numKeys2 / 10) < 1) {
-      console.log(`[chel] Migrating... ${Math.round(numVisitedKeys / (numKeys2 / 10))}0% done`);
+    if (numVisitedKeys % 1e3 === 0) {
+      console.log(`[chel] Migrating... ${numVisitedKeys} entries done`);
     }
   }
-  numKeys2 && console.log(`[chel] ${green("Migrated:")} ${numKeys2} entries`);
+  numVisitedKeys && console.log(`[chel] ${green("Migrated:")} ${numVisitedKeys} entries`);
 }
 async function startDashboardServer(port) {
   const dashboardServer = await Promise.resolve().then(() => (init_dashboard_server(), dashboard_server_exports));
