@@ -12,7 +12,6 @@ export async function migrate (args: string[]): Promise<void> {
   const parsedArgs = flags.parse(args)
 
   const { to } = parsedArgs
-  const src = path.resolve(parsedArgs._[0] ? String(parsedArgs._[0]) : '.')
 
   await initDB({ skipDbPreloading: true })
 
@@ -45,10 +44,10 @@ export async function migrate (args: string[]): Promise<void> {
       console.log(`[chel] Migrating... ${Math.round(numVisitedKeys / (numKeys / 10))}0% done`)
     }
     */
-   // Prints a message every 1000 messages
-   if (numVisitedKeys % 1000 === 0) {
-    console.log(`[chel] Migrating... ${numVisitedKeys} entries done`)
-   }
+    // Prints a message every 1000 messages
+    if (numVisitedKeys % 1000 === 0) {
+      console.log(`[chel] Migrating... ${numVisitedKeys} entries done`)
+    }
   }
   numVisitedKeys && console.log(`[chel] ${colors.green('Migrated:')} ${numVisitedKeys} entries`)
 }
