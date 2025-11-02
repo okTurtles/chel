@@ -18,7 +18,6 @@ export const multicodes = {
 }
 const multihasher = blake.blake2b.blake2b256
 
-export type Backend = typeof backends.sqlite | typeof backends.fs
 // For now our entry keys are CIDs serialized to base58btc and our values are always Uint8Array instances.
 export type Entry = [string, Uint8Array<ArrayBuffer>]
 

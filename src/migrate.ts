@@ -2,7 +2,6 @@
 
 import * as flags from 'jsr:@std/flags/'
 import * as colors from 'jsr:@std/fmt/colors'
-import * as path from 'jsr:@std/path/'
 import sbp from 'npm:@sbp/sbp'
 import type DatabaseBackend from './serve/DatabaseBackend.ts'
 import { initDB } from './serve/database.ts'

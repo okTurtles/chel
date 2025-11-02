@@ -12,7 +12,7 @@ export default class SqliteBackend extends DatabaseBackend {
   readStatement: { get: (key: string) => { value?: Buffer | string } | undefined } | null = null
   writeStatement: { run: (key: string, value: Buffer | string) => unknown } | null = null
   deleteStatement: { run: (key: string) => unknown } | null = null
-  iterKeysStatement: { iter: () => Iterable<[string]> } | null = null
+  iterKeysStatement: { iter: () => Iterable<{key: string}> } | null = null
 
   constructor (options: { filepath?: string } = {}) {
     super()
