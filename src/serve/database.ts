@@ -1,11 +1,11 @@
-import '@chelonia/lib/chelonia'
-import '@chelonia/lib/db'
 import { Buffer } from 'node:buffer'
 import fs from 'node:fs'
 import { readFile, readdir } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
 import { Readable } from 'node:stream'
+import 'npm:@chelonia/lib/chelonia'
+import 'npm:@chelonia/lib/db'
 import { checkKey, parsePrefixableKey, prefixHandlers } from 'npm:@chelonia/lib/db'
 import { maybeParseCID, multicodes, strToB64 } from 'npm:@chelonia/lib/functions'
 import Boom from 'npm:@hapi/boom'
@@ -75,7 +75,7 @@ export const updateSize = async (resourceID: string, sizeKey: string, size: numb
 
 // Streams stored contract log entries since the given entry hash (inclusive!).
 export default sbp('sbp/selectors/register', {
-  'backend/db/streamEntriesAfter': async function (contractID: string, height: number, requestedLimit?: number, options: { keyOps?: boolean } = {}): Promise<unknown> {
+  'backend/db/streamEntriesAfter': async function (contractID: string, height: number, requestedLimit?: number, options: { keyOps?: boolean } = {}): Promise<Readable> {
     const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, process.env.MAX_EVENTS_BATCH_SIZE ? parseInt(process.env.MAX_EVENTS_BATCH_SIZE) || 500 : 500)
     const latestHEADinfo = await sbp('chelonia/db/latestHEADinfo', contractID)
     if (latestHEADinfo === '') {
@@ -238,7 +238,7 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
   if (persistence) {
     const Ctor = (await import(`./database-${persistence}.ts`)).default
     // Destructuring is safe because these methods have been bound using rebindMethods().
-    const { init, readData, writeData, deleteData, close } = new Ctor(options[persistence])
+    const { init, readData, writeData, deleteData, iterKeys, keyCount, close } = new Ctor(options[persistence])
     await init()
     sbp('okTurtles.events/once', SERVER_EXITING, () => {
       sbp('okTurtles.eventQueue/queueEvent', SERVER_EXITING, async () => {
@@ -309,9 +309,15 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
         prefixes.forEach(prefix => {
           cache.delete(prefix + key)
         })
+      },
+      'chelonia.db/iterKeys': () => {
+        return iterKeys()
+      },
+      'chelonia.db/keyCount': () => {
+        return keyCount()
       }
     })
-    sbp('sbp/selectors/lock', ['chelonia.db/get', 'chelonia.db/set', 'chelonia.db/delete'])
+    sbp('sbp/selectors/lock', ['chelonia.db/get', 'chelonia.db/set', 'chelonia.db/delete', 'chelonia.db/iterKeys'])
   }
   if (skipDbPreloading) return
   // TODO: Update this to only run when persistence is disabled when `chel deploy` can target SQLite.

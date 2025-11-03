@@ -1,4 +1,4 @@
-// chel get <url-or-dir-or-sqlitedb> <key>
+// chel get [<url>] <key>
 /*
 When using a URL, this queries the GET /file/<key> route.
 
@@ -7,20 +7,25 @@ If it's a binary file, for example an image, the command will be used like this:
 chel get https://url.com mygreatlongkey > file.png
 */
 
-import * as flags from 'jsr:@std/flags/'
 import { writeAll } from 'jsr:@std/io/'
-import { exit, getBackend, isURL, readRemoteData } from './utils.ts'
+import sbp from 'npm:@sbp/sbp'
+import { initDB } from './serve/database.ts'
+import { exit, readRemoteData } from './utils.ts'
 
 export async function get (args: string[]): Promise<void> {
-  const parsedArgs = flags.parse(args)
+  const url = URL.canParse(args[0]) ? args[0] : null
+  if (url) {
+    args.shift()
+  } else {
+    await initDB({ skipDbPreloading: true })
+  }
 
-  const [urlOrLocalPath, key] = parsedArgs._.map(String)
-  const src = urlOrLocalPath
+  const [key] = args
 
   try {
-    const data = isURL(src)
-      ? await readRemoteData(src, key)
-      : await (await getBackend(src)).readData(key)
+    const data = url
+      ? await readRemoteData(url, key)
+      : await sbp('chelonia.db/get', key)
 
     if (data === undefined) exit(`no entry found for ${key as string}`)
 

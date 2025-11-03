@@ -12,6 +12,8 @@ export default class SqliteBackend extends DatabaseBackend {
   readStatement: { get: (key: string) => { value?: Buffer | string } | undefined } | null = null
   writeStatement: { run: (key: string, value: Buffer | string) => unknown } | null = null
   deleteStatement: { run: (key: string) => unknown } | null = null
+  iterKeysStatement: { iter: () => Iterable<{key: string}> } | null = null
+  keyCountStatement: { get: () => { count: number } | undefined } | null = null
 
   constructor (options: { filepath?: string } = {}) {
     super()
@@ -39,6 +41,8 @@ export default class SqliteBackend extends DatabaseBackend {
     this.readStatement = this.db.prepare('SELECT value FROM Data WHERE key = ?')
     this.writeStatement = this.db.prepare('REPLACE INTO Data(key, value) VALUES(?, ?)')
     this.deleteStatement = this.db.prepare('DELETE FROM Data WHERE key = ?')
+    this.iterKeysStatement = this.db.prepare('SELECT key FROM Data')
+    this.keyCountStatement = this.db.prepare('SELECT COUNT(*) count FROM Data')
   }
 
   // Useful in test hooks.
@@ -53,7 +57,12 @@ export default class SqliteBackend extends DatabaseBackend {
     // 'row' will be undefined if the key was not found.
     // Note: sqlite remembers the type of every stored value, therefore we
     // can return the value as-is.
-    return row?.value
+    const value = row?.value
+    if (ArrayBuffer.isView(value) && !Buffer.isBuffer(value)) {
+      return Buffer.from(value)
+    } else {
+      return value
+    }
   }
 
   async writeData (key: string, value: Buffer | string): Promise<void> {
@@ -66,5 +75,16 @@ export default class SqliteBackend extends DatabaseBackend {
 
   close () {
     this.db!.close()
+  }
+
+  async * iterKeys () {
+    for (const row of this.iterKeysStatement!.iter()) {
+      yield row.key
+    }
+  }
+
+  async keyCount () {
+    const result = await this.keyCountStatement!.get()
+    return result?.count ?? 0
   }
 }

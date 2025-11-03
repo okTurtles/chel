@@ -27,7 +27,6 @@ export default class RedisBackend extends DatabaseBackend {
     await this.db!.flushAll()
   }
 
-  // deno-lint-ignore require-await
   async readData (key: string): Promise<Buffer | string | void> {
     return await this.db!.get(key) ?? undefined
   }
@@ -42,5 +41,16 @@ export default class RedisBackend extends DatabaseBackend {
 
   close () {
     this.db!.destroy()
+  }
+
+  async * iterKeys () {
+    const iterator = this.db!.withTypeMapping({}).scanIterator({ MATCH: '*' })
+    for await (const keys of iterator) {
+      yield * keys
+    }
+  }
+
+  keyCount () {
+    return this.db!.dbSize()
   }
 }
