@@ -20,7 +20,7 @@ export async function migrate (args: string[]): Promise<void> {
   let backendTo: DatabaseBackend
   try {
     const Ctor = (await import(`./serve/database-${to}.ts`)).default
-    backendTo = new Ctor({ filepath: 'data/groupincome.db' })
+    backendTo = new Ctor()
     await backendTo.init()
   } catch (error) {
     exit(error)
