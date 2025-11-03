@@ -49,6 +49,7 @@ export async function migrate (args: string[]): Promise<void> {
     ['SIGUSR2', 11]
   ] as [string, number][]).forEach(([signal, code]) => handleSignal(signal, code))
 
+  let lastReportedPercentage = 0
   for await (const key of sbp('chelonia.db/iterKeys')) {
     if (!isValidKey(key)) continue
     const value = await sbp('chelonia.db/get', key)
@@ -66,9 +67,10 @@ export async function migrate (args: string[]): Promise<void> {
     }
     ++numVisitedKeys
     // Prints a message roughly every 10% of progress.
-    // FIXME: wrong output sometimes.
-    if (numVisitedKeys % (numKeys / 10) < 1) {
-      console.log(`[chel] Migrating... ${Math.round(numVisitedKeys / (numKeys / 10))}0% done`)
+    const percentage = Math.floor((numVisitedKeys / numKeys) * 100)
+    if (percentage - lastReportedPercentage >= 10) {
+      lastReportedPercentage = percentage
+      console.log(`[chel] Migrating... ${percentage}% done`)
     }
   }
   numVisitedKeys && console.log(`[chel] ${colors.green('Migrated:')} ${numVisitedKeys} entries`)
