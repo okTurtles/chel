@@ -3460,16 +3460,16 @@ import { readFile as readFile3, readdir as readdir2 } from "node:fs/promises";
 import path from "node:path";
 import process5 from "node:process";
 import { Readable } from "node:stream";
-import path9 from "node:path";
+import path6 from "node:path";
 import process6 from "node:process";
 import process7 from "node:process";
 import { Buffer as Buffer12 } from "node:buffer";
 import process8 from "node:process";
 import { Buffer as Buffer13 } from "node:buffer";
 import { isIP } from "node:net";
-import path10 from "node:path";
+import path7 from "node:path";
 import process9 from "node:process";
-import { basename as basename52, join as join7 } from "node:path";
+import { basename as basename42, join as join52 } from "node:path";
 import process10 from "node:process";
 import { Worker } from "node:worker_threads";
 import process11 from "node:process";
@@ -3873,10 +3873,10 @@ var __require2 = /* @__PURE__ */ ((x3) => typeof __require !== "undefined" ? __r
   if (typeof __require !== "undefined") return __require.apply(this, arguments);
   throw Error('Dynamic require of "' + x3 + '" is not supported');
 });
-var __glob = (map) => (path12) => {
-  var fn = map[path12];
+var __glob = (map) => (path9) => {
+  var fn = map[path9];
   if (fn) return fn();
-  throw new Error("Module not found in bundle: " + path12);
+  throw new Error("Module not found in bundle: " + path9);
 };
 var __esm = (fn, res) => function __init() {
   return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
@@ -4082,8 +4082,8 @@ var init_esm2 = __esm({
         }
         const events = this.eventQueues[name];
         let accept;
-        const promise = new Promise((resolve8) => {
-          accept = resolve8;
+        const promise = new Promise((resolve52) => {
+          accept = resolve52;
         });
         const thisEvent = typeof invocation === "function" ? {
           fn: invocation,
@@ -4246,8 +4246,8 @@ function merge2(obj, src4) {
   return res;
 }
 function delay(msec) {
-  return new Promise((resolve8) => {
-    setTimeout(resolve8, msec);
+  return new Promise((resolve52) => {
+    setTimeout(resolve52, msec);
   });
 }
 function randomBytes(length4) {
@@ -6101,11 +6101,11 @@ var init_blake2bstream = __esm({
     init_hasher();
     __awaiter = function(thisArg, _arguments, P, generator) {
       function adopt(value) {
-        return value instanceof P ? value : new P(function(resolve8) {
-          resolve8(value);
+        return value instanceof P ? value : new P(function(resolve52) {
+          resolve52(value);
         });
       }
-      return new (P || (P = Promise))(function(resolve8, reject) {
+      return new (P || (P = Promise))(function(resolve52, reject) {
         function fulfilled(value) {
           try {
             step(generator.next(value));
@@ -6121,7 +6121,7 @@ var init_blake2bstream = __esm({
           }
         }
         function step(result) {
-          result.done ? resolve8(result.value) : adopt(result.value).then(fulfilled, rejected);
+          result.done ? resolve52(result.value) : adopt(result.value).then(fulfilled, rejected);
         }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
       });
@@ -6585,7 +6585,7 @@ var strToBuf;
 var strToB64;
 var getSubscriptionId;
 var init_functions = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.7/node_modules/@chelonia/lib/dist/esm/functions.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/functions.mjs"() {
     init_base58();
     init_blake2b();
     init_blake2bstream();
@@ -6742,7 +6742,7 @@ var isDefinetelyOffline;
 var messageParser;
 var publicMethods;
 var init_pubsub = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.7/node_modules/@chelonia/lib/dist/esm/pubsub/index.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/pubsub/index.mjs"() {
     init_esm4();
     init_esm();
     NOTIFICATION_TYPE = Object.freeze({
@@ -10315,7 +10315,7 @@ var ChelErrorFetchServerTimeFailed;
 var ChelErrorUnexpectedHttpResponseCode;
 var ChelErrorResourceGone;
 var init_errors = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.7/node_modules/@chelonia/lib/dist/esm/errors.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/errors.mjs"() {
     ChelErrorGenerator = (name, base4 = Error) => class extends base4 {
       constructor(...params) {
         super(...params);
@@ -10363,7 +10363,7 @@ var PERSISTENT_ACTION_FAILURE;
 var PERSISTENT_ACTION_SUCCESS;
 var PERSISTENT_ACTION_TOTAL_FAILURE;
 var init_events = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.7/node_modules/@chelonia/lib/dist/esm/events.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/events.mjs"() {
     CHELONIA_RESET = "chelonia-reset";
     CONTRACT_IS_SYNCING = "contract-is-syncing";
     CONTRACTS_MODIFIED = "contracts-modified";
@@ -10526,12 +10526,12 @@ var init_esm8 = __esm({
             case "_fn": {
               const mp = value[2];
               return (...args) => {
-                return new Promise((resolve8, reject) => {
+                return new Promise((resolve52, reject) => {
                   const mc = new MessageChannel();
                   const { data: data2, transferables } = serializer(args);
                   mc.port1.onmessage = (ev) => {
                     if (ev.data[0]) {
-                      resolve8(deserializer(ev.data[1]));
+                      resolve52(deserializer(ev.data[1]));
                     } else {
                       reject(deserializer(ev.data[1]));
                     }
@@ -10565,7 +10565,7 @@ var signedDataKeyId;
 var isRawSignedData;
 var rawSignedIncomingData;
 var init_signedData = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.7/node_modules/@chelonia/lib/dist/esm/signedData.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/signedData.mjs"() {
     init_esm7();
     init_esm();
     init_esm5();
@@ -10838,7 +10838,7 @@ var isRawEncryptedData;
 var unwrapMaybeEncryptedData;
 var maybeEncryptedIncomingData;
 var init_encryptedData = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.7/node_modules/@chelonia/lib/dist/esm/encryptedData.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/encryptedData.mjs"() {
     init_esm7();
     init_esm();
     init_esm5();
@@ -11103,7 +11103,7 @@ var decryptedAndVerifiedDeserializedMessage;
 var SPMessage;
 var keyOps;
 var init_SPMessage = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.7/node_modules/@chelonia/lib/dist/esm/SPMessage.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/SPMessage.mjs"() {
     init_esm7();
     init_esm8();
     init_esm5();
@@ -11501,7 +11501,7 @@ var init_SPMessage = __esm({
 });
 var chelonia_utils_default;
 var init_chelonia_utils = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.7/node_modules/@chelonia/lib/dist/esm/chelonia-utils.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/chelonia-utils.mjs"() {
     init_esm();
     chelonia_utils_default = esm_default("sbp/selectors/register", {
       // This selector is a wrapper for the `chelonia/kv/set` selector that uses
@@ -11824,7 +11824,7 @@ var init_encrypt = __esm({
 var wm;
 var Secret;
 var init_Secret = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.7/node_modules/@chelonia/lib/dist/esm/Secret.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/Secret.mjs"() {
     init_esm8();
     wm = /* @__PURE__ */ new WeakMap();
     Secret = class {
@@ -11848,7 +11848,7 @@ var init_Secret = __esm({
 });
 var INVITE_STATUS;
 var init_constants = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.7/node_modules/@chelonia/lib/dist/esm/constants.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/constants.mjs"() {
     INVITE_STATUS = {
       REVOKED: "revoked",
       VALID: "valid",
@@ -12090,7 +12090,7 @@ var collectEventStream;
 var logEvtError;
 var handleFetchResult;
 var init_utils = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.7/node_modules/@chelonia/lib/dist/esm/utils.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/utils.mjs"() {
     init_esm7();
     init_esm();
     init_esm5();
@@ -12565,7 +12565,7 @@ var noneHandlers;
 var cipherHandlers;
 var files_default;
 var init_files = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.7/node_modules/@chelonia/lib/dist/esm/files.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/files.mjs"() {
     init_encodeMultipartMessage();
     init_decrypt();
     init_encodings();
@@ -12641,13 +12641,13 @@ var init_files = __esm({
     computeChunkDescriptors = (inStream) => {
       let length4 = 0;
       const [lengthStream, cidStream] = inStream.tee();
-      const lengthPromise = new Promise((resolve8, reject) => {
+      const lengthPromise = new Promise((resolve52, reject) => {
         lengthStream.pipeTo(new WritableStream({
           write(chunk) {
             length4 += chunk.byteLength;
           },
           close() {
-            resolve8(length4);
+            resolve52(length4);
           },
           abort(reason) {
             reject(reason);
@@ -12910,6 +12910,52 @@ var init_files = __esm({
     });
   }
 });
+var _store2;
+var esm_default5;
+var init_esm9 = __esm({
+  "node_modules/.deno/@sbp+okturtles.data@0.1.7/node_modules/@sbp/okturtles.data/dist/esm/index.mjs"() {
+    init_esm();
+    _store2 = /* @__PURE__ */ new Map();
+    esm_default5 = esm_default("sbp/selectors/register", {
+      "okTurtles.data/get": function(key) {
+        return _store2.get(key);
+      },
+      "okTurtles.data/set": function(key, data) {
+        _store2.set(key, data);
+        return data;
+      },
+      "okTurtles.data/delete": function(key) {
+        return _store2.delete(key);
+      },
+      "okTurtles.data/add": function(key, data) {
+        const array2 = _store2.get(key);
+        if (array2) {
+          array2.push(data);
+        } else {
+          _store2.set(key, [data]);
+        }
+      },
+      "okTurtles.data/remove": function(key, data) {
+        const array2 = _store2.get(key);
+        if (array2) {
+          const aLen = array2.length;
+          const filtered = array2.filter((v2) => v2 !== data);
+          _store2.set(key, filtered);
+          return aLen - filtered.length;
+        }
+      },
+      "okTurtles.data/iterKeys": function* () {
+        yield* _store2.keys();
+      },
+      "okTurtles.data/keyCount": function() {
+        return _store2.size;
+      },
+      "okTurtles.data/apply": function(key, fn) {
+        return fn(_store2.get(key));
+      }
+    });
+  }
+});
 var headPrefix;
 var getContractIdFromLogHead;
 var getLogHead;
@@ -12919,8 +12965,8 @@ var prefixHandlers;
 var dbPrimitiveSelectors;
 var db_default;
 var init_db = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.7/node_modules/@chelonia/lib/dist/esm/db.mjs"() {
-    init_esm3();
+  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/db.mjs"() {
+    init_esm9();
     init_esm2();
     init_esm();
     init_SPMessage();
@@ -12964,7 +13010,7 @@ var init_db = __esm({
       }
       */
     };
-    esm_default("sbp/selectors/unsafe", ["chelonia.db/get", "chelonia.db/set", "chelonia.db/delete"]);
+    esm_default("sbp/selectors/unsafe", ["chelonia.db/get", "chelonia.db/set", "chelonia.db/delete", "chelonia.db/iterKeys", "chelonia.db/keyCount"]);
     dbPrimitiveSelectors = process.env.LIGHTWEIGHT_CLIENT === "true" ? {
       "chelonia.db/get": function(key) {
         const id = getContractIdFromLogHead(key);
@@ -12983,6 +13029,11 @@ var init_db = __esm({
       },
       "chelonia.db/delete": function() {
         return Promise.resolve(true);
+      },
+      "chelonia.db/iterKeys": async function* () {
+      },
+      "chelonia.db/keyCount": function() {
+        return Promise.resolve(0);
       }
     } : {
       // eslint-disable-next-line require-await
@@ -13002,6 +13053,12 @@ var init_db = __esm({
       // eslint-disable-next-line require-await
       "chelonia.db/delete": async function(key) {
         return esm_default("okTurtles.data/delete", key);
+      },
+      "chelonia.db/iterKeys": async function* () {
+        yield* esm_default("okTurtles.data/iterKeys");
+      },
+      "chelonia.db/keyCount": function() {
+        return Promise.resolve(esm_default("okTurtles.data/keyCount"));
       }
     };
     db_default = esm_default("sbp/selectors/register", {
@@ -13119,7 +13176,7 @@ var reprocessDebounced;
 var handleEvent;
 var notImplemented;
 var init_internals = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.7/node_modules/@chelonia/lib/dist/esm/internals.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/internals.mjs"() {
     init_esm();
     init_functions();
     init_esm5();
@@ -14910,7 +14967,7 @@ var watchdog;
 var syncServerTime;
 var time_sync_default;
 var init_time_sync = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.7/node_modules/@chelonia/lib/dist/esm/time-sync.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/time-sync.mjs"() {
     init_esm();
     wallBase = Date.now();
     monotonicBase = performance.now();
@@ -15143,7 +15200,7 @@ function gettersProxy(state, getters) {
 var ACTION_REGEX;
 var chelonia_default;
 var init_chelonia = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.7/node_modules/@chelonia/lib/dist/esm/chelonia.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/chelonia.mjs"() {
     init_esm2();
     init_esm4();
     init_esm();
@@ -16717,10 +16774,10 @@ var require_reach = __commonJS({
       }
       const isChainArray = Array.isArray(chain);
       Assert(!isChainArray || !options3.separator, "Separator option is not valid for array-based chain");
-      const path12 = isChainArray ? chain : chain.split(options3.separator || ".");
+      const path9 = isChainArray ? chain : chain.split(options3.separator || ".");
       let ref = obj;
-      for (let i2 = 0; i2 < path12.length; ++i2) {
-        let key = path12[i2];
+      for (let i2 = 0; i2 < path9.length; ++i2) {
+        let key = path9[i2];
         const type = options3.iterables && internals.iterables(ref);
         if (Array.isArray(ref) || type === "set") {
           const number2 = Number(key);
@@ -16730,7 +16787,7 @@ var require_reach = __commonJS({
         }
         if (!ref || typeof ref === "function" && options3.functions === false || // Defaults to true
         !type && ref[key] === void 0) {
-          Assert(!options3.strict || i2 + 1 === path12.length, "Missing segment", key, "in reach path ", chain);
+          Assert(!options3.strict || i2 + 1 === path9.length, "Missing segment", key, "in reach path ", chain);
           Assert(typeof ref === "object" || options3.functions === true || typeof ref !== "function", "Invalid segment", key, "in reach path ", chain);
           ref = options3.default;
           break;
@@ -17049,8 +17106,8 @@ var require_applyToDefaults = __commonJS({
       const nullOverride = options3.nullOverride !== void 0 ? options3.nullOverride : false;
       return Merge(copy2, source, { nullOverride, mergeArrays: false });
     };
-    internals.reachCopy = function(dst, src4, path12) {
-      for (const segment of path12) {
+    internals.reachCopy = function(dst, src4, path9) {
+      for (const segment of path9) {
         if (!(segment in src4)) {
           return;
         }
@@ -17062,14 +17119,14 @@ var require_applyToDefaults = __commonJS({
       }
       const value = src4;
       let ref = dst;
-      for (let i2 = 0; i2 < path12.length - 1; ++i2) {
-        const segment = path12[i2];
+      for (let i2 = 0; i2 < path9.length - 1; ++i2) {
+        const segment = path9[i2];
         if (typeof ref[segment] !== "object") {
           ref[segment] = {};
         }
         ref = ref[segment];
       }
-      ref[path12[path12.length - 1]] = value;
+      ref[path9[path9.length - 1]] = value;
     };
   }
 });
@@ -17725,12 +17782,12 @@ var require_wait = __commonJS({
       if (typeof timeout !== "number" && timeout !== void 0) {
         throw new TypeError("Timeout must be a number or bigint");
       }
-      return new Promise((resolve8) => {
+      return new Promise((resolve52) => {
         const _setTimeout = options3 ? options3.setTimeout : setTimeout;
         const activate = () => {
           const time3 = Math.min(timeout, internals.maxTimer);
           timeout -= time3;
-          _setTimeout(() => timeout > 0 ? activate() : resolve8(returnValue), time3);
+          _setTimeout(() => timeout > 0 ? activate() : resolve52(returnValue), time3);
         };
         if (timeout !== Infinity) {
           activate();
@@ -18998,7 +19055,7 @@ var CS;
 var SU;
 var SALT_LENGTH_IN_OCTETS;
 var init_zkppConstants = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.7/node_modules/@chelonia/lib/dist/esm/zkppConstants.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/zkppConstants.mjs"() {
     AUTHSALT = "AUTHSALT";
     CONTRACTSALT = "CONTRACTSALT";
     CS = "CS";
@@ -19022,7 +19079,7 @@ var boxKeyPair;
 var saltAgreement;
 var parseRegisterSalt;
 var init_zkpp = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.7/node_modules/@chelonia/lib/dist/esm/zkpp.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/zkpp.mjs"() {
     import_scrypt_async2 = __toESM(require_scrypt_async(), 1);
     import_tweetnacl2 = __toESM(require_nacl_fast(), 1);
     init_zkppConstants();
@@ -19370,7 +19427,7 @@ var DatabaseBackend;
 var init_DatabaseBackend = __esm({
   "src/serve/DatabaseBackend.ts"() {
     "use strict";
-    requiredMethodNames = ["init", "clear", "readData", "writeData", "deleteData", "close", "iterKeys"];
+    requiredMethodNames = ["init", "clear", "readData", "writeData", "deleteData", "close", "iterKeys", "keyCount"];
     DatabaseBackend = class _DatabaseBackend {
       constructor() {
         if (new.target === _DatabaseBackend) {
@@ -19461,9 +19518,9 @@ var init_database_fs = __esm({
         });
       }
       async writeData(key, value) {
-        const path12 = this.mapKey(key);
-        if (this.depth) await mkdir(dirname6(path12), { mode: 488, recursive: true });
-        await writeFile(path12, value);
+        const path9 = this.mapKey(key);
+        if (this.depth) await mkdir(dirname6(path9), { mode: 488, recursive: true });
+        await writeFile(path9, value);
       }
       async deleteData(key) {
         await unlink(this.mapKey(key)).catch((e2) => {
@@ -19477,11 +19534,15 @@ var init_database_fs = __esm({
       }
       async *iterKeys() {
         const entries = await readdir(this.dataFolder, { withFileTypes: true });
-        for await (const entry of entries) {
+        for (const entry of entries) {
           if (entry.isFile()) {
             yield entry.name;
           }
         }
+      }
+      async keyCount() {
+        const entries = await readdir(this.dataFolder, { withFileTypes: true });
+        return entries.filter((e2) => e2.isFile()).length;
       }
     };
   }
@@ -26557,8 +26618,8 @@ var require_MODULE_LOAD = __commonJS({
        * @param moduleArguments - Optional arguments to pass to the module
        * @see https://redis.io/commands/module-load/
        */
-      parseCommand(parser2, path12, moduleArguments) {
-        parser2.push("MODULE", "LOAD", path12);
+      parseCommand(parser2, path9, moduleArguments) {
+        parser2.push("MODULE", "LOAD", path9);
         if (moduleArguments) {
           parser2.push(...moduleArguments);
         }
@@ -33612,8 +33673,8 @@ var require_commands_queue = __commonJS({
           return;
         }
         ;
-        return new Promise((resolve8) => {
-          this.#waitingForReply.events.on("empty", resolve8);
+        return new Promise((resolve52) => {
+          this.#waitingForReply.events.on("empty", resolve52);
         });
       }
       addCommand(args, options3) {
@@ -33622,14 +33683,14 @@ var require_commands_queue = __commonJS({
         } else if (options3?.abortSignal?.aborted) {
           return Promise.reject(new errors_1.AbortError());
         }
-        return new Promise((resolve8, reject) => {
+        return new Promise((resolve52, reject) => {
           let node;
           const value = {
             args,
             chainId: options3?.chainId,
             abort: void 0,
             timeout: void 0,
-            resolve: resolve8,
+            resolve: resolve52,
             reject,
             channelsCounter: void 0,
             typeMapping: options3?.typeMapping
@@ -33663,7 +33724,7 @@ var require_commands_queue = __commonJS({
         });
       }
       #addPubSubCommand(command2, asap = false, chainId) {
-        return new Promise((resolve8, reject) => {
+        return new Promise((resolve52, reject) => {
           this.#toWrite.add({
             args: command2.args,
             chainId,
@@ -33671,7 +33732,7 @@ var require_commands_queue = __commonJS({
             timeout: void 0,
             resolve() {
               command2.resolve();
-              resolve8();
+              resolve52();
             },
             reject(err) {
               command2.reject?.();
@@ -33690,8 +33751,8 @@ var require_commands_queue = __commonJS({
             if (this.#onPush(reply))
               return;
             if (PONG2.equals(reply[0])) {
-              const { resolve: resolve8, typeMapping } = this.#waitingForReply.shift(), buffer = reply[1].length === 0 ? reply[0] : reply[1];
-              resolve8(typeMapping?.[decoder_1.RESP_TYPES.SIMPLE_STRING] === Buffer ? buffer : buffer.toString());
+              const { resolve: resolve52, typeMapping } = this.#waitingForReply.shift(), buffer = reply[1].length === 0 ? reply[0] : reply[1];
+              resolve52(typeMapping?.[decoder_1.RESP_TYPES.SIMPLE_STRING] === Buffer ? buffer : buffer.toString());
               return;
             }
           }
@@ -33715,12 +33776,12 @@ var require_commands_queue = __commonJS({
         if (!command2)
           return;
         if (command2 && this.#respVersion === 2) {
-          const { resolve: resolve8 } = command2;
+          const { resolve: resolve52 } = command2;
           command2.resolve = () => {
             if (!this.#pubSub.isActive) {
               this.#resetDecoderCallbacks();
             }
-            resolve8();
+            resolve52();
           };
         }
         return this.#addPubSubCommand(command2);
@@ -33753,7 +33814,7 @@ var require_commands_queue = __commonJS({
         return this.#pubSub.listeners[type];
       }
       monitor(callback, options3) {
-        return new Promise((resolve8, reject) => {
+        return new Promise((resolve52, reject) => {
           const typeMapping = options3?.typeMapping ?? {};
           this.#toWrite.add({
             args: ["MONITOR"],
@@ -33768,7 +33829,7 @@ var require_commands_queue = __commonJS({
                 this.decoder.onReply = callback;
               }
               this.decoder.getTypeMapping = () => typeMapping;
-              resolve8();
+              resolve52();
             },
             reject,
             channelsCounter: void 0,
@@ -33782,7 +33843,7 @@ var require_commands_queue = __commonJS({
       }
       #resetFallbackOnReply;
       async reset(chainId, typeMapping) {
-        return new Promise((resolve8, reject) => {
+        return new Promise((resolve52, reject) => {
           this.#resetFallbackOnReply = this.decoder.onReply;
           this.decoder.onReply = (reply) => {
             if (typeof reply === "string" && reply === "RESET" || reply instanceof Buffer && RESET.equals(reply)) {
@@ -33799,7 +33860,7 @@ var require_commands_queue = __commonJS({
             chainId,
             abort: void 0,
             timeout: void 0,
-            resolve: resolve8,
+            resolve: resolve52,
             reject,
             channelsCounter: void 0,
             typeMapping
@@ -35060,7 +35121,7 @@ var require_pool = __commonJS({
         this._self.#returnClient(node);
       }
       execute(fn) {
-        return new Promise((resolve8, reject) => {
+        return new Promise((resolve52, reject) => {
           const client = this._self.#idleClients.shift(), { tail } = this._self.#tasksQueue;
           if (!client) {
             let timeout;
@@ -35073,7 +35134,7 @@ var require_pool = __commonJS({
             const task = this._self.#tasksQueue.push({
               timeout,
               // @ts-ignore
-              resolve: resolve8,
+              resolve: resolve52,
               reject,
               fn
             });
@@ -35083,15 +35144,15 @@ var require_pool = __commonJS({
             return;
           }
           const node = this._self.#clientsInUse.push(client);
-          this._self.#executeTask(node, resolve8, reject, fn);
+          this._self.#executeTask(node, resolve52, reject, fn);
         });
       }
-      #executeTask(node, resolve8, reject, fn) {
+      #executeTask(node, resolve52, reject, fn) {
         const result = fn(node.value);
         if (result instanceof Promise) {
-          result.then(resolve8, reject).finally(() => this.#returnClient(node));
+          result.then(resolve52, reject).finally(() => this.#returnClient(node));
         } else {
-          resolve8(result);
+          resolve52(result);
           this.#returnClient(node);
         }
       }
@@ -36085,20 +36146,20 @@ var require_client = __commonJS({
        * Close the client. Wait for pending commands.
        */
       close() {
-        return new Promise((resolve8) => {
+        return new Promise((resolve52) => {
           clearTimeout(this._self.#pingTimer);
           this._self.#socket.close();
           this._self.#clientSideCache?.onClose();
           if (this._self.#queue.isEmpty()) {
             this._self.#socket.destroySocket();
-            return resolve8();
+            return resolve52();
           }
           const maybeClose = () => {
             if (!this._self.#queue.isEmpty())
               return;
             this._self.#socket.off("data", maybeClose);
             this._self.#socket.destroySocket();
-            resolve8();
+            resolve52();
           };
           this._self.#socket.on("data", maybeClose);
           this._self.#credentialsSubscription?.dispose();
@@ -37833,9 +37894,9 @@ var require_wait_queue = __commonJS({
       #list = new linked_list_1.SinglyLinkedList();
       #queue = new linked_list_1.SinglyLinkedList();
       push(value) {
-        const resolve8 = this.#queue.shift();
-        if (resolve8 !== void 0) {
-          resolve8(value);
+        const resolve52 = this.#queue.shift();
+        if (resolve52 !== void 0) {
+          resolve52(value);
           return;
         }
         this.#list.push(value);
@@ -37844,7 +37905,7 @@ var require_wait_queue = __commonJS({
         return this.#list.shift();
       }
       wait() {
-        return new Promise((resolve8) => this.#queue.push(resolve8));
+        return new Promise((resolve52) => this.#queue.push(resolve52));
       }
     };
     exports2.WaitQueue = WaitQueue;
@@ -40637,10 +40698,10 @@ var require_ARRAPPEND = __commonJS({
        * @param json - The first value to append
        * @param jsons - Additional values to append
        */
-      parseCommand(parser2, key, path12, json, ...jsons) {
+      parseCommand(parser2, key, path9, json, ...jsons) {
         parser2.push("JSON.ARRAPPEND");
         parser2.pushKey(key);
-        parser2.push(path12, (0, generic_transformers_1.transformRedisJsonArgument)(json));
+        parser2.push(path9, (0, generic_transformers_1.transformRedisJsonArgument)(json));
         for (let i2 = 0; i2 < jsons.length; i2++) {
           parser2.push((0, generic_transformers_1.transformRedisJsonArgument)(jsons[i2]));
         }
@@ -40668,10 +40729,10 @@ var require_ARRINDEX = __commonJS({
        * @param options.range.start - Starting index for the search
        * @param options.range.stop - Optional ending index for the search
        */
-      parseCommand(parser2, key, path12, json, options3) {
+      parseCommand(parser2, key, path9, json, options3) {
         parser2.push("JSON.ARRINDEX");
         parser2.pushKey(key);
-        parser2.push(path12, (0, generic_transformers_1.transformRedisJsonArgument)(json));
+        parser2.push(path9, (0, generic_transformers_1.transformRedisJsonArgument)(json));
         if (options3?.range) {
           parser2.push(options3.range.start.toString());
           if (options3.range.stop !== void 0) {
@@ -40701,10 +40762,10 @@ var require_ARRINSERT = __commonJS({
        * @param json - The first value to insert
        * @param jsons - Additional values to insert
        */
-      parseCommand(parser2, key, path12, index, json, ...jsons) {
+      parseCommand(parser2, key, path9, index, json, ...jsons) {
         parser2.push("JSON.ARRINSERT");
         parser2.pushKey(key);
-        parser2.push(path12, index.toString(), (0, generic_transformers_1.transformRedisJsonArgument)(json));
+        parser2.push(path9, index.toString(), (0, generic_transformers_1.transformRedisJsonArgument)(json));
         for (let i2 = 0; i2 < jsons.length; i2++) {
           parser2.push((0, generic_transformers_1.transformRedisJsonArgument)(jsons[i2]));
         }
@@ -40788,10 +40849,10 @@ var require_ARRTRIM = __commonJS({
        * @param start - Starting index (inclusive)
        * @param stop - Ending index (inclusive)
        */
-      parseCommand(parser2, key, path12, start, stop) {
+      parseCommand(parser2, key, path9, start, stop) {
         parser2.push("JSON.ARRTRIM");
         parser2.pushKey(key);
-        parser2.push(path12, start.toString(), stop.toString());
+        parser2.push(path9, start.toString(), stop.toString());
       },
       transformReply: void 0
     };
@@ -40944,10 +41005,10 @@ var require_MERGE3 = __commonJS({
        * @param path - Path to merge into
        * @param value - JSON value to merge
        */
-      parseCommand(parser2, key, path12, value) {
+      parseCommand(parser2, key, path9, value) {
         parser2.push("JSON.MERGE");
         parser2.pushKey(key);
-        parser2.push(path12, (0, generic_transformers_1.transformRedisJsonArgument)(value));
+        parser2.push(path9, (0, generic_transformers_1.transformRedisJsonArgument)(value));
       },
       transformReply: void 0
     };
@@ -40968,10 +41029,10 @@ var require_MGET2 = __commonJS({
        * @param keys - Array of keys containing JSON documents
        * @param path - Path to retrieve from each document
        */
-      parseCommand(parser2, keys, path12) {
+      parseCommand(parser2, keys, path9) {
         parser2.push("JSON.MGET");
         parser2.pushKeys(keys);
-        parser2.push(path12);
+        parser2.push(path9);
       },
       transformReply(reply) {
         return reply.map((json) => (0, generic_transformers_1.transformRedisJsonNullReply)(json));
@@ -41022,10 +41083,10 @@ var require_NUMINCRBY = __commonJS({
        * @param path - Path to the numeric value
        * @param by - Amount to increment by
        */
-      parseCommand(parser2, key, path12, by) {
+      parseCommand(parser2, key, path9, by) {
         parser2.push("JSON.NUMINCRBY");
         parser2.pushKey(key);
-        parser2.push(path12, by.toString());
+        parser2.push(path9, by.toString());
       },
       transformReply: {
         2: (reply) => {
@@ -41055,10 +41116,10 @@ var require_NUMMULTBY = __commonJS({
        * @param path - Path to the numeric value
        * @param by - Amount to multiply by
        */
-      parseCommand(parser2, key, path12, by) {
+      parseCommand(parser2, key, path9, by) {
         parser2.push("JSON.NUMMULTBY");
         parser2.pushKey(key);
-        parser2.push(path12, by.toString());
+        parser2.push(path9, by.toString());
       },
       transformReply: NUMINCRBY_1.default.transformReply
     };
@@ -41136,10 +41197,10 @@ var require_SET2 = __commonJS({
        * @deprecated options.NX - Use options.condition instead
        * @deprecated options.XX - Use options.condition instead
        */
-      parseCommand(parser2, key, path12, json, options3) {
+      parseCommand(parser2, key, path9, json, options3) {
         parser2.push("JSON.SET");
         parser2.pushKey(key);
-        parser2.push(path12, (0, generic_transformers_1.transformRedisJsonArgument)(json));
+        parser2.push(path9, (0, generic_transformers_1.transformRedisJsonArgument)(json));
         if (options3?.condition) {
           parser2.push(options3?.condition);
         } else if (options3?.NX) {
@@ -41221,10 +41282,10 @@ var require_TOGGLE = __commonJS({
        * @param key - The key containing the JSON document
        * @param path - Path to the boolean value
        */
-      parseCommand(parser2, key, path12) {
+      parseCommand(parser2, key, path9) {
         parser2.push("JSON.TOGGLE");
         parser2.pushKey(key);
-        parser2.push(path12);
+        parser2.push(path9);
       },
       transformReply: void 0
     };
@@ -45028,10 +45089,13 @@ var init_database_redis = __esm({
         this.db.destroy();
       }
       async *iterKeys() {
-        const keys = await this.db.keys("*");
-        for (const key of keys) {
-          yield key;
+        const iterator = this.db.withTypeMapping({}).scanIterator({ MATCH: "*" });
+        for await (const keys of iterator) {
+          yield* keys;
         }
+      }
+      keyCount() {
+        return this.db.dbSize();
       }
     };
   }
@@ -45053,6 +45117,7 @@ var init_database_sqlite = __esm({
       writeStatement = null;
       deleteStatement = null;
       iterKeysStatement = null;
+      keyCountStatement = null;
       constructor(options3 = {}) {
         super();
         const { filepath } = options3;
@@ -45076,6 +45141,7 @@ var init_database_sqlite = __esm({
         this.writeStatement = this.db.prepare("REPLACE INTO Data(key, value) VALUES(?, ?)");
         this.deleteStatement = this.db.prepare("DELETE FROM Data WHERE key = ?");
         this.iterKeysStatement = this.db.prepare("SELECT key FROM Data");
+        this.keyCountStatement = this.db.prepare("SELECT COUNT(*) count FROM Data");
       }
       // Useful in test hooks.
       // deno-lint-ignore require-await
@@ -45088,6 +45154,8 @@ var init_database_sqlite = __esm({
         const value = row?.value;
         if (ArrayBuffer.isView(value) && !Buffer11.isBuffer(value)) {
           return Buffer11.from(value);
+        } else {
+          return value;
         }
       }
       async writeData(key, value) {
@@ -45103,6 +45171,10 @@ var init_database_sqlite = __esm({
         for (const row of this.iterKeysStatement.iter()) {
           yield row.key;
         }
+      }
+      async keyCount() {
+        const { count } = await this.keyCountStatement.get();
+        return count;
       }
     };
   }
@@ -45237,6 +45309,13 @@ var init_database_router = __esm({
         for (const backend of new Set(Object.values(this.backends))) {
           yield* backend.iterKeys();
         }
+      }
+      async keyCount() {
+        let count = 0;
+        for (const backend of new Set(Object.values(this.backends))) {
+          count += await backend.keyCount();
+        }
+        return count;
       }
     };
   }
@@ -45513,7 +45592,7 @@ var init_database = __esm({
     initDB = async ({ skipDbPreloading } = {}) => {
       if (persistence) {
         const Ctor = (await globImport_database_ts2(`./database-${persistence}.ts`)).default;
-        const { init: init2, readData, writeData, deleteData, iterKeys, close } = new Ctor(options2[persistence]);
+        const { init: init2, readData, writeData, deleteData, iterKeys, keyCount, close } = new Ctor(options2[persistence]);
         await init2();
         esm_default("okTurtles.events/once", SERVER_EXITING, () => {
           esm_default("okTurtles.eventQueue/queueEvent", SERVER_EXITING, async () => {
@@ -45528,11 +45607,6 @@ var init_database = __esm({
           max: Number(process5.env.GI_LRU_NUM_ITEMS) || 1e4
         });
         const prefixes = Object.keys(prefixHandlers);
-        esm_default("sbp/selectors/register", {
-          "chelonia.db/iterKeys": () => {
-            return iterKeys();
-          }
-        });
         esm_default("sbp/selectors/overwrite", {
           "chelonia.db/get": async function(prefixableKey, { bypassCache } = {}) {
             if (!bypassCache) {
@@ -45574,10 +45648,13 @@ var init_database = __esm({
             prefixes.forEach((prefix) => {
               cache3.delete(prefix + key);
             });
+          },
+          "chelonia.db/iterKeys": () => {
+            return iterKeys();
+          },
+          "chelonia.db/keyCount": () => {
+            return keyCount();
           }
-          /* 'chelonia.db/iterKeys': () => {
-            return iterKeys()
-          } */
         });
         esm_default("sbp/selectors/lock", ["chelonia.db/get", "chelonia.db/set", "chelonia.db/delete", "chelonia.db/iterKeys"]);
       }
@@ -46577,14 +46654,14 @@ var require_annotate = __commonJS({
       for (let i2 = this.details.length - 1; i2 >= 0; --i2) {
         const pos = i2 + 1;
         const error = this.details[i2];
-        const path12 = error.path;
+        const path9 = error.path;
         let node = obj;
         for (let j = 0; ; ++j) {
-          const seg = path12[j];
+          const seg = path9[j];
           if (Common.isSchema(node)) {
             node = node.clone();
           }
-          if (j + 1 < path12.length && typeof node[seg] !== "string") {
+          if (j + 1 < path9.length && typeof node[seg] !== "string") {
             node = node[seg];
           } else {
             const refAnnotations = node[internals.annotations] || { errors: {}, missing: {} };
@@ -46729,9 +46806,9 @@ var require_errors2 = __commonJS({
         return exports2.template(this.value, messages, this.code, this.state, this.prefs);
       }
     };
-    exports2.path = function(path12) {
+    exports2.path = function(path9) {
       let label = "";
-      for (const segment of path12) {
+      for (const segment of path9) {
         if (typeof segment === "object") {
           continue;
         }
@@ -46763,11 +46840,11 @@ var require_errors2 = __commonJS({
       if (!prefs.errors.label) {
         return "";
       }
-      let path12 = state.path;
+      let path9 = state.path;
       if (prefs.errors.label === "key" && state.path.length > 1) {
-        path12 = state.path.slice(-1);
+        path9 = state.path.slice(-1);
       }
-      const normalized = exports2.path(path12);
+      const normalized = exports2.path(path9);
       if (normalized) {
         return normalized;
       }
@@ -46959,11 +47036,11 @@ var require_modify = __commonJS({
           this._byKey.set(key, value);
         }
       }
-      reach(path12, behind = []) {
-        const current = path12[0];
+      reach(path9, behind = []) {
+        const current = path9[0];
         const node = this._get(current);
-        Assert(node, "Schema does not contain path", [...behind, ...path12].join("."));
-        const forward = path12.slice(1);
+        Assert(node, "Schema does not contain path", [...behind, ...path9].join("."));
+        const forward = path9.slice(1);
         if (!forward.length) {
           return node.schema;
         }
@@ -47037,7 +47114,7 @@ var require_modify = __commonJS({
       return obj;
     };
     internals.scan = function(item, source, options3, _path, _key) {
-      const path12 = _path || [];
+      const path9 = _path || [];
       if (item === null || typeof item !== "object") {
         return;
       }
@@ -47045,7 +47122,7 @@ var require_modify = __commonJS({
       if (Array.isArray(item)) {
         for (let i2 = 0; i2 < item.length; ++i2) {
           const key = source.name === "keys" && item[i2].key;
-          const result = internals.scan(item[i2], source, options3, [i2, ...path12], key);
+          const result = internals.scan(item[i2], source, options3, [i2, ...path9], key);
           if (result !== void 0) {
             clone2 = clone2 || item.slice();
             clone2[i2] = result;
@@ -47054,14 +47131,14 @@ var require_modify = __commonJS({
         return clone2;
       }
       if (options3.schema !== false && Common.isSchema(item) || options3.ref !== false && Ref.isRef(item)) {
-        const result = options3.each(item, { ...source, path: path12, key: _key });
+        const result = options3.each(item, { ...source, path: path9, key: _key });
         return result;
       }
       for (const key in item) {
         if (key[0] === "_") {
           continue;
         }
-        const result = internals.scan(item[key], source, options3, [key, ...path12], _key);
+        const result = internals.scan(item[key], source, options3, [key, ...path9], _key);
         if (result !== void 0) {
           clone2 = clone2 || Object.assign({}, item);
           clone2[key] = result;
@@ -47081,14 +47158,14 @@ var require_state = __commonJS({
       value: Symbol("value")
     };
     module2.exports = internals.State = class {
-      constructor(path12, ancestors, state) {
-        this.path = path12;
+      constructor(path9, ancestors, state) {
+        this.path = path9;
         this.ancestors = ancestors;
         this.mainstay = state.mainstay;
         this.schemas = state.schemas;
       }
-      localize(path12, ancestors = null, schema = null) {
-        const state = new internals.State(path12, ancestors, this);
+      localize(path9, ancestors = null, schema = null) {
+        const state = new internals.State(path9, ancestors, this);
         if (schema && state.schemas) {
           state.schemas = [internals.schemas(schema), ...state.schemas];
         }
@@ -47125,17 +47202,17 @@ var require_state = __commonJS({
       constructor() {
         this._values = null;
       }
-      set(path12, value, reason) {
-        if (!path12.length) {
+      set(path9, value, reason) {
+        if (!path9.length) {
           return;
         }
-        if (reason === "strip" && typeof path12[path12.length - 1] === "number") {
+        if (reason === "strip" && typeof path9[path9.length - 1] === "number") {
           return;
         }
         this._values = this._values || /* @__PURE__ */ new Map();
         let node = this._values;
-        for (let i2 = 0; i2 < path12.length; ++i2) {
-          const segment = path12[i2];
+        for (let i2 = 0; i2 < path9.length; ++i2) {
+          const segment = path9[i2];
           let next = node.get(segment);
           if (!next) {
             next = /* @__PURE__ */ new Map();
@@ -47145,24 +47222,24 @@ var require_state = __commonJS({
         }
         node[internals.value] = value;
       }
-      get(path12) {
-        const node = this.node(path12);
+      get(path9) {
+        const node = this.node(path9);
         if (node) {
           return node[internals.value];
         }
       }
-      node(path12) {
+      node(path9) {
         if (!this._values) {
           return;
         }
-        return Reach(this._values, path12, { iterables: true });
+        return Reach(this._values, path9, { iterables: true });
       }
-      override(path12, node) {
+      override(path9, node) {
         if (!this._values) {
           return;
         }
-        const parents = path12.slice(0, -1);
-        const own = path12[path12.length - 1];
+        const parents = path9.slice(0, -1);
+        const own = path9[path9.length - 1];
         const parent = Reach(this._values, parents, { iterables: true });
         if (node) {
           parent.set(own, node);
@@ -47895,7 +47972,7 @@ var require_base = __commonJS({
       $_mutateRebuild() {
         this._refs.reset();
         this._ids.reset();
-        const each = (item, { source, name, path: path12, key }) => {
+        const each = (item, { source, name, path: path9, key }) => {
           const family = this._definition[source][name]?.register;
           if (family !== false) {
             this.$_mutateRegister(item, { family, key });
@@ -47914,8 +47991,8 @@ var require_base = __commonJS({
       $_property(name) {
         return this._definition.properties[name];
       }
-      $_reach(path12) {
-        return this._ids.reach(path12);
+      $_reach(path9) {
+        return this._ids.reach(path9);
       }
       $_rootReferences() {
         return this._refs.roots();
@@ -48459,9 +48536,9 @@ var require_array = __commonJS({
               let errored = false;
               let isValid = false;
               const key = wasArray ? i2 : new Number(i2);
-              const path12 = [...state.path, key];
+              const path9 = [...state.path, key];
               if (!schema._flags.sparse && item === void 0) {
-                errors.push(error("array.sparse", { key, path: path12, pos: i2, value: void 0 }, state.localize(path12)));
+                errors.push(error("array.sparse", { key, path: path9, pos: i2, value: void 0 }, state.localize(path9)));
                 if (prefs.abortEarly) {
                   return errors;
                 }
@@ -48470,10 +48547,10 @@ var require_array = __commonJS({
               }
               const ancestors = [value, ...state.ancestors];
               for (const exclusion of schema.$_terms._exclusions) {
-                if (!exclusion.$_match(item, state.localize(path12, ancestors, exclusion), prefs, { presence: "ignore" })) {
+                if (!exclusion.$_match(item, state.localize(path9, ancestors, exclusion), prefs, { presence: "ignore" })) {
                   continue;
                 }
-                errors.push(error("array.excludes", { pos: i2, value: item }, state.localize(path12)));
+                errors.push(error("array.excludes", { pos: i2, value: item }, state.localize(path9)));
                 if (prefs.abortEarly) {
                   return errors;
                 }
@@ -48487,14 +48564,14 @@ var require_array = __commonJS({
               if (schema.$_terms.ordered.length) {
                 if (ordereds.length) {
                   const ordered = ordereds.shift();
-                  const res = ordered.$_validate(item, state.localize(path12, ancestors, ordered), prefs);
+                  const res = ordered.$_validate(item, state.localize(path9, ancestors, ordered), prefs);
                   if (!res.errors) {
                     if (ordered._flags.result === "strip") {
                       internals.fastSplice(value, i2);
                       --i2;
                       --il;
                     } else if (!schema._flags.sparse && res.value === void 0) {
-                      errors.push(error("array.sparse", { key, path: path12, pos: i2, value: void 0 }, state.localize(path12)));
+                      errors.push(error("array.sparse", { key, path: path9, pos: i2, value: void 0 }, state.localize(path9)));
                       if (prefs.abortEarly) {
                         return errors;
                       }
@@ -48520,7 +48597,7 @@ var require_array = __commonJS({
               const requiredChecks = [];
               let jl = requireds.length;
               for (let j = 0; j < jl; ++j) {
-                const localState = state.localize(path12, ancestors, requireds[j]);
+                const localState = state.localize(path9, ancestors, requireds[j]);
                 localState.snapshot();
                 const res = requireds[j].$_validate(item, localState, prefs);
                 requiredChecks[j] = res;
@@ -48531,7 +48608,7 @@ var require_array = __commonJS({
                   --j;
                   --jl;
                   if (!schema._flags.sparse && res.value === void 0) {
-                    errors.push(error("array.sparse", { key, path: path12, pos: i2, value: void 0 }, state.localize(path12)));
+                    errors.push(error("array.sparse", { key, path: path9, pos: i2, value: void 0 }, state.localize(path9)));
                     if (prefs.abortEarly) {
                       return errors;
                     }
@@ -48551,7 +48628,7 @@ var require_array = __commonJS({
                 if (previousCheck !== -1) {
                   res = requiredChecks[previousCheck];
                 } else {
-                  const localState = state.localize(path12, ancestors, inclusion);
+                  const localState = state.localize(path9, ancestors, inclusion);
                   localState.snapshot();
                   res = inclusion.$_validate(item, localState, prefs);
                   if (!res.errors) {
@@ -48560,7 +48637,7 @@ var require_array = __commonJS({
                       --i2;
                       --il;
                     } else if (!schema._flags.sparse && res.value === void 0) {
-                      errors.push(error("array.sparse", { key, path: path12, pos: i2, value: void 0 }, state.localize(path12)));
+                      errors.push(error("array.sparse", { key, path: path9, pos: i2, value: void 0 }, state.localize(path9)));
                       errored = true;
                     } else {
                       value[i2] = res.value;
@@ -48596,7 +48673,7 @@ var require_array = __commonJS({
                   --il;
                   continue;
                 }
-                errors.push(error("array.includes", { pos: i2, value: item }, state.localize(path12)));
+                errors.push(error("array.includes", { pos: i2, value: item }, state.localize(path9)));
                 if (prefs.abortEarly) {
                   return errors;
                 }
@@ -48712,7 +48789,7 @@ var require_array = __commonJS({
             }
             return this.$_addRule(rule);
           },
-          validate(value, { state, error, schema }, { comparator: raw, options: options3 }, { comparator, path: path12 }) {
+          validate(value, { state, error, schema }, { comparator: raw, options: options3 }, { comparator, path: path9 }) {
             const found = {
               string: /* @__PURE__ */ Object.create(null),
               number: /* @__PURE__ */ Object.create(null),
@@ -48725,7 +48802,7 @@ var require_array = __commonJS({
             const compare = comparator || DeepEqual;
             const ignoreUndefined = options3.ignoreUndefined;
             for (let i2 = 0; i2 < value.length; ++i2) {
-              const item = path12 ? Reach(value[i2], path12) : value[i2];
+              const item = path9 ? Reach(value[i2], path9) : value[i2];
               const records = comparator ? found.custom : found[typeof item];
               Assert(records, "Failed to find unique map container for type", typeof item);
               if (records instanceof Map) {
@@ -48740,7 +48817,7 @@ var require_array = __commonJS({
                       dupePos: current.value[1],
                       dupeValue: value[current.value[1]]
                     };
-                    if (path12) {
+                    if (path9) {
                       context.path = raw;
                     }
                     return error("array.unique", context, localState);
@@ -48755,7 +48832,7 @@ var require_array = __commonJS({
                     dupePos: records[item],
                     dupeValue: value[records[item]]
                   };
-                  if (path12) {
+                  if (path9) {
                     context.path = raw;
                   }
                   const localState = state.localize([...state.path, i2], [value, ...state.ancestors]);
@@ -49433,8 +49510,8 @@ var require_keys = __commonJS({
           },
           validate(value, { error, prefs, state }, { subject, schema, message }) {
             const about = subject.resolve(value, state, prefs);
-            const path12 = subject.absolute(state);
-            if (schema.$_match(about, state.localize(path12, [value, ...state.ancestors], schema), prefs)) {
+            const path9 = subject.absolute(state);
+            if (schema.$_match(about, state.localize(path9, [value, ...state.ancestors], schema), prefs)) {
               return value;
             }
             return error("object.assert", { subject, message });
@@ -49881,7 +49958,7 @@ var require_keys = __commonJS({
         const ancestors = [value, ...state.ancestors];
         for (const key of unprocessed) {
           const item = value[key];
-          const path12 = [...state.path, key];
+          const path9 = [...state.path, key];
           for (let i2 = 0; i2 < schema.$_terms.patterns.length; ++i2) {
             const pattern = schema.$_terms.patterns[i2];
             if (pattern.regex) {
@@ -49895,7 +49972,7 @@ var require_keys = __commonJS({
               }
             }
             unprocessed.delete(key);
-            const localState = state.localize(path12, ancestors, { schema: pattern.rule, key });
+            const localState = state.localize(path9, ancestors, { schema: pattern.rule, key });
             const result = pattern.rule.$_validate(item, localState, prefs);
             if (result.errors) {
               if (prefs.abortEarly) {
@@ -50123,10 +50200,10 @@ var require_link = __commonJS({
         return linked._generate(value, state, prefs).schema;
       }
       const ref = schema.$_terms.link[0].ref;
-      const { perspective, path: path12 } = internals.perspective(ref, state);
+      const { perspective, path: path9 } = internals.perspective(ref, state);
       internals.assert(perspective, "which is outside of schema boundaries", ref, schema, state, prefs);
       try {
-        linked = path12.length ? perspective.$_reach(path12) : perspective;
+        linked = path9.length ? perspective.$_reach(path9) : perspective;
       } catch (ignoreErr) {
         internals.assert(false, "to non-existing schema", ref, schema, state, prefs);
       }
@@ -51440,9 +51517,9 @@ var require_lib10 = __commonJS({
         Hoek.assert(typeof dispatchFunc === "function", "Invalid or missing dispatch function");
         Validate.assert(options3 ?? null, internals.options, "Invalid options:");
       }
-      return new Promise((resolve8) => {
+      return new Promise((resolve52) => {
         const req = new Request2(options3);
-        const res = new Response2(req, resolve8);
+        const res = new Response2(req, resolve52);
         req.prepare(() => dispatchFunc(req, res));
       });
     };
@@ -51468,8 +51545,8 @@ var require_lib11 = __commonJS({
         return instance.#notes;
       }
       _init(options3 = {}) {
-        this.work = new Promise((resolve8, reject) => {
-          this._resolve = resolve8;
+        this.work = new Promise((resolve52, reject) => {
+          this._resolve = resolve52;
           this._reject = reject;
         });
         const meetings = options3.meetings ?? 1;
@@ -52863,11 +52940,11 @@ var require_regex = __commonJS({
       const segmentContent = "(?:" + literal + "|" + midParam + "|" + mixedParam + ")";
       const segment = "\\/" + segmentContent;
       const segments = "(?:" + segment + ")*";
-      const path12 = "(?:^" + segments + endParam + "$)";
+      const path9 = "(?:^" + segments + endParam + "$)";
       const parseParam = "(" + literal + ")|(?:\\{(\\w+)(?:(\\*)(\\d+)?)?(\\?)?\\})";
       const expressions = {
         parseParam: new RegExp(parseParam, "g"),
-        validatePath: new RegExp(empty4 + "|" + path12),
+        validatePath: new RegExp(empty4 + "|" + path9),
         validatePathEncoded: /%(?:2[146-9A-E]|3[\dABD]|4[\dA-F]|5[\dAF]|6[1-9A-F]|7[\dAE])/g
       };
       return expressions;
@@ -52973,16 +53050,16 @@ var require_segment = __commonJS({
       }
       return 0;
     };
-    internals.Segment.prototype.lookup = function(path12, segments, options3) {
+    internals.Segment.prototype.lookup = function(path9, segments, options3) {
       let match = null;
       if (this._fulls) {
-        match = this._fulls.get(options3.isCaseSensitive ? path12 : path12.toLowerCase());
+        match = this._fulls.get(options3.isCaseSensitive ? path9 : path9.toLowerCase());
         if (match) {
           return { record: match.record, array: [] };
         }
       }
       const current = segments[0];
-      const nextPath = path12.slice(current.length + 1);
+      const nextPath = path9.slice(current.length + 1);
       const remainder = segments.length > 1 ? segments.slice(1) : null;
       if (this._literals) {
         const literal = options3.isCaseSensitive ? current : current.toLowerCase();
@@ -53019,11 +53096,11 @@ var require_segment = __commonJS({
         }
       }
       if (this._wildcard) {
-        return { record: this._wildcard.record, array: [path12.slice(1)] };
+        return { record: this._wildcard.record, array: [path9.slice(1)] };
       }
       return null;
     };
-    internals.deeper = function(match, path12, segments, array2, options3) {
+    internals.deeper = function(match, path9, segments, array2, options3) {
       if (!segments) {
         if (match._edge) {
           return { record: match._edge.record, array: array2 };
@@ -53032,7 +53109,7 @@ var require_segment = __commonJS({
           return { record: match._wildcard.record, array: array2 };
         }
       } else {
-        const result = match.lookup(path12, segments, options3);
+        const result = match.lookup(path9, segments, options3);
         if (result) {
           return { record: result.record, array: array2.concat(result.array) };
         }
@@ -53106,18 +53183,18 @@ var require_lib14 = __commonJS({
       Hoek.assert(Object.keys(this.specials).indexOf(type) !== -1, "Unknown special route type:", type);
       this.specials[type] = { route: route2 };
     };
-    internals.Router.prototype.route = function(method, path12, hostname2) {
-      const segments = path12.length === 1 ? [""] : path12.split("/").slice(1);
+    internals.Router.prototype.route = function(method, path9, hostname2) {
+      const segments = path9.length === 1 ? [""] : path9.split("/").slice(1);
       const vhost = this.vhosts && hostname2 && this.vhosts.get(hostname2);
-      const route2 = vhost && this._lookup(path12, segments, vhost, method) || this._lookup(path12, segments, this.routes, method) || method === "head" && vhost && this._lookup(path12, segments, vhost, "get") || method === "head" && this._lookup(path12, segments, this.routes, "get") || method === "options" && this.specials.options || vhost && this._lookup(path12, segments, vhost, "*") || this._lookup(path12, segments, this.routes, "*") || this.specials.notFound || Boom5.notFound();
+      const route2 = vhost && this._lookup(path9, segments, vhost, method) || this._lookup(path9, segments, this.routes, method) || method === "head" && vhost && this._lookup(path9, segments, vhost, "get") || method === "head" && this._lookup(path9, segments, this.routes, "get") || method === "options" && this.specials.options || vhost && this._lookup(path9, segments, vhost, "*") || this._lookup(path9, segments, this.routes, "*") || this.specials.notFound || Boom5.notFound();
       return route2;
     };
-    internals.Router.prototype._lookup = function(path12, segments, table, method) {
+    internals.Router.prototype._lookup = function(path9, segments, table, method) {
       const set = table.get(method);
       if (!set) {
         return null;
       }
-      const match = set.router.lookup(path12, segments, this.settings);
+      const match = set.router.lookup(path9, segments, this.settings);
       if (!match) {
         return null;
       }
@@ -53141,15 +53218,15 @@ var require_lib14 = __commonJS({
       }
       return { params: assignments, paramsArray: array2, route: match.record.route };
     };
-    internals.Router.prototype.normalize = function(path12) {
-      if (path12 && path12.indexOf("%") !== -1) {
-        const uppercase2 = path12.replace(/%[0-9a-fA-F][0-9a-fA-F]/g, (encoded) => encoded.toUpperCase());
+    internals.Router.prototype.normalize = function(path9) {
+      if (path9 && path9.indexOf("%") !== -1) {
+        const uppercase2 = path9.replace(/%[0-9a-fA-F][0-9a-fA-F]/g, (encoded) => encoded.toUpperCase());
         const decoded = uppercase2.replace(/%(?:2[146-9A-E]|3[\dABD]|4[\dA-F]|5[\dAF]|6[1-9A-F]|7[\dAE])/g, (encoded) => String.fromCharCode(parseInt(encoded.substring(1), 16)));
-        path12 = decoded;
+        path9 = decoded;
       }
-      if (path12 && (path12.indexOf("/.") !== -1 || path12[0] === ".")) {
-        const hasLeadingSlash = path12[0] === "/";
-        const segments = path12.split("/");
+      if (path9 && (path9.indexOf("/.") !== -1 || path9[0] === ".")) {
+        const hasLeadingSlash = path9[0] === "/";
+        const segments = path9.split("/");
         const normalized = [];
         let segment;
         for (let i2 = 0; i2 < segments.length; ++i2) {
@@ -53163,17 +53240,17 @@ var require_lib14 = __commonJS({
         if (segment === "." || segment === "..") {
           normalized.push("");
         }
-        path12 = normalized.join("/");
-        if (path12[0] !== "/" && hasLeadingSlash) {
-          path12 = "/" + path12;
+        path9 = normalized.join("/");
+        if (path9[0] !== "/" && hasLeadingSlash) {
+          path9 = "/" + path9;
         }
       }
-      return path12;
+      return path9;
     };
-    internals.Router.prototype.analyze = function(path12) {
-      Hoek.assert(internals.pathRegex.validatePath.test(path12), "Invalid path:", path12);
-      Hoek.assert(!internals.pathRegex.validatePathEncoded.test(path12), "Path cannot contain encoded non-reserved path characters:", path12);
-      const pathParts = path12.split("/");
+    internals.Router.prototype.analyze = function(path9) {
+      Hoek.assert(internals.pathRegex.validatePath.test(path9), "Invalid path:", path9);
+      Hoek.assert(!internals.pathRegex.validatePathEncoded.test(path9), "Path cannot contain encoded non-reserved path characters:", path9);
+      const pathParts = path9.split("/");
       const segments = [];
       const params = [];
       const fingers = [];
@@ -53188,7 +53265,7 @@ var require_lib14 = __commonJS({
         const parts = internals.parseParams(segment);
         if (parts.length === 1) {
           const item = parts[0];
-          Hoek.assert(params.indexOf(item.name) === -1, "Cannot repeat the same parameter name:", item.name, "in:", path12);
+          Hoek.assert(params.indexOf(item.name) === -1, "Cannot repeat the same parameter name:", item.name, "in:", path9);
           params.push(item.name);
           if (item.wildcard) {
             if (item.count) {
@@ -53222,7 +53299,7 @@ var require_lib14 = __commonJS({
               regex = regex + Hoek.escapeRegex(part);
               seg.segments.push(part);
             } else {
-              Hoek.assert(params.indexOf(part.name) === -1, "Cannot repeat the same parameter name:", part.name, "in:", path12);
+              Hoek.assert(params.indexOf(part.name) === -1, "Cannot repeat the same parameter name:", part.name, "in:", path9);
               params.push(part.name);
               finger = finger + "?";
               regex = regex + "(." + (part.empty ? "*" : "+") + ")";
@@ -53548,8 +53625,8 @@ var require_lib15 = __commonJS({
         if (listener) {
           return this.addListener(criteria, listener, context);
         }
-        return new Promise((resolve8) => {
-          this.addListener(criteria, (...args) => resolve8(args));
+        return new Promise((resolve52) => {
+          this.addListener(criteria, (...args) => resolve52(args));
         });
       }
       few(criteria) {
@@ -53616,8 +53693,8 @@ var require_pending = __commonJS({
       constructor(id, rule) {
         this.id = id;
         this.rule = rule;
-        this.promise = new Promise((resolve8, reject) => {
-          this.resolve = resolve8;
+        this.promise = new Promise((resolve52, reject) => {
+          this.resolve = resolve52;
           this.reject = reject;
         });
       }
@@ -63646,8 +63723,8 @@ var require_lib19 = __commonJS({
           }
         }
       }
-      path(path12) {
-        const extension = Path.extname(path12).slice(1).toLowerCase();
+      path(path9) {
+        const extension = Path.extname(path9).slice(1).toLowerCase();
         const mime = this.#db.byExtension.get(extension) ?? {};
         return internals.applyPredicate(mime);
       }
@@ -64257,12 +64334,12 @@ var require_lib23 = __commonJS({
       }
     };
     internals.pbkdf2 = function(...args) {
-      return new Promise((resolve8, reject) => {
+      return new Promise((resolve52, reject) => {
         const next = (err, result) => {
           if (err) {
             return reject(Boom5.boomify(err));
           }
-          resolve8(result);
+          resolve52(result);
         };
         args.push(next);
         Crypto.pbkdf2(...args);
@@ -64735,15 +64812,15 @@ var require_lib26 = __commonJS({
     "use strict";
     var Crypto = __require2("crypto");
     var Path = __require2("path");
-    exports2.uniqueFilename = function(path12, extension) {
+    exports2.uniqueFilename = function(path9, extension) {
       if (extension) {
         extension = extension[0] !== "." ? "." + extension : extension;
       } else {
         extension = "";
       }
-      path12 = Path.resolve(path12);
+      path9 = Path.resolve(path9);
       const name = [Date.now(), process.pid, Crypto.randomBytes(8).toString("hex")].join("-") + extension;
-      return Path.join(path12, name);
+      return Path.join(path9, name);
     };
   }
 });
@@ -65370,13 +65447,13 @@ var require_lib30 = __commonJS({
         }
         const relay = {};
         const req = this._request(method, url, options3, relay);
-        const promise = new Promise((resolve8, reject) => {
+        const promise = new Promise((resolve52, reject) => {
           relay.callback = (err, res) => {
             if (err) {
               reject(err);
               return;
             }
-            resolve8(res);
+            resolve52(res);
             return;
           };
         });
@@ -65557,13 +65634,13 @@ var require_lib30 = __commonJS({
         }
       }
       read(res, options3 = {}) {
-        return new Promise((resolve8, reject) => {
+        return new Promise((resolve52, reject) => {
           this._read(res, options3, (err, payload) => {
             if (err) {
               reject(err);
               return;
             }
-            resolve8(payload);
+            resolve52(payload);
             return;
           });
         });
@@ -65698,11 +65775,11 @@ var require_lib30 = __commonJS({
         throw new Boom5.Boom(`Response Error: ${res.statusCode} ${res.statusMessage}`, { statusCode: res.statusCode, data });
       }
     };
-    internals.resolveUrl = function(baseUrl, path12) {
-      if (!path12) {
+    internals.resolveUrl = function(baseUrl, path9) {
+      if (!path9) {
         return baseUrl;
       }
-      const url = new Url.URL(path12, baseUrl);
+      const url = new Url.URL(path9, baseUrl);
       return Url.format(url);
     };
     internals.deferPipeUntilSocketConnects = function(req, stream) {
@@ -65909,7 +65986,7 @@ var require_lib31 = __commonJS({
       throw error;
     };
     internals.multipart = function(req, options3, source, contentType) {
-      return new Promise((resolve8, reject) => {
+      return new Promise((resolve52, reject) => {
         const clientTimeout = options3.timeout;
         const clientTimeoutId = clientTimeout ? setTimeout(() => reject(Boom5.clientTimeout()), clientTimeout) : null;
         const dispenserOptions = Hoek.applyToDefaults(contentType, {
@@ -65949,7 +66026,7 @@ var require_lib31 = __commonJS({
             reject(err);
             return;
           }
-          resolve8(data);
+          resolve52(data);
         };
         const output = typeof options3.multipart === "object" ? options3.multipart.output : options3.output;
         const onPart = (part) => {
@@ -65968,9 +66045,9 @@ var require_lib31 = __commonJS({
       });
     };
     internals.writeFile = function(req, options3, stream) {
-      const promise = new Promise((resolve8, reject) => {
-        const path12 = File2.uniqueFilename(options3.uploads ?? Os.tmpdir());
-        const file = Fs.createWriteStream(path12, { flags: "wx" });
+      const promise = new Promise((resolve52, reject) => {
+        const path9 = File2.uniqueFilename(options3.uploads ?? Os.tmpdir());
+        const file = Fs.createWriteStream(path9, { flags: "wx" });
         const counter = new internals.Counter(options3);
         const finalize = (err) => {
           req.removeListener("aborted", onAbort);
@@ -65980,12 +66057,12 @@ var require_lib31 = __commonJS({
             unpipeStreamToCounter();
             unpipeCounterToFile();
             file.close();
-            Fs.unlink(path12, () => reject(err));
+            Fs.unlink(path9, () => reject(err));
             return;
           }
           const result = {
             item: {
-              path: path12,
+              path: path9,
               bytes: counter.bytes
             }
           };
@@ -65994,7 +66071,7 @@ var require_lib31 = __commonJS({
             result.item.filename = stream.filename;
             result.item.headers = stream.headers;
           }
-          resolve8(result);
+          resolve52(result);
         };
         file.once("close", finalize);
         file.once("error", finalize);
@@ -66563,8 +66640,8 @@ var require_validation = __commonJS({
       detailedError.output.payload.validation = { source, keys: [] };
       if (validationError.details) {
         for (const details of validationError.details) {
-          const path12 = details.path;
-          detailedError.output.payload.validation.keys.push(Hoek.escapeHtml(path12.join(".")));
+          const path9 = details.path;
+          detailedError.output.payload.validation.keys.push(Hoek.escapeHtml(path9.join(".")));
         }
       }
       if (request.route.settings.validate.errorFields) {
@@ -66662,11 +66739,11 @@ var require_route = __commonJS({
         Config.apply("route", route2, route2.method, route2.path);
         const method = route2.method.toLowerCase();
         Hoek.assert(method !== "head", "Cannot set HEAD route:", route2.path);
-        const path12 = realm.modifiers.route.prefix ? realm.modifiers.route.prefix + (route2.path !== "/" ? route2.path : "") : route2.path;
-        Hoek.assert(path12 === "/" || path12[path12.length - 1] !== "/" || !core.settings.router.stripTrailingSlash, "Path cannot end with a trailing slash when configured to strip:", route2.method, route2.path);
+        const path9 = realm.modifiers.route.prefix ? realm.modifiers.route.prefix + (route2.path !== "/" ? route2.path : "") : route2.path;
+        Hoek.assert(path9 === "/" || path9[path9.length - 1] !== "/" || !core.settings.router.stripTrailingSlash, "Path cannot end with a trailing slash when configured to strip:", route2.method, route2.path);
         const vhost = realm.modifiers.route.vhost ?? route2.vhost;
         this.method = method;
-        this.path = path12;
+        this.path = path9;
         let config2 = route2.options ?? route2.config ?? {};
         if (typeof config2 === "function") {
           config2 = config2.call(realm.settings.bind, server);
@@ -66676,7 +66753,7 @@ var require_route = __commonJS({
         this._assert(method !== "get" || !config2.validate?.payload, "Cannot validate HEAD or GET request payload");
         this._assert(!route2.rules || !config2.rules, "Route rules can only appear once");
         const rules = route2.rules ?? config2.rules;
-        const rulesConfig = internals.rules(rules, { method, path: path12, vhost }, server);
+        const rulesConfig = internals.rules(rules, { method, path: path9, vhost }, server);
         delete config2.rules;
         this._assert(route2.handler || config2.handler, "Missing or undefined handler");
         this._assert(!!route2.handler ^ !!config2.handler, "Handler must only appear once");
@@ -66684,7 +66761,7 @@ var require_route = __commonJS({
         delete config2.handler;
         const handlerDefaults = Handler.defaults(method, handler, core);
         const settings = internals.config([core.settings.routes, handlerDefaults, realm.settings, rulesConfig, config2]);
-        this.settings = Config.apply("routeConfig", settings, method, path12);
+        this.settings = Config.apply("routeConfig", settings, method, path9);
         this._core = core;
         this.realm = realm;
         this.settings.vhost = vhost;
@@ -66713,7 +66790,7 @@ var require_route = __commonJS({
         }
         this._assert(!this.settings.validate.payload || this.settings.payload.parse, "Route payload must be set to 'parse' when payload validation enabled");
         this._assert(!this.settings.validate.state || this.settings.state.parse, "Route state must be set to 'parse' when state validation enabled");
-        this.settings.auth = this._special ? false : this._core.auth._setupRoute(this.settings.auth, path12);
+        this.settings.auth = this._special ? false : this._core.auth._setupRoute(this.settings.auth, path9);
         if (this.method === "get" && typeof this.settings.cache === "object" && (this.settings.cache.expiresIn || this.settings.cache.expiresAt)) {
           this.settings.cache._statuses = new Set(this.settings.cache.statuses);
           this._cache = new Catbox.Policy({ expiresIn: this.settings.cache.expiresIn, expiresAt: this.settings.cache.expiresAt });
@@ -67188,7 +67265,7 @@ var require_toolkit = __commonJS({
       if (!options3.timeout) {
         return method;
       }
-      const timer2 = new Promise((resolve8, reject) => {
+      const timer2 = new Promise((resolve52, reject) => {
         const handler = () => {
           reject(Boom5.internal(`${options3.name} timed out`));
         };
@@ -67756,11 +67833,11 @@ var require_request2 = __commonJS({
         return this._url;
       }
       _normalizePath(url, options3) {
-        let path12 = this._core.router.normalize(url.pathname);
-        if (options3.stripTrailingSlash && path12.length > 1 && path12[path12.length - 1] === "/") {
-          path12 = path12.slice(0, -1);
+        let path9 = this._core.router.normalize(url.pathname);
+        if (options3.stripTrailingSlash && path9.length > 1 && path9[path9.length - 1] === "/") {
+          path9 = path9.slice(0, -1);
         }
-        url.pathname = path12;
+        url.pathname = path9;
       }
       _parseQuery(searchParams) {
         let query = /* @__PURE__ */ Object.create(null);
@@ -68233,7 +68310,7 @@ var require_auth = __commonJS({
           return false;
         }
       }
-      _setupRoute(options3, path12) {
+      _setupRoute(options3, path9) {
         if (!options3) {
           return options3;
         }
@@ -68243,12 +68320,12 @@ var require_auth = __commonJS({
           options3.strategies = [options3.strategy];
           delete options3.strategy;
         }
-        if (path12 && !options3.strategies) {
-          Hoek.assert(this.settings.default, "Route missing authentication strategy and no default defined:", path12);
+        if (path9 && !options3.strategies) {
+          Hoek.assert(this.settings.default, "Route missing authentication strategy and no default defined:", path9);
           options3 = Hoek.applyToDefaults(this.settings.default, options3);
         }
-        path12 = path12 ?? "default strategy";
-        Hoek.assert(options3.strategies?.length, "Missing authentication strategy:", path12);
+        path9 = path9 ?? "default strategy";
+        Hoek.assert(options3.strategies?.length, "Missing authentication strategy:", path9);
         options3.mode = options3.mode ?? "required";
         if (options3.entity !== void 0 || // Backwards compatibility with <= 11.x.x
         options3.scope !== void 0) {
@@ -68267,12 +68344,12 @@ var require_auth = __commonJS({
         let hasAuthenticatePayload = false;
         for (const name of options3.strategies) {
           const strategy = this.#strategies[name];
-          Hoek.assert(strategy, "Unknown authentication strategy", name, "in", path12);
-          Hoek.assert(strategy.methods.payload || options3.payload !== "required", "Payload validation can only be required when all strategies support it in", path12);
+          Hoek.assert(strategy, "Unknown authentication strategy", name, "in", path9);
+          Hoek.assert(strategy.methods.payload || options3.payload !== "required", "Payload validation can only be required when all strategies support it in", path9);
           hasAuthenticatePayload = hasAuthenticatePayload || strategy.methods.payload;
-          Hoek.assert(!strategy.methods.options.payload || options3.payload === void 0 || options3.payload === "required", "Cannot set authentication payload to", options3.payload, "when a strategy requires payload validation in", path12);
+          Hoek.assert(!strategy.methods.options.payload || options3.payload === void 0 || options3.payload === "required", "Cannot set authentication payload to", options3.payload, "when a strategy requires payload validation in", path9);
         }
-        Hoek.assert(!options3.payload || hasAuthenticatePayload, "Payload authentication requires at least one strategy with payload support in", path12);
+        Hoek.assert(!options3.payload || hasAuthenticatePayload, "Payload authentication requires at least one strategy with payload support in", path9);
         return options3;
       }
       lookup(route2) {
@@ -69004,13 +69081,13 @@ var require_methods = __commonJS({
         this._assign(name, func, func);
       }
       _assign(name, method) {
-        const path12 = name.split(".");
+        const path9 = name.split(".");
         let ref = this.methods;
-        for (let i2 = 0; i2 < path12.length; ++i2) {
-          if (!ref[path12[i2]]) {
-            ref[path12[i2]] = i2 + 1 === path12.length ? method : {};
+        for (let i2 = 0; i2 < path9.length; ++i2) {
+          if (!ref[path9[i2]]) {
+            ref[path9[i2]] = i2 + 1 === path9.length ? method : {};
           }
-          ref = ref[path12[i2]];
+          ref = ref[path9[i2]];
         }
       }
     };
@@ -69828,9 +69905,9 @@ var require_core = __commonJS({
         }
       }
       _listen() {
-        return new Promise((resolve8, reject) => {
+        return new Promise((resolve52, reject) => {
           if (!this.settings.autoListen) {
-            resolve8();
+            resolve52();
             return;
           }
           const onError = (err) => {
@@ -69840,7 +69917,7 @@ var require_core = __commonJS({
           this.listener.once("error", onError);
           const finalize = () => {
             this.listener.removeListener("error", onError);
-            resolve8();
+            resolve52();
             return;
           };
           if (this.type !== "tcp") {
@@ -69931,14 +70008,14 @@ var require_core = __commonJS({
             }
           }
         }
-        return new Promise((resolve8) => {
+        return new Promise((resolve52) => {
           this.listener.close(() => {
             if (this.settings.operations.cleanStop) {
               this.listener.removeListener(this.settings.tls ? "secureConnection" : "connection", this.onConnection);
               clearTimeout(timeoutId);
             }
             this._initializeListener();
-            resolve8();
+            resolve52();
           });
           this.events.emit("closing");
         });
@@ -70430,12 +70507,12 @@ var require_server = __commonJS({
         }
         return record.route.public;
       }
-      match(method, path12, host) {
+      match(method, path9, host) {
         Hoek.assert(method && typeof method === "string", "Invalid method:", method);
-        Hoek.assert(path12 && typeof path12 === "string" && path12[0] === "/", "Invalid path:", path12);
+        Hoek.assert(path9 && typeof path9 === "string" && path9[0] === "/", "Invalid path:", path9);
         Hoek.assert(!host || typeof host === "string", "Invalid host:", host);
-        const match = this._core.router.route(method.toLowerCase(), path12, host);
-        Hoek.assert(match !== this._core.router.specials.badRequest, "Invalid path:", path12);
+        const match = this._core.router.route(method.toLowerCase(), path9, host);
+        Hoek.assert(match !== this._core.router.specials.badRequest, "Invalid path:", path9);
         if (match === this._core.router.specials.notFound) {
           return null;
         }
@@ -71598,8 +71675,8 @@ var require_etag = __commonJS({
       if (!etags) {
         return null;
       }
-      const path12 = response.source.path;
-      const cachekey = [path12, stat.ino, stat.size, stat.mtime.getTime()].join("-");
+      const path9 = response.source.path;
+      const cachekey = [path9, stat.ino, stat.size, stat.mtime.getTime()].join("-");
       const cachedEtag = etags.get(cachekey);
       if (cachedEtag) {
         return cachedEtag;
@@ -71672,8 +71749,8 @@ var require_fs = __commonJS({
       notFound: /* @__PURE__ */ new Set(["ENOENT", "ENOTDIR"])
     };
     exports2.File = class {
-      constructor(path12) {
-        this.path = path12;
+      constructor(path9) {
+        this.path = path9;
         this.fd = null;
       }
       async open(mode) {
@@ -71770,28 +71847,28 @@ var require_file = __commonJS({
       settings.confine = settings.confine === true ? "." : settings.confine;
       Hoek.assert(typeof settings.path !== "string" || settings.path[settings.path.length - 1] !== "/", "File path cannot end with a '/':", route2.path);
       const handler = (request) => {
-        const path12 = typeof settings.path === "function" ? settings.path(request) : settings.path;
-        return exports2.response(path12, settings, request);
+        const path9 = typeof settings.path === "function" ? settings.path(request) : settings.path;
+        return exports2.response(path9, settings, request);
       };
       return handler;
     };
-    exports2.load = function(path12, request, options3) {
-      const response = exports2.response(path12, options3, request, true);
+    exports2.load = function(path9, request, options3) {
+      const response = exports2.response(path9, options3, request, true);
       return internals.prepare(response);
     };
-    exports2.response = function(path12, options3, request, _preloaded) {
+    exports2.response = function(path9, options3, request, _preloaded) {
       Hoek.assert(!options3.mode || ["attachment", "inline"].indexOf(options3.mode) !== -1, "options.mode must be either false, attachment, or inline");
       if (options3.confine) {
         const confineDir = Path.resolve(request.route.settings.files.relativeTo, options3.confine);
-        path12 = Path.isAbsolute(path12) ? Path.normalize(path12) : Path.join(confineDir, path12);
-        if (path12.lastIndexOf(confineDir, 0) !== 0) {
-          path12 = null;
+        path9 = Path.isAbsolute(path9) ? Path.normalize(path9) : Path.join(confineDir, path9);
+        if (path9.lastIndexOf(confineDir, 0) !== 0) {
+          path9 = null;
         }
       } else {
-        path12 = Path.isAbsolute(path12) ? Path.normalize(path12) : Path.join(request.route.settings.files.relativeTo, path12);
+        path9 = Path.isAbsolute(path9) ? Path.normalize(path9) : Path.join(request.route.settings.files.relativeTo, path9);
       }
       const source = {
-        path: path12,
+        path: path9,
         settings: options3,
         stat: null,
         file: null
@@ -71801,11 +71878,11 @@ var require_file = __commonJS({
     };
     internals.prepare = async function(response) {
       const { request, source } = response;
-      const { settings, path: path12 } = source;
-      if (path12 === null) {
+      const { settings, path: path9 } = source;
+      if (path9 === null) {
         throw Boom5.forbidden(null, { code: "EACCES" });
       }
-      const file = source.file = new Fs.File(path12);
+      const file = source.file = new Fs.File(path9);
       try {
         const stat = await file.openStat("r");
         const start = settings.start ?? 0;
@@ -71815,11 +71892,11 @@ var require_file = __commonJS({
           response.bytes(stat.size - start);
         }
         if (!response.headers["content-type"]) {
-          response.type(request.server.mime.path(path12).type ?? "application/octet-stream");
+          response.type(request.server.mime.path(path9).type ?? "application/octet-stream");
         }
         response.header("last-modified", stat.mtime.toUTCString());
         if (settings.mode) {
-          const fileName = settings.filename ?? Path.basename(path12);
+          const fileName = settings.filename ?? Path.basename(path9);
           response.header("content-disposition", settings.mode + "; filename=" + encodeURIComponent(fileName));
         }
         await Etag.apply(response, stat);
@@ -71970,10 +72047,10 @@ var require_directory = __commonJS({
         };
         const each = async (baseDir) => {
           fileOptions.confine = baseDir;
-          let path12 = selection;
+          let path9 = selection;
           let error;
           try {
-            return await File2.load(path12, request, fileOptions);
+            return await File2.load(path9, request, fileOptions);
           } catch (err) {
             Bounce.ignore(err, "boom");
             error = err;
@@ -71983,9 +72060,9 @@ var require_directory = __commonJS({
               throw error;
             }
             if (hasTrailingSlash) {
-              path12 = path12.slice(0, -1);
+              path9 = path9.slice(0, -1);
             }
-            return await File2.load(path12 + "." + settings.defaultExtension, request, fileOptions);
+            return await File2.load(path9 + "." + settings.defaultExtension, request, fileOptions);
           }
           if (internals.isDirectory(error)) {
             if (settings.redirectToSlash !== false && // Defaults to true
@@ -71993,7 +72070,7 @@ var require_directory = __commonJS({
               return reply.redirect(resource + "/");
             }
             for (const indexName of indexNames) {
-              const indexFile = Path.join(path12, indexName);
+              const indexFile = Path.join(path9, indexName);
               try {
                 return await File2.load(indexFile, request, fileOptions);
               } catch (err) {
@@ -72004,7 +72081,7 @@ var require_directory = __commonJS({
               }
             }
             if (settings.listing) {
-              return internals.generateListing(Path.join(basePath, baseDir, path12), resource, selection, hasTrailingSlash, settings, request);
+              return internals.generateListing(Path.join(basePath, baseDir, path9), resource, selection, hasTrailingSlash, settings, request);
             }
           }
           throw error;
@@ -72023,10 +72100,10 @@ var require_directory = __commonJS({
       };
       return handler;
     };
-    internals.generateListing = async function(path12, resource, selection, hasTrailingSlash, settings, request) {
+    internals.generateListing = async function(path9, resource, selection, hasTrailingSlash, settings, request) {
       let files;
       try {
-        files = await Fs.readdir(path12);
+        files = await Fs.readdir(path9);
       } catch (err) {
         Bounce.rethrow(err, "system");
         throw Boom5.internal("Error accessing directory", err);
@@ -72046,11 +72123,11 @@ var require_directory = __commonJS({
       html = html + "</ul></body></html>";
       return request.generateResponse(html);
     };
-    internals.isFileHidden = function(path12) {
-      return /(^|[\\\/])\.([^.\\\/]|\.[^\\\/])/.test(path12);
+    internals.isFileHidden = function(path9) {
+      return /(^|[\\\/])\.([^.\\\/]|\.[^\\\/])/.test(path9);
     };
-    internals.pathEncode = function(path12) {
-      return encodeURIComponent(path12).replace(/%2F/g, "/").replace(/%5C/g, "\\");
+    internals.pathEncode = function(path9) {
+      return encodeURIComponent(path9).replace(/%2F/g, "/").replace(/%5C/g, "\\");
     };
     internals.isNotFound = function(boom) {
       return boom.output.statusCode === 404;
@@ -72123,12 +72200,12 @@ var require_lib35 = __commonJS({
         etagsCacheMaxSize: Validate.number().integer().min(0).default(1e3)
       }).required()
     };
-    internals.fileMethod = function(path12, responseOptions = {}) {
+    internals.fileMethod = function(path9, responseOptions = {}) {
       if (typeof responseOptions.confine === "undefined" || responseOptions.confine === true) {
         responseOptions.confine = ".";
       }
       Hoek.assert(responseOptions.end === void 0 || +responseOptions.start <= +responseOptions.end, "options.start must be less than or equal to options.end");
-      return this.response(File2.response(path12, responseOptions, this.request));
+      return this.response(File2.response(path9, responseOptions, this.request));
     };
     exports2.plugin = {
       pkg: require_package4(),
@@ -72206,61 +72283,20 @@ var init_dashboard_server = __esm({
     Hapi = __toESM(require_lib34());
     import_inert = __toESM(require_lib35());
     getDashboardPath = () => {
-      return path9.resolve(import.meta.dirname || process6.cwd(), "dist-dashboard");
+      return path6.resolve(import.meta.dirname || process6.cwd(), "dist-dashboard");
     };
     dashboard_server_default = startDashboard;
   }
 });
-var _store2;
-var module_default;
-var init_module = __esm({
-  "node_modules/.deno/@sbp+okturtles.data@0.1.5/node_modules/@sbp/okturtles.data/dist/module.mjs"() {
-    "use strict";
-    init_esm();
-    _store2 = /* @__PURE__ */ new Map();
-    module_default = esm_default("sbp/selectors/register", {
-      "okTurtles.data/get": function(key) {
-        return _store2.get(key);
-      },
-      "okTurtles.data/set": function(key, data) {
-        _store2.set(key, data);
-        return data;
-      },
-      "okTurtles.data/delete": function(key) {
-        return _store2.delete(key);
-      },
-      "okTurtles.data/add": function(key, data) {
-        const array2 = _store2.get(key);
-        if (array2) {
-          array2.push(data);
-        } else {
-          _store2.set(key, [data]);
-        }
-      },
-      "okTurtles.data/remove": function(key, data) {
-        const array2 = _store2.get(key);
-        if (array2) {
-          const aLen = array2.length;
-          const filtered = array2.filter((v2) => v2 !== data);
-          _store2.set(key, filtered);
-          return aLen - filtered.length;
-        }
-      },
-      "okTurtles.data/apply": function(key, fn) {
-        return fn(_store2.get(key));
-      }
-    });
-  }
-});
 var isEventQueueSbpEvent2;
-var esm_default5;
-var init_esm9 = __esm({
+var esm_default6;
+var init_esm10 = __esm({
   "node_modules/.deno/@sbp+okturtles.eventqueue@1.2.0/node_modules/@sbp/okturtles.eventqueue/dist/esm/index.js"() {
     init_esm();
     isEventQueueSbpEvent2 = (e2) => {
       return Object.prototype.hasOwnProperty.call(e2, "sbpInvocation");
     };
-    esm_default5 = esm_default("sbp/selectors/register", {
+    esm_default6 = esm_default("sbp/selectors/register", {
       "okTurtles.eventQueue/_init": function() {
         this.eventQueues = /* @__PURE__ */ Object.create(null);
       },
@@ -72293,8 +72329,8 @@ var init_esm9 = __esm({
         }
         const events = this.eventQueues[name];
         let accept;
-        const promise = new Promise((resolve8) => {
-          accept = resolve8;
+        const promise = new Promise((resolve52) => {
+          accept = resolve52;
         });
         const thisEvent = typeof invocation === "function" ? {
           fn: invocation,
@@ -72325,14 +72361,55 @@ var init_esm9 = __esm({
     });
   }
 });
+var _store3;
+var module_default;
+var init_module = __esm({
+  "node_modules/.deno/@sbp+okturtles.data@0.1.5/node_modules/@sbp/okturtles.data/dist/module.mjs"() {
+    "use strict";
+    init_esm();
+    _store3 = /* @__PURE__ */ new Map();
+    module_default = esm_default("sbp/selectors/register", {
+      "okTurtles.data/get": function(key) {
+        return _store3.get(key);
+      },
+      "okTurtles.data/set": function(key, data) {
+        _store3.set(key, data);
+        return data;
+      },
+      "okTurtles.data/delete": function(key) {
+        return _store3.delete(key);
+      },
+      "okTurtles.data/add": function(key, data) {
+        const array2 = _store3.get(key);
+        if (array2) {
+          array2.push(data);
+        } else {
+          _store3.set(key, [data]);
+        }
+      },
+      "okTurtles.data/remove": function(key, data) {
+        const array2 = _store3.get(key);
+        if (array2) {
+          const aLen = array2.length;
+          const filtered = array2.filter((v2) => v2 !== data);
+          _store3.set(key, filtered);
+          return aLen - filtered.length;
+        }
+      },
+      "okTurtles.data/apply": function(key, fn) {
+        return fn(_store3.get(key));
+      }
+    });
+  }
+});
 var listenKey2;
-var esm_default6;
-var init_esm10 = __esm({
+var esm_default7;
+var init_esm11 = __esm({
   "node_modules/.deno/@sbp+okturtles.events@1.0.0/node_modules/@sbp/okturtles.events/dist/esm/index.js"() {
     init_esm();
     init_module();
     listenKey2 = (evt) => `events/${evt}/listeners`;
-    esm_default6 = esm_default("sbp/selectors/register", {
+    esm_default7 = esm_default("sbp/selectors/register", {
       "okTurtles.events/_init": function() {
         this.errorHandler = (event, e2) => {
           console.error(`[okTurtles.events] Error at handler for ${event}`, e2);
@@ -73238,15 +73315,15 @@ var require_route2 = __commonJS({
       };
     }
     function wrapConversion(toModel, graph) {
-      const path12 = [graph[toModel].parent, toModel];
+      const path9 = [graph[toModel].parent, toModel];
       let fn = conversions[graph[toModel].parent][toModel];
       let cur = graph[toModel].parent;
       while (graph[cur].parent) {
-        path12.unshift(graph[cur].parent);
+        path9.unshift(graph[cur].parent);
         fn = link(conversions[graph[cur].parent][cur], fn);
         cur = graph[cur].parent;
       }
-      fn.conversion = path12;
+      fn.conversion = path9;
       return fn;
     }
     module2.exports = function(fromModel) {
@@ -74163,8 +74240,8 @@ var require_req = __commonJS({
       if (req.originalUrl) {
         _req.url = req.originalUrl;
       } else {
-        const path12 = req.path;
-        _req.url = typeof path12 === "string" ? path12 : req.url ? req.url.path || req.url : void 0;
+        const path9 = req.path;
+        _req.url = typeof path9 === "string" ? path9 : req.url ? req.url.path || req.url : void 0;
       }
       if (req.query) {
         _req.query = req.query;
@@ -74341,17 +74418,17 @@ var require_parse = __commonJS({
       const wildcards = [];
       var wcLen = 0;
       const secret = paths.reduce(function(o2, strPath, ix) {
-        var path12 = strPath.match(rx).map((p) => p.replace(/'|"|`/g, ""));
+        var path9 = strPath.match(rx).map((p) => p.replace(/'|"|`/g, ""));
         const leadingBracket = strPath[0] === "[";
-        path12 = path12.map((p) => {
+        path9 = path9.map((p) => {
           if (p[0] === "[") return p.substr(1, p.length - 2);
           else return p;
         });
-        const star = path12.indexOf("*");
+        const star = path9.indexOf("*");
         if (star > -1) {
-          const before = path12.slice(0, star);
+          const before = path9.slice(0, star);
           const beforeStr = before.join(".");
-          const after = path12.slice(star + 1, path12.length);
+          const after = path9.slice(star + 1, path9.length);
           const nested = after.length > 0;
           wcLen++;
           wildcards.push({
@@ -74362,7 +74439,7 @@ var require_parse = __commonJS({
           });
         } else {
           o2[strPath] = {
-            path: path12,
+            path: path9,
             val: void 0,
             precensored: false,
             circle: "",
@@ -74406,20 +74483,20 @@ var require_redactor = __commonJS({
       return redact;
     }
     function redactTmpl(secret, isCensorFct, censorFctTakesPath) {
-      return Object.keys(secret).map((path12) => {
-        const { escPath, leadingBracket, path: arrPath } = secret[path12];
+      return Object.keys(secret).map((path9) => {
+        const { escPath, leadingBracket, path: arrPath } = secret[path9];
         const skip = leadingBracket ? 1 : 0;
         const delim = leadingBracket ? "" : ".";
         const hops = [];
         var match;
-        while ((match = rx.exec(path12)) !== null) {
+        while ((match = rx.exec(path9)) !== null) {
           const [, ix] = match;
           const { index, input } = match;
           if (index > skip) hops.push(input.substring(0, index - (ix ? 0 : 1)));
         }
         var existence = hops.map((p) => `o${delim}${p}`).join(" && ");
-        if (existence.length === 0) existence += `o${delim}${path12} != null`;
-        else existence += ` && o${delim}${path12} != null`;
+        if (existence.length === 0) existence += `o${delim}${path9} != null`;
+        else existence += ` && o${delim}${path9} != null`;
         const circularDetection = `
       switch (true) {
         ${hops.reverse().map((p) => `
@@ -74432,12 +74509,12 @@ var require_redactor = __commonJS({
         const censorArgs = censorFctTakesPath ? `val, ${JSON.stringify(arrPath)}` : `val`;
         return `
       if (${existence}) {
-        const val = o${delim}${path12}
+        const val = o${delim}${path9}
         if (val === censor) {
           secret[${escPath}].precensored = true
         } else {
           secret[${escPath}].val = val
-          o${delim}${path12} = ${isCensorFct ? `censor(${censorArgs})` : "censor"}
+          o${delim}${path9} = ${isCensorFct ? `censor(${censorArgs})` : "censor"}
           ${circularDetection}
         }
       }
@@ -74487,13 +74564,13 @@ var require_modifiers = __commonJS({
         target[k] = values[i2];
       }
     }
-    function groupRedact(o2, path12, censor, isCensorFct, censorFctTakesPath) {
-      const target = get22(o2, path12);
+    function groupRedact(o2, path9, censor, isCensorFct, censorFctTakesPath) {
+      const target = get22(o2, path9);
       if (target == null || typeof target === "string") return { keys: null, values: null, target, flat: true };
       const keys = Object.keys(target);
       const keysLength = keys.length;
-      const pathLength = path12.length;
-      const pathWithKey = censorFctTakesPath ? [...path12] : void 0;
+      const pathLength = path9.length;
+      const pathWithKey = censorFctTakesPath ? [...path9] : void 0;
       const values = new Array(keysLength);
       for (var i2 = 0; i2 < keysLength; i2++) {
         const key = keys[i2];
@@ -74511,29 +74588,29 @@ var require_modifiers = __commonJS({
     }
     function nestedRestore(instructions) {
       for (let i2 = 0; i2 < instructions.length; i2++) {
-        const { target, path: path12, value } = instructions[i2];
+        const { target, path: path9, value } = instructions[i2];
         let current = target;
-        for (let i3 = path12.length - 1; i3 > 0; i3--) {
-          current = current[path12[i3]];
+        for (let i3 = path9.length - 1; i3 > 0; i3--) {
+          current = current[path9[i3]];
         }
-        current[path12[0]] = value;
+        current[path9[0]] = value;
       }
     }
-    function nestedRedact(store, o2, path12, ns, censor, isCensorFct, censorFctTakesPath) {
-      const target = get22(o2, path12);
+    function nestedRedact(store, o2, path9, ns, censor, isCensorFct, censorFctTakesPath) {
+      const target = get22(o2, path9);
       if (target == null) return;
       const keys = Object.keys(target);
       const keysLength = keys.length;
       for (var i2 = 0; i2 < keysLength; i2++) {
         const key = keys[i2];
-        specialSet(store, target, key, path12, ns, censor, isCensorFct, censorFctTakesPath);
+        specialSet(store, target, key, path9, ns, censor, isCensorFct, censorFctTakesPath);
       }
       return store;
     }
     function has2(obj, prop) {
       return obj !== void 0 && obj !== null ? "hasOwn" in Object ? Object.hasOwn(obj, prop) : Object.prototype.hasOwnProperty.call(obj, prop) : false;
     }
-    function specialSet(store, o2, k, path12, afterPath, censor, isCensorFct, censorFctTakesPath) {
+    function specialSet(store, o2, k, path9, afterPath, censor, isCensorFct, censorFctTakesPath) {
       const afterPathLen = afterPath.length;
       const lastPathIndex = afterPathLen - 1;
       const originalKey = k;
@@ -74576,7 +74653,7 @@ var require_modifiers = __commonJS({
             if (consecutive) {
               redactPathCurrent = node(redactPathCurrent, wck, depth);
               level = i2;
-              ov = iterateNthLevel(wcov, level - 1, k, path12, afterPath, censor, isCensorFct, censorFctTakesPath, originalKey, n, nv, ov, kIsWc, wck, i2, lastPathIndex, redactPathCurrent, store, o2[originalKey], depth + 1);
+              ov = iterateNthLevel(wcov, level - 1, k, path9, afterPath, censor, isCensorFct, censorFctTakesPath, originalKey, n, nv, ov, kIsWc, wck, i2, lastPathIndex, redactPathCurrent, store, o2[originalKey], depth + 1);
             } else {
               if (kIsWc || typeof wcov === "object" && wcov !== null && k in wcov) {
                 if (kIsWc) {
@@ -74584,7 +74661,7 @@ var require_modifiers = __commonJS({
                 } else {
                   ov = wcov[k];
                 }
-                nv = i2 !== lastPathIndex ? ov : isCensorFct ? censorFctTakesPath ? censor(ov, [...path12, originalKey, ...afterPath]) : censor(ov) : censor;
+                nv = i2 !== lastPathIndex ? ov : isCensorFct ? censorFctTakesPath ? censor(ov, [...path9, originalKey, ...afterPath]) : censor(ov) : censor;
                 if (kIsWc) {
                   const rv = restoreInstr(node(redactPathCurrent, wck, depth), ov, o2[originalKey]);
                   store.push(rv);
@@ -74607,7 +74684,7 @@ var require_modifiers = __commonJS({
         } else {
           ov = n[k];
           redactPathCurrent = node(redactPathCurrent, k, depth);
-          nv = i2 !== lastPathIndex ? ov : isCensorFct ? censorFctTakesPath ? censor(ov, [...path12, originalKey, ...afterPath]) : censor(ov) : censor;
+          nv = i2 !== lastPathIndex ? ov : isCensorFct ? censorFctTakesPath ? censor(ov, [...path9, originalKey, ...afterPath]) : censor(ov) : censor;
           if (has2(n, k) && nv === ov || nv === void 0 && censor !== void 0) {
           } else {
             const rv = restoreInstr(redactPathCurrent, ov, o2[originalKey]);
@@ -74630,7 +74707,7 @@ var require_modifiers = __commonJS({
       }
       return n;
     }
-    function iterateNthLevel(wcov, level, k, path12, afterPath, censor, isCensorFct, censorFctTakesPath, originalKey, n, nv, ov, kIsWc, wck, i2, lastPathIndex, redactPathCurrent, store, parent, depth) {
+    function iterateNthLevel(wcov, level, k, path9, afterPath, censor, isCensorFct, censorFctTakesPath, originalKey, n, nv, ov, kIsWc, wck, i2, lastPathIndex, redactPathCurrent, store, parent, depth) {
       if (level === 0) {
         if (kIsWc || typeof wcov === "object" && wcov !== null && k in wcov) {
           if (kIsWc) {
@@ -74638,7 +74715,7 @@ var require_modifiers = __commonJS({
           } else {
             ov = wcov[k];
           }
-          nv = i2 !== lastPathIndex ? ov : isCensorFct ? censorFctTakesPath ? censor(ov, [...path12, originalKey, ...afterPath]) : censor(ov) : censor;
+          nv = i2 !== lastPathIndex ? ov : isCensorFct ? censorFctTakesPath ? censor(ov, [...path9, originalKey, ...afterPath]) : censor(ov) : censor;
           if (kIsWc) {
             const rv = restoreInstr(redactPathCurrent, ov, parent);
             store.push(rv);
@@ -74657,7 +74734,7 @@ var require_modifiers = __commonJS({
       for (const key in wcov) {
         if (typeof wcov[key] === "object") {
           redactPathCurrent = node(redactPathCurrent, key, depth);
-          iterateNthLevel(wcov[key], level - 1, k, path12, afterPath, censor, isCensorFct, censorFctTakesPath, originalKey, n, nv, ov, kIsWc, wck, i2, lastPathIndex, redactPathCurrent, store, parent, depth + 1);
+          iterateNthLevel(wcov[key], level - 1, k, path9, afterPath, censor, isCensorFct, censorFctTakesPath, originalKey, n, nv, ov, kIsWc, wck, i2, lastPathIndex, redactPathCurrent, store, parent, depth + 1);
         }
       }
     }
@@ -74679,12 +74756,12 @@ var require_modifiers = __commonJS({
     }
     function restoreInstr(node2, value, target) {
       let current = node2;
-      const path12 = [];
+      const path9 = [];
       do {
-        path12.push(current.key);
+        path9.push(current.key);
         current = current.parent;
       } while (current.parent != null);
-      return { path: path12, value, target };
+      return { path: path9, value, target };
     }
   }
 });
@@ -74712,10 +74789,10 @@ var require_restorer = __commonJS({
       };
     }
     function resetTmpl(secret, paths) {
-      return paths.map((path12) => {
-        const { circle, escPath, leadingBracket } = secret[path12];
+      return paths.map((path9) => {
+        const { circle, escPath, leadingBracket } = secret[path9];
         const delim = leadingBracket ? "" : ".";
-        const reset = circle ? `o.${circle} = secret[${escPath}].val` : `o${delim}${path12} = secret[${escPath}].val`;
+        const reset = circle ? `o.${circle} = secret[${escPath}].val` : `o${delim}${path9} = secret[${escPath}].val`;
         const clear = `secret[${escPath}].val = undefined`;
         return `
       if (secret[${escPath}].val !== undefined) {
@@ -74939,8 +75016,8 @@ var require_redaction = __commonJS({
         if (shape[k] === null) {
           o2[k] = (value) => topCensor(value, [k]);
         } else {
-          const wrappedCensor = typeof censor === "function" ? (value, path12) => {
-            return censor(value, [k, ...path12]);
+          const wrappedCensor = typeof censor === "function" ? (value, path9) => {
+            return censor(value, [k, ...path9]);
           } : censor;
           o2[k] = fastRedact({
             paths: shape[k],
@@ -75135,7 +75212,7 @@ var require_sonic_boom = __commonJS({
     var fs2 = __require2("fs");
     var EventEmitter = __require2("events");
     var inherits = __require2("util").inherits;
-    var path12 = __require2("path");
+    var path9 = __require2("path");
     var sleep = require_atomic_sleep();
     var BUSY_WRITE_TIMEOUT = 100;
     var kEmptyBuffer = Buffer.allocUnsafe(0);
@@ -75186,7 +75263,7 @@ var require_sonic_boom = __commonJS({
       const mode = sonic.mode;
       if (sonic.sync) {
         try {
-          if (sonic.mkdir) fs2.mkdirSync(path12.dirname(file), { recursive: true });
+          if (sonic.mkdir) fs2.mkdirSync(path9.dirname(file), { recursive: true });
           const fd = fs2.openSync(file, flags7, mode);
           fileOpened(null, fd);
         } catch (err) {
@@ -75194,7 +75271,7 @@ var require_sonic_boom = __commonJS({
           throw err;
         }
       } else if (sonic.mkdir) {
-        fs2.mkdir(path12.dirname(file), { recursive: true }, (err) => {
+        fs2.mkdir(path9.dirname(file), { recursive: true }, (err) => {
           if (err) return fileOpened(err);
           fs2.open(file, flags7, mode, fileOpened);
         });
@@ -75903,7 +75980,7 @@ var require_thread_stream = __commonJS({
     var { version: version4 } = require_package5();
     var { EventEmitter } = __require2("events");
     var { Worker: Worker2 } = __require2("worker_threads");
-    var { join: join9 } = __require2("path");
+    var { join: join7 } = __require2("path");
     var { pathToFileURL } = __require2("url");
     var { wait } = require_wait2();
     var {
@@ -75939,7 +76016,7 @@ var require_thread_stream = __commonJS({
     function createWorker2(stream, opts) {
       const { filename, workerData } = opts;
       const bundlerOverrides = "__bundlerPathsOverrides" in globalThis ? globalThis.__bundlerPathsOverrides : {};
-      const toExecute = bundlerOverrides["thread-stream-worker"] || join9(__dirname, "lib", "worker.js");
+      const toExecute = bundlerOverrides["thread-stream-worker"] || join7(__dirname, "lib", "worker.js");
       const worker = new Worker2(toExecute, {
         ...opts.workerOpts,
         trackUnmanagedFds: false,
@@ -76323,7 +76400,7 @@ var require_transport = __commonJS({
     "use strict";
     var { createRequire } = __require2("module");
     var getCallers = require_caller();
-    var { join: join9, isAbsolute: isAbsolute6, sep } = __require2("path");
+    var { join: join7, isAbsolute: isAbsolute6, sep } = __require2("path");
     var sleep = require_atomic_sleep();
     var onExit = require_on_exit_leak_free();
     var ThreadStream = require_thread_stream();
@@ -76382,7 +76459,7 @@ var require_transport = __commonJS({
         throw new Error("only one of target or targets can be specified");
       }
       if (targets) {
-        target = bundlerOverrides["pino-worker"] || join9(__dirname, "worker.js");
+        target = bundlerOverrides["pino-worker"] || join7(__dirname, "worker.js");
         options3.targets = targets.map((dest) => {
           return {
             ...dest,
@@ -76390,7 +76467,7 @@ var require_transport = __commonJS({
           };
         });
       } else if (pipeline) {
-        target = bundlerOverrides["pino-pipeline-worker"] || join9(__dirname, "worker-pipeline.js");
+        target = bundlerOverrides["pino-pipeline-worker"] || join7(__dirname, "worker-pipeline.js");
         options3.targets = pipeline.map((dest) => {
           return {
             ...dest,
@@ -76411,7 +76488,7 @@ var require_transport = __commonJS({
           return origin;
         }
         if (origin === "pino/file") {
-          return join9(__dirname, "..", "file.js");
+          return join7(__dirname, "..", "file.js");
         }
         let fixTarget2;
         for (const filePath of callers) {
@@ -77349,7 +77426,7 @@ var require_safe_stable_stringify = __commonJS({
               return circularValue;
             }
             let res = "";
-            let join9 = ",";
+            let join7 = ",";
             const originalIndentation = indentation;
             if (Array.isArray(value)) {
               if (value.length === 0) {
@@ -77363,7 +77440,7 @@ var require_safe_stable_stringify = __commonJS({
                 indentation += spacer;
                 res += `
 ${indentation}`;
-                join9 = `,
+                join7 = `,
 ${indentation}`;
               }
               const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
@@ -77371,13 +77448,13 @@ ${indentation}`;
               for (; i2 < maximumValuesToStringify - 1; i2++) {
                 const tmp2 = stringifyFnReplacer(String(i2), value, stack, replacer, spacer, indentation);
                 res += tmp2 !== void 0 ? tmp2 : "null";
-                res += join9;
+                res += join7;
               }
               const tmp = stringifyFnReplacer(String(i2), value, stack, replacer, spacer, indentation);
               res += tmp !== void 0 ? tmp : "null";
               if (value.length - 1 > maximumBreadth) {
                 const removedKeys = value.length - maximumBreadth - 1;
-                res += `${join9}"... ${getItemCount(removedKeys)} not stringified"`;
+                res += `${join7}"... ${getItemCount(removedKeys)} not stringified"`;
               }
               if (spacer !== "") {
                 res += `
@@ -77398,7 +77475,7 @@ ${originalIndentation}`;
             let separator = "";
             if (spacer !== "") {
               indentation += spacer;
-              join9 = `,
+              join7 = `,
 ${indentation}`;
               whitespace = " ";
             }
@@ -77412,13 +77489,13 @@ ${indentation}`;
               const tmp = stringifyFnReplacer(key2, value, stack, replacer, spacer, indentation);
               if (tmp !== void 0) {
                 res += `${separator}${strEscape(key2)}:${whitespace}${tmp}`;
-                separator = join9;
+                separator = join7;
               }
             }
             if (keyLength > maximumBreadth) {
               const removedKeys = keyLength - maximumBreadth;
               res += `${separator}"...":${whitespace}"${getItemCount(removedKeys)} not stringified"`;
-              separator = join9;
+              separator = join7;
             }
             if (spacer !== "" && separator.length > 1) {
               res = `
@@ -77459,7 +77536,7 @@ ${originalIndentation}`;
             }
             const originalIndentation = indentation;
             let res = "";
-            let join9 = ",";
+            let join7 = ",";
             if (Array.isArray(value)) {
               if (value.length === 0) {
                 return "[]";
@@ -77472,7 +77549,7 @@ ${originalIndentation}`;
                 indentation += spacer;
                 res += `
 ${indentation}`;
-                join9 = `,
+                join7 = `,
 ${indentation}`;
               }
               const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
@@ -77480,13 +77557,13 @@ ${indentation}`;
               for (; i2 < maximumValuesToStringify - 1; i2++) {
                 const tmp2 = stringifyArrayReplacer(String(i2), value[i2], stack, replacer, spacer, indentation);
                 res += tmp2 !== void 0 ? tmp2 : "null";
-                res += join9;
+                res += join7;
               }
               const tmp = stringifyArrayReplacer(String(i2), value[i2], stack, replacer, spacer, indentation);
               res += tmp !== void 0 ? tmp : "null";
               if (value.length - 1 > maximumBreadth) {
                 const removedKeys = value.length - maximumBreadth - 1;
-                res += `${join9}"... ${getItemCount(removedKeys)} not stringified"`;
+                res += `${join7}"... ${getItemCount(removedKeys)} not stringified"`;
               }
               if (spacer !== "") {
                 res += `
@@ -77499,7 +77576,7 @@ ${originalIndentation}`;
             let whitespace = "";
             if (spacer !== "") {
               indentation += spacer;
-              join9 = `,
+              join7 = `,
 ${indentation}`;
               whitespace = " ";
             }
@@ -77508,7 +77585,7 @@ ${indentation}`;
               const tmp = stringifyArrayReplacer(key2, value[key2], stack, replacer, spacer, indentation);
               if (tmp !== void 0) {
                 res += `${separator}${strEscape(key2)}:${whitespace}${tmp}`;
-                separator = join9;
+                separator = join7;
               }
             }
             if (spacer !== "" && separator.length > 1) {
@@ -77566,20 +77643,20 @@ ${originalIndentation}`;
               indentation += spacer;
               let res2 = `
 ${indentation}`;
-              const join10 = `,
+              const join8 = `,
 ${indentation}`;
               const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
               let i2 = 0;
               for (; i2 < maximumValuesToStringify - 1; i2++) {
                 const tmp2 = stringifyIndent(String(i2), value[i2], stack, spacer, indentation);
                 res2 += tmp2 !== void 0 ? tmp2 : "null";
-                res2 += join10;
+                res2 += join8;
               }
               const tmp = stringifyIndent(String(i2), value[i2], stack, spacer, indentation);
               res2 += tmp !== void 0 ? tmp : "null";
               if (value.length - 1 > maximumBreadth) {
                 const removedKeys = value.length - maximumBreadth - 1;
-                res2 += `${join10}"... ${getItemCount(removedKeys)} not stringified"`;
+                res2 += `${join8}"... ${getItemCount(removedKeys)} not stringified"`;
               }
               res2 += `
 ${originalIndentation}`;
@@ -77595,16 +77672,16 @@ ${originalIndentation}`;
               return '"[Object]"';
             }
             indentation += spacer;
-            const join9 = `,
+            const join7 = `,
 ${indentation}`;
             let res = "";
             let separator = "";
             let maximumPropertiesToStringify = Math.min(keyLength, maximumBreadth);
             if (isTypedArrayWithEntries(value)) {
-              res += stringifyTypedArray(value, join9, maximumBreadth);
+              res += stringifyTypedArray(value, join7, maximumBreadth);
               keys = keys.slice(value.length);
               maximumPropertiesToStringify -= value.length;
-              separator = join9;
+              separator = join7;
             }
             if (deterministic) {
               keys = sort(keys, comparator);
@@ -77615,13 +77692,13 @@ ${indentation}`;
               const tmp = stringifyIndent(key2, value[key2], stack, spacer, indentation);
               if (tmp !== void 0) {
                 res += `${separator}${strEscape(key2)}: ${tmp}`;
-                separator = join9;
+                separator = join7;
               }
             }
             if (keyLength > maximumBreadth) {
               const removedKeys = keyLength - maximumBreadth;
               res += `${separator}"...": "${getItemCount(removedKeys)} not stringified"`;
-              separator = join9;
+              separator = join7;
             }
             if (separator !== "") {
               res = `
@@ -78174,7 +78251,7 @@ var tag;
 var PersistentAction;
 var persistent_actions_default;
 var init_persistent_actions = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.7/node_modules/@chelonia/lib/dist/esm/persistent-actions.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/persistent-actions.mjs"() {
     init_esm4();
     init_esm();
     init_events();
@@ -78371,7 +78448,7 @@ var init_persistent_actions = __esm({
 });
 var SERVER;
 var init_presets = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.7/node_modules/@chelonia/lib/dist/esm/presets.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/presets.mjs"() {
     SERVER = {
       // We don't check the subscriptionSet in the server because we accpt new
       // contract registrations, and are also not subcribed to contracts the same
@@ -82629,7 +82706,7 @@ var require_DLList = __commonJS({
 var require_Events = __commonJS({
   "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/Events.js"(exports2, module2) {
     "use strict";
-    function asyncGeneratorStep2(gen, resolve8, reject, _next, _throw, key, arg) {
+    function asyncGeneratorStep2(gen, resolve52, reject, _next, _throw, key, arg) {
       try {
         var info = gen[key](arg);
         var value = info.value;
@@ -82638,7 +82715,7 @@ var require_Events = __commonJS({
         return;
       }
       if (info.done) {
-        resolve8(value);
+        resolve52(value);
       } else {
         Promise.resolve(value).then(_next, _throw);
       }
@@ -82646,13 +82723,13 @@ var require_Events = __commonJS({
     function _asyncToGenerator2(fn) {
       return function() {
         var self2 = this, args = arguments;
-        return new Promise(function(resolve8, reject) {
+        return new Promise(function(resolve52, reject) {
           var gen = fn.apply(self2, args);
           function _next(value) {
-            asyncGeneratorStep2(gen, resolve8, reject, _next, _throw, "next", value);
+            asyncGeneratorStep2(gen, resolve52, reject, _next, _throw, "next", value);
           }
           function _throw(err) {
-            asyncGeneratorStep2(gen, resolve8, reject, _next, _throw, "throw", err);
+            asyncGeneratorStep2(gen, resolve52, reject, _next, _throw, "throw", err);
           }
           _next(void 0);
         });
@@ -82838,7 +82915,7 @@ var require_BottleneckError = __commonJS({
 var require_Job = __commonJS({
   "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/Job.js"(exports2, module2) {
     "use strict";
-    function asyncGeneratorStep2(gen, resolve8, reject, _next, _throw, key, arg) {
+    function asyncGeneratorStep2(gen, resolve52, reject, _next, _throw, key, arg) {
       try {
         var info = gen[key](arg);
         var value = info.value;
@@ -82847,7 +82924,7 @@ var require_Job = __commonJS({
         return;
       }
       if (info.done) {
-        resolve8(value);
+        resolve52(value);
       } else {
         Promise.resolve(value).then(_next, _throw);
       }
@@ -82855,13 +82932,13 @@ var require_Job = __commonJS({
     function _asyncToGenerator2(fn) {
       return function() {
         var self2 = this, args = arguments;
-        return new Promise(function(resolve8, reject) {
+        return new Promise(function(resolve52, reject) {
           var gen = fn.apply(self2, args);
           function _next(value) {
-            asyncGeneratorStep2(gen, resolve8, reject, _next, _throw, "next", value);
+            asyncGeneratorStep2(gen, resolve52, reject, _next, _throw, "next", value);
           }
           function _throw(err) {
-            asyncGeneratorStep2(gen, resolve8, reject, _next, _throw, "throw", err);
+            asyncGeneratorStep2(gen, resolve52, reject, _next, _throw, "throw", err);
           }
           _next(void 0);
         });
@@ -83040,7 +83117,7 @@ var require_Job = __commonJS({
 var require_LocalDatastore = __commonJS({
   "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/LocalDatastore.js"(exports2, module2) {
     "use strict";
-    function asyncGeneratorStep2(gen, resolve8, reject, _next, _throw, key, arg) {
+    function asyncGeneratorStep2(gen, resolve52, reject, _next, _throw, key, arg) {
       try {
         var info = gen[key](arg);
         var value = info.value;
@@ -83049,7 +83126,7 @@ var require_LocalDatastore = __commonJS({
         return;
       }
       if (info.done) {
-        resolve8(value);
+        resolve52(value);
       } else {
         Promise.resolve(value).then(_next, _throw);
       }
@@ -83057,13 +83134,13 @@ var require_LocalDatastore = __commonJS({
     function _asyncToGenerator2(fn) {
       return function() {
         var self2 = this, args = arguments;
-        return new Promise(function(resolve8, reject) {
+        return new Promise(function(resolve52, reject) {
           var gen = fn.apply(self2, args);
           function _next(value) {
-            asyncGeneratorStep2(gen, resolve8, reject, _next, _throw, "next", value);
+            asyncGeneratorStep2(gen, resolve52, reject, _next, _throw, "next", value);
           }
           function _throw(err) {
-            asyncGeneratorStep2(gen, resolve8, reject, _next, _throw, "throw", err);
+            asyncGeneratorStep2(gen, resolve52, reject, _next, _throw, "throw", err);
           }
           _next(void 0);
         });
@@ -83132,8 +83209,8 @@ var require_LocalDatastore = __commonJS({
         })();
       }
       yieldLoop(t = 0) {
-        return new this.Promise(function(resolve8, reject) {
-          return setTimeout(resolve8, t);
+        return new this.Promise(function(resolve52, reject) {
+          return setTimeout(resolve52, t);
         });
       }
       computePenalty() {
@@ -83597,7 +83674,7 @@ var require_Scripts = __commonJS({
 var require_RedisConnection = __commonJS({
   "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/RedisConnection.js"(exports, module) {
     "use strict";
-    function asyncGeneratorStep(gen, resolve8, reject, _next, _throw, key, arg) {
+    function asyncGeneratorStep(gen, resolve52, reject, _next, _throw, key, arg) {
       try {
         var info = gen[key](arg);
         var value = info.value;
@@ -83606,7 +83683,7 @@ var require_RedisConnection = __commonJS({
         return;
       }
       if (info.done) {
-        resolve8(value);
+        resolve52(value);
       } else {
         Promise.resolve(value).then(_next, _throw);
       }
@@ -83614,13 +83691,13 @@ var require_RedisConnection = __commonJS({
     function _asyncToGenerator(fn) {
       return function() {
         var self2 = this, args = arguments;
-        return new Promise(function(resolve8, reject) {
+        return new Promise(function(resolve52, reject) {
           var gen = fn.apply(self2, args);
           function _next(value) {
-            asyncGeneratorStep(gen, resolve8, reject, _next, _throw, "next", value);
+            asyncGeneratorStep(gen, resolve52, reject, _next, _throw, "next", value);
           }
           function _throw(err) {
-            asyncGeneratorStep(gen, resolve8, reject, _next, _throw, "throw", err);
+            asyncGeneratorStep(gen, resolve52, reject, _next, _throw, "throw", err);
           }
           _next(void 0);
         });
@@ -83661,7 +83738,7 @@ var require_RedisConnection = __commonJS({
         }
         _setup(client, sub) {
           client.setMaxListeners(0);
-          return new this.Promise((resolve8, reject) => {
+          return new this.Promise((resolve52, reject) => {
             client.on("error", (e2) => {
               return this.Events.trigger("error", e2);
             });
@@ -83672,14 +83749,14 @@ var require_RedisConnection = __commonJS({
               });
             }
             if (client.ready) {
-              return resolve8();
+              return resolve52();
             } else {
-              return client.once("ready", resolve8);
+              return client.once("ready", resolve52);
             }
           });
         }
         _loadScript(name) {
-          return new this.Promise((resolve8, reject) => {
+          return new this.Promise((resolve52, reject) => {
             var payload;
             payload = Scripts.payload(name);
             return this.client.multi([["script", "load", payload]]).exec((err, replies) => {
@@ -83687,7 +83764,7 @@ var require_RedisConnection = __commonJS({
                 return reject(err);
               }
               this.shas[name] = replies[0];
-              return resolve8(replies[0]);
+              return resolve52(replies[0]);
             });
           });
         }
@@ -83700,12 +83777,12 @@ var require_RedisConnection = __commonJS({
           var _this = this;
           return _asyncToGenerator(function* () {
             yield _this.ready;
-            return new _this.Promise((resolve8, reject) => {
+            return new _this.Promise((resolve52, reject) => {
               return _this.client.multi([cmd]).exec_atomic(function(err, replies) {
                 if (err != null) {
                   return reject(err);
                 } else {
-                  return resolve8(replies[0]);
+                  return resolve52(replies[0]);
                 }
               });
             });
@@ -83713,13 +83790,13 @@ var require_RedisConnection = __commonJS({
         }
         __addLimiter__(instance) {
           return this.Promise.all([instance.channel(), instance.channel_client()].map((channel) => {
-            return new this.Promise((resolve8, reject) => {
+            return new this.Promise((resolve52, reject) => {
               var handler;
               handler = (chan) => {
                 if (chan === channel) {
                   this.subscriber.removeListener("subscribe", handler);
                   this.limiters[channel] = instance;
-                  return resolve8();
+                  return resolve52();
                 }
               };
               this.subscriber.on("subscribe", handler);
@@ -83733,13 +83810,13 @@ var require_RedisConnection = __commonJS({
             /* @__PURE__ */ function() {
               var _ref = _asyncToGenerator(function* (channel) {
                 if (!_this2.terminated) {
-                  yield new _this2.Promise((resolve8, reject) => {
+                  yield new _this2.Promise((resolve52, reject) => {
                     return _this2.subscriber.unsubscribe(channel, function(err, chan) {
                       if (err != null) {
                         return reject(err);
                       }
                       if (chan === channel) {
-                        return resolve8();
+                        return resolve52();
                       }
                     });
                   });
@@ -83822,7 +83899,7 @@ var require_IORedisConnection = __commonJS({
     function _arrayWithHoles(arr) {
       if (Array.isArray(arr)) return arr;
     }
-    function asyncGeneratorStep(gen, resolve8, reject, _next, _throw, key, arg) {
+    function asyncGeneratorStep(gen, resolve52, reject, _next, _throw, key, arg) {
       try {
         var info = gen[key](arg);
         var value = info.value;
@@ -83831,7 +83908,7 @@ var require_IORedisConnection = __commonJS({
         return;
       }
       if (info.done) {
-        resolve8(value);
+        resolve52(value);
       } else {
         Promise.resolve(value).then(_next, _throw);
       }
@@ -83839,13 +83916,13 @@ var require_IORedisConnection = __commonJS({
     function _asyncToGenerator(fn) {
       return function() {
         var self2 = this, args = arguments;
-        return new Promise(function(resolve8, reject) {
+        return new Promise(function(resolve52, reject) {
           var gen = fn.apply(self2, args);
           function _next(value) {
-            asyncGeneratorStep(gen, resolve8, reject, _next, _throw, "next", value);
+            asyncGeneratorStep(gen, resolve52, reject, _next, _throw, "next", value);
           }
           function _throw(err) {
-            asyncGeneratorStep(gen, resolve8, reject, _next, _throw, "throw", err);
+            asyncGeneratorStep(gen, resolve52, reject, _next, _throw, "throw", err);
           }
           _next(void 0);
         });
@@ -83891,7 +83968,7 @@ var require_IORedisConnection = __commonJS({
         }
         _setup(client, sub) {
           client.setMaxListeners(0);
-          return new this.Promise((resolve8, reject) => {
+          return new this.Promise((resolve52, reject) => {
             client.on("error", (e2) => {
               return this.Events.trigger("error", e2);
             });
@@ -83902,9 +83979,9 @@ var require_IORedisConnection = __commonJS({
               });
             }
             if (client.status === "ready") {
-              return resolve8();
+              return resolve52();
             } else {
-              return client.once("ready", resolve8);
+              return client.once("ready", resolve52);
             }
           });
         }
@@ -83930,10 +84007,10 @@ var require_IORedisConnection = __commonJS({
         }
         __addLimiter__(instance) {
           return this.Promise.all([instance.channel(), instance.channel_client()].map((channel) => {
-            return new this.Promise((resolve8, reject) => {
+            return new this.Promise((resolve52, reject) => {
               return this.subscriber.subscribe(channel, () => {
                 this.limiters[channel] = instance;
-                return resolve8();
+                return resolve52();
               });
             });
           }));
@@ -84029,7 +84106,7 @@ var require_RedisDatastore = __commonJS({
     function _arrayWithHoles2(arr) {
       if (Array.isArray(arr)) return arr;
     }
-    function asyncGeneratorStep2(gen, resolve8, reject, _next, _throw, key, arg) {
+    function asyncGeneratorStep2(gen, resolve52, reject, _next, _throw, key, arg) {
       try {
         var info = gen[key](arg);
         var value = info.value;
@@ -84038,7 +84115,7 @@ var require_RedisDatastore = __commonJS({
         return;
       }
       if (info.done) {
-        resolve8(value);
+        resolve52(value);
       } else {
         Promise.resolve(value).then(_next, _throw);
       }
@@ -84046,13 +84123,13 @@ var require_RedisDatastore = __commonJS({
     function _asyncToGenerator2(fn) {
       return function() {
         var self2 = this, args = arguments;
-        return new Promise(function(resolve8, reject) {
+        return new Promise(function(resolve52, reject) {
           var gen = fn.apply(self2, args);
           function _next(value) {
-            asyncGeneratorStep2(gen, resolve8, reject, _next, _throw, "next", value);
+            asyncGeneratorStep2(gen, resolve52, reject, _next, _throw, "next", value);
           }
           function _throw(err) {
-            asyncGeneratorStep2(gen, resolve8, reject, _next, _throw, "throw", err);
+            asyncGeneratorStep2(gen, resolve52, reject, _next, _throw, "throw", err);
           }
           _next(void 0);
         });
@@ -84188,7 +84265,7 @@ var require_RedisDatastore = __commonJS({
           if (!(name === "init" || name === "register_client")) {
             yield _this3.ready;
           }
-          return new _this3.Promise((resolve8, reject) => {
+          return new _this3.Promise((resolve52, reject) => {
             var all_args, arr;
             all_args = [Date.now(), _this3.clientId].concat(args);
             _this3.instance.Events.trigger("debug", `Calling Redis script: ${name}.lua`, all_args);
@@ -84196,7 +84273,7 @@ var require_RedisDatastore = __commonJS({
               if (err != null) {
                 return reject(err);
               }
-              return resolve8(replies);
+              return resolve52(replies);
             });
             return _this3.connection.__scriptFn__(name)(...arr);
           }).catch((e2) => {
@@ -84423,7 +84500,7 @@ var require_States = __commonJS({
 var require_Sync = __commonJS({
   "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/Sync.js"(exports2, module2) {
     "use strict";
-    function asyncGeneratorStep2(gen, resolve8, reject, _next, _throw, key, arg) {
+    function asyncGeneratorStep2(gen, resolve52, reject, _next, _throw, key, arg) {
       try {
         var info = gen[key](arg);
         var value = info.value;
@@ -84432,7 +84509,7 @@ var require_Sync = __commonJS({
         return;
       }
       if (info.done) {
-        resolve8(value);
+        resolve52(value);
       } else {
         Promise.resolve(value).then(_next, _throw);
       }
@@ -84440,13 +84517,13 @@ var require_Sync = __commonJS({
     function _asyncToGenerator2(fn) {
       return function() {
         var self2 = this, args = arguments;
-        return new Promise(function(resolve8, reject) {
+        return new Promise(function(resolve52, reject) {
           var gen = fn.apply(self2, args);
           function _next(value) {
-            asyncGeneratorStep2(gen, resolve8, reject, _next, _throw, "next", value);
+            asyncGeneratorStep2(gen, resolve52, reject, _next, _throw, "next", value);
           }
           function _throw(err) {
-            asyncGeneratorStep2(gen, resolve8, reject, _next, _throw, "throw", err);
+            asyncGeneratorStep2(gen, resolve52, reject, _next, _throw, "throw", err);
           }
           _next(void 0);
         });
@@ -84469,19 +84546,19 @@ var require_Sync = __commonJS({
       _tryToRun() {
         var _this = this;
         return _asyncToGenerator2(function* () {
-          var args, cb, error, reject, resolve8, returned, task;
+          var args, cb, error, reject, resolve52, returned, task;
           if (_this._running < 1 && _this._queue.length > 0) {
             _this._running++;
             var _this$_queue$shift = _this._queue.shift();
             task = _this$_queue$shift.task;
             args = _this$_queue$shift.args;
-            resolve8 = _this$_queue$shift.resolve;
+            resolve52 = _this$_queue$shift.resolve;
             reject = _this$_queue$shift.reject;
             cb = yield _asyncToGenerator2(function* () {
               try {
                 returned = yield task(...args);
                 return function() {
-                  return resolve8(returned);
+                  return resolve52(returned);
                 };
               } catch (error1) {
                 error = error1;
@@ -84497,16 +84574,16 @@ var require_Sync = __commonJS({
         })();
       }
       schedule(task, ...args) {
-        var promise, reject, resolve8;
-        resolve8 = reject = null;
+        var promise, reject, resolve52;
+        resolve52 = reject = null;
         promise = new this.Promise(function(_resolve, _reject) {
-          resolve8 = _resolve;
+          resolve52 = _resolve;
           return reject = _reject;
         });
         this._queue.push({
           task,
           args,
-          resolve: resolve8,
+          resolve: resolve52,
           reject
         });
         this._tryToRun();
@@ -84555,7 +84632,7 @@ var require_Group = __commonJS({
     function _arrayWithHoles2(arr) {
       if (Array.isArray(arr)) return arr;
     }
-    function asyncGeneratorStep2(gen, resolve8, reject, _next, _throw, key, arg) {
+    function asyncGeneratorStep2(gen, resolve52, reject, _next, _throw, key, arg) {
       try {
         var info = gen[key](arg);
         var value = info.value;
@@ -84564,7 +84641,7 @@ var require_Group = __commonJS({
         return;
       }
       if (info.done) {
-        resolve8(value);
+        resolve52(value);
       } else {
         Promise.resolve(value).then(_next, _throw);
       }
@@ -84572,13 +84649,13 @@ var require_Group = __commonJS({
     function _asyncToGenerator2(fn) {
       return function() {
         var self2 = this, args = arguments;
-        return new Promise(function(resolve8, reject) {
+        return new Promise(function(resolve52, reject) {
           var gen = fn.apply(self2, args);
           function _next(value) {
-            asyncGeneratorStep2(gen, resolve8, reject, _next, _throw, "next", value);
+            asyncGeneratorStep2(gen, resolve52, reject, _next, _throw, "next", value);
           }
           function _throw(err) {
-            asyncGeneratorStep2(gen, resolve8, reject, _next, _throw, "throw", err);
+            asyncGeneratorStep2(gen, resolve52, reject, _next, _throw, "throw", err);
           }
           _next(void 0);
         });
@@ -84837,7 +84914,7 @@ var require_Bottleneck = __commonJS({
     function _arrayWithHoles2(arr) {
       if (Array.isArray(arr)) return arr;
     }
-    function asyncGeneratorStep2(gen, resolve8, reject, _next, _throw, key, arg) {
+    function asyncGeneratorStep2(gen, resolve52, reject, _next, _throw, key, arg) {
       try {
         var info = gen[key](arg);
         var value = info.value;
@@ -84846,7 +84923,7 @@ var require_Bottleneck = __commonJS({
         return;
       }
       if (info.done) {
-        resolve8(value);
+        resolve52(value);
       } else {
         Promise.resolve(value).then(_next, _throw);
       }
@@ -84854,13 +84931,13 @@ var require_Bottleneck = __commonJS({
     function _asyncToGenerator2(fn) {
       return function() {
         var self2 = this, args = arguments;
-        return new Promise(function(resolve8, reject) {
+        return new Promise(function(resolve52, reject) {
           var gen = fn.apply(self2, args);
           function _next(value) {
-            asyncGeneratorStep2(gen, resolve8, reject, _next, _throw, "next", value);
+            asyncGeneratorStep2(gen, resolve52, reject, _next, _throw, "next", value);
           }
           function _throw(err) {
-            asyncGeneratorStep2(gen, resolve8, reject, _next, _throw, "throw", err);
+            asyncGeneratorStep2(gen, resolve52, reject, _next, _throw, "throw", err);
           }
           _next(void 0);
         });
@@ -85098,14 +85175,14 @@ var require_Bottleneck = __commonJS({
               counts = this._states.counts;
               return counts[0] + counts[1] + counts[2] + counts[3] === at;
             };
-            return new this.Promise((resolve8, reject) => {
+            return new this.Promise((resolve52, reject) => {
               if (finished()) {
-                return resolve8();
+                return resolve52();
               } else {
                 return this.on("done", () => {
                   if (finished()) {
                     this.removeAllListeners("done");
-                    return resolve8();
+                    return resolve52();
                   }
                 });
               }
@@ -85213,9 +85290,9 @@ var require_Bottleneck = __commonJS({
             options3 = parser2.load(options3, this.jobDefaults);
           }
           task = (...args2) => {
-            return new this.Promise(function(resolve8, reject) {
+            return new this.Promise(function(resolve52, reject) {
               return fn(...args2, function(...args3) {
-                return (args3[0] != null ? reject : resolve8)(args3);
+                return (args3[0] != null ? reject : resolve52)(args3);
               });
             });
           };
@@ -85987,14 +86064,14 @@ var require_annotate2 = __commonJS({
       for (let i2 = this.details.length - 1; i2 >= 0; --i2) {
         const pos = i2 + 1;
         const error = this.details[i2];
-        const path12 = error.path;
+        const path9 = error.path;
         let node = obj;
         for (let j = 0; ; ++j) {
-          const seg = path12[j];
+          const seg = path9[j];
           if (Common.isSchema(node)) {
             node = node.clone();
           }
-          if (j + 1 < path12.length && typeof node[seg] !== "string") {
+          if (j + 1 < path9.length && typeof node[seg] !== "string") {
             node = node[seg];
           } else {
             const refAnnotations = node[internals.annotations] || { errors: {}, missing: {} };
@@ -86149,9 +86226,9 @@ var require_errors3 = __commonJS({
         return exports2.template(this.value, messages, code2 || this.code, this.state, this.prefs);
       }
     };
-    exports2.path = function(path12) {
+    exports2.path = function(path9) {
       let label = "";
-      for (const segment of path12) {
+      for (const segment of path9) {
         if (typeof segment === "object") {
           continue;
         }
@@ -86197,11 +86274,11 @@ var require_errors3 = __commonJS({
       if (flags7.label) {
         return flags7.label;
       }
-      let path12 = state.path;
+      let path9 = state.path;
       if (prefs.errors.label === "key" && state.path.length > 1) {
-        path12 = state.path.slice(-1);
+        path9 = state.path.slice(-1);
       }
-      const normalized = exports2.path(path12);
+      const normalized = exports2.path(path9);
       if (normalized) {
         return normalized;
       }
@@ -88152,7 +88229,7 @@ var require_trace = __commonJS({
         }
       }
       _scan(schema, _path) {
-        const path12 = _path || [];
+        const path9 = _path || [];
         let log2 = this._sources.get(schema);
         if (!log2) {
           log2 = {
@@ -88164,12 +88241,12 @@ var require_trace = __commonJS({
           };
           this._sources.set(schema, log2);
         }
-        if (path12.length) {
-          log2.paths.add(path12);
+        if (path9.length) {
+          log2.paths.add(path9);
         }
         const each = (sub, source) => {
           const subId = internals.id(sub, source);
-          this._scan(sub, path12.concat(subId));
+          this._scan(sub, path9.concat(subId));
         };
         schema.$_modify({ each, ref: false });
       }
@@ -88178,10 +88255,10 @@ var require_trace = __commonJS({
       }
     };
     internals.message = function(item) {
-      const path12 = item.paths ? Errors.path(item.paths[0]) + (item.rule ? ":" : "") : "";
-      return `${path12}${item.rule || ""} (${item.status})`;
+      const path9 = item.paths ? Errors.path(item.paths[0]) + (item.rule ? ":" : "") : "";
+      return `${path9}${item.rule || ""} (${item.status})`;
     };
-    internals.id = function(schema, { source, name, path: path12, key }) {
+    internals.id = function(schema, { source, name, path: path9, key }) {
       if (schema._flags.id) {
         return schema._flags.id;
       }
@@ -88190,14 +88267,14 @@ var require_trace = __commonJS({
       }
       name = `@${name}`;
       if (source === "terms") {
-        return [name, path12[Math.min(path12.length - 1, 1)]];
+        return [name, path9[Math.min(path9.length - 1, 1)]];
       }
       return name;
     };
     internals.sub = function(paths, skipped) {
-      for (const path12 of paths) {
+      for (const path9 of paths) {
         for (const skip of skipped) {
-          if (deepEqual(path12.slice(0, skip.length), skip)) {
+          if (deepEqual(path9.slice(0, skip.length), skip)) {
             return true;
           }
         }
@@ -88245,8 +88322,8 @@ var require_modify2 = __commonJS({
           this._byKey.set(key, value);
         }
       }
-      fork(path12, adjuster, root) {
-        const chain = this._collect(path12);
+      fork(path9, adjuster, root) {
+        const chain = this._collect(path9);
         chain.push({ schema: root });
         const tail = chain.shift();
         let adjusted = { id: tail.id, schema: adjuster(tail.schema) };
@@ -88256,24 +88333,24 @@ var require_modify2 = __commonJS({
         }
         return adjusted.schema;
       }
-      labels(path12, behind = []) {
-        const current = path12[0];
+      labels(path9, behind = []) {
+        const current = path9[0];
         const node = this._get(current);
         if (!node) {
-          return [...behind, ...path12].join(".");
+          return [...behind, ...path9].join(".");
         }
-        const forward = path12.slice(1);
+        const forward = path9.slice(1);
         behind = [...behind, node.schema._flags.label || current];
         if (!forward.length) {
           return behind.join(".");
         }
         return node.schema._ids.labels(forward, behind);
       }
-      reach(path12, behind = []) {
-        const current = path12[0];
+      reach(path9, behind = []) {
+        const current = path9[0];
         const node = this._get(current);
-        assert22(node, "Schema does not contain path", [...behind, ...path12].join("."));
-        const forward = path12.slice(1);
+        assert22(node, "Schema does not contain path", [...behind, ...path9].join("."));
+        const forward = path9.slice(1);
         if (!forward.length) {
           return node.schema;
         }
@@ -88304,12 +88381,12 @@ var require_modify2 = __commonJS({
         this._byKey = /* @__PURE__ */ new Map();
         this._schemaChain = false;
       }
-      _collect(path12, behind = [], nodes = []) {
-        const current = path12[0];
+      _collect(path9, behind = [], nodes = []) {
+        const current = path9[0];
         const node = this._get(current);
-        assert22(node, "Schema does not contain path", [...behind, ...path12].join("."));
+        assert22(node, "Schema does not contain path", [...behind, ...path9].join("."));
         nodes = [node, ...nodes];
-        const forward = path12.slice(1);
+        const forward = path9.slice(1);
         if (!forward.length) {
           return nodes;
         }
@@ -88367,7 +88444,7 @@ var require_modify2 = __commonJS({
       return obj;
     };
     internals.scan = function(item, source, options3, _path, _key) {
-      const path12 = _path || [];
+      const path9 = _path || [];
       if (item === null || typeof item !== "object") {
         return;
       }
@@ -88375,7 +88452,7 @@ var require_modify2 = __commonJS({
       if (Array.isArray(item)) {
         for (let i2 = 0; i2 < item.length; ++i2) {
           const key = source.source === "terms" && source.name === "keys" && item[i2].key;
-          const result = internals.scan(item[i2], source, options3, [i2, ...path12], key);
+          const result = internals.scan(item[i2], source, options3, [i2, ...path9], key);
           if (result !== void 0) {
             clone2 = clone2 || item.slice();
             clone2[i2] = result;
@@ -88384,7 +88461,7 @@ var require_modify2 = __commonJS({
         return clone2;
       }
       if (options3.schema !== false && Common.isSchema(item) || options3.ref !== false && Ref.isRef(item)) {
-        const result = options3.each(item, { ...source, path: path12, key: _key });
+        const result = options3.each(item, { ...source, path: path9, key: _key });
         if (result === item) {
           return;
         }
@@ -88394,7 +88471,7 @@ var require_modify2 = __commonJS({
         if (key[0] === "_") {
           continue;
         }
-        const result = internals.scan(item[key], source, options3, [key, ...path12], _key);
+        const result = internals.scan(item[key], source, options3, [key, ...path9], _key);
         if (result !== void 0) {
           clone2 = clone2 || Object.assign({}, item);
           clone2[key] = result;
@@ -88413,15 +88490,15 @@ var require_state3 = __commonJS({
       value: Symbol("value")
     };
     module2.exports = internals.State = class {
-      constructor(path12, ancestors, state) {
-        this.path = path12;
+      constructor(path9, ancestors, state) {
+        this.path = path9;
         this.ancestors = ancestors;
         this.mainstay = state.mainstay;
         this.schemas = state.schemas;
         this.debug = null;
       }
-      localize(path12, ancestors = null, schema = null) {
-        const state = new internals.State(path12, ancestors, this);
+      localize(path9, ancestors = null, schema = null) {
+        const state = new internals.State(path9, ancestors, this);
         if (schema && state.schemas) {
           state.schemas = [internals.schemas(schema), ...state.schemas];
         }
@@ -88468,17 +88545,17 @@ var require_state3 = __commonJS({
       constructor() {
         this._values = null;
       }
-      set(path12, value, reason) {
-        if (!path12.length) {
+      set(path9, value, reason) {
+        if (!path9.length) {
           return;
         }
-        if (reason === "strip" && typeof path12[path12.length - 1] === "number") {
+        if (reason === "strip" && typeof path9[path9.length - 1] === "number") {
           return;
         }
         this._values = this._values || /* @__PURE__ */ new Map();
         let node = this._values;
-        for (let i2 = 0; i2 < path12.length; ++i2) {
-          const segment = path12[i2];
+        for (let i2 = 0; i2 < path9.length; ++i2) {
+          const segment = path9[i2];
           let next = node.get(segment);
           if (!next) {
             next = /* @__PURE__ */ new Map();
@@ -88488,24 +88565,24 @@ var require_state3 = __commonJS({
         }
         node[internals.value] = value;
       }
-      get(path12) {
-        const node = this.node(path12);
+      get(path9) {
+        const node = this.node(path9);
         if (node) {
           return node[internals.value];
         }
       }
-      node(path12) {
+      node(path9) {
         if (!this._values) {
           return;
         }
-        return reach(this._values, path12, { iterables: true });
+        return reach(this._values, path9, { iterables: true });
       }
-      override(path12, node) {
+      override(path9, node) {
         if (!this._values) {
           return;
         }
-        const parents = path12.slice(0, -1);
-        const own = path12[path12.length - 1];
+        const parents = path9.slice(0, -1);
+        const own = path9[path9.length - 1];
         const parent = reach(this._values, parents, { iterables: true });
         if (node) {
           parent.set(own, node);
@@ -88569,17 +88646,17 @@ var require_validator3 = __commonJS({
         let root = result.value;
         const errors = [];
         for (const external of mainstay.externals) {
-          const path12 = external.state.path;
+          const path9 = external.state.path;
           const linked = external.schema.type === "link" ? mainstay.links.get(external.schema) : null;
           let node = root;
           let key;
           let parent;
-          const ancestors = path12.length ? [root] : [];
-          const original = path12.length ? reach(value, path12) : value;
-          if (path12.length) {
-            key = path12[path12.length - 1];
+          const ancestors = path9.length ? [root] : [];
+          const original = path9.length ? reach(value, path9) : value;
+          if (path9.length) {
+            key = path9[path9.length - 1];
             let current = root;
-            for (const segment of path12.slice(0, -1)) {
+            for (const segment of path9.slice(0, -1)) {
               current = current[segment];
               ancestors.unshift(current);
             }
@@ -89489,16 +89566,16 @@ var require_base2 = __commonJS({
         assert22(!options3.base, "Cannot extend type with another base");
         return Extend.type(this, options3);
       }
-      extract(path12) {
-        path12 = Array.isArray(path12) ? path12 : path12.split(".");
-        return this._ids.reach(path12);
+      extract(path9) {
+        path9 = Array.isArray(path9) ? path9 : path9.split(".");
+        return this._ids.reach(path9);
       }
       fork(paths, adjuster) {
         assert22(!this._inRuleset(), "Cannot fork inside a ruleset");
         let obj = this;
-        for (let path12 of [].concat(paths)) {
-          path12 = Array.isArray(path12) ? path12 : path12.split(".");
-          obj = obj._ids.fork(path12, adjuster, obj);
+        for (let path9 of [].concat(paths)) {
+          path9 = Array.isArray(path9) ? path9 : path9.split(".");
+          obj = obj._ids.fork(path9, adjuster, obj);
         }
         obj.$_temp.ruleset = false;
         return obj;
@@ -89657,9 +89734,9 @@ var require_base2 = __commonJS({
       $_getRule(name) {
         return this._singleRules.get(name);
       }
-      $_mapLabels(path12) {
-        path12 = Array.isArray(path12) ? path12 : path12.split(".");
-        return this._ids.labels(path12);
+      $_mapLabels(path9) {
+        path9 = Array.isArray(path9) ? path9 : path9.split(".");
+        return this._ids.labels(path9);
       }
       $_match(value, state, prefs, overrides) {
         prefs = Object.assign({}, prefs);
@@ -89678,7 +89755,7 @@ var require_base2 = __commonJS({
         assert22(!this._inRuleset(), "Cannot add this rule inside a ruleset");
         this._refs.reset();
         this._ids.reset();
-        const each = (item, { source, name, path: path12, key }) => {
+        const each = (item, { source, name, path: path9, key }) => {
           const family = this._definition[source][name] && this._definition[source][name].register;
           if (family !== false) {
             this.$_mutateRegister(item, { family, key });
@@ -89698,8 +89775,8 @@ var require_base2 = __commonJS({
       $_property(name) {
         return this._definition.properties[name];
       }
-      $_reach(path12) {
-        return this._ids.reach(path12);
+      $_reach(path9) {
+        return this._ids.reach(path9);
       }
       $_rootReferences() {
         return this._refs.roots();
@@ -89915,9 +89992,9 @@ var require_base2 = __commonJS({
         const mapToStandardError = (error) => {
           let issues;
           if (Errors.ValidationError.isError(error)) {
-            issues = error.details.map(({ message, path: path12 }) => ({
+            issues = error.details.map(({ message, path: path9 }) => ({
               message,
-              path: path12
+              path: path9
             }));
           } else {
             issues = [{
@@ -90440,9 +90517,9 @@ var require_array2 = __commonJS({
               let errored = false;
               let isValid = false;
               const key = wasArray ? i2 : new Number(i2);
-              const path12 = [...state.path, key];
+              const path9 = [...state.path, key];
               if (!schema._flags.sparse && item === void 0) {
-                errors.push(error("array.sparse", { key, path: path12, pos: i2, value: void 0 }, state.localize(path12)));
+                errors.push(error("array.sparse", { key, path: path9, pos: i2, value: void 0 }, state.localize(path9)));
                 if (prefs.abortEarly) {
                   return errors;
                 }
@@ -90451,10 +90528,10 @@ var require_array2 = __commonJS({
               }
               const ancestors = [value, ...state.ancestors];
               for (const exclusion of schema.$_terms._exclusions) {
-                if (!exclusion.$_match(item, state.localize(path12, ancestors, exclusion), prefs, { presence: "ignore" })) {
+                if (!exclusion.$_match(item, state.localize(path9, ancestors, exclusion), prefs, { presence: "ignore" })) {
                   continue;
                 }
-                errors.push(error("array.excludes", { pos: i2, value: item }, state.localize(path12)));
+                errors.push(error("array.excludes", { pos: i2, value: item }, state.localize(path9)));
                 if (prefs.abortEarly) {
                   return errors;
                 }
@@ -90468,14 +90545,14 @@ var require_array2 = __commonJS({
               if (schema.$_terms.ordered.length) {
                 if (ordereds.length) {
                   const ordered = ordereds.shift();
-                  const res = ordered.$_validate(item, state.localize(path12, ancestors, ordered), prefs);
+                  const res = ordered.$_validate(item, state.localize(path9, ancestors, ordered), prefs);
                   if (!res.errors) {
                     if (ordered._flags.result === "strip") {
                       internals.fastSplice(value, i2);
                       --i2;
                       --il;
                     } else if (!schema._flags.sparse && res.value === void 0) {
-                      errors.push(error("array.sparse", { key, path: path12, pos: i2, value: void 0 }, state.localize(path12)));
+                      errors.push(error("array.sparse", { key, path: path9, pos: i2, value: void 0 }, state.localize(path9)));
                       if (prefs.abortEarly) {
                         return errors;
                       }
@@ -90501,7 +90578,7 @@ var require_array2 = __commonJS({
               const requiredChecks = [];
               let jl = requireds.length;
               for (let j = 0; j < jl; ++j) {
-                const localState = state.localize(path12, ancestors, requireds[j]);
+                const localState = state.localize(path9, ancestors, requireds[j]);
                 localState.snapshot();
                 const res = requireds[j].$_validate(item, localState, prefs);
                 requiredChecks[j] = res;
@@ -90513,7 +90590,7 @@ var require_array2 = __commonJS({
                   --j;
                   --jl;
                   if (!schema._flags.sparse && res.value === void 0) {
-                    errors.push(error("array.sparse", { key, path: path12, pos: i2, value: void 0 }, state.localize(path12)));
+                    errors.push(error("array.sparse", { key, path: path9, pos: i2, value: void 0 }, state.localize(path9)));
                     if (prefs.abortEarly) {
                       return errors;
                     }
@@ -90533,7 +90610,7 @@ var require_array2 = __commonJS({
                 if (previousCheck !== -1) {
                   res = requiredChecks[previousCheck];
                 } else {
-                  const localState = state.localize(path12, ancestors, inclusion);
+                  const localState = state.localize(path9, ancestors, inclusion);
                   localState.snapshot();
                   res = inclusion.$_validate(item, localState, prefs);
                   if (!res.errors) {
@@ -90543,7 +90620,7 @@ var require_array2 = __commonJS({
                       --i2;
                       --il;
                     } else if (!schema._flags.sparse && res.value === void 0) {
-                      errors.push(error("array.sparse", { key, path: path12, pos: i2, value: void 0 }, state.localize(path12)));
+                      errors.push(error("array.sparse", { key, path: path9, pos: i2, value: void 0 }, state.localize(path9)));
                       errored = true;
                     } else {
                       value[i2] = res.value;
@@ -90579,7 +90656,7 @@ var require_array2 = __commonJS({
                   --il;
                   continue;
                 }
-                errors.push(error("array.includes", { pos: i2, value: item }, state.localize(path12)));
+                errors.push(error("array.includes", { pos: i2, value: item }, state.localize(path9)));
                 if (prefs.abortEarly) {
                   return errors;
                 }
@@ -90699,7 +90776,7 @@ var require_array2 = __commonJS({
             }
             return this.$_addRule(rule);
           },
-          validate(value, { state, error, schema }, { comparator: raw, options: options3 }, { comparator, path: path12 }) {
+          validate(value, { state, error, schema }, { comparator: raw, options: options3 }, { comparator, path: path9 }) {
             const found = {
               string: /* @__PURE__ */ Object.create(null),
               number: /* @__PURE__ */ Object.create(null),
@@ -90713,7 +90790,7 @@ var require_array2 = __commonJS({
             const compare = comparator || deepEqual;
             const ignoreUndefined = options3.ignoreUndefined;
             for (let i2 = 0; i2 < value.length; ++i2) {
-              const item = path12 ? reach(value[i2], path12) : value[i2];
+              const item = path9 ? reach(value[i2], path9) : value[i2];
               const records = comparator ? found.custom : found[typeof item];
               assert22(records, "Failed to find unique map container for type", typeof item);
               if (records instanceof Map) {
@@ -90728,7 +90805,7 @@ var require_array2 = __commonJS({
                       dupePos: current.value[1],
                       dupeValue: value[current.value[1]]
                     };
-                    if (path12) {
+                    if (path9) {
                       context.path = raw;
                     }
                     return error("array.unique", context, localState);
@@ -90743,7 +90820,7 @@ var require_array2 = __commonJS({
                     dupePos: records[item],
                     dupeValue: value[records[item]]
                   };
-                  if (path12) {
+                  if (path9) {
                     context.path = raw;
                   }
                   const localState = state.localize([...state.path, i2], [value, ...state.ancestors]);
@@ -91349,8 +91426,8 @@ var require_keys2 = __commonJS({
           },
           validate(value, { error, prefs, state }, { subject, schema, message }) {
             const about = subject.resolve(value, state, prefs);
-            const path12 = Ref.isRef(subject) ? subject.absolute(state) : [];
-            if (schema.$_match(about, state.localize(path12, [value, ...state.ancestors], schema), prefs)) {
+            const path9 = Ref.isRef(subject) ? subject.absolute(state) : [];
+            if (schema.$_match(about, state.localize(path9, [value, ...state.ancestors], schema), prefs)) {
               return value;
             }
             return error("object.assert", { subject, message });
@@ -91876,7 +91953,7 @@ var require_keys2 = __commonJS({
         const ancestors = [value, ...state.ancestors];
         for (const key of unprocessed) {
           const item = value[key];
-          const path12 = [...state.path, key];
+          const path9 = [...state.path, key];
           for (let i2 = 0; i2 < schema.$_terms.patterns.length; ++i2) {
             const pattern = schema.$_terms.patterns[i2];
             if (pattern.regex) {
@@ -91891,7 +91968,7 @@ var require_keys2 = __commonJS({
               }
             }
             unprocessed.delete(key);
-            const localState = state.localize(path12, ancestors, { schema: pattern.rule, key });
+            const localState = state.localize(path9, ancestors, { schema: pattern.rule, key });
             const result = pattern.rule.$_validate(item, localState, prefs);
             if (result.errors) {
               if (prefs.abortEarly) {
@@ -92142,10 +92219,10 @@ var require_link2 = __commonJS({
         return linked._generate(value, state, prefs).schema;
       }
       const ref = schema.$_terms.link[0].ref;
-      const { perspective, path: path12 } = internals.perspective(ref, state);
+      const { perspective, path: path9 } = internals.perspective(ref, state);
       internals.assert(perspective, "which is outside of schema boundaries", ref, schema, state, prefs);
       try {
-        linked = path12.length ? perspective.$_reach(path12) : perspective;
+        linked = path9.length ? perspective.$_reach(path9) : perspective;
       } catch {
         internals.assert(false, "to non-existing schema", ref, schema, state, prefs);
       }
@@ -95927,8 +96004,8 @@ var init_routes = __esm({
     dashboardDir = import.meta.dirname || "./build/dist-dashboard";
     staticServeConfig = {
       routePath: isCheloniaDashboard ? "/dashboard/{path*}" : "/app/{path*}",
-      distAssets: path10.resolve(path10.join(isCheloniaDashboard ? dashboardDir : appDir, "assets")),
-      distIndexHtml: path10.resolve(path10.join(isCheloniaDashboard ? dashboardDir : appDir, "index.html")),
+      distAssets: path7.resolve(path7.join(isCheloniaDashboard ? dashboardDir : appDir, "assets")),
+      distIndexHtml: path7.resolve(path7.join(isCheloniaDashboard ? dashboardDir : appDir, "index.html")),
       redirect: isCheloniaDashboard ? "/dashboard/" : "/app/"
     };
     errorMapper = (e2) => {
@@ -95946,9 +96023,9 @@ var init_routes = __esm({
     };
     route = new Proxy({}, {
       get: function(_obj, prop) {
-        return function(path12, options3, handler) {
+        return function(path9, options3, handler) {
           esm_default("okTurtles.data/apply", SERVER_INSTANCE, function(server) {
-            server.route({ path: path12, method: prop, options: options3, handler });
+            server.route({ path: path9, method: prop, options: options3, handler });
           });
         };
       }
@@ -96540,9 +96617,9 @@ var init_routes = __esm({
       }
     }, function(request, h2) {
       const { subpath } = request.params;
-      const basename62 = path10.basename(subpath);
-      if (basename62.includes("-cached")) {
-        return h2.file(subpath, { etagMethod: false }).etag(basename62).header("Cache-Control", "public,max-age=31536000,immutable");
+      const basename52 = path7.basename(subpath);
+      if (basename52.includes("-cached")) {
+        return h2.file(subpath, { etagMethod: false }).etag(basename52).header("Cache-Control", "public,max-age=31536000,immutable");
       }
       return h2.file(subpath);
     });
@@ -96566,9 +96643,9 @@ var init_routes = __esm({
         }
       }, function(request, h2) {
         const { subpath } = request.params;
-        const basename62 = path10.basename(subpath);
-        if (basename62.includes("-cached")) {
-          return h2.file(subpath, { etagMethod: false }).etag(basename62).header("Cache-Control", "public,max-age=31536000,immutable");
+        const basename52 = path7.basename(subpath);
+        if (basename52.includes("-cached")) {
+          return h2.file(subpath, { etagMethod: false }).etag(basename52).header("Cache-Control", "public,max-age=31536000,immutable");
         }
         return h2.file(subpath);
       });
@@ -96735,24 +96812,24 @@ var init_server = __esm({
     init_instance_keys();
     init_pubsub2();
     init_push();
-    createWorker = (path12) => {
+    createWorker = (path9) => {
       let worker;
       let ready;
       const launchWorker = () => {
-        worker = new Worker(path12);
-        return new Promise((resolve8, reject) => {
+        worker = new Worker(path9);
+        return new Promise((resolve52, reject) => {
           const msgHandler = (msg) => {
             if (msg === "ready") {
               worker.off("error", reject);
               worker.on("error", (e2) => {
-                console.error(e2, `Running worker ${basename52(path12)} terminated. Attempting relaunch...`);
+                console.error(e2, `Running worker ${basename42(path9)} terminated. Attempting relaunch...`);
                 worker.off("message", msgHandler);
                 ready = launchWorker().catch((e3) => {
-                  console.error(e3, `Error on worker ${basename52(path12)} relaunch`);
+                  console.error(e3, `Error on worker ${basename42(path9)} relaunch`);
                   process10.exit(1);
                 });
               });
-              resolve8();
+              resolve52();
             }
           };
           worker.on("message", msgHandler);
@@ -96761,7 +96838,7 @@ var init_server = __esm({
       };
       ready = launchWorker();
       const rpcSbp = (...args) => {
-        return ready.then(() => new Promise((resolve8, reject) => {
+        return ready.then(() => new Promise((resolve52, reject) => {
           const mc = new MessageChannel();
           const cleanup = /* @__PURE__ */ ((worker2) => () => {
             worker2.off("error", reject);
@@ -96771,7 +96848,7 @@ var init_server = __esm({
           mc.port2.onmessage = (event) => {
             cleanup();
             const [success, result] = event.data;
-            if (success) return resolve8(result);
+            if (success) return resolve52(result);
             reject(result);
           };
           mc.port2.onmessageerror = () => {
@@ -96792,8 +96869,8 @@ var init_server = __esm({
       process10.stderr.write("The size calculation worker must run more frequently than the credits worker for accurate billing");
       process10.exit(1);
     }
-    ownerSizeTotalWorker = process10.env.CHELONIA_ARCHIVE_MODE || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker(join7(import.meta.dirname || ".", "serve", "ownerSizeTotalWorker.js"));
-    creditsWorker = process10.env.CHELONIA_ARCHIVE_MODE || !CREDITS_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker(join7(import.meta.dirname || ".", "serve", "creditsWorker.js"));
+    ownerSizeTotalWorker = process10.env.CHELONIA_ARCHIVE_MODE || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker(join52(import.meta.dirname || ".", "serve", "ownerSizeTotalWorker.js"));
+    creditsWorker = process10.env.CHELONIA_ARCHIVE_MODE || !CREDITS_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker(join52(import.meta.dirname || ".", "serve", "creditsWorker.js"));
     ({ CONTRACTS_VERSION, GI_VERSION } = process10.env);
     hapi = new Hapi2.Server({
       // debug: false, // <- Hapi v16 was outputing too many unnecessary debug statements
@@ -97254,9 +97331,9 @@ var handleSignal;
 var init_serve = __esm({
   "src/serve/index.ts"() {
     "use strict";
-    init_module();
     init_esm9();
     init_esm10();
+    init_esm11();
     init_esm();
     import_npm_chalk4 = __toESM(require_source());
     init_events2();
@@ -97270,17 +97347,17 @@ var init_serve = __esm({
     };
     ["backend"].forEach((domain) => esm_default("sbp/filters/domain/add", domain, logSBP));
     [].forEach((sel) => esm_default("sbp/filters/selector/add", sel, logSBP));
-    serve_default = new Promise((resolve8, reject) => {
+    serve_default = new Promise((resolve52, reject) => {
       esm_default("okTurtles.events/on", SERVER_RUNNING, function() {
         console.info(import_npm_chalk4.default.bold("backend startup sequence complete."));
-        resolve8();
+        resolve52();
       });
       Promise.resolve().then(() => (init_server(), server_exports)).catch(reject);
     });
     esm_default("okTurtles.events/once", SERVER_EXITING, () => {
       esm_default("okTurtles.data/apply", PUBSUB_INSTANCE, function(pubsub) {
         esm_default("okTurtles.eventQueue/queueEvent", SERVER_EXITING, () => {
-          return new Promise((resolve8) => {
+          return new Promise((resolve52) => {
             pubsub.on("close", async function() {
               try {
                 await esm_default("backend/server/stop");
@@ -97288,7 +97365,7 @@ var init_serve = __esm({
               } catch (err) {
                 console.error(err, "Error during shutdown");
               } finally {
-                resolve8();
+                resolve52();
               }
             });
             pubsub.close();
@@ -97542,10 +97619,10 @@ function assignProp(target, prop, value) {
     configurable: true
   });
 }
-function getElementAtPath(obj, path12) {
-  if (!path12)
+function getElementAtPath(obj, path9) {
+  if (!path9)
     return obj;
-  return path12.reduce((acc, key) => acc?.[key], obj);
+  return path9.reduce((acc, key) => acc?.[key], obj);
 }
 function promiseAllObject(promisesObj) {
   const keys = Object.keys(promisesObj);
@@ -97865,11 +97942,11 @@ function aborted(x3, startIndex = 0) {
   }
   return false;
 }
-function prefixIssues(path12, issues) {
+function prefixIssues(path9, issues) {
   return issues.map((iss) => {
     var _a2;
     (_a2 = iss).path ?? (_a2.path = []);
-    iss.path.unshift(path12);
+    iss.path.unshift(path9);
     return iss;
   });
 }
@@ -102894,10 +102971,10 @@ async function deploy(args) {
   for (const manifestPath of manifests) {
     const json = JSON.parse(Deno.readTextFileSync(manifestPath));
     const body = ContractBodySchema.parse(JSON.parse(json.body));
-    const dirname52 = dirname5(manifestPath);
-    toUpload.push(CONTRACT_TEXT_PREFIX + join5(dirname52, body.contract.file));
+    const dirname42 = dirname5(manifestPath);
+    toUpload.push(CONTRACT_TEXT_PREFIX + join5(dirname42, body.contract.file));
     if (body.contractSlim) {
-      toUpload.push(CONTRACT_TEXT_PREFIX + join5(dirname52, body.contractSlim.file));
+      toUpload.push(CONTRACT_TEXT_PREFIX + join5(dirname42, body.contractSlim.file));
     }
     toUpload.push(CONTRACT_MANIFEST_PREFIX + manifestPath);
   }
@@ -102927,7 +103004,7 @@ async function eventsAfter2(args) {
 }
 async function getMessagesSince(contractID, sinceHeight, limit) {
   const readable = await esm_default("backend/db/streamEntriesAfter", contractID, sinceHeight, limit);
-  return new Promise((resolve8, reject) => {
+  return new Promise((resolve52, reject) => {
     const data = [];
     readable.on("readable", () => {
       let chunk;
@@ -102940,7 +103017,7 @@ async function getMessagesSince(contractID, sinceHeight, limit) {
       const events = JSON.parse(data.join("")).map((s) => {
         return JSON.parse(new TextDecoder().decode(decodeBase64(s)));
       });
-      resolve8(events);
+      resolve52(events);
     });
   });
 }
@@ -103184,26 +103261,31 @@ var globImport_serve_database_ts = __glob({
 async function migrate(args) {
   const parsedArgs = parse6(args);
   const { to } = parsedArgs;
-  const src4 = resolve5(parsedArgs._[0] ? String(parsedArgs._[0]) : ".");
   await initDB({ skipDbPreloading: true });
   if (!to) exit("missing argument: --to");
   let backendTo;
   try {
     const Ctor = (await globImport_serve_database_ts(`./serve/database-${to}.ts`)).default;
-    backendTo = new Ctor();
+    backendTo = new Ctor({ filepath: "data/groupincome.db" });
     await backendTo.init();
   } catch (error) {
     exit(error);
   }
+  const numKeys2 = await esm_default("chelonia.db/keyCount");
+  console.error(numKeys2);
   let numVisitedKeys = 0;
   for await (const key of esm_default("chelonia.db/iterKeys")) {
     if (!isValidKey(key)) continue;
     const value = await esm_default("chelonia.db/get", key);
-    if (value === void 0) continue;
+    if (value === void 0) {
+      console.error(key, value);
+      ++numVisitedKeys;
+      continue;
+    }
     await backendTo.writeData(key, value);
     ++numVisitedKeys;
-    if (numVisitedKeys % 1e3 === 0) {
-      console.log(`[chel] Migrating... ${numVisitedKeys} entries done`);
+    if (numVisitedKeys % (numKeys2 / 10) < 1) {
+      console.log(`[chel] Migrating... ${Math.round(numVisitedKeys / (numKeys2 / 10))}0% done`);
     }
   }
   numVisitedKeys && console.log(`[chel] ${green("Migrated:")} ${numVisitedKeys} entries`);

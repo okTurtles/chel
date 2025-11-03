@@ -3286,46 +3286,6 @@ var init_esm2 = __esm({
     });
   }
 });
-var _store;
-var esm_default3;
-var init_esm3 = __esm({
-  "node_modules/.deno/@sbp+okturtles.data@0.1.6/node_modules/@sbp/okturtles.data/dist/esm/index.mjs"() {
-    init_esm();
-    _store = /* @__PURE__ */ new Map();
-    esm_default3 = esm_default("sbp/selectors/register", {
-      "okTurtles.data/get": function(key) {
-        return _store.get(key);
-      },
-      "okTurtles.data/set": function(key, data) {
-        _store.set(key, data);
-        return data;
-      },
-      "okTurtles.data/delete": function(key) {
-        return _store.delete(key);
-      },
-      "okTurtles.data/add": function(key, data) {
-        const array = _store.get(key);
-        if (array) {
-          array.push(data);
-        } else {
-          _store.set(key, [data]);
-        }
-      },
-      "okTurtles.data/remove": function(key, data) {
-        const array = _store.get(key);
-        if (array) {
-          const aLen = array.length;
-          const filtered = array.filter((v2) => v2 !== data);
-          _store.set(key, filtered);
-          return aLen - filtered.length;
-        }
-      },
-      "okTurtles.data/apply": function(key, fn) {
-        return fn(_store.get(key));
-      }
-    });
-  }
-});
 function pick(o2, props) {
   const x2 = /* @__PURE__ */ Object.create(null);
   for (const k of props) {
@@ -3442,7 +3402,7 @@ function debounce(func, wait, immediate) {
   return debounced;
 }
 var has;
-var init_esm4 = __esm({
+var init_esm3 = __esm({
   "node_modules/.deno/turtledash@1.0.3/node_modules/turtledash/dist/esm/index.js"() {
     has = Function.prototype.call.bind(Object.prototype.hasOwnProperty);
   }
@@ -5708,7 +5668,7 @@ var b64ToStr;
 var strToBuf;
 var strToB64;
 var init_functions = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.7/node_modules/@chelonia/lib/dist/esm/functions.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/functions.mjs"() {
     init_base58();
     init_blake2b();
     init_blake2bstream();
@@ -5745,7 +5705,7 @@ var init_functions = __esm({
     strToB64 = (str) => strToBuf(str).toString("base64");
   }
 });
-var init_esm5 = __esm({
+var init_esm4 = __esm({
   "node_modules/.deno/@chelonia+multiformats@1.0.0/node_modules/@chelonia/multiformats/dist/esm/index.mjs"() {
     init_base();
     init_base32();
@@ -8492,9 +8452,9 @@ var sign;
 var verifySignature;
 var encrypt;
 var decrypt;
-var init_esm6 = __esm({
+var init_esm5 = __esm({
   "node_modules/.deno/@chelonia+crypto@1.0.1/node_modules/@chelonia/crypto/dist/esm/index.mjs"() {
-    init_esm5();
+    init_esm4();
     import_scrypt_async = __toESM(require_scrypt_async(), 1);
     import_tweetnacl = __toESM(require_nacl_fast(), 1);
     bufToStr = (() => {
@@ -8858,7 +8818,7 @@ var ChelErrorFetchServerTimeFailed;
 var ChelErrorUnexpectedHttpResponseCode;
 var ChelErrorResourceGone;
 var init_errors = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.7/node_modules/@chelonia/lib/dist/esm/errors.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/errors.mjs"() {
     ChelErrorGenerator = (name, base2 = Error) => class extends base2 {
       constructor(...params) {
         super(...params);
@@ -8900,7 +8860,7 @@ var rawResult;
 var serializer;
 var deserializerTable;
 var deserializer;
-var init_esm7 = __esm({
+var init_esm6 = __esm({
   "node_modules/.deno/@chelonia+serdes@1.0.0/node_modules/@chelonia/serdes/dist/esm/index.js"() {
     serdesTagSymbol = Symbol("tag");
     serdesSerializeSymbol = Symbol("serialize");
@@ -9080,10 +9040,10 @@ var signedDataKeyId;
 var isRawSignedData;
 var rawSignedIncomingData;
 var init_signedData = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.7/node_modules/@chelonia/lib/dist/esm/signedData.mjs"() {
-    init_esm6();
+  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/signedData.mjs"() {
+    init_esm5();
     init_esm();
-    init_esm4();
+    init_esm3();
     init_errors();
     init_functions();
     rootStateFn = () => esm_default("chelonia/rootState");
@@ -9353,10 +9313,10 @@ var isRawEncryptedData;
 var unwrapMaybeEncryptedData;
 var maybeEncryptedIncomingData;
 var init_encryptedData = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.7/node_modules/@chelonia/lib/dist/esm/encryptedData.mjs"() {
-    init_esm6();
+  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/encryptedData.mjs"() {
+    init_esm5();
     init_esm();
-    init_esm4();
+    init_esm3();
     init_errors();
     init_signedData();
     rootStateFn2 = () => esm_default("chelonia/rootState");
@@ -9618,10 +9578,10 @@ var decryptedAndVerifiedDeserializedMessage;
 var SPMessage;
 var keyOps;
 var init_SPMessage = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.7/node_modules/@chelonia/lib/dist/esm/SPMessage.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/SPMessage.mjs"() {
+    init_esm5();
     init_esm6();
-    init_esm7();
-    init_esm4();
+    init_esm3();
     init_encryptedData();
     init_functions();
     init_signedData();
@@ -10014,6 +9974,52 @@ var init_SPMessage = __esm({
     ];
   }
 });
+var _store2;
+var esm_default5;
+var init_esm7 = __esm({
+  "node_modules/.deno/@sbp+okturtles.data@0.1.7/node_modules/@sbp/okturtles.data/dist/esm/index.mjs"() {
+    init_esm();
+    _store2 = /* @__PURE__ */ new Map();
+    esm_default5 = esm_default("sbp/selectors/register", {
+      "okTurtles.data/get": function(key) {
+        return _store2.get(key);
+      },
+      "okTurtles.data/set": function(key, data) {
+        _store2.set(key, data);
+        return data;
+      },
+      "okTurtles.data/delete": function(key) {
+        return _store2.delete(key);
+      },
+      "okTurtles.data/add": function(key, data) {
+        const array = _store2.get(key);
+        if (array) {
+          array.push(data);
+        } else {
+          _store2.set(key, [data]);
+        }
+      },
+      "okTurtles.data/remove": function(key, data) {
+        const array = _store2.get(key);
+        if (array) {
+          const aLen = array.length;
+          const filtered = array.filter((v2) => v2 !== data);
+          _store2.set(key, filtered);
+          return aLen - filtered.length;
+        }
+      },
+      "okTurtles.data/iterKeys": function* () {
+        yield* _store2.keys();
+      },
+      "okTurtles.data/keyCount": function() {
+        return _store2.size;
+      },
+      "okTurtles.data/apply": function(key, fn) {
+        return fn(_store2.get(key));
+      }
+    });
+  }
+});
 var headPrefix;
 var getContractIdFromLogHead;
 var getLogHead;
@@ -10023,8 +10029,8 @@ var prefixHandlers;
 var dbPrimitiveSelectors;
 var db_default;
 var init_db = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.7/node_modules/@chelonia/lib/dist/esm/db.mjs"() {
-    init_esm3();
+  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/db.mjs"() {
+    init_esm7();
     init_esm2();
     init_esm();
     init_SPMessage();
@@ -10068,7 +10074,7 @@ var init_db = __esm({
       }
       */
     };
-    esm_default("sbp/selectors/unsafe", ["chelonia.db/get", "chelonia.db/set", "chelonia.db/delete"]);
+    esm_default("sbp/selectors/unsafe", ["chelonia.db/get", "chelonia.db/set", "chelonia.db/delete", "chelonia.db/iterKeys", "chelonia.db/keyCount"]);
     dbPrimitiveSelectors = process.env.LIGHTWEIGHT_CLIENT === "true" ? {
       "chelonia.db/get": function(key) {
         const id = getContractIdFromLogHead(key);
@@ -10087,6 +10093,11 @@ var init_db = __esm({
       },
       "chelonia.db/delete": function() {
         return Promise.resolve(true);
+      },
+      "chelonia.db/iterKeys": async function* () {
+      },
+      "chelonia.db/keyCount": function() {
+        return Promise.resolve(0);
       }
     } : {
       // eslint-disable-next-line require-await
@@ -10106,6 +10117,12 @@ var init_db = __esm({
       // eslint-disable-next-line require-await
       "chelonia.db/delete": async function(key) {
         return esm_default("okTurtles.data/delete", key);
+      },
+      "chelonia.db/iterKeys": async function* () {
+        yield* esm_default("okTurtles.data/iterKeys");
+      },
+      "chelonia.db/keyCount": function() {
+        return Promise.resolve(esm_default("okTurtles.data/keyCount"));
       }
     };
     db_default = esm_default("sbp/selectors/register", {
@@ -12448,7 +12465,7 @@ var DatabaseBackend;
 var init_DatabaseBackend = __esm({
   "src/serve/DatabaseBackend.ts"() {
     "use strict";
-    requiredMethodNames = ["init", "clear", "readData", "writeData", "deleteData", "close", "iterKeys"];
+    requiredMethodNames = ["init", "clear", "readData", "writeData", "deleteData", "close", "iterKeys", "keyCount"];
     DatabaseBackend = class _DatabaseBackend {
       constructor() {
         if (new.target === _DatabaseBackend) {
@@ -12555,11 +12572,15 @@ var init_database_fs = __esm({
       }
       async *iterKeys() {
         const entries = await readdir(this.dataFolder, { withFileTypes: true });
-        for await (const entry of entries) {
+        for (const entry of entries) {
           if (entry.isFile()) {
             yield entry.name;
           }
         }
+      }
+      async keyCount() {
+        const entries = await readdir(this.dataFolder, { withFileTypes: true });
+        return entries.filter((e2) => e2.isFile()).length;
       }
     };
   }
@@ -38106,10 +38127,13 @@ var init_database_redis = __esm({
         this.db.destroy();
       }
       async *iterKeys() {
-        const keys = await this.db.keys("*");
-        for (const key of keys) {
-          yield key;
+        const iterator = this.db.withTypeMapping({}).scanIterator({ MATCH: "*" });
+        for await (const keys of iterator) {
+          yield* keys;
         }
+      }
+      keyCount() {
+        return this.db.dbSize();
       }
     };
   }
@@ -38131,6 +38155,7 @@ var init_database_sqlite = __esm({
       writeStatement = null;
       deleteStatement = null;
       iterKeysStatement = null;
+      keyCountStatement = null;
       constructor(options2 = {}) {
         super();
         const { filepath } = options2;
@@ -38154,6 +38179,7 @@ var init_database_sqlite = __esm({
         this.writeStatement = this.db.prepare("REPLACE INTO Data(key, value) VALUES(?, ?)");
         this.deleteStatement = this.db.prepare("DELETE FROM Data WHERE key = ?");
         this.iterKeysStatement = this.db.prepare("SELECT key FROM Data");
+        this.keyCountStatement = this.db.prepare("SELECT COUNT(*) count FROM Data");
       }
       // Useful in test hooks.
       // deno-lint-ignore require-await
@@ -38166,6 +38192,8 @@ var init_database_sqlite = __esm({
         const value = row?.value;
         if (ArrayBuffer.isView(value) && !Buffer11.isBuffer(value)) {
           return Buffer11.from(value);
+        } else {
+          return value;
         }
       }
       async writeData(key, value) {
@@ -38181,6 +38209,10 @@ var init_database_sqlite = __esm({
         for (const row of this.iterKeysStatement.iter()) {
           yield row.key;
         }
+      }
+      async keyCount() {
+        const { count } = await this.keyCountStatement.get();
+        return count;
       }
     };
   }
@@ -38316,6 +38348,13 @@ var init_database_router = __esm({
           yield* backend.iterKeys();
         }
       }
+      async keyCount() {
+        let count = 0;
+        for (const backend of new Set(Object.values(this.backends))) {
+          count += await backend.keyCount();
+        }
+        return count;
+      }
     };
   }
 });
@@ -38327,7 +38366,7 @@ var db;
 var init_database_router_test = __esm({
   "src/serve/database-router.test.ts"() {
     "use strict";
-    init_esm4();
+    init_esm3();
     init_database_router();
     CID2 = "Q";
     randomKeyWithPrefix = (prefix) => `${prefix}${globalThis.crypto.randomUUID().replaceAll("-", "")}`;
@@ -42612,7 +42651,40 @@ init_esm();
 var OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL = 3e4;
 init_esm2();
 init_esm();
-init_esm3();
+init_esm();
+var _store = /* @__PURE__ */ new Map();
+var esm_default3 = esm_default("sbp/selectors/register", {
+  "okTurtles.data/get": function(key) {
+    return _store.get(key);
+  },
+  "okTurtles.data/set": function(key, data) {
+    _store.set(key, data);
+    return data;
+  },
+  "okTurtles.data/delete": function(key) {
+    return _store.delete(key);
+  },
+  "okTurtles.data/add": function(key, data) {
+    const array = _store.get(key);
+    if (array) {
+      array.push(data);
+    } else {
+      _store.set(key, [data]);
+    }
+  },
+  "okTurtles.data/remove": function(key, data) {
+    const array = _store.get(key);
+    if (array) {
+      const aLen = array.length;
+      const filtered = array.filter((v2) => v2 !== data);
+      _store.set(key, filtered);
+      return aLen - filtered.length;
+    }
+  },
+  "okTurtles.data/apply": function(key, fn) {
+    return fn(_store.get(key));
+  }
+});
 var listenKey = (evt) => `events/${evt}/listeners`;
 var esm_default4 = esm_default("sbp/selectors/register", {
   "okTurtles.events/_init": function() {
@@ -42654,7 +42726,7 @@ var esm_default4 = esm_default("sbp/selectors/register", {
   }
 });
 init_esm();
-init_esm4();
+init_esm3();
 init_functions();
 init_esm();
 var NOTIFICATION_TYPE = Object.freeze({
@@ -43181,7 +43253,7 @@ for (const name of Object.keys(defaultClientEventHandlers)) {
     });
   }
 }
-init_esm6();
+init_esm5();
 init_errors();
 var CHELONIA_RESET = "chelonia-reset";
 var CONTRACT_IS_SYNCING = "contract-is-syncing";
@@ -43471,16 +43543,16 @@ var U = async (e2, b, f, i2, A2, y) => {
   return b.pipeThrough(g2), g2.readable;
 };
 var K = U;
-init_esm6();
+init_esm5();
 init_bytes();
 init_esm();
-init_esm4();
+init_esm3();
 init_functions();
-init_esm6();
+init_esm5();
 init_esm();
-init_esm4();
+init_esm3();
 init_SPMessage();
-init_esm7();
+init_esm6();
 var wm = /* @__PURE__ */ new WeakMap();
 var Secret = class {
   static [serdesDeserializeSymbol](secret) {
@@ -44474,9 +44546,9 @@ var files_default = esm_default("sbp/selectors/register", {
 });
 init_esm();
 init_functions();
-init_esm4();
+init_esm3();
 init_SPMessage();
-init_esm6();
+init_esm5();
 init_db();
 init_encryptedData();
 init_errors();
@@ -48210,7 +48282,7 @@ function namespaceKey(name) {
 var initDB = async ({ skipDbPreloading } = {}) => {
   if (persistence) {
     const Ctor = (await globImport_database_ts2(`./database-${persistence}.ts`)).default;
-    const { init: init2, readData, writeData, deleteData, iterKeys, close } = new Ctor(options[persistence]);
+    const { init: init2, readData, writeData, deleteData, iterKeys, keyCount, close } = new Ctor(options[persistence]);
     await init2();
     esm_default("okTurtles.events/once", SERVER_EXITING, () => {
       esm_default("okTurtles.eventQueue/queueEvent", SERVER_EXITING, async () => {
@@ -48225,11 +48297,6 @@ var initDB = async ({ skipDbPreloading } = {}) => {
       max: Number(process5.env.GI_LRU_NUM_ITEMS) || 1e4
     });
     const prefixes = Object.keys(prefixHandlers);
-    esm_default("sbp/selectors/register", {
-      "chelonia.db/iterKeys": () => {
-        return iterKeys();
-      }
-    });
     esm_default("sbp/selectors/overwrite", {
       "chelonia.db/get": async function(prefixableKey, { bypassCache } = {}) {
         if (!bypassCache) {
@@ -48271,10 +48338,13 @@ var initDB = async ({ skipDbPreloading } = {}) => {
         prefixes.forEach((prefix) => {
           cache2.delete(prefix + key);
         });
+      },
+      "chelonia.db/iterKeys": () => {
+        return iterKeys();
+      },
+      "chelonia.db/keyCount": () => {
+        return keyCount();
       }
-      /* 'chelonia.db/iterKeys': () => {
-        return iterKeys()
-      } */
     });
     esm_default("sbp/selectors/lock", ["chelonia.db/get", "chelonia.db/set", "chelonia.db/delete", "chelonia.db/iterKeys"]);
   }

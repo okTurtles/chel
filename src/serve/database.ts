@@ -238,7 +238,7 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
   if (persistence) {
     const Ctor = (await import(`./database-${persistence}.ts`)).default
     // Destructuring is safe because these methods have been bound using rebindMethods().
-    const { init, readData, writeData, deleteData, iterKeys, close } = new Ctor(options[persistence])
+    const { init, readData, writeData, deleteData, iterKeys, keyCount, close } = new Ctor(options[persistence])
     await init()
     sbp('okTurtles.events/once', SERVER_EXITING, () => {
       sbp('okTurtles.eventQueue/queueEvent', SERVER_EXITING, async () => {
@@ -256,9 +256,6 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
     })
 
     const prefixes = Object.keys(prefixHandlers)
-    sbp('sbp/selectors/register', {
-      'chelonia.db/iterKeys': () => { return iterKeys() }
-    })
     sbp('sbp/selectors/overwrite', {
       'chelonia.db/get': async function (prefixableKey: string, { bypassCache }: { bypassCache?: boolean } = {}): Promise<Buffer | string | void> {
         if (!bypassCache) {
@@ -313,9 +310,12 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
           cache.delete(prefix + key)
         })
       },
-      /* 'chelonia.db/iterKeys': () => {
+      'chelonia.db/iterKeys': () => {
         return iterKeys()
-      } */
+      },
+      'chelonia.db/keyCount': () => {
+        return keyCount()
+      }
     })
     sbp('sbp/selectors/lock', ['chelonia.db/get', 'chelonia.db/set', 'chelonia.db/delete', 'chelonia.db/iterKeys'])
   }

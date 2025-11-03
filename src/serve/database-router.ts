@@ -127,4 +127,12 @@ export default class RouterBackend extends DatabaseBackend {
       yield * backend.iterKeys()
     }
   }
+
+  async keyCount () {
+    let count = 0
+    for (const backend of new Set(Object.values(this.backends))) {
+      count += await backend.keyCount()
+    }
+    return count
+  }
 }

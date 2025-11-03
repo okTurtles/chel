@@ -44,9 +44,13 @@ export default class RedisBackend extends DatabaseBackend {
   }
 
   async * iterKeys () {
-    const keys = await this.db!.keys('*')
-    for (const key of keys) {
-      yield key
+    const iterator = this.db!.withTypeMapping({}).scanIterator({ MATCH: '*' })
+    for await (const keys of iterator) {
+      yield * keys
     }
+  }
+
+  keyCount () {
+    return this.db!.dbSize()
   }
 }

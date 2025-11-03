@@ -13,6 +13,7 @@ export default class SqliteBackend extends DatabaseBackend {
   writeStatement: { run: (key: string, value: Buffer | string) => unknown } | null = null
   deleteStatement: { run: (key: string) => unknown } | null = null
   iterKeysStatement: { iter: () => Iterable<{key: string}> } | null = null
+  keyCountStatement: { get: () => { count: number } } | null = null
 
   constructor (options: { filepath?: string } = {}) {
     super()
@@ -41,6 +42,7 @@ export default class SqliteBackend extends DatabaseBackend {
     this.writeStatement = this.db.prepare('REPLACE INTO Data(key, value) VALUES(?, ?)')
     this.deleteStatement = this.db.prepare('DELETE FROM Data WHERE key = ?')
     this.iterKeysStatement = this.db.prepare('SELECT key FROM Data')
+    this.keyCountStatement = this.db.prepare('SELECT COUNT(*) count FROM Data')
   }
 
   // Useful in test hooks.
@@ -58,6 +60,8 @@ export default class SqliteBackend extends DatabaseBackend {
     const value = row?.value
     if (ArrayBuffer.isView(value) && !Buffer.isBuffer(value)) {
       return Buffer.from(value)
+    } else {
+      return value
     }
   }
 
@@ -77,5 +81,10 @@ export default class SqliteBackend extends DatabaseBackend {
     for (const row of this.iterKeysStatement!.iter()) {
       yield row.key
     }
+  }
+
+  async keyCount () {
+    const { count } = await this.keyCountStatement!.get()
+    return count
   }
 }

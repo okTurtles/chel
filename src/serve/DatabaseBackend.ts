@@ -1,6 +1,6 @@
 import { Buffer } from 'node:buffer'
 
-const requiredMethodNames = ['init', 'clear', 'readData', 'writeData', 'deleteData', 'close', 'iterKeys'] as const
+const requiredMethodNames = ['init', 'clear', 'readData', 'writeData', 'deleteData', 'close', 'iterKeys', 'keyCount'] as const
 
 export default abstract class DatabaseBackend {
   abstract init (): Promise<void>
@@ -10,6 +10,7 @@ export default abstract class DatabaseBackend {
   abstract deleteData (key: string): Promise<void>
   abstract close (): Promise<void> | void
   abstract iterKeys (): AsyncGenerator<string>
+  abstract keyCount (): Promise<number>
 
   constructor () {
     if (new.target === DatabaseBackend) {
