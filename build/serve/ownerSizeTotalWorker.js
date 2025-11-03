@@ -38211,8 +38211,8 @@ var init_database_sqlite = __esm({
         }
       }
       async keyCount() {
-        const { count } = await this.keyCountStatement.get();
-        return count;
+        const result = await this.keyCountStatement.get();
+        return result?.count ?? 0;
       }
     };
   }
