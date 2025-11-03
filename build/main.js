@@ -3461,18 +3461,18 @@ import path from "node:path";
 import process5 from "node:process";
 import { Readable } from "node:stream";
 import path6 from "node:path";
-import process6 from "node:process";
 import process7 from "node:process";
-import { Buffer as Buffer12 } from "node:buffer";
 import process8 from "node:process";
+import { Buffer as Buffer12 } from "node:buffer";
+import process9 from "node:process";
 import { Buffer as Buffer13 } from "node:buffer";
 import { isIP } from "node:net";
 import path7 from "node:path";
-import process9 from "node:process";
-import { basename as basename42, join as join52 } from "node:path";
 import process10 from "node:process";
-import { Worker } from "node:worker_threads";
+import { basename as basename42, join as join52 } from "node:path";
 import process11 from "node:process";
+import { Worker } from "node:worker_threads";
+import process12 from "node:process";
 
 // deno:https://jsr.io/@std/encoding/1.0.10/_common64.ts
 var padding = "=".charCodeAt(0);
@@ -3860,7 +3860,8 @@ async function writeAll(writer, data) {
 }
 
 // build/main.js-tmp
-import process12 from "node:process";
+import process6 from "node:process";
+import process13 from "node:process";
 var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -72283,7 +72284,7 @@ var init_dashboard_server = __esm({
     Hapi = __toESM(require_lib34());
     import_inert = __toESM(require_lib35());
     getDashboardPath = () => {
-      return path6.resolve(import.meta.dirname || process6.cwd(), "dist-dashboard");
+      return path6.resolve(import.meta.dirname || process7.cwd(), "dist-dashboard");
     };
     dashboard_server_default = startDashboard;
   }
@@ -78211,7 +78212,7 @@ var init_logger = __esm({
   "src/serve/logger.ts"() {
     "use strict";
     import_npm_pino = __toESM(require_pino());
-    prettyPrint = process7.env.NODE_ENV === "development" || process7.env.CI || process7.env.CYPRESS_RECORD_KEY || process7.env.PRETTY;
+    prettyPrint = process8.env.NODE_ENV === "development" || process8.env.CI || process8.env.CYPRESS_RECORD_KEY || process8.env.PRETTY;
     if (prettyPrint) {
       try {
         logger = (0, import_npm_pino.default)({
@@ -78230,7 +78231,7 @@ var init_logger = __esm({
     } else {
       logger = (0, import_npm_pino.default)({ hooks: { logMethod } });
     }
-    logLevel = process7.env.LOG_LEVEL || (prettyPrint ? "debug" : "info");
+    logLevel = process8.env.LOG_LEVEL || (prettyPrint ? "debug" : "info");
     if (Object.keys(logger.levels.values).includes(logLevel)) {
       logger.level = logLevel;
     } else {
@@ -82341,7 +82342,7 @@ var init_pubsub2 = __esm({
     ({ PING, PONG, PUB, SUB, UNSUB, KV_FILTER } = NOTIFICATION_TYPE);
     ({ ERROR, OK } = RESPONSE_TYPE);
     defaultOptions3 = {
-      logPingRounds: process8.env.NODE_ENV !== "production" && !process8.env.CI,
+      logPingRounds: process9.env.NODE_ENV !== "production" && !process9.env.CI,
       logPongMessages: false,
       maxPayload: 6 * 1024 * 1024,
       pingInterval: 3e4
@@ -95918,11 +95919,11 @@ var init_routes = __esm({
     KV_KEY_REGEX = /^(?!_private)[^\x00]{1,256}$/;
     NAME_REGEX = /^(?![_-])((?!([_-])\2)[a-z\d_-]){1,80}(?<![_-])$/;
     POSITIVE_INTEGER_REGEX = /^\d{1,16}$/;
-    FILE_UPLOAD_MAX_BYTES = parseInt(process9.env.FILE_UPLOAD_MAX_BYTES) || 30 * MEGABYTE;
-    SIGNUP_LIMIT_MIN = parseInt(process9.env.SIGNUP_LIMIT_MIN) || 2;
-    SIGNUP_LIMIT_HOUR = parseInt(process9.env.SIGNUP_LIMIT_HOUR) || 10;
-    SIGNUP_LIMIT_DAY = parseInt(process9.env.SIGNUP_LIMIT_DAY) || 50;
-    SIGNUP_LIMIT_DISABLED = process9.env.NODE_ENV !== "production" || process9.env.SIGNUP_LIMIT_DISABLED === "true";
+    FILE_UPLOAD_MAX_BYTES = parseInt(process10.env.FILE_UPLOAD_MAX_BYTES) || 30 * MEGABYTE;
+    SIGNUP_LIMIT_MIN = parseInt(process10.env.SIGNUP_LIMIT_MIN) || 2;
+    SIGNUP_LIMIT_HOUR = parseInt(process10.env.SIGNUP_LIMIT_HOUR) || 10;
+    SIGNUP_LIMIT_DAY = parseInt(process10.env.SIGNUP_LIMIT_DAY) || 50;
+    SIGNUP_LIMIT_DISABLED = process10.env.NODE_ENV !== "production" || process10.env.SIGNUP_LIMIT_DISABLED === "true";
     limiterPerMinute = new import_npm_bottleneck.default.Group({
       strategy: import_npm_bottleneck.default.strategy.LEAK,
       highWater: 0,
@@ -95999,8 +96000,8 @@ var init_routes = __esm({
       }
       return r === 0;
     };
-    isCheloniaDashboard = process9.env.IS_CHELONIA_DASHBOARD_DEV;
-    appDir = process9.env.CHELONIA_APP_DIR || ".";
+    isCheloniaDashboard = process10.env.IS_CHELONIA_DASHBOARD_DEV;
+    appDir = process10.env.CHELONIA_APP_DIR || ".";
     dashboardDir = import.meta.dirname || "./build/dist-dashboard";
     staticServeConfig = {
       routePath: isCheloniaDashboard ? "/dashboard/{path*}" : "/app/{path*}",
@@ -96045,7 +96046,7 @@ var init_routes = __esm({
         payload: import_npm_joi.default.string().required()
       }
     }, async function(request) {
-      if (process9.env.CHELONIA_ARCHIVE_MODE) return import_boom3.default.notImplemented("Server in archive mode");
+      if (process10.env.CHELONIA_ARCHIVE_MODE) return import_boom3.default.notImplemented("Server in archive mode");
       const ip = request.headers["x-real-ip"] || request.info.remoteAddress;
       try {
         const deserializedHEAD = SPMessage.deserializeHEAD(request.payload);
@@ -96062,7 +96063,7 @@ var init_routes = __esm({
             if (name !== "gi.contracts/identity") {
               return import_boom3.default.unauthorized("This contract type requires ownership information", "shelter");
             }
-            if (process9.env.CHELONIA_REGISTRATION_DISABLED) {
+            if (process10.env.CHELONIA_REGISTRATION_DISABLED) {
               return import_boom3.default.forbidden("Registration disabled");
             }
             if (!SIGNUP_LIMIT_DISABLED) {
@@ -96173,7 +96174,7 @@ var init_routes = __esm({
       const resources = (await esm_default("chelonia.db/get", `_private_resources_${billableContractID}`))?.split("\0");
       return resources || [];
     });
-    if (process9.env.NODE_ENV === "development") {
+    if (process10.env.NODE_ENV === "development") {
       const levelToColor = {
         error: import_npm_chalk2.default.bold.red,
         warn: import_npm_chalk2.default.yellow,
@@ -96189,7 +96190,7 @@ var init_routes = __esm({
           })
         }
       }, function(request, h2) {
-        if (process9.env.CHELONIA_ARCHIVE_MODE) return import_boom3.default.notImplemented("Server in archive mode");
+        if (process10.env.CHELONIA_ARCHIVE_MODE) return import_boom3.default.notImplemented("Server in archive mode");
         const ip = request.headers["x-real-ip"] || request.info.remoteAddress;
         const log2 = levelToColor[request.payload.level];
         console.debug(import_npm_chalk2.default.bold.yellow(`REMOTE LOG (${ip}): `) + log2(`[${request.payload.level}] ${request.payload.value}`));
@@ -96256,7 +96257,7 @@ var init_routes = __esm({
         }
       }
     );
-    if (process9.env.NODE_ENV === "development") {
+    if (process10.env.NODE_ENV === "development") {
       route.POST("/dev-file", {
         payload: {
           output: "data",
@@ -96272,7 +96273,7 @@ var init_routes = __esm({
           // TODO: make this a configurable setting
         }
       }, async function(request) {
-        if (process9.env.CHELONIA_ARCHIVE_MODE) return import_boom3.default.notImplemented("Server in archive mode");
+        if (process10.env.CHELONIA_ARCHIVE_MODE) return import_boom3.default.notImplemented("Server in archive mode");
         try {
           console.log("FILE UPLOAD!");
           const { hash: hash3, data } = request.payload;
@@ -96312,7 +96313,7 @@ var init_routes = __esm({
         // TODO: make this a configurable setting
       }
     }, async function(request, h2) {
-      if (process9.env.CHELONIA_ARCHIVE_MODE) return import_boom3.default.notImplemented("Server in archive mode");
+      if (process10.env.CHELONIA_ARCHIVE_MODE) return import_boom3.default.notImplemented("Server in archive mode");
       try {
         console.info("FILE UPLOAD!");
         const credentials = request.auth.credentials;
@@ -96413,7 +96414,7 @@ var init_routes = __esm({
         })
       }
     }, async function(request, h2) {
-      if (process9.env.CHELONIA_ARCHIVE_MODE) return import_boom3.default.notImplemented("Server in archive mode");
+      if (process10.env.CHELONIA_ARCHIVE_MODE) return import_boom3.default.notImplemented("Server in archive mode");
       const { hash: hash3 } = request.params;
       const strategy = request.auth.strategy;
       const parsed = maybeParseCID(hash3);
@@ -96461,7 +96462,7 @@ var init_routes = __esm({
         mode: "required"
       }
     }, async function(request, h2) {
-      if (process9.env.CHELONIA_ARCHIVE_MODE) return import_boom3.default.notImplemented("Server in archive mode");
+      if (process10.env.CHELONIA_ARCHIVE_MODE) return import_boom3.default.notImplemented("Server in archive mode");
       const { hash: hash3 } = request.params;
       const strategy = request.auth.strategy;
       if (!hash3 || hash3.startsWith("_private")) return import_boom3.default.notFound();
@@ -96522,7 +96523,7 @@ var init_routes = __esm({
         })
       }
     }, function(request, h2) {
-      if (process9.env.CHELONIA_ARCHIVE_MODE) return import_boom3.default.notImplemented("Server in archive mode");
+      if (process10.env.CHELONIA_ARCHIVE_MODE) return import_boom3.default.notImplemented("Server in archive mode");
       const { contractID, key } = request.params;
       const parsed = maybeParseCID(contractID);
       if (parsed?.code !== multicodes.SHELTER_CONTRACT_DATA) {
@@ -96595,8 +96596,8 @@ var init_routes = __esm({
       return h2.response(result).etag(cid).header("x-cid", `"${cid}"`);
     });
     route.GET("/serverMessages", { cache: { otherwise: "no-store" } }, (_request, h2) => {
-      if (!process9.env.CHELONIA_SERVER_MESSAGES) return [];
-      return h2.response(process9.env.CHELONIA_SERVER_MESSAGES).type("application/json");
+      if (!process10.env.CHELONIA_SERVER_MESSAGES) return [];
+      return h2.response(process10.env.CHELONIA_SERVER_MESSAGES).type("application/json");
     });
     route.GET("/assets/{subpath*}", {
       ext: {
@@ -96685,7 +96686,7 @@ var init_routes = __esm({
         ])
       }
     }, async function(req) {
-      if (process9.env.CHELONIA_ARCHIVE_MODE) return import_boom3.default.notImplemented("Server in archive mode");
+      if (process10.env.CHELONIA_ARCHIVE_MODE) return import_boom3.default.notImplemented("Server in archive mode");
       const lookupResult = await esm_default("backend/db/lookupName", req.params["name"]);
       if (lookupResult) {
         return import_boom3.default.conflict();
@@ -96764,7 +96765,7 @@ var init_routes = __esm({
         })
       }
     }, async function(req) {
-      if (process9.env.CHELONIA_ARCHIVE_MODE) return import_boom3.default.notImplemented("Server in archive mode");
+      if (process10.env.CHELONIA_ARCHIVE_MODE) return import_boom3.default.notImplemented("Server in archive mode");
       try {
         const { payload } = req;
         const result = await updateContractSalt(req.params["contractID"], payload["r"], payload["s"], payload["sig"], payload["hc"], payload["Ea"]);
@@ -96826,7 +96827,7 @@ var init_server = __esm({
                 worker.off("message", msgHandler);
                 ready = launchWorker().catch((e3) => {
                   console.error(e3, `Error on worker ${basename42(path9)} relaunch`);
-                  process10.exit(1);
+                  process11.exit(1);
                 });
               });
               resolve52();
@@ -96866,17 +96867,17 @@ var init_server = __esm({
       };
     };
     if (CREDITS_WORKER_TASK_TIME_INTERVAL && OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL > CREDITS_WORKER_TASK_TIME_INTERVAL) {
-      process10.stderr.write("The size calculation worker must run more frequently than the credits worker for accurate billing");
-      process10.exit(1);
+      process11.stderr.write("The size calculation worker must run more frequently than the credits worker for accurate billing");
+      process11.exit(1);
     }
-    ownerSizeTotalWorker = process10.env.CHELONIA_ARCHIVE_MODE || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker(join52(import.meta.dirname || ".", "serve", "ownerSizeTotalWorker.js"));
-    creditsWorker = process10.env.CHELONIA_ARCHIVE_MODE || !CREDITS_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker(join52(import.meta.dirname || ".", "serve", "creditsWorker.js"));
-    ({ CONTRACTS_VERSION, GI_VERSION } = process10.env);
+    ownerSizeTotalWorker = process11.env.CHELONIA_ARCHIVE_MODE || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker(join52(import.meta.dirname || ".", "serve", "ownerSizeTotalWorker.js"));
+    creditsWorker = process11.env.CHELONIA_ARCHIVE_MODE || !CREDITS_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker(join52(import.meta.dirname || ".", "serve", "creditsWorker.js"));
+    ({ CONTRACTS_VERSION, GI_VERSION } = process11.env);
     hapi = new Hapi2.Server({
       // debug: false, // <- Hapi v16 was outputing too many unnecessary debug statements
       //               // v17 doesn't seem to do this anymore so I've re-enabled the logging
       // debug: { log: ['error'], request: ['error'] },
-      port: process10.env.API_PORT,
+      port: process11.env.API_PORT,
       // See: https://github.com/hapijs/discuss/issues/262#issuecomment-204616831
       routes: {
         cors: {
@@ -97141,7 +97142,7 @@ var init_server = __esm({
         });
       }
     });
-    if (process10.env.NODE_ENV === "development" && !process10.env.CI) {
+    if (process11.env.NODE_ENV === "development" && !process11.env.CI) {
       hapi.events.on("response", (req) => {
         const ip = req.headers["x-real-ip"] || req.info.remoteAddress;
         const statusCode = req.response instanceof import_boom4.default.Boom ? req.response.output.statusCode : req.response.statusCode;
@@ -97339,7 +97340,7 @@ var init_serve = __esm({
     init_events2();
     init_instance_keys();
     init_logger();
-    console.info("NODE_ENV =", process11.env.NODE_ENV);
+    console.info("NODE_ENV =", process12.env.NODE_ENV);
     dontLog = {
       "backend/server/broadcastEntry": true,
       "backend/server/broadcastDeletion": true,
@@ -97374,25 +97375,25 @@ var init_serve = __esm({
         });
       });
     });
-    process11.on("uncaughtException", (err) => {
+    process12.on("uncaughtException", (err) => {
       console.error(err, "[server] Unhandled exception");
-      process11.exit(1);
+      process12.exit(1);
     });
-    process11.on("unhandledRejection", (reason) => {
+    process12.on("unhandledRejection", (reason) => {
       console.error(reason, "[server] Unhandled promise rejection:", reason);
-      process11.exit(1);
+      process12.exit(1);
     });
     exit2 = (code2) => {
       esm_default("okTurtles.events/once", SERVER_EXITING, () => {
         esm_default("okTurtles.eventQueue/queueEvent", SERVER_EXITING, () => {
-          process11.send?.({});
-          process11.nextTick(() => process11.exit(code2));
+          process12.send?.({});
+          process12.nextTick(() => process12.exit(code2));
         });
       });
       esm_default("okTurtles.events/emit", SERVER_EXITING);
     };
     handleSignal = (signal, code2) => {
-      process11.on(signal, () => {
+      process12.on(signal, () => {
         console.error(`Exiting upon receiving ${signal} (${code2})`);
         exit2(128 + code2);
       });
@@ -97405,7 +97406,7 @@ var init_serve = __esm({
       ["SIGUSR1", 10],
       ["SIGUSR2", 11]
     ].forEach(([signal, code2]) => handleSignal(signal, code2));
-    process11.on("message", (message) => {
+    process12.on("message", (message) => {
       console.info("message received in child, shutting down...", message);
       exit2(0);
     });
@@ -103272,17 +103273,36 @@ async function migrate(args) {
     exit(error);
   }
   const numKeys2 = await esm_default("chelonia.db/keyCount");
-  console.error(numKeys2);
   let numVisitedKeys = 0;
+  let shouldExit = 0;
+  const handleSignal2 = (signal, code2) => {
+    process6.on(signal, () => {
+      console.error(`Received signal ${signal} (${code2}). Finishing current operation.`);
+      shouldExit = 128 + code2;
+    });
+  };
+  [
+    ["SIGHUP", 1],
+    ["SIGINT", 2],
+    ["SIGQUIT", 3],
+    ["SIGTERM", 15],
+    ["SIGUSR1", 10],
+    ["SIGUSR2", 11]
+  ].forEach(([signal, code2]) => handleSignal2(signal, code2));
   for await (const key of esm_default("chelonia.db/iterKeys")) {
     if (!isValidKey(key)) continue;
     const value = await esm_default("chelonia.db/get", key);
+    if (shouldExit) {
+      exit(shouldExit);
+    }
     if (value === void 0) {
-      console.error(key, value);
       ++numVisitedKeys;
       continue;
     }
     await backendTo.writeData(key, value);
+    if (shouldExit) {
+      exit(shouldExit);
+    }
     ++numVisitedKeys;
     if (numVisitedKeys % (numKeys2 / 10) < 1) {
       console.log(`[chel] Migrating... ${Math.round(numVisitedKeys / (numKeys2 / 10))}0% done`);
@@ -103295,8 +103315,8 @@ async function startDashboardServer(port) {
   await dashboardServer.startDashboard(port);
 }
 async function startApplicationServer(port, directory) {
-  process12.env.API_PORT = port.toString();
-  process12.env.CHELONIA_APP_DIR = directory;
+  process13.env.API_PORT = port.toString();
+  process13.env.CHELONIA_APP_DIR = directory;
   const startServer = await Promise.resolve().then(() => (init_serve(), serve_exports));
   await startServer.default;
 }
@@ -103340,7 +103360,7 @@ async function serve(args) {
     });
   } catch (error) {
     console.error(red("\u274C Failed to start server:"), error);
-    process12.exit(1);
+    process13.exit(1);
   }
 }
 function parseServeArgs(args) {

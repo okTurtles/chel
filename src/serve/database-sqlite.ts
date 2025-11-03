@@ -13,7 +13,7 @@ export default class SqliteBackend extends DatabaseBackend {
   writeStatement: { run: (key: string, value: Buffer | string) => unknown } | null = null
   deleteStatement: { run: (key: string) => unknown } | null = null
   iterKeysStatement: { iter: () => Iterable<{key: string}> } | null = null
-  keyCountStatement: { get: () => { count: number } } | null = null
+  keyCountStatement: { get: () => { count: number } | undefined } | null = null
 
   constructor (options: { filepath?: string } = {}) {
     super()
@@ -84,7 +84,7 @@ export default class SqliteBackend extends DatabaseBackend {
   }
 
   async keyCount () {
-    const { count } = await this.keyCountStatement!.get()
-    return count
+    const result = await this.keyCountStatement!.get()
+    return result?.count ?? 0
   }
 }
