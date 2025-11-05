@@ -52,7 +52,9 @@
     "npm:joi": "npm:joi@18.0.1",
     "npm:bottleneck": "npm:bottleneck@2.19.5",
     "npm:@apeleghq/rfc8188/": "npm:@apeleghq/rfc8188@1.0.7/",
-    "npm:redis": "npm:redis@5.9.0"
+    "npm:redis": "npm:redis@5.9.0",
+    "npm:nconf": "npm:nconf@0.13.0",
+    "npm:yargs": "npm:yargs@16.2.0"
   },
   "nodeModulesDir": "auto",
   "fmt": {
