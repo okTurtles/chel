@@ -3,13 +3,6 @@ import process from 'node:process'
 // @deno-types="npm:@types/yargs"
 import type { ArgumentsCamelCase } from 'npm:yargs'
 
-interface ServeOptions {
-  dp?: number
-  port?: number
-  'db-type'?: string
-  'db-location'?: string
-}
-
 // Dashboard server function
 async function startDashboardServer (port: number) {
   // Import and start the dashboard server
@@ -28,7 +21,7 @@ async function startApplicationServer (port: number, directory: string): Promise
   await startServer.default
 }
 
-export async function serve (args: ArgumentsCamelCase<{ port: number, 'dashboard-port': number, directory: string | undefined }>) {
+export async function serve (args: ArgumentsCamelCase<{ port: number, 'dashboard-port': number, directory: string }>) {
   const { port: applicationPort, 'dashboard-port': dashboardPort, directory } = args
 
   try {

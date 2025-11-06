@@ -204,7 +204,6 @@ yargs(hideBin(process.argv))
     return yargs
       .option('key', {
         describe: 'Public key',
-        demandOption: true,
         requiresArg: true,
         string: true,
       })

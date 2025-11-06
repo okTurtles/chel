@@ -37,7 +37,7 @@ function isManifest (obj: unknown): obj is Manifest {
   )
 }
 
-export const verifySignature = async (args: ArgumentsCamelCase<{ key: string, manifestFile: string }>, internal = false): Promise<void> => {
+export const verifySignature = async (args: ArgumentsCamelCase<{ key: string | undefined, manifestFile: string }>, internal = false): Promise<void> => {
   await revokeNet()
   const { key: keyFile, manifestFile } = args
   const [externalKeyDescriptorRaw, manifestRaw] = await Promise.all([
@@ -113,7 +113,7 @@ export const verifySignature = async (args: ArgumentsCamelCase<{ key: string, ma
   }
 
   if (body.contractSlim) {
-    const computedHash = await hash([path.join(parsedFilepath.dir, body.contractSlim.file)], multicodes.SHELTER_CONTRACT_TEXT, true)
+    const computedHash = await hash({ ...args, filename: path.join(parsedFilepath.dir, body.contractSlim.file) }, multicodes.SHELTER_CONTRACT_TEXT, true)
     if (computedHash !== body.contractSlim.hash) {
       exit(`Invalid slim contract file hash. Expected ${body.contractSlim.hash} but got ${computedHash}`, internal)
     }
