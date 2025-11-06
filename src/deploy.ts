@@ -3,6 +3,8 @@
 import * as path from 'jsr:@std/path/'
 import * as z from 'npm:zod'
 import { upload } from './upload.ts'
+// @deno-types="npm:@types/yargs"
+import type { ArgumentsCamelCase } from 'npm:yargs'
 
 // Prefixes to use to select the correct CID to use
 const CONTRACT_TEXT_PREFIX = 't|'
@@ -13,8 +15,8 @@ const ContractBodySchema = z.object({
   contractSlim: z.object({ file: z.string() }).optional(),
 })
 
-export async function deploy (args: string[]): Promise<void> {
-  const [urlOrDirOrSqliteFile, ...manifests] = args
+export async function deploy (args: ArgumentsCamelCase<{ _: string[], url: string | undefined }>): Promise<void> {
+  const manifests = args._
   if (manifests.length === 0) throw new Error('missing url or manifests!')
   const toUpload = []
   for (const manifestPath of manifests) {
@@ -27,5 +29,5 @@ export async function deploy (args: string[]): Promise<void> {
     }
     toUpload.push(CONTRACT_MANIFEST_PREFIX + manifestPath)
   }
-  await upload([urlOrDirOrSqliteFile, ...toUpload], true)
+  await upload({ ...args, _: toUpload }, true)
 }

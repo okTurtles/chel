@@ -11,16 +11,13 @@ import { writeAll } from 'jsr:@std/io/'
 import sbp from 'npm:@sbp/sbp'
 import { initDB } from './serve/database.ts'
 import { exit, readRemoteData } from './utils.ts'
+// @deno-types="npm:@types/yargs"
+import type { ArgumentsCamelCase } from 'npm:yargs'
 
-export async function get (args: string[]): Promise<void> {
-  const url = URL.canParse(args[0]) ? args[0] : null
-  if (url) {
-    args.shift()
-  } else {
+export async function get ({ key, url }: ArgumentsCamelCase<{ url: string | undefined, key: string }>): Promise<void> {
+  if (!url) {
     await initDB({ skipDbPreloading: true })
   }
-
-  const [key] = args
 
   try {
     const data = url

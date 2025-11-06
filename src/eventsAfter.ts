@@ -1,26 +1,18 @@
 // chel eventsAfter [--limit N] [--url url] <contractID> <height>
 
 import * as base64 from 'jsr:@std/encoding/base64'
-import * as flags from 'jsr:@std/flags/'
 import sbp from 'npm:@sbp/sbp'
 import { initDB } from './serve/database.ts'
-import { exit, isArrayLength } from './utils.ts'
+import { exit } from './utils.ts'
+// @deno-types="npm:@types/yargs"
+import type { ArgumentsCamelCase } from 'npm:yargs'
 
-const defaultLimit = 50
-
-export async function eventsAfter (args: string[]): Promise<void> {
-  const parsedArgs = flags.parse(args)
-
-  const limit = Number(parsedArgs.limit ?? defaultLimit)
-  if (!isArrayLength(limit)) exit('argument --limit must be a valid array length')
-  const [contractID] = parsedArgs._.map(String)
-  const height = Number(parsedArgs._[2])
-
+export async function eventsAfter ({ limit, url, contractID, height }: ArgumentsCamelCase<{ limit: number, url: string | undefined, contractID: string, height: number }>): Promise<void> {
   try {
     let messages
 
-    if (parsedArgs.url) {
-      messages = await getRemoteMessagesSince(parsedArgs.url, contractID, height, limit)
+    if (url) {
+      messages = await getRemoteMessagesSince(url, contractID, height, limit)
     } else {
       await initDB({ skipDbPreloading: true })
       messages = await getMessagesSince(contractID, height, limit)

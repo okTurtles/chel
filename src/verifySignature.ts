@@ -1,9 +1,10 @@
-import * as flags from 'jsr:@std/flags/'
 import * as colors from 'jsr:@std/fmt/colors'
 import * as path from 'jsr:@std/path/'
 import { verifySignature as cryptoVerifySignature, deserializeKey, keyId } from 'npm:@chelonia/crypto'
 import { hash } from './commands.ts'
 import { exit, multicodes, readJsonFile, revokeNet } from './utils.ts'
+// @deno-types="npm:@types/yargs"
+import type { ArgumentsCamelCase } from 'npm:yargs'
 
 interface ExternalKeyDescriptor {
   pubkey: string
@@ -36,11 +37,9 @@ function isManifest (obj: unknown): obj is Manifest {
   )
 }
 
-export const verifySignature = async (args: string[], internal = false): Promise<void> => {
+export const verifySignature = async (args: ArgumentsCamelCase<{ key: string, manifestFile: string }>, internal = false): Promise<void> => {
   await revokeNet()
-  const parsedArgs = flags.parse(args)
-  const [manifestFile] = parsedArgs._
-  const keyFile = parsedArgs.k
+  const { key: keyFile, manifestFile } = args
   const [externalKeyDescriptorRaw, manifestRaw] = await Promise.all([
     typeof keyFile === 'string' ? readJsonFile(keyFile) : null,
     readJsonFile(manifestFile)
@@ -108,7 +107,7 @@ export const verifySignature = async (args: string[], internal = false): Promise
   if (!body.contract?.file) {
     exit('Invalid manifest: no contract file', internal)
   }
-  const computedHash = await hash([path.join(parsedFilepath.dir, body.contract.file)], multicodes.SHELTER_CONTRACT_TEXT, true)
+  const computedHash = await hash({ ...args, filename: path.join(parsedFilepath.dir, body.contract.file) }, multicodes.SHELTER_CONTRACT_TEXT, true)
   if (computedHash !== body.contract.hash) {
     exit(`Invalid contract file hash. Expected ${body.contract.hash} but got ${computedHash}`, internal)
   }

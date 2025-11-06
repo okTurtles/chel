@@ -3,17 +3,17 @@ import * as path from 'jsr:@std/path/'
 import sbp from 'npm:@sbp/sbp'
 import { initDB } from './serve/database.ts'
 import { createEntryFromFile, multicodes, type Entry } from './utils.ts'
+// @deno-types="npm:@types/yargs"
+import type { ArgumentsCamelCase } from 'npm:yargs'
 
 // chel upload [<url>] <file1> [<file2> [<file3> ...]]
 
-export async function upload (files: string[], internal = false): Promise<[string, string][]> {
-  const url = URL.canParse(files[0]) ? files[0] : null
-  if (url) {
-    files.shift()
-  } else {
+export async function upload (args: ArgumentsCamelCase<{ url: string | undefined, _: string[] }>, internal = false): Promise<[string, string][]> {
+  const { url, _: files } = args
+  if (files.length === 0) throw new Error('missing files!')
+  if (!url) {
     await initDB({ skipDbPreloading: true })
   }
-  if (files.length === 0) throw new Error('missing files!')
   const uploaded: Array<[string, string]> = []
   const uploaderFn = url
     ? uploadEntryToURL

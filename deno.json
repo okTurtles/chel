@@ -54,7 +54,9 @@
     "npm:@apeleghq/rfc8188/": "npm:@apeleghq/rfc8188@1.0.7/",
     "npm:redis": "npm:redis@5.9.0",
     "npm:nconf": "npm:nconf@0.13.0",
-    "npm:yargs": "npm:yargs@16.2.0"
+    "npm:yargs": "npm:yargs@16.2.0",
+    "npm:@types/nconf": "npm:@types/nconf@0.10.7",
+    "npm:@types/yargs": "npm:@types/yargs@17.0.34"
   },
   "nodeModulesDir": "auto",
   "fmt": {

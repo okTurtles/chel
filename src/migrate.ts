@@ -1,17 +1,16 @@
 // chel migrate --to <backend>
 
-import * as flags from 'jsr:@std/flags/'
 import * as colors from 'jsr:@std/fmt/colors'
+import process from 'node:process'
 import sbp from 'npm:@sbp/sbp'
 import type DatabaseBackend from './serve/DatabaseBackend.ts'
 import { initDB } from './serve/database.ts'
 import { exit, isValidKey } from './utils.ts'
-import process from 'node:process'
+// @deno-types="npm:@types/yargs"
+import type { ArgumentsCamelCase } from 'npm:yargs'
 
-export async function migrate (args: string[]): Promise<void> {
-  const parsedArgs = flags.parse(args)
-
-  const { to } = parsedArgs
+export async function migrate (args: ArgumentsCamelCase<{ to: string }>): Promise<void> {
+  const { to } = args
 
   await initDB({ skipDbPreloading: true })
 

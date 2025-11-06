@@ -63,7 +63,6 @@ export async function startDashboard (port: number): Promise<void> {
 
   // Start the dashboard server
   await dashboardServer.start()
-  console.log(`📊 Dashboard server running at: http://localhost:${port}`)
 }
 
 export default startDashboard

@@ -1,11 +1,11 @@
-import * as flags from 'jsr:@std/flags/'
 import * as colors from 'jsr:@std/fmt/colors'
 import { EDWARDS25519SHA512BATCH, keygen as cryptoKeygen, keyId, serializeKey } from 'npm:@chelonia/crypto'
 import { revokeNet } from './utils.ts'
+// @deno-types="npm:@types/yargs"
+import type { ArgumentsCamelCase } from 'npm:yargs'
 
-export const keygen = async (args: string[]): Promise<void> => {
+export const keygen = async (args: ArgumentsCamelCase<{out: string | undefined, pubout: string | undefined }>): Promise<void> => {
   await revokeNet()
-  const parsedArgs = flags.parse(args)
   const key = cryptoKeygen(EDWARDS25519SHA512BATCH)
   const pubKeyData = {
     version: '1.0.0',
@@ -19,8 +19,8 @@ export const keygen = async (args: string[]): Promise<void> => {
   const pubResult = JSON.stringify(pubKeyData)
 
   const idx = keyId(key).slice(-12)
-  const outFile = parsedArgs.out || `${EDWARDS25519SHA512BATCH}-${idx}.json`
-  const pubOutFile = parsedArgs.pubout || `${EDWARDS25519SHA512BATCH}-${idx}.pub.json`
+  const outFile = args.out || `${EDWARDS25519SHA512BATCH}-${idx}.json`
+  const pubOutFile = args.pubout || `${EDWARDS25519SHA512BATCH}-${idx}.pub.json`
 
   await Deno.writeTextFile(outFile, result)
   console.log(colors.green('wrote:'), outFile, colors.blue('(secret)'))
