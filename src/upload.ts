@@ -6,11 +6,8 @@ import { createEntryFromFile, multicodes, type Entry } from './utils.ts'
 // @deno-types="npm:@types/yargs"
 import type { ArgumentsCamelCase } from 'npm:yargs'
 
-// chel upload [<url>] <file1> [<file2> [<file3> ...]]
-
-export async function upload (args: ArgumentsCamelCase<{ url: string | undefined, _: string[] }>, internal = false): Promise<[string, string][]> {
-  const { url, _: files } = args
-  if (files.length === 0) throw new Error('missing files!')
+export async function upload (args: ArgumentsCamelCase<{ url: string | undefined, files: string[] }>, internal = false): Promise<[string, string][]> {
+  const { url, files } = args
   if (!url) {
     await initDB({ skipDbPreloading: true })
   }

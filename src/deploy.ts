@@ -15,9 +15,8 @@ const ContractBodySchema = z.object({
   contractSlim: z.object({ file: z.string() }).optional(),
 })
 
-export async function deploy (args: ArgumentsCamelCase<{ _: string[], url: string | undefined }>): Promise<void> {
-  const manifests = args._
-  if (manifests.length === 0) throw new Error('missing url or manifests!')
+export async function deploy (args: ArgumentsCamelCase<{ manifests: string[], url: string | undefined }>): Promise<void> {
+  const { manifests } = args
   const toUpload = []
   for (const manifestPath of manifests) {
     const json = JSON.parse(Deno.readTextFileSync(manifestPath)) as { body: string }
@@ -29,5 +28,5 @@ export async function deploy (args: ArgumentsCamelCase<{ _: string[], url: strin
     }
     toUpload.push(CONTRACT_MANIFEST_PREFIX + manifestPath)
   }
-  await upload({ ...args, _: toUpload }, true)
+  await upload({ ...args, files: toUpload }, true)
 }
