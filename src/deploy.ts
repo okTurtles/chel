@@ -4,7 +4,7 @@ import * as path from 'jsr:@std/path/'
 import * as z from 'npm:zod'
 import { upload } from './upload.ts'
 // @deno-types="npm:@types/yargs"
-import type { ArgumentsCamelCase } from 'npm:yargs'
+import type { ArgumentsCamelCase, CommandModule } from 'npm:yargs'
 
 // Prefixes to use to select the correct CID to use
 const CONTRACT_TEXT_PREFIX = 't|'
@@ -15,7 +15,9 @@ const ContractBodySchema = z.object({
   contractSlim: z.object({ file: z.string() }).optional(),
 })
 
-export async function deploy (args: ArgumentsCamelCase<{ manifests: string[], url: string | undefined }>): Promise<void> {
+type Params = { manifests: string[], url: string }
+
+export async function deploy (args: ArgumentsCamelCase<Params>): Promise<void> {
   const { manifests } = args
   const toUpload = []
   for (const manifestPath of manifests) {
@@ -30,3 +32,25 @@ export async function deploy (args: ArgumentsCamelCase<{ manifests: string[], ur
   }
   await upload({ ...args, files: toUpload }, true)
 }
+
+export const module = {
+  builder: (yargs) => {
+    return yargs
+      .option('url', {
+        describe: 'URL of a remote server',
+        requiresArg: true,
+        string: true
+      })
+      .positional('manifests', {
+        describe: 'Manifest files to deploy',
+        demandOption: true,
+        array: true,
+        type: 'string'
+      })
+  },
+  command: 'deploy [--url REMOTE_URL] <manifests..>',
+  describe: '',
+  handler: (argv) => {
+    return deploy(argv)
+  }
+} as CommandModule<object, Params>

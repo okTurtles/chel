@@ -12,9 +12,11 @@ import sbp from 'npm:@sbp/sbp'
 import { initDB } from './serve/database.ts'
 import { exit, readRemoteData } from './utils.ts'
 // @deno-types="npm:@types/yargs"
-import type { ArgumentsCamelCase } from 'npm:yargs'
+import type { ArgumentsCamelCase, CommandModule } from 'npm:yargs'
 
-export async function get ({ key, url }: ArgumentsCamelCase<{ url: string | undefined, key: string }>): Promise<void> {
+type Params = { url?: string, key: string }
+
+export async function get ({ key, url }: ArgumentsCamelCase<Params>): Promise<void> {
   if (!url) {
     await initDB({ skipDbPreloading: true })
   }
@@ -36,3 +38,25 @@ export async function get ({ key, url }: ArgumentsCamelCase<{ url: string | unde
     exit(error)
   }
 }
+
+export const module = {
+  builder: (yargs) => {
+    return yargs
+      .option('url', {
+        describe: 'URL of a remote server',
+        string: true
+      })
+      .positional('key', {
+        describe: 'Database key',
+        demandOption: true,
+        type: 'string'
+      })
+  },
+  command: 'get [--url REMOTE_ADDRESS] <key>',
+  describe: 'Retrieves the entry associated with a given <hash> key, from a given database or server.\n\n' +
+  '- The output can be piped to a file, like this:' +
+  '  chel get https://url.com mygreatlongkey > file.png',
+  handler: (argv) => {
+    return get(argv)
+  }
+} as CommandModule<object, Params>

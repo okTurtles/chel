@@ -31,6 +31,10 @@ import {
   type WSS
 } from './pubsub.ts'
 import { addChannelToSubscription, deleteChannelFromSubscription, postEvent, pushServerActionhandlers, subscriptionInfoWrapper } from './push.ts'
+// @deno-types="npm:@types/nconf"
+import nconf from 'npm:nconf'
+
+const ARCHIVE_MODE = nconf.get('chelonia:archiveMode')
 
 type WorkerType = {
   ready: Promise<void>,
@@ -107,10 +111,10 @@ if (CREDITS_WORKER_TASK_TIME_INTERVAL && OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTER
 }
 
 // Initialize workers for size calculation and credits processing
-const ownerSizeTotalWorker = process.env.CHELONIA_ARCHIVE_MODE || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL
+const ownerSizeTotalWorker = ARCHIVE_MODE || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL
   ? undefined
   : createWorker(join(import.meta.dirname || '.', 'serve', 'ownerSizeTotalWorker.js'))
-const creditsWorker = process.env.CHELONIA_ARCHIVE_MODE || !CREDITS_WORKER_TASK_TIME_INTERVAL
+const creditsWorker = ARCHIVE_MODE || !CREDITS_WORKER_TASK_TIME_INTERVAL
   ? undefined
   : createWorker(join(import.meta.dirname || '.', 'serve', 'creditsWorker.js'))
 
@@ -121,7 +125,7 @@ const hapi = new Hapi.Server({
   // debug: false, // <- Hapi v16 was outputing too many unnecessary debug statements
   //               // v17 doesn't seem to do this anymore so I've re-enabled the logging
   // debug: { log: ['error'], request: ['error'] },
-  port: process.env.API_PORT,
+  port: nconf.get('server:port'),
   // See: https://github.com/hapijs/discuss/issues/262#issuecomment-204616831
   routes: {
     cors: {

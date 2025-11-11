@@ -7,9 +7,11 @@ import type DatabaseBackend from './serve/DatabaseBackend.ts'
 import { initDB } from './serve/database.ts'
 import { exit, isValidKey } from './utils.ts'
 // @deno-types="npm:@types/yargs"
-import type { ArgumentsCamelCase } from 'npm:yargs'
+import type { ArgumentsCamelCase, CommandModule } from 'npm:yargs'
 
-export async function migrate (args: ArgumentsCamelCase<{ to: string }>): Promise<void> {
+type Params = { to: string }
+
+export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> {
   const { to } = args
 
   await initDB({ skipDbPreloading: true })
@@ -74,3 +76,25 @@ export async function migrate (args: ArgumentsCamelCase<{ to: string }>): Promis
   }
   numVisitedKeys && console.log(`[chel] ${colors.green('Migrated:')} ${numVisitedKeys} entries`)
 }
+
+export const module = {
+  builder: (yargs) => {
+    return yargs
+      .option('to', {
+        describe: 'Destination backend',
+        demandOption: true,
+        requiresArg: true,
+        string: true
+      })
+  },
+  command: 'migrate [--to backend]',
+  describe: 'Reads all key-value pairs from a given database and creates or updates another database accordingly.\n\n' +
+  '- The output database will be created if necessary.\n' +
+  '- The source database won\'t be modified nor deleted.\n' +
+  '- Invalid key-value pairs entries will be skipped.\n' +
+  '- Requires read and write access to the source.\n' +
+  '- Requires read and write access to --out.\n',
+  handler: (argv) => {
+    return migrate(argv)
+  }
+} as CommandModule<object, Params>

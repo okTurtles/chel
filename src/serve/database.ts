@@ -14,10 +14,15 @@ import LRU from 'npm:lru-cache'
 import { SERVER_EXITING } from './events.ts'
 import { initVapid } from './vapid.ts'
 import { initZkpp } from './zkppSalt.ts'
+// @deno-types="npm:@types/nconf"
+import nconf from 'npm:nconf'
+
+const ARCHIVE_MODE = nconf.get('chelonia:archiveMode')
+const backend = nconf.get('database:backend')
 
 const production = process.env.NODE_ENV === 'production'
 // Defaults to `fs` in production.
-const persistence = process.env.GI_PERSIST || (production ? 'fs' : undefined)
+const persistence = backend || (production ? 'fs' : undefined)
 
 // Default database options. Other values may be used e.g. in tests.
 const dbRootPath = process.env.DB_PATH || './data'
@@ -76,7 +81,8 @@ export const updateSize = async (resourceID: string, sizeKey: string, size: numb
 // Streams stored contract log entries since the given entry hash (inclusive!).
 export default sbp('sbp/selectors/register', {
   'backend/db/streamEntriesAfter': async function (contractID: string, height: number, requestedLimit?: number, options: { keyOps?: boolean } = {}): Promise<Readable> {
-    const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, process.env.MAX_EVENTS_BATCH_SIZE ? parseInt(process.env.MAX_EVENTS_BATCH_SIZE) || 500 : 500)
+    const batchMaxSize = nconf.get('server:maxEventsBatchSize') ?? 500
+    const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, batchMaxSize)
     const latestHEADinfo = await sbp('chelonia/db/latestHEADinfo', contractID)
     if (latestHEADinfo === '') {
       throw Boom.resourceGone(`contractID ${contractID} has been deleted!`)
@@ -235,7 +241,7 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
   // If persistence must be enabled:
   // - load and initialize the selected storage backend
   // - then overwrite 'chelonia.db/get' and '-set' to use it with an LRU cache
-  if (persistence) {
+  if (persistence && persistence !== 'mem') {
     const Ctor = (await import(`./database-${persistence}.ts`)).default
     // Destructuring is safe because these methods have been bound using rebindMethods().
     const { init, readData, writeData, deleteData, iterKeys, keyCount, close } = new Ctor(options[persistence])
@@ -252,7 +258,7 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
 
     // https://github.com/isaacs/node-lru-cache#usage
     const cache = new LRU<string, Buffer | string>({
-      max: Number(process.env.GI_LRU_NUM_ITEMS) || 10000
+      max: nconf.get('database:lruNumItems') ?? 10000
     })
 
     const prefixes = Object.keys(prefixHandlers)
@@ -274,7 +280,7 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
         return value
       },
       'chelonia.db/set': async function (key: string, value: Buffer | string): Promise<void> {
-        if (process.env.CHELONIA_ARCHIVE_MODE) throw new Error('Unable to write in archive mode')
+        if (ARCHIVE_MODE) throw new Error('Unable to write in archive mode')
         checkKey(key)
         if (key.startsWith('_private_immutable')) {
           const existingValue = await readData(key)
@@ -297,7 +303,7 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
         })
       },
       'chelonia.db/delete': async function (key: string): Promise<void> {
-        if (process.env.CHELONIA_ARCHIVE_MODE) throw new Error('Unable to write in archive mode')
+        if (ARCHIVE_MODE) throw new Error('Unable to write in archive mode')
         checkKey(key)
         if (key.startsWith('_private_immutable')) {
           throw new Error('Cannot delete immutable key')

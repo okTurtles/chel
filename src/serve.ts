@@ -1,7 +1,9 @@
 import * as colors from 'jsr:@std/fmt/colors'
 import process from 'node:process'
 // @deno-types="npm:@types/yargs"
-import type { ArgumentsCamelCase } from 'npm:yargs'
+import type { ArgumentsCamelCase, CommandModule } from 'npm:yargs'
+
+type Params = { port: number, 'dashboard-port': number, directory: string }
 
 // Dashboard server function
 async function startDashboardServer (port: number) {
@@ -21,7 +23,7 @@ async function startApplicationServer (port: number, directory: string): Promise
   await startServer.default
 }
 
-export async function serve (args: ArgumentsCamelCase<{ port: number, 'dashboard-port': number, directory: string }>) {
+export async function serve (args: ArgumentsCamelCase<Params>) {
   const { port: applicationPort, 'dashboard-port': dashboardPort, directory } = args
 
   try {
@@ -47,3 +49,36 @@ export async function serve (args: ArgumentsCamelCase<{ port: number, 'dashboard
     process.exit(1)
   }
 }
+
+export const module = {
+  builder: (yargs) => {
+    return yargs
+      .option('port', {
+        default: 8000,
+        describe: 'Port to listen on (app)',
+        requiresArg: true,
+        number: true
+      })
+      .alias('p', 'port')
+      .alias('server:port', 'port')
+      .option('dashboard-port', {
+        default: 8888,
+        describe: 'Port to listen on (dashboard)',
+        requiresArg: true,
+        number: true
+      })
+      .alias('d', 'dashboard-port')
+      .alias('server:dashboardPort', 'dashboard-port')
+      .positional('directory', {
+        default: '.',
+        describe: 'Directory',
+        type: 'string'
+      })
+      .alias('server:appDir', 'directory')
+  },
+  command: 'serve [--port PORT] [--dashboard-port PORT] [directory]',
+  describe: 'start the server',
+  handler: (argv) => {
+    return serve(argv)
+  }
+} as CommandModule<object, Params>

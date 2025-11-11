@@ -5,9 +5,11 @@ import sbp from 'npm:@sbp/sbp'
 import { initDB } from './serve/database.ts'
 import { exit } from './utils.ts'
 // @deno-types="npm:@types/yargs"
-import type { ArgumentsCamelCase } from 'npm:yargs'
+import type { ArgumentsCamelCase, CommandModule } from 'npm:yargs'
 
-export async function eventsAfter ({ limit, url, contractID, height }: ArgumentsCamelCase<{ limit: number, url: string | undefined, contractID: string, height: number }>): Promise<void> {
+type Params = { limit: number, url: string | undefined, contractID: string, height: number }
+
+export async function eventsAfter ({ limit, url, contractID, height }: ArgumentsCamelCase<Params>): Promise<void> {
   try {
     let messages
 
@@ -59,3 +61,38 @@ async function getRemoteMessagesSince (src: string, contractID: string, sinceHei
   }
   return b64messages.map(b64str => JSON.parse(new TextDecoder().decode(base64.decodeBase64(b64str))))
 }
+
+export const module = {
+  builder: (yargs) => {
+    return yargs
+      .option('limit', {
+        describe: 'Limit',
+        default: 50,
+        number: true,
+        requiresArg: true
+      })
+      .option('url', {
+        describe: 'URL of a remote server',
+        string: true
+      })
+      .positional('contractID', {
+        describe: 'Contract ID',
+        demandOption: true,
+        type: 'string'
+      })
+      .positional('height', {
+        describe: 'Height',
+        demandOption: true,
+        type: 'number'
+      })
+  },
+  command: 'eventsAfter [--limit LIMIT] [--url REMOTE_URL] <contractID> <height>',
+  describe: 'Displays a JSON array of the N first events that happened in a given contract, since a given entry identified by its hash.\n\n' +
+  '- Older events are displayed first.\n' +
+  '- The output is parseable with tools such as \'jq\'.\n' +
+  '- If <hash> is the same as <contractID>, then the oldest events will be returned.\n' +
+  '- If <url-or-localpath> is a URL, then its /eventsAfter REST endpoint will be called.\n',
+  handler: (argv) => {
+    return eventsAfter(argv)
+  }
+} as CommandModule<object, Params>

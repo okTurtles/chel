@@ -2,9 +2,11 @@ import * as colors from 'jsr:@std/fmt/colors'
 import { EDWARDS25519SHA512BATCH, keygen as cryptoKeygen, keyId, serializeKey } from 'npm:@chelonia/crypto'
 import { revokeNet } from './utils.ts'
 // @deno-types="npm:@types/yargs"
-import type { ArgumentsCamelCase } from 'npm:yargs'
+import type { ArgumentsCamelCase, CommandModule } from 'npm:yargs'
 
-export const keygen = async (args: ArgumentsCamelCase<{out: string | undefined, pubout: string | undefined }>): Promise<void> => {
+type Params = {out?: string, pubout?: string }
+
+export const keygen = async (args: ArgumentsCamelCase<Params>): Promise<void> => {
   await revokeNet()
   const key = cryptoKeygen(EDWARDS25519SHA512BATCH)
   const pubKeyData = {
@@ -28,3 +30,24 @@ export const keygen = async (args: ArgumentsCamelCase<{out: string | undefined, 
   await Deno.writeTextFile(pubOutFile, pubResult)
   console.log(colors.green('wrote:'), pubOutFile, colors.blue('(public)'))
 }
+
+export const module = {
+  builder: (yargs) => {
+    return yargs
+      .option('out', {
+        describe: 'File name for the secret key',
+        requiresArg: true,
+        string: true
+      })
+      .option('pubout', {
+        describe: 'File name for the public key',
+        requiresArg: true,
+        string: true
+      })
+  },
+  command: 'keygen [--out <filename>] [--pubout <filename>]',
+  describe: '',
+  handler: (argv) => {
+    return keygen(argv)
+  }
+} as CommandModule<object, Params>

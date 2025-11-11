@@ -4,9 +4,11 @@ import sbp from 'npm:@sbp/sbp'
 import { initDB } from './serve/database.ts'
 import { createEntryFromFile, multicodes, type Entry } from './utils.ts'
 // @deno-types="npm:@types/yargs"
-import type { ArgumentsCamelCase } from 'npm:yargs'
+import type { ArgumentsCamelCase, CommandModule } from 'npm:yargs'
 
-export async function upload (args: ArgumentsCamelCase<{ url: string | undefined, files: string[] }>, internal = false): Promise<[string, string][]> {
+type Params = { url?: string, files: string[] }
+
+export async function upload (args: ArgumentsCamelCase<Params>, internal = false): Promise<[string, string][]> {
   const { url, files } = args
   if (!url) {
     await initDB({ skipDbPreloading: true })
@@ -74,3 +76,25 @@ export function handleFetchResult (type: ResponseTypeFn): ((r: Response) => unkn
     return await r[type]()
   }
 }
+
+export const module = {
+  builder: (yargs) => {
+    return yargs
+      .option('url', {
+        describe: 'URL of a remote server',
+        requiresArg: true,
+        string: true
+      })
+      .positional('files', {
+        describe: 'Files to upload',
+        demandOption: true,
+        array: true,
+        type: 'string'
+      })
+  },
+  command: 'upload [--url REMOTE_URL] <files..>',
+  describe: 'Requires read and write access to the destination.',
+  handler: (argv) => {
+    return void upload(argv)
+  }
+} as CommandModule<object, Params>

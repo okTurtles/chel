@@ -1,10 +1,12 @@
 import * as colors from 'jsr:@std/fmt/colors'
 import * as path from 'jsr:@std/path/'
 import { verifySignature as cryptoVerifySignature, deserializeKey, keyId } from 'npm:@chelonia/crypto'
-import { hash } from './commands.ts'
+import { hash } from './hash.ts'
 import { exit, multicodes, readJsonFile, revokeNet } from './utils.ts'
 // @deno-types="npm:@types/yargs"
-import type { ArgumentsCamelCase } from 'npm:yargs'
+import type { ArgumentsCamelCase, CommandModule } from 'npm:yargs'
+
+type Params = { key?: string, manifestFile: string }
 
 interface ExternalKeyDescriptor {
   pubkey: string
@@ -37,7 +39,7 @@ function isManifest (obj: unknown): obj is Manifest {
   )
 }
 
-export const verifySignature = async (args: ArgumentsCamelCase<{ key: string | undefined, manifestFile: string }>, internal = false): Promise<void> => {
+export const verifySignature = async (args: ArgumentsCamelCase<Params>, internal = false): Promise<void> => {
   await revokeNet()
   const { key: keyFile, manifestFile } = args
   const [externalKeyDescriptorRaw, manifestRaw] = await Promise.all([
@@ -121,3 +123,25 @@ export const verifySignature = async (args: ArgumentsCamelCase<{ key: string | u
 
   if (!internal) console.log(colors.green('ok'), 'all checks passed')
 }
+
+export const module = {
+  builder: (yargs) => {
+    return yargs
+      .option('key', {
+        describe: 'Public key',
+        requiresArg: true,
+        string: true,
+      })
+      .alias('k', 'key')
+      .positional('manifestFile', {
+        describe: 'Manifest file',
+        demandOption: true,
+        type: 'string'
+      })
+  },
+  command: 'verifySignature <manifestFile>',
+  describe: '',
+  handler: (argv) => {
+    return verifySignature(argv)
+  }
+} as CommandModule<object, Params>
