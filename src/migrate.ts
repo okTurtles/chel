@@ -8,6 +8,9 @@ import { initDB } from './serve/database.ts'
 import { exit, isValidKey } from './utils.ts'
 // @deno-types="npm:@types/yargs"
 import type { ArgumentsCamelCase, CommandModule } from 'npm:yargs'
+// @deno-types="npm:@types/nconf"
+import nconf from 'npm:nconf'
+import { parse, stringify } from 'npm:smol-toml'
 
 type Params = { to: string }
 
@@ -80,21 +83,41 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
 export const module = {
   builder: (yargs) => {
     return yargs
+      .option('from', {
+        describe: 'Source backend',
+        requiresArg: true,
+        string: true
+      })
+      .alias('database:backend', 'from')
+      .option('from-config', {
+        describe: 'Source backend configuration',
+        requiresArg: true,
+        string: true
+      })
       .option('to', {
         describe: 'Destination backend',
         demandOption: true,
         requiresArg: true,
         string: true
       })
+      .option('to-config', {
+        describe: 'Destination backend configuration',
+        requiresArg: true,
+        string: true
+      })
+      .strict(false)
+      .strictCommands(true)
   },
   command: 'migrate [--to backend]',
   describe: 'Reads all key-value pairs from a given database and creates or updates another database accordingly.\n\n' +
   '- The output database will be created if necessary.\n' +
   '- The source database won\'t be modified nor deleted.\n' +
   '- Invalid key-value pairs entries will be skipped.\n' +
-  '- Requires read and write access to the source.\n' +
-  '- Requires read and write access to --out.\n',
+  '- Requires read and write access to the source.\n',
   handler: (argv) => {
+    if (argv['from-config']) {
+      nconf.file(`database:backendOptions:${nconf.get('database:backend')}`, { file: 'chel.toml', format: { parse, stringify } })
+    }
     return migrate(argv)
   }
 } as CommandModule<object, Params>
