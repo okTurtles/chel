@@ -9,7 +9,7 @@ import DatabaseBackend from './DatabaseBackend.ts'
 // filesystems by default. This can be problematic for Chelonia / Group Income,
 // as we rely on keys being case-sensitive. This is especially relevant for CIDs,
 // where collisions could lead to DoS or data corruption.
-async function testCaseSensitivity (backend: DatabaseBackend) {
+async function testCaseSensitivity(backend: DatabaseBackend) {
   const { readData, writeData, deleteData } = backend
   const date = new Date()
   const dateString = date.toISOString()
@@ -45,16 +45,18 @@ export default class FsBackend extends DatabaseBackend {
   dataFolder: string = ''
   depth: number = 0
   keyChunkLength: number = 2
+  skipFsCaseSensitivityCheck: boolean = false
 
-  constructor (options: { dirname?: string; depth?: number; keyChunkLength?: number } = {}) {
+  constructor(options: { dirname?: string; depth?: number; keyChunkLength?: number, skipFsCaseSensitivityCheck?: boolean } = {}) {
     super()
     this.dataFolder = resolve(options.dirname!)
     if (options.depth) this.depth = options.depth
     if (options.keyChunkLength) this.keyChunkLength = options.keyChunkLength
+    if (options.skipFsCaseSensitivityCheck) this.skipFsCaseSensitivityCheck = true
   }
 
   // Maps a given key to a real path on the filesystem.
-  mapKey (key: string): string {
+  mapKey(key: string): string {
     // The following `basepath(normalize())` check is an attempt at preventing
     // path traversal and similar issues, accidental or intentional, by ensuring
     // that the `key` corresponds to a file name. This is a defense-in-depth
@@ -68,21 +70,21 @@ export default class FsBackend extends DatabaseBackend {
     return join(this.dataFolder, ...keyChunks, key)
   }
 
-  async init () {
+  async init() {
     await mkdir(this.dataFolder, { mode: 0o750, recursive: true })
-    if (process.env.SKIP_DB_FS_CASE_SENSITIVITY_CHECK === undefined) {
+    if (!this.skipFsCaseSensitivityCheck) {
       await testCaseSensitivity(this)
     }
   }
 
-  async clear () {
+  async clear() {
     const names = await readdir(this.dataFolder)
     const paths = names.map(name => join(this.dataFolder, name))
     await Promise.all(paths.map(p => rm(p, { recursive: true }))
     )
   }
 
-  async readData (key: string): Promise<Buffer | string | void> {
+  async readData(key: string): Promise<Buffer | string | void> {
     // Necessary here to thwart path traversal attacks.
     checkKey(key)
     return await readFile(this.mapKey(key))
@@ -92,13 +94,13 @@ export default class FsBackend extends DatabaseBackend {
       })
   }
 
-  async writeData (key: string, value: Buffer | string) {
+  async writeData(key: string, value: Buffer | string) {
     const path = this.mapKey(key)
     if (this.depth) await mkdir(dirname(path), { mode: 0o750, recursive: true })
     await writeFile(path, value)
   }
 
-  async deleteData (key: string) {
+  async deleteData(key: string) {
     await unlink(this.mapKey(key)).catch((e) => {
       // Ignore 'not found' errors
       if (e?.code === 'ENOENT') {
@@ -108,9 +110,9 @@ export default class FsBackend extends DatabaseBackend {
     })
   }
 
-  close () {}
+  close() { }
 
-  async * iterKeys () {
+  async * iterKeys() {
     const entries = await readdir(this.dataFolder, { withFileTypes: true })
     for (const entry of entries) {
       // Skip subfolders and symlinks.
@@ -120,7 +122,7 @@ export default class FsBackend extends DatabaseBackend {
     }
   }
 
-  async keyCount () {
+  async keyCount() {
     const entries = await readdir(this.dataFolder, { withFileTypes: true })
     return entries.filter(e => e.isFile()).length
   }

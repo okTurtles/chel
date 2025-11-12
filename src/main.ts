@@ -14,33 +14,28 @@ import * as commands from './commands.ts'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
 // @deno-types="npm:@types/yargs"
-import yargs from 'npm:yargs'
+import yargs, { CommandModule } from 'npm:yargs'
 import { hideBin } from 'npm:yargs/helpers'
+import { parse, stringify } from 'npm:smol-toml'
+
+// Typecasting seems to be required
+const commandModules = Object.values(commands) as unknown as CommandModule
 
 nconf
-  .env({
+  /* .env({
     separator: '__',
     lowerCase: true,
     parseValues: true
-  })
+  }) */
   .argv(yargs(hideBin(process.argv))
     .version(import.meta.VERSION)
     .strict()
-    .command(commands.deploy)
-    .command(commands.eventsAfter)
-    .command(commands.get)
-    .command(commands.hash)
-    .command(commands.keygen)
-    .command(commands.manifest)
-    .command(commands.migrate)
-    .command(commands.serve)
-    .command(commands.upload)
-    .command(commands.verifySignature)
-    .command(commands.version)
+    .command(commandModules)
     .demandCommand()
     .help()
   )
-  .file({ file: 'chel.config.json' })
+  // .file({ file: 'chel.config.json' })
+  .file({ file: 'chel.toml', format: { parse, stringify } })
   .defaults({
     'server': {
       'appDir': '.',
@@ -71,7 +66,15 @@ nconf
       'lruNumItems': 10000,
       'backend': 'mem',
       'backendOptions': {
-
+        'fs': {
+          'depth': 0,
+          'keyChunkLength': 2,
+          'dirname': './data',
+          'skipFsCaseSensitivityCheck': false
+        },
+        'sqlite': {
+          'filepath': './data/chelonia.db'
+        }
       }
     }
   })

@@ -6,30 +6,24 @@ import type { ArgumentsCamelCase, CommandModule } from 'npm:yargs'
 type Params = { port: number, 'dashboard-port': number, directory: string }
 
 // Dashboard server function
-async function startDashboardServer (port: number) {
+async function startDashboardServer (): Promise<void> {
   // Import and start the dashboard server
   const dashboardServer = await import('./serve/dashboard-server.ts')
-  await dashboardServer.startDashboard(port)
+  await dashboardServer.startDashboard()
 }
 
 // Application server function
-async function startApplicationServer (port: number, directory: string): Promise<void> {
-  // Set environment variables that the server expects
-  process.env.API_PORT = port.toString()
-  process.env.CHELONIA_APP_DIR = directory
-
+async function startApplicationServer (): Promise<void> {
   // Import and start the application server
   const startServer = await import('./serve/index.ts')
   await startServer.default
 }
 
 export async function serve (args: ArgumentsCamelCase<Params>) {
-  const { port: applicationPort, 'dashboard-port': dashboardPort, directory } = args
-
   try {
     // Start dashboard server on port 7000 first
     try {
-      await startDashboardServer(dashboardPort)
+      await startDashboardServer()
     } catch (error) {
       console.error(colors.red('❌ Failed to start dashboard server:'), error)
       throw error
@@ -37,7 +31,7 @@ export async function serve (args: ArgumentsCamelCase<Params>) {
 
     // Start application server on port 8000 second
     try {
-      await startApplicationServer(applicationPort, directory)
+      await startApplicationServer()
     } catch (error) {
       console.error(colors.red('❌ Failed to start application server:'), error)
       throw error

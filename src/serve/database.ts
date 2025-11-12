@@ -1,5 +1,4 @@
 import { Buffer } from 'node:buffer'
-import fs from 'node:fs'
 import { readFile, readdir } from 'node:fs/promises'
 import path from 'node:path'
 import process from 'node:process'
@@ -24,35 +23,11 @@ const production = process.env.NODE_ENV === 'production'
 // Defaults to `fs` in production.
 const persistence = backend || (production ? 'fs' : undefined)
 
-// Default database options. Other values may be used e.g. in tests.
-const dbRootPath = process.env.DB_PATH || './data'
-const options: {
-  fs: { depth: number; dirname: string; keyChunkLength: number }
-  sqlite: { filepath: string }
-  [key: string]: unknown
-} = {
-  fs: {
-    depth: 0,
-    dirname: dbRootPath,
-    keyChunkLength: 2
-  },
-  sqlite: {
-    filepath: path.join(dbRootPath, 'groupincome.db')
-  }
-}
+const options = nconf.get('database:backendOptions')
 
 // Segment length for keyop index. Changing this value will require rebuilding
 // this index. The value should be a power of 10 (e.g., 10, 100, 1000, 10000)
 export const KEYOP_SEGMENT_LENGTH = 10_000
-
-// Used by `throwIfFileOutsideDataDir()`.
-const dataFolder = path.resolve(options.fs.dirname)
-
-// Create our data folder if it doesn't exist yet.
-// This is currently necessary even when not using persistence, e.g. to store file uploads.
-if (!fs.existsSync(dataFolder)) {
-  fs.mkdirSync(dataFolder, { mode: 0o750 })
-}
 
 export const updateSize = async (resourceID: string, sizeKey: string, size: number, skipIfDeleted?: boolean) => {
   if (!Number.isSafeInteger(size)) {
@@ -326,6 +301,7 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
     sbp('sbp/selectors/lock', ['chelonia.db/get', 'chelonia.db/set', 'chelonia.db/delete', 'chelonia.db/iterKeys'])
   }
   if (skipDbPreloading) return
+  /*
   // TODO: Update this to only run when persistence is disabled when `chel deploy` can target SQLite.
   if (persistence !== 'fs' || options.fs.dirname !== dbRootPath) {
     // Remember to keep these values up-to-date.
@@ -372,6 +348,7 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
     }
     numNewKeys && console.info(`[chelonia.db] Preloaded ${numNewKeys} new entries`)
   }
+  */
   await Promise.all([initVapid(), initZkpp()])
 }
 
