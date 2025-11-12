@@ -19,7 +19,7 @@ async function startApplicationServer (): Promise<void> {
   await startServer.default
 }
 
-export async function serve (args: ArgumentsCamelCase<Params>) {
+export async function serve (_args: ArgumentsCamelCase<Params>) {
   try {
     // Start dashboard server on port 7000 first
     try {
