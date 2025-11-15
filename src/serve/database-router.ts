@@ -1,7 +1,4 @@
-import { Buffer } from 'node:buffer'
-import { resolve } from 'node:path'
-import { readFile } from 'node:fs/promises'
-import process from 'node:process'
+import type { Buffer } from 'node:buffer'
 import DatabaseBackend from './DatabaseBackend.ts'
 
 type ConfigEntry = { name: string; options: Record<string, unknown> }
@@ -9,22 +6,19 @@ type Config = {
   [key: string]: ConfigEntry
 }
 
-const {
-  // Tried first by the config lookup.
-  // Define this if your config JSON comes as a string from an envar's contents.
-  GI_PERSIST_ROUTER_CONFIG,
-  // Tried next.
-  // Define this if your config comes from a JSON file.
-  GI_PERSIST_ROUTER_CONFIG_PATH = './database-router-config.json'
-} = process.env
-
 export default class RouterBackend extends DatabaseBackend {
   backends!: { [key: string]: DatabaseBackend }
   config!: Config
 
-  constructor (options: { config?: Config } = {}) {
+  constructor (config: Config = {}) {
     super()
-    if (options.config) this.config = options.config
+    // Return a sorted copy where entries with longer keys come first.
+    const configCopy = Object.fromEntries(Object.entries(config).sort((a, b) => b[0].length - a[0].length)) as Config
+    const errors = this.validateConfig(configCopy)
+    if (errors.length) {
+      throw new Error(`[${this.constructor.name}] ${errors.length} error(s) found in your config.`, { cause: errors })
+    }
+    this.config = configCopy
   }
 
   lookupBackend (key: string): DatabaseBackend {
@@ -36,18 +30,6 @@ export default class RouterBackend extends DatabaseBackend {
       }
     }
     return backends['*']
-  }
-
-  async readConfig (): Promise<Config> {
-    if (GI_PERSIST_ROUTER_CONFIG) {
-      console.info('[database-router] Reading config from envar GI_PERSIST_ROUTER_CONFIG')
-    } else {
-      console.info('[database-router] Reading config from path', GI_PERSIST_ROUTER_CONFIG_PATH)
-    }
-    const configString = GI_PERSIST_ROUTER_CONFIG || await readFile(resolve(GI_PERSIST_ROUTER_CONFIG_PATH), 'utf8')
-    const config = JSON.parse(configString)
-    // Return a sorted copy where entries with longer keys come first.
-    return Object.fromEntries(Object.entries(config).sort((a, b) => b[0].length - a[0].length)) as Config
   }
 
   validateConfig (config: Config): Array<{ msg: string; entry?: [string, ConfigEntry] }> {
@@ -70,12 +52,6 @@ export default class RouterBackend extends DatabaseBackend {
   }
 
   async init (): Promise<void> {
-    // Init config if not done yet.
-    if (!this.config) this.config = await this.readConfig()
-    const errors = this.validateConfig(this.config)
-    if (errors.length) {
-      throw new Error(`[${this.constructor.name}] ${errors.length} error(s) found in your config.`, { cause: errors })
-    }
     // Init backends
     this.backends = Object.create(null) as { [key: string]: DatabaseBackend }
     const entries = Object.entries(this.config)

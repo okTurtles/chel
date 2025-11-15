@@ -1,8 +1,7 @@
 import * as colors from 'jsr:@std/fmt/colors'
 import { EDWARDS25519SHA512BATCH, keygen as cryptoKeygen, keyId, serializeKey } from 'npm:@chelonia/crypto'
+import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { revokeNet } from './utils.ts'
-// @deno-types="npm:@types/yargs"
-import type { ArgumentsCamelCase, CommandModule } from 'npm:yargs'
 
 type Params = {out?: string, pubout?: string }
 
@@ -47,7 +46,7 @@ export const module = {
   },
   command: 'keygen [--out <filename>] [--pubout <filename>]',
   describe: '',
-  handler: (argv) => {
+  postHandler: (argv) => {
     return keygen(argv)
   }
 } as CommandModule<object, Params>

@@ -1,21 +1,27 @@
 // chel migrate --to <backend>
 
 import * as colors from 'jsr:@std/fmt/colors'
+import { readFile } from 'node:fs/promises'
 import process from 'node:process'
 import sbp from 'npm:@sbp/sbp'
+import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import type DatabaseBackend from './serve/DatabaseBackend.ts'
 import { initDB } from './serve/database.ts'
 import { exit, isValidKey } from './utils.ts'
-// @deno-types="npm:@types/yargs"
-import type { ArgumentsCamelCase, CommandModule } from 'npm:yargs'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
-import { parse, stringify } from 'npm:smol-toml'
+import { parse } from 'npm:smol-toml'
 
-type Params = { to: string }
+type Params = { from?: string, fromConfig?: string, to: string, toConfig?: string }
 
 export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> {
   const { to } = args
+
+  if (args.fromConfig) {
+    const fromConfig = parse(await readFile(args.fromConfig, { encoding: 'utf-8', flag: 'r' }))
+    const backend = nconf.get('database:backend')
+    nconf.overrides({ database: { backendOptions: { [backend]: fromConfig } } })
+  }
 
   await initDB({ skipDbPreloading: true })
 
@@ -23,8 +29,13 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
 
   let backendTo: DatabaseBackend
   try {
+    let toConfig = {}
+    if (args.toConfig) {
+      toConfig = parse(await readFile(args.toConfig, { encoding: 'utf-8', flag: 'r' }))
+    }
+
     const Ctor = (await import(`./serve/database-${to}.ts`)).default
-    backendTo = new Ctor()
+    backendTo = new Ctor(toConfig)
     await backendTo.init()
   } catch (error) {
     exit(error)
@@ -108,16 +119,13 @@ export const module = {
       .strict(false)
       .strictCommands(true)
   },
-  command: 'migrate [--to backend]',
+  command: 'migrate [--from <backend>] [--to <backend>]',
   describe: 'Reads all key-value pairs from a given database and creates or updates another database accordingly.\n\n' +
   '- The output database will be created if necessary.\n' +
   '- The source database won\'t be modified nor deleted.\n' +
   '- Invalid key-value pairs entries will be skipped.\n' +
   '- Requires read and write access to the source.\n',
-  handler: (argv) => {
-    if (argv['from-config']) {
-      nconf.file(`database:backendOptions:${nconf.get('database:backend')}`, { file: 'chel.toml', format: { parse, stringify } })
-    }
+  postHandler: (argv) => {
     return migrate(argv)
   }
 } as CommandModule<object, Params>

@@ -13,20 +13,36 @@ import process from 'node:process'
 import * as commands from './commands.ts'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
-// @deno-types="npm:@types/yargs"
-import yargs, { CommandModule } from 'npm:yargs'
-import { hideBin } from 'npm:yargs/helpers'
 import { parse, stringify } from 'npm:smol-toml'
+// @deno-types="npm:@types/yargs"
+import yargs, { type ArgumentsCamelCase, type CommandModule as YCommandModule } from 'npm:yargs'
+import { hideBin } from 'npm:yargs/helpers'
+
+let postHandler: () => void | Promise<void> = () => {}
+
+const handlerWrapper = <T, U>(commandModule: commands.CommandModule<T, U>): YCommandModule<T, U> => {
+  return {
+    ...commandModule,
+    handler: (argv: ArgumentsCamelCase<U>) => {
+      postHandler = () => commandModule.postHandler(argv)
+      if (commandModule.handler) {
+        return commandModule.handler(argv)
+      }
+    }
+  }
+}
 
 // Typecasting seems to be required
-const commandModules = Object.values(commands) as unknown as CommandModule
+const commandModules = Object.values(commands).map(
+  (c) => handlerWrapper(c as commands.CommandModule<object, object>)
+)
 
 nconf
-  /* .env({
+  .env({
     separator: '__',
     lowerCase: true,
     parseValues: true
-  }) */
+  })
   .argv(yargs(hideBin(process.argv))
     .version(import.meta.VERSION)
     .strict()
@@ -34,7 +50,6 @@ nconf
     .demandCommand()
     .help()
   )
-  // .file({ file: 'chel.config.json' })
   .file({ file: 'chel.toml', format: { parse, stringify } })
   .defaults({
     'server': {
@@ -79,4 +94,4 @@ nconf
     }
   })
 
-console.error('@@@@', nconf.get())
+await postHandler()

@@ -9,10 +9,9 @@ chel get https://url.com mygreatlongkey > file.png
 
 import { writeAll } from 'jsr:@std/io/'
 import sbp from 'npm:@sbp/sbp'
+import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { initDB } from './serve/database.ts'
 import { exit, readRemoteData } from './utils.ts'
-// @deno-types="npm:@types/yargs"
-import type { ArgumentsCamelCase, CommandModule } from 'npm:yargs'
 
 type Params = { url?: string, key: string }
 
@@ -56,7 +55,7 @@ export const module = {
   describe: 'Retrieves the entry associated with a given <hash> key, from a given database or server.\n\n' +
   '- The output can be piped to a file, like this:' +
   '  chel get https://url.com mygreatlongkey > file.png',
-  handler: (argv) => {
+  postHandler: (argv) => {
     return get(argv)
   }
 } as CommandModule<object, Params>

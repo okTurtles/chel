@@ -1,7 +1,6 @@
 import * as colors from 'jsr:@std/fmt/colors'
 import process from 'node:process'
-// @deno-types="npm:@types/yargs"
-import type { ArgumentsCamelCase, CommandModule } from 'npm:yargs'
+import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 
 type Params = { port: number, 'dashboard-port': number, directory: string }
 
@@ -73,7 +72,7 @@ export const module = {
   },
   command: 'serve [--port PORT] [--dashboard-port PORT] [directory]',
   describe: 'start the server',
-  handler: (argv) => {
+  postHandler: (argv) => {
     return serve(argv)
   }
 } as CommandModule<object, Params>

@@ -1,10 +1,9 @@
 import * as colors from 'jsr:@std/fmt/colors'
 import * as path from 'jsr:@std/path/'
 import sbp from 'npm:@sbp/sbp'
+import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { initDB } from './serve/database.ts'
 import { createEntryFromFile, multicodes, type Entry } from './utils.ts'
-// @deno-types="npm:@types/yargs"
-import type { ArgumentsCamelCase, CommandModule } from 'npm:yargs'
 
 type Params = { url?: string, files: string[] }
 
@@ -94,7 +93,7 @@ export const module = {
   },
   command: 'upload [--url REMOTE_URL] <files..>',
   describe: 'Requires read and write access to the destination.',
-  handler: (argv) => {
+  postHandler: (argv) => {
     return void upload(argv)
   }
 } as CommandModule<object, Params>

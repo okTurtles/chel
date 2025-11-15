@@ -25,7 +25,7 @@ const validConfig = {
   }
 }
 
-const db = new RouterBackend({ config: validConfig })
+const db = new RouterBackend(validConfig)
 
 Deno.test({
   name: 'DatabaseRouter::validateConfig',

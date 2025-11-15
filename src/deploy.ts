@@ -2,9 +2,8 @@
 
 import * as path from 'jsr:@std/path/'
 import * as z from 'npm:zod'
+import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { upload } from './upload.ts'
-// @deno-types="npm:@types/yargs"
-import type { ArgumentsCamelCase, CommandModule } from 'npm:yargs'
 
 // Prefixes to use to select the correct CID to use
 const CONTRACT_TEXT_PREFIX = 't|'
@@ -50,7 +49,7 @@ export const module = {
   },
   command: 'deploy [--url REMOTE_URL] <manifests..>',
   describe: '',
-  handler: (argv) => {
+  postHandler: (argv) => {
     return deploy(argv)
   }
 } as CommandModule<object, Params>

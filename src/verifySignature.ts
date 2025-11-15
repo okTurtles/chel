@@ -1,10 +1,9 @@
 import * as colors from 'jsr:@std/fmt/colors'
 import * as path from 'jsr:@std/path/'
 import { verifySignature as cryptoVerifySignature, deserializeKey, keyId } from 'npm:@chelonia/crypto'
+import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { hash } from './hash.ts'
 import { exit, multicodes, readJsonFile, revokeNet } from './utils.ts'
-// @deno-types="npm:@types/yargs"
-import type { ArgumentsCamelCase, CommandModule } from 'npm:yargs'
 
 type Params = { key?: string, manifestFile: string }
 
@@ -141,7 +140,7 @@ export const module = {
   },
   command: 'verifySignature <manifestFile>',
   describe: '',
-  handler: (argv) => {
+  postHandler: (argv) => {
     return verifySignature(argv)
   }
 } as CommandModule<object, Params>

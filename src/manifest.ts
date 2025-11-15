@@ -6,10 +6,9 @@
 import * as colors from 'jsr:@std/fmt/colors'
 import * as path from 'jsr:@std/path/'
 import { EDWARDS25519SHA512BATCH, deserializeKey, keyId, serializeKey, sign } from 'npm:@chelonia/crypto'
+import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { hash } from './hash.ts'
 import { exit, multicodes, readJsonFile, revokeNet } from './utils.ts'
-// @deno-types="npm:@types/yargs"
-import type { ArgumentsCamelCase, CommandModule } from 'npm:yargs'
 
 // import { writeAllSync } from "https://deno.land/std@0.141.0/streams/mod.ts"
 
@@ -152,7 +151,7 @@ export const module = {
   },
   command: 'manifest [-k|--key <pubkey1>] [-k|--key <pubkey2> ...] [--out <manifest.json>] [-s|--slim <contract-slim.js>] [-v|--version <version>] <signingKey> <contractBundle>',
   describe: 'Produce a signed manifest from a contract.\n' + 'If unspecified, <version> is set to \'x\'.',
-  handler: (argv) => {
+  postHandler: (argv) => {
     return manifest(argv)
   }
 } as CommandModule<object, Params>

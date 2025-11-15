@@ -1,14 +1,14 @@
-// @deno-types="npm:@types/yargs"
-import type { CommandModule } from 'npm:yargs'
+import type { CommandModule } from './commands.ts'
+import type { ImportMeta } from './types/build.d.ts'
 
 export function version (): void {
-  console.log(import.meta.VERSION)
+  console.log((import.meta as ImportMeta).VERSION)
 }
 
 export const module = {
   command: 'version',
   describe: 'show chel version',
-  handler: () => {
+  postHandler: () => {
     return version()
   }
 } as CommandModule<object, object>

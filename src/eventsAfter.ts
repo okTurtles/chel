@@ -2,10 +2,9 @@
 
 import * as base64 from 'jsr:@std/encoding/base64'
 import sbp from 'npm:@sbp/sbp'
+import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { initDB } from './serve/database.ts'
 import { exit } from './utils.ts'
-// @deno-types="npm:@types/yargs"
-import type { ArgumentsCamelCase, CommandModule } from 'npm:yargs'
 
 type Params = { limit: number, url: string | undefined, contractID: string, height: number }
 
@@ -92,7 +91,7 @@ export const module = {
   '- The output is parseable with tools such as \'jq\'.\n' +
   '- If <hash> is the same as <contractID>, then the oldest events will be returned.\n' +
   '- If <url-or-localpath> is a URL, then its /eventsAfter REST endpoint will be called.\n',
-  handler: (argv) => {
+  postHandler: (argv) => {
     return eventsAfter(argv)
   }
 } as CommandModule<object, Params>
