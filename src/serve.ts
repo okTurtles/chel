@@ -70,7 +70,7 @@ export const module = {
       })
       .alias('server:appDir', 'directory')
   },
-  command: 'serve [--port PORT] [--dashboard-port PORT] [directory]',
+  command: 'serve [directory]',
   describe: 'start the server',
   postHandler: (argv) => {
     return serve(argv)

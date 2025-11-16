@@ -7,7 +7,6 @@ import { Buffer as Buffer2 } from "node:buffer";
 import { Buffer as Buffer5 } from "node:buffer";
 import { mkdir, readdir, readFile, rm, unlink, writeFile } from "node:fs/promises";
 import { basename as basename6, dirname as dirname6, join as join6, normalize as normalize6, resolve as resolve6 } from "node:path";
-import process3 from "node:process";
 import { Buffer as Buffer10 } from "node:buffer";
 
 // deno:https://jsr.io/@db/sqlite/0.12.0/deno.json
@@ -68,11 +67,11 @@ function assertArg3(url) {
 // deno:https://jsr.io/@std/path/0.217.0/windows/from_file_url.ts
 function fromFileUrl(url) {
   url = assertArg3(url);
-  let path2 = decodeURIComponent(url.pathname.replace(/\//g, "\\").replace(/%(?![0-9A-Fa-f]{2})/g, "%25")).replace(/^\\*([A-Za-z]:)(\\|$)/, "$1\\");
+  let path = decodeURIComponent(url.pathname.replace(/\//g, "\\").replace(/%(?![0-9A-Fa-f]{2})/g, "%25")).replace(/^\\*([A-Za-z]:)(\\|$)/, "$1\\");
   if (url.hostname !== "") {
-    path2 = `\\\\${url.hostname}${path2}`;
+    path = `\\\\${url.hostname}${path}`;
   }
-  return path2;
+  return path;
 }
 
 // deno:https://jsr.io/@std/path/0.217.0/posix/from_file_url.ts
@@ -111,9 +110,9 @@ function checkWindows() {
 var isWindows2 = checkWindows();
 
 // deno:https://jsr.io/@std/path/1.1.1/_common/assert_path.ts
-function assertPath2(path2) {
-  if (typeof path2 !== "string") {
-    throw new TypeError(`Path must be a string, received "${JSON.stringify(path2)}"`);
+function assertPath2(path) {
+  if (typeof path !== "string") {
+    throw new TypeError(`Path must be a string, received "${JSON.stringify(path)}"`);
   }
 }
 
@@ -177,29 +176,29 @@ function isWindowsDeviceRoot2(code2) {
 // deno:https://jsr.io/@std/path/1.1.1/windows/from_file_url.ts
 function fromFileUrl5(url) {
   url = assertArg5(url);
-  let path2 = decodeURIComponent(url.pathname.replace(/\//g, "\\").replace(/%(?![0-9A-Fa-f]{2})/g, "%25")).replace(/^\\*([A-Za-z]:)(\\|$)/, "$1\\");
+  let path = decodeURIComponent(url.pathname.replace(/\//g, "\\").replace(/%(?![0-9A-Fa-f]{2})/g, "%25")).replace(/^\\*([A-Za-z]:)(\\|$)/, "$1\\");
   if (url.hostname !== "") {
-    path2 = `\\\\${url.hostname}${path2}`;
+    path = `\\\\${url.hostname}${path}`;
   }
-  return path2;
+  return path;
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/_common/dirname.ts
-function assertArg6(path2) {
-  assertPath2(path2);
-  if (path2.length === 0) return ".";
+function assertArg6(path) {
+  assertPath2(path);
+  if (path.length === 0) return ".";
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/posix/dirname.ts
-function dirname3(path2) {
-  if (path2 instanceof URL) {
-    path2 = fromFileUrl4(path2);
+function dirname3(path) {
+  if (path instanceof URL) {
+    path = fromFileUrl4(path);
   }
-  assertArg6(path2);
+  assertArg6(path);
   let end = -1;
   let matchedNonSeparator = false;
-  for (let i2 = path2.length - 1; i2 >= 1; --i2) {
-    if (isPosixPathSeparator3(path2.charCodeAt(i2))) {
+  for (let i2 = path.length - 1; i2 >= 1; --i2) {
+    if (isPosixPathSeparator3(path.charCodeAt(i2))) {
       if (matchedNonSeparator) {
         end = i2;
         break;
@@ -209,44 +208,44 @@ function dirname3(path2) {
     }
   }
   if (end === -1) {
-    return isPosixPathSeparator3(path2.charCodeAt(0)) ? "/" : ".";
+    return isPosixPathSeparator3(path.charCodeAt(0)) ? "/" : ".";
   }
-  return stripTrailingSeparators2(path2.slice(0, end), isPosixPathSeparator3);
+  return stripTrailingSeparators2(path.slice(0, end), isPosixPathSeparator3);
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/windows/dirname.ts
-function dirname4(path2) {
-  if (path2 instanceof URL) {
-    path2 = fromFileUrl5(path2);
+function dirname4(path) {
+  if (path instanceof URL) {
+    path = fromFileUrl5(path);
   }
-  assertArg6(path2);
-  const len = path2.length;
+  assertArg6(path);
+  const len = path.length;
   let rootEnd = -1;
   let end = -1;
   let matchedSlash = true;
   let offset = 0;
-  const code2 = path2.charCodeAt(0);
+  const code2 = path.charCodeAt(0);
   if (len > 1) {
     if (isPathSeparator2(code2)) {
       rootEnd = offset = 1;
-      if (isPathSeparator2(path2.charCodeAt(1))) {
+      if (isPathSeparator2(path.charCodeAt(1))) {
         let j = 2;
         let last = j;
         for (; j < len; ++j) {
-          if (isPathSeparator2(path2.charCodeAt(j))) break;
+          if (isPathSeparator2(path.charCodeAt(j))) break;
         }
         if (j < len && j !== last) {
           last = j;
           for (; j < len; ++j) {
-            if (!isPathSeparator2(path2.charCodeAt(j))) break;
+            if (!isPathSeparator2(path.charCodeAt(j))) break;
           }
           if (j < len && j !== last) {
             last = j;
             for (; j < len; ++j) {
-              if (isPathSeparator2(path2.charCodeAt(j))) break;
+              if (isPathSeparator2(path.charCodeAt(j))) break;
             }
             if (j === len) {
-              return path2;
+              return path;
             }
             if (j !== last) {
               rootEnd = offset = j + 1;
@@ -255,18 +254,18 @@ function dirname4(path2) {
         }
       }
     } else if (isWindowsDeviceRoot2(code2)) {
-      if (path2.charCodeAt(1) === CHAR_COLON2) {
+      if (path.charCodeAt(1) === CHAR_COLON2) {
         rootEnd = offset = 2;
         if (len > 2) {
-          if (isPathSeparator2(path2.charCodeAt(2))) rootEnd = offset = 3;
+          if (isPathSeparator2(path.charCodeAt(2))) rootEnd = offset = 3;
         }
       }
     }
   } else if (isPathSeparator2(code2)) {
-    return path2;
+    return path;
   }
   for (let i2 = len - 1; i2 >= offset; --i2) {
-    if (isPathSeparator2(path2.charCodeAt(i2))) {
+    if (isPathSeparator2(path.charCodeAt(i2))) {
       if (!matchedSlash) {
         end = i2;
         break;
@@ -279,27 +278,27 @@ function dirname4(path2) {
     if (rootEnd === -1) return ".";
     else end = rootEnd;
   }
-  return stripTrailingSeparators2(path2.slice(0, end), isPosixPathSeparator4);
+  return stripTrailingSeparators2(path.slice(0, end), isPosixPathSeparator4);
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/dirname.ts
-function dirname5(path2) {
-  return isWindows2 ? dirname4(path2) : dirname3(path2);
+function dirname5(path) {
+  return isWindows2 ? dirname4(path) : dirname3(path);
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/posix/extname.ts
-function extname3(path2) {
-  if (path2 instanceof URL) {
-    path2 = fromFileUrl4(path2);
+function extname3(path) {
+  if (path instanceof URL) {
+    path = fromFileUrl4(path);
   }
-  assertPath2(path2);
+  assertPath2(path);
   let startDot = -1;
   let startPart = 0;
   let end = -1;
   let matchedSlash = true;
   let preDotState = 0;
-  for (let i2 = path2.length - 1; i2 >= 0; --i2) {
-    const code2 = path2.charCodeAt(i2);
+  for (let i2 = path.length - 1; i2 >= 0; --i2) {
+    const code2 = path.charCodeAt(i2);
     if (isPosixPathSeparator3(code2)) {
       if (!matchedSlash) {
         startPart = i2 + 1;
@@ -323,26 +322,26 @@ function extname3(path2) {
   preDotState === 1 && startDot === end - 1 && startDot === startPart + 1) {
     return "";
   }
-  return path2.slice(startDot, end);
+  return path.slice(startDot, end);
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/windows/extname.ts
-function extname4(path2) {
-  if (path2 instanceof URL) {
-    path2 = fromFileUrl5(path2);
+function extname4(path) {
+  if (path instanceof URL) {
+    path = fromFileUrl5(path);
   }
-  assertPath2(path2);
+  assertPath2(path);
   let start = 0;
   let startDot = -1;
   let startPart = 0;
   let end = -1;
   let matchedSlash = true;
   let preDotState = 0;
-  if (path2.length >= 2 && path2.charCodeAt(1) === CHAR_COLON2 && isWindowsDeviceRoot2(path2.charCodeAt(0))) {
+  if (path.length >= 2 && path.charCodeAt(1) === CHAR_COLON2 && isWindowsDeviceRoot2(path.charCodeAt(0))) {
     start = startPart = 2;
   }
-  for (let i2 = path2.length - 1; i2 >= start; --i2) {
-    const code2 = path2.charCodeAt(i2);
+  for (let i2 = path.length - 1; i2 >= start; --i2) {
+    const code2 = path.charCodeAt(i2);
     if (isPathSeparator2(code2)) {
       if (!matchedSlash) {
         startPart = i2 + 1;
@@ -366,12 +365,12 @@ function extname4(path2) {
   preDotState === 1 && startDot === end - 1 && startDot === startPart + 1) {
     return "";
   }
-  return path2.slice(startDot, end);
+  return path.slice(startDot, end);
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/extname.ts
-function extname5(path2) {
-  return isWindows2 ? extname4(path2) : extname3(path2);
+function extname5(path) {
+  return isWindows2 ? extname4(path) : extname3(path);
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/from_file_url.ts
@@ -380,47 +379,47 @@ function fromFileUrl6(url) {
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/posix/is_absolute.ts
-function isAbsolute3(path2) {
-  assertPath2(path2);
-  return path2.length > 0 && isPosixPathSeparator3(path2.charCodeAt(0));
+function isAbsolute3(path) {
+  assertPath2(path);
+  return path.length > 0 && isPosixPathSeparator3(path.charCodeAt(0));
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/windows/is_absolute.ts
-function isAbsolute4(path2) {
-  assertPath2(path2);
-  const len = path2.length;
+function isAbsolute4(path) {
+  assertPath2(path);
+  const len = path.length;
   if (len === 0) return false;
-  const code2 = path2.charCodeAt(0);
+  const code2 = path.charCodeAt(0);
   if (isPathSeparator2(code2)) {
     return true;
   } else if (isWindowsDeviceRoot2(code2)) {
-    if (len > 2 && path2.charCodeAt(1) === CHAR_COLON2) {
-      if (isPathSeparator2(path2.charCodeAt(2))) return true;
+    if (len > 2 && path.charCodeAt(1) === CHAR_COLON2) {
+      if (isPathSeparator2(path.charCodeAt(2))) return true;
     }
   }
   return false;
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/is_absolute.ts
-function isAbsolute5(path2) {
-  return isWindows2 ? isAbsolute4(path2) : isAbsolute3(path2);
+function isAbsolute5(path) {
+  return isWindows2 ? isAbsolute4(path) : isAbsolute3(path);
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/_common/normalize.ts
-function assertArg8(path2) {
-  assertPath2(path2);
-  if (path2.length === 0) return ".";
+function assertArg8(path) {
+  assertPath2(path);
+  if (path.length === 0) return ".";
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/_common/normalize_string.ts
-function normalizeString2(path2, allowAboveRoot, separator, isPathSeparator3) {
+function normalizeString2(path, allowAboveRoot, separator, isPathSeparator3) {
   let res = "";
   let lastSegmentLength = 0;
   let lastSlash = -1;
   let dots = 0;
   let code2;
-  for (let i2 = 0; i2 <= path2.length; ++i2) {
-    if (i2 < path2.length) code2 = path2.charCodeAt(i2);
+  for (let i2 = 0; i2 <= path.length; ++i2) {
+    if (i2 < path.length) code2 = path.charCodeAt(i2);
     else if (isPathSeparator3(code2)) break;
     else code2 = CHAR_FORWARD_SLASH2;
     if (isPathSeparator3(code2)) {
@@ -453,8 +452,8 @@ function normalizeString2(path2, allowAboveRoot, separator, isPathSeparator3) {
           lastSegmentLength = 2;
         }
       } else {
-        if (res.length > 0) res += separator + path2.slice(lastSlash + 1, i2);
-        else res = path2.slice(lastSlash + 1, i2);
+        if (res.length > 0) res += separator + path.slice(lastSlash + 1, i2);
+        else res = path.slice(lastSlash + 1, i2);
         lastSegmentLength = i2 - lastSlash - 1;
       }
       lastSlash = i2;
@@ -469,70 +468,70 @@ function normalizeString2(path2, allowAboveRoot, separator, isPathSeparator3) {
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/posix/normalize.ts
-function normalize3(path2) {
-  if (path2 instanceof URL) {
-    path2 = fromFileUrl4(path2);
+function normalize3(path) {
+  if (path instanceof URL) {
+    path = fromFileUrl4(path);
   }
-  assertArg8(path2);
-  const isAbsolute6 = isPosixPathSeparator3(path2.charCodeAt(0));
-  const trailingSeparator = isPosixPathSeparator3(path2.charCodeAt(path2.length - 1));
-  path2 = normalizeString2(path2, !isAbsolute6, "/", isPosixPathSeparator3);
-  if (path2.length === 0 && !isAbsolute6) path2 = ".";
-  if (path2.length > 0 && trailingSeparator) path2 += "/";
-  if (isAbsolute6) return `/${path2}`;
-  return path2;
+  assertArg8(path);
+  const isAbsolute6 = isPosixPathSeparator3(path.charCodeAt(0));
+  const trailingSeparator = isPosixPathSeparator3(path.charCodeAt(path.length - 1));
+  path = normalizeString2(path, !isAbsolute6, "/", isPosixPathSeparator3);
+  if (path.length === 0 && !isAbsolute6) path = ".";
+  if (path.length > 0 && trailingSeparator) path += "/";
+  if (isAbsolute6) return `/${path}`;
+  return path;
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/posix/join.ts
-function join3(path2, ...paths) {
-  if (path2 === void 0) return ".";
-  if (path2 instanceof URL) {
-    path2 = fromFileUrl4(path2);
+function join3(path, ...paths) {
+  if (path === void 0) return ".";
+  if (path instanceof URL) {
+    path = fromFileUrl4(path);
   }
-  paths = path2 ? [
-    path2,
+  paths = path ? [
+    path,
     ...paths
   ] : paths;
-  paths.forEach((path3) => assertPath2(path3));
-  const joined = paths.filter((path3) => path3.length > 0).join("/");
+  paths.forEach((path2) => assertPath2(path2));
+  const joined = paths.filter((path2) => path2.length > 0).join("/");
   return joined === "" ? "." : normalize3(joined);
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/windows/normalize.ts
-function normalize4(path2) {
-  if (path2 instanceof URL) {
-    path2 = fromFileUrl5(path2);
+function normalize4(path) {
+  if (path instanceof URL) {
+    path = fromFileUrl5(path);
   }
-  assertArg8(path2);
-  const len = path2.length;
+  assertArg8(path);
+  const len = path.length;
   let rootEnd = 0;
   let device;
   let isAbsolute6 = false;
-  const code2 = path2.charCodeAt(0);
+  const code2 = path.charCodeAt(0);
   if (len > 1) {
     if (isPathSeparator2(code2)) {
       isAbsolute6 = true;
-      if (isPathSeparator2(path2.charCodeAt(1))) {
+      if (isPathSeparator2(path.charCodeAt(1))) {
         let j = 2;
         let last = j;
         for (; j < len; ++j) {
-          if (isPathSeparator2(path2.charCodeAt(j))) break;
+          if (isPathSeparator2(path.charCodeAt(j))) break;
         }
         if (j < len && j !== last) {
-          const firstPart = path2.slice(last, j);
+          const firstPart = path.slice(last, j);
           last = j;
           for (; j < len; ++j) {
-            if (!isPathSeparator2(path2.charCodeAt(j))) break;
+            if (!isPathSeparator2(path.charCodeAt(j))) break;
           }
           if (j < len && j !== last) {
             last = j;
             for (; j < len; ++j) {
-              if (isPathSeparator2(path2.charCodeAt(j))) break;
+              if (isPathSeparator2(path.charCodeAt(j))) break;
             }
             if (j === len) {
-              return `\\\\${firstPart}\\${path2.slice(last)}\\`;
+              return `\\\\${firstPart}\\${path.slice(last)}\\`;
             } else if (j !== last) {
-              device = `\\\\${firstPart}\\${path2.slice(last, j)}`;
+              device = `\\\\${firstPart}\\${path.slice(last, j)}`;
               rootEnd = j;
             }
           }
@@ -541,11 +540,11 @@ function normalize4(path2) {
         rootEnd = 1;
       }
     } else if (isWindowsDeviceRoot2(code2)) {
-      if (path2.charCodeAt(1) === CHAR_COLON2) {
-        device = path2.slice(0, 2);
+      if (path.charCodeAt(1) === CHAR_COLON2) {
+        device = path.slice(0, 2);
         rootEnd = 2;
         if (len > 2) {
-          if (isPathSeparator2(path2.charCodeAt(2))) {
+          if (isPathSeparator2(path.charCodeAt(2))) {
             isAbsolute6 = true;
             rootEnd = 3;
           }
@@ -557,12 +556,12 @@ function normalize4(path2) {
   }
   let tail;
   if (rootEnd < len) {
-    tail = normalizeString2(path2.slice(rootEnd), !isAbsolute6, "\\", isPathSeparator2);
+    tail = normalizeString2(path.slice(rootEnd), !isAbsolute6, "\\", isPathSeparator2);
   } else {
     tail = "";
   }
   if (tail.length === 0 && !isAbsolute6) tail = ".";
-  if (tail.length > 0 && isPathSeparator2(path2.charCodeAt(len - 1))) {
+  if (tail.length > 0 && isPathSeparator2(path.charCodeAt(len - 1))) {
     tail += "\\";
   }
   if (device === void 0) {
@@ -579,16 +578,16 @@ function normalize4(path2) {
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/windows/join.ts
-function join4(path2, ...paths) {
-  if (path2 instanceof URL) {
-    path2 = fromFileUrl5(path2);
+function join4(path, ...paths) {
+  if (path instanceof URL) {
+    path = fromFileUrl5(path);
   }
-  paths = path2 ? [
-    path2,
+  paths = path ? [
+    path,
     ...paths
   ] : paths;
-  paths.forEach((path3) => assertPath2(path3));
-  paths = paths.filter((path3) => path3.length > 0);
+  paths.forEach((path2) => assertPath2(path2));
+  paths = paths.filter((path2) => path2.length > 0);
   if (paths.length === 0) return ".";
   let needsReplace = true;
   let slashCount = 0;
@@ -619,13 +618,13 @@ function join4(path2, ...paths) {
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/join.ts
-function join5(path2, ...paths) {
-  return isWindows2 ? join4(path2, ...paths) : join3(path2, ...paths);
+function join5(path, ...paths) {
+  return isWindows2 ? join4(path, ...paths) : join3(path, ...paths);
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/normalize.ts
-function normalize5(path2) {
-  return isWindows2 ? normalize4(path2) : normalize3(path2);
+function normalize5(path) {
+  return isWindows2 ? normalize4(path) : normalize3(path);
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/posix/resolve.ts
@@ -633,21 +632,21 @@ function resolve3(...pathSegments) {
   let resolvedPath = "";
   let resolvedAbsolute = false;
   for (let i2 = pathSegments.length - 1; i2 >= -1 && !resolvedAbsolute; i2--) {
-    let path2;
-    if (i2 >= 0) path2 = pathSegments[i2];
+    let path;
+    if (i2 >= 0) path = pathSegments[i2];
     else {
       const { Deno: Deno3 } = globalThis;
       if (typeof Deno3?.cwd !== "function") {
         throw new TypeError("Resolved a relative path without a current working directory (CWD)");
       }
-      path2 = Deno3.cwd();
+      path = Deno3.cwd();
     }
-    assertPath2(path2);
-    if (path2.length === 0) {
+    assertPath2(path);
+    if (path.length === 0) {
       continue;
     }
-    resolvedPath = `${path2}/${resolvedPath}`;
-    resolvedAbsolute = isPosixPathSeparator3(path2.charCodeAt(0));
+    resolvedPath = `${path}/${resolvedPath}`;
+    resolvedAbsolute = isPosixPathSeparator3(path.charCodeAt(0));
   }
   resolvedPath = normalizeString2(resolvedPath, !resolvedAbsolute, "/", isPosixPathSeparator3);
   if (resolvedAbsolute) {
@@ -663,56 +662,56 @@ function resolve4(...pathSegments) {
   let resolvedTail = "";
   let resolvedAbsolute = false;
   for (let i2 = pathSegments.length - 1; i2 >= -1; i2--) {
-    let path2;
+    let path;
     const { Deno: Deno3 } = globalThis;
     if (i2 >= 0) {
-      path2 = pathSegments[i2];
+      path = pathSegments[i2];
     } else if (!resolvedDevice) {
       if (typeof Deno3?.cwd !== "function") {
         throw new TypeError("Resolved a drive-letter-less path without a current working directory (CWD)");
       }
-      path2 = Deno3.cwd();
+      path = Deno3.cwd();
     } else {
       if (typeof Deno3?.env?.get !== "function" || typeof Deno3?.cwd !== "function") {
         throw new TypeError("Resolved a relative path without a current working directory (CWD)");
       }
-      path2 = Deno3.cwd();
-      if (path2 === void 0 || path2.slice(0, 3).toLowerCase() !== `${resolvedDevice.toLowerCase()}\\`) {
-        path2 = `${resolvedDevice}\\`;
+      path = Deno3.cwd();
+      if (path === void 0 || path.slice(0, 3).toLowerCase() !== `${resolvedDevice.toLowerCase()}\\`) {
+        path = `${resolvedDevice}\\`;
       }
     }
-    assertPath2(path2);
-    const len = path2.length;
+    assertPath2(path);
+    const len = path.length;
     if (len === 0) continue;
     let rootEnd = 0;
     let device = "";
     let isAbsolute6 = false;
-    const code2 = path2.charCodeAt(0);
+    const code2 = path.charCodeAt(0);
     if (len > 1) {
       if (isPathSeparator2(code2)) {
         isAbsolute6 = true;
-        if (isPathSeparator2(path2.charCodeAt(1))) {
+        if (isPathSeparator2(path.charCodeAt(1))) {
           let j = 2;
           let last = j;
           for (; j < len; ++j) {
-            if (isPathSeparator2(path2.charCodeAt(j))) break;
+            if (isPathSeparator2(path.charCodeAt(j))) break;
           }
           if (j < len && j !== last) {
-            const firstPart = path2.slice(last, j);
+            const firstPart = path.slice(last, j);
             last = j;
             for (; j < len; ++j) {
-              if (!isPathSeparator2(path2.charCodeAt(j))) break;
+              if (!isPathSeparator2(path.charCodeAt(j))) break;
             }
             if (j < len && j !== last) {
               last = j;
               for (; j < len; ++j) {
-                if (isPathSeparator2(path2.charCodeAt(j))) break;
+                if (isPathSeparator2(path.charCodeAt(j))) break;
               }
               if (j === len) {
-                device = `\\\\${firstPart}\\${path2.slice(last)}`;
+                device = `\\\\${firstPart}\\${path.slice(last)}`;
                 rootEnd = j;
               } else if (j !== last) {
-                device = `\\\\${firstPart}\\${path2.slice(last, j)}`;
+                device = `\\\\${firstPart}\\${path.slice(last, j)}`;
                 rootEnd = j;
               }
             }
@@ -721,11 +720,11 @@ function resolve4(...pathSegments) {
           rootEnd = 1;
         }
       } else if (isWindowsDeviceRoot2(code2)) {
-        if (path2.charCodeAt(1) === CHAR_COLON2) {
-          device = path2.slice(0, 2);
+        if (path.charCodeAt(1) === CHAR_COLON2) {
+          device = path.slice(0, 2);
           rootEnd = 2;
           if (len > 2) {
-            if (isPathSeparator2(path2.charCodeAt(2))) {
+            if (isPathSeparator2(path.charCodeAt(2))) {
               isAbsolute6 = true;
               rootEnd = 3;
             }
@@ -743,7 +742,7 @@ function resolve4(...pathSegments) {
       resolvedDevice = device;
     }
     if (!resolvedAbsolute) {
-      resolvedTail = `${path2.slice(rootEnd)}\\${resolvedTail}`;
+      resolvedTail = `${path.slice(rootEnd)}\\${resolvedTail}`;
       resolvedAbsolute = isAbsolute6;
     }
     if (resolvedAbsolute && resolvedDevice.length > 0) break;
@@ -773,21 +772,21 @@ function encodeWhitespace2(string) {
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/posix/to_file_url.ts
-function toFileUrl3(path2) {
-  if (!isAbsolute3(path2)) {
-    throw new TypeError(`Path must be absolute: received "${path2}"`);
+function toFileUrl3(path) {
+  if (!isAbsolute3(path)) {
+    throw new TypeError(`Path must be absolute: received "${path}"`);
   }
   const url = new URL("file:///");
-  url.pathname = encodeWhitespace2(path2.replace(/%/g, "%25").replace(/\\/g, "%5C"));
+  url.pathname = encodeWhitespace2(path.replace(/%/g, "%25").replace(/\\/g, "%5C"));
   return url;
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/windows/to_file_url.ts
-function toFileUrl4(path2) {
-  if (!isAbsolute4(path2)) {
-    throw new TypeError(`Path must be absolute: received "${path2}"`);
+function toFileUrl4(path) {
+  if (!isAbsolute4(path)) {
+    throw new TypeError(`Path must be absolute: received "${path}"`);
   }
-  const [, hostname, pathname] = path2.match(/^(?:[/\\]{2}([^/\\]+)(?=[/\\](?:[^/\\]|$)))?(.*)/);
+  const [, hostname, pathname] = path.match(/^(?:[/\\]{2}([^/\\]+)(?=[/\\](?:[^/\\]|$)))?(.*)/);
   const url = new URL("file:///");
   url.pathname = encodeWhitespace2(pathname.replace(/%/g, "%25"));
   if (hostname !== void 0 && hostname !== "localhost") {
@@ -800,8 +799,8 @@ function toFileUrl4(path2) {
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/to_file_url.ts
-function toFileUrl5(path2) {
-  return isWindows2 ? toFileUrl4(path2) : toFileUrl3(path2);
+function toFileUrl5(path) {
+  return isWindows2 ? toFileUrl4(path) : toFileUrl3(path);
 }
 
 // deno:https://jsr.io/@std/fs/1.0.19/_get_file_info_type.ts
@@ -2494,8 +2493,8 @@ var Database = class {
     unwrap(result, this.#handle);
     this.#enableLoadExtension = enabled2;
   }
-  constructor(path2, options2 = {}) {
-    this.#path = path2 instanceof URL ? fromFileUrl3(path2) : path2;
+  constructor(path, options2 = {}) {
+    this.#path = path instanceof URL ? fromFileUrl3(path) : path;
     let flags = 0;
     this.int64 = options2.int64 ?? false;
     this.unsafeConcurrency = options2.unsafeConcurrency ?? false;
@@ -3015,24 +3014,17 @@ var wrapTransaction = (fn, db2, { begin, commit, rollback, savepoint, release, r
 import { Buffer as Buffer11 } from "node:buffer";
 import { mkdir as mkdir2 } from "node:fs/promises";
 import { basename as basename22, dirname as dirname22, join as join22, resolve as resolve22 } from "node:path";
-import { resolve as resolve32 } from "node:path";
-import { readFile as readFile2 } from "node:fs/promises";
-import process4 from "node:process";
-import fs from "node:fs";
-import { readFile as readFile3, readdir as readdir2 } from "node:fs/promises";
-import path from "node:path";
-import process5 from "node:process";
+import process2 from "node:process";
 import { Readable } from "node:stream";
 import { Buffer as Buffer6 } from "node:buffer";
 import { Buffer as Buffer4 } from "node:buffer";
 import { Buffer as Buffer3 } from "node:buffer";
 import { Buffer as Buffer7 } from "node:buffer";
-import process2 from "node:process";
 import { Buffer as Buffer9 } from "node:buffer";
 import { randomBytes as randomBytes2, timingSafeEqual } from "node:crypto";
 import { Buffer as Buffer8 } from "node:buffer";
 import { parentPort } from "node:worker_threads";
-import process6 from "node:process";
+import process3 from "node:process";
 var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -3045,10 +3037,10 @@ var __require2 = /* @__PURE__ */ ((x2) => typeof __require !== "undefined" ? __r
   if (typeof __require !== "undefined") return __require.apply(this, arguments);
   throw Error('Dynamic require of "' + x2 + '" is not supported');
 });
-var __glob = (map) => (path2) => {
-  var fn = map[path2];
+var __glob = (map) => (path) => {
+  var fn = map[path];
   if (fn) return fn();
-  throw new Error("Module not found in bundle: " + path2);
+  throw new Error("Module not found in bundle: " + path);
 };
 var __esm = (fn, res) => function __init() {
   return fn && (res = (0, fn[__getOwnPropNames(fn)[0]])(fn = 0)), res;
@@ -3254,8 +3246,8 @@ var init_esm2 = __esm({
         }
         const events = this.eventQueues[name];
         let accept;
-        const promise = new Promise((resolve42) => {
-          accept = resolve42;
+        const promise = new Promise((resolve32) => {
+          accept = resolve32;
         });
         const thisEvent = typeof invocation === "function" ? {
           fn: invocation,
@@ -3330,8 +3322,8 @@ function merge(obj, src2) {
   return res;
 }
 function delay(msec) {
-  return new Promise((resolve42) => {
-    setTimeout(resolve42, msec);
+  return new Promise((resolve32) => {
+    setTimeout(resolve32, msec);
   });
 }
 function randomBytes(length2) {
@@ -5185,11 +5177,11 @@ var init_blake2bstream = __esm({
     init_hasher();
     __awaiter = function(thisArg, _arguments, P, generator) {
       function adopt(value) {
-        return value instanceof P ? value : new P(function(resolve42) {
-          resolve42(value);
+        return value instanceof P ? value : new P(function(resolve32) {
+          resolve32(value);
         });
       }
-      return new (P || (P = Promise))(function(resolve42, reject) {
+      return new (P || (P = Promise))(function(resolve32, reject) {
         function fulfilled(value) {
           try {
             step(generator.next(value));
@@ -5205,7 +5197,7 @@ var init_blake2bstream = __esm({
           }
         }
         function step(result) {
-          result.done ? resolve42(result.value) : adopt(result.value).then(fulfilled, rejected);
+          result.done ? resolve32(result.value) : adopt(result.value).then(fulfilled, rejected);
         }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
       });
@@ -5662,7 +5654,6 @@ function blake32Hash(data) {
 }
 var multicodes;
 var parseCID;
-var maybeParseCID;
 var b64ToBuf;
 var b64ToStr;
 var strToBuf;
@@ -5691,13 +5682,6 @@ var init_functions = __esm({
         throw new Error("Invalid CID");
       }
       return parsed;
-    };
-    maybeParseCID = (cid) => {
-      try {
-        return parseCID(cid);
-      } catch {
-        return null;
-      }
     };
     b64ToBuf = (b64) => Buffer2.from(b64, "base64");
     b64ToStr = (b64) => b64ToBuf(b64).toString("utf8");
@@ -9001,12 +8985,12 @@ var init_esm6 = __esm({
             case "_fn": {
               const mp = value[2];
               return (...args) => {
-                return new Promise((resolve42, reject) => {
+                return new Promise((resolve32, reject) => {
                   const mc = new MessageChannel();
                   const { data: data2, transferables } = serializer(args);
                   mc.port1.onmessage = (ev) => {
                     if (ev.data[0]) {
-                      resolve42(deserializer(ev.data[1]));
+                      resolve32(deserializer(ev.data[1]));
                     } else {
                       reject(deserializer(ev.data[1]));
                     }
@@ -10290,10 +10274,10 @@ var require_reach = __commonJS({
       }
       const isChainArray = Array.isArray(chain);
       Assert(!isChainArray || !options2.separator, "Separator option is not valid for array-based chain");
-      const path2 = isChainArray ? chain : chain.split(options2.separator || ".");
+      const path = isChainArray ? chain : chain.split(options2.separator || ".");
       let ref = obj;
-      for (let i2 = 0; i2 < path2.length; ++i2) {
-        let key = path2[i2];
+      for (let i2 = 0; i2 < path.length; ++i2) {
+        let key = path[i2];
         const type = options2.iterables && internals.iterables(ref);
         if (Array.isArray(ref) || type === "set") {
           const number = Number(key);
@@ -10303,7 +10287,7 @@ var require_reach = __commonJS({
         }
         if (!ref || typeof ref === "function" && options2.functions === false || // Defaults to true
         !type && ref[key] === void 0) {
-          Assert(!options2.strict || i2 + 1 === path2.length, "Missing segment", key, "in reach path ", chain);
+          Assert(!options2.strict || i2 + 1 === path.length, "Missing segment", key, "in reach path ", chain);
           Assert(typeof ref === "object" || options2.functions === true || typeof ref !== "function", "Invalid segment", key, "in reach path ", chain);
           ref = options2.default;
           break;
@@ -10622,8 +10606,8 @@ var require_applyToDefaults = __commonJS({
       const nullOverride = options2.nullOverride !== void 0 ? options2.nullOverride : false;
       return Merge(copy, source, { nullOverride, mergeArrays: false });
     };
-    internals.reachCopy = function(dst, src2, path2) {
-      for (const segment of path2) {
+    internals.reachCopy = function(dst, src2, path) {
+      for (const segment of path) {
         if (!(segment in src2)) {
           return;
         }
@@ -10635,14 +10619,14 @@ var require_applyToDefaults = __commonJS({
       }
       const value = src2;
       let ref = dst;
-      for (let i2 = 0; i2 < path2.length - 1; ++i2) {
-        const segment = path2[i2];
+      for (let i2 = 0; i2 < path.length - 1; ++i2) {
+        const segment = path[i2];
         if (typeof ref[segment] !== "object") {
           ref[segment] = {};
         }
         ref = ref[segment];
       }
-      ref[path2[path2.length - 1]] = value;
+      ref[path[path.length - 1]] = value;
     };
   }
 });
@@ -11298,12 +11282,12 @@ var require_wait = __commonJS({
       if (typeof timeout !== "number" && timeout !== void 0) {
         throw new TypeError("Timeout must be a number or bigint");
       }
-      return new Promise((resolve42) => {
+      return new Promise((resolve32) => {
         const _setTimeout = options2 ? options2.setTimeout : setTimeout;
         const activate = () => {
           const time = Math.min(timeout, internals.maxTimer);
           timeout -= time;
-          _setTimeout(() => timeout > 0 ? activate() : resolve42(returnValue), time);
+          _setTimeout(() => timeout > 0 ? activate() : resolve32(returnValue), time);
         };
         if (timeout !== Infinity) {
           activate();
@@ -12460,6 +12444,8626 @@ var require_lru_cache = __commonJS({
     module.exports = LRUCache;
   }
 });
+var require_async = __commonJS({
+  "node_modules/.deno/async@3.2.6/node_modules/async/dist/async.js"(exports, module) {
+    (function(global2, factory) {
+      typeof exports === "object" && typeof module !== "undefined" ? factory(exports) : typeof define === "function" && define.amd ? define(["exports"], factory) : (global2 = typeof globalThis !== "undefined" ? globalThis : global2 || self, factory(global2.async = {}));
+    })(exports, function(exports2) {
+      "use strict";
+      function apply(fn, ...args) {
+        return (...callArgs) => fn(...args, ...callArgs);
+      }
+      function initialParams(fn) {
+        return function(...args) {
+          var callback = args.pop();
+          return fn.call(this, args, callback);
+        };
+      }
+      var hasQueueMicrotask = typeof queueMicrotask === "function" && queueMicrotask;
+      var hasSetImmediate = typeof setImmediate === "function" && setImmediate;
+      var hasNextTick = typeof process === "object" && typeof process.nextTick === "function";
+      function fallback(fn) {
+        setTimeout(fn, 0);
+      }
+      function wrap(defer) {
+        return (fn, ...args) => defer(() => fn(...args));
+      }
+      var _defer$1;
+      if (hasQueueMicrotask) {
+        _defer$1 = queueMicrotask;
+      } else if (hasSetImmediate) {
+        _defer$1 = setImmediate;
+      } else if (hasNextTick) {
+        _defer$1 = process.nextTick;
+      } else {
+        _defer$1 = fallback;
+      }
+      var setImmediate$1 = wrap(_defer$1);
+      function asyncify(func) {
+        if (isAsync(func)) {
+          return function(...args) {
+            const callback = args.pop();
+            const promise = func.apply(this, args);
+            return handlePromise(promise, callback);
+          };
+        }
+        return initialParams(function(args, callback) {
+          var result;
+          try {
+            result = func.apply(this, args);
+          } catch (e2) {
+            return callback(e2);
+          }
+          if (result && typeof result.then === "function") {
+            return handlePromise(result, callback);
+          } else {
+            callback(null, result);
+          }
+        });
+      }
+      function handlePromise(promise, callback) {
+        return promise.then((value) => {
+          invokeCallback(callback, null, value);
+        }, (err) => {
+          invokeCallback(callback, err && (err instanceof Error || err.message) ? err : new Error(err));
+        });
+      }
+      function invokeCallback(callback, error, value) {
+        try {
+          callback(error, value);
+        } catch (err) {
+          setImmediate$1((e2) => {
+            throw e2;
+          }, err);
+        }
+      }
+      function isAsync(fn) {
+        return fn[Symbol.toStringTag] === "AsyncFunction";
+      }
+      function isAsyncGenerator(fn) {
+        return fn[Symbol.toStringTag] === "AsyncGenerator";
+      }
+      function isAsyncIterable(obj) {
+        return typeof obj[Symbol.asyncIterator] === "function";
+      }
+      function wrapAsync(asyncFn) {
+        if (typeof asyncFn !== "function") throw new Error("expected a function");
+        return isAsync(asyncFn) ? asyncify(asyncFn) : asyncFn;
+      }
+      function awaitify(asyncFn, arity) {
+        if (!arity) arity = asyncFn.length;
+        if (!arity) throw new Error("arity is undefined");
+        function awaitable(...args) {
+          if (typeof args[arity - 1] === "function") {
+            return asyncFn.apply(this, args);
+          }
+          return new Promise((resolve32, reject2) => {
+            args[arity - 1] = (err, ...cbArgs) => {
+              if (err) return reject2(err);
+              resolve32(cbArgs.length > 1 ? cbArgs : cbArgs[0]);
+            };
+            asyncFn.apply(this, args);
+          });
+        }
+        return awaitable;
+      }
+      function applyEach$1(eachfn) {
+        return function applyEach2(fns, ...callArgs) {
+          const go = awaitify(function(callback) {
+            var that = this;
+            return eachfn(fns, (fn, cb) => {
+              wrapAsync(fn).apply(that, callArgs.concat(cb));
+            }, callback);
+          });
+          return go;
+        };
+      }
+      function _asyncMap(eachfn, arr, iteratee, callback) {
+        arr = arr || [];
+        var results = [];
+        var counter = 0;
+        var _iteratee = wrapAsync(iteratee);
+        return eachfn(arr, (value, _, iterCb) => {
+          var index2 = counter++;
+          _iteratee(value, (err, v2) => {
+            results[index2] = v2;
+            iterCb(err);
+          });
+        }, (err) => {
+          callback(err, results);
+        });
+      }
+      function isArrayLike(value) {
+        return value && typeof value.length === "number" && value.length >= 0 && value.length % 1 === 0;
+      }
+      const breakLoop = {};
+      function once(fn) {
+        function wrapper3(...args) {
+          if (fn === null) return;
+          var callFn = fn;
+          fn = null;
+          callFn.apply(this, args);
+        }
+        Object.assign(wrapper3, fn);
+        return wrapper3;
+      }
+      function getIterator(coll) {
+        return coll[Symbol.iterator] && coll[Symbol.iterator]();
+      }
+      function createArrayIterator(coll) {
+        var i2 = -1;
+        var len = coll.length;
+        return function next() {
+          return ++i2 < len ? { value: coll[i2], key: i2 } : null;
+        };
+      }
+      function createES2015Iterator(iterator) {
+        var i2 = -1;
+        return function next() {
+          var item = iterator.next();
+          if (item.done)
+            return null;
+          i2++;
+          return { value: item.value, key: i2 };
+        };
+      }
+      function createObjectIterator(obj) {
+        var okeys = obj ? Object.keys(obj) : [];
+        var i2 = -1;
+        var len = okeys.length;
+        return function next() {
+          var key = okeys[++i2];
+          if (key === "__proto__") {
+            return next();
+          }
+          return i2 < len ? { value: obj[key], key } : null;
+        };
+      }
+      function createIterator(coll) {
+        if (isArrayLike(coll)) {
+          return createArrayIterator(coll);
+        }
+        var iterator = getIterator(coll);
+        return iterator ? createES2015Iterator(iterator) : createObjectIterator(coll);
+      }
+      function onlyOnce(fn) {
+        return function(...args) {
+          if (fn === null) throw new Error("Callback was already called.");
+          var callFn = fn;
+          fn = null;
+          callFn.apply(this, args);
+        };
+      }
+      function asyncEachOfLimit(generator, limit, iteratee, callback) {
+        let done = false;
+        let canceled = false;
+        let awaiting = false;
+        let running = 0;
+        let idx = 0;
+        function replenish() {
+          if (running >= limit || awaiting || done) return;
+          awaiting = true;
+          generator.next().then(({ value, done: iterDone }) => {
+            if (canceled || done) return;
+            awaiting = false;
+            if (iterDone) {
+              done = true;
+              if (running <= 0) {
+                callback(null);
+              }
+              return;
+            }
+            running++;
+            iteratee(value, idx, iterateeCallback);
+            idx++;
+            replenish();
+          }).catch(handleError);
+        }
+        function iterateeCallback(err, result) {
+          running -= 1;
+          if (canceled) return;
+          if (err) return handleError(err);
+          if (err === false) {
+            done = true;
+            canceled = true;
+            return;
+          }
+          if (result === breakLoop || done && running <= 0) {
+            done = true;
+            return callback(null);
+          }
+          replenish();
+        }
+        function handleError(err) {
+          if (canceled) return;
+          awaiting = false;
+          done = true;
+          callback(err);
+        }
+        replenish();
+      }
+      var eachOfLimit$2 = (limit) => {
+        return (obj, iteratee, callback) => {
+          callback = once(callback);
+          if (limit <= 0) {
+            throw new RangeError("concurrency limit cannot be less than 1");
+          }
+          if (!obj) {
+            return callback(null);
+          }
+          if (isAsyncGenerator(obj)) {
+            return asyncEachOfLimit(obj, limit, iteratee, callback);
+          }
+          if (isAsyncIterable(obj)) {
+            return asyncEachOfLimit(obj[Symbol.asyncIterator](), limit, iteratee, callback);
+          }
+          var nextElem = createIterator(obj);
+          var done = false;
+          var canceled = false;
+          var running = 0;
+          var looping = false;
+          function iterateeCallback(err, value) {
+            if (canceled) return;
+            running -= 1;
+            if (err) {
+              done = true;
+              callback(err);
+            } else if (err === false) {
+              done = true;
+              canceled = true;
+            } else if (value === breakLoop || done && running <= 0) {
+              done = true;
+              return callback(null);
+            } else if (!looping) {
+              replenish();
+            }
+          }
+          function replenish() {
+            looping = true;
+            while (running < limit && !done) {
+              var elem = nextElem();
+              if (elem === null) {
+                done = true;
+                if (running <= 0) {
+                  callback(null);
+                }
+                return;
+              }
+              running += 1;
+              iteratee(elem.value, elem.key, onlyOnce(iterateeCallback));
+            }
+            looping = false;
+          }
+          replenish();
+        };
+      };
+      function eachOfLimit(coll, limit, iteratee, callback) {
+        return eachOfLimit$2(limit)(coll, wrapAsync(iteratee), callback);
+      }
+      var eachOfLimit$1 = awaitify(eachOfLimit, 4);
+      function eachOfArrayLike(coll, iteratee, callback) {
+        callback = once(callback);
+        var index2 = 0, completed = 0, { length: length2 } = coll, canceled = false;
+        if (length2 === 0) {
+          callback(null);
+        }
+        function iteratorCallback(err, value) {
+          if (err === false) {
+            canceled = true;
+          }
+          if (canceled === true) return;
+          if (err) {
+            callback(err);
+          } else if (++completed === length2 || value === breakLoop) {
+            callback(null);
+          }
+        }
+        for (; index2 < length2; index2++) {
+          iteratee(coll[index2], index2, onlyOnce(iteratorCallback));
+        }
+      }
+      function eachOfGeneric(coll, iteratee, callback) {
+        return eachOfLimit$1(coll, Infinity, iteratee, callback);
+      }
+      function eachOf(coll, iteratee, callback) {
+        var eachOfImplementation = isArrayLike(coll) ? eachOfArrayLike : eachOfGeneric;
+        return eachOfImplementation(coll, wrapAsync(iteratee), callback);
+      }
+      var eachOf$1 = awaitify(eachOf, 3);
+      function map(coll, iteratee, callback) {
+        return _asyncMap(eachOf$1, coll, iteratee, callback);
+      }
+      var map$1 = awaitify(map, 3);
+      var applyEach = applyEach$1(map$1);
+      function eachOfSeries(coll, iteratee, callback) {
+        return eachOfLimit$1(coll, 1, iteratee, callback);
+      }
+      var eachOfSeries$1 = awaitify(eachOfSeries, 3);
+      function mapSeries(coll, iteratee, callback) {
+        return _asyncMap(eachOfSeries$1, coll, iteratee, callback);
+      }
+      var mapSeries$1 = awaitify(mapSeries, 3);
+      var applyEachSeries = applyEach$1(mapSeries$1);
+      const PROMISE_SYMBOL = Symbol("promiseCallback");
+      function promiseCallback() {
+        let resolve32, reject2;
+        function callback(err, ...args) {
+          if (err) return reject2(err);
+          resolve32(args.length > 1 ? args : args[0]);
+        }
+        callback[PROMISE_SYMBOL] = new Promise((res, rej) => {
+          resolve32 = res, reject2 = rej;
+        });
+        return callback;
+      }
+      function auto(tasks, concurrency, callback) {
+        if (typeof concurrency !== "number") {
+          callback = concurrency;
+          concurrency = null;
+        }
+        callback = once(callback || promiseCallback());
+        var numTasks = Object.keys(tasks).length;
+        if (!numTasks) {
+          return callback(null);
+        }
+        if (!concurrency) {
+          concurrency = numTasks;
+        }
+        var results = {};
+        var runningTasks = 0;
+        var canceled = false;
+        var hasError = false;
+        var listeners = /* @__PURE__ */ Object.create(null);
+        var readyTasks = [];
+        var readyToCheck = [];
+        var uncheckedDependencies = {};
+        Object.keys(tasks).forEach((key) => {
+          var task = tasks[key];
+          if (!Array.isArray(task)) {
+            enqueueTask(key, [task]);
+            readyToCheck.push(key);
+            return;
+          }
+          var dependencies = task.slice(0, task.length - 1);
+          var remainingDependencies = dependencies.length;
+          if (remainingDependencies === 0) {
+            enqueueTask(key, task);
+            readyToCheck.push(key);
+            return;
+          }
+          uncheckedDependencies[key] = remainingDependencies;
+          dependencies.forEach((dependencyName) => {
+            if (!tasks[dependencyName]) {
+              throw new Error("async.auto task `" + key + "` has a non-existent dependency `" + dependencyName + "` in " + dependencies.join(", "));
+            }
+            addListener(dependencyName, () => {
+              remainingDependencies--;
+              if (remainingDependencies === 0) {
+                enqueueTask(key, task);
+              }
+            });
+          });
+        });
+        checkForDeadlocks();
+        processQueue();
+        function enqueueTask(key, task) {
+          readyTasks.push(() => runTask(key, task));
+        }
+        function processQueue() {
+          if (canceled) return;
+          if (readyTasks.length === 0 && runningTasks === 0) {
+            return callback(null, results);
+          }
+          while (readyTasks.length && runningTasks < concurrency) {
+            var run2 = readyTasks.shift();
+            run2();
+          }
+        }
+        function addListener(taskName, fn) {
+          var taskListeners = listeners[taskName];
+          if (!taskListeners) {
+            taskListeners = listeners[taskName] = [];
+          }
+          taskListeners.push(fn);
+        }
+        function taskComplete(taskName) {
+          var taskListeners = listeners[taskName] || [];
+          taskListeners.forEach((fn) => fn());
+          processQueue();
+        }
+        function runTask(key, task) {
+          if (hasError) return;
+          var taskCallback = onlyOnce((err, ...result) => {
+            runningTasks--;
+            if (err === false) {
+              canceled = true;
+              return;
+            }
+            if (result.length < 2) {
+              [result] = result;
+            }
+            if (err) {
+              var safeResults = {};
+              Object.keys(results).forEach((rkey) => {
+                safeResults[rkey] = results[rkey];
+              });
+              safeResults[key] = result;
+              hasError = true;
+              listeners = /* @__PURE__ */ Object.create(null);
+              if (canceled) return;
+              callback(err, safeResults);
+            } else {
+              results[key] = result;
+              taskComplete(key);
+            }
+          });
+          runningTasks++;
+          var taskFn = wrapAsync(task[task.length - 1]);
+          if (task.length > 1) {
+            taskFn(results, taskCallback);
+          } else {
+            taskFn(taskCallback);
+          }
+        }
+        function checkForDeadlocks() {
+          var currentTask;
+          var counter = 0;
+          while (readyToCheck.length) {
+            currentTask = readyToCheck.pop();
+            counter++;
+            getDependents(currentTask).forEach((dependent) => {
+              if (--uncheckedDependencies[dependent] === 0) {
+                readyToCheck.push(dependent);
+              }
+            });
+          }
+          if (counter !== numTasks) {
+            throw new Error(
+              "async.auto cannot execute tasks due to a recursive dependency"
+            );
+          }
+        }
+        function getDependents(taskName) {
+          var result = [];
+          Object.keys(tasks).forEach((key) => {
+            const task = tasks[key];
+            if (Array.isArray(task) && task.indexOf(taskName) >= 0) {
+              result.push(key);
+            }
+          });
+          return result;
+        }
+        return callback[PROMISE_SYMBOL];
+      }
+      var FN_ARGS = /^(?:async\s)?(?:function)?\s*(?:\w+\s*)?\(([^)]+)\)(?:\s*{)/;
+      var ARROW_FN_ARGS = /^(?:async\s)?\s*(?:\(\s*)?((?:[^)=\s]\s*)*)(?:\)\s*)?=>/;
+      var FN_ARG_SPLIT = /,/;
+      var FN_ARG = /(=.+)?(\s*)$/;
+      function stripComments(string) {
+        let stripped = "";
+        let index2 = 0;
+        let endBlockComment = string.indexOf("*/");
+        while (index2 < string.length) {
+          if (string[index2] === "/" && string[index2 + 1] === "/") {
+            let endIndex = string.indexOf("\n", index2);
+            index2 = endIndex === -1 ? string.length : endIndex;
+          } else if (endBlockComment !== -1 && string[index2] === "/" && string[index2 + 1] === "*") {
+            let endIndex = string.indexOf("*/", index2);
+            if (endIndex !== -1) {
+              index2 = endIndex + 2;
+              endBlockComment = string.indexOf("*/", index2);
+            } else {
+              stripped += string[index2];
+              index2++;
+            }
+          } else {
+            stripped += string[index2];
+            index2++;
+          }
+        }
+        return stripped;
+      }
+      function parseParams(func) {
+        const src2 = stripComments(func.toString());
+        let match = src2.match(FN_ARGS);
+        if (!match) {
+          match = src2.match(ARROW_FN_ARGS);
+        }
+        if (!match) throw new Error("could not parse args in autoInject\nSource:\n" + src2);
+        let [, args] = match;
+        return args.replace(/\s/g, "").split(FN_ARG_SPLIT).map((arg) => arg.replace(FN_ARG, "").trim());
+      }
+      function autoInject(tasks, callback) {
+        var newTasks = {};
+        Object.keys(tasks).forEach((key) => {
+          var taskFn = tasks[key];
+          var params;
+          var fnIsAsync = isAsync(taskFn);
+          var hasNoDeps = !fnIsAsync && taskFn.length === 1 || fnIsAsync && taskFn.length === 0;
+          if (Array.isArray(taskFn)) {
+            params = [...taskFn];
+            taskFn = params.pop();
+            newTasks[key] = params.concat(params.length > 0 ? newTask : taskFn);
+          } else if (hasNoDeps) {
+            newTasks[key] = taskFn;
+          } else {
+            params = parseParams(taskFn);
+            if (taskFn.length === 0 && !fnIsAsync && params.length === 0) {
+              throw new Error("autoInject task functions require explicit parameters.");
+            }
+            if (!fnIsAsync) params.pop();
+            newTasks[key] = params.concat(newTask);
+          }
+          function newTask(results, taskCb) {
+            var newArgs = params.map((name) => results[name]);
+            newArgs.push(taskCb);
+            wrapAsync(taskFn)(...newArgs);
+          }
+        });
+        return auto(newTasks, callback);
+      }
+      class DLL {
+        constructor() {
+          this.head = this.tail = null;
+          this.length = 0;
+        }
+        removeLink(node) {
+          if (node.prev) node.prev.next = node.next;
+          else this.head = node.next;
+          if (node.next) node.next.prev = node.prev;
+          else this.tail = node.prev;
+          node.prev = node.next = null;
+          this.length -= 1;
+          return node;
+        }
+        empty() {
+          while (this.head) this.shift();
+          return this;
+        }
+        insertAfter(node, newNode) {
+          newNode.prev = node;
+          newNode.next = node.next;
+          if (node.next) node.next.prev = newNode;
+          else this.tail = newNode;
+          node.next = newNode;
+          this.length += 1;
+        }
+        insertBefore(node, newNode) {
+          newNode.prev = node.prev;
+          newNode.next = node;
+          if (node.prev) node.prev.next = newNode;
+          else this.head = newNode;
+          node.prev = newNode;
+          this.length += 1;
+        }
+        unshift(node) {
+          if (this.head) this.insertBefore(this.head, node);
+          else setInitial(this, node);
+        }
+        push(node) {
+          if (this.tail) this.insertAfter(this.tail, node);
+          else setInitial(this, node);
+        }
+        shift() {
+          return this.head && this.removeLink(this.head);
+        }
+        pop() {
+          return this.tail && this.removeLink(this.tail);
+        }
+        toArray() {
+          return [...this];
+        }
+        *[Symbol.iterator]() {
+          var cur = this.head;
+          while (cur) {
+            yield cur.data;
+            cur = cur.next;
+          }
+        }
+        remove(testFn) {
+          var curr = this.head;
+          while (curr) {
+            var { next } = curr;
+            if (testFn(curr)) {
+              this.removeLink(curr);
+            }
+            curr = next;
+          }
+          return this;
+        }
+      }
+      function setInitial(dll, node) {
+        dll.length = 1;
+        dll.head = dll.tail = node;
+      }
+      function queue$1(worker, concurrency, payload) {
+        if (concurrency == null) {
+          concurrency = 1;
+        } else if (concurrency === 0) {
+          throw new RangeError("Concurrency must not be zero");
+        }
+        var _worker = wrapAsync(worker);
+        var numRunning = 0;
+        var workersList = [];
+        const events = {
+          error: [],
+          drain: [],
+          saturated: [],
+          unsaturated: [],
+          empty: []
+        };
+        function on(event, handler) {
+          events[event].push(handler);
+        }
+        function once2(event, handler) {
+          const handleAndRemove = (...args) => {
+            off(event, handleAndRemove);
+            handler(...args);
+          };
+          events[event].push(handleAndRemove);
+        }
+        function off(event, handler) {
+          if (!event) return Object.keys(events).forEach((ev) => events[ev] = []);
+          if (!handler) return events[event] = [];
+          events[event] = events[event].filter((ev) => ev !== handler);
+        }
+        function trigger(event, ...args) {
+          events[event].forEach((handler) => handler(...args));
+        }
+        var processingScheduled = false;
+        function _insert(data, insertAtFront, rejectOnError, callback) {
+          if (callback != null && typeof callback !== "function") {
+            throw new Error("task callback must be a function");
+          }
+          q.started = true;
+          var res, rej;
+          function promiseCallback2(err, ...args) {
+            if (err) return rejectOnError ? rej(err) : res();
+            if (args.length <= 1) return res(args[0]);
+            res(args);
+          }
+          var item = q._createTaskItem(
+            data,
+            rejectOnError ? promiseCallback2 : callback || promiseCallback2
+          );
+          if (insertAtFront) {
+            q._tasks.unshift(item);
+          } else {
+            q._tasks.push(item);
+          }
+          if (!processingScheduled) {
+            processingScheduled = true;
+            setImmediate$1(() => {
+              processingScheduled = false;
+              q.process();
+            });
+          }
+          if (rejectOnError || !callback) {
+            return new Promise((resolve32, reject2) => {
+              res = resolve32;
+              rej = reject2;
+            });
+          }
+        }
+        function _createCB(tasks) {
+          return function(err, ...args) {
+            numRunning -= 1;
+            for (var i2 = 0, l = tasks.length; i2 < l; i2++) {
+              var task = tasks[i2];
+              var index2 = workersList.indexOf(task);
+              if (index2 === 0) {
+                workersList.shift();
+              } else if (index2 > 0) {
+                workersList.splice(index2, 1);
+              }
+              task.callback(err, ...args);
+              if (err != null) {
+                trigger("error", err, task.data);
+              }
+            }
+            if (numRunning <= q.concurrency - q.buffer) {
+              trigger("unsaturated");
+            }
+            if (q.idle()) {
+              trigger("drain");
+            }
+            q.process();
+          };
+        }
+        function _maybeDrain(data) {
+          if (data.length === 0 && q.idle()) {
+            setImmediate$1(() => trigger("drain"));
+            return true;
+          }
+          return false;
+        }
+        const eventMethod = (name) => (handler) => {
+          if (!handler) {
+            return new Promise((resolve32, reject2) => {
+              once2(name, (err, data) => {
+                if (err) return reject2(err);
+                resolve32(data);
+              });
+            });
+          }
+          off(name);
+          on(name, handler);
+        };
+        var isProcessing = false;
+        var q = {
+          _tasks: new DLL(),
+          _createTaskItem(data, callback) {
+            return {
+              data,
+              callback
+            };
+          },
+          *[Symbol.iterator]() {
+            yield* q._tasks[Symbol.iterator]();
+          },
+          concurrency,
+          payload,
+          buffer: concurrency / 4,
+          started: false,
+          paused: false,
+          push(data, callback) {
+            if (Array.isArray(data)) {
+              if (_maybeDrain(data)) return;
+              return data.map((datum) => _insert(datum, false, false, callback));
+            }
+            return _insert(data, false, false, callback);
+          },
+          pushAsync(data, callback) {
+            if (Array.isArray(data)) {
+              if (_maybeDrain(data)) return;
+              return data.map((datum) => _insert(datum, false, true, callback));
+            }
+            return _insert(data, false, true, callback);
+          },
+          kill() {
+            off();
+            q._tasks.empty();
+          },
+          unshift(data, callback) {
+            if (Array.isArray(data)) {
+              if (_maybeDrain(data)) return;
+              return data.map((datum) => _insert(datum, true, false, callback));
+            }
+            return _insert(data, true, false, callback);
+          },
+          unshiftAsync(data, callback) {
+            if (Array.isArray(data)) {
+              if (_maybeDrain(data)) return;
+              return data.map((datum) => _insert(datum, true, true, callback));
+            }
+            return _insert(data, true, true, callback);
+          },
+          remove(testFn) {
+            q._tasks.remove(testFn);
+          },
+          process() {
+            if (isProcessing) {
+              return;
+            }
+            isProcessing = true;
+            while (!q.paused && numRunning < q.concurrency && q._tasks.length) {
+              var tasks = [], data = [];
+              var l = q._tasks.length;
+              if (q.payload) l = Math.min(l, q.payload);
+              for (var i2 = 0; i2 < l; i2++) {
+                var node = q._tasks.shift();
+                tasks.push(node);
+                workersList.push(node);
+                data.push(node.data);
+              }
+              numRunning += 1;
+              if (q._tasks.length === 0) {
+                trigger("empty");
+              }
+              if (numRunning === q.concurrency) {
+                trigger("saturated");
+              }
+              var cb = onlyOnce(_createCB(tasks));
+              _worker(data, cb);
+            }
+            isProcessing = false;
+          },
+          length() {
+            return q._tasks.length;
+          },
+          running() {
+            return numRunning;
+          },
+          workersList() {
+            return workersList;
+          },
+          idle() {
+            return q._tasks.length + numRunning === 0;
+          },
+          pause() {
+            q.paused = true;
+          },
+          resume() {
+            if (q.paused === false) {
+              return;
+            }
+            q.paused = false;
+            setImmediate$1(q.process);
+          }
+        };
+        Object.defineProperties(q, {
+          saturated: {
+            writable: false,
+            value: eventMethod("saturated")
+          },
+          unsaturated: {
+            writable: false,
+            value: eventMethod("unsaturated")
+          },
+          empty: {
+            writable: false,
+            value: eventMethod("empty")
+          },
+          drain: {
+            writable: false,
+            value: eventMethod("drain")
+          },
+          error: {
+            writable: false,
+            value: eventMethod("error")
+          }
+        });
+        return q;
+      }
+      function cargo$1(worker, payload) {
+        return queue$1(worker, 1, payload);
+      }
+      function cargo(worker, concurrency, payload) {
+        return queue$1(worker, concurrency, payload);
+      }
+      function reduce(coll, memo, iteratee, callback) {
+        callback = once(callback);
+        var _iteratee = wrapAsync(iteratee);
+        return eachOfSeries$1(coll, (x2, i2, iterCb) => {
+          _iteratee(memo, x2, (err, v2) => {
+            memo = v2;
+            iterCb(err);
+          });
+        }, (err) => callback(err, memo));
+      }
+      var reduce$1 = awaitify(reduce, 4);
+      function seq(...functions) {
+        var _functions = functions.map(wrapAsync);
+        return function(...args) {
+          var that = this;
+          var cb = args[args.length - 1];
+          if (typeof cb == "function") {
+            args.pop();
+          } else {
+            cb = promiseCallback();
+          }
+          reduce$1(
+            _functions,
+            args,
+            (newargs, fn, iterCb) => {
+              fn.apply(that, newargs.concat((err, ...nextargs) => {
+                iterCb(err, nextargs);
+              }));
+            },
+            (err, results) => cb(err, ...results)
+          );
+          return cb[PROMISE_SYMBOL];
+        };
+      }
+      function compose(...args) {
+        return seq(...args.reverse());
+      }
+      function mapLimit(coll, limit, iteratee, callback) {
+        return _asyncMap(eachOfLimit$2(limit), coll, iteratee, callback);
+      }
+      var mapLimit$1 = awaitify(mapLimit, 4);
+      function concatLimit(coll, limit, iteratee, callback) {
+        var _iteratee = wrapAsync(iteratee);
+        return mapLimit$1(coll, limit, (val, iterCb) => {
+          _iteratee(val, (err, ...args) => {
+            if (err) return iterCb(err);
+            return iterCb(err, args);
+          });
+        }, (err, mapResults) => {
+          var result = [];
+          for (var i2 = 0; i2 < mapResults.length; i2++) {
+            if (mapResults[i2]) {
+              result = result.concat(...mapResults[i2]);
+            }
+          }
+          return callback(err, result);
+        });
+      }
+      var concatLimit$1 = awaitify(concatLimit, 4);
+      function concat(coll, iteratee, callback) {
+        return concatLimit$1(coll, Infinity, iteratee, callback);
+      }
+      var concat$1 = awaitify(concat, 3);
+      function concatSeries(coll, iteratee, callback) {
+        return concatLimit$1(coll, 1, iteratee, callback);
+      }
+      var concatSeries$1 = awaitify(concatSeries, 3);
+      function constant$1(...args) {
+        return function(...ignoredArgs) {
+          var callback = ignoredArgs.pop();
+          return callback(null, ...args);
+        };
+      }
+      function _createTester(check, getResult) {
+        return (eachfn, arr, _iteratee, cb) => {
+          var testPassed = false;
+          var testResult;
+          const iteratee = wrapAsync(_iteratee);
+          eachfn(arr, (value, _, callback) => {
+            iteratee(value, (err, result) => {
+              if (err || err === false) return callback(err);
+              if (check(result) && !testResult) {
+                testPassed = true;
+                testResult = getResult(true, value);
+                return callback(null, breakLoop);
+              }
+              callback();
+            });
+          }, (err) => {
+            if (err) return cb(err);
+            cb(null, testPassed ? testResult : getResult(false));
+          });
+        };
+      }
+      function detect(coll, iteratee, callback) {
+        return _createTester((bool) => bool, (res, item) => item)(eachOf$1, coll, iteratee, callback);
+      }
+      var detect$1 = awaitify(detect, 3);
+      function detectLimit(coll, limit, iteratee, callback) {
+        return _createTester((bool) => bool, (res, item) => item)(eachOfLimit$2(limit), coll, iteratee, callback);
+      }
+      var detectLimit$1 = awaitify(detectLimit, 4);
+      function detectSeries(coll, iteratee, callback) {
+        return _createTester((bool) => bool, (res, item) => item)(eachOfLimit$2(1), coll, iteratee, callback);
+      }
+      var detectSeries$1 = awaitify(detectSeries, 3);
+      function consoleFunc(name) {
+        return (fn, ...args) => wrapAsync(fn)(...args, (err, ...resultArgs) => {
+          if (typeof console === "object") {
+            if (err) {
+              if (console.error) {
+                console.error(err);
+              }
+            } else if (console[name]) {
+              resultArgs.forEach((x2) => console[name](x2));
+            }
+          }
+        });
+      }
+      var dir = consoleFunc("dir");
+      function doWhilst(iteratee, test, callback) {
+        callback = onlyOnce(callback);
+        var _fn = wrapAsync(iteratee);
+        var _test = wrapAsync(test);
+        var results;
+        function next(err, ...args) {
+          if (err) return callback(err);
+          if (err === false) return;
+          results = args;
+          _test(...args, check);
+        }
+        function check(err, truth) {
+          if (err) return callback(err);
+          if (err === false) return;
+          if (!truth) return callback(null, ...results);
+          _fn(next);
+        }
+        return check(null, true);
+      }
+      var doWhilst$1 = awaitify(doWhilst, 3);
+      function doUntil(iteratee, test, callback) {
+        const _test = wrapAsync(test);
+        return doWhilst$1(iteratee, (...args) => {
+          const cb = args.pop();
+          _test(...args, (err, truth) => cb(err, !truth));
+        }, callback);
+      }
+      function _withoutIndex(iteratee) {
+        return (value, index2, callback) => iteratee(value, callback);
+      }
+      function eachLimit$2(coll, iteratee, callback) {
+        return eachOf$1(coll, _withoutIndex(wrapAsync(iteratee)), callback);
+      }
+      var each = awaitify(eachLimit$2, 3);
+      function eachLimit(coll, limit, iteratee, callback) {
+        return eachOfLimit$2(limit)(coll, _withoutIndex(wrapAsync(iteratee)), callback);
+      }
+      var eachLimit$1 = awaitify(eachLimit, 4);
+      function eachSeries(coll, iteratee, callback) {
+        return eachLimit$1(coll, 1, iteratee, callback);
+      }
+      var eachSeries$1 = awaitify(eachSeries, 3);
+      function ensureAsync(fn) {
+        if (isAsync(fn)) return fn;
+        return function(...args) {
+          var callback = args.pop();
+          var sync = true;
+          args.push((...innerArgs) => {
+            if (sync) {
+              setImmediate$1(() => callback(...innerArgs));
+            } else {
+              callback(...innerArgs);
+            }
+          });
+          fn.apply(this, args);
+          sync = false;
+        };
+      }
+      function every(coll, iteratee, callback) {
+        return _createTester((bool) => !bool, (res) => !res)(eachOf$1, coll, iteratee, callback);
+      }
+      var every$1 = awaitify(every, 3);
+      function everyLimit(coll, limit, iteratee, callback) {
+        return _createTester((bool) => !bool, (res) => !res)(eachOfLimit$2(limit), coll, iteratee, callback);
+      }
+      var everyLimit$1 = awaitify(everyLimit, 4);
+      function everySeries(coll, iteratee, callback) {
+        return _createTester((bool) => !bool, (res) => !res)(eachOfSeries$1, coll, iteratee, callback);
+      }
+      var everySeries$1 = awaitify(everySeries, 3);
+      function filterArray(eachfn, arr, iteratee, callback) {
+        var truthValues = new Array(arr.length);
+        eachfn(arr, (x2, index2, iterCb) => {
+          iteratee(x2, (err, v2) => {
+            truthValues[index2] = !!v2;
+            iterCb(err);
+          });
+        }, (err) => {
+          if (err) return callback(err);
+          var results = [];
+          for (var i2 = 0; i2 < arr.length; i2++) {
+            if (truthValues[i2]) results.push(arr[i2]);
+          }
+          callback(null, results);
+        });
+      }
+      function filterGeneric(eachfn, coll, iteratee, callback) {
+        var results = [];
+        eachfn(coll, (x2, index2, iterCb) => {
+          iteratee(x2, (err, v2) => {
+            if (err) return iterCb(err);
+            if (v2) {
+              results.push({ index: index2, value: x2 });
+            }
+            iterCb(err);
+          });
+        }, (err) => {
+          if (err) return callback(err);
+          callback(null, results.sort((a, b) => a.index - b.index).map((v2) => v2.value));
+        });
+      }
+      function _filter(eachfn, coll, iteratee, callback) {
+        var filter2 = isArrayLike(coll) ? filterArray : filterGeneric;
+        return filter2(eachfn, coll, wrapAsync(iteratee), callback);
+      }
+      function filter(coll, iteratee, callback) {
+        return _filter(eachOf$1, coll, iteratee, callback);
+      }
+      var filter$1 = awaitify(filter, 3);
+      function filterLimit(coll, limit, iteratee, callback) {
+        return _filter(eachOfLimit$2(limit), coll, iteratee, callback);
+      }
+      var filterLimit$1 = awaitify(filterLimit, 4);
+      function filterSeries(coll, iteratee, callback) {
+        return _filter(eachOfSeries$1, coll, iteratee, callback);
+      }
+      var filterSeries$1 = awaitify(filterSeries, 3);
+      function forever(fn, errback) {
+        var done = onlyOnce(errback);
+        var task = wrapAsync(ensureAsync(fn));
+        function next(err) {
+          if (err) return done(err);
+          if (err === false) return;
+          task(next);
+        }
+        return next();
+      }
+      var forever$1 = awaitify(forever, 2);
+      function groupByLimit(coll, limit, iteratee, callback) {
+        var _iteratee = wrapAsync(iteratee);
+        return mapLimit$1(coll, limit, (val, iterCb) => {
+          _iteratee(val, (err, key) => {
+            if (err) return iterCb(err);
+            return iterCb(err, { key, val });
+          });
+        }, (err, mapResults) => {
+          var result = {};
+          var { hasOwnProperty } = Object.prototype;
+          for (var i2 = 0; i2 < mapResults.length; i2++) {
+            if (mapResults[i2]) {
+              var { key } = mapResults[i2];
+              var { val } = mapResults[i2];
+              if (hasOwnProperty.call(result, key)) {
+                result[key].push(val);
+              } else {
+                result[key] = [val];
+              }
+            }
+          }
+          return callback(err, result);
+        });
+      }
+      var groupByLimit$1 = awaitify(groupByLimit, 4);
+      function groupBy(coll, iteratee, callback) {
+        return groupByLimit$1(coll, Infinity, iteratee, callback);
+      }
+      function groupBySeries(coll, iteratee, callback) {
+        return groupByLimit$1(coll, 1, iteratee, callback);
+      }
+      var log = consoleFunc("log");
+      function mapValuesLimit(obj, limit, iteratee, callback) {
+        callback = once(callback);
+        var newObj = {};
+        var _iteratee = wrapAsync(iteratee);
+        return eachOfLimit$2(limit)(obj, (val, key, next) => {
+          _iteratee(val, key, (err, result) => {
+            if (err) return next(err);
+            newObj[key] = result;
+            next(err);
+          });
+        }, (err) => callback(err, newObj));
+      }
+      var mapValuesLimit$1 = awaitify(mapValuesLimit, 4);
+      function mapValues(obj, iteratee, callback) {
+        return mapValuesLimit$1(obj, Infinity, iteratee, callback);
+      }
+      function mapValuesSeries(obj, iteratee, callback) {
+        return mapValuesLimit$1(obj, 1, iteratee, callback);
+      }
+      function memoize(fn, hasher = (v2) => v2) {
+        var memo = /* @__PURE__ */ Object.create(null);
+        var queues = /* @__PURE__ */ Object.create(null);
+        var _fn = wrapAsync(fn);
+        var memoized = initialParams((args, callback) => {
+          var key = hasher(...args);
+          if (key in memo) {
+            setImmediate$1(() => callback(null, ...memo[key]));
+          } else if (key in queues) {
+            queues[key].push(callback);
+          } else {
+            queues[key] = [callback];
+            _fn(...args, (err, ...resultArgs) => {
+              if (!err) {
+                memo[key] = resultArgs;
+              }
+              var q = queues[key];
+              delete queues[key];
+              for (var i2 = 0, l = q.length; i2 < l; i2++) {
+                q[i2](err, ...resultArgs);
+              }
+            });
+          }
+        });
+        memoized.memo = memo;
+        memoized.unmemoized = fn;
+        return memoized;
+      }
+      var _defer;
+      if (hasNextTick) {
+        _defer = process.nextTick;
+      } else if (hasSetImmediate) {
+        _defer = setImmediate;
+      } else {
+        _defer = fallback;
+      }
+      var nextTick = wrap(_defer);
+      var _parallel = awaitify((eachfn, tasks, callback) => {
+        var results = isArrayLike(tasks) ? [] : {};
+        eachfn(tasks, (task, key, taskCb) => {
+          wrapAsync(task)((err, ...result) => {
+            if (result.length < 2) {
+              [result] = result;
+            }
+            results[key] = result;
+            taskCb(err);
+          });
+        }, (err) => callback(err, results));
+      }, 3);
+      function parallel(tasks, callback) {
+        return _parallel(eachOf$1, tasks, callback);
+      }
+      function parallelLimit(tasks, limit, callback) {
+        return _parallel(eachOfLimit$2(limit), tasks, callback);
+      }
+      function queue(worker, concurrency) {
+        var _worker = wrapAsync(worker);
+        return queue$1((items, cb) => {
+          _worker(items[0], cb);
+        }, concurrency, 1);
+      }
+      class Heap {
+        constructor() {
+          this.heap = [];
+          this.pushCount = Number.MIN_SAFE_INTEGER;
+        }
+        get length() {
+          return this.heap.length;
+        }
+        empty() {
+          this.heap = [];
+          return this;
+        }
+        percUp(index2) {
+          let p;
+          while (index2 > 0 && smaller(this.heap[index2], this.heap[p = parent(index2)])) {
+            let t = this.heap[index2];
+            this.heap[index2] = this.heap[p];
+            this.heap[p] = t;
+            index2 = p;
+          }
+        }
+        percDown(index2) {
+          let l;
+          while ((l = leftChi(index2)) < this.heap.length) {
+            if (l + 1 < this.heap.length && smaller(this.heap[l + 1], this.heap[l])) {
+              l = l + 1;
+            }
+            if (smaller(this.heap[index2], this.heap[l])) {
+              break;
+            }
+            let t = this.heap[index2];
+            this.heap[index2] = this.heap[l];
+            this.heap[l] = t;
+            index2 = l;
+          }
+        }
+        push(node) {
+          node.pushCount = ++this.pushCount;
+          this.heap.push(node);
+          this.percUp(this.heap.length - 1);
+        }
+        unshift(node) {
+          return this.heap.push(node);
+        }
+        shift() {
+          let [top] = this.heap;
+          this.heap[0] = this.heap[this.heap.length - 1];
+          this.heap.pop();
+          this.percDown(0);
+          return top;
+        }
+        toArray() {
+          return [...this];
+        }
+        *[Symbol.iterator]() {
+          for (let i2 = 0; i2 < this.heap.length; i2++) {
+            yield this.heap[i2].data;
+          }
+        }
+        remove(testFn) {
+          let j = 0;
+          for (let i2 = 0; i2 < this.heap.length; i2++) {
+            if (!testFn(this.heap[i2])) {
+              this.heap[j] = this.heap[i2];
+              j++;
+            }
+          }
+          this.heap.splice(j);
+          for (let i2 = parent(this.heap.length - 1); i2 >= 0; i2--) {
+            this.percDown(i2);
+          }
+          return this;
+        }
+      }
+      function leftChi(i2) {
+        return (i2 << 1) + 1;
+      }
+      function parent(i2) {
+        return (i2 + 1 >> 1) - 1;
+      }
+      function smaller(x2, y) {
+        if (x2.priority !== y.priority) {
+          return x2.priority < y.priority;
+        } else {
+          return x2.pushCount < y.pushCount;
+        }
+      }
+      function priorityQueue(worker, concurrency) {
+        var q = queue(worker, concurrency);
+        var {
+          push,
+          pushAsync
+        } = q;
+        q._tasks = new Heap();
+        q._createTaskItem = ({ data, priority }, callback) => {
+          return {
+            data,
+            priority,
+            callback
+          };
+        };
+        function createDataItems(tasks, priority) {
+          if (!Array.isArray(tasks)) {
+            return { data: tasks, priority };
+          }
+          return tasks.map((data) => {
+            return { data, priority };
+          });
+        }
+        q.push = function(data, priority = 0, callback) {
+          return push(createDataItems(data, priority), callback);
+        };
+        q.pushAsync = function(data, priority = 0, callback) {
+          return pushAsync(createDataItems(data, priority), callback);
+        };
+        delete q.unshift;
+        delete q.unshiftAsync;
+        return q;
+      }
+      function race(tasks, callback) {
+        callback = once(callback);
+        if (!Array.isArray(tasks)) return callback(new TypeError("First argument to race must be an array of functions"));
+        if (!tasks.length) return callback();
+        for (var i2 = 0, l = tasks.length; i2 < l; i2++) {
+          wrapAsync(tasks[i2])(callback);
+        }
+      }
+      var race$1 = awaitify(race, 2);
+      function reduceRight(array, memo, iteratee, callback) {
+        var reversed = [...array].reverse();
+        return reduce$1(reversed, memo, iteratee, callback);
+      }
+      function reflect(fn) {
+        var _fn = wrapAsync(fn);
+        return initialParams(function reflectOn(args, reflectCallback) {
+          args.push((error, ...cbArgs) => {
+            let retVal = {};
+            if (error) {
+              retVal.error = error;
+            }
+            if (cbArgs.length > 0) {
+              var value = cbArgs;
+              if (cbArgs.length <= 1) {
+                [value] = cbArgs;
+              }
+              retVal.value = value;
+            }
+            reflectCallback(null, retVal);
+          });
+          return _fn.apply(this, args);
+        });
+      }
+      function reflectAll(tasks) {
+        var results;
+        if (Array.isArray(tasks)) {
+          results = tasks.map(reflect);
+        } else {
+          results = {};
+          Object.keys(tasks).forEach((key) => {
+            results[key] = reflect.call(this, tasks[key]);
+          });
+        }
+        return results;
+      }
+      function reject$2(eachfn, arr, _iteratee, callback) {
+        const iteratee = wrapAsync(_iteratee);
+        return _filter(eachfn, arr, (value, cb) => {
+          iteratee(value, (err, v2) => {
+            cb(err, !v2);
+          });
+        }, callback);
+      }
+      function reject(coll, iteratee, callback) {
+        return reject$2(eachOf$1, coll, iteratee, callback);
+      }
+      var reject$1 = awaitify(reject, 3);
+      function rejectLimit(coll, limit, iteratee, callback) {
+        return reject$2(eachOfLimit$2(limit), coll, iteratee, callback);
+      }
+      var rejectLimit$1 = awaitify(rejectLimit, 4);
+      function rejectSeries(coll, iteratee, callback) {
+        return reject$2(eachOfSeries$1, coll, iteratee, callback);
+      }
+      var rejectSeries$1 = awaitify(rejectSeries, 3);
+      function constant(value) {
+        return function() {
+          return value;
+        };
+      }
+      const DEFAULT_TIMES = 5;
+      const DEFAULT_INTERVAL = 0;
+      function retry(opts, task, callback) {
+        var options2 = {
+          times: DEFAULT_TIMES,
+          intervalFunc: constant(DEFAULT_INTERVAL)
+        };
+        if (arguments.length < 3 && typeof opts === "function") {
+          callback = task || promiseCallback();
+          task = opts;
+        } else {
+          parseTimes(options2, opts);
+          callback = callback || promiseCallback();
+        }
+        if (typeof task !== "function") {
+          throw new Error("Invalid arguments for async.retry");
+        }
+        var _task = wrapAsync(task);
+        var attempt = 1;
+        function retryAttempt() {
+          _task((err, ...args) => {
+            if (err === false) return;
+            if (err && attempt++ < options2.times && (typeof options2.errorFilter != "function" || options2.errorFilter(err))) {
+              setTimeout(retryAttempt, options2.intervalFunc(attempt - 1));
+            } else {
+              callback(err, ...args);
+            }
+          });
+        }
+        retryAttempt();
+        return callback[PROMISE_SYMBOL];
+      }
+      function parseTimes(acc, t) {
+        if (typeof t === "object") {
+          acc.times = +t.times || DEFAULT_TIMES;
+          acc.intervalFunc = typeof t.interval === "function" ? t.interval : constant(+t.interval || DEFAULT_INTERVAL);
+          acc.errorFilter = t.errorFilter;
+        } else if (typeof t === "number" || typeof t === "string") {
+          acc.times = +t || DEFAULT_TIMES;
+        } else {
+          throw new Error("Invalid arguments for async.retry");
+        }
+      }
+      function retryable(opts, task) {
+        if (!task) {
+          task = opts;
+          opts = null;
+        }
+        let arity = opts && opts.arity || task.length;
+        if (isAsync(task)) {
+          arity += 1;
+        }
+        var _task = wrapAsync(task);
+        return initialParams((args, callback) => {
+          if (args.length < arity - 1 || callback == null) {
+            args.push(callback);
+            callback = promiseCallback();
+          }
+          function taskFn(cb) {
+            _task(...args, cb);
+          }
+          if (opts) retry(opts, taskFn, callback);
+          else retry(taskFn, callback);
+          return callback[PROMISE_SYMBOL];
+        });
+      }
+      function series(tasks, callback) {
+        return _parallel(eachOfSeries$1, tasks, callback);
+      }
+      function some(coll, iteratee, callback) {
+        return _createTester(Boolean, (res) => res)(eachOf$1, coll, iteratee, callback);
+      }
+      var some$1 = awaitify(some, 3);
+      function someLimit(coll, limit, iteratee, callback) {
+        return _createTester(Boolean, (res) => res)(eachOfLimit$2(limit), coll, iteratee, callback);
+      }
+      var someLimit$1 = awaitify(someLimit, 4);
+      function someSeries(coll, iteratee, callback) {
+        return _createTester(Boolean, (res) => res)(eachOfSeries$1, coll, iteratee, callback);
+      }
+      var someSeries$1 = awaitify(someSeries, 3);
+      function sortBy(coll, iteratee, callback) {
+        var _iteratee = wrapAsync(iteratee);
+        return map$1(coll, (x2, iterCb) => {
+          _iteratee(x2, (err, criteria) => {
+            if (err) return iterCb(err);
+            iterCb(err, { value: x2, criteria });
+          });
+        }, (err, results) => {
+          if (err) return callback(err);
+          callback(null, results.sort(comparator).map((v2) => v2.value));
+        });
+        function comparator(left, right) {
+          var a = left.criteria, b = right.criteria;
+          return a < b ? -1 : a > b ? 1 : 0;
+        }
+      }
+      var sortBy$1 = awaitify(sortBy, 3);
+      function timeout(asyncFn, milliseconds, info) {
+        var fn = wrapAsync(asyncFn);
+        return initialParams((args, callback) => {
+          var timedOut = false;
+          var timer;
+          function timeoutCallback() {
+            var name = asyncFn.name || "anonymous";
+            var error = new Error('Callback function "' + name + '" timed out.');
+            error.code = "ETIMEDOUT";
+            if (info) {
+              error.info = info;
+            }
+            timedOut = true;
+            callback(error);
+          }
+          args.push((...cbArgs) => {
+            if (!timedOut) {
+              callback(...cbArgs);
+              clearTimeout(timer);
+            }
+          });
+          timer = setTimeout(timeoutCallback, milliseconds);
+          fn(...args);
+        });
+      }
+      function range(size) {
+        var result = Array(size);
+        while (size--) {
+          result[size] = size;
+        }
+        return result;
+      }
+      function timesLimit(count, limit, iteratee, callback) {
+        var _iteratee = wrapAsync(iteratee);
+        return mapLimit$1(range(count), limit, _iteratee, callback);
+      }
+      function times(n, iteratee, callback) {
+        return timesLimit(n, Infinity, iteratee, callback);
+      }
+      function timesSeries(n, iteratee, callback) {
+        return timesLimit(n, 1, iteratee, callback);
+      }
+      function transform(coll, accumulator, iteratee, callback) {
+        if (arguments.length <= 3 && typeof accumulator === "function") {
+          callback = iteratee;
+          iteratee = accumulator;
+          accumulator = Array.isArray(coll) ? [] : {};
+        }
+        callback = once(callback || promiseCallback());
+        var _iteratee = wrapAsync(iteratee);
+        eachOf$1(coll, (v2, k, cb) => {
+          _iteratee(accumulator, v2, k, cb);
+        }, (err) => callback(err, accumulator));
+        return callback[PROMISE_SYMBOL];
+      }
+      function tryEach(tasks, callback) {
+        var error = null;
+        var result;
+        return eachSeries$1(tasks, (task, taskCb) => {
+          wrapAsync(task)((err, ...args) => {
+            if (err === false) return taskCb(err);
+            if (args.length < 2) {
+              [result] = args;
+            } else {
+              result = args;
+            }
+            error = err;
+            taskCb(err ? null : {});
+          });
+        }, () => callback(error, result));
+      }
+      var tryEach$1 = awaitify(tryEach);
+      function unmemoize(fn) {
+        return (...args) => {
+          return (fn.unmemoized || fn)(...args);
+        };
+      }
+      function whilst(test, iteratee, callback) {
+        callback = onlyOnce(callback);
+        var _fn = wrapAsync(iteratee);
+        var _test = wrapAsync(test);
+        var results = [];
+        function next(err, ...rest) {
+          if (err) return callback(err);
+          results = rest;
+          if (err === false) return;
+          _test(check);
+        }
+        function check(err, truth) {
+          if (err) return callback(err);
+          if (err === false) return;
+          if (!truth) return callback(null, ...results);
+          _fn(next);
+        }
+        return _test(check);
+      }
+      var whilst$1 = awaitify(whilst, 3);
+      function until(test, iteratee, callback) {
+        const _test = wrapAsync(test);
+        return whilst$1((cb) => _test((err, truth) => cb(err, !truth)), iteratee, callback);
+      }
+      function waterfall(tasks, callback) {
+        callback = once(callback);
+        if (!Array.isArray(tasks)) return callback(new Error("First argument to waterfall must be an array of functions"));
+        if (!tasks.length) return callback();
+        var taskIndex = 0;
+        function nextTask(args) {
+          var task = wrapAsync(tasks[taskIndex++]);
+          task(...args, onlyOnce(next));
+        }
+        function next(err, ...args) {
+          if (err === false) return;
+          if (err || taskIndex === tasks.length) {
+            return callback(err, ...args);
+          }
+          nextTask(args);
+        }
+        nextTask([]);
+      }
+      var waterfall$1 = awaitify(waterfall);
+      var index = {
+        apply,
+        applyEach,
+        applyEachSeries,
+        asyncify,
+        auto,
+        autoInject,
+        cargo: cargo$1,
+        cargoQueue: cargo,
+        compose,
+        concat: concat$1,
+        concatLimit: concatLimit$1,
+        concatSeries: concatSeries$1,
+        constant: constant$1,
+        detect: detect$1,
+        detectLimit: detectLimit$1,
+        detectSeries: detectSeries$1,
+        dir,
+        doUntil,
+        doWhilst: doWhilst$1,
+        each,
+        eachLimit: eachLimit$1,
+        eachOf: eachOf$1,
+        eachOfLimit: eachOfLimit$1,
+        eachOfSeries: eachOfSeries$1,
+        eachSeries: eachSeries$1,
+        ensureAsync,
+        every: every$1,
+        everyLimit: everyLimit$1,
+        everySeries: everySeries$1,
+        filter: filter$1,
+        filterLimit: filterLimit$1,
+        filterSeries: filterSeries$1,
+        forever: forever$1,
+        groupBy,
+        groupByLimit: groupByLimit$1,
+        groupBySeries,
+        log,
+        map: map$1,
+        mapLimit: mapLimit$1,
+        mapSeries: mapSeries$1,
+        mapValues,
+        mapValuesLimit: mapValuesLimit$1,
+        mapValuesSeries,
+        memoize,
+        nextTick,
+        parallel,
+        parallelLimit,
+        priorityQueue,
+        queue,
+        race: race$1,
+        reduce: reduce$1,
+        reduceRight,
+        reflect,
+        reflectAll,
+        reject: reject$1,
+        rejectLimit: rejectLimit$1,
+        rejectSeries: rejectSeries$1,
+        retry,
+        retryable,
+        seq,
+        series,
+        setImmediate: setImmediate$1,
+        some: some$1,
+        someLimit: someLimit$1,
+        someSeries: someSeries$1,
+        sortBy: sortBy$1,
+        timeout,
+        times,
+        timesLimit,
+        timesSeries,
+        transform,
+        tryEach: tryEach$1,
+        unmemoize,
+        until,
+        waterfall: waterfall$1,
+        whilst: whilst$1,
+        // aliases
+        all: every$1,
+        allLimit: everyLimit$1,
+        allSeries: everySeries$1,
+        any: some$1,
+        anyLimit: someLimit$1,
+        anySeries: someSeries$1,
+        find: detect$1,
+        findLimit: detectLimit$1,
+        findSeries: detectSeries$1,
+        flatMap: concat$1,
+        flatMapLimit: concatLimit$1,
+        flatMapSeries: concatSeries$1,
+        forEach: each,
+        forEachSeries: eachSeries$1,
+        forEachLimit: eachLimit$1,
+        forEachOf: eachOf$1,
+        forEachOfSeries: eachOfSeries$1,
+        forEachOfLimit: eachOfLimit$1,
+        inject: reduce$1,
+        foldl: reduce$1,
+        foldr: reduceRight,
+        select: filter$1,
+        selectLimit: filterLimit$1,
+        selectSeries: filterSeries$1,
+        wrapSync: asyncify,
+        during: whilst$1,
+        doDuring: doWhilst$1
+      };
+      exports2.all = every$1;
+      exports2.allLimit = everyLimit$1;
+      exports2.allSeries = everySeries$1;
+      exports2.any = some$1;
+      exports2.anyLimit = someLimit$1;
+      exports2.anySeries = someSeries$1;
+      exports2.apply = apply;
+      exports2.applyEach = applyEach;
+      exports2.applyEachSeries = applyEachSeries;
+      exports2.asyncify = asyncify;
+      exports2.auto = auto;
+      exports2.autoInject = autoInject;
+      exports2.cargo = cargo$1;
+      exports2.cargoQueue = cargo;
+      exports2.compose = compose;
+      exports2.concat = concat$1;
+      exports2.concatLimit = concatLimit$1;
+      exports2.concatSeries = concatSeries$1;
+      exports2.constant = constant$1;
+      exports2.default = index;
+      exports2.detect = detect$1;
+      exports2.detectLimit = detectLimit$1;
+      exports2.detectSeries = detectSeries$1;
+      exports2.dir = dir;
+      exports2.doDuring = doWhilst$1;
+      exports2.doUntil = doUntil;
+      exports2.doWhilst = doWhilst$1;
+      exports2.during = whilst$1;
+      exports2.each = each;
+      exports2.eachLimit = eachLimit$1;
+      exports2.eachOf = eachOf$1;
+      exports2.eachOfLimit = eachOfLimit$1;
+      exports2.eachOfSeries = eachOfSeries$1;
+      exports2.eachSeries = eachSeries$1;
+      exports2.ensureAsync = ensureAsync;
+      exports2.every = every$1;
+      exports2.everyLimit = everyLimit$1;
+      exports2.everySeries = everySeries$1;
+      exports2.filter = filter$1;
+      exports2.filterLimit = filterLimit$1;
+      exports2.filterSeries = filterSeries$1;
+      exports2.find = detect$1;
+      exports2.findLimit = detectLimit$1;
+      exports2.findSeries = detectSeries$1;
+      exports2.flatMap = concat$1;
+      exports2.flatMapLimit = concatLimit$1;
+      exports2.flatMapSeries = concatSeries$1;
+      exports2.foldl = reduce$1;
+      exports2.foldr = reduceRight;
+      exports2.forEach = each;
+      exports2.forEachLimit = eachLimit$1;
+      exports2.forEachOf = eachOf$1;
+      exports2.forEachOfLimit = eachOfLimit$1;
+      exports2.forEachOfSeries = eachOfSeries$1;
+      exports2.forEachSeries = eachSeries$1;
+      exports2.forever = forever$1;
+      exports2.groupBy = groupBy;
+      exports2.groupByLimit = groupByLimit$1;
+      exports2.groupBySeries = groupBySeries;
+      exports2.inject = reduce$1;
+      exports2.log = log;
+      exports2.map = map$1;
+      exports2.mapLimit = mapLimit$1;
+      exports2.mapSeries = mapSeries$1;
+      exports2.mapValues = mapValues;
+      exports2.mapValuesLimit = mapValuesLimit$1;
+      exports2.mapValuesSeries = mapValuesSeries;
+      exports2.memoize = memoize;
+      exports2.nextTick = nextTick;
+      exports2.parallel = parallel;
+      exports2.parallelLimit = parallelLimit;
+      exports2.priorityQueue = priorityQueue;
+      exports2.queue = queue;
+      exports2.race = race$1;
+      exports2.reduce = reduce$1;
+      exports2.reduceRight = reduceRight;
+      exports2.reflect = reflect;
+      exports2.reflectAll = reflectAll;
+      exports2.reject = reject$1;
+      exports2.rejectLimit = rejectLimit$1;
+      exports2.rejectSeries = rejectSeries$1;
+      exports2.retry = retry;
+      exports2.retryable = retryable;
+      exports2.select = filter$1;
+      exports2.selectLimit = filterLimit$1;
+      exports2.selectSeries = filterSeries$1;
+      exports2.seq = seq;
+      exports2.series = series;
+      exports2.setImmediate = setImmediate$1;
+      exports2.some = some$1;
+      exports2.someLimit = someLimit$1;
+      exports2.someSeries = someSeries$1;
+      exports2.sortBy = sortBy$1;
+      exports2.timeout = timeout;
+      exports2.times = times;
+      exports2.timesLimit = timesLimit;
+      exports2.timesSeries = timesSeries;
+      exports2.transform = transform;
+      exports2.tryEach = tryEach$1;
+      exports2.unmemoize = unmemoize;
+      exports2.until = until;
+      exports2.waterfall = waterfall$1;
+      exports2.whilst = whilst$1;
+      exports2.wrapSync = asyncify;
+      Object.defineProperty(exports2, "__esModule", { value: true });
+    });
+  }
+});
+var require_ini = __commonJS({
+  "node_modules/.deno/ini@2.0.0/node_modules/ini/ini.js"(exports, module) {
+    var { hasOwnProperty } = Object.prototype;
+    var eol = typeof process !== "undefined" && process.platform === "win32" ? "\r\n" : "\n";
+    var encode3 = (obj, opt) => {
+      const children = [];
+      let out = "";
+      if (typeof opt === "string") {
+        opt = {
+          section: opt,
+          whitespace: false
+        };
+      } else {
+        opt = opt || /* @__PURE__ */ Object.create(null);
+        opt.whitespace = opt.whitespace === true;
+      }
+      const separator = opt.whitespace ? " = " : "=";
+      for (const k of Object.keys(obj)) {
+        const val = obj[k];
+        if (val && Array.isArray(val)) {
+          for (const item of val)
+            out += safe(k + "[]") + separator + safe(item) + "\n";
+        } else if (val && typeof val === "object")
+          children.push(k);
+        else
+          out += safe(k) + separator + safe(val) + eol;
+      }
+      if (opt.section && out.length)
+        out = "[" + safe(opt.section) + "]" + eol + out;
+      for (const k of children) {
+        const nk = dotSplit(k).join("\\.");
+        const section = (opt.section ? opt.section + "." : "") + nk;
+        const { whitespace } = opt;
+        const child = encode3(obj[k], {
+          section,
+          whitespace
+        });
+        if (out.length && child.length)
+          out += eol;
+        out += child;
+      }
+      return out;
+    };
+    var dotSplit = (str) => str.replace(/\1/g, "LITERAL\\1LITERAL").replace(/\\\./g, "").split(/\./).map((part) => part.replace(/\1/g, "\\.").replace(/\2LITERAL\\1LITERAL\2/g, ""));
+    var decode5 = (str) => {
+      const out = /* @__PURE__ */ Object.create(null);
+      let p = out;
+      let section = null;
+      const re = /^\[([^\]]*)\]$|^([^=]+)(=(.*))?$/i;
+      const lines = str.split(/[\r\n]+/g);
+      for (const line of lines) {
+        if (!line || line.match(/^\s*[;#]/))
+          continue;
+        const match = line.match(re);
+        if (!match)
+          continue;
+        if (match[1] !== void 0) {
+          section = unsafe(match[1]);
+          if (section === "__proto__") {
+            p = /* @__PURE__ */ Object.create(null);
+            continue;
+          }
+          p = out[section] = out[section] || /* @__PURE__ */ Object.create(null);
+          continue;
+        }
+        const keyRaw = unsafe(match[2]);
+        const isArray = keyRaw.length > 2 && keyRaw.slice(-2) === "[]";
+        const key = isArray ? keyRaw.slice(0, -2) : keyRaw;
+        if (key === "__proto__")
+          continue;
+        const valueRaw = match[3] ? unsafe(match[4]) : true;
+        const value = valueRaw === "true" || valueRaw === "false" || valueRaw === "null" ? JSON.parse(valueRaw) : valueRaw;
+        if (isArray) {
+          if (!hasOwnProperty.call(p, key))
+            p[key] = [];
+          else if (!Array.isArray(p[key]))
+            p[key] = [p[key]];
+        }
+        if (Array.isArray(p[key]))
+          p[key].push(value);
+        else
+          p[key] = value;
+      }
+      const remove = [];
+      for (const k of Object.keys(out)) {
+        if (!hasOwnProperty.call(out, k) || typeof out[k] !== "object" || Array.isArray(out[k]))
+          continue;
+        const parts = dotSplit(k);
+        let p2 = out;
+        const l = parts.pop();
+        const nl = l.replace(/\\\./g, ".");
+        for (const part of parts) {
+          if (part === "__proto__")
+            continue;
+          if (!hasOwnProperty.call(p2, part) || typeof p2[part] !== "object")
+            p2[part] = /* @__PURE__ */ Object.create(null);
+          p2 = p2[part];
+        }
+        if (p2 === out && nl === l)
+          continue;
+        p2[nl] = out[k];
+        remove.push(k);
+      }
+      for (const del of remove)
+        delete out[del];
+      return out;
+    };
+    var isQuoted = (val) => val.charAt(0) === '"' && val.slice(-1) === '"' || val.charAt(0) === "'" && val.slice(-1) === "'";
+    var safe = (val) => typeof val !== "string" || val.match(/[=\r\n]/) || val.match(/^\[/) || val.length > 1 && isQuoted(val) || val !== val.trim() ? JSON.stringify(val) : val.replace(/;/g, "\\;").replace(/#/g, "\\#");
+    var unsafe = (val, doUnesc) => {
+      val = (val || "").trim();
+      if (isQuoted(val)) {
+        if (val.charAt(0) === "'")
+          val = val.substr(1, val.length - 2);
+        try {
+          val = JSON.parse(val);
+        } catch (_) {
+        }
+      } else {
+        let esc = false;
+        let unesc = "";
+        for (let i2 = 0, l = val.length; i2 < l; i2++) {
+          const c = val.charAt(i2);
+          if (esc) {
+            if ("\\;#".indexOf(c) !== -1)
+              unesc += c;
+            else
+              unesc += "\\" + c;
+            esc = false;
+          } else if (";#".indexOf(c) !== -1)
+            break;
+          else if (c === "\\")
+            esc = true;
+          else
+            unesc += c;
+        }
+        if (esc)
+          unesc += "\\";
+        return unesc.trim();
+      }
+      return val;
+    };
+    module.exports = {
+      parse: decode5,
+      decode: decode5,
+      stringify: encode3,
+      encode: encode3,
+      safe,
+      unsafe
+    };
+  }
+});
+var require_formats = __commonJS({
+  "node_modules/.deno/nconf@0.13.0/node_modules/nconf/lib/nconf/formats.js"(exports) {
+    var ini = require_ini();
+    var formats = exports;
+    formats.json = {
+      stringify: function(obj, replacer, spacing) {
+        return JSON.stringify(obj, replacer || null, spacing || 2);
+      },
+      parse: JSON.parse
+    };
+    formats.ini = ini;
+  }
+});
+var require_memory = __commonJS({
+  "node_modules/.deno/nconf@0.13.0/node_modules/nconf/lib/nconf/stores/memory.js"(exports) {
+    var common2 = require_common();
+    var Memory = exports.Memory = function(options2) {
+      options2 = options2 || {};
+      this.type = "memory";
+      this.store = {};
+      this.mtimes = {};
+      this.readOnly = false;
+      this.loadFrom = options2.loadFrom || null;
+      this.logicalSeparator = options2.logicalSeparator || ":";
+      this.parseValues = options2.parseValues || false;
+      if (this.loadFrom) {
+        this.store = common2.loadFilesSync(this.loadFrom);
+      }
+    };
+    Memory.prototype.get = function(key) {
+      var target = this.store, path = common2.path(key, this.logicalSeparator);
+      while (path.length > 0) {
+        key = path.shift();
+        if (target && typeof target !== "string" && Object.hasOwnProperty.call(target, key)) {
+          target = target[key];
+          continue;
+        }
+        return void 0;
+      }
+      return target;
+    };
+    Memory.prototype.set = function(key, value) {
+      if (this.readOnly) {
+        return false;
+      }
+      var target = this.store, path = common2.path(key, this.logicalSeparator);
+      if (path.length === 0) {
+        if (!value || typeof value !== "object") {
+          return false;
+        } else {
+          this.reset();
+          this.store = value;
+          return true;
+        }
+      }
+      this.mtimes[key] = Date.now();
+      while (path.length > 1) {
+        key = path.shift();
+        if (!target[key] || typeof target[key] !== "object" || !Object.hasOwnProperty.call(target, key)) {
+          target[key] = {};
+        }
+        target = target[key];
+      }
+      key = path.shift();
+      if (this.parseValues) {
+        value = common2.parseValues.call(common2, value);
+      }
+      target[key] = value;
+      return true;
+    };
+    Memory.prototype.clear = function(key) {
+      if (this.readOnly) {
+        return false;
+      }
+      var target = this.store, value = target, path = common2.path(key, this.logicalSeparator);
+      delete this.mtimes[key];
+      for (var i2 = 0; i2 < path.length - 1; i2++) {
+        key = path[i2];
+        value = target[key];
+        if (typeof value !== "function" && typeof value !== "object") {
+          return false;
+        }
+        target = value;
+      }
+      key = path[i2];
+      delete target[key];
+      return true;
+    };
+    Memory.prototype.merge = function(key, value) {
+      if (this.readOnly) {
+        return false;
+      }
+      if (typeof value !== "object" || Array.isArray(value) || value === null) {
+        return this.set(key, value);
+      }
+      var self2 = this, target = this.store, path = common2.path(key, this.logicalSeparator), fullKey = key;
+      this.mtimes[key] = Date.now();
+      while (path.length > 1) {
+        key = path.shift();
+        if (!target[key]) {
+          target[key] = {};
+        }
+        target = target[key];
+      }
+      key = path.shift();
+      if (typeof target[key] !== "object" || Array.isArray(target[key])) {
+        target[key] = value;
+        return true;
+      }
+      return Object.keys(value).every(function(nested) {
+        return self2.merge(common2.keyed(self2.logicalSeparator, fullKey, nested), value[nested]);
+      });
+    };
+    Memory.prototype.reset = function() {
+      if (this.readOnly) {
+        return false;
+      }
+      this.mtimes = {};
+      this.store = {};
+      return true;
+    };
+    Memory.prototype.loadSync = function() {
+      return this.store || {};
+    };
+  }
+});
+var require_common = __commonJS({
+  "node_modules/.deno/nconf@0.13.0/node_modules/nconf/lib/nconf/common.js"(exports) {
+    var fs = __require2("fs");
+    var async = require_async();
+    var formats = require_formats();
+    var Memory = require_memory().Memory;
+    var common2 = exports;
+    common2.path = function(key, separator) {
+      separator = separator || ":";
+      return key == null ? [] : key.split(separator);
+    };
+    common2.key = function() {
+      return Array.prototype.slice.call(arguments).join(":");
+    };
+    common2.keyed = function() {
+      return Array.prototype.slice.call(arguments, 1).join(arguments[0]);
+    };
+    common2.loadFiles = function(files, callback) {
+      if (!files) {
+        return callback(null, {});
+      }
+      var options2 = Array.isArray(files) ? { files } : files;
+      options2.format = options2.format || formats.json;
+      function parseFile(file, next) {
+        fs.readFile(file, function(err, data) {
+          return !err ? next(null, options2.format.parse(data.toString())) : next(err);
+        });
+      }
+      async.map(options2.files, parseFile, function(err, objs) {
+        return err ? callback(err) : callback(null, common2.merge(objs));
+      });
+    };
+    common2.loadFilesSync = function(files) {
+      if (!files) {
+        return;
+      }
+      var options2 = Array.isArray(files) ? { files } : files;
+      options2.format = options2.format || formats.json;
+      return common2.merge(options2.files.map(function(file) {
+        return options2.format.parse(fs.readFileSync(file, "utf8"));
+      }));
+    };
+    common2.merge = function(objs) {
+      var store = new Memory();
+      objs.forEach(function(obj) {
+        Object.keys(obj).forEach(function(key) {
+          store.merge(key, obj[key]);
+        });
+      });
+      return store.store;
+    };
+    common2.capitalize = function(str) {
+      return str && str[0].toUpperCase() + str.slice(1);
+    };
+    common2.parseValues = function(value) {
+      var val = value;
+      try {
+        val = JSON.parse(value);
+      } catch (ignore) {
+        if (value === "undefined") {
+          val = void 0;
+        }
+      }
+      return val;
+    };
+    common2.transform = function(map, fn) {
+      var pairs = Object.keys(map).map(function(key) {
+        var obj = { key, value: map[key] };
+        var result = fn.call(null, obj);
+        if (!result) {
+          return null;
+        } else if (result.key) {
+          return result;
+        }
+        var error = new Error("Transform function passed to store returned an invalid format: " + JSON.stringify(result));
+        error.name = "RuntimeError";
+        throw error;
+      });
+      return pairs.filter(function(pair) {
+        return pair !== null;
+      }).reduce(function(accumulator, pair) {
+        accumulator[pair.key] = pair.value;
+        return accumulator;
+      }, {});
+    };
+  }
+});
+var require_provider = __commonJS({
+  "node_modules/.deno/nconf@0.13.0/node_modules/nconf/lib/nconf/provider.js"(exports) {
+    var async = require_async();
+    var common2 = require_common();
+    var Provider = exports.Provider = function(options2) {
+      options2 = options2 || {};
+      this.stores = {};
+      this.sources = [];
+      this.init(options2);
+    };
+    ["argv", "env"].forEach(function(type) {
+      Provider.prototype[type] = function() {
+        var args = [type].concat(Array.prototype.slice.call(arguments));
+        return this.add.apply(this, args);
+      };
+    });
+    Provider.prototype.file = function(key, options2) {
+      if (arguments.length == 1) {
+        options2 = typeof key === "string" ? { file: key } : key;
+        key = "file";
+      } else {
+        options2 = typeof options2 === "string" ? { file: options2 } : options2;
+      }
+      options2.type = "file";
+      return this.add(key, options2);
+    };
+    ["defaults", "overrides"].forEach(function(type) {
+      Provider.prototype[type] = function(options2) {
+        options2 = options2 || {};
+        if (!options2.type) {
+          options2.type = "literal";
+        }
+        return this.add(type, options2);
+      };
+    });
+    Provider.prototype.use = function(name, options2) {
+      options2 = options2 || {};
+      function sameOptions(store2) {
+        return Object.keys(options2).every(function(key) {
+          return options2[key] === store2[key];
+        });
+      }
+      var store = this.stores[name], update = store && !sameOptions(store);
+      if (!store || update) {
+        if (update) {
+          this.remove(name);
+        }
+        this.add(name, options2);
+      }
+      return this;
+    };
+    Provider.prototype.add = function(name, options2, usage) {
+      options2 = options2 || {};
+      var type = options2.type || name;
+      if (!require_nconf()[common2.capitalize(type)]) {
+        throw new Error("Cannot add store with unknown type: " + type);
+      }
+      this.stores[name] = this.create(type, options2, usage);
+      if (this.stores[name].loadSync) {
+        this.stores[name].loadSync();
+      }
+      return this;
+    };
+    Provider.prototype.remove = function(name) {
+      delete this.stores[name];
+      return this;
+    };
+    Provider.prototype.create = function(type, options2, usage) {
+      return new (require_nconf())[common2.capitalize(type.toLowerCase())](options2, usage);
+    };
+    Provider.prototype.init = function(options2) {
+      var self2 = this;
+      if (options2.type) {
+        this.add(options2.type, options2);
+      } else if (options2.store) {
+        this.add(options2.store.name || options2.store.type, options2.store);
+      } else if (options2.stores) {
+        Object.keys(options2.stores).forEach(function(name) {
+          var store = options2.stores[name];
+          self2.add(store.name || name || store.type, store);
+        });
+      }
+      if (options2.source) {
+        this.sources.push(this.create(options2.source.type || options2.source.name, options2.source));
+      } else if (options2.sources) {
+        Object.keys(options2.sources).forEach(function(name) {
+          var source = options2.sources[name];
+          self2.sources.push(self2.create(source.type || source.name || name, source));
+        });
+      }
+    };
+    Provider.prototype.get = function(key, callback) {
+      if (typeof key === "function") {
+        callback = key;
+        key = null;
+      }
+      if (!callback) {
+        return this._execute("get", 1, key, callback);
+      }
+      var current = 0, names = Object.keys(this.stores), self2 = this, response, mergeObjs = [];
+      async.whilst(function(cb) {
+        cb(null, typeof response === "undefined" && current < names.length);
+      }, function(next) {
+        var store = self2.stores[names[current]];
+        current++;
+        if (store.get.length >= 2) {
+          return store.get(key, function(err, value) {
+            if (err) {
+              return next(err);
+            }
+            response = value;
+            if (response && typeof response === "object" && !Array.isArray(response)) {
+              mergeObjs.push(response);
+              response = void 0;
+            }
+            next();
+          });
+        }
+        response = store.get(key);
+        if (response && typeof response === "object" && !Array.isArray(response)) {
+          mergeObjs.push(response);
+          response = void 0;
+        }
+        next();
+      }, function(err) {
+        if (!err && mergeObjs.length) {
+          response = common2.merge(mergeObjs.reverse());
+        }
+        return err ? callback(err) : callback(null, response);
+      });
+    };
+    Provider.prototype.any = function(keys, callback) {
+      if (!Array.isArray(keys)) {
+        keys = Array.prototype.slice.call(arguments);
+        if (keys.length > 0 && typeof keys[keys.length - 1] === "function") {
+          callback = keys.pop();
+        } else {
+          callback = null;
+        }
+      }
+      if (!callback) {
+        var val;
+        for (var i2 = 0; i2 < keys.length; ++i2) {
+          val = this._execute("get", 1, keys[i2], callback);
+          if (val) {
+            return val;
+          }
+        }
+        return null;
+      }
+      var keyIndex = 0, result, self2 = this;
+      async.whilst(function(cb) {
+        cb(null, !result && keyIndex < keys.length);
+      }, function(next) {
+        var key = keys[keyIndex];
+        keyIndex++;
+        self2.get(key, function(err, v2) {
+          if (err) {
+            next(err);
+          } else {
+            result = v2;
+            next();
+          }
+        });
+      }, function(err) {
+        return err ? callback(err) : callback(null, result);
+      });
+    };
+    Provider.prototype.set = function(key, value, callback) {
+      return this._execute("set", 2, key, value, callback);
+    };
+    Provider.prototype.required = function(keys) {
+      if (!Array.isArray(keys)) {
+        throw new Error("Incorrect parameter, array expected");
+      }
+      var missing = [];
+      keys.forEach(function(key) {
+        if (typeof this.get(key) === "undefined") {
+          missing.push(key);
+        }
+      }, this);
+      if (missing.length) {
+        throw new Error("Missing required keys: " + missing.join(", "));
+      } else {
+        return true;
+      }
+    };
+    Provider.prototype.reset = function(callback) {
+      return this._execute("reset", 0, callback);
+    };
+    Provider.prototype.clear = function(key, callback) {
+      return this._execute("clear", 1, key, callback);
+    };
+    Provider.prototype.merge = function() {
+      var self2 = this, args = Array.prototype.slice.call(arguments), callback = typeof args[args.length - 1] === "function" && args.pop(), value = args.pop(), key = args.pop();
+      function mergeProperty(prop, next) {
+        return self2._execute("merge", 2, prop, value[prop], next);
+      }
+      if (!key) {
+        if (Array.isArray(value) || typeof value !== "object") {
+          return onError(new Error("Cannot merge non-Object into top-level."), callback);
+        }
+        return async.forEach(Object.keys(value), mergeProperty, callback || function() {
+        });
+      }
+      return this._execute("merge", 2, key, value, callback);
+    };
+    Provider.prototype.load = function(callback) {
+      var self2 = this;
+      function getStores() {
+        var stores = Object.keys(self2.stores);
+        stores.reverse();
+        return stores.map(function(name) {
+          return self2.stores[name];
+        });
+      }
+      function loadStoreSync(store) {
+        if (!store.loadSync) {
+          throw new Error("nconf store " + store.type + " has no loadSync() method");
+        }
+        return store.loadSync();
+      }
+      function loadStore(store, next) {
+        if (!store.load && !store.loadSync) {
+          return next(new Error("nconf store " + store.type + " has no load() method"));
+        }
+        return store.loadSync ? next(null, store.loadSync()) : store.load(next);
+      }
+      function loadBatch(targets, done) {
+        if (!done) {
+          return common2.merge(targets.map(loadStoreSync));
+        }
+        async.map(targets, loadStore, function(err, objs) {
+          return err ? done(err) : done(null, common2.merge(objs));
+        });
+      }
+      function mergeSources(data) {
+        if (data && typeof data === "object") {
+          self2.use("sources", {
+            type: "literal",
+            store: data
+          });
+        }
+      }
+      function loadSources() {
+        var sourceHierarchy = self2.sources.splice(0);
+        sourceHierarchy.reverse();
+        if (!callback) {
+          mergeSources(loadBatch(sourceHierarchy));
+          return loadBatch(getStores());
+        }
+        loadBatch(sourceHierarchy, function(err, data) {
+          if (err) {
+            return callback(err);
+          }
+          mergeSources(data);
+          return loadBatch(getStores(), callback);
+        });
+      }
+      return self2.sources.length ? loadSources() : loadBatch(getStores(), callback);
+    };
+    Provider.prototype.save = function(value, callback) {
+      if (!callback && typeof value === "function") {
+        callback = value;
+        value = null;
+      }
+      var self2 = this, names = Object.keys(this.stores);
+      function saveStoreSync(memo, name) {
+        var store = self2.stores[name];
+        if (store.saveSync) {
+          var ret = store.saveSync();
+          if (typeof ret == "object" && ret !== null) {
+            memo.push(ret);
+          }
+        }
+        return memo;
+      }
+      function saveStore(memo, name, next) {
+        var store = self2.stores[name];
+        if (store.save) {
+          return store.save(value, function(err, data) {
+            if (err) {
+              return next(err);
+            }
+            if (typeof data == "object" && data !== null) {
+              memo.push(data);
+            }
+            next(null, memo);
+          });
+        } else if (store.saveSync) {
+          memo.push(store.saveSync());
+        }
+        next(null, memo);
+      }
+      if (!callback) {
+        return common2.merge(names.reduce(saveStoreSync, []));
+      }
+      async.reduce(names, [], saveStore, function(err, objs) {
+        return err ? callback(err) : callback(null, common2.merge(objs));
+      });
+    };
+    Provider.prototype._execute = function(action, syncLength) {
+      var args = Array.prototype.slice.call(arguments, 2), callback = typeof args[args.length - 1] === "function" && args.pop(), destructive = ["set", "clear", "merge", "reset"].indexOf(action) !== -1, self2 = this, response, mergeObjs = [], keys = Object.keys(this.stores);
+      function runAction(name, next) {
+        var store = self2.stores[name];
+        if (destructive && store.readOnly) {
+          return next();
+        }
+        return store[action].length > syncLength ? store[action].apply(store, args.concat(next)) : next(null, store[action].apply(store, args));
+      }
+      if (callback) {
+        return async.forEach(keys, runAction, function(err) {
+          return err ? callback(err) : callback();
+        });
+      }
+      keys.forEach(function(name) {
+        if (typeof response === "undefined") {
+          var store = self2.stores[name];
+          if (destructive && store.readOnly) {
+            return;
+          }
+          response = store[action].apply(store, args);
+          if (response && action === "get" && typeof response === "object" && !Array.isArray(response)) {
+            mergeObjs.push(response);
+            response = void 0;
+          }
+        }
+      });
+      if (mergeObjs.length) {
+        response = common2.merge(mergeObjs.reverse());
+      }
+      return response;
+    };
+    function onError(err, callback) {
+      if (callback) {
+        return callback(err);
+      }
+      throw err;
+    }
+  }
+});
+var require_package = __commonJS({
+  "node_modules/.deno/nconf@0.13.0/node_modules/nconf/package.json"(exports, module) {
+    module.exports = {
+      name: "nconf",
+      description: "Hierarchical node.js configuration with files, environment variables, command-line arguments, and atomic object merging.",
+      version: "0.13.0",
+      author: "Charlie Robbins <charlie.robbins@gmail.com>",
+      contributors: [
+        "Matt Hamann <matthew.hamann@gmail.com>",
+        "Maciej Ma\u0142ecki <me@mmalecki.com>",
+        "Jarrett Cruger <jcrugzz@gmail.com>",
+        "Adrien Becchis"
+      ],
+      repository: {
+        type: "git",
+        url: "http://github.com/flatiron/nconf.git"
+      },
+      keywords: [
+        "configuration",
+        "key value store",
+        "plugabble"
+      ],
+      dependencies: {
+        async: "^3.0.0",
+        ini: "^2.0.0",
+        "secure-keys": "^1.0.0",
+        yargs: "^16.1.1"
+      },
+      devDependencies: {
+        "@release-it/conventional-changelog": "^7.0.2",
+        coveralls: "^3.1.0",
+        eslint: "^7.0.0",
+        "nconf-yaml": "^1.0.2",
+        nyc: "^15.1.0",
+        "release-it": "^16.2.1",
+        vows: "^0.8.3"
+      },
+      main: "./lib/nconf",
+      scripts: {
+        test: "vows test/*-test.js test/**/*-test.js --spec",
+        cover: "nyc --reporter=lcov npm test",
+        coveralls: "cat coverage/lcov.info | coveralls",
+        lint: "eslint .",
+        release: "release-it"
+      },
+      engines: {
+        node: ">= 0.4.0"
+      },
+      license: "MIT"
+    };
+  }
+});
+var require_build = __commonJS({
+  "node_modules/.deno/y18n@5.0.8/node_modules/y18n/build/index.cjs"(exports, module) {
+    "use strict";
+    var fs = __require2("fs");
+    var util = __require2("util");
+    var path = __require2("path");
+    var shim;
+    var Y18N = class {
+      constructor(opts) {
+        opts = opts || {};
+        this.directory = opts.directory || "./locales";
+        this.updateFiles = typeof opts.updateFiles === "boolean" ? opts.updateFiles : true;
+        this.locale = opts.locale || "en";
+        this.fallbackToLanguage = typeof opts.fallbackToLanguage === "boolean" ? opts.fallbackToLanguage : true;
+        this.cache = /* @__PURE__ */ Object.create(null);
+        this.writeQueue = [];
+      }
+      __(...args) {
+        if (typeof arguments[0] !== "string") {
+          return this._taggedLiteral(arguments[0], ...arguments);
+        }
+        const str = args.shift();
+        let cb = function() {
+        };
+        if (typeof args[args.length - 1] === "function")
+          cb = args.pop();
+        cb = cb || function() {
+        };
+        if (!this.cache[this.locale])
+          this._readLocaleFile();
+        if (!this.cache[this.locale][str] && this.updateFiles) {
+          this.cache[this.locale][str] = str;
+          this._enqueueWrite({
+            directory: this.directory,
+            locale: this.locale,
+            cb
+          });
+        } else {
+          cb();
+        }
+        return shim.format.apply(shim.format, [this.cache[this.locale][str] || str].concat(args));
+      }
+      __n() {
+        const args = Array.prototype.slice.call(arguments);
+        const singular = args.shift();
+        const plural = args.shift();
+        const quantity = args.shift();
+        let cb = function() {
+        };
+        if (typeof args[args.length - 1] === "function")
+          cb = args.pop();
+        if (!this.cache[this.locale])
+          this._readLocaleFile();
+        let str = quantity === 1 ? singular : plural;
+        if (this.cache[this.locale][singular]) {
+          const entry = this.cache[this.locale][singular];
+          str = entry[quantity === 1 ? "one" : "other"];
+        }
+        if (!this.cache[this.locale][singular] && this.updateFiles) {
+          this.cache[this.locale][singular] = {
+            one: singular,
+            other: plural
+          };
+          this._enqueueWrite({
+            directory: this.directory,
+            locale: this.locale,
+            cb
+          });
+        } else {
+          cb();
+        }
+        const values = [str];
+        if (~str.indexOf("%d"))
+          values.push(quantity);
+        return shim.format.apply(shim.format, values.concat(args));
+      }
+      setLocale(locale) {
+        this.locale = locale;
+      }
+      getLocale() {
+        return this.locale;
+      }
+      updateLocale(obj) {
+        if (!this.cache[this.locale])
+          this._readLocaleFile();
+        for (const key in obj) {
+          if (Object.prototype.hasOwnProperty.call(obj, key)) {
+            this.cache[this.locale][key] = obj[key];
+          }
+        }
+      }
+      _taggedLiteral(parts, ...args) {
+        let str = "";
+        parts.forEach(function(part, i2) {
+          const arg = args[i2 + 1];
+          str += part;
+          if (typeof arg !== "undefined") {
+            str += "%s";
+          }
+        });
+        return this.__.apply(this, [str].concat([].slice.call(args, 1)));
+      }
+      _enqueueWrite(work) {
+        this.writeQueue.push(work);
+        if (this.writeQueue.length === 1)
+          this._processWriteQueue();
+      }
+      _processWriteQueue() {
+        const _this = this;
+        const work = this.writeQueue[0];
+        const directory = work.directory;
+        const locale = work.locale;
+        const cb = work.cb;
+        const languageFile = this._resolveLocaleFile(directory, locale);
+        const serializedLocale = JSON.stringify(this.cache[locale], null, 2);
+        shim.fs.writeFile(languageFile, serializedLocale, "utf-8", function(err) {
+          _this.writeQueue.shift();
+          if (_this.writeQueue.length > 0)
+            _this._processWriteQueue();
+          cb(err);
+        });
+      }
+      _readLocaleFile() {
+        let localeLookup = {};
+        const languageFile = this._resolveLocaleFile(this.directory, this.locale);
+        try {
+          if (shim.fs.readFileSync) {
+            localeLookup = JSON.parse(shim.fs.readFileSync(languageFile, "utf-8"));
+          }
+        } catch (err) {
+          if (err instanceof SyntaxError) {
+            err.message = "syntax error in " + languageFile;
+          }
+          if (err.code === "ENOENT")
+            localeLookup = {};
+          else
+            throw err;
+        }
+        this.cache[this.locale] = localeLookup;
+      }
+      _resolveLocaleFile(directory, locale) {
+        let file = shim.resolve(directory, "./", locale + ".json");
+        if (this.fallbackToLanguage && !this._fileExistsSync(file) && ~locale.lastIndexOf("_")) {
+          const languageFile = shim.resolve(directory, "./", locale.split("_")[0] + ".json");
+          if (this._fileExistsSync(languageFile))
+            file = languageFile;
+        }
+        return file;
+      }
+      _fileExistsSync(file) {
+        return shim.exists(file);
+      }
+    };
+    function y18n$1(opts, _shim) {
+      shim = _shim;
+      const y18n2 = new Y18N(opts);
+      return {
+        __: y18n2.__.bind(y18n2),
+        __n: y18n2.__n.bind(y18n2),
+        setLocale: y18n2.setLocale.bind(y18n2),
+        getLocale: y18n2.getLocale.bind(y18n2),
+        updateLocale: y18n2.updateLocale.bind(y18n2),
+        locale: y18n2.locale
+      };
+    }
+    var nodePlatformShim = {
+      fs: {
+        readFileSync: fs.readFileSync,
+        writeFile: fs.writeFile
+      },
+      format: util.format,
+      resolve: path.resolve,
+      exists: (file) => {
+        try {
+          return fs.statSync(file).isFile();
+        } catch (err) {
+          return false;
+        }
+      }
+    };
+    var y18n = (opts) => {
+      return y18n$1(opts, nodePlatformShim);
+    };
+    module.exports = y18n;
+  }
+});
+var require_build2 = __commonJS({
+  "node_modules/.deno/yargs-parser@20.2.9/node_modules/yargs-parser/build/index.cjs"(exports, module) {
+    "use strict";
+    var util = __require2("util");
+    var fs = __require2("fs");
+    var path = __require2("path");
+    function camelCase(str) {
+      const isCamelCase = str !== str.toLowerCase() && str !== str.toUpperCase();
+      if (!isCamelCase) {
+        str = str.toLowerCase();
+      }
+      if (str.indexOf("-") === -1 && str.indexOf("_") === -1) {
+        return str;
+      } else {
+        let camelcase = "";
+        let nextChrUpper = false;
+        const leadingHyphens = str.match(/^-+/);
+        for (let i2 = leadingHyphens ? leadingHyphens[0].length : 0; i2 < str.length; i2++) {
+          let chr = str.charAt(i2);
+          if (nextChrUpper) {
+            nextChrUpper = false;
+            chr = chr.toUpperCase();
+          }
+          if (i2 !== 0 && (chr === "-" || chr === "_")) {
+            nextChrUpper = true;
+          } else if (chr !== "-" && chr !== "_") {
+            camelcase += chr;
+          }
+        }
+        return camelcase;
+      }
+    }
+    function decamelize(str, joinString) {
+      const lowercase = str.toLowerCase();
+      joinString = joinString || "-";
+      let notCamelcase = "";
+      for (let i2 = 0; i2 < str.length; i2++) {
+        const chrLower = lowercase.charAt(i2);
+        const chrString = str.charAt(i2);
+        if (chrLower !== chrString && i2 > 0) {
+          notCamelcase += `${joinString}${lowercase.charAt(i2)}`;
+        } else {
+          notCamelcase += chrString;
+        }
+      }
+      return notCamelcase;
+    }
+    function looksLikeNumber(x2) {
+      if (x2 === null || x2 === void 0)
+        return false;
+      if (typeof x2 === "number")
+        return true;
+      if (/^0x[0-9a-f]+$/i.test(x2))
+        return true;
+      if (/^0[^.]/.test(x2))
+        return false;
+      return /^[-]?(?:\d+(?:\.\d*)?|\.\d+)(e[-+]?\d+)?$/.test(x2);
+    }
+    function tokenizeArgString(argString) {
+      if (Array.isArray(argString)) {
+        return argString.map((e2) => typeof e2 !== "string" ? e2 + "" : e2);
+      }
+      argString = argString.trim();
+      let i2 = 0;
+      let prevC = null;
+      let c = null;
+      let opening = null;
+      const args = [];
+      for (let ii = 0; ii < argString.length; ii++) {
+        prevC = c;
+        c = argString.charAt(ii);
+        if (c === " " && !opening) {
+          if (!(prevC === " ")) {
+            i2++;
+          }
+          continue;
+        }
+        if (c === opening) {
+          opening = null;
+        } else if ((c === "'" || c === '"') && !opening) {
+          opening = c;
+        }
+        if (!args[i2])
+          args[i2] = "";
+        args[i2] += c;
+      }
+      return args;
+    }
+    var DefaultValuesForTypeKey;
+    (function(DefaultValuesForTypeKey2) {
+      DefaultValuesForTypeKey2["BOOLEAN"] = "boolean";
+      DefaultValuesForTypeKey2["STRING"] = "string";
+      DefaultValuesForTypeKey2["NUMBER"] = "number";
+      DefaultValuesForTypeKey2["ARRAY"] = "array";
+    })(DefaultValuesForTypeKey || (DefaultValuesForTypeKey = {}));
+    var mixin;
+    var YargsParser = class {
+      constructor(_mixin) {
+        mixin = _mixin;
+      }
+      parse(argsInput, options2) {
+        const opts = Object.assign({
+          alias: void 0,
+          array: void 0,
+          boolean: void 0,
+          config: void 0,
+          configObjects: void 0,
+          configuration: void 0,
+          coerce: void 0,
+          count: void 0,
+          default: void 0,
+          envPrefix: void 0,
+          narg: void 0,
+          normalize: void 0,
+          string: void 0,
+          number: void 0,
+          __: void 0,
+          key: void 0
+        }, options2);
+        const args = tokenizeArgString(argsInput);
+        const aliases = combineAliases(Object.assign(/* @__PURE__ */ Object.create(null), opts.alias));
+        const configuration = Object.assign({
+          "boolean-negation": true,
+          "camel-case-expansion": true,
+          "combine-arrays": false,
+          "dot-notation": true,
+          "duplicate-arguments-array": true,
+          "flatten-duplicate-arrays": true,
+          "greedy-arrays": true,
+          "halt-at-non-option": false,
+          "nargs-eats-options": false,
+          "negation-prefix": "no-",
+          "parse-numbers": true,
+          "parse-positional-numbers": true,
+          "populate--": false,
+          "set-placeholder-key": false,
+          "short-option-groups": true,
+          "strip-aliased": false,
+          "strip-dashed": false,
+          "unknown-options-as-args": false
+        }, opts.configuration);
+        const defaults = Object.assign(/* @__PURE__ */ Object.create(null), opts.default);
+        const configObjects = opts.configObjects || [];
+        const envPrefix = opts.envPrefix;
+        const notFlagsOption = configuration["populate--"];
+        const notFlagsArgv = notFlagsOption ? "--" : "_";
+        const newAliases = /* @__PURE__ */ Object.create(null);
+        const defaulted = /* @__PURE__ */ Object.create(null);
+        const __ = opts.__ || mixin.format;
+        const flags = {
+          aliases: /* @__PURE__ */ Object.create(null),
+          arrays: /* @__PURE__ */ Object.create(null),
+          bools: /* @__PURE__ */ Object.create(null),
+          strings: /* @__PURE__ */ Object.create(null),
+          numbers: /* @__PURE__ */ Object.create(null),
+          counts: /* @__PURE__ */ Object.create(null),
+          normalize: /* @__PURE__ */ Object.create(null),
+          configs: /* @__PURE__ */ Object.create(null),
+          nargs: /* @__PURE__ */ Object.create(null),
+          coercions: /* @__PURE__ */ Object.create(null),
+          keys: []
+        };
+        const negative = /^-([0-9]+(\.[0-9]+)?|\.[0-9]+)$/;
+        const negatedBoolean = new RegExp("^--" + configuration["negation-prefix"] + "(.+)");
+        [].concat(opts.array || []).filter(Boolean).forEach(function(opt) {
+          const key = typeof opt === "object" ? opt.key : opt;
+          const assignment = Object.keys(opt).map(function(key2) {
+            const arrayFlagKeys = {
+              boolean: "bools",
+              string: "strings",
+              number: "numbers"
+            };
+            return arrayFlagKeys[key2];
+          }).filter(Boolean).pop();
+          if (assignment) {
+            flags[assignment][key] = true;
+          }
+          flags.arrays[key] = true;
+          flags.keys.push(key);
+        });
+        [].concat(opts.boolean || []).filter(Boolean).forEach(function(key) {
+          flags.bools[key] = true;
+          flags.keys.push(key);
+        });
+        [].concat(opts.string || []).filter(Boolean).forEach(function(key) {
+          flags.strings[key] = true;
+          flags.keys.push(key);
+        });
+        [].concat(opts.number || []).filter(Boolean).forEach(function(key) {
+          flags.numbers[key] = true;
+          flags.keys.push(key);
+        });
+        [].concat(opts.count || []).filter(Boolean).forEach(function(key) {
+          flags.counts[key] = true;
+          flags.keys.push(key);
+        });
+        [].concat(opts.normalize || []).filter(Boolean).forEach(function(key) {
+          flags.normalize[key] = true;
+          flags.keys.push(key);
+        });
+        if (typeof opts.narg === "object") {
+          Object.entries(opts.narg).forEach(([key, value]) => {
+            if (typeof value === "number") {
+              flags.nargs[key] = value;
+              flags.keys.push(key);
+            }
+          });
+        }
+        if (typeof opts.coerce === "object") {
+          Object.entries(opts.coerce).forEach(([key, value]) => {
+            if (typeof value === "function") {
+              flags.coercions[key] = value;
+              flags.keys.push(key);
+            }
+          });
+        }
+        if (typeof opts.config !== "undefined") {
+          if (Array.isArray(opts.config) || typeof opts.config === "string") {
+            [].concat(opts.config).filter(Boolean).forEach(function(key) {
+              flags.configs[key] = true;
+            });
+          } else if (typeof opts.config === "object") {
+            Object.entries(opts.config).forEach(([key, value]) => {
+              if (typeof value === "boolean" || typeof value === "function") {
+                flags.configs[key] = value;
+              }
+            });
+          }
+        }
+        extendAliases(opts.key, aliases, opts.default, flags.arrays);
+        Object.keys(defaults).forEach(function(key) {
+          (flags.aliases[key] || []).forEach(function(alias) {
+            defaults[alias] = defaults[key];
+          });
+        });
+        let error = null;
+        checkConfiguration();
+        let notFlags = [];
+        const argv = Object.assign(/* @__PURE__ */ Object.create(null), { _: [] });
+        const argvReturn = {};
+        for (let i2 = 0; i2 < args.length; i2++) {
+          const arg = args[i2];
+          const truncatedArg = arg.replace(/^-{3,}/, "---");
+          let broken;
+          let key;
+          let letters;
+          let m3;
+          let next;
+          let value;
+          if (arg !== "--" && isUnknownOptionAsArg(arg)) {
+            pushPositional(arg);
+          } else if (truncatedArg.match(/---+(=|$)/)) {
+            pushPositional(arg);
+            continue;
+          } else if (arg.match(/^--.+=/) || !configuration["short-option-groups"] && arg.match(/^-.+=/)) {
+            m3 = arg.match(/^--?([^=]+)=([\s\S]*)$/);
+            if (m3 !== null && Array.isArray(m3) && m3.length >= 3) {
+              if (checkAllAliases(m3[1], flags.arrays)) {
+                i2 = eatArray(i2, m3[1], args, m3[2]);
+              } else if (checkAllAliases(m3[1], flags.nargs) !== false) {
+                i2 = eatNargs(i2, m3[1], args, m3[2]);
+              } else {
+                setArg(m3[1], m3[2]);
+              }
+            }
+          } else if (arg.match(negatedBoolean) && configuration["boolean-negation"]) {
+            m3 = arg.match(negatedBoolean);
+            if (m3 !== null && Array.isArray(m3) && m3.length >= 2) {
+              key = m3[1];
+              setArg(key, checkAllAliases(key, flags.arrays) ? [false] : false);
+            }
+          } else if (arg.match(/^--.+/) || !configuration["short-option-groups"] && arg.match(/^-[^-]+/)) {
+            m3 = arg.match(/^--?(.+)/);
+            if (m3 !== null && Array.isArray(m3) && m3.length >= 2) {
+              key = m3[1];
+              if (checkAllAliases(key, flags.arrays)) {
+                i2 = eatArray(i2, key, args);
+              } else if (checkAllAliases(key, flags.nargs) !== false) {
+                i2 = eatNargs(i2, key, args);
+              } else {
+                next = args[i2 + 1];
+                if (next !== void 0 && (!next.match(/^-/) || next.match(negative)) && !checkAllAliases(key, flags.bools) && !checkAllAliases(key, flags.counts)) {
+                  setArg(key, next);
+                  i2++;
+                } else if (/^(true|false)$/.test(next)) {
+                  setArg(key, next);
+                  i2++;
+                } else {
+                  setArg(key, defaultValue(key));
+                }
+              }
+            }
+          } else if (arg.match(/^-.\..+=/)) {
+            m3 = arg.match(/^-([^=]+)=([\s\S]*)$/);
+            if (m3 !== null && Array.isArray(m3) && m3.length >= 3) {
+              setArg(m3[1], m3[2]);
+            }
+          } else if (arg.match(/^-.\..+/) && !arg.match(negative)) {
+            next = args[i2 + 1];
+            m3 = arg.match(/^-(.\..+)/);
+            if (m3 !== null && Array.isArray(m3) && m3.length >= 2) {
+              key = m3[1];
+              if (next !== void 0 && !next.match(/^-/) && !checkAllAliases(key, flags.bools) && !checkAllAliases(key, flags.counts)) {
+                setArg(key, next);
+                i2++;
+              } else {
+                setArg(key, defaultValue(key));
+              }
+            }
+          } else if (arg.match(/^-[^-]+/) && !arg.match(negative)) {
+            letters = arg.slice(1, -1).split("");
+            broken = false;
+            for (let j = 0; j < letters.length; j++) {
+              next = arg.slice(j + 2);
+              if (letters[j + 1] && letters[j + 1] === "=") {
+                value = arg.slice(j + 3);
+                key = letters[j];
+                if (checkAllAliases(key, flags.arrays)) {
+                  i2 = eatArray(i2, key, args, value);
+                } else if (checkAllAliases(key, flags.nargs) !== false) {
+                  i2 = eatNargs(i2, key, args, value);
+                } else {
+                  setArg(key, value);
+                }
+                broken = true;
+                break;
+              }
+              if (next === "-") {
+                setArg(letters[j], next);
+                continue;
+              }
+              if (/[A-Za-z]/.test(letters[j]) && /^-?\d+(\.\d*)?(e-?\d+)?$/.test(next) && checkAllAliases(next, flags.bools) === false) {
+                setArg(letters[j], next);
+                broken = true;
+                break;
+              }
+              if (letters[j + 1] && letters[j + 1].match(/\W/)) {
+                setArg(letters[j], next);
+                broken = true;
+                break;
+              } else {
+                setArg(letters[j], defaultValue(letters[j]));
+              }
+            }
+            key = arg.slice(-1)[0];
+            if (!broken && key !== "-") {
+              if (checkAllAliases(key, flags.arrays)) {
+                i2 = eatArray(i2, key, args);
+              } else if (checkAllAliases(key, flags.nargs) !== false) {
+                i2 = eatNargs(i2, key, args);
+              } else {
+                next = args[i2 + 1];
+                if (next !== void 0 && (!/^(-|--)[^-]/.test(next) || next.match(negative)) && !checkAllAliases(key, flags.bools) && !checkAllAliases(key, flags.counts)) {
+                  setArg(key, next);
+                  i2++;
+                } else if (/^(true|false)$/.test(next)) {
+                  setArg(key, next);
+                  i2++;
+                } else {
+                  setArg(key, defaultValue(key));
+                }
+              }
+            }
+          } else if (arg.match(/^-[0-9]$/) && arg.match(negative) && checkAllAliases(arg.slice(1), flags.bools)) {
+            key = arg.slice(1);
+            setArg(key, defaultValue(key));
+          } else if (arg === "--") {
+            notFlags = args.slice(i2 + 1);
+            break;
+          } else if (configuration["halt-at-non-option"]) {
+            notFlags = args.slice(i2);
+            break;
+          } else {
+            pushPositional(arg);
+          }
+        }
+        applyEnvVars(argv, true);
+        applyEnvVars(argv, false);
+        setConfig(argv);
+        setConfigObjects();
+        applyDefaultsAndAliases(argv, flags.aliases, defaults, true);
+        applyCoercions(argv);
+        if (configuration["set-placeholder-key"])
+          setPlaceholderKeys(argv);
+        Object.keys(flags.counts).forEach(function(key) {
+          if (!hasKey(argv, key.split(".")))
+            setArg(key, 0);
+        });
+        if (notFlagsOption && notFlags.length)
+          argv[notFlagsArgv] = [];
+        notFlags.forEach(function(key) {
+          argv[notFlagsArgv].push(key);
+        });
+        if (configuration["camel-case-expansion"] && configuration["strip-dashed"]) {
+          Object.keys(argv).filter((key) => key !== "--" && key.includes("-")).forEach((key) => {
+            delete argv[key];
+          });
+        }
+        if (configuration["strip-aliased"]) {
+          [].concat(...Object.keys(aliases).map((k) => aliases[k])).forEach((alias) => {
+            if (configuration["camel-case-expansion"] && alias.includes("-")) {
+              delete argv[alias.split(".").map((prop) => camelCase(prop)).join(".")];
+            }
+            delete argv[alias];
+          });
+        }
+        function pushPositional(arg) {
+          const maybeCoercedNumber = maybeCoerceNumber("_", arg);
+          if (typeof maybeCoercedNumber === "string" || typeof maybeCoercedNumber === "number") {
+            argv._.push(maybeCoercedNumber);
+          }
+        }
+        function eatNargs(i2, key, args2, argAfterEqualSign) {
+          let ii;
+          let toEat = checkAllAliases(key, flags.nargs);
+          toEat = typeof toEat !== "number" || isNaN(toEat) ? 1 : toEat;
+          if (toEat === 0) {
+            if (!isUndefined(argAfterEqualSign)) {
+              error = Error(__("Argument unexpected for: %s", key));
+            }
+            setArg(key, defaultValue(key));
+            return i2;
+          }
+          let available = isUndefined(argAfterEqualSign) ? 0 : 1;
+          if (configuration["nargs-eats-options"]) {
+            if (args2.length - (i2 + 1) + available < toEat) {
+              error = Error(__("Not enough arguments following: %s", key));
+            }
+            available = toEat;
+          } else {
+            for (ii = i2 + 1; ii < args2.length; ii++) {
+              if (!args2[ii].match(/^-[^0-9]/) || args2[ii].match(negative) || isUnknownOptionAsArg(args2[ii]))
+                available++;
+              else
+                break;
+            }
+            if (available < toEat)
+              error = Error(__("Not enough arguments following: %s", key));
+          }
+          let consumed = Math.min(available, toEat);
+          if (!isUndefined(argAfterEqualSign) && consumed > 0) {
+            setArg(key, argAfterEqualSign);
+            consumed--;
+          }
+          for (ii = i2 + 1; ii < consumed + i2 + 1; ii++) {
+            setArg(key, args2[ii]);
+          }
+          return i2 + consumed;
+        }
+        function eatArray(i2, key, args2, argAfterEqualSign) {
+          let argsToSet = [];
+          let next = argAfterEqualSign || args2[i2 + 1];
+          const nargsCount = checkAllAliases(key, flags.nargs);
+          if (checkAllAliases(key, flags.bools) && !/^(true|false)$/.test(next)) {
+            argsToSet.push(true);
+          } else if (isUndefined(next) || isUndefined(argAfterEqualSign) && /^-/.test(next) && !negative.test(next) && !isUnknownOptionAsArg(next)) {
+            if (defaults[key] !== void 0) {
+              const defVal = defaults[key];
+              argsToSet = Array.isArray(defVal) ? defVal : [defVal];
+            }
+          } else {
+            if (!isUndefined(argAfterEqualSign)) {
+              argsToSet.push(processValue(key, argAfterEqualSign));
+            }
+            for (let ii = i2 + 1; ii < args2.length; ii++) {
+              if (!configuration["greedy-arrays"] && argsToSet.length > 0 || nargsCount && typeof nargsCount === "number" && argsToSet.length >= nargsCount)
+                break;
+              next = args2[ii];
+              if (/^-/.test(next) && !negative.test(next) && !isUnknownOptionAsArg(next))
+                break;
+              i2 = ii;
+              argsToSet.push(processValue(key, next));
+            }
+          }
+          if (typeof nargsCount === "number" && (nargsCount && argsToSet.length < nargsCount || isNaN(nargsCount) && argsToSet.length === 0)) {
+            error = Error(__("Not enough arguments following: %s", key));
+          }
+          setArg(key, argsToSet);
+          return i2;
+        }
+        function setArg(key, val) {
+          if (/-/.test(key) && configuration["camel-case-expansion"]) {
+            const alias = key.split(".").map(function(prop) {
+              return camelCase(prop);
+            }).join(".");
+            addNewAlias(key, alias);
+          }
+          const value = processValue(key, val);
+          const splitKey = key.split(".");
+          setKey(argv, splitKey, value);
+          if (flags.aliases[key]) {
+            flags.aliases[key].forEach(function(x2) {
+              const keyProperties = x2.split(".");
+              setKey(argv, keyProperties, value);
+            });
+          }
+          if (splitKey.length > 1 && configuration["dot-notation"]) {
+            (flags.aliases[splitKey[0]] || []).forEach(function(x2) {
+              let keyProperties = x2.split(".");
+              const a = [].concat(splitKey);
+              a.shift();
+              keyProperties = keyProperties.concat(a);
+              if (!(flags.aliases[key] || []).includes(keyProperties.join("."))) {
+                setKey(argv, keyProperties, value);
+              }
+            });
+          }
+          if (checkAllAliases(key, flags.normalize) && !checkAllAliases(key, flags.arrays)) {
+            const keys = [key].concat(flags.aliases[key] || []);
+            keys.forEach(function(key2) {
+              Object.defineProperty(argvReturn, key2, {
+                enumerable: true,
+                get() {
+                  return val;
+                },
+                set(value2) {
+                  val = typeof value2 === "string" ? mixin.normalize(value2) : value2;
+                }
+              });
+            });
+          }
+        }
+        function addNewAlias(key, alias) {
+          if (!(flags.aliases[key] && flags.aliases[key].length)) {
+            flags.aliases[key] = [alias];
+            newAliases[alias] = true;
+          }
+          if (!(flags.aliases[alias] && flags.aliases[alias].length)) {
+            addNewAlias(alias, key);
+          }
+        }
+        function processValue(key, val) {
+          if (typeof val === "string" && (val[0] === "'" || val[0] === '"') && val[val.length - 1] === val[0]) {
+            val = val.substring(1, val.length - 1);
+          }
+          if (checkAllAliases(key, flags.bools) || checkAllAliases(key, flags.counts)) {
+            if (typeof val === "string")
+              val = val === "true";
+          }
+          let value = Array.isArray(val) ? val.map(function(v2) {
+            return maybeCoerceNumber(key, v2);
+          }) : maybeCoerceNumber(key, val);
+          if (checkAllAliases(key, flags.counts) && (isUndefined(value) || typeof value === "boolean")) {
+            value = increment();
+          }
+          if (checkAllAliases(key, flags.normalize) && checkAllAliases(key, flags.arrays)) {
+            if (Array.isArray(val))
+              value = val.map((val2) => {
+                return mixin.normalize(val2);
+              });
+            else
+              value = mixin.normalize(val);
+          }
+          return value;
+        }
+        function maybeCoerceNumber(key, value) {
+          if (!configuration["parse-positional-numbers"] && key === "_")
+            return value;
+          if (!checkAllAliases(key, flags.strings) && !checkAllAliases(key, flags.bools) && !Array.isArray(value)) {
+            const shouldCoerceNumber = looksLikeNumber(value) && configuration["parse-numbers"] && Number.isSafeInteger(Math.floor(parseFloat(`${value}`)));
+            if (shouldCoerceNumber || !isUndefined(value) && checkAllAliases(key, flags.numbers)) {
+              value = Number(value);
+            }
+          }
+          return value;
+        }
+        function setConfig(argv2) {
+          const configLookup = /* @__PURE__ */ Object.create(null);
+          applyDefaultsAndAliases(configLookup, flags.aliases, defaults);
+          Object.keys(flags.configs).forEach(function(configKey) {
+            const configPath = argv2[configKey] || configLookup[configKey];
+            if (configPath) {
+              try {
+                let config = null;
+                const resolvedConfigPath = mixin.resolve(mixin.cwd(), configPath);
+                const resolveConfig = flags.configs[configKey];
+                if (typeof resolveConfig === "function") {
+                  try {
+                    config = resolveConfig(resolvedConfigPath);
+                  } catch (e2) {
+                    config = e2;
+                  }
+                  if (config instanceof Error) {
+                    error = config;
+                    return;
+                  }
+                } else {
+                  config = mixin.require(resolvedConfigPath);
+                }
+                setConfigObject(config);
+              } catch (ex) {
+                if (ex.name === "PermissionDenied")
+                  error = ex;
+                else if (argv2[configKey])
+                  error = Error(__("Invalid JSON config file: %s", configPath));
+              }
+            }
+          });
+        }
+        function setConfigObject(config, prev) {
+          Object.keys(config).forEach(function(key) {
+            const value = config[key];
+            const fullKey = prev ? prev + "." + key : key;
+            if (typeof value === "object" && value !== null && !Array.isArray(value) && configuration["dot-notation"]) {
+              setConfigObject(value, fullKey);
+            } else {
+              if (!hasKey(argv, fullKey.split(".")) || checkAllAliases(fullKey, flags.arrays) && configuration["combine-arrays"]) {
+                setArg(fullKey, value);
+              }
+            }
+          });
+        }
+        function setConfigObjects() {
+          if (typeof configObjects !== "undefined") {
+            configObjects.forEach(function(configObject) {
+              setConfigObject(configObject);
+            });
+          }
+        }
+        function applyEnvVars(argv2, configOnly) {
+          if (typeof envPrefix === "undefined")
+            return;
+          const prefix = typeof envPrefix === "string" ? envPrefix : "";
+          const env2 = mixin.env();
+          Object.keys(env2).forEach(function(envVar) {
+            if (prefix === "" || envVar.lastIndexOf(prefix, 0) === 0) {
+              const keys = envVar.split("__").map(function(key, i2) {
+                if (i2 === 0) {
+                  key = key.substring(prefix.length);
+                }
+                return camelCase(key);
+              });
+              if ((configOnly && flags.configs[keys.join(".")] || !configOnly) && !hasKey(argv2, keys)) {
+                setArg(keys.join("."), env2[envVar]);
+              }
+            }
+          });
+        }
+        function applyCoercions(argv2) {
+          let coerce2;
+          const applied = /* @__PURE__ */ new Set();
+          Object.keys(argv2).forEach(function(key) {
+            if (!applied.has(key)) {
+              coerce2 = checkAllAliases(key, flags.coercions);
+              if (typeof coerce2 === "function") {
+                try {
+                  const value = maybeCoerceNumber(key, coerce2(argv2[key]));
+                  [].concat(flags.aliases[key] || [], key).forEach((ali) => {
+                    applied.add(ali);
+                    argv2[ali] = value;
+                  });
+                } catch (err) {
+                  error = err;
+                }
+              }
+            }
+          });
+        }
+        function setPlaceholderKeys(argv2) {
+          flags.keys.forEach((key) => {
+            if (~key.indexOf("."))
+              return;
+            if (typeof argv2[key] === "undefined")
+              argv2[key] = void 0;
+          });
+          return argv2;
+        }
+        function applyDefaultsAndAliases(obj, aliases2, defaults2, canLog = false) {
+          Object.keys(defaults2).forEach(function(key) {
+            if (!hasKey(obj, key.split("."))) {
+              setKey(obj, key.split("."), defaults2[key]);
+              if (canLog)
+                defaulted[key] = true;
+              (aliases2[key] || []).forEach(function(x2) {
+                if (hasKey(obj, x2.split(".")))
+                  return;
+                setKey(obj, x2.split("."), defaults2[key]);
+              });
+            }
+          });
+        }
+        function hasKey(obj, keys) {
+          let o2 = obj;
+          if (!configuration["dot-notation"])
+            keys = [keys.join(".")];
+          keys.slice(0, -1).forEach(function(key2) {
+            o2 = o2[key2] || {};
+          });
+          const key = keys[keys.length - 1];
+          if (typeof o2 !== "object")
+            return false;
+          else
+            return key in o2;
+        }
+        function setKey(obj, keys, value) {
+          let o2 = obj;
+          if (!configuration["dot-notation"])
+            keys = [keys.join(".")];
+          keys.slice(0, -1).forEach(function(key2) {
+            key2 = sanitizeKey(key2);
+            if (typeof o2 === "object" && o2[key2] === void 0) {
+              o2[key2] = {};
+            }
+            if (typeof o2[key2] !== "object" || Array.isArray(o2[key2])) {
+              if (Array.isArray(o2[key2])) {
+                o2[key2].push({});
+              } else {
+                o2[key2] = [o2[key2], {}];
+              }
+              o2 = o2[key2][o2[key2].length - 1];
+            } else {
+              o2 = o2[key2];
+            }
+          });
+          const key = sanitizeKey(keys[keys.length - 1]);
+          const isTypeArray = checkAllAliases(keys.join("."), flags.arrays);
+          const isValueArray = Array.isArray(value);
+          let duplicate = configuration["duplicate-arguments-array"];
+          if (!duplicate && checkAllAliases(key, flags.nargs)) {
+            duplicate = true;
+            if (!isUndefined(o2[key]) && flags.nargs[key] === 1 || Array.isArray(o2[key]) && o2[key].length === flags.nargs[key]) {
+              o2[key] = void 0;
+            }
+          }
+          if (value === increment()) {
+            o2[key] = increment(o2[key]);
+          } else if (Array.isArray(o2[key])) {
+            if (duplicate && isTypeArray && isValueArray) {
+              o2[key] = configuration["flatten-duplicate-arrays"] ? o2[key].concat(value) : (Array.isArray(o2[key][0]) ? o2[key] : [o2[key]]).concat([value]);
+            } else if (!duplicate && Boolean(isTypeArray) === Boolean(isValueArray)) {
+              o2[key] = value;
+            } else {
+              o2[key] = o2[key].concat([value]);
+            }
+          } else if (o2[key] === void 0 && isTypeArray) {
+            o2[key] = isValueArray ? value : [value];
+          } else if (duplicate && !(o2[key] === void 0 || checkAllAliases(key, flags.counts) || checkAllAliases(key, flags.bools))) {
+            o2[key] = [o2[key], value];
+          } else {
+            o2[key] = value;
+          }
+        }
+        function extendAliases(...args2) {
+          args2.forEach(function(obj) {
+            Object.keys(obj || {}).forEach(function(key) {
+              if (flags.aliases[key])
+                return;
+              flags.aliases[key] = [].concat(aliases[key] || []);
+              flags.aliases[key].concat(key).forEach(function(x2) {
+                if (/-/.test(x2) && configuration["camel-case-expansion"]) {
+                  const c = camelCase(x2);
+                  if (c !== key && flags.aliases[key].indexOf(c) === -1) {
+                    flags.aliases[key].push(c);
+                    newAliases[c] = true;
+                  }
+                }
+              });
+              flags.aliases[key].concat(key).forEach(function(x2) {
+                if (x2.length > 1 && /[A-Z]/.test(x2) && configuration["camel-case-expansion"]) {
+                  const c = decamelize(x2, "-");
+                  if (c !== key && flags.aliases[key].indexOf(c) === -1) {
+                    flags.aliases[key].push(c);
+                    newAliases[c] = true;
+                  }
+                }
+              });
+              flags.aliases[key].forEach(function(x2) {
+                flags.aliases[x2] = [key].concat(flags.aliases[key].filter(function(y) {
+                  return x2 !== y;
+                }));
+              });
+            });
+          });
+        }
+        function checkAllAliases(key, flag) {
+          const toCheck = [].concat(flags.aliases[key] || [], key);
+          const keys = Object.keys(flag);
+          const setAlias = toCheck.find((key2) => keys.includes(key2));
+          return setAlias ? flag[setAlias] : false;
+        }
+        function hasAnyFlag(key) {
+          const flagsKeys = Object.keys(flags);
+          const toCheck = [].concat(flagsKeys.map((k) => flags[k]));
+          return toCheck.some(function(flag) {
+            return Array.isArray(flag) ? flag.includes(key) : flag[key];
+          });
+        }
+        function hasFlagsMatching(arg, ...patterns) {
+          const toCheck = [].concat(...patterns);
+          return toCheck.some(function(pattern) {
+            const match = arg.match(pattern);
+            return match && hasAnyFlag(match[1]);
+          });
+        }
+        function hasAllShortFlags(arg) {
+          if (arg.match(negative) || !arg.match(/^-[^-]+/)) {
+            return false;
+          }
+          let hasAllFlags = true;
+          let next;
+          const letters = arg.slice(1).split("");
+          for (let j = 0; j < letters.length; j++) {
+            next = arg.slice(j + 2);
+            if (!hasAnyFlag(letters[j])) {
+              hasAllFlags = false;
+              break;
+            }
+            if (letters[j + 1] && letters[j + 1] === "=" || next === "-" || /[A-Za-z]/.test(letters[j]) && /^-?\d+(\.\d*)?(e-?\d+)?$/.test(next) || letters[j + 1] && letters[j + 1].match(/\W/)) {
+              break;
+            }
+          }
+          return hasAllFlags;
+        }
+        function isUnknownOptionAsArg(arg) {
+          return configuration["unknown-options-as-args"] && isUnknownOption(arg);
+        }
+        function isUnknownOption(arg) {
+          arg = arg.replace(/^-{3,}/, "--");
+          if (arg.match(negative)) {
+            return false;
+          }
+          if (hasAllShortFlags(arg)) {
+            return false;
+          }
+          const flagWithEquals = /^-+([^=]+?)=[\s\S]*$/;
+          const normalFlag = /^-+([^=]+?)$/;
+          const flagEndingInHyphen = /^-+([^=]+?)-$/;
+          const flagEndingInDigits = /^-+([^=]+?\d+)$/;
+          const flagEndingInNonWordCharacters = /^-+([^=]+?)\W+.*$/;
+          return !hasFlagsMatching(arg, flagWithEquals, negatedBoolean, normalFlag, flagEndingInHyphen, flagEndingInDigits, flagEndingInNonWordCharacters);
+        }
+        function defaultValue(key) {
+          if (!checkAllAliases(key, flags.bools) && !checkAllAliases(key, flags.counts) && `${key}` in defaults) {
+            return defaults[key];
+          } else {
+            return defaultForType(guessType(key));
+          }
+        }
+        function defaultForType(type) {
+          const def = {
+            [DefaultValuesForTypeKey.BOOLEAN]: true,
+            [DefaultValuesForTypeKey.STRING]: "",
+            [DefaultValuesForTypeKey.NUMBER]: void 0,
+            [DefaultValuesForTypeKey.ARRAY]: []
+          };
+          return def[type];
+        }
+        function guessType(key) {
+          let type = DefaultValuesForTypeKey.BOOLEAN;
+          if (checkAllAliases(key, flags.strings))
+            type = DefaultValuesForTypeKey.STRING;
+          else if (checkAllAliases(key, flags.numbers))
+            type = DefaultValuesForTypeKey.NUMBER;
+          else if (checkAllAliases(key, flags.bools))
+            type = DefaultValuesForTypeKey.BOOLEAN;
+          else if (checkAllAliases(key, flags.arrays))
+            type = DefaultValuesForTypeKey.ARRAY;
+          return type;
+        }
+        function isUndefined(num) {
+          return num === void 0;
+        }
+        function checkConfiguration() {
+          Object.keys(flags.counts).find((key) => {
+            if (checkAllAliases(key, flags.arrays)) {
+              error = Error(__("Invalid configuration: %s, opts.count excludes opts.array.", key));
+              return true;
+            } else if (checkAllAliases(key, flags.nargs)) {
+              error = Error(__("Invalid configuration: %s, opts.count excludes opts.narg.", key));
+              return true;
+            }
+            return false;
+          });
+        }
+        return {
+          aliases: Object.assign({}, flags.aliases),
+          argv: Object.assign(argvReturn, argv),
+          configuration,
+          defaulted: Object.assign({}, defaulted),
+          error,
+          newAliases: Object.assign({}, newAliases)
+        };
+      }
+    };
+    function combineAliases(aliases) {
+      const aliasArrays = [];
+      const combined = /* @__PURE__ */ Object.create(null);
+      let change = true;
+      Object.keys(aliases).forEach(function(key) {
+        aliasArrays.push([].concat(aliases[key], key));
+      });
+      while (change) {
+        change = false;
+        for (let i2 = 0; i2 < aliasArrays.length; i2++) {
+          for (let ii = i2 + 1; ii < aliasArrays.length; ii++) {
+            const intersect = aliasArrays[i2].filter(function(v2) {
+              return aliasArrays[ii].indexOf(v2) !== -1;
+            });
+            if (intersect.length) {
+              aliasArrays[i2] = aliasArrays[i2].concat(aliasArrays[ii]);
+              aliasArrays.splice(ii, 1);
+              change = true;
+              break;
+            }
+          }
+        }
+      }
+      aliasArrays.forEach(function(aliasArray) {
+        aliasArray = aliasArray.filter(function(v2, i2, self2) {
+          return self2.indexOf(v2) === i2;
+        });
+        const lastAlias = aliasArray.pop();
+        if (lastAlias !== void 0 && typeof lastAlias === "string") {
+          combined[lastAlias] = aliasArray;
+        }
+      });
+      return combined;
+    }
+    function increment(orig) {
+      return orig !== void 0 ? orig + 1 : 1;
+    }
+    function sanitizeKey(key) {
+      if (key === "__proto__")
+        return "___proto___";
+      return key;
+    }
+    var minNodeVersion = process && process.env && process.env.YARGS_MIN_NODE_VERSION ? Number(process.env.YARGS_MIN_NODE_VERSION) : 10;
+    if (process && process.version) {
+      const major = Number(process.version.match(/v([^.]+)/)[1]);
+      if (major < minNodeVersion) {
+        throw Error(`yargs parser supports a minimum Node.js version of ${minNodeVersion}. Read our version support policy: https://github.com/yargs/yargs-parser#supported-nodejs-versions`);
+      }
+    }
+    var env = process ? process.env : {};
+    var parser = new YargsParser({
+      cwd: process.cwd,
+      env: () => {
+        return env;
+      },
+      format: util.format,
+      normalize: path.normalize,
+      resolve: path.resolve,
+      require: (path2) => {
+        if (typeof __require2 !== "undefined") {
+          return __require2(path2);
+        } else if (path2.match(/\.json$/)) {
+          return fs.readFileSync(path2, "utf8");
+        } else {
+          throw Error("only .json config files are supported in ESM");
+        }
+      }
+    });
+    var yargsParser = function Parser(args, opts) {
+      const result = parser.parse(args.slice(), opts);
+      return result.argv;
+    };
+    yargsParser.detailed = function(args, opts) {
+      return parser.parse(args.slice(), opts);
+    };
+    yargsParser.camelCase = camelCase;
+    yargsParser.decamelize = decamelize;
+    yargsParser.looksLikeNumber = looksLikeNumber;
+    module.exports = yargsParser;
+  }
+});
+var require_ansi_regex = __commonJS({
+  "node_modules/.deno/ansi-regex@5.0.1/node_modules/ansi-regex/index.js"(exports, module) {
+    "use strict";
+    module.exports = ({ onlyFirst = false } = {}) => {
+      const pattern = [
+        "[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)",
+        "(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-ntqry=><~]))"
+      ].join("|");
+      return new RegExp(pattern, onlyFirst ? void 0 : "g");
+    };
+  }
+});
+var require_strip_ansi = __commonJS({
+  "node_modules/.deno/strip-ansi@6.0.1/node_modules/strip-ansi/index.js"(exports, module) {
+    "use strict";
+    var ansiRegex = require_ansi_regex();
+    module.exports = (string) => typeof string === "string" ? string.replace(ansiRegex(), "") : string;
+  }
+});
+var require_is_fullwidth_code_point = __commonJS({
+  "node_modules/.deno/is-fullwidth-code-point@3.0.0/node_modules/is-fullwidth-code-point/index.js"(exports, module) {
+    "use strict";
+    var isFullwidthCodePoint = (codePoint) => {
+      if (Number.isNaN(codePoint)) {
+        return false;
+      }
+      if (codePoint >= 4352 && (codePoint <= 4447 || // Hangul Jamo
+      codePoint === 9001 || // LEFT-POINTING ANGLE BRACKET
+      codePoint === 9002 || // RIGHT-POINTING ANGLE BRACKET
+      // CJK Radicals Supplement .. Enclosed CJK Letters and Months
+      11904 <= codePoint && codePoint <= 12871 && codePoint !== 12351 || // Enclosed CJK Letters and Months .. CJK Unified Ideographs Extension A
+      12880 <= codePoint && codePoint <= 19903 || // CJK Unified Ideographs .. Yi Radicals
+      19968 <= codePoint && codePoint <= 42182 || // Hangul Jamo Extended-A
+      43360 <= codePoint && codePoint <= 43388 || // Hangul Syllables
+      44032 <= codePoint && codePoint <= 55203 || // CJK Compatibility Ideographs
+      63744 <= codePoint && codePoint <= 64255 || // Vertical Forms
+      65040 <= codePoint && codePoint <= 65049 || // CJK Compatibility Forms .. Small Form Variants
+      65072 <= codePoint && codePoint <= 65131 || // Halfwidth and Fullwidth Forms
+      65281 <= codePoint && codePoint <= 65376 || 65504 <= codePoint && codePoint <= 65510 || // Kana Supplement
+      110592 <= codePoint && codePoint <= 110593 || // Enclosed Ideographic Supplement
+      127488 <= codePoint && codePoint <= 127569 || // CJK Unified Ideographs Extension B .. Tertiary Ideographic Plane
+      131072 <= codePoint && codePoint <= 262141)) {
+        return true;
+      }
+      return false;
+    };
+    module.exports = isFullwidthCodePoint;
+    module.exports.default = isFullwidthCodePoint;
+  }
+});
+var require_emoji_regex = __commonJS({
+  "node_modules/.deno/emoji-regex@8.0.0/node_modules/emoji-regex/index.js"(exports, module) {
+    "use strict";
+    module.exports = function() {
+      return /\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62(?:\uDB40\uDC65\uDB40\uDC6E\uDB40\uDC67|\uDB40\uDC73\uDB40\uDC63\uDB40\uDC74|\uDB40\uDC77\uDB40\uDC6C\uDB40\uDC73)\uDB40\uDC7F|\uD83D\uDC68(?:\uD83C\uDFFC\u200D(?:\uD83E\uDD1D\u200D\uD83D\uDC68\uD83C\uDFFB|\uD83C[\uDF3E\uDF73\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFF\u200D(?:\uD83E\uDD1D\u200D\uD83D\uDC68(?:\uD83C[\uDFFB-\uDFFE])|\uD83C[\uDF3E\uDF73\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFE\u200D(?:\uD83E\uDD1D\u200D\uD83D\uDC68(?:\uD83C[\uDFFB-\uDFFD])|\uD83C[\uDF3E\uDF73\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFD\u200D(?:\uD83E\uDD1D\u200D\uD83D\uDC68(?:\uD83C[\uDFFB\uDFFC])|\uD83C[\uDF3E\uDF73\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\u200D(?:\u2764\uFE0F\u200D(?:\uD83D\uDC8B\u200D)?\uD83D\uDC68|(?:\uD83D[\uDC68\uDC69])\u200D(?:\uD83D\uDC66\u200D\uD83D\uDC66|\uD83D\uDC67\u200D(?:\uD83D[\uDC66\uDC67]))|\uD83D\uDC66\u200D\uD83D\uDC66|\uD83D\uDC67\u200D(?:\uD83D[\uDC66\uDC67])|(?:\uD83D[\uDC68\uDC69])\u200D(?:\uD83D[\uDC66\uDC67])|[\u2695\u2696\u2708]\uFE0F|\uD83D[\uDC66\uDC67]|\uD83C[\uDF3E\uDF73\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|(?:\uD83C\uDFFB\u200D[\u2695\u2696\u2708]|\uD83C\uDFFF\u200D[\u2695\u2696\u2708]|\uD83C\uDFFE\u200D[\u2695\u2696\u2708]|\uD83C\uDFFD\u200D[\u2695\u2696\u2708]|\uD83C\uDFFC\u200D[\u2695\u2696\u2708])\uFE0F|\uD83C\uDFFB\u200D(?:\uD83C[\uDF3E\uDF73\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C[\uDFFB-\uDFFF])|(?:\uD83E\uDDD1\uD83C\uDFFB\u200D\uD83E\uDD1D\u200D\uD83E\uDDD1|\uD83D\uDC69\uD83C\uDFFC\u200D\uD83E\uDD1D\u200D\uD83D\uDC69)\uD83C\uDFFB|\uD83E\uDDD1(?:\uD83C\uDFFF\u200D\uD83E\uDD1D\u200D\uD83E\uDDD1(?:\uD83C[\uDFFB-\uDFFF])|\u200D\uD83E\uDD1D\u200D\uD83E\uDDD1)|(?:\uD83E\uDDD1\uD83C\uDFFE\u200D\uD83E\uDD1D\u200D\uD83E\uDDD1|\uD83D\uDC69\uD83C\uDFFF\u200D\uD83E\uDD1D\u200D(?:\uD83D[\uDC68\uDC69]))(?:\uD83C[\uDFFB-\uDFFE])|(?:\uD83E\uDDD1\uD83C\uDFFC\u200D\uD83E\uDD1D\u200D\uD83E\uDDD1|\uD83D\uDC69\uD83C\uDFFD\u200D\uD83E\uDD1D\u200D\uD83D\uDC69)(?:\uD83C[\uDFFB\uDFFC])|\uD83D\uDC69(?:\uD83C\uDFFE\u200D(?:\uD83E\uDD1D\u200D\uD83D\uDC68(?:\uD83C[\uDFFB-\uDFFD\uDFFF])|\uD83C[\uDF3E\uDF73\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFC\u200D(?:\uD83E\uDD1D\u200D\uD83D\uDC68(?:\uD83C[\uDFFB\uDFFD-\uDFFF])|\uD83C[\uDF3E\uDF73\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFB\u200D(?:\uD83E\uDD1D\u200D\uD83D\uDC68(?:\uD83C[\uDFFC-\uDFFF])|\uD83C[\uDF3E\uDF73\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFD\u200D(?:\uD83E\uDD1D\u200D\uD83D\uDC68(?:\uD83C[\uDFFB\uDFFC\uDFFE\uDFFF])|\uD83C[\uDF3E\uDF73\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\u200D(?:\u2764\uFE0F\u200D(?:\uD83D\uDC8B\u200D(?:\uD83D[\uDC68\uDC69])|\uD83D[\uDC68\uDC69])|\uD83C[\uDF3E\uDF73\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD])|\uD83C\uDFFF\u200D(?:\uD83C[\uDF3E\uDF73\uDF93\uDFA4\uDFA8\uDFEB\uDFED]|\uD83D[\uDCBB\uDCBC\uDD27\uDD2C\uDE80\uDE92]|\uD83E[\uDDAF-\uDDB3\uDDBC\uDDBD]))|\uD83D\uDC69\u200D\uD83D\uDC69\u200D(?:\uD83D\uDC66\u200D\uD83D\uDC66|\uD83D\uDC67\u200D(?:\uD83D[\uDC66\uDC67]))|(?:\uD83E\uDDD1\uD83C\uDFFD\u200D\uD83E\uDD1D\u200D\uD83E\uDDD1|\uD83D\uDC69\uD83C\uDFFE\u200D\uD83E\uDD1D\u200D\uD83D\uDC69)(?:\uD83C[\uDFFB-\uDFFD])|\uD83D\uDC69\u200D\uD83D\uDC66\u200D\uD83D\uDC66|\uD83D\uDC69\u200D\uD83D\uDC69\u200D(?:\uD83D[\uDC66\uDC67])|(?:\uD83D\uDC41\uFE0F\u200D\uD83D\uDDE8|\uD83D\uDC69(?:\uD83C\uDFFF\u200D[\u2695\u2696\u2708]|\uD83C\uDFFE\u200D[\u2695\u2696\u2708]|\uD83C\uDFFC\u200D[\u2695\u2696\u2708]|\uD83C\uDFFB\u200D[\u2695\u2696\u2708]|\uD83C\uDFFD\u200D[\u2695\u2696\u2708]|\u200D[\u2695\u2696\u2708])|(?:(?:\u26F9|\uD83C[\uDFCB\uDFCC]|\uD83D\uDD75)\uFE0F|\uD83D\uDC6F|\uD83E[\uDD3C\uDDDE\uDDDF])\u200D[\u2640\u2642]|(?:\u26F9|\uD83C[\uDFCB\uDFCC]|\uD83D\uDD75)(?:\uD83C[\uDFFB-\uDFFF])\u200D[\u2640\u2642]|(?:\uD83C[\uDFC3\uDFC4\uDFCA]|\uD83D[\uDC6E\uDC71\uDC73\uDC77\uDC81\uDC82\uDC86\uDC87\uDE45-\uDE47\uDE4B\uDE4D\uDE4E\uDEA3\uDEB4-\uDEB6]|\uD83E[\uDD26\uDD37-\uDD39\uDD3D\uDD3E\uDDB8\uDDB9\uDDCD-\uDDCF\uDDD6-\uDDDD])(?:(?:\uD83C[\uDFFB-\uDFFF])\u200D[\u2640\u2642]|\u200D[\u2640\u2642])|\uD83C\uDFF4\u200D\u2620)\uFE0F|\uD83D\uDC69\u200D\uD83D\uDC67\u200D(?:\uD83D[\uDC66\uDC67])|\uD83C\uDFF3\uFE0F\u200D\uD83C\uDF08|\uD83D\uDC15\u200D\uD83E\uDDBA|\uD83D\uDC69\u200D\uD83D\uDC66|\uD83D\uDC69\u200D\uD83D\uDC67|\uD83C\uDDFD\uD83C\uDDF0|\uD83C\uDDF4\uD83C\uDDF2|\uD83C\uDDF6\uD83C\uDDE6|[#\*0-9]\uFE0F\u20E3|\uD83C\uDDE7(?:\uD83C[\uDDE6\uDDE7\uDDE9-\uDDEF\uDDF1-\uDDF4\uDDF6-\uDDF9\uDDFB\uDDFC\uDDFE\uDDFF])|\uD83C\uDDF9(?:\uD83C[\uDDE6\uDDE8\uDDE9\uDDEB-\uDDED\uDDEF-\uDDF4\uDDF7\uDDF9\uDDFB\uDDFC\uDDFF])|\uD83C\uDDEA(?:\uD83C[\uDDE6\uDDE8\uDDEA\uDDEC\uDDED\uDDF7-\uDDFA])|\uD83E\uDDD1(?:\uD83C[\uDFFB-\uDFFF])|\uD83C\uDDF7(?:\uD83C[\uDDEA\uDDF4\uDDF8\uDDFA\uDDFC])|\uD83D\uDC69(?:\uD83C[\uDFFB-\uDFFF])|\uD83C\uDDF2(?:\uD83C[\uDDE6\uDDE8-\uDDED\uDDF0-\uDDFF])|\uD83C\uDDE6(?:\uD83C[\uDDE8-\uDDEC\uDDEE\uDDF1\uDDF2\uDDF4\uDDF6-\uDDFA\uDDFC\uDDFD\uDDFF])|\uD83C\uDDF0(?:\uD83C[\uDDEA\uDDEC-\uDDEE\uDDF2\uDDF3\uDDF5\uDDF7\uDDFC\uDDFE\uDDFF])|\uD83C\uDDED(?:\uD83C[\uDDF0\uDDF2\uDDF3\uDDF7\uDDF9\uDDFA])|\uD83C\uDDE9(?:\uD83C[\uDDEA\uDDEC\uDDEF\uDDF0\uDDF2\uDDF4\uDDFF])|\uD83C\uDDFE(?:\uD83C[\uDDEA\uDDF9])|\uD83C\uDDEC(?:\uD83C[\uDDE6\uDDE7\uDDE9-\uDDEE\uDDF1-\uDDF3\uDDF5-\uDDFA\uDDFC\uDDFE])|\uD83C\uDDF8(?:\uD83C[\uDDE6-\uDDEA\uDDEC-\uDDF4\uDDF7-\uDDF9\uDDFB\uDDFD-\uDDFF])|\uD83C\uDDEB(?:\uD83C[\uDDEE-\uDDF0\uDDF2\uDDF4\uDDF7])|\uD83C\uDDF5(?:\uD83C[\uDDE6\uDDEA-\uDDED\uDDF0-\uDDF3\uDDF7-\uDDF9\uDDFC\uDDFE])|\uD83C\uDDFB(?:\uD83C[\uDDE6\uDDE8\uDDEA\uDDEC\uDDEE\uDDF3\uDDFA])|\uD83C\uDDF3(?:\uD83C[\uDDE6\uDDE8\uDDEA-\uDDEC\uDDEE\uDDF1\uDDF4\uDDF5\uDDF7\uDDFA\uDDFF])|\uD83C\uDDE8(?:\uD83C[\uDDE6\uDDE8\uDDE9\uDDEB-\uDDEE\uDDF0-\uDDF5\uDDF7\uDDFA-\uDDFF])|\uD83C\uDDF1(?:\uD83C[\uDDE6-\uDDE8\uDDEE\uDDF0\uDDF7-\uDDFB\uDDFE])|\uD83C\uDDFF(?:\uD83C[\uDDE6\uDDF2\uDDFC])|\uD83C\uDDFC(?:\uD83C[\uDDEB\uDDF8])|\uD83C\uDDFA(?:\uD83C[\uDDE6\uDDEC\uDDF2\uDDF3\uDDF8\uDDFE\uDDFF])|\uD83C\uDDEE(?:\uD83C[\uDDE8-\uDDEA\uDDF1-\uDDF4\uDDF6-\uDDF9])|\uD83C\uDDEF(?:\uD83C[\uDDEA\uDDF2\uDDF4\uDDF5])|(?:\uD83C[\uDFC3\uDFC4\uDFCA]|\uD83D[\uDC6E\uDC71\uDC73\uDC77\uDC81\uDC82\uDC86\uDC87\uDE45-\uDE47\uDE4B\uDE4D\uDE4E\uDEA3\uDEB4-\uDEB6]|\uD83E[\uDD26\uDD37-\uDD39\uDD3D\uDD3E\uDDB8\uDDB9\uDDCD-\uDDCF\uDDD6-\uDDDD])(?:\uD83C[\uDFFB-\uDFFF])|(?:\u26F9|\uD83C[\uDFCB\uDFCC]|\uD83D\uDD75)(?:\uD83C[\uDFFB-\uDFFF])|(?:[\u261D\u270A-\u270D]|\uD83C[\uDF85\uDFC2\uDFC7]|\uD83D[\uDC42\uDC43\uDC46-\uDC50\uDC66\uDC67\uDC6B-\uDC6D\uDC70\uDC72\uDC74-\uDC76\uDC78\uDC7C\uDC83\uDC85\uDCAA\uDD74\uDD7A\uDD90\uDD95\uDD96\uDE4C\uDE4F\uDEC0\uDECC]|\uD83E[\uDD0F\uDD18-\uDD1C\uDD1E\uDD1F\uDD30-\uDD36\uDDB5\uDDB6\uDDBB\uDDD2-\uDDD5])(?:\uD83C[\uDFFB-\uDFFF])|(?:[\u231A\u231B\u23E9-\u23EC\u23F0\u23F3\u25FD\u25FE\u2614\u2615\u2648-\u2653\u267F\u2693\u26A1\u26AA\u26AB\u26BD\u26BE\u26C4\u26C5\u26CE\u26D4\u26EA\u26F2\u26F3\u26F5\u26FA\u26FD\u2705\u270A\u270B\u2728\u274C\u274E\u2753-\u2755\u2757\u2795-\u2797\u27B0\u27BF\u2B1B\u2B1C\u2B50\u2B55]|\uD83C[\uDC04\uDCCF\uDD8E\uDD91-\uDD9A\uDDE6-\uDDFF\uDE01\uDE1A\uDE2F\uDE32-\uDE36\uDE38-\uDE3A\uDE50\uDE51\uDF00-\uDF20\uDF2D-\uDF35\uDF37-\uDF7C\uDF7E-\uDF93\uDFA0-\uDFCA\uDFCF-\uDFD3\uDFE0-\uDFF0\uDFF4\uDFF8-\uDFFF]|\uD83D[\uDC00-\uDC3E\uDC40\uDC42-\uDCFC\uDCFF-\uDD3D\uDD4B-\uDD4E\uDD50-\uDD67\uDD7A\uDD95\uDD96\uDDA4\uDDFB-\uDE4F\uDE80-\uDEC5\uDECC\uDED0-\uDED2\uDED5\uDEEB\uDEEC\uDEF4-\uDEFA\uDFE0-\uDFEB]|\uD83E[\uDD0D-\uDD3A\uDD3C-\uDD45\uDD47-\uDD71\uDD73-\uDD76\uDD7A-\uDDA2\uDDA5-\uDDAA\uDDAE-\uDDCA\uDDCD-\uDDFF\uDE70-\uDE73\uDE78-\uDE7A\uDE80-\uDE82\uDE90-\uDE95])|(?:[#\*0-9\xA9\xAE\u203C\u2049\u2122\u2139\u2194-\u2199\u21A9\u21AA\u231A\u231B\u2328\u23CF\u23E9-\u23F3\u23F8-\u23FA\u24C2\u25AA\u25AB\u25B6\u25C0\u25FB-\u25FE\u2600-\u2604\u260E\u2611\u2614\u2615\u2618\u261D\u2620\u2622\u2623\u2626\u262A\u262E\u262F\u2638-\u263A\u2640\u2642\u2648-\u2653\u265F\u2660\u2663\u2665\u2666\u2668\u267B\u267E\u267F\u2692-\u2697\u2699\u269B\u269C\u26A0\u26A1\u26AA\u26AB\u26B0\u26B1\u26BD\u26BE\u26C4\u26C5\u26C8\u26CE\u26CF\u26D1\u26D3\u26D4\u26E9\u26EA\u26F0-\u26F5\u26F7-\u26FA\u26FD\u2702\u2705\u2708-\u270D\u270F\u2712\u2714\u2716\u271D\u2721\u2728\u2733\u2734\u2744\u2747\u274C\u274E\u2753-\u2755\u2757\u2763\u2764\u2795-\u2797\u27A1\u27B0\u27BF\u2934\u2935\u2B05-\u2B07\u2B1B\u2B1C\u2B50\u2B55\u3030\u303D\u3297\u3299]|\uD83C[\uDC04\uDCCF\uDD70\uDD71\uDD7E\uDD7F\uDD8E\uDD91-\uDD9A\uDDE6-\uDDFF\uDE01\uDE02\uDE1A\uDE2F\uDE32-\uDE3A\uDE50\uDE51\uDF00-\uDF21\uDF24-\uDF93\uDF96\uDF97\uDF99-\uDF9B\uDF9E-\uDFF0\uDFF3-\uDFF5\uDFF7-\uDFFF]|\uD83D[\uDC00-\uDCFD\uDCFF-\uDD3D\uDD49-\uDD4E\uDD50-\uDD67\uDD6F\uDD70\uDD73-\uDD7A\uDD87\uDD8A-\uDD8D\uDD90\uDD95\uDD96\uDDA4\uDDA5\uDDA8\uDDB1\uDDB2\uDDBC\uDDC2-\uDDC4\uDDD1-\uDDD3\uDDDC-\uDDDE\uDDE1\uDDE3\uDDE8\uDDEF\uDDF3\uDDFA-\uDE4F\uDE80-\uDEC5\uDECB-\uDED2\uDED5\uDEE0-\uDEE5\uDEE9\uDEEB\uDEEC\uDEF0\uDEF3-\uDEFA\uDFE0-\uDFEB]|\uD83E[\uDD0D-\uDD3A\uDD3C-\uDD45\uDD47-\uDD71\uDD73-\uDD76\uDD7A-\uDDA2\uDDA5-\uDDAA\uDDAE-\uDDCA\uDDCD-\uDDFF\uDE70-\uDE73\uDE78-\uDE7A\uDE80-\uDE82\uDE90-\uDE95])\uFE0F|(?:[\u261D\u26F9\u270A-\u270D]|\uD83C[\uDF85\uDFC2-\uDFC4\uDFC7\uDFCA-\uDFCC]|\uD83D[\uDC42\uDC43\uDC46-\uDC50\uDC66-\uDC78\uDC7C\uDC81-\uDC83\uDC85-\uDC87\uDC8F\uDC91\uDCAA\uDD74\uDD75\uDD7A\uDD90\uDD95\uDD96\uDE45-\uDE47\uDE4B-\uDE4F\uDEA3\uDEB4-\uDEB6\uDEC0\uDECC]|\uD83E[\uDD0F\uDD18-\uDD1F\uDD26\uDD30-\uDD39\uDD3C-\uDD3E\uDDB5\uDDB6\uDDB8\uDDB9\uDDBB\uDDCD-\uDDCF\uDDD1-\uDDDD])/g;
+    };
+  }
+});
+var require_string_width = __commonJS({
+  "node_modules/.deno/string-width@4.2.3/node_modules/string-width/index.js"(exports, module) {
+    "use strict";
+    var stripAnsi = require_strip_ansi();
+    var isFullwidthCodePoint = require_is_fullwidth_code_point();
+    var emojiRegex = require_emoji_regex();
+    var stringWidth = (string) => {
+      if (typeof string !== "string" || string.length === 0) {
+        return 0;
+      }
+      string = stripAnsi(string);
+      if (string.length === 0) {
+        return 0;
+      }
+      string = string.replace(emojiRegex(), "  ");
+      let width = 0;
+      for (let i2 = 0; i2 < string.length; i2++) {
+        const code2 = string.codePointAt(i2);
+        if (code2 <= 31 || code2 >= 127 && code2 <= 159) {
+          continue;
+        }
+        if (code2 >= 768 && code2 <= 879) {
+          continue;
+        }
+        if (code2 > 65535) {
+          i2++;
+        }
+        width += isFullwidthCodePoint(code2) ? 2 : 1;
+      }
+      return width;
+    };
+    module.exports = stringWidth;
+    module.exports.default = stringWidth;
+  }
+});
+var require_color_name = __commonJS({
+  "node_modules/.deno/color-name@1.1.4/node_modules/color-name/index.js"(exports, module) {
+    "use strict";
+    module.exports = {
+      "aliceblue": [240, 248, 255],
+      "antiquewhite": [250, 235, 215],
+      "aqua": [0, 255, 255],
+      "aquamarine": [127, 255, 212],
+      "azure": [240, 255, 255],
+      "beige": [245, 245, 220],
+      "bisque": [255, 228, 196],
+      "black": [0, 0, 0],
+      "blanchedalmond": [255, 235, 205],
+      "blue": [0, 0, 255],
+      "blueviolet": [138, 43, 226],
+      "brown": [165, 42, 42],
+      "burlywood": [222, 184, 135],
+      "cadetblue": [95, 158, 160],
+      "chartreuse": [127, 255, 0],
+      "chocolate": [210, 105, 30],
+      "coral": [255, 127, 80],
+      "cornflowerblue": [100, 149, 237],
+      "cornsilk": [255, 248, 220],
+      "crimson": [220, 20, 60],
+      "cyan": [0, 255, 255],
+      "darkblue": [0, 0, 139],
+      "darkcyan": [0, 139, 139],
+      "darkgoldenrod": [184, 134, 11],
+      "darkgray": [169, 169, 169],
+      "darkgreen": [0, 100, 0],
+      "darkgrey": [169, 169, 169],
+      "darkkhaki": [189, 183, 107],
+      "darkmagenta": [139, 0, 139],
+      "darkolivegreen": [85, 107, 47],
+      "darkorange": [255, 140, 0],
+      "darkorchid": [153, 50, 204],
+      "darkred": [139, 0, 0],
+      "darksalmon": [233, 150, 122],
+      "darkseagreen": [143, 188, 143],
+      "darkslateblue": [72, 61, 139],
+      "darkslategray": [47, 79, 79],
+      "darkslategrey": [47, 79, 79],
+      "darkturquoise": [0, 206, 209],
+      "darkviolet": [148, 0, 211],
+      "deeppink": [255, 20, 147],
+      "deepskyblue": [0, 191, 255],
+      "dimgray": [105, 105, 105],
+      "dimgrey": [105, 105, 105],
+      "dodgerblue": [30, 144, 255],
+      "firebrick": [178, 34, 34],
+      "floralwhite": [255, 250, 240],
+      "forestgreen": [34, 139, 34],
+      "fuchsia": [255, 0, 255],
+      "gainsboro": [220, 220, 220],
+      "ghostwhite": [248, 248, 255],
+      "gold": [255, 215, 0],
+      "goldenrod": [218, 165, 32],
+      "gray": [128, 128, 128],
+      "green": [0, 128, 0],
+      "greenyellow": [173, 255, 47],
+      "grey": [128, 128, 128],
+      "honeydew": [240, 255, 240],
+      "hotpink": [255, 105, 180],
+      "indianred": [205, 92, 92],
+      "indigo": [75, 0, 130],
+      "ivory": [255, 255, 240],
+      "khaki": [240, 230, 140],
+      "lavender": [230, 230, 250],
+      "lavenderblush": [255, 240, 245],
+      "lawngreen": [124, 252, 0],
+      "lemonchiffon": [255, 250, 205],
+      "lightblue": [173, 216, 230],
+      "lightcoral": [240, 128, 128],
+      "lightcyan": [224, 255, 255],
+      "lightgoldenrodyellow": [250, 250, 210],
+      "lightgray": [211, 211, 211],
+      "lightgreen": [144, 238, 144],
+      "lightgrey": [211, 211, 211],
+      "lightpink": [255, 182, 193],
+      "lightsalmon": [255, 160, 122],
+      "lightseagreen": [32, 178, 170],
+      "lightskyblue": [135, 206, 250],
+      "lightslategray": [119, 136, 153],
+      "lightslategrey": [119, 136, 153],
+      "lightsteelblue": [176, 196, 222],
+      "lightyellow": [255, 255, 224],
+      "lime": [0, 255, 0],
+      "limegreen": [50, 205, 50],
+      "linen": [250, 240, 230],
+      "magenta": [255, 0, 255],
+      "maroon": [128, 0, 0],
+      "mediumaquamarine": [102, 205, 170],
+      "mediumblue": [0, 0, 205],
+      "mediumorchid": [186, 85, 211],
+      "mediumpurple": [147, 112, 219],
+      "mediumseagreen": [60, 179, 113],
+      "mediumslateblue": [123, 104, 238],
+      "mediumspringgreen": [0, 250, 154],
+      "mediumturquoise": [72, 209, 204],
+      "mediumvioletred": [199, 21, 133],
+      "midnightblue": [25, 25, 112],
+      "mintcream": [245, 255, 250],
+      "mistyrose": [255, 228, 225],
+      "moccasin": [255, 228, 181],
+      "navajowhite": [255, 222, 173],
+      "navy": [0, 0, 128],
+      "oldlace": [253, 245, 230],
+      "olive": [128, 128, 0],
+      "olivedrab": [107, 142, 35],
+      "orange": [255, 165, 0],
+      "orangered": [255, 69, 0],
+      "orchid": [218, 112, 214],
+      "palegoldenrod": [238, 232, 170],
+      "palegreen": [152, 251, 152],
+      "paleturquoise": [175, 238, 238],
+      "palevioletred": [219, 112, 147],
+      "papayawhip": [255, 239, 213],
+      "peachpuff": [255, 218, 185],
+      "peru": [205, 133, 63],
+      "pink": [255, 192, 203],
+      "plum": [221, 160, 221],
+      "powderblue": [176, 224, 230],
+      "purple": [128, 0, 128],
+      "rebeccapurple": [102, 51, 153],
+      "red": [255, 0, 0],
+      "rosybrown": [188, 143, 143],
+      "royalblue": [65, 105, 225],
+      "saddlebrown": [139, 69, 19],
+      "salmon": [250, 128, 114],
+      "sandybrown": [244, 164, 96],
+      "seagreen": [46, 139, 87],
+      "seashell": [255, 245, 238],
+      "sienna": [160, 82, 45],
+      "silver": [192, 192, 192],
+      "skyblue": [135, 206, 235],
+      "slateblue": [106, 90, 205],
+      "slategray": [112, 128, 144],
+      "slategrey": [112, 128, 144],
+      "snow": [255, 250, 250],
+      "springgreen": [0, 255, 127],
+      "steelblue": [70, 130, 180],
+      "tan": [210, 180, 140],
+      "teal": [0, 128, 128],
+      "thistle": [216, 191, 216],
+      "tomato": [255, 99, 71],
+      "turquoise": [64, 224, 208],
+      "violet": [238, 130, 238],
+      "wheat": [245, 222, 179],
+      "white": [255, 255, 255],
+      "whitesmoke": [245, 245, 245],
+      "yellow": [255, 255, 0],
+      "yellowgreen": [154, 205, 50]
+    };
+  }
+});
+var require_conversions = __commonJS({
+  "node_modules/.deno/color-convert@2.0.1/node_modules/color-convert/conversions.js"(exports, module) {
+    var cssKeywords = require_color_name();
+    var reverseKeywords = {};
+    for (const key of Object.keys(cssKeywords)) {
+      reverseKeywords[cssKeywords[key]] = key;
+    }
+    var convert = {
+      rgb: { channels: 3, labels: "rgb" },
+      hsl: { channels: 3, labels: "hsl" },
+      hsv: { channels: 3, labels: "hsv" },
+      hwb: { channels: 3, labels: "hwb" },
+      cmyk: { channels: 4, labels: "cmyk" },
+      xyz: { channels: 3, labels: "xyz" },
+      lab: { channels: 3, labels: "lab" },
+      lch: { channels: 3, labels: "lch" },
+      hex: { channels: 1, labels: ["hex"] },
+      keyword: { channels: 1, labels: ["keyword"] },
+      ansi16: { channels: 1, labels: ["ansi16"] },
+      ansi256: { channels: 1, labels: ["ansi256"] },
+      hcg: { channels: 3, labels: ["h", "c", "g"] },
+      apple: { channels: 3, labels: ["r16", "g16", "b16"] },
+      gray: { channels: 1, labels: ["gray"] }
+    };
+    module.exports = convert;
+    for (const model of Object.keys(convert)) {
+      if (!("channels" in convert[model])) {
+        throw new Error("missing channels property: " + model);
+      }
+      if (!("labels" in convert[model])) {
+        throw new Error("missing channel labels property: " + model);
+      }
+      if (convert[model].labels.length !== convert[model].channels) {
+        throw new Error("channel and label counts mismatch: " + model);
+      }
+      const { channels, labels } = convert[model];
+      delete convert[model].channels;
+      delete convert[model].labels;
+      Object.defineProperty(convert[model], "channels", { value: channels });
+      Object.defineProperty(convert[model], "labels", { value: labels });
+    }
+    convert.rgb.hsl = function(rgb) {
+      const r = rgb[0] / 255;
+      const g2 = rgb[1] / 255;
+      const b = rgb[2] / 255;
+      const min = Math.min(r, g2, b);
+      const max = Math.max(r, g2, b);
+      const delta = max - min;
+      let h2;
+      let s;
+      if (max === min) {
+        h2 = 0;
+      } else if (r === max) {
+        h2 = (g2 - b) / delta;
+      } else if (g2 === max) {
+        h2 = 2 + (b - r) / delta;
+      } else if (b === max) {
+        h2 = 4 + (r - g2) / delta;
+      }
+      h2 = Math.min(h2 * 60, 360);
+      if (h2 < 0) {
+        h2 += 360;
+      }
+      const l = (min + max) / 2;
+      if (max === min) {
+        s = 0;
+      } else if (l <= 0.5) {
+        s = delta / (max + min);
+      } else {
+        s = delta / (2 - max - min);
+      }
+      return [h2, s * 100, l * 100];
+    };
+    convert.rgb.hsv = function(rgb) {
+      let rdif;
+      let gdif;
+      let bdif;
+      let h2;
+      let s;
+      const r = rgb[0] / 255;
+      const g2 = rgb[1] / 255;
+      const b = rgb[2] / 255;
+      const v2 = Math.max(r, g2, b);
+      const diff = v2 - Math.min(r, g2, b);
+      const diffc = function(c) {
+        return (v2 - c) / 6 / diff + 1 / 2;
+      };
+      if (diff === 0) {
+        h2 = 0;
+        s = 0;
+      } else {
+        s = diff / v2;
+        rdif = diffc(r);
+        gdif = diffc(g2);
+        bdif = diffc(b);
+        if (r === v2) {
+          h2 = bdif - gdif;
+        } else if (g2 === v2) {
+          h2 = 1 / 3 + rdif - bdif;
+        } else if (b === v2) {
+          h2 = 2 / 3 + gdif - rdif;
+        }
+        if (h2 < 0) {
+          h2 += 1;
+        } else if (h2 > 1) {
+          h2 -= 1;
+        }
+      }
+      return [
+        h2 * 360,
+        s * 100,
+        v2 * 100
+      ];
+    };
+    convert.rgb.hwb = function(rgb) {
+      const r = rgb[0];
+      const g2 = rgb[1];
+      let b = rgb[2];
+      const h2 = convert.rgb.hsl(rgb)[0];
+      const w3 = 1 / 255 * Math.min(r, Math.min(g2, b));
+      b = 1 - 1 / 255 * Math.max(r, Math.max(g2, b));
+      return [h2, w3 * 100, b * 100];
+    };
+    convert.rgb.cmyk = function(rgb) {
+      const r = rgb[0] / 255;
+      const g2 = rgb[1] / 255;
+      const b = rgb[2] / 255;
+      const k = Math.min(1 - r, 1 - g2, 1 - b);
+      const c = (1 - r - k) / (1 - k) || 0;
+      const m3 = (1 - g2 - k) / (1 - k) || 0;
+      const y = (1 - b - k) / (1 - k) || 0;
+      return [c * 100, m3 * 100, y * 100, k * 100];
+    };
+    function comparativeDistance(x2, y) {
+      return (x2[0] - y[0]) ** 2 + (x2[1] - y[1]) ** 2 + (x2[2] - y[2]) ** 2;
+    }
+    convert.rgb.keyword = function(rgb) {
+      const reversed = reverseKeywords[rgb];
+      if (reversed) {
+        return reversed;
+      }
+      let currentClosestDistance = Infinity;
+      let currentClosestKeyword;
+      for (const keyword of Object.keys(cssKeywords)) {
+        const value = cssKeywords[keyword];
+        const distance = comparativeDistance(rgb, value);
+        if (distance < currentClosestDistance) {
+          currentClosestDistance = distance;
+          currentClosestKeyword = keyword;
+        }
+      }
+      return currentClosestKeyword;
+    };
+    convert.keyword.rgb = function(keyword) {
+      return cssKeywords[keyword];
+    };
+    convert.rgb.xyz = function(rgb) {
+      let r = rgb[0] / 255;
+      let g2 = rgb[1] / 255;
+      let b = rgb[2] / 255;
+      r = r > 0.04045 ? ((r + 0.055) / 1.055) ** 2.4 : r / 12.92;
+      g2 = g2 > 0.04045 ? ((g2 + 0.055) / 1.055) ** 2.4 : g2 / 12.92;
+      b = b > 0.04045 ? ((b + 0.055) / 1.055) ** 2.4 : b / 12.92;
+      const x2 = r * 0.4124 + g2 * 0.3576 + b * 0.1805;
+      const y = r * 0.2126 + g2 * 0.7152 + b * 0.0722;
+      const z = r * 0.0193 + g2 * 0.1192 + b * 0.9505;
+      return [x2 * 100, y * 100, z * 100];
+    };
+    convert.rgb.lab = function(rgb) {
+      const xyz = convert.rgb.xyz(rgb);
+      let x2 = xyz[0];
+      let y = xyz[1];
+      let z = xyz[2];
+      x2 /= 95.047;
+      y /= 100;
+      z /= 108.883;
+      x2 = x2 > 8856e-6 ? x2 ** (1 / 3) : 7.787 * x2 + 16 / 116;
+      y = y > 8856e-6 ? y ** (1 / 3) : 7.787 * y + 16 / 116;
+      z = z > 8856e-6 ? z ** (1 / 3) : 7.787 * z + 16 / 116;
+      const l = 116 * y - 16;
+      const a = 500 * (x2 - y);
+      const b = 200 * (y - z);
+      return [l, a, b];
+    };
+    convert.hsl.rgb = function(hsl) {
+      const h2 = hsl[0] / 360;
+      const s = hsl[1] / 100;
+      const l = hsl[2] / 100;
+      let t2;
+      let t3;
+      let val;
+      if (s === 0) {
+        val = l * 255;
+        return [val, val, val];
+      }
+      if (l < 0.5) {
+        t2 = l * (1 + s);
+      } else {
+        t2 = l + s - l * s;
+      }
+      const t1 = 2 * l - t2;
+      const rgb = [0, 0, 0];
+      for (let i2 = 0; i2 < 3; i2++) {
+        t3 = h2 + 1 / 3 * -(i2 - 1);
+        if (t3 < 0) {
+          t3++;
+        }
+        if (t3 > 1) {
+          t3--;
+        }
+        if (6 * t3 < 1) {
+          val = t1 + (t2 - t1) * 6 * t3;
+        } else if (2 * t3 < 1) {
+          val = t2;
+        } else if (3 * t3 < 2) {
+          val = t1 + (t2 - t1) * (2 / 3 - t3) * 6;
+        } else {
+          val = t1;
+        }
+        rgb[i2] = val * 255;
+      }
+      return rgb;
+    };
+    convert.hsl.hsv = function(hsl) {
+      const h2 = hsl[0];
+      let s = hsl[1] / 100;
+      let l = hsl[2] / 100;
+      let smin = s;
+      const lmin = Math.max(l, 0.01);
+      l *= 2;
+      s *= l <= 1 ? l : 2 - l;
+      smin *= lmin <= 1 ? lmin : 2 - lmin;
+      const v2 = (l + s) / 2;
+      const sv = l === 0 ? 2 * smin / (lmin + smin) : 2 * s / (l + s);
+      return [h2, sv * 100, v2 * 100];
+    };
+    convert.hsv.rgb = function(hsv) {
+      const h2 = hsv[0] / 60;
+      const s = hsv[1] / 100;
+      let v2 = hsv[2] / 100;
+      const hi = Math.floor(h2) % 6;
+      const f = h2 - Math.floor(h2);
+      const p = 255 * v2 * (1 - s);
+      const q = 255 * v2 * (1 - s * f);
+      const t = 255 * v2 * (1 - s * (1 - f));
+      v2 *= 255;
+      switch (hi) {
+        case 0:
+          return [v2, t, p];
+        case 1:
+          return [q, v2, p];
+        case 2:
+          return [p, v2, t];
+        case 3:
+          return [p, q, v2];
+        case 4:
+          return [t, p, v2];
+        case 5:
+          return [v2, p, q];
+      }
+    };
+    convert.hsv.hsl = function(hsv) {
+      const h2 = hsv[0];
+      const s = hsv[1] / 100;
+      const v2 = hsv[2] / 100;
+      const vmin = Math.max(v2, 0.01);
+      let sl;
+      let l;
+      l = (2 - s) * v2;
+      const lmin = (2 - s) * vmin;
+      sl = s * vmin;
+      sl /= lmin <= 1 ? lmin : 2 - lmin;
+      sl = sl || 0;
+      l /= 2;
+      return [h2, sl * 100, l * 100];
+    };
+    convert.hwb.rgb = function(hwb) {
+      const h2 = hwb[0] / 360;
+      let wh = hwb[1] / 100;
+      let bl = hwb[2] / 100;
+      const ratio = wh + bl;
+      let f;
+      if (ratio > 1) {
+        wh /= ratio;
+        bl /= ratio;
+      }
+      const i2 = Math.floor(6 * h2);
+      const v2 = 1 - bl;
+      f = 6 * h2 - i2;
+      if ((i2 & 1) !== 0) {
+        f = 1 - f;
+      }
+      const n = wh + f * (v2 - wh);
+      let r;
+      let g2;
+      let b;
+      switch (i2) {
+        default:
+        case 6:
+        case 0:
+          r = v2;
+          g2 = n;
+          b = wh;
+          break;
+        case 1:
+          r = n;
+          g2 = v2;
+          b = wh;
+          break;
+        case 2:
+          r = wh;
+          g2 = v2;
+          b = n;
+          break;
+        case 3:
+          r = wh;
+          g2 = n;
+          b = v2;
+          break;
+        case 4:
+          r = n;
+          g2 = wh;
+          b = v2;
+          break;
+        case 5:
+          r = v2;
+          g2 = wh;
+          b = n;
+          break;
+      }
+      return [r * 255, g2 * 255, b * 255];
+    };
+    convert.cmyk.rgb = function(cmyk) {
+      const c = cmyk[0] / 100;
+      const m3 = cmyk[1] / 100;
+      const y = cmyk[2] / 100;
+      const k = cmyk[3] / 100;
+      const r = 1 - Math.min(1, c * (1 - k) + k);
+      const g2 = 1 - Math.min(1, m3 * (1 - k) + k);
+      const b = 1 - Math.min(1, y * (1 - k) + k);
+      return [r * 255, g2 * 255, b * 255];
+    };
+    convert.xyz.rgb = function(xyz) {
+      const x2 = xyz[0] / 100;
+      const y = xyz[1] / 100;
+      const z = xyz[2] / 100;
+      let r;
+      let g2;
+      let b;
+      r = x2 * 3.2406 + y * -1.5372 + z * -0.4986;
+      g2 = x2 * -0.9689 + y * 1.8758 + z * 0.0415;
+      b = x2 * 0.0557 + y * -0.204 + z * 1.057;
+      r = r > 31308e-7 ? 1.055 * r ** (1 / 2.4) - 0.055 : r * 12.92;
+      g2 = g2 > 31308e-7 ? 1.055 * g2 ** (1 / 2.4) - 0.055 : g2 * 12.92;
+      b = b > 31308e-7 ? 1.055 * b ** (1 / 2.4) - 0.055 : b * 12.92;
+      r = Math.min(Math.max(0, r), 1);
+      g2 = Math.min(Math.max(0, g2), 1);
+      b = Math.min(Math.max(0, b), 1);
+      return [r * 255, g2 * 255, b * 255];
+    };
+    convert.xyz.lab = function(xyz) {
+      let x2 = xyz[0];
+      let y = xyz[1];
+      let z = xyz[2];
+      x2 /= 95.047;
+      y /= 100;
+      z /= 108.883;
+      x2 = x2 > 8856e-6 ? x2 ** (1 / 3) : 7.787 * x2 + 16 / 116;
+      y = y > 8856e-6 ? y ** (1 / 3) : 7.787 * y + 16 / 116;
+      z = z > 8856e-6 ? z ** (1 / 3) : 7.787 * z + 16 / 116;
+      const l = 116 * y - 16;
+      const a = 500 * (x2 - y);
+      const b = 200 * (y - z);
+      return [l, a, b];
+    };
+    convert.lab.xyz = function(lab) {
+      const l = lab[0];
+      const a = lab[1];
+      const b = lab[2];
+      let x2;
+      let y;
+      let z;
+      y = (l + 16) / 116;
+      x2 = a / 500 + y;
+      z = y - b / 200;
+      const y2 = y ** 3;
+      const x22 = x2 ** 3;
+      const z2 = z ** 3;
+      y = y2 > 8856e-6 ? y2 : (y - 16 / 116) / 7.787;
+      x2 = x22 > 8856e-6 ? x22 : (x2 - 16 / 116) / 7.787;
+      z = z2 > 8856e-6 ? z2 : (z - 16 / 116) / 7.787;
+      x2 *= 95.047;
+      y *= 100;
+      z *= 108.883;
+      return [x2, y, z];
+    };
+    convert.lab.lch = function(lab) {
+      const l = lab[0];
+      const a = lab[1];
+      const b = lab[2];
+      let h2;
+      const hr = Math.atan2(b, a);
+      h2 = hr * 360 / 2 / Math.PI;
+      if (h2 < 0) {
+        h2 += 360;
+      }
+      const c = Math.sqrt(a * a + b * b);
+      return [l, c, h2];
+    };
+    convert.lch.lab = function(lch) {
+      const l = lch[0];
+      const c = lch[1];
+      const h2 = lch[2];
+      const hr = h2 / 360 * 2 * Math.PI;
+      const a = c * Math.cos(hr);
+      const b = c * Math.sin(hr);
+      return [l, a, b];
+    };
+    convert.rgb.ansi16 = function(args, saturation = null) {
+      const [r, g2, b] = args;
+      let value = saturation === null ? convert.rgb.hsv(args)[2] : saturation;
+      value = Math.round(value / 50);
+      if (value === 0) {
+        return 30;
+      }
+      let ansi = 30 + (Math.round(b / 255) << 2 | Math.round(g2 / 255) << 1 | Math.round(r / 255));
+      if (value === 2) {
+        ansi += 60;
+      }
+      return ansi;
+    };
+    convert.hsv.ansi16 = function(args) {
+      return convert.rgb.ansi16(convert.hsv.rgb(args), args[2]);
+    };
+    convert.rgb.ansi256 = function(args) {
+      const r = args[0];
+      const g2 = args[1];
+      const b = args[2];
+      if (r === g2 && g2 === b) {
+        if (r < 8) {
+          return 16;
+        }
+        if (r > 248) {
+          return 231;
+        }
+        return Math.round((r - 8) / 247 * 24) + 232;
+      }
+      const ansi = 16 + 36 * Math.round(r / 255 * 5) + 6 * Math.round(g2 / 255 * 5) + Math.round(b / 255 * 5);
+      return ansi;
+    };
+    convert.ansi16.rgb = function(args) {
+      let color = args % 10;
+      if (color === 0 || color === 7) {
+        if (args > 50) {
+          color += 3.5;
+        }
+        color = color / 10.5 * 255;
+        return [color, color, color];
+      }
+      const mult = (~~(args > 50) + 1) * 0.5;
+      const r = (color & 1) * mult * 255;
+      const g2 = (color >> 1 & 1) * mult * 255;
+      const b = (color >> 2 & 1) * mult * 255;
+      return [r, g2, b];
+    };
+    convert.ansi256.rgb = function(args) {
+      if (args >= 232) {
+        const c = (args - 232) * 10 + 8;
+        return [c, c, c];
+      }
+      args -= 16;
+      let rem;
+      const r = Math.floor(args / 36) / 5 * 255;
+      const g2 = Math.floor((rem = args % 36) / 6) / 5 * 255;
+      const b = rem % 6 / 5 * 255;
+      return [r, g2, b];
+    };
+    convert.rgb.hex = function(args) {
+      const integer = ((Math.round(args[0]) & 255) << 16) + ((Math.round(args[1]) & 255) << 8) + (Math.round(args[2]) & 255);
+      const string = integer.toString(16).toUpperCase();
+      return "000000".substring(string.length) + string;
+    };
+    convert.hex.rgb = function(args) {
+      const match = args.toString(16).match(/[a-f0-9]{6}|[a-f0-9]{3}/i);
+      if (!match) {
+        return [0, 0, 0];
+      }
+      let colorString = match[0];
+      if (match[0].length === 3) {
+        colorString = colorString.split("").map((char) => {
+          return char + char;
+        }).join("");
+      }
+      const integer = parseInt(colorString, 16);
+      const r = integer >> 16 & 255;
+      const g2 = integer >> 8 & 255;
+      const b = integer & 255;
+      return [r, g2, b];
+    };
+    convert.rgb.hcg = function(rgb) {
+      const r = rgb[0] / 255;
+      const g2 = rgb[1] / 255;
+      const b = rgb[2] / 255;
+      const max = Math.max(Math.max(r, g2), b);
+      const min = Math.min(Math.min(r, g2), b);
+      const chroma = max - min;
+      let grayscale;
+      let hue;
+      if (chroma < 1) {
+        grayscale = min / (1 - chroma);
+      } else {
+        grayscale = 0;
+      }
+      if (chroma <= 0) {
+        hue = 0;
+      } else if (max === r) {
+        hue = (g2 - b) / chroma % 6;
+      } else if (max === g2) {
+        hue = 2 + (b - r) / chroma;
+      } else {
+        hue = 4 + (r - g2) / chroma;
+      }
+      hue /= 6;
+      hue %= 1;
+      return [hue * 360, chroma * 100, grayscale * 100];
+    };
+    convert.hsl.hcg = function(hsl) {
+      const s = hsl[1] / 100;
+      const l = hsl[2] / 100;
+      const c = l < 0.5 ? 2 * s * l : 2 * s * (1 - l);
+      let f = 0;
+      if (c < 1) {
+        f = (l - 0.5 * c) / (1 - c);
+      }
+      return [hsl[0], c * 100, f * 100];
+    };
+    convert.hsv.hcg = function(hsv) {
+      const s = hsv[1] / 100;
+      const v2 = hsv[2] / 100;
+      const c = s * v2;
+      let f = 0;
+      if (c < 1) {
+        f = (v2 - c) / (1 - c);
+      }
+      return [hsv[0], c * 100, f * 100];
+    };
+    convert.hcg.rgb = function(hcg) {
+      const h2 = hcg[0] / 360;
+      const c = hcg[1] / 100;
+      const g2 = hcg[2] / 100;
+      if (c === 0) {
+        return [g2 * 255, g2 * 255, g2 * 255];
+      }
+      const pure = [0, 0, 0];
+      const hi = h2 % 1 * 6;
+      const v2 = hi % 1;
+      const w3 = 1 - v2;
+      let mg = 0;
+      switch (Math.floor(hi)) {
+        case 0:
+          pure[0] = 1;
+          pure[1] = v2;
+          pure[2] = 0;
+          break;
+        case 1:
+          pure[0] = w3;
+          pure[1] = 1;
+          pure[2] = 0;
+          break;
+        case 2:
+          pure[0] = 0;
+          pure[1] = 1;
+          pure[2] = v2;
+          break;
+        case 3:
+          pure[0] = 0;
+          pure[1] = w3;
+          pure[2] = 1;
+          break;
+        case 4:
+          pure[0] = v2;
+          pure[1] = 0;
+          pure[2] = 1;
+          break;
+        default:
+          pure[0] = 1;
+          pure[1] = 0;
+          pure[2] = w3;
+      }
+      mg = (1 - c) * g2;
+      return [
+        (c * pure[0] + mg) * 255,
+        (c * pure[1] + mg) * 255,
+        (c * pure[2] + mg) * 255
+      ];
+    };
+    convert.hcg.hsv = function(hcg) {
+      const c = hcg[1] / 100;
+      const g2 = hcg[2] / 100;
+      const v2 = c + g2 * (1 - c);
+      let f = 0;
+      if (v2 > 0) {
+        f = c / v2;
+      }
+      return [hcg[0], f * 100, v2 * 100];
+    };
+    convert.hcg.hsl = function(hcg) {
+      const c = hcg[1] / 100;
+      const g2 = hcg[2] / 100;
+      const l = g2 * (1 - c) + 0.5 * c;
+      let s = 0;
+      if (l > 0 && l < 0.5) {
+        s = c / (2 * l);
+      } else if (l >= 0.5 && l < 1) {
+        s = c / (2 * (1 - l));
+      }
+      return [hcg[0], s * 100, l * 100];
+    };
+    convert.hcg.hwb = function(hcg) {
+      const c = hcg[1] / 100;
+      const g2 = hcg[2] / 100;
+      const v2 = c + g2 * (1 - c);
+      return [hcg[0], (v2 - c) * 100, (1 - v2) * 100];
+    };
+    convert.hwb.hcg = function(hwb) {
+      const w3 = hwb[1] / 100;
+      const b = hwb[2] / 100;
+      const v2 = 1 - b;
+      const c = v2 - w3;
+      let g2 = 0;
+      if (c < 1) {
+        g2 = (v2 - c) / (1 - c);
+      }
+      return [hwb[0], c * 100, g2 * 100];
+    };
+    convert.apple.rgb = function(apple) {
+      return [apple[0] / 65535 * 255, apple[1] / 65535 * 255, apple[2] / 65535 * 255];
+    };
+    convert.rgb.apple = function(rgb) {
+      return [rgb[0] / 255 * 65535, rgb[1] / 255 * 65535, rgb[2] / 255 * 65535];
+    };
+    convert.gray.rgb = function(args) {
+      return [args[0] / 100 * 255, args[0] / 100 * 255, args[0] / 100 * 255];
+    };
+    convert.gray.hsl = function(args) {
+      return [0, 0, args[0]];
+    };
+    convert.gray.hsv = convert.gray.hsl;
+    convert.gray.hwb = function(gray) {
+      return [0, 100, gray[0]];
+    };
+    convert.gray.cmyk = function(gray) {
+      return [0, 0, 0, gray[0]];
+    };
+    convert.gray.lab = function(gray) {
+      return [gray[0], 0, 0];
+    };
+    convert.gray.hex = function(gray) {
+      const val = Math.round(gray[0] / 100 * 255) & 255;
+      const integer = (val << 16) + (val << 8) + val;
+      const string = integer.toString(16).toUpperCase();
+      return "000000".substring(string.length) + string;
+    };
+    convert.rgb.gray = function(rgb) {
+      const val = (rgb[0] + rgb[1] + rgb[2]) / 3;
+      return [val / 255 * 100];
+    };
+  }
+});
+var require_route = __commonJS({
+  "node_modules/.deno/color-convert@2.0.1/node_modules/color-convert/route.js"(exports, module) {
+    var conversions = require_conversions();
+    function buildGraph() {
+      const graph = {};
+      const models = Object.keys(conversions);
+      for (let len = models.length, i2 = 0; i2 < len; i2++) {
+        graph[models[i2]] = {
+          // http://jsperf.com/1-vs-infinity
+          // micro-opt, but this is simple.
+          distance: -1,
+          parent: null
+        };
+      }
+      return graph;
+    }
+    function deriveBFS(fromModel) {
+      const graph = buildGraph();
+      const queue = [fromModel];
+      graph[fromModel].distance = 0;
+      while (queue.length) {
+        const current = queue.pop();
+        const adjacents = Object.keys(conversions[current]);
+        for (let len = adjacents.length, i2 = 0; i2 < len; i2++) {
+          const adjacent = adjacents[i2];
+          const node = graph[adjacent];
+          if (node.distance === -1) {
+            node.distance = graph[current].distance + 1;
+            node.parent = current;
+            queue.unshift(adjacent);
+          }
+        }
+      }
+      return graph;
+    }
+    function link(from3, to) {
+      return function(args) {
+        return to(from3(args));
+      };
+    }
+    function wrapConversion(toModel, graph) {
+      const path = [graph[toModel].parent, toModel];
+      let fn = conversions[graph[toModel].parent][toModel];
+      let cur = graph[toModel].parent;
+      while (graph[cur].parent) {
+        path.unshift(graph[cur].parent);
+        fn = link(conversions[graph[cur].parent][cur], fn);
+        cur = graph[cur].parent;
+      }
+      fn.conversion = path;
+      return fn;
+    }
+    module.exports = function(fromModel) {
+      const graph = deriveBFS(fromModel);
+      const conversion = {};
+      const models = Object.keys(graph);
+      for (let len = models.length, i2 = 0; i2 < len; i2++) {
+        const toModel = models[i2];
+        const node = graph[toModel];
+        if (node.parent === null) {
+          continue;
+        }
+        conversion[toModel] = wrapConversion(toModel, graph);
+      }
+      return conversion;
+    };
+  }
+});
+var require_color_convert = __commonJS({
+  "node_modules/.deno/color-convert@2.0.1/node_modules/color-convert/index.js"(exports, module) {
+    var conversions = require_conversions();
+    var route = require_route();
+    var convert = {};
+    var models = Object.keys(conversions);
+    function wrapRaw(fn) {
+      const wrappedFn = function(...args) {
+        const arg0 = args[0];
+        if (arg0 === void 0 || arg0 === null) {
+          return arg0;
+        }
+        if (arg0.length > 1) {
+          args = arg0;
+        }
+        return fn(args);
+      };
+      if ("conversion" in fn) {
+        wrappedFn.conversion = fn.conversion;
+      }
+      return wrappedFn;
+    }
+    function wrapRounded(fn) {
+      const wrappedFn = function(...args) {
+        const arg0 = args[0];
+        if (arg0 === void 0 || arg0 === null) {
+          return arg0;
+        }
+        if (arg0.length > 1) {
+          args = arg0;
+        }
+        const result = fn(args);
+        if (typeof result === "object") {
+          for (let len = result.length, i2 = 0; i2 < len; i2++) {
+            result[i2] = Math.round(result[i2]);
+          }
+        }
+        return result;
+      };
+      if ("conversion" in fn) {
+        wrappedFn.conversion = fn.conversion;
+      }
+      return wrappedFn;
+    }
+    models.forEach((fromModel) => {
+      convert[fromModel] = {};
+      Object.defineProperty(convert[fromModel], "channels", { value: conversions[fromModel].channels });
+      Object.defineProperty(convert[fromModel], "labels", { value: conversions[fromModel].labels });
+      const routes = route(fromModel);
+      const routeModels = Object.keys(routes);
+      routeModels.forEach((toModel) => {
+        const fn = routes[toModel];
+        convert[fromModel][toModel] = wrapRounded(fn);
+        convert[fromModel][toModel].raw = wrapRaw(fn);
+      });
+    });
+    module.exports = convert;
+  }
+});
+var require_ansi_styles = __commonJS({
+  "node_modules/.deno/ansi-styles@4.3.0/node_modules/ansi-styles/index.js"(exports, module) {
+    "use strict";
+    var wrapAnsi16 = (fn, offset) => (...args) => {
+      const code2 = fn(...args);
+      return `\x1B[${code2 + offset}m`;
+    };
+    var wrapAnsi256 = (fn, offset) => (...args) => {
+      const code2 = fn(...args);
+      return `\x1B[${38 + offset};5;${code2}m`;
+    };
+    var wrapAnsi16m = (fn, offset) => (...args) => {
+      const rgb = fn(...args);
+      return `\x1B[${38 + offset};2;${rgb[0]};${rgb[1]};${rgb[2]}m`;
+    };
+    var ansi2ansi = (n) => n;
+    var rgb2rgb = (r, g2, b) => [r, g2, b];
+    var setLazyProperty = (object, property, get) => {
+      Object.defineProperty(object, property, {
+        get: () => {
+          const value = get();
+          Object.defineProperty(object, property, {
+            value,
+            enumerable: true,
+            configurable: true
+          });
+          return value;
+        },
+        enumerable: true,
+        configurable: true
+      });
+    };
+    var colorConvert;
+    var makeDynamicStyles = (wrap, targetSpace, identity, isBackground) => {
+      if (colorConvert === void 0) {
+        colorConvert = require_color_convert();
+      }
+      const offset = isBackground ? 10 : 0;
+      const styles = {};
+      for (const [sourceSpace, suite] of Object.entries(colorConvert)) {
+        const name = sourceSpace === "ansi16" ? "ansi" : sourceSpace;
+        if (sourceSpace === targetSpace) {
+          styles[name] = wrap(identity, offset);
+        } else if (typeof suite === "object") {
+          styles[name] = wrap(suite[targetSpace], offset);
+        }
+      }
+      return styles;
+    };
+    function assembleStyles() {
+      const codes = /* @__PURE__ */ new Map();
+      const styles = {
+        modifier: {
+          reset: [0, 0],
+          // 21 isn't widely supported and 22 does the same thing
+          bold: [1, 22],
+          dim: [2, 22],
+          italic: [3, 23],
+          underline: [4, 24],
+          inverse: [7, 27],
+          hidden: [8, 28],
+          strikethrough: [9, 29]
+        },
+        color: {
+          black: [30, 39],
+          red: [31, 39],
+          green: [32, 39],
+          yellow: [33, 39],
+          blue: [34, 39],
+          magenta: [35, 39],
+          cyan: [36, 39],
+          white: [37, 39],
+          // Bright color
+          blackBright: [90, 39],
+          redBright: [91, 39],
+          greenBright: [92, 39],
+          yellowBright: [93, 39],
+          blueBright: [94, 39],
+          magentaBright: [95, 39],
+          cyanBright: [96, 39],
+          whiteBright: [97, 39]
+        },
+        bgColor: {
+          bgBlack: [40, 49],
+          bgRed: [41, 49],
+          bgGreen: [42, 49],
+          bgYellow: [43, 49],
+          bgBlue: [44, 49],
+          bgMagenta: [45, 49],
+          bgCyan: [46, 49],
+          bgWhite: [47, 49],
+          // Bright color
+          bgBlackBright: [100, 49],
+          bgRedBright: [101, 49],
+          bgGreenBright: [102, 49],
+          bgYellowBright: [103, 49],
+          bgBlueBright: [104, 49],
+          bgMagentaBright: [105, 49],
+          bgCyanBright: [106, 49],
+          bgWhiteBright: [107, 49]
+        }
+      };
+      styles.color.gray = styles.color.blackBright;
+      styles.bgColor.bgGray = styles.bgColor.bgBlackBright;
+      styles.color.grey = styles.color.blackBright;
+      styles.bgColor.bgGrey = styles.bgColor.bgBlackBright;
+      for (const [groupName, group] of Object.entries(styles)) {
+        for (const [styleName, style] of Object.entries(group)) {
+          styles[styleName] = {
+            open: `\x1B[${style[0]}m`,
+            close: `\x1B[${style[1]}m`
+          };
+          group[styleName] = styles[styleName];
+          codes.set(style[0], style[1]);
+        }
+        Object.defineProperty(styles, groupName, {
+          value: group,
+          enumerable: false
+        });
+      }
+      Object.defineProperty(styles, "codes", {
+        value: codes,
+        enumerable: false
+      });
+      styles.color.close = "\x1B[39m";
+      styles.bgColor.close = "\x1B[49m";
+      setLazyProperty(styles.color, "ansi", () => makeDynamicStyles(wrapAnsi16, "ansi16", ansi2ansi, false));
+      setLazyProperty(styles.color, "ansi256", () => makeDynamicStyles(wrapAnsi256, "ansi256", ansi2ansi, false));
+      setLazyProperty(styles.color, "ansi16m", () => makeDynamicStyles(wrapAnsi16m, "rgb", rgb2rgb, false));
+      setLazyProperty(styles.bgColor, "ansi", () => makeDynamicStyles(wrapAnsi16, "ansi16", ansi2ansi, true));
+      setLazyProperty(styles.bgColor, "ansi256", () => makeDynamicStyles(wrapAnsi256, "ansi256", ansi2ansi, true));
+      setLazyProperty(styles.bgColor, "ansi16m", () => makeDynamicStyles(wrapAnsi16m, "rgb", rgb2rgb, true));
+      return styles;
+    }
+    Object.defineProperty(module, "exports", {
+      enumerable: true,
+      get: assembleStyles
+    });
+  }
+});
+var require_wrap_ansi = __commonJS({
+  "node_modules/.deno/wrap-ansi@7.0.0/node_modules/wrap-ansi/index.js"(exports, module) {
+    "use strict";
+    var stringWidth = require_string_width();
+    var stripAnsi = require_strip_ansi();
+    var ansiStyles = require_ansi_styles();
+    var ESCAPES = /* @__PURE__ */ new Set([
+      "\x1B",
+      "\x9B"
+    ]);
+    var END_CODE = 39;
+    var ANSI_ESCAPE_BELL = "\x07";
+    var ANSI_CSI = "[";
+    var ANSI_OSC = "]";
+    var ANSI_SGR_TERMINATOR = "m";
+    var ANSI_ESCAPE_LINK = `${ANSI_OSC}8;;`;
+    var wrapAnsi = (code2) => `${ESCAPES.values().next().value}${ANSI_CSI}${code2}${ANSI_SGR_TERMINATOR}`;
+    var wrapAnsiHyperlink = (uri) => `${ESCAPES.values().next().value}${ANSI_ESCAPE_LINK}${uri}${ANSI_ESCAPE_BELL}`;
+    var wordLengths = (string) => string.split(" ").map((character) => stringWidth(character));
+    var wrapWord = (rows, word, columns) => {
+      const characters = [...word];
+      let isInsideEscape = false;
+      let isInsideLinkEscape = false;
+      let visible = stringWidth(stripAnsi(rows[rows.length - 1]));
+      for (const [index, character] of characters.entries()) {
+        const characterLength = stringWidth(character);
+        if (visible + characterLength <= columns) {
+          rows[rows.length - 1] += character;
+        } else {
+          rows.push(character);
+          visible = 0;
+        }
+        if (ESCAPES.has(character)) {
+          isInsideEscape = true;
+          isInsideLinkEscape = characters.slice(index + 1).join("").startsWith(ANSI_ESCAPE_LINK);
+        }
+        if (isInsideEscape) {
+          if (isInsideLinkEscape) {
+            if (character === ANSI_ESCAPE_BELL) {
+              isInsideEscape = false;
+              isInsideLinkEscape = false;
+            }
+          } else if (character === ANSI_SGR_TERMINATOR) {
+            isInsideEscape = false;
+          }
+          continue;
+        }
+        visible += characterLength;
+        if (visible === columns && index < characters.length - 1) {
+          rows.push("");
+          visible = 0;
+        }
+      }
+      if (!visible && rows[rows.length - 1].length > 0 && rows.length > 1) {
+        rows[rows.length - 2] += rows.pop();
+      }
+    };
+    var stringVisibleTrimSpacesRight = (string) => {
+      const words = string.split(" ");
+      let last = words.length;
+      while (last > 0) {
+        if (stringWidth(words[last - 1]) > 0) {
+          break;
+        }
+        last--;
+      }
+      if (last === words.length) {
+        return string;
+      }
+      return words.slice(0, last).join(" ") + words.slice(last).join("");
+    };
+    var exec = (string, columns, options2 = {}) => {
+      if (options2.trim !== false && string.trim() === "") {
+        return "";
+      }
+      let returnValue = "";
+      let escapeCode;
+      let escapeUrl;
+      const lengths = wordLengths(string);
+      let rows = [""];
+      for (const [index, word] of string.split(" ").entries()) {
+        if (options2.trim !== false) {
+          rows[rows.length - 1] = rows[rows.length - 1].trimStart();
+        }
+        let rowLength = stringWidth(rows[rows.length - 1]);
+        if (index !== 0) {
+          if (rowLength >= columns && (options2.wordWrap === false || options2.trim === false)) {
+            rows.push("");
+            rowLength = 0;
+          }
+          if (rowLength > 0 || options2.trim === false) {
+            rows[rows.length - 1] += " ";
+            rowLength++;
+          }
+        }
+        if (options2.hard && lengths[index] > columns) {
+          const remainingColumns = columns - rowLength;
+          const breaksStartingThisLine = 1 + Math.floor((lengths[index] - remainingColumns - 1) / columns);
+          const breaksStartingNextLine = Math.floor((lengths[index] - 1) / columns);
+          if (breaksStartingNextLine < breaksStartingThisLine) {
+            rows.push("");
+          }
+          wrapWord(rows, word, columns);
+          continue;
+        }
+        if (rowLength + lengths[index] > columns && rowLength > 0 && lengths[index] > 0) {
+          if (options2.wordWrap === false && rowLength < columns) {
+            wrapWord(rows, word, columns);
+            continue;
+          }
+          rows.push("");
+        }
+        if (rowLength + lengths[index] > columns && options2.wordWrap === false) {
+          wrapWord(rows, word, columns);
+          continue;
+        }
+        rows[rows.length - 1] += word;
+      }
+      if (options2.trim !== false) {
+        rows = rows.map(stringVisibleTrimSpacesRight);
+      }
+      const pre = [...rows.join("\n")];
+      for (const [index, character] of pre.entries()) {
+        returnValue += character;
+        if (ESCAPES.has(character)) {
+          const { groups } = new RegExp(`(?:\\${ANSI_CSI}(?<code>\\d+)m|\\${ANSI_ESCAPE_LINK}(?<uri>.*)${ANSI_ESCAPE_BELL})`).exec(pre.slice(index).join("")) || { groups: {} };
+          if (groups.code !== void 0) {
+            const code22 = Number.parseFloat(groups.code);
+            escapeCode = code22 === END_CODE ? void 0 : code22;
+          } else if (groups.uri !== void 0) {
+            escapeUrl = groups.uri.length === 0 ? void 0 : groups.uri;
+          }
+        }
+        const code2 = ansiStyles.codes.get(Number(escapeCode));
+        if (pre[index + 1] === "\n") {
+          if (escapeUrl) {
+            returnValue += wrapAnsiHyperlink("");
+          }
+          if (escapeCode && code2) {
+            returnValue += wrapAnsi(code2);
+          }
+        } else if (character === "\n") {
+          if (escapeCode && code2) {
+            returnValue += wrapAnsi(escapeCode);
+          }
+          if (escapeUrl) {
+            returnValue += wrapAnsiHyperlink(escapeUrl);
+          }
+        }
+      }
+      return returnValue;
+    };
+    module.exports = (string, columns, options2) => {
+      return String(string).normalize().replace(/\r\n/g, "\n").split("\n").map((line) => exec(line, columns, options2)).join("\n");
+    };
+  }
+});
+var require_build3 = __commonJS({
+  "node_modules/.deno/cliui@7.0.4/node_modules/cliui/build/index.cjs"(exports, module) {
+    "use strict";
+    var align = {
+      right: alignRight,
+      center: alignCenter
+    };
+    var top = 0;
+    var right = 1;
+    var bottom = 2;
+    var left = 3;
+    var UI = class {
+      constructor(opts) {
+        var _a2;
+        this.width = opts.width;
+        this.wrap = (_a2 = opts.wrap) !== null && _a2 !== void 0 ? _a2 : true;
+        this.rows = [];
+      }
+      span(...args) {
+        const cols = this.div(...args);
+        cols.span = true;
+      }
+      resetOutput() {
+        this.rows = [];
+      }
+      div(...args) {
+        if (args.length === 0) {
+          this.div("");
+        }
+        if (this.wrap && this.shouldApplyLayoutDSL(...args) && typeof args[0] === "string") {
+          return this.applyLayoutDSL(args[0]);
+        }
+        const cols = args.map((arg) => {
+          if (typeof arg === "string") {
+            return this.colFromString(arg);
+          }
+          return arg;
+        });
+        this.rows.push(cols);
+        return cols;
+      }
+      shouldApplyLayoutDSL(...args) {
+        return args.length === 1 && typeof args[0] === "string" && /[\t\n]/.test(args[0]);
+      }
+      applyLayoutDSL(str) {
+        const rows = str.split("\n").map((row) => row.split("	"));
+        let leftColumnWidth = 0;
+        rows.forEach((columns) => {
+          if (columns.length > 1 && mixin.stringWidth(columns[0]) > leftColumnWidth) {
+            leftColumnWidth = Math.min(Math.floor(this.width * 0.5), mixin.stringWidth(columns[0]));
+          }
+        });
+        rows.forEach((columns) => {
+          this.div(...columns.map((r, i2) => {
+            return {
+              text: r.trim(),
+              padding: this.measurePadding(r),
+              width: i2 === 0 && columns.length > 1 ? leftColumnWidth : void 0
+            };
+          }));
+        });
+        return this.rows[this.rows.length - 1];
+      }
+      colFromString(text) {
+        return {
+          text,
+          padding: this.measurePadding(text)
+        };
+      }
+      measurePadding(str) {
+        const noAnsi = mixin.stripAnsi(str);
+        return [0, noAnsi.match(/\s*$/)[0].length, 0, noAnsi.match(/^\s*/)[0].length];
+      }
+      toString() {
+        const lines = [];
+        this.rows.forEach((row) => {
+          this.rowToString(row, lines);
+        });
+        return lines.filter((line) => !line.hidden).map((line) => line.text).join("\n");
+      }
+      rowToString(row, lines) {
+        this.rasterize(row).forEach((rrow, r) => {
+          let str = "";
+          rrow.forEach((col, c) => {
+            const { width } = row[c];
+            const wrapWidth = this.negatePadding(row[c]);
+            let ts = col;
+            if (wrapWidth > mixin.stringWidth(col)) {
+              ts += " ".repeat(wrapWidth - mixin.stringWidth(col));
+            }
+            if (row[c].align && row[c].align !== "left" && this.wrap) {
+              const fn = align[row[c].align];
+              ts = fn(ts, wrapWidth);
+              if (mixin.stringWidth(ts) < wrapWidth) {
+                ts += " ".repeat((width || 0) - mixin.stringWidth(ts) - 1);
+              }
+            }
+            const padding = row[c].padding || [0, 0, 0, 0];
+            if (padding[left]) {
+              str += " ".repeat(padding[left]);
+            }
+            str += addBorder(row[c], ts, "| ");
+            str += ts;
+            str += addBorder(row[c], ts, " |");
+            if (padding[right]) {
+              str += " ".repeat(padding[right]);
+            }
+            if (r === 0 && lines.length > 0) {
+              str = this.renderInline(str, lines[lines.length - 1]);
+            }
+          });
+          lines.push({
+            text: str.replace(/ +$/, ""),
+            span: row.span
+          });
+        });
+        return lines;
+      }
+      // if the full 'source' can render in
+      // the target line, do so.
+      renderInline(source, previousLine) {
+        const match = source.match(/^ */);
+        const leadingWhitespace = match ? match[0].length : 0;
+        const target = previousLine.text;
+        const targetTextWidth = mixin.stringWidth(target.trimRight());
+        if (!previousLine.span) {
+          return source;
+        }
+        if (!this.wrap) {
+          previousLine.hidden = true;
+          return target + source;
+        }
+        if (leadingWhitespace < targetTextWidth) {
+          return source;
+        }
+        previousLine.hidden = true;
+        return target.trimRight() + " ".repeat(leadingWhitespace - targetTextWidth) + source.trimLeft();
+      }
+      rasterize(row) {
+        const rrows = [];
+        const widths = this.columnWidths(row);
+        let wrapped;
+        row.forEach((col, c) => {
+          col.width = widths[c];
+          if (this.wrap) {
+            wrapped = mixin.wrap(col.text, this.negatePadding(col), { hard: true }).split("\n");
+          } else {
+            wrapped = col.text.split("\n");
+          }
+          if (col.border) {
+            wrapped.unshift("." + "-".repeat(this.negatePadding(col) + 2) + ".");
+            wrapped.push("'" + "-".repeat(this.negatePadding(col) + 2) + "'");
+          }
+          if (col.padding) {
+            wrapped.unshift(...new Array(col.padding[top] || 0).fill(""));
+            wrapped.push(...new Array(col.padding[bottom] || 0).fill(""));
+          }
+          wrapped.forEach((str, r) => {
+            if (!rrows[r]) {
+              rrows.push([]);
+            }
+            const rrow = rrows[r];
+            for (let i2 = 0; i2 < c; i2++) {
+              if (rrow[i2] === void 0) {
+                rrow.push("");
+              }
+            }
+            rrow.push(str);
+          });
+        });
+        return rrows;
+      }
+      negatePadding(col) {
+        let wrapWidth = col.width || 0;
+        if (col.padding) {
+          wrapWidth -= (col.padding[left] || 0) + (col.padding[right] || 0);
+        }
+        if (col.border) {
+          wrapWidth -= 4;
+        }
+        return wrapWidth;
+      }
+      columnWidths(row) {
+        if (!this.wrap) {
+          return row.map((col) => {
+            return col.width || mixin.stringWidth(col.text);
+          });
+        }
+        let unset = row.length;
+        let remainingWidth = this.width;
+        const widths = row.map((col) => {
+          if (col.width) {
+            unset--;
+            remainingWidth -= col.width;
+            return col.width;
+          }
+          return void 0;
+        });
+        const unsetWidth = unset ? Math.floor(remainingWidth / unset) : 0;
+        return widths.map((w3, i2) => {
+          if (w3 === void 0) {
+            return Math.max(unsetWidth, _minWidth(row[i2]));
+          }
+          return w3;
+        });
+      }
+    };
+    function addBorder(col, ts, style) {
+      if (col.border) {
+        if (/[.']-+[.']/.test(ts)) {
+          return "";
+        }
+        if (ts.trim().length !== 0) {
+          return style;
+        }
+        return "  ";
+      }
+      return "";
+    }
+    function _minWidth(col) {
+      const padding = col.padding || [];
+      const minWidth = 1 + (padding[left] || 0) + (padding[right] || 0);
+      if (col.border) {
+        return minWidth + 4;
+      }
+      return minWidth;
+    }
+    function getWindowWidth() {
+      if (typeof process === "object" && process.stdout && process.stdout.columns) {
+        return process.stdout.columns;
+      }
+      return 80;
+    }
+    function alignRight(str, width) {
+      str = str.trim();
+      const strWidth = mixin.stringWidth(str);
+      if (strWidth < width) {
+        return " ".repeat(width - strWidth) + str;
+      }
+      return str;
+    }
+    function alignCenter(str, width) {
+      str = str.trim();
+      const strWidth = mixin.stringWidth(str);
+      if (strWidth >= width) {
+        return str;
+      }
+      return " ".repeat(width - strWidth >> 1) + str;
+    }
+    var mixin;
+    function cliui(opts, _mixin) {
+      mixin = _mixin;
+      return new UI({
+        width: (opts === null || opts === void 0 ? void 0 : opts.width) || getWindowWidth(),
+        wrap: opts === null || opts === void 0 ? void 0 : opts.wrap
+      });
+    }
+    var stringWidth = require_string_width();
+    var stripAnsi = require_strip_ansi();
+    var wrap = require_wrap_ansi();
+    function ui(opts) {
+      return cliui(opts, {
+        stringWidth,
+        stripAnsi,
+        wrap
+      });
+    }
+    module.exports = ui;
+  }
+});
+var require_sync = __commonJS({
+  "node_modules/.deno/escalade@3.2.0/node_modules/escalade/sync/index.js"(exports, module) {
+    var { dirname: dirname32, resolve: resolve32 } = __require2("path");
+    var { readdirSync, statSync } = __require2("fs");
+    module.exports = function(start, callback) {
+      let dir = resolve32(".", start);
+      let tmp, stats = statSync(dir);
+      if (!stats.isDirectory()) {
+        dir = dirname32(dir);
+      }
+      while (true) {
+        tmp = callback(dir, readdirSync(dir));
+        if (tmp) return resolve32(dir, tmp);
+        dir = dirname32(tmp = dir);
+        if (tmp === dir) break;
+      }
+    };
+  }
+});
+var require_get_caller_file = __commonJS({
+  "node_modules/.deno/get-caller-file@2.0.5/node_modules/get-caller-file/index.js"(exports, module) {
+    "use strict";
+    module.exports = function getCallerFile(position) {
+      if (position === void 0) {
+        position = 2;
+      }
+      if (position >= Error.stackTraceLimit) {
+        throw new TypeError("getCallerFile(position) requires position be less then Error.stackTraceLimit but position was: `" + position + "` and Error.stackTraceLimit was: `" + Error.stackTraceLimit + "`");
+      }
+      var oldPrepareStackTrace = Error.prepareStackTrace;
+      Error.prepareStackTrace = function(_, stack2) {
+        return stack2;
+      };
+      var stack = new Error().stack;
+      Error.prepareStackTrace = oldPrepareStackTrace;
+      if (stack !== null && typeof stack === "object") {
+        return stack[position] ? stack[position].getFileName() : void 0;
+      }
+    };
+  }
+});
+var require_require_directory = __commonJS({
+  "node_modules/.deno/require-directory@2.1.1/node_modules/require-directory/index.js"(exports, module) {
+    "use strict";
+    var fs = __require2("fs");
+    var join32 = __require2("path").join;
+    var resolve32 = __require2("path").resolve;
+    var dirname32 = __require2("path").dirname;
+    var defaultOptions2 = {
+      extensions: ["js", "json", "coffee"],
+      recurse: true,
+      rename: function(name) {
+        return name;
+      },
+      visit: function(obj) {
+        return obj;
+      }
+    };
+    function checkFileInclusion(path, filename, options2) {
+      return (
+        // verify file has valid extension
+        new RegExp("\\.(" + options2.extensions.join("|") + ")$", "i").test(filename) && // if options.include is a RegExp, evaluate it and make sure the path passes
+        !(options2.include && options2.include instanceof RegExp && !options2.include.test(path)) && // if options.include is a function, evaluate it and make sure the path passes
+        !(options2.include && typeof options2.include === "function" && !options2.include(path, filename)) && // if options.exclude is a RegExp, evaluate it and make sure the path doesn't pass
+        !(options2.exclude && options2.exclude instanceof RegExp && options2.exclude.test(path)) && // if options.exclude is a function, evaluate it and make sure the path doesn't pass
+        !(options2.exclude && typeof options2.exclude === "function" && options2.exclude(path, filename))
+      );
+    }
+    function requireDirectory(m3, path, options2) {
+      var retval = {};
+      if (path && !options2 && typeof path !== "string") {
+        options2 = path;
+        path = null;
+      }
+      options2 = options2 || {};
+      for (var prop in defaultOptions2) {
+        if (typeof options2[prop] === "undefined") {
+          options2[prop] = defaultOptions2[prop];
+        }
+      }
+      path = !path ? dirname32(m3.filename) : resolve32(dirname32(m3.filename), path);
+      fs.readdirSync(path).forEach(function(filename) {
+        var joined = join32(path, filename), files, key, obj;
+        if (fs.statSync(joined).isDirectory() && options2.recurse) {
+          files = requireDirectory(m3, joined, options2);
+          if (Object.keys(files).length) {
+            retval[options2.rename(filename, joined, filename)] = files;
+          }
+        } else {
+          if (joined !== m3.filename && checkFileInclusion(joined, filename, options2)) {
+            key = filename.substring(0, filename.lastIndexOf("."));
+            obj = m3.require(joined);
+            retval[options2.rename(key, joined, filename)] = options2.visit(obj, joined, filename) || obj;
+          }
+        }
+      });
+      return retval;
+    }
+    module.exports = requireDirectory;
+    module.exports.defaults = defaultOptions2;
+  }
+});
+var require_build4 = __commonJS({
+  "node_modules/.deno/yargs@16.2.0/node_modules/yargs/build/index.cjs"(exports, module) {
+    "use strict";
+    var assert2 = __require2("assert");
+    var YError = class _YError extends Error {
+      constructor(msg) {
+        super(msg || "yargs error");
+        this.name = "YError";
+        Error.captureStackTrace(this, _YError);
+      }
+    };
+    var previouslyVisitedConfigs = [];
+    var shim;
+    function applyExtends(config, cwd, mergeExtends, _shim) {
+      shim = _shim;
+      let defaultConfig = {};
+      if (Object.prototype.hasOwnProperty.call(config, "extends")) {
+        if (typeof config.extends !== "string")
+          return defaultConfig;
+        const isPath = /\.json|\..*rc$/.test(config.extends);
+        let pathToDefault = null;
+        if (!isPath) {
+          try {
+            pathToDefault = __require2.resolve(config.extends);
+          } catch (_err) {
+            return config;
+          }
+        } else {
+          pathToDefault = getPathToDefaultConfig(cwd, config.extends);
+        }
+        checkForCircularExtends(pathToDefault);
+        previouslyVisitedConfigs.push(pathToDefault);
+        defaultConfig = isPath ? JSON.parse(shim.readFileSync(pathToDefault, "utf8")) : __require2(config.extends);
+        delete config.extends;
+        defaultConfig = applyExtends(defaultConfig, shim.path.dirname(pathToDefault), mergeExtends, shim);
+      }
+      previouslyVisitedConfigs = [];
+      return mergeExtends ? mergeDeep(defaultConfig, config) : Object.assign({}, defaultConfig, config);
+    }
+    function checkForCircularExtends(cfgPath) {
+      if (previouslyVisitedConfigs.indexOf(cfgPath) > -1) {
+        throw new YError(`Circular extended configurations: '${cfgPath}'.`);
+      }
+    }
+    function getPathToDefaultConfig(cwd, pathToExtend) {
+      return shim.path.resolve(cwd, pathToExtend);
+    }
+    function mergeDeep(config1, config2) {
+      const target = {};
+      function isObject(obj) {
+        return obj && typeof obj === "object" && !Array.isArray(obj);
+      }
+      Object.assign(target, config1);
+      for (const key of Object.keys(config2)) {
+        if (isObject(config2[key]) && isObject(target[key])) {
+          target[key] = mergeDeep(config1[key], config2[key]);
+        } else {
+          target[key] = config2[key];
+        }
+      }
+      return target;
+    }
+    function parseCommand(cmd) {
+      const extraSpacesStrippedCommand = cmd.replace(/\s{2,}/g, " ");
+      const splitCommand = extraSpacesStrippedCommand.split(/\s+(?![^[]*]|[^<]*>)/);
+      const bregex = /\.*[\][<>]/g;
+      const firstCommand = splitCommand.shift();
+      if (!firstCommand)
+        throw new Error(`No command found in: ${cmd}`);
+      const parsedCommand = {
+        cmd: firstCommand.replace(bregex, ""),
+        demanded: [],
+        optional: []
+      };
+      splitCommand.forEach((cmd2, i2) => {
+        let variadic = false;
+        cmd2 = cmd2.replace(/\s/g, "");
+        if (/\.+[\]>]/.test(cmd2) && i2 === splitCommand.length - 1)
+          variadic = true;
+        if (/^\[/.test(cmd2)) {
+          parsedCommand.optional.push({
+            cmd: cmd2.replace(bregex, "").split("|"),
+            variadic
+          });
+        } else {
+          parsedCommand.demanded.push({
+            cmd: cmd2.replace(bregex, "").split("|"),
+            variadic
+          });
+        }
+      });
+      return parsedCommand;
+    }
+    var positionName = ["first", "second", "third", "fourth", "fifth", "sixth"];
+    function argsert(arg1, arg2, arg3) {
+      function parseArgs() {
+        return typeof arg1 === "object" ? [{ demanded: [], optional: [] }, arg1, arg2] : [
+          parseCommand(`cmd ${arg1}`),
+          arg2,
+          arg3
+        ];
+      }
+      try {
+        let position = 0;
+        const [parsed, callerArguments, _length] = parseArgs();
+        const args = [].slice.call(callerArguments);
+        while (args.length && args[args.length - 1] === void 0)
+          args.pop();
+        const length2 = _length || args.length;
+        if (length2 < parsed.demanded.length) {
+          throw new YError(`Not enough arguments provided. Expected ${parsed.demanded.length} but received ${args.length}.`);
+        }
+        const totalCommands = parsed.demanded.length + parsed.optional.length;
+        if (length2 > totalCommands) {
+          throw new YError(`Too many arguments provided. Expected max ${totalCommands} but received ${length2}.`);
+        }
+        parsed.demanded.forEach((demanded) => {
+          const arg = args.shift();
+          const observedType = guessType(arg);
+          const matchingTypes = demanded.cmd.filter((type) => type === observedType || type === "*");
+          if (matchingTypes.length === 0)
+            argumentTypeError(observedType, demanded.cmd, position);
+          position += 1;
+        });
+        parsed.optional.forEach((optional) => {
+          if (args.length === 0)
+            return;
+          const arg = args.shift();
+          const observedType = guessType(arg);
+          const matchingTypes = optional.cmd.filter((type) => type === observedType || type === "*");
+          if (matchingTypes.length === 0) {
+            console.error(arg);
+            argumentTypeError(observedType, optional.cmd, position);
+          }
+          position += 1;
+        });
+      } catch (err) {
+        console.warn(err.stack);
+      }
+    }
+    function guessType(arg) {
+      if (Array.isArray(arg)) {
+        return "array";
+      } else if (arg === null) {
+        return "null";
+      }
+      return typeof arg;
+    }
+    function argumentTypeError(observedType, allowedTypes, position) {
+      throw new YError(`Invalid ${positionName[position] || "manyith"} argument. Expected ${allowedTypes.join(" or ")} but received ${observedType}.`);
+    }
+    function isPromise(maybePromise) {
+      return !!maybePromise && !!maybePromise.then && typeof maybePromise.then === "function";
+    }
+    function assertNotStrictEqual(actual, expected, shim2, message) {
+      shim2.assert.notStrictEqual(actual, expected, message);
+    }
+    function assertSingleKey(actual, shim2) {
+      shim2.assert.strictEqual(typeof actual, "string");
+    }
+    function objectKeys(object) {
+      return Object.keys(object);
+    }
+    function objFilter(original = {}, filter = () => true) {
+      const obj = {};
+      objectKeys(original).forEach((key) => {
+        if (filter(key, original[key])) {
+          obj[key] = original[key];
+        }
+      });
+      return obj;
+    }
+    function globalMiddlewareFactory(globalMiddleware, context) {
+      return function(callback, applyBeforeValidation = false) {
+        argsert("<array|function> [boolean]", [callback, applyBeforeValidation], arguments.length);
+        if (Array.isArray(callback)) {
+          for (let i2 = 0; i2 < callback.length; i2++) {
+            if (typeof callback[i2] !== "function") {
+              throw Error("middleware must be a function");
+            }
+            callback[i2].applyBeforeValidation = applyBeforeValidation;
+          }
+          Array.prototype.push.apply(globalMiddleware, callback);
+        } else if (typeof callback === "function") {
+          callback.applyBeforeValidation = applyBeforeValidation;
+          globalMiddleware.push(callback);
+        }
+        return context;
+      };
+    }
+    function commandMiddlewareFactory(commandMiddleware) {
+      if (!commandMiddleware)
+        return [];
+      return commandMiddleware.map((middleware) => {
+        middleware.applyBeforeValidation = false;
+        return middleware;
+      });
+    }
+    function applyMiddleware(argv, yargs, middlewares, beforeValidation) {
+      const beforeValidationError = new Error("middleware cannot return a promise when applyBeforeValidation is true");
+      return middlewares.reduce((acc, middleware) => {
+        if (middleware.applyBeforeValidation !== beforeValidation) {
+          return acc;
+        }
+        if (isPromise(acc)) {
+          return acc.then((initialObj) => Promise.all([
+            initialObj,
+            middleware(initialObj, yargs)
+          ])).then(([initialObj, middlewareObj]) => Object.assign(initialObj, middlewareObj));
+        } else {
+          const result = middleware(acc, yargs);
+          if (beforeValidation && isPromise(result))
+            throw beforeValidationError;
+          return isPromise(result) ? result.then((middlewareObj) => Object.assign(acc, middlewareObj)) : Object.assign(acc, result);
+        }
+      }, argv);
+    }
+    function getProcessArgvBinIndex() {
+      if (isBundledElectronApp())
+        return 0;
+      return 1;
+    }
+    function isBundledElectronApp() {
+      return isElectronApp() && !process.defaultApp;
+    }
+    function isElectronApp() {
+      return !!process.versions.electron;
+    }
+    function hideBin(argv) {
+      return argv.slice(getProcessArgvBinIndex() + 1);
+    }
+    function getProcessArgvBin() {
+      return process.argv[getProcessArgvBinIndex()];
+    }
+    var processArgv = /* @__PURE__ */ Object.freeze({
+      __proto__: null,
+      hideBin,
+      getProcessArgvBin
+    });
+    function whichModule(exported) {
+      if (typeof __require2 === "undefined")
+        return null;
+      for (let i2 = 0, files = Object.keys(__require2.cache), mod; i2 < files.length; i2++) {
+        mod = __require2.cache[files[i2]];
+        if (mod.exports === exported)
+          return mod;
+      }
+      return null;
+    }
+    var DEFAULT_MARKER = /(^\*)|(^\$0)/;
+    function command(yargs, usage2, validation2, globalMiddleware = [], shim2) {
+      const self2 = {};
+      let handlers = {};
+      let aliasMap = {};
+      let defaultCommand;
+      self2.addHandler = function addHandler(cmd, description, builder, handler, commandMiddleware, deprecated) {
+        let aliases = [];
+        const middlewares = commandMiddlewareFactory(commandMiddleware);
+        handler = handler || (() => {
+        });
+        if (Array.isArray(cmd)) {
+          if (isCommandAndAliases(cmd)) {
+            [cmd, ...aliases] = cmd;
+          } else {
+            for (const command2 of cmd) {
+              self2.addHandler(command2);
+            }
+          }
+        } else if (isCommandHandlerDefinition(cmd)) {
+          let command2 = Array.isArray(cmd.command) || typeof cmd.command === "string" ? cmd.command : moduleName(cmd);
+          if (cmd.aliases)
+            command2 = [].concat(command2).concat(cmd.aliases);
+          self2.addHandler(command2, extractDesc(cmd), cmd.builder, cmd.handler, cmd.middlewares, cmd.deprecated);
+          return;
+        } else if (isCommandBuilderDefinition(builder)) {
+          self2.addHandler([cmd].concat(aliases), description, builder.builder, builder.handler, builder.middlewares, builder.deprecated);
+          return;
+        }
+        if (typeof cmd === "string") {
+          const parsedCommand = parseCommand(cmd);
+          aliases = aliases.map((alias) => parseCommand(alias).cmd);
+          let isDefault = false;
+          const parsedAliases = [parsedCommand.cmd].concat(aliases).filter((c) => {
+            if (DEFAULT_MARKER.test(c)) {
+              isDefault = true;
+              return false;
+            }
+            return true;
+          });
+          if (parsedAliases.length === 0 && isDefault)
+            parsedAliases.push("$0");
+          if (isDefault) {
+            parsedCommand.cmd = parsedAliases[0];
+            aliases = parsedAliases.slice(1);
+            cmd = cmd.replace(DEFAULT_MARKER, parsedCommand.cmd);
+          }
+          aliases.forEach((alias) => {
+            aliasMap[alias] = parsedCommand.cmd;
+          });
+          if (description !== false) {
+            usage2.command(cmd, description, isDefault, aliases, deprecated);
+          }
+          handlers[parsedCommand.cmd] = {
+            original: cmd,
+            description,
+            handler,
+            builder: builder || {},
+            middlewares,
+            deprecated,
+            demanded: parsedCommand.demanded,
+            optional: parsedCommand.optional
+          };
+          if (isDefault)
+            defaultCommand = handlers[parsedCommand.cmd];
+        }
+      };
+      self2.addDirectory = function addDirectory(dir, context, req, callerFile, opts) {
+        opts = opts || {};
+        if (typeof opts.recurse !== "boolean")
+          opts.recurse = false;
+        if (!Array.isArray(opts.extensions))
+          opts.extensions = ["js"];
+        const parentVisit = typeof opts.visit === "function" ? opts.visit : (o2) => o2;
+        opts.visit = function visit(obj, joined, filename) {
+          const visited = parentVisit(obj, joined, filename);
+          if (visited) {
+            if (~context.files.indexOf(joined))
+              return visited;
+            context.files.push(joined);
+            self2.addHandler(visited);
+          }
+          return visited;
+        };
+        shim2.requireDirectory({ require: req, filename: callerFile }, dir, opts);
+      };
+      function moduleName(obj) {
+        const mod = whichModule(obj);
+        if (!mod)
+          throw new Error(`No command name given for module: ${shim2.inspect(obj)}`);
+        return commandFromFilename(mod.filename);
+      }
+      function commandFromFilename(filename) {
+        return shim2.path.basename(filename, shim2.path.extname(filename));
+      }
+      function extractDesc({ describe, description, desc }) {
+        for (const test of [describe, description, desc]) {
+          if (typeof test === "string" || test === false)
+            return test;
+          assertNotStrictEqual(test, true, shim2);
+        }
+        return false;
+      }
+      self2.getCommands = () => Object.keys(handlers).concat(Object.keys(aliasMap));
+      self2.getCommandHandlers = () => handlers;
+      self2.hasDefaultCommand = () => !!defaultCommand;
+      self2.runCommand = function runCommand(command2, yargs2, parsed, commandIndex) {
+        let aliases = parsed.aliases;
+        const commandHandler = handlers[command2] || handlers[aliasMap[command2]] || defaultCommand;
+        const currentContext = yargs2.getContext();
+        let numFiles = currentContext.files.length;
+        const parentCommands = currentContext.commands.slice();
+        let innerArgv = parsed.argv;
+        let positionalMap = {};
+        if (command2) {
+          currentContext.commands.push(command2);
+          currentContext.fullCommands.push(commandHandler.original);
+        }
+        const builder = commandHandler.builder;
+        if (isCommandBuilderCallback(builder)) {
+          const builderOutput = builder(yargs2.reset(parsed.aliases));
+          const innerYargs = isYargsInstance(builderOutput) ? builderOutput : yargs2;
+          if (shouldUpdateUsage(innerYargs)) {
+            innerYargs.getUsageInstance().usage(usageFromParentCommandsCommandHandler(parentCommands, commandHandler), commandHandler.description);
+          }
+          innerArgv = innerYargs._parseArgs(null, null, true, commandIndex);
+          aliases = innerYargs.parsed.aliases;
+        } else if (isCommandBuilderOptionDefinitions(builder)) {
+          const innerYargs = yargs2.reset(parsed.aliases);
+          if (shouldUpdateUsage(innerYargs)) {
+            innerYargs.getUsageInstance().usage(usageFromParentCommandsCommandHandler(parentCommands, commandHandler), commandHandler.description);
+          }
+          Object.keys(commandHandler.builder).forEach((key) => {
+            innerYargs.option(key, builder[key]);
+          });
+          innerArgv = innerYargs._parseArgs(null, null, true, commandIndex);
+          aliases = innerYargs.parsed.aliases;
+        }
+        if (!yargs2._hasOutput()) {
+          positionalMap = populatePositionals(commandHandler, innerArgv, currentContext);
+        }
+        const middlewares = globalMiddleware.slice(0).concat(commandHandler.middlewares);
+        applyMiddleware(innerArgv, yargs2, middlewares, true);
+        if (!yargs2._hasOutput()) {
+          yargs2._runValidation(innerArgv, aliases, positionalMap, yargs2.parsed.error, !command2);
+        }
+        if (commandHandler.handler && !yargs2._hasOutput()) {
+          yargs2._setHasOutput();
+          const populateDoubleDash = !!yargs2.getOptions().configuration["populate--"];
+          yargs2._postProcess(innerArgv, populateDoubleDash);
+          innerArgv = applyMiddleware(innerArgv, yargs2, middlewares, false);
+          let handlerResult;
+          if (isPromise(innerArgv)) {
+            handlerResult = innerArgv.then((argv) => commandHandler.handler(argv));
+          } else {
+            handlerResult = commandHandler.handler(innerArgv);
+          }
+          const handlerFinishCommand = yargs2.getHandlerFinishCommand();
+          if (isPromise(handlerResult)) {
+            yargs2.getUsageInstance().cacheHelpMessage();
+            handlerResult.then((value) => {
+              if (handlerFinishCommand) {
+                handlerFinishCommand(value);
+              }
+            }).catch((error) => {
+              try {
+                yargs2.getUsageInstance().fail(null, error);
+              } catch (err) {
+              }
+            }).then(() => {
+              yargs2.getUsageInstance().clearCachedHelpMessage();
+            });
+          } else {
+            if (handlerFinishCommand) {
+              handlerFinishCommand(handlerResult);
+            }
+          }
+        }
+        if (command2) {
+          currentContext.commands.pop();
+          currentContext.fullCommands.pop();
+        }
+        numFiles = currentContext.files.length - numFiles;
+        if (numFiles > 0)
+          currentContext.files.splice(numFiles * -1, numFiles);
+        return innerArgv;
+      };
+      function shouldUpdateUsage(yargs2) {
+        return !yargs2.getUsageInstance().getUsageDisabled() && yargs2.getUsageInstance().getUsage().length === 0;
+      }
+      function usageFromParentCommandsCommandHandler(parentCommands, commandHandler) {
+        const c = DEFAULT_MARKER.test(commandHandler.original) ? commandHandler.original.replace(DEFAULT_MARKER, "").trim() : commandHandler.original;
+        const pc = parentCommands.filter((c2) => {
+          return !DEFAULT_MARKER.test(c2);
+        });
+        pc.push(c);
+        return `$0 ${pc.join(" ")}`;
+      }
+      self2.runDefaultBuilderOn = function(yargs2) {
+        assertNotStrictEqual(defaultCommand, void 0, shim2);
+        if (shouldUpdateUsage(yargs2)) {
+          const commandString = DEFAULT_MARKER.test(defaultCommand.original) ? defaultCommand.original : defaultCommand.original.replace(/^[^[\]<>]*/, "$0 ");
+          yargs2.getUsageInstance().usage(commandString, defaultCommand.description);
+        }
+        const builder = defaultCommand.builder;
+        if (isCommandBuilderCallback(builder)) {
+          builder(yargs2);
+        } else if (!isCommandBuilderDefinition(builder)) {
+          Object.keys(builder).forEach((key) => {
+            yargs2.option(key, builder[key]);
+          });
+        }
+      };
+      function populatePositionals(commandHandler, argv, context) {
+        argv._ = argv._.slice(context.commands.length);
+        const demanded = commandHandler.demanded.slice(0);
+        const optional = commandHandler.optional.slice(0);
+        const positionalMap = {};
+        validation2.positionalCount(demanded.length, argv._.length);
+        while (demanded.length) {
+          const demand = demanded.shift();
+          populatePositional(demand, argv, positionalMap);
+        }
+        while (optional.length) {
+          const maybe = optional.shift();
+          populatePositional(maybe, argv, positionalMap);
+        }
+        argv._ = context.commands.concat(argv._.map((a) => "" + a));
+        postProcessPositionals(argv, positionalMap, self2.cmdToParseOptions(commandHandler.original));
+        return positionalMap;
+      }
+      function populatePositional(positional, argv, positionalMap) {
+        const cmd = positional.cmd[0];
+        if (positional.variadic) {
+          positionalMap[cmd] = argv._.splice(0).map(String);
+        } else {
+          if (argv._.length)
+            positionalMap[cmd] = [String(argv._.shift())];
+        }
+      }
+      function postProcessPositionals(argv, positionalMap, parseOptions) {
+        const options2 = Object.assign({}, yargs.getOptions());
+        options2.default = Object.assign(parseOptions.default, options2.default);
+        for (const key of Object.keys(parseOptions.alias)) {
+          options2.alias[key] = (options2.alias[key] || []).concat(parseOptions.alias[key]);
+        }
+        options2.array = options2.array.concat(parseOptions.array);
+        options2.config = {};
+        const unparsed = [];
+        Object.keys(positionalMap).forEach((key) => {
+          positionalMap[key].map((value) => {
+            if (options2.configuration["unknown-options-as-args"])
+              options2.key[key] = true;
+            unparsed.push(`--${key}`);
+            unparsed.push(value);
+          });
+        });
+        if (!unparsed.length)
+          return;
+        const config = Object.assign({}, options2.configuration, {
+          "populate--": true
+        });
+        const parsed = shim2.Parser.detailed(unparsed, Object.assign({}, options2, {
+          configuration: config
+        }));
+        if (parsed.error) {
+          yargs.getUsageInstance().fail(parsed.error.message, parsed.error);
+        } else {
+          const positionalKeys = Object.keys(positionalMap);
+          Object.keys(positionalMap).forEach((key) => {
+            positionalKeys.push(...parsed.aliases[key]);
+          });
+          Object.keys(parsed.argv).forEach((key) => {
+            if (positionalKeys.indexOf(key) !== -1) {
+              if (!positionalMap[key])
+                positionalMap[key] = parsed.argv[key];
+              argv[key] = parsed.argv[key];
+            }
+          });
+        }
+      }
+      self2.cmdToParseOptions = function(cmdString) {
+        const parseOptions = {
+          array: [],
+          default: {},
+          alias: {},
+          demand: {}
+        };
+        const parsed = parseCommand(cmdString);
+        parsed.demanded.forEach((d) => {
+          const [cmd, ...aliases] = d.cmd;
+          if (d.variadic) {
+            parseOptions.array.push(cmd);
+            parseOptions.default[cmd] = [];
+          }
+          parseOptions.alias[cmd] = aliases;
+          parseOptions.demand[cmd] = true;
+        });
+        parsed.optional.forEach((o2) => {
+          const [cmd, ...aliases] = o2.cmd;
+          if (o2.variadic) {
+            parseOptions.array.push(cmd);
+            parseOptions.default[cmd] = [];
+          }
+          parseOptions.alias[cmd] = aliases;
+        });
+        return parseOptions;
+      };
+      self2.reset = () => {
+        handlers = {};
+        aliasMap = {};
+        defaultCommand = void 0;
+        return self2;
+      };
+      const frozens = [];
+      self2.freeze = () => {
+        frozens.push({
+          handlers,
+          aliasMap,
+          defaultCommand
+        });
+      };
+      self2.unfreeze = () => {
+        const frozen = frozens.pop();
+        assertNotStrictEqual(frozen, void 0, shim2);
+        ({ handlers, aliasMap, defaultCommand } = frozen);
+      };
+      return self2;
+    }
+    function isCommandBuilderDefinition(builder) {
+      return typeof builder === "object" && !!builder.builder && typeof builder.handler === "function";
+    }
+    function isCommandAndAliases(cmd) {
+      if (cmd.every((c) => typeof c === "string")) {
+        return true;
+      } else {
+        return false;
+      }
+    }
+    function isCommandBuilderCallback(builder) {
+      return typeof builder === "function";
+    }
+    function isCommandBuilderOptionDefinitions(builder) {
+      return typeof builder === "object";
+    }
+    function isCommandHandlerDefinition(cmd) {
+      return typeof cmd === "object" && !Array.isArray(cmd);
+    }
+    function setBlocking(blocking) {
+      if (typeof process === "undefined")
+        return;
+      [process.stdout, process.stderr].forEach((_stream) => {
+        const stream = _stream;
+        if (stream._handle && stream.isTTY && typeof stream._handle.setBlocking === "function") {
+          stream._handle.setBlocking(blocking);
+        }
+      });
+    }
+    function usage(yargs, y18n2, shim2) {
+      const __ = y18n2.__;
+      const self2 = {};
+      const fails = [];
+      self2.failFn = function failFn(f) {
+        fails.push(f);
+      };
+      let failMessage = null;
+      let showHelpOnFail = true;
+      self2.showHelpOnFail = function showHelpOnFailFn(arg1 = true, arg2) {
+        function parseFunctionArgs() {
+          return typeof arg1 === "string" ? [true, arg1] : [arg1, arg2];
+        }
+        const [enabled2, message] = parseFunctionArgs();
+        failMessage = message;
+        showHelpOnFail = enabled2;
+        return self2;
+      };
+      let failureOutput = false;
+      self2.fail = function fail(msg, err) {
+        const logger2 = yargs._getLoggerInstance();
+        if (fails.length) {
+          for (let i2 = fails.length - 1; i2 >= 0; --i2) {
+            fails[i2](msg, err, self2);
+          }
+        } else {
+          if (yargs.getExitProcess())
+            setBlocking(true);
+          if (!failureOutput) {
+            failureOutput = true;
+            if (showHelpOnFail) {
+              yargs.showHelp("error");
+              logger2.error();
+            }
+            if (msg || err)
+              logger2.error(msg || err);
+            if (failMessage) {
+              if (msg || err)
+                logger2.error("");
+              logger2.error(failMessage);
+            }
+          }
+          err = err || new YError(msg);
+          if (yargs.getExitProcess()) {
+            return yargs.exit(1);
+          } else if (yargs._hasParseCallback()) {
+            return yargs.exit(1, err);
+          } else {
+            throw err;
+          }
+        }
+      };
+      let usages = [];
+      let usageDisabled = false;
+      self2.usage = (msg, description) => {
+        if (msg === null) {
+          usageDisabled = true;
+          usages = [];
+          return self2;
+        }
+        usageDisabled = false;
+        usages.push([msg, description || ""]);
+        return self2;
+      };
+      self2.getUsage = () => {
+        return usages;
+      };
+      self2.getUsageDisabled = () => {
+        return usageDisabled;
+      };
+      self2.getPositionalGroupName = () => {
+        return __("Positionals:");
+      };
+      let examples = [];
+      self2.example = (cmd, description) => {
+        examples.push([cmd, description || ""]);
+      };
+      let commands = [];
+      self2.command = function command2(cmd, description, isDefault, aliases, deprecated = false) {
+        if (isDefault) {
+          commands = commands.map((cmdArray) => {
+            cmdArray[2] = false;
+            return cmdArray;
+          });
+        }
+        commands.push([cmd, description || "", isDefault, aliases, deprecated]);
+      };
+      self2.getCommands = () => commands;
+      let descriptions = {};
+      self2.describe = function describe(keyOrKeys, desc) {
+        if (Array.isArray(keyOrKeys)) {
+          keyOrKeys.forEach((k) => {
+            self2.describe(k, desc);
+          });
+        } else if (typeof keyOrKeys === "object") {
+          Object.keys(keyOrKeys).forEach((k) => {
+            self2.describe(k, keyOrKeys[k]);
+          });
+        } else {
+          descriptions[keyOrKeys] = desc;
+        }
+      };
+      self2.getDescriptions = () => descriptions;
+      let epilogs = [];
+      self2.epilog = (msg) => {
+        epilogs.push(msg);
+      };
+      let wrapSet = false;
+      let wrap;
+      self2.wrap = (cols) => {
+        wrapSet = true;
+        wrap = cols;
+      };
+      function getWrap() {
+        if (!wrapSet) {
+          wrap = windowWidth();
+          wrapSet = true;
+        }
+        return wrap;
+      }
+      const deferY18nLookupPrefix = "__yargsString__:";
+      self2.deferY18nLookup = (str) => deferY18nLookupPrefix + str;
+      self2.help = function help() {
+        if (cachedHelpMessage)
+          return cachedHelpMessage;
+        normalizeAliases();
+        const base$0 = yargs.customScriptName ? yargs.$0 : shim2.path.basename(yargs.$0);
+        const demandedOptions = yargs.getDemandedOptions();
+        const demandedCommands = yargs.getDemandedCommands();
+        const deprecatedOptions = yargs.getDeprecatedOptions();
+        const groups = yargs.getGroups();
+        const options2 = yargs.getOptions();
+        let keys = [];
+        keys = keys.concat(Object.keys(descriptions));
+        keys = keys.concat(Object.keys(demandedOptions));
+        keys = keys.concat(Object.keys(demandedCommands));
+        keys = keys.concat(Object.keys(options2.default));
+        keys = keys.filter(filterHiddenOptions);
+        keys = Object.keys(keys.reduce((acc, key) => {
+          if (key !== "_")
+            acc[key] = true;
+          return acc;
+        }, {}));
+        const theWrap = getWrap();
+        const ui = shim2.cliui({
+          width: theWrap,
+          wrap: !!theWrap
+        });
+        if (!usageDisabled) {
+          if (usages.length) {
+            usages.forEach((usage2) => {
+              ui.div(`${usage2[0].replace(/\$0/g, base$0)}`);
+              if (usage2[1]) {
+                ui.div({ text: `${usage2[1]}`, padding: [1, 0, 0, 0] });
+              }
+            });
+            ui.div();
+          } else if (commands.length) {
+            let u2 = null;
+            if (demandedCommands._) {
+              u2 = `${base$0} <${__("command")}>
+`;
+            } else {
+              u2 = `${base$0} [${__("command")}]
+`;
+            }
+            ui.div(`${u2}`);
+          }
+        }
+        if (commands.length) {
+          ui.div(__("Commands:"));
+          const context = yargs.getContext();
+          const parentCommands = context.commands.length ? `${context.commands.join(" ")} ` : "";
+          if (yargs.getParserConfiguration()["sort-commands"] === true) {
+            commands = commands.sort((a, b) => a[0].localeCompare(b[0]));
+          }
+          commands.forEach((command2) => {
+            const commandString = `${base$0} ${parentCommands}${command2[0].replace(/^\$0 ?/, "")}`;
+            ui.span({
+              text: commandString,
+              padding: [0, 2, 0, 2],
+              width: maxWidth(commands, theWrap, `${base$0}${parentCommands}`) + 4
+            }, { text: command2[1] });
+            const hints = [];
+            if (command2[2])
+              hints.push(`[${__("default")}]`);
+            if (command2[3] && command2[3].length) {
+              hints.push(`[${__("aliases:")} ${command2[3].join(", ")}]`);
+            }
+            if (command2[4]) {
+              if (typeof command2[4] === "string") {
+                hints.push(`[${__("deprecated: %s", command2[4])}]`);
+              } else {
+                hints.push(`[${__("deprecated")}]`);
+              }
+            }
+            if (hints.length) {
+              ui.div({
+                text: hints.join(" "),
+                padding: [0, 0, 0, 2],
+                align: "right"
+              });
+            } else {
+              ui.div();
+            }
+          });
+          ui.div();
+        }
+        const aliasKeys = (Object.keys(options2.alias) || []).concat(Object.keys(yargs.parsed.newAliases) || []);
+        keys = keys.filter((key) => !yargs.parsed.newAliases[key] && aliasKeys.every((alias) => (options2.alias[alias] || []).indexOf(key) === -1));
+        const defaultGroup = __("Options:");
+        if (!groups[defaultGroup])
+          groups[defaultGroup] = [];
+        addUngroupedKeys(keys, options2.alias, groups, defaultGroup);
+        const isLongSwitch = (sw) => /^--/.test(getText(sw));
+        const displayedGroups = Object.keys(groups).filter((groupName) => groups[groupName].length > 0).map((groupName) => {
+          const normalizedKeys = groups[groupName].filter(filterHiddenOptions).map((key) => {
+            if (~aliasKeys.indexOf(key))
+              return key;
+            for (let i2 = 0, aliasKey; (aliasKey = aliasKeys[i2]) !== void 0; i2++) {
+              if (~(options2.alias[aliasKey] || []).indexOf(key))
+                return aliasKey;
+            }
+            return key;
+          });
+          return { groupName, normalizedKeys };
+        }).filter(({ normalizedKeys }) => normalizedKeys.length > 0).map(({ groupName, normalizedKeys }) => {
+          const switches = normalizedKeys.reduce((acc, key) => {
+            acc[key] = [key].concat(options2.alias[key] || []).map((sw) => {
+              if (groupName === self2.getPositionalGroupName())
+                return sw;
+              else {
+                return (/^[0-9]$/.test(sw) ? ~options2.boolean.indexOf(key) ? "-" : "--" : sw.length > 1 ? "--" : "-") + sw;
+              }
+            }).sort((sw1, sw2) => isLongSwitch(sw1) === isLongSwitch(sw2) ? 0 : isLongSwitch(sw1) ? 1 : -1).join(", ");
+            return acc;
+          }, {});
+          return { groupName, normalizedKeys, switches };
+        });
+        const shortSwitchesUsed = displayedGroups.filter(({ groupName }) => groupName !== self2.getPositionalGroupName()).some(({ normalizedKeys, switches }) => !normalizedKeys.every((key) => isLongSwitch(switches[key])));
+        if (shortSwitchesUsed) {
+          displayedGroups.filter(({ groupName }) => groupName !== self2.getPositionalGroupName()).forEach(({ normalizedKeys, switches }) => {
+            normalizedKeys.forEach((key) => {
+              if (isLongSwitch(switches[key])) {
+                switches[key] = addIndentation(switches[key], "-x, ".length);
+              }
+            });
+          });
+        }
+        displayedGroups.forEach(({ groupName, normalizedKeys, switches }) => {
+          ui.div(groupName);
+          normalizedKeys.forEach((key) => {
+            const kswitch = switches[key];
+            let desc = descriptions[key] || "";
+            let type = null;
+            if (~desc.lastIndexOf(deferY18nLookupPrefix))
+              desc = __(desc.substring(deferY18nLookupPrefix.length));
+            if (~options2.boolean.indexOf(key))
+              type = `[${__("boolean")}]`;
+            if (~options2.count.indexOf(key))
+              type = `[${__("count")}]`;
+            if (~options2.string.indexOf(key))
+              type = `[${__("string")}]`;
+            if (~options2.normalize.indexOf(key))
+              type = `[${__("string")}]`;
+            if (~options2.array.indexOf(key))
+              type = `[${__("array")}]`;
+            if (~options2.number.indexOf(key))
+              type = `[${__("number")}]`;
+            const deprecatedExtra = (deprecated) => typeof deprecated === "string" ? `[${__("deprecated: %s", deprecated)}]` : `[${__("deprecated")}]`;
+            const extra = [
+              key in deprecatedOptions ? deprecatedExtra(deprecatedOptions[key]) : null,
+              type,
+              key in demandedOptions ? `[${__("required")}]` : null,
+              options2.choices && options2.choices[key] ? `[${__("choices:")} ${self2.stringifiedValues(options2.choices[key])}]` : null,
+              defaultString(options2.default[key], options2.defaultDescription[key])
+            ].filter(Boolean).join(" ");
+            ui.span({
+              text: getText(kswitch),
+              padding: [0, 2, 0, 2 + getIndentation(kswitch)],
+              width: maxWidth(switches, theWrap) + 4
+            }, desc);
+            if (extra)
+              ui.div({ text: extra, padding: [0, 0, 0, 2], align: "right" });
+            else
+              ui.div();
+          });
+          ui.div();
+        });
+        if (examples.length) {
+          ui.div(__("Examples:"));
+          examples.forEach((example) => {
+            example[0] = example[0].replace(/\$0/g, base$0);
+          });
+          examples.forEach((example) => {
+            if (example[1] === "") {
+              ui.div({
+                text: example[0],
+                padding: [0, 2, 0, 2]
+              });
+            } else {
+              ui.div({
+                text: example[0],
+                padding: [0, 2, 0, 2],
+                width: maxWidth(examples, theWrap) + 4
+              }, {
+                text: example[1]
+              });
+            }
+          });
+          ui.div();
+        }
+        if (epilogs.length > 0) {
+          const e2 = epilogs.map((epilog) => epilog.replace(/\$0/g, base$0)).join("\n");
+          ui.div(`${e2}
+`);
+        }
+        return ui.toString().replace(/\s*$/, "");
+      };
+      function maxWidth(table, theWrap, modifier) {
+        let width = 0;
+        if (!Array.isArray(table)) {
+          table = Object.values(table).map((v2) => [v2]);
+        }
+        table.forEach((v2) => {
+          width = Math.max(shim2.stringWidth(modifier ? `${modifier} ${getText(v2[0])}` : getText(v2[0])) + getIndentation(v2[0]), width);
+        });
+        if (theWrap)
+          width = Math.min(width, parseInt((theWrap * 0.5).toString(), 10));
+        return width;
+      }
+      function normalizeAliases() {
+        const demandedOptions = yargs.getDemandedOptions();
+        const options2 = yargs.getOptions();
+        (Object.keys(options2.alias) || []).forEach((key) => {
+          options2.alias[key].forEach((alias) => {
+            if (descriptions[alias])
+              self2.describe(key, descriptions[alias]);
+            if (alias in demandedOptions)
+              yargs.demandOption(key, demandedOptions[alias]);
+            if (~options2.boolean.indexOf(alias))
+              yargs.boolean(key);
+            if (~options2.count.indexOf(alias))
+              yargs.count(key);
+            if (~options2.string.indexOf(alias))
+              yargs.string(key);
+            if (~options2.normalize.indexOf(alias))
+              yargs.normalize(key);
+            if (~options2.array.indexOf(alias))
+              yargs.array(key);
+            if (~options2.number.indexOf(alias))
+              yargs.number(key);
+          });
+        });
+      }
+      let cachedHelpMessage;
+      self2.cacheHelpMessage = function() {
+        cachedHelpMessage = this.help();
+      };
+      self2.clearCachedHelpMessage = function() {
+        cachedHelpMessage = void 0;
+      };
+      function addUngroupedKeys(keys, aliases, groups, defaultGroup) {
+        let groupedKeys = [];
+        let toCheck = null;
+        Object.keys(groups).forEach((group) => {
+          groupedKeys = groupedKeys.concat(groups[group]);
+        });
+        keys.forEach((key) => {
+          toCheck = [key].concat(aliases[key]);
+          if (!toCheck.some((k) => groupedKeys.indexOf(k) !== -1)) {
+            groups[defaultGroup].push(key);
+          }
+        });
+        return groupedKeys;
+      }
+      function filterHiddenOptions(key) {
+        return yargs.getOptions().hiddenOptions.indexOf(key) < 0 || yargs.parsed.argv[yargs.getOptions().showHiddenOpt];
+      }
+      self2.showHelp = (level) => {
+        const logger2 = yargs._getLoggerInstance();
+        if (!level)
+          level = "error";
+        const emit = typeof level === "function" ? level : logger2[level];
+        emit(self2.help());
+      };
+      self2.functionDescription = (fn) => {
+        const description = fn.name ? shim2.Parser.decamelize(fn.name, "-") : __("generated-value");
+        return ["(", description, ")"].join("");
+      };
+      self2.stringifiedValues = function stringifiedValues(values, separator) {
+        let string = "";
+        const sep = separator || ", ";
+        const array = [].concat(values);
+        if (!values || !array.length)
+          return string;
+        array.forEach((value) => {
+          if (string.length)
+            string += sep;
+          string += JSON.stringify(value);
+        });
+        return string;
+      };
+      function defaultString(value, defaultDescription) {
+        let string = `[${__("default:")} `;
+        if (value === void 0 && !defaultDescription)
+          return null;
+        if (defaultDescription) {
+          string += defaultDescription;
+        } else {
+          switch (typeof value) {
+            case "string":
+              string += `"${value}"`;
+              break;
+            case "object":
+              string += JSON.stringify(value);
+              break;
+            default:
+              string += value;
+          }
+        }
+        return `${string}]`;
+      }
+      function windowWidth() {
+        const maxWidth2 = 80;
+        if (shim2.process.stdColumns) {
+          return Math.min(maxWidth2, shim2.process.stdColumns);
+        } else {
+          return maxWidth2;
+        }
+      }
+      let version = null;
+      self2.version = (ver) => {
+        version = ver;
+      };
+      self2.showVersion = () => {
+        const logger2 = yargs._getLoggerInstance();
+        logger2.log(version);
+      };
+      self2.reset = function reset(localLookup) {
+        failMessage = null;
+        failureOutput = false;
+        usages = [];
+        usageDisabled = false;
+        epilogs = [];
+        examples = [];
+        commands = [];
+        descriptions = objFilter(descriptions, (k) => !localLookup[k]);
+        return self2;
+      };
+      const frozens = [];
+      self2.freeze = function freeze() {
+        frozens.push({
+          failMessage,
+          failureOutput,
+          usages,
+          usageDisabled,
+          epilogs,
+          examples,
+          commands,
+          descriptions
+        });
+      };
+      self2.unfreeze = function unfreeze() {
+        const frozen = frozens.pop();
+        assertNotStrictEqual(frozen, void 0, shim2);
+        ({
+          failMessage,
+          failureOutput,
+          usages,
+          usageDisabled,
+          epilogs,
+          examples,
+          commands,
+          descriptions
+        } = frozen);
+      };
+      return self2;
+    }
+    function isIndentedText(text) {
+      return typeof text === "object";
+    }
+    function addIndentation(text, indent) {
+      return isIndentedText(text) ? { text: text.text, indentation: text.indentation + indent } : { text, indentation: indent };
+    }
+    function getIndentation(text) {
+      return isIndentedText(text) ? text.indentation : 0;
+    }
+    function getText(text) {
+      return isIndentedText(text) ? text.text : text;
+    }
+    var completionShTemplate = `###-begin-{{app_name}}-completions-###
+#
+# yargs command completion script
+#
+# Installation: {{app_path}} {{completion_command}} >> ~/.bashrc
+#    or {{app_path}} {{completion_command}} >> ~/.bash_profile on OSX.
+#
+_yargs_completions()
+{
+    local cur_word args type_list
+
+    cur_word="\${COMP_WORDS[COMP_CWORD]}"
+    args=("\${COMP_WORDS[@]}")
+
+    # ask yargs to generate completions.
+    type_list=$({{app_path}} --get-yargs-completions "\${args[@]}")
+
+    COMPREPLY=( $(compgen -W "\${type_list}" -- \${cur_word}) )
+
+    # if no match was found, fall back to filename completion
+    if [ \${#COMPREPLY[@]} -eq 0 ]; then
+      COMPREPLY=()
+    fi
+
+    return 0
+}
+complete -o default -F _yargs_completions {{app_name}}
+###-end-{{app_name}}-completions-###
+`;
+    var completionZshTemplate = `###-begin-{{app_name}}-completions-###
+#
+# yargs command completion script
+#
+# Installation: {{app_path}} {{completion_command}} >> ~/.zshrc
+#    or {{app_path}} {{completion_command}} >> ~/.zsh_profile on OSX.
+#
+_{{app_name}}_yargs_completions()
+{
+  local reply
+  local si=$IFS
+  IFS=$'
+' reply=($(COMP_CWORD="$((CURRENT-1))" COMP_LINE="$BUFFER" COMP_POINT="$CURSOR" {{app_path}} --get-yargs-completions "\${words[@]}"))
+  IFS=$si
+  _describe 'values' reply
+}
+compdef _{{app_name}}_yargs_completions {{app_name}}
+###-end-{{app_name}}-completions-###
+`;
+    function completion(yargs, usage2, command2, shim2) {
+      const self2 = {
+        completionKey: "get-yargs-completions"
+      };
+      let aliases;
+      self2.setParsed = function setParsed(parsed) {
+        aliases = parsed.aliases;
+      };
+      const zshShell = shim2.getEnv("SHELL") && shim2.getEnv("SHELL").indexOf("zsh") !== -1 || shim2.getEnv("ZSH_NAME") && shim2.getEnv("ZSH_NAME").indexOf("zsh") !== -1;
+      self2.getCompletion = function getCompletion(args, done) {
+        const completions = [];
+        const current = args.length ? args[args.length - 1] : "";
+        const argv = yargs.parse(args, true);
+        const parentCommands = yargs.getContext().commands;
+        function runCompletionFunction(argv2) {
+          assertNotStrictEqual(completionFunction, null, shim2);
+          if (isSyncCompletionFunction(completionFunction)) {
+            const result = completionFunction(current, argv2);
+            if (isPromise(result)) {
+              return result.then((list) => {
+                shim2.process.nextTick(() => {
+                  done(list);
+                });
+              }).catch((err) => {
+                shim2.process.nextTick(() => {
+                  throw err;
+                });
+              });
+            }
+            return done(result);
+          } else {
+            return completionFunction(current, argv2, (completions2) => {
+              done(completions2);
+            });
+          }
+        }
+        if (completionFunction) {
+          return isPromise(argv) ? argv.then(runCompletionFunction) : runCompletionFunction(argv);
+        }
+        const handlers = command2.getCommandHandlers();
+        for (let i2 = 0, ii = args.length; i2 < ii; ++i2) {
+          if (handlers[args[i2]] && handlers[args[i2]].builder) {
+            const builder = handlers[args[i2]].builder;
+            if (isCommandBuilderCallback(builder)) {
+              const y = yargs.reset();
+              builder(y);
+              return y.argv;
+            }
+          }
+        }
+        if (!current.match(/^-/) && parentCommands[parentCommands.length - 1] !== current) {
+          usage2.getCommands().forEach((usageCommand) => {
+            const commandName = parseCommand(usageCommand[0]).cmd;
+            if (args.indexOf(commandName) === -1) {
+              if (!zshShell) {
+                completions.push(commandName);
+              } else {
+                const desc = usageCommand[1] || "";
+                completions.push(commandName.replace(/:/g, "\\:") + ":" + desc);
+              }
+            }
+          });
+        }
+        if (current.match(/^-/) || current === "" && completions.length === 0) {
+          const descs = usage2.getDescriptions();
+          const options2 = yargs.getOptions();
+          Object.keys(options2.key).forEach((key) => {
+            const negable = !!options2.configuration["boolean-negation"] && options2.boolean.includes(key);
+            let keyAndAliases = [key].concat(aliases[key] || []);
+            if (negable)
+              keyAndAliases = keyAndAliases.concat(keyAndAliases.map((key2) => `no-${key2}`));
+            function completeOptionKey(key2) {
+              const notInArgs = keyAndAliases.every((val) => args.indexOf(`--${val}`) === -1);
+              if (notInArgs) {
+                const startsByTwoDashes = (s) => /^--/.test(s);
+                const isShortOption = (s) => /^[^0-9]$/.test(s);
+                const dashes = !startsByTwoDashes(current) && isShortOption(key2) ? "-" : "--";
+                if (!zshShell) {
+                  completions.push(dashes + key2);
+                } else {
+                  const desc = descs[key2] || "";
+                  completions.push(dashes + `${key2.replace(/:/g, "\\:")}:${desc.replace("__yargsString__:", "")}`);
+                }
+              }
+            }
+            completeOptionKey(key);
+            if (negable && !!options2.default[key])
+              completeOptionKey(`no-${key}`);
+          });
+        }
+        done(completions);
+      };
+      self2.generateCompletionScript = function generateCompletionScript($0, cmd) {
+        let script = zshShell ? completionZshTemplate : completionShTemplate;
+        const name = shim2.path.basename($0);
+        if ($0.match(/\.js$/))
+          $0 = `./${$0}`;
+        script = script.replace(/{{app_name}}/g, name);
+        script = script.replace(/{{completion_command}}/g, cmd);
+        return script.replace(/{{app_path}}/g, $0);
+      };
+      let completionFunction = null;
+      self2.registerFunction = (fn) => {
+        completionFunction = fn;
+      };
+      return self2;
+    }
+    function isSyncCompletionFunction(completionFunction) {
+      return completionFunction.length < 3;
+    }
+    function levenshtein(a, b) {
+      if (a.length === 0)
+        return b.length;
+      if (b.length === 0)
+        return a.length;
+      const matrix = [];
+      let i2;
+      for (i2 = 0; i2 <= b.length; i2++) {
+        matrix[i2] = [i2];
+      }
+      let j;
+      for (j = 0; j <= a.length; j++) {
+        matrix[0][j] = j;
+      }
+      for (i2 = 1; i2 <= b.length; i2++) {
+        for (j = 1; j <= a.length; j++) {
+          if (b.charAt(i2 - 1) === a.charAt(j - 1)) {
+            matrix[i2][j] = matrix[i2 - 1][j - 1];
+          } else {
+            matrix[i2][j] = Math.min(matrix[i2 - 1][j - 1] + 1, Math.min(matrix[i2][j - 1] + 1, matrix[i2 - 1][j] + 1));
+          }
+        }
+      }
+      return matrix[b.length][a.length];
+    }
+    var specialKeys = ["$0", "--", "_"];
+    function validation(yargs, usage2, y18n2, shim2) {
+      const __ = y18n2.__;
+      const __n = y18n2.__n;
+      const self2 = {};
+      self2.nonOptionCount = function nonOptionCount(argv) {
+        const demandedCommands = yargs.getDemandedCommands();
+        const positionalCount = argv._.length + (argv["--"] ? argv["--"].length : 0);
+        const _s = positionalCount - yargs.getContext().commands.length;
+        if (demandedCommands._ && (_s < demandedCommands._.min || _s > demandedCommands._.max)) {
+          if (_s < demandedCommands._.min) {
+            if (demandedCommands._.minMsg !== void 0) {
+              usage2.fail(demandedCommands._.minMsg ? demandedCommands._.minMsg.replace(/\$0/g, _s.toString()).replace(/\$1/, demandedCommands._.min.toString()) : null);
+            } else {
+              usage2.fail(__n("Not enough non-option arguments: got %s, need at least %s", "Not enough non-option arguments: got %s, need at least %s", _s, _s.toString(), demandedCommands._.min.toString()));
+            }
+          } else if (_s > demandedCommands._.max) {
+            if (demandedCommands._.maxMsg !== void 0) {
+              usage2.fail(demandedCommands._.maxMsg ? demandedCommands._.maxMsg.replace(/\$0/g, _s.toString()).replace(/\$1/, demandedCommands._.max.toString()) : null);
+            } else {
+              usage2.fail(__n("Too many non-option arguments: got %s, maximum of %s", "Too many non-option arguments: got %s, maximum of %s", _s, _s.toString(), demandedCommands._.max.toString()));
+            }
+          }
+        }
+      };
+      self2.positionalCount = function positionalCount(required, observed) {
+        if (observed < required) {
+          usage2.fail(__n("Not enough non-option arguments: got %s, need at least %s", "Not enough non-option arguments: got %s, need at least %s", observed, observed + "", required + ""));
+        }
+      };
+      self2.requiredArguments = function requiredArguments(argv) {
+        const demandedOptions = yargs.getDemandedOptions();
+        let missing = null;
+        for (const key of Object.keys(demandedOptions)) {
+          if (!Object.prototype.hasOwnProperty.call(argv, key) || typeof argv[key] === "undefined") {
+            missing = missing || {};
+            missing[key] = demandedOptions[key];
+          }
+        }
+        if (missing) {
+          const customMsgs = [];
+          for (const key of Object.keys(missing)) {
+            const msg = missing[key];
+            if (msg && customMsgs.indexOf(msg) < 0) {
+              customMsgs.push(msg);
+            }
+          }
+          const customMsg = customMsgs.length ? `
+${customMsgs.join("\n")}` : "";
+          usage2.fail(__n("Missing required argument: %s", "Missing required arguments: %s", Object.keys(missing).length, Object.keys(missing).join(", ") + customMsg));
+        }
+      };
+      self2.unknownArguments = function unknownArguments(argv, aliases, positionalMap, isDefaultCommand, checkPositionals = true) {
+        const commandKeys = yargs.getCommandInstance().getCommands();
+        const unknown = [];
+        const currentContext = yargs.getContext();
+        Object.keys(argv).forEach((key) => {
+          if (specialKeys.indexOf(key) === -1 && !Object.prototype.hasOwnProperty.call(positionalMap, key) && !Object.prototype.hasOwnProperty.call(yargs._getParseContext(), key) && !self2.isValidAndSomeAliasIsNotNew(key, aliases)) {
+            unknown.push(key);
+          }
+        });
+        if (checkPositionals && (currentContext.commands.length > 0 || commandKeys.length > 0 || isDefaultCommand)) {
+          argv._.slice(currentContext.commands.length).forEach((key) => {
+            if (commandKeys.indexOf("" + key) === -1) {
+              unknown.push("" + key);
+            }
+          });
+        }
+        if (unknown.length > 0) {
+          usage2.fail(__n("Unknown argument: %s", "Unknown arguments: %s", unknown.length, unknown.join(", ")));
+        }
+      };
+      self2.unknownCommands = function unknownCommands(argv) {
+        const commandKeys = yargs.getCommandInstance().getCommands();
+        const unknown = [];
+        const currentContext = yargs.getContext();
+        if (currentContext.commands.length > 0 || commandKeys.length > 0) {
+          argv._.slice(currentContext.commands.length).forEach((key) => {
+            if (commandKeys.indexOf("" + key) === -1) {
+              unknown.push("" + key);
+            }
+          });
+        }
+        if (unknown.length > 0) {
+          usage2.fail(__n("Unknown command: %s", "Unknown commands: %s", unknown.length, unknown.join(", ")));
+          return true;
+        } else {
+          return false;
+        }
+      };
+      self2.isValidAndSomeAliasIsNotNew = function isValidAndSomeAliasIsNotNew(key, aliases) {
+        if (!Object.prototype.hasOwnProperty.call(aliases, key)) {
+          return false;
+        }
+        const newAliases = yargs.parsed.newAliases;
+        for (const a of [key, ...aliases[key]]) {
+          if (!Object.prototype.hasOwnProperty.call(newAliases, a) || !newAliases[key]) {
+            return true;
+          }
+        }
+        return false;
+      };
+      self2.limitedChoices = function limitedChoices(argv) {
+        const options2 = yargs.getOptions();
+        const invalid = {};
+        if (!Object.keys(options2.choices).length)
+          return;
+        Object.keys(argv).forEach((key) => {
+          if (specialKeys.indexOf(key) === -1 && Object.prototype.hasOwnProperty.call(options2.choices, key)) {
+            [].concat(argv[key]).forEach((value) => {
+              if (options2.choices[key].indexOf(value) === -1 && value !== void 0) {
+                invalid[key] = (invalid[key] || []).concat(value);
+              }
+            });
+          }
+        });
+        const invalidKeys = Object.keys(invalid);
+        if (!invalidKeys.length)
+          return;
+        let msg = __("Invalid values:");
+        invalidKeys.forEach((key) => {
+          msg += `
+  ${__("Argument: %s, Given: %s, Choices: %s", key, usage2.stringifiedValues(invalid[key]), usage2.stringifiedValues(options2.choices[key]))}`;
+        });
+        usage2.fail(msg);
+      };
+      let checks = [];
+      self2.check = function check(f, global2) {
+        checks.push({
+          func: f,
+          global: global2
+        });
+      };
+      self2.customChecks = function customChecks(argv, aliases) {
+        for (let i2 = 0, f; (f = checks[i2]) !== void 0; i2++) {
+          const func = f.func;
+          let result = null;
+          try {
+            result = func(argv, aliases);
+          } catch (err) {
+            usage2.fail(err.message ? err.message : err, err);
+            continue;
+          }
+          if (!result) {
+            usage2.fail(__("Argument check failed: %s", func.toString()));
+          } else if (typeof result === "string" || result instanceof Error) {
+            usage2.fail(result.toString(), result);
+          }
+        }
+      };
+      let implied = {};
+      self2.implies = function implies(key, value) {
+        argsert("<string|object> [array|number|string]", [key, value], arguments.length);
+        if (typeof key === "object") {
+          Object.keys(key).forEach((k) => {
+            self2.implies(k, key[k]);
+          });
+        } else {
+          yargs.global(key);
+          if (!implied[key]) {
+            implied[key] = [];
+          }
+          if (Array.isArray(value)) {
+            value.forEach((i2) => self2.implies(key, i2));
+          } else {
+            assertNotStrictEqual(value, void 0, shim2);
+            implied[key].push(value);
+          }
+        }
+      };
+      self2.getImplied = function getImplied() {
+        return implied;
+      };
+      function keyExists(argv, val) {
+        const num = Number(val);
+        val = isNaN(num) ? val : num;
+        if (typeof val === "number") {
+          val = argv._.length >= val;
+        } else if (val.match(/^--no-.+/)) {
+          val = val.match(/^--no-(.+)/)[1];
+          val = !argv[val];
+        } else {
+          val = argv[val];
+        }
+        return val;
+      }
+      self2.implications = function implications(argv) {
+        const implyFail = [];
+        Object.keys(implied).forEach((key) => {
+          const origKey = key;
+          (implied[key] || []).forEach((value) => {
+            let key2 = origKey;
+            const origValue = value;
+            key2 = keyExists(argv, key2);
+            value = keyExists(argv, value);
+            if (key2 && !value) {
+              implyFail.push(` ${origKey} -> ${origValue}`);
+            }
+          });
+        });
+        if (implyFail.length) {
+          let msg = `${__("Implications failed:")}
+`;
+          implyFail.forEach((value) => {
+            msg += value;
+          });
+          usage2.fail(msg);
+        }
+      };
+      let conflicting = {};
+      self2.conflicts = function conflicts(key, value) {
+        argsert("<string|object> [array|string]", [key, value], arguments.length);
+        if (typeof key === "object") {
+          Object.keys(key).forEach((k) => {
+            self2.conflicts(k, key[k]);
+          });
+        } else {
+          yargs.global(key);
+          if (!conflicting[key]) {
+            conflicting[key] = [];
+          }
+          if (Array.isArray(value)) {
+            value.forEach((i2) => self2.conflicts(key, i2));
+          } else {
+            conflicting[key].push(value);
+          }
+        }
+      };
+      self2.getConflicting = () => conflicting;
+      self2.conflicting = function conflictingFn(argv) {
+        Object.keys(argv).forEach((key) => {
+          if (conflicting[key]) {
+            conflicting[key].forEach((value) => {
+              if (value && argv[key] !== void 0 && argv[value] !== void 0) {
+                usage2.fail(__("Arguments %s and %s are mutually exclusive", key, value));
+              }
+            });
+          }
+        });
+      };
+      self2.recommendCommands = function recommendCommands(cmd, potentialCommands) {
+        const threshold = 3;
+        potentialCommands = potentialCommands.sort((a, b) => b.length - a.length);
+        let recommended = null;
+        let bestDistance = Infinity;
+        for (let i2 = 0, candidate; (candidate = potentialCommands[i2]) !== void 0; i2++) {
+          const d = levenshtein(cmd, candidate);
+          if (d <= threshold && d < bestDistance) {
+            bestDistance = d;
+            recommended = candidate;
+          }
+        }
+        if (recommended)
+          usage2.fail(__("Did you mean %s?", recommended));
+      };
+      self2.reset = function reset(localLookup) {
+        implied = objFilter(implied, (k) => !localLookup[k]);
+        conflicting = objFilter(conflicting, (k) => !localLookup[k]);
+        checks = checks.filter((c) => c.global);
+        return self2;
+      };
+      const frozens = [];
+      self2.freeze = function freeze() {
+        frozens.push({
+          implied,
+          checks,
+          conflicting
+        });
+      };
+      self2.unfreeze = function unfreeze() {
+        const frozen = frozens.pop();
+        assertNotStrictEqual(frozen, void 0, shim2);
+        ({ implied, checks, conflicting } = frozen);
+      };
+      return self2;
+    }
+    var shim$1;
+    function YargsWithShim(_shim) {
+      shim$1 = _shim;
+      return Yargs;
+    }
+    function Yargs(processArgs = [], cwd = shim$1.process.cwd(), parentRequire) {
+      const self2 = {};
+      let command$1;
+      let completion$1 = null;
+      let groups = {};
+      const globalMiddleware = [];
+      let output = "";
+      const preservedGroups = {};
+      let usage$1;
+      let validation$1;
+      let handlerFinishCommand = null;
+      const y18n2 = shim$1.y18n;
+      self2.middleware = globalMiddlewareFactory(globalMiddleware, self2);
+      self2.scriptName = function(scriptName) {
+        self2.customScriptName = true;
+        self2.$0 = scriptName;
+        return self2;
+      };
+      let default$0;
+      if (/\b(node|iojs|electron)(\.exe)?$/.test(shim$1.process.argv()[0])) {
+        default$0 = shim$1.process.argv().slice(1, 2);
+      } else {
+        default$0 = shim$1.process.argv().slice(0, 1);
+      }
+      self2.$0 = default$0.map((x2) => {
+        const b = rebase(cwd, x2);
+        return x2.match(/^(\/|([a-zA-Z]:)?\\)/) && b.length < x2.length ? b : x2;
+      }).join(" ").trim();
+      if (shim$1.getEnv("_") && shim$1.getProcessArgvBin() === shim$1.getEnv("_")) {
+        self2.$0 = shim$1.getEnv("_").replace(`${shim$1.path.dirname(shim$1.process.execPath())}/`, "");
+      }
+      const context = { resets: -1, commands: [], fullCommands: [], files: [] };
+      self2.getContext = () => context;
+      let hasOutput = false;
+      let exitError = null;
+      self2.exit = (code2, err) => {
+        hasOutput = true;
+        exitError = err;
+        if (exitProcess)
+          shim$1.process.exit(code2);
+      };
+      let completionCommand = null;
+      self2.completion = function(cmd, desc, fn) {
+        argsert("[string] [string|boolean|function] [function]", [cmd, desc, fn], arguments.length);
+        if (typeof desc === "function") {
+          fn = desc;
+          desc = void 0;
+        }
+        completionCommand = cmd || completionCommand || "completion";
+        if (!desc && desc !== false) {
+          desc = "generate completion script";
+        }
+        self2.command(completionCommand, desc);
+        if (fn)
+          completion$1.registerFunction(fn);
+        return self2;
+      };
+      let options2;
+      self2.resetOptions = self2.reset = function resetOptions(aliases = {}) {
+        context.resets++;
+        options2 = options2 || {};
+        const tmpOptions = {};
+        tmpOptions.local = options2.local ? options2.local : [];
+        tmpOptions.configObjects = options2.configObjects ? options2.configObjects : [];
+        const localLookup = {};
+        tmpOptions.local.forEach((l) => {
+          localLookup[l] = true;
+          (aliases[l] || []).forEach((a) => {
+            localLookup[a] = true;
+          });
+        });
+        Object.assign(preservedGroups, Object.keys(groups).reduce((acc, groupName) => {
+          const keys = groups[groupName].filter((key) => !(key in localLookup));
+          if (keys.length > 0) {
+            acc[groupName] = keys;
+          }
+          return acc;
+        }, {}));
+        groups = {};
+        const arrayOptions = [
+          "array",
+          "boolean",
+          "string",
+          "skipValidation",
+          "count",
+          "normalize",
+          "number",
+          "hiddenOptions"
+        ];
+        const objectOptions = [
+          "narg",
+          "key",
+          "alias",
+          "default",
+          "defaultDescription",
+          "config",
+          "choices",
+          "demandedOptions",
+          "demandedCommands",
+          "coerce",
+          "deprecatedOptions"
+        ];
+        arrayOptions.forEach((k) => {
+          tmpOptions[k] = (options2[k] || []).filter((k2) => !localLookup[k2]);
+        });
+        objectOptions.forEach((k) => {
+          tmpOptions[k] = objFilter(options2[k], (k2) => !localLookup[k2]);
+        });
+        tmpOptions.envPrefix = options2.envPrefix;
+        options2 = tmpOptions;
+        usage$1 = usage$1 ? usage$1.reset(localLookup) : usage(self2, y18n2, shim$1);
+        validation$1 = validation$1 ? validation$1.reset(localLookup) : validation(self2, usage$1, y18n2, shim$1);
+        command$1 = command$1 ? command$1.reset() : command(self2, usage$1, validation$1, globalMiddleware, shim$1);
+        if (!completion$1)
+          completion$1 = completion(self2, usage$1, command$1, shim$1);
+        completionCommand = null;
+        output = "";
+        exitError = null;
+        hasOutput = false;
+        self2.parsed = false;
+        return self2;
+      };
+      self2.resetOptions();
+      const frozens = [];
+      function freeze() {
+        frozens.push({
+          options: options2,
+          configObjects: options2.configObjects.slice(0),
+          exitProcess,
+          groups,
+          strict,
+          strictCommands,
+          strictOptions,
+          completionCommand,
+          output,
+          exitError,
+          hasOutput,
+          parsed: self2.parsed,
+          parseFn,
+          parseContext,
+          handlerFinishCommand
+        });
+        usage$1.freeze();
+        validation$1.freeze();
+        command$1.freeze();
+      }
+      function unfreeze() {
+        const frozen = frozens.pop();
+        assertNotStrictEqual(frozen, void 0, shim$1);
+        let configObjects;
+        ({
+          options: options2,
+          configObjects,
+          exitProcess,
+          groups,
+          output,
+          exitError,
+          hasOutput,
+          parsed: self2.parsed,
+          strict,
+          strictCommands,
+          strictOptions,
+          completionCommand,
+          parseFn,
+          parseContext,
+          handlerFinishCommand
+        } = frozen);
+        options2.configObjects = configObjects;
+        usage$1.unfreeze();
+        validation$1.unfreeze();
+        command$1.unfreeze();
+      }
+      self2.boolean = function(keys) {
+        argsert("<array|string>", [keys], arguments.length);
+        populateParserHintArray("boolean", keys);
+        return self2;
+      };
+      self2.array = function(keys) {
+        argsert("<array|string>", [keys], arguments.length);
+        populateParserHintArray("array", keys);
+        return self2;
+      };
+      self2.number = function(keys) {
+        argsert("<array|string>", [keys], arguments.length);
+        populateParserHintArray("number", keys);
+        return self2;
+      };
+      self2.normalize = function(keys) {
+        argsert("<array|string>", [keys], arguments.length);
+        populateParserHintArray("normalize", keys);
+        return self2;
+      };
+      self2.count = function(keys) {
+        argsert("<array|string>", [keys], arguments.length);
+        populateParserHintArray("count", keys);
+        return self2;
+      };
+      self2.string = function(keys) {
+        argsert("<array|string>", [keys], arguments.length);
+        populateParserHintArray("string", keys);
+        return self2;
+      };
+      self2.requiresArg = function(keys) {
+        argsert("<array|string|object> [number]", [keys], arguments.length);
+        if (typeof keys === "string" && options2.narg[keys]) {
+          return self2;
+        } else {
+          populateParserHintSingleValueDictionary(self2.requiresArg, "narg", keys, NaN);
+        }
+        return self2;
+      };
+      self2.skipValidation = function(keys) {
+        argsert("<array|string>", [keys], arguments.length);
+        populateParserHintArray("skipValidation", keys);
+        return self2;
+      };
+      function populateParserHintArray(type, keys) {
+        keys = [].concat(keys);
+        keys.forEach((key) => {
+          key = sanitizeKey(key);
+          options2[type].push(key);
+        });
+      }
+      self2.nargs = function(key, value) {
+        argsert("<string|object|array> [number]", [key, value], arguments.length);
+        populateParserHintSingleValueDictionary(self2.nargs, "narg", key, value);
+        return self2;
+      };
+      self2.choices = function(key, value) {
+        argsert("<object|string|array> [string|array]", [key, value], arguments.length);
+        populateParserHintArrayDictionary(self2.choices, "choices", key, value);
+        return self2;
+      };
+      self2.alias = function(key, value) {
+        argsert("<object|string|array> [string|array]", [key, value], arguments.length);
+        populateParserHintArrayDictionary(self2.alias, "alias", key, value);
+        return self2;
+      };
+      self2.default = self2.defaults = function(key, value, defaultDescription) {
+        argsert("<object|string|array> [*] [string]", [key, value, defaultDescription], arguments.length);
+        if (defaultDescription) {
+          assertSingleKey(key, shim$1);
+          options2.defaultDescription[key] = defaultDescription;
+        }
+        if (typeof value === "function") {
+          assertSingleKey(key, shim$1);
+          if (!options2.defaultDescription[key])
+            options2.defaultDescription[key] = usage$1.functionDescription(value);
+          value = value.call();
+        }
+        populateParserHintSingleValueDictionary(self2.default, "default", key, value);
+        return self2;
+      };
+      self2.describe = function(key, desc) {
+        argsert("<object|string|array> [string]", [key, desc], arguments.length);
+        setKey(key, true);
+        usage$1.describe(key, desc);
+        return self2;
+      };
+      function setKey(key, set) {
+        populateParserHintSingleValueDictionary(setKey, "key", key, set);
+        return self2;
+      }
+      function demandOption(keys, msg) {
+        argsert("<object|string|array> [string]", [keys, msg], arguments.length);
+        populateParserHintSingleValueDictionary(self2.demandOption, "demandedOptions", keys, msg);
+        return self2;
+      }
+      self2.demandOption = demandOption;
+      self2.coerce = function(keys, value) {
+        argsert("<object|string|array> [function]", [keys, value], arguments.length);
+        populateParserHintSingleValueDictionary(self2.coerce, "coerce", keys, value);
+        return self2;
+      };
+      function populateParserHintSingleValueDictionary(builder, type, key, value) {
+        populateParserHintDictionary(builder, type, key, value, (type2, key2, value2) => {
+          options2[type2][key2] = value2;
+        });
+      }
+      function populateParserHintArrayDictionary(builder, type, key, value) {
+        populateParserHintDictionary(builder, type, key, value, (type2, key2, value2) => {
+          options2[type2][key2] = (options2[type2][key2] || []).concat(value2);
+        });
+      }
+      function populateParserHintDictionary(builder, type, key, value, singleKeyHandler) {
+        if (Array.isArray(key)) {
+          key.forEach((k) => {
+            builder(k, value);
+          });
+        } else if (/* @__PURE__ */ ((key2) => typeof key2 === "object")(key)) {
+          for (const k of objectKeys(key)) {
+            builder(k, key[k]);
+          }
+        } else {
+          singleKeyHandler(type, sanitizeKey(key), value);
+        }
+      }
+      function sanitizeKey(key) {
+        if (key === "__proto__")
+          return "___proto___";
+        return key;
+      }
+      function deleteFromParserHintObject(optionKey) {
+        objectKeys(options2).forEach((hintKey) => {
+          if (/* @__PURE__ */ ((key) => key === "configObjects")(hintKey))
+            return;
+          const hint = options2[hintKey];
+          if (Array.isArray(hint)) {
+            if (~hint.indexOf(optionKey))
+              hint.splice(hint.indexOf(optionKey), 1);
+          } else if (typeof hint === "object") {
+            delete hint[optionKey];
+          }
+        });
+        delete usage$1.getDescriptions()[optionKey];
+      }
+      self2.config = function config(key = "config", msg, parseFn2) {
+        argsert("[object|string] [string|function] [function]", [key, msg, parseFn2], arguments.length);
+        if (typeof key === "object" && !Array.isArray(key)) {
+          key = applyExtends(key, cwd, self2.getParserConfiguration()["deep-merge-config"] || false, shim$1);
+          options2.configObjects = (options2.configObjects || []).concat(key);
+          return self2;
+        }
+        if (typeof msg === "function") {
+          parseFn2 = msg;
+          msg = void 0;
+        }
+        self2.describe(key, msg || usage$1.deferY18nLookup("Path to JSON config file"));
+        (Array.isArray(key) ? key : [key]).forEach((k) => {
+          options2.config[k] = parseFn2 || true;
+        });
+        return self2;
+      };
+      self2.example = function(cmd, description) {
+        argsert("<string|array> [string]", [cmd, description], arguments.length);
+        if (Array.isArray(cmd)) {
+          cmd.forEach((exampleParams) => self2.example(...exampleParams));
+        } else {
+          usage$1.example(cmd, description);
+        }
+        return self2;
+      };
+      self2.command = function(cmd, description, builder, handler, middlewares, deprecated) {
+        argsert("<string|array|object> [string|boolean] [function|object] [function] [array] [boolean|string]", [cmd, description, builder, handler, middlewares, deprecated], arguments.length);
+        command$1.addHandler(cmd, description, builder, handler, middlewares, deprecated);
+        return self2;
+      };
+      self2.commandDir = function(dir, opts) {
+        argsert("<string> [object]", [dir, opts], arguments.length);
+        const req = parentRequire || shim$1.require;
+        command$1.addDirectory(dir, self2.getContext(), req, shim$1.getCallerFile(), opts);
+        return self2;
+      };
+      self2.demand = self2.required = self2.require = function demand(keys, max, msg) {
+        if (Array.isArray(max)) {
+          max.forEach((key) => {
+            assertNotStrictEqual(msg, true, shim$1);
+            demandOption(key, msg);
+          });
+          max = Infinity;
+        } else if (typeof max !== "number") {
+          msg = max;
+          max = Infinity;
+        }
+        if (typeof keys === "number") {
+          assertNotStrictEqual(msg, true, shim$1);
+          self2.demandCommand(keys, max, msg, msg);
+        } else if (Array.isArray(keys)) {
+          keys.forEach((key) => {
+            assertNotStrictEqual(msg, true, shim$1);
+            demandOption(key, msg);
+          });
+        } else {
+          if (typeof msg === "string") {
+            demandOption(keys, msg);
+          } else if (msg === true || typeof msg === "undefined") {
+            demandOption(keys);
+          }
+        }
+        return self2;
+      };
+      self2.demandCommand = function demandCommand(min = 1, max, minMsg, maxMsg) {
+        argsert("[number] [number|string] [string|null|undefined] [string|null|undefined]", [min, max, minMsg, maxMsg], arguments.length);
+        if (typeof max !== "number") {
+          minMsg = max;
+          max = Infinity;
+        }
+        self2.global("_", false);
+        options2.demandedCommands._ = {
+          min,
+          max,
+          minMsg,
+          maxMsg
+        };
+        return self2;
+      };
+      self2.getDemandedOptions = () => {
+        argsert([], 0);
+        return options2.demandedOptions;
+      };
+      self2.getDemandedCommands = () => {
+        argsert([], 0);
+        return options2.demandedCommands;
+      };
+      self2.deprecateOption = function deprecateOption(option, message) {
+        argsert("<string> [string|boolean]", [option, message], arguments.length);
+        options2.deprecatedOptions[option] = message;
+        return self2;
+      };
+      self2.getDeprecatedOptions = () => {
+        argsert([], 0);
+        return options2.deprecatedOptions;
+      };
+      self2.implies = function(key, value) {
+        argsert("<string|object> [number|string|array]", [key, value], arguments.length);
+        validation$1.implies(key, value);
+        return self2;
+      };
+      self2.conflicts = function(key1, key2) {
+        argsert("<string|object> [string|array]", [key1, key2], arguments.length);
+        validation$1.conflicts(key1, key2);
+        return self2;
+      };
+      self2.usage = function(msg, description, builder, handler) {
+        argsert("<string|null|undefined> [string|boolean] [function|object] [function]", [msg, description, builder, handler], arguments.length);
+        if (description !== void 0) {
+          assertNotStrictEqual(msg, null, shim$1);
+          if ((msg || "").match(/^\$0( |$)/)) {
+            return self2.command(msg, description, builder, handler);
+          } else {
+            throw new YError(".usage() description must start with $0 if being used as alias for .command()");
+          }
+        } else {
+          usage$1.usage(msg);
+          return self2;
+        }
+      };
+      self2.epilogue = self2.epilog = function(msg) {
+        argsert("<string>", [msg], arguments.length);
+        usage$1.epilog(msg);
+        return self2;
+      };
+      self2.fail = function(f) {
+        argsert("<function>", [f], arguments.length);
+        usage$1.failFn(f);
+        return self2;
+      };
+      self2.onFinishCommand = function(f) {
+        argsert("<function>", [f], arguments.length);
+        handlerFinishCommand = f;
+        return self2;
+      };
+      self2.getHandlerFinishCommand = () => handlerFinishCommand;
+      self2.check = function(f, _global) {
+        argsert("<function> [boolean]", [f, _global], arguments.length);
+        validation$1.check(f, _global !== false);
+        return self2;
+      };
+      self2.global = function global2(globals, global2) {
+        argsert("<string|array> [boolean]", [globals, global2], arguments.length);
+        globals = [].concat(globals);
+        if (global2 !== false) {
+          options2.local = options2.local.filter((l) => globals.indexOf(l) === -1);
+        } else {
+          globals.forEach((g2) => {
+            if (options2.local.indexOf(g2) === -1)
+              options2.local.push(g2);
+          });
+        }
+        return self2;
+      };
+      self2.pkgConf = function pkgConf(key, rootPath) {
+        argsert("<string> [string]", [key, rootPath], arguments.length);
+        let conf = null;
+        const obj = pkgUp(rootPath || cwd);
+        if (obj[key] && typeof obj[key] === "object") {
+          conf = applyExtends(obj[key], rootPath || cwd, self2.getParserConfiguration()["deep-merge-config"] || false, shim$1);
+          options2.configObjects = (options2.configObjects || []).concat(conf);
+        }
+        return self2;
+      };
+      const pkgs = {};
+      function pkgUp(rootPath) {
+        const npath = rootPath || "*";
+        if (pkgs[npath])
+          return pkgs[npath];
+        let obj = {};
+        try {
+          let startDir = rootPath || shim$1.mainFilename;
+          if (!rootPath && shim$1.path.extname(startDir)) {
+            startDir = shim$1.path.dirname(startDir);
+          }
+          const pkgJsonPath = shim$1.findUp(startDir, (dir, names) => {
+            if (names.includes("package.json")) {
+              return "package.json";
+            } else {
+              return void 0;
+            }
+          });
+          assertNotStrictEqual(pkgJsonPath, void 0, shim$1);
+          obj = JSON.parse(shim$1.readFileSync(pkgJsonPath, "utf8"));
+        } catch (_noop) {
+        }
+        pkgs[npath] = obj || {};
+        return pkgs[npath];
+      }
+      let parseFn = null;
+      let parseContext = null;
+      self2.parse = function parse5(args, shortCircuit, _parseFn) {
+        argsert("[string|array] [function|boolean|object] [function]", [args, shortCircuit, _parseFn], arguments.length);
+        freeze();
+        if (typeof args === "undefined") {
+          const argv = self2._parseArgs(processArgs);
+          const tmpParsed = self2.parsed;
+          unfreeze();
+          self2.parsed = tmpParsed;
+          return argv;
+        }
+        if (typeof shortCircuit === "object") {
+          parseContext = shortCircuit;
+          shortCircuit = _parseFn;
+        }
+        if (typeof shortCircuit === "function") {
+          parseFn = shortCircuit;
+          shortCircuit = false;
+        }
+        if (!shortCircuit)
+          processArgs = args;
+        if (parseFn)
+          exitProcess = false;
+        const parsed = self2._parseArgs(args, !!shortCircuit);
+        completion$1.setParsed(self2.parsed);
+        if (parseFn)
+          parseFn(exitError, parsed, output);
+        unfreeze();
+        return parsed;
+      };
+      self2._getParseContext = () => parseContext || {};
+      self2._hasParseCallback = () => !!parseFn;
+      self2.option = self2.options = function option(key, opt) {
+        argsert("<string|object> [object]", [key, opt], arguments.length);
+        if (typeof key === "object") {
+          Object.keys(key).forEach((k) => {
+            self2.options(k, key[k]);
+          });
+        } else {
+          if (typeof opt !== "object") {
+            opt = {};
+          }
+          options2.key[key] = true;
+          if (opt.alias)
+            self2.alias(key, opt.alias);
+          const deprecate = opt.deprecate || opt.deprecated;
+          if (deprecate) {
+            self2.deprecateOption(key, deprecate);
+          }
+          const demand = opt.demand || opt.required || opt.require;
+          if (demand) {
+            self2.demand(key, demand);
+          }
+          if (opt.demandOption) {
+            self2.demandOption(key, typeof opt.demandOption === "string" ? opt.demandOption : void 0);
+          }
+          if (opt.conflicts) {
+            self2.conflicts(key, opt.conflicts);
+          }
+          if ("default" in opt) {
+            self2.default(key, opt.default);
+          }
+          if (opt.implies !== void 0) {
+            self2.implies(key, opt.implies);
+          }
+          if (opt.nargs !== void 0) {
+            self2.nargs(key, opt.nargs);
+          }
+          if (opt.config) {
+            self2.config(key, opt.configParser);
+          }
+          if (opt.normalize) {
+            self2.normalize(key);
+          }
+          if (opt.choices) {
+            self2.choices(key, opt.choices);
+          }
+          if (opt.coerce) {
+            self2.coerce(key, opt.coerce);
+          }
+          if (opt.group) {
+            self2.group(key, opt.group);
+          }
+          if (opt.boolean || opt.type === "boolean") {
+            self2.boolean(key);
+            if (opt.alias)
+              self2.boolean(opt.alias);
+          }
+          if (opt.array || opt.type === "array") {
+            self2.array(key);
+            if (opt.alias)
+              self2.array(opt.alias);
+          }
+          if (opt.number || opt.type === "number") {
+            self2.number(key);
+            if (opt.alias)
+              self2.number(opt.alias);
+          }
+          if (opt.string || opt.type === "string") {
+            self2.string(key);
+            if (opt.alias)
+              self2.string(opt.alias);
+          }
+          if (opt.count || opt.type === "count") {
+            self2.count(key);
+          }
+          if (typeof opt.global === "boolean") {
+            self2.global(key, opt.global);
+          }
+          if (opt.defaultDescription) {
+            options2.defaultDescription[key] = opt.defaultDescription;
+          }
+          if (opt.skipValidation) {
+            self2.skipValidation(key);
+          }
+          const desc = opt.describe || opt.description || opt.desc;
+          self2.describe(key, desc);
+          if (opt.hidden) {
+            self2.hide(key);
+          }
+          if (opt.requiresArg) {
+            self2.requiresArg(key);
+          }
+        }
+        return self2;
+      };
+      self2.getOptions = () => options2;
+      self2.positional = function(key, opts) {
+        argsert("<string> <object>", [key, opts], arguments.length);
+        if (context.resets === 0) {
+          throw new YError(".positional() can only be called in a command's builder function");
+        }
+        const supportedOpts = [
+          "default",
+          "defaultDescription",
+          "implies",
+          "normalize",
+          "choices",
+          "conflicts",
+          "coerce",
+          "type",
+          "describe",
+          "desc",
+          "description",
+          "alias"
+        ];
+        opts = objFilter(opts, (k, v2) => {
+          let accept = supportedOpts.indexOf(k) !== -1;
+          if (k === "type" && ["string", "number", "boolean"].indexOf(v2) === -1)
+            accept = false;
+          return accept;
+        });
+        const fullCommand = context.fullCommands[context.fullCommands.length - 1];
+        const parseOptions = fullCommand ? command$1.cmdToParseOptions(fullCommand) : {
+          array: [],
+          alias: {},
+          default: {},
+          demand: {}
+        };
+        objectKeys(parseOptions).forEach((pk) => {
+          const parseOption = parseOptions[pk];
+          if (Array.isArray(parseOption)) {
+            if (parseOption.indexOf(key) !== -1)
+              opts[pk] = true;
+          } else {
+            if (parseOption[key] && !(pk in opts))
+              opts[pk] = parseOption[key];
+          }
+        });
+        self2.group(key, usage$1.getPositionalGroupName());
+        return self2.option(key, opts);
+      };
+      self2.group = function group(opts, groupName) {
+        argsert("<string|array> <string>", [opts, groupName], arguments.length);
+        const existing = preservedGroups[groupName] || groups[groupName];
+        if (preservedGroups[groupName]) {
+          delete preservedGroups[groupName];
+        }
+        const seen = {};
+        groups[groupName] = (existing || []).concat(opts).filter((key) => {
+          if (seen[key])
+            return false;
+          return seen[key] = true;
+        });
+        return self2;
+      };
+      self2.getGroups = () => Object.assign({}, groups, preservedGroups);
+      self2.env = function(prefix) {
+        argsert("[string|boolean]", [prefix], arguments.length);
+        if (prefix === false)
+          delete options2.envPrefix;
+        else
+          options2.envPrefix = prefix || "";
+        return self2;
+      };
+      self2.wrap = function(cols) {
+        argsert("<number|null|undefined>", [cols], arguments.length);
+        usage$1.wrap(cols);
+        return self2;
+      };
+      let strict = false;
+      self2.strict = function(enabled2) {
+        argsert("[boolean]", [enabled2], arguments.length);
+        strict = enabled2 !== false;
+        return self2;
+      };
+      self2.getStrict = () => strict;
+      let strictCommands = false;
+      self2.strictCommands = function(enabled2) {
+        argsert("[boolean]", [enabled2], arguments.length);
+        strictCommands = enabled2 !== false;
+        return self2;
+      };
+      self2.getStrictCommands = () => strictCommands;
+      let strictOptions = false;
+      self2.strictOptions = function(enabled2) {
+        argsert("[boolean]", [enabled2], arguments.length);
+        strictOptions = enabled2 !== false;
+        return self2;
+      };
+      self2.getStrictOptions = () => strictOptions;
+      let parserConfig = {};
+      self2.parserConfiguration = function parserConfiguration(config) {
+        argsert("<object>", [config], arguments.length);
+        parserConfig = config;
+        return self2;
+      };
+      self2.getParserConfiguration = () => parserConfig;
+      self2.showHelp = function(level) {
+        argsert("[string|function]", [level], arguments.length);
+        if (!self2.parsed)
+          self2._parseArgs(processArgs);
+        if (command$1.hasDefaultCommand()) {
+          context.resets++;
+          command$1.runDefaultBuilderOn(self2);
+        }
+        usage$1.showHelp(level);
+        return self2;
+      };
+      let versionOpt = null;
+      self2.version = function version(opt, msg, ver) {
+        const defaultVersionOpt = "version";
+        argsert("[boolean|string] [string] [string]", [opt, msg, ver], arguments.length);
+        if (versionOpt) {
+          deleteFromParserHintObject(versionOpt);
+          usage$1.version(void 0);
+          versionOpt = null;
+        }
+        if (arguments.length === 0) {
+          ver = guessVersion();
+          opt = defaultVersionOpt;
+        } else if (arguments.length === 1) {
+          if (opt === false) {
+            return self2;
+          }
+          ver = opt;
+          opt = defaultVersionOpt;
+        } else if (arguments.length === 2) {
+          ver = msg;
+          msg = void 0;
+        }
+        versionOpt = typeof opt === "string" ? opt : defaultVersionOpt;
+        msg = msg || usage$1.deferY18nLookup("Show version number");
+        usage$1.version(ver || void 0);
+        self2.boolean(versionOpt);
+        self2.describe(versionOpt, msg);
+        return self2;
+      };
+      function guessVersion() {
+        const obj = pkgUp();
+        return obj.version || "unknown";
+      }
+      let helpOpt = null;
+      self2.addHelpOpt = self2.help = function addHelpOpt(opt, msg) {
+        const defaultHelpOpt = "help";
+        argsert("[string|boolean] [string]", [opt, msg], arguments.length);
+        if (helpOpt) {
+          deleteFromParserHintObject(helpOpt);
+          helpOpt = null;
+        }
+        if (arguments.length === 1) {
+          if (opt === false)
+            return self2;
+        }
+        helpOpt = typeof opt === "string" ? opt : defaultHelpOpt;
+        self2.boolean(helpOpt);
+        self2.describe(helpOpt, msg || usage$1.deferY18nLookup("Show help"));
+        return self2;
+      };
+      const defaultShowHiddenOpt = "show-hidden";
+      options2.showHiddenOpt = defaultShowHiddenOpt;
+      self2.addShowHiddenOpt = self2.showHidden = function addShowHiddenOpt(opt, msg) {
+        argsert("[string|boolean] [string]", [opt, msg], arguments.length);
+        if (arguments.length === 1) {
+          if (opt === false)
+            return self2;
+        }
+        const showHiddenOpt = typeof opt === "string" ? opt : defaultShowHiddenOpt;
+        self2.boolean(showHiddenOpt);
+        self2.describe(showHiddenOpt, msg || usage$1.deferY18nLookup("Show hidden options"));
+        options2.showHiddenOpt = showHiddenOpt;
+        return self2;
+      };
+      self2.hide = function hide(key) {
+        argsert("<string>", [key], arguments.length);
+        options2.hiddenOptions.push(key);
+        return self2;
+      };
+      self2.showHelpOnFail = function showHelpOnFail(enabled2, message) {
+        argsert("[boolean|string] [string]", [enabled2, message], arguments.length);
+        usage$1.showHelpOnFail(enabled2, message);
+        return self2;
+      };
+      let exitProcess = true;
+      self2.exitProcess = function(enabled2 = true) {
+        argsert("[boolean]", [enabled2], arguments.length);
+        exitProcess = enabled2;
+        return self2;
+      };
+      self2.getExitProcess = () => exitProcess;
+      self2.showCompletionScript = function($0, cmd) {
+        argsert("[string] [string]", [$0, cmd], arguments.length);
+        $0 = $0 || self2.$0;
+        _logger.log(completion$1.generateCompletionScript($0, cmd || completionCommand || "completion"));
+        return self2;
+      };
+      self2.getCompletion = function(args, done) {
+        argsert("<array> <function>", [args, done], arguments.length);
+        completion$1.getCompletion(args, done);
+      };
+      self2.locale = function(locale) {
+        argsert("[string]", [locale], arguments.length);
+        if (!locale) {
+          guessLocale();
+          return y18n2.getLocale();
+        }
+        detectLocale = false;
+        y18n2.setLocale(locale);
+        return self2;
+      };
+      self2.updateStrings = self2.updateLocale = function(obj) {
+        argsert("<object>", [obj], arguments.length);
+        detectLocale = false;
+        y18n2.updateLocale(obj);
+        return self2;
+      };
+      let detectLocale = true;
+      self2.detectLocale = function(detect) {
+        argsert("<boolean>", [detect], arguments.length);
+        detectLocale = detect;
+        return self2;
+      };
+      self2.getDetectLocale = () => detectLocale;
+      const _logger = {
+        log(...args) {
+          if (!self2._hasParseCallback())
+            console.log(...args);
+          hasOutput = true;
+          if (output.length)
+            output += "\n";
+          output += args.join(" ");
+        },
+        error(...args) {
+          if (!self2._hasParseCallback())
+            console.error(...args);
+          hasOutput = true;
+          if (output.length)
+            output += "\n";
+          output += args.join(" ");
+        }
+      };
+      self2._getLoggerInstance = () => _logger;
+      self2._hasOutput = () => hasOutput;
+      self2._setHasOutput = () => {
+        hasOutput = true;
+      };
+      let recommendCommands;
+      self2.recommendCommands = function(recommend = true) {
+        argsert("[boolean]", [recommend], arguments.length);
+        recommendCommands = recommend;
+        return self2;
+      };
+      self2.getUsageInstance = () => usage$1;
+      self2.getValidationInstance = () => validation$1;
+      self2.getCommandInstance = () => command$1;
+      self2.terminalWidth = () => {
+        argsert([], 0);
+        return shim$1.process.stdColumns;
+      };
+      Object.defineProperty(self2, "argv", {
+        get: () => self2._parseArgs(processArgs),
+        enumerable: true
+      });
+      self2._parseArgs = function parseArgs(args, shortCircuit, _calledFromCommand, commandIndex) {
+        let skipValidation = !!_calledFromCommand;
+        args = args || processArgs;
+        options2.__ = y18n2.__;
+        options2.configuration = self2.getParserConfiguration();
+        const populateDoubleDash = !!options2.configuration["populate--"];
+        const config = Object.assign({}, options2.configuration, {
+          "populate--": true
+        });
+        const parsed = shim$1.Parser.detailed(args, Object.assign({}, options2, {
+          configuration: Object.assign({ "parse-positional-numbers": false }, config)
+        }));
+        let argv = parsed.argv;
+        if (parseContext)
+          argv = Object.assign({}, argv, parseContext);
+        const aliases = parsed.aliases;
+        argv.$0 = self2.$0;
+        self2.parsed = parsed;
+        try {
+          guessLocale();
+          if (shortCircuit) {
+            return self2._postProcess(argv, populateDoubleDash, _calledFromCommand);
+          }
+          if (helpOpt) {
+            const helpCmds = [helpOpt].concat(aliases[helpOpt] || []).filter((k) => k.length > 1);
+            if (~helpCmds.indexOf("" + argv._[argv._.length - 1])) {
+              argv._.pop();
+              argv[helpOpt] = true;
+            }
+          }
+          const handlerKeys = command$1.getCommands();
+          const requestCompletions = completion$1.completionKey in argv;
+          const skipRecommendation = argv[helpOpt] || requestCompletions;
+          const skipDefaultCommand = skipRecommendation && (handlerKeys.length > 1 || handlerKeys[0] !== "$0");
+          if (argv._.length) {
+            if (handlerKeys.length) {
+              let firstUnknownCommand;
+              for (let i2 = commandIndex || 0, cmd; argv._[i2] !== void 0; i2++) {
+                cmd = String(argv._[i2]);
+                if (~handlerKeys.indexOf(cmd) && cmd !== completionCommand) {
+                  const innerArgv = command$1.runCommand(cmd, self2, parsed, i2 + 1);
+                  return self2._postProcess(innerArgv, populateDoubleDash);
+                } else if (!firstUnknownCommand && cmd !== completionCommand) {
+                  firstUnknownCommand = cmd;
+                  break;
+                }
+              }
+              if (command$1.hasDefaultCommand() && !skipDefaultCommand) {
+                const innerArgv = command$1.runCommand(null, self2, parsed);
+                return self2._postProcess(innerArgv, populateDoubleDash);
+              }
+              if (recommendCommands && firstUnknownCommand && !skipRecommendation) {
+                validation$1.recommendCommands(firstUnknownCommand, handlerKeys);
+              }
+            }
+            if (completionCommand && ~argv._.indexOf(completionCommand) && !requestCompletions) {
+              if (exitProcess)
+                setBlocking(true);
+              self2.showCompletionScript();
+              self2.exit(0);
+            }
+          } else if (command$1.hasDefaultCommand() && !skipDefaultCommand) {
+            const innerArgv = command$1.runCommand(null, self2, parsed);
+            return self2._postProcess(innerArgv, populateDoubleDash);
+          }
+          if (requestCompletions) {
+            if (exitProcess)
+              setBlocking(true);
+            args = [].concat(args);
+            const completionArgs = args.slice(args.indexOf(`--${completion$1.completionKey}`) + 1);
+            completion$1.getCompletion(completionArgs, (completions) => {
+              (completions || []).forEach((completion2) => {
+                _logger.log(completion2);
+              });
+              self2.exit(0);
+            });
+            return self2._postProcess(argv, !populateDoubleDash, _calledFromCommand);
+          }
+          if (!hasOutput) {
+            Object.keys(argv).forEach((key) => {
+              if (key === helpOpt && argv[key]) {
+                if (exitProcess)
+                  setBlocking(true);
+                skipValidation = true;
+                self2.showHelp("log");
+                self2.exit(0);
+              } else if (key === versionOpt && argv[key]) {
+                if (exitProcess)
+                  setBlocking(true);
+                skipValidation = true;
+                usage$1.showVersion();
+                self2.exit(0);
+              }
+            });
+          }
+          if (!skipValidation && options2.skipValidation.length > 0) {
+            skipValidation = Object.keys(argv).some((key) => options2.skipValidation.indexOf(key) >= 0 && argv[key] === true);
+          }
+          if (!skipValidation) {
+            if (parsed.error)
+              throw new YError(parsed.error.message);
+            if (!requestCompletions) {
+              self2._runValidation(argv, aliases, {}, parsed.error);
+            }
+          }
+        } catch (err) {
+          if (err instanceof YError)
+            usage$1.fail(err.message, err);
+          else
+            throw err;
+        }
+        return self2._postProcess(argv, populateDoubleDash, _calledFromCommand);
+      };
+      self2._postProcess = function(argv, populateDoubleDash, calledFromCommand = false) {
+        if (isPromise(argv))
+          return argv;
+        if (calledFromCommand)
+          return argv;
+        if (!populateDoubleDash) {
+          argv = self2._copyDoubleDash(argv);
+        }
+        const parsePositionalNumbers = self2.getParserConfiguration()["parse-positional-numbers"] || self2.getParserConfiguration()["parse-positional-numbers"] === void 0;
+        if (parsePositionalNumbers) {
+          argv = self2._parsePositionalNumbers(argv);
+        }
+        return argv;
+      };
+      self2._copyDoubleDash = function(argv) {
+        if (!argv._ || !argv["--"])
+          return argv;
+        argv._.push.apply(argv._, argv["--"]);
+        try {
+          delete argv["--"];
+        } catch (_err) {
+        }
+        return argv;
+      };
+      self2._parsePositionalNumbers = function(argv) {
+        const args = argv["--"] ? argv["--"] : argv._;
+        for (let i2 = 0, arg; (arg = args[i2]) !== void 0; i2++) {
+          if (shim$1.Parser.looksLikeNumber(arg) && Number.isSafeInteger(Math.floor(parseFloat(`${arg}`)))) {
+            args[i2] = Number(arg);
+          }
+        }
+        return argv;
+      };
+      self2._runValidation = function runValidation(argv, aliases, positionalMap, parseErrors, isDefaultCommand = false) {
+        if (parseErrors)
+          throw new YError(parseErrors.message);
+        validation$1.nonOptionCount(argv);
+        validation$1.requiredArguments(argv);
+        let failedStrictCommands = false;
+        if (strictCommands) {
+          failedStrictCommands = validation$1.unknownCommands(argv);
+        }
+        if (strict && !failedStrictCommands) {
+          validation$1.unknownArguments(argv, aliases, positionalMap, isDefaultCommand);
+        } else if (strictOptions) {
+          validation$1.unknownArguments(argv, aliases, {}, false, false);
+        }
+        validation$1.customChecks(argv, aliases);
+        validation$1.limitedChoices(argv);
+        validation$1.implications(argv);
+        validation$1.conflicting(argv);
+      };
+      function guessLocale() {
+        if (!detectLocale)
+          return;
+        const locale = shim$1.getEnv("LC_ALL") || shim$1.getEnv("LC_MESSAGES") || shim$1.getEnv("LANG") || shim$1.getEnv("LANGUAGE") || "en_US";
+        self2.locale(locale.replace(/[.:].*/, ""));
+      }
+      self2.help();
+      self2.version();
+      return self2;
+    }
+    var rebase = (base2, dir) => shim$1.path.relative(base2, dir);
+    function isYargsInstance(y) {
+      return !!y && typeof y._parseArgs === "function";
+    }
+    var _a2;
+    var _b;
+    var { readFileSync } = __require2("fs");
+    var { inspect } = __require2("util");
+    var { resolve: resolve32 } = __require2("path");
+    var y18n = require_build();
+    var Parser = require_build2();
+    var cjsPlatformShim = {
+      assert: {
+        notStrictEqual: assert2.notStrictEqual,
+        strictEqual: assert2.strictEqual
+      },
+      cliui: require_build3(),
+      findUp: require_sync(),
+      getEnv: (key) => {
+        return process.env[key];
+      },
+      getCallerFile: require_get_caller_file(),
+      getProcessArgvBin,
+      inspect,
+      mainFilename: (_b = (_a2 = __require2 === null || __require2 === void 0 ? void 0 : __require2.main) === null || _a2 === void 0 ? void 0 : _a2.filename) !== null && _b !== void 0 ? _b : process.cwd(),
+      Parser,
+      path: __require2("path"),
+      process: {
+        argv: () => process.argv,
+        cwd: process.cwd,
+        execPath: () => process.execPath,
+        exit: (code2) => {
+          process.exit(code2);
+        },
+        nextTick: process.nextTick,
+        stdColumns: typeof process.stdout.columns !== "undefined" ? process.stdout.columns : null
+      },
+      readFileSync,
+      require: __require2,
+      requireDirectory: require_require_directory(),
+      stringWidth: require_string_width(),
+      y18n: y18n({
+        directory: resolve32(__dirname, "../locales"),
+        updateFiles: false
+      })
+    };
+    var minNodeVersion = process && process.env && process.env.YARGS_MIN_NODE_VERSION ? Number(process.env.YARGS_MIN_NODE_VERSION) : 10;
+    if (process && process.version) {
+      const major = Number(process.version.match(/v([^.]+)/)[1]);
+      if (major < minNodeVersion) {
+        throw Error(`yargs supports a minimum Node.js version of ${minNodeVersion}. Read our version support policy: https://github.com/yargs/yargs#supported-nodejs-versions`);
+      }
+    }
+    var Parser$1 = require_build2();
+    var Yargs$1 = YargsWithShim(cjsPlatformShim);
+    var cjs = {
+      applyExtends,
+      cjsPlatformShim,
+      Yargs: Yargs$1,
+      argsert,
+      globalMiddlewareFactory,
+      isPromise,
+      objFilter,
+      parseCommand,
+      Parser: Parser$1,
+      processArgv,
+      rebase,
+      YError
+    };
+    module.exports = cjs;
+  }
+});
+var require_yargs = __commonJS({
+  "node_modules/.deno/yargs@16.2.0/node_modules/yargs/index.cjs"(exports, module) {
+    "use strict";
+    var { Yargs, processArgv } = require_build4();
+    Argv(processArgv.hideBin(process.argv));
+    module.exports = Argv;
+    function Argv(processArgs, cwd) {
+      const argv = Yargs(processArgs, cwd, __require2);
+      singletonify(argv);
+      return argv;
+    }
+    function singletonify(inst) {
+      Object.keys(inst).forEach((key) => {
+        if (key === "argv") {
+          Argv.__defineGetter__(key, inst.__lookupGetter__(key));
+        } else if (typeof inst[key] === "function") {
+          Argv[key] = inst[key].bind(inst);
+        } else {
+          Argv.__defineGetter__("$0", () => {
+            return inst.$0;
+          });
+          Argv.__defineGetter__("parsed", () => {
+            return inst.parsed;
+          });
+        }
+      });
+    }
+  }
+});
+var require_argv = __commonJS({
+  "node_modules/.deno/nconf@0.13.0/node_modules/nconf/lib/nconf/stores/argv.js"(exports) {
+    var util = __require2("util");
+    var common2 = require_common();
+    var Memory = require_memory().Memory;
+    var Argv = exports.Argv = function(options2, usage) {
+      Memory.call(this, options2);
+      options2 = options2 || {};
+      this.type = "argv";
+      this.readOnly = true;
+      this.options = options2;
+      this.usage = usage;
+      if (typeof options2.parseValues === "boolean") {
+        this.parseValues = options2.parseValues;
+        delete options2.parseValues;
+      } else {
+        this.parseValues = false;
+      }
+      if (typeof options2.transform === "function") {
+        this.transform = options2.transform;
+        delete options2.transform;
+      } else {
+        this.transform = false;
+      }
+      if (typeof options2.separator === "string" || options2.separator instanceof RegExp) {
+        this.separator = options2.separator;
+        delete options2.separator;
+      } else {
+        this.separator = "";
+      }
+    };
+    util.inherits(Argv, Memory);
+    Argv.prototype.loadSync = function() {
+      this.loadArgv();
+      return this.store;
+    };
+    Argv.prototype.loadArgv = function() {
+      var self2 = this, yargs, argv;
+      yargs = isYargs(this.options) ? this.options : typeof this.options === "object" ? require_yargs()(process.argv.slice(2)).options(this.options) : require_yargs()(process.argv.slice(2));
+      if (typeof this.usage === "string") {
+        yargs.usage(this.usage);
+      }
+      argv = yargs.argv;
+      if (!argv) {
+        return;
+      }
+      if (this.transform) {
+        argv = common2.transform(argv, this.transform);
+      }
+      this.readOnly = false;
+      Object.keys(argv).forEach(function(key) {
+        var val = argv[key];
+        if (typeof val !== "undefined") {
+          if (self2.parseValues) {
+            val = common2.parseValues(val);
+          }
+          if (self2.separator) {
+            self2.set(common2.key.apply(common2, key.split(self2.separator)), val);
+          } else {
+            self2.set(key, val);
+          }
+        }
+      });
+      this.showHelp = yargs.showHelp;
+      this.help = yargs.help;
+      this.readOnly = true;
+      return this.store;
+    };
+    function isYargs(obj) {
+      return (typeof obj === "function" || typeof obj === "object") && "argv" in obj;
+    }
+  }
+});
+var require_env = __commonJS({
+  "node_modules/.deno/nconf@0.13.0/node_modules/nconf/lib/nconf/stores/env.js"(exports) {
+    var util = __require2("util");
+    var common2 = require_common();
+    var Memory = require_memory().Memory;
+    var Env = exports.Env = function(options2) {
+      Memory.call(this, options2);
+      options2 = options2 || {};
+      this.type = "env";
+      this.readOnly = options2.readOnly !== void 0 ? options2.readOnly : true;
+      this.whitelist = options2.whitelist || [];
+      this.separator = options2.separator || "";
+      this.lowerCase = options2.lowerCase || false;
+      this.parseValues = options2.parseValues || false;
+      this.transform = options2.transform || false;
+      if ({}.toString.call(options2.match) === "[object RegExp]" && typeof options2 !== "string") {
+        this.match = options2.match;
+      }
+      if (options2 instanceof Array) {
+        this.whitelist = options2;
+      }
+      if (typeof options2 === "string" || options2 instanceof RegExp) {
+        this.separator = options2;
+      }
+    };
+    util.inherits(Env, Memory);
+    Env.prototype.loadSync = function() {
+      this.loadEnv();
+      return this.store;
+    };
+    Env.prototype.loadEnv = function() {
+      var self2 = this;
+      var env = process.env;
+      if (this.prefix) {
+        env = {};
+        Object.keys(process.env).forEach(function(key) {
+          if (key.indexOf(self2.prefix) === 0) {
+            env[key.replace(self2.prefix, "")] = process.env[key];
+          }
+        });
+      }
+      if (this.lowerCase) {
+        env = {};
+        Object.keys(process.env).forEach(function(key) {
+          env[key.toLowerCase()] = process.env[key];
+        });
+      }
+      if (this.transform) {
+        env = common2.transform(env, this.transform);
+      }
+      this.readOnly = false;
+      Object.keys(env).filter(function(key) {
+        if (self2.match && self2.whitelist.length) {
+          return key.match(self2.match) || self2.whitelist.indexOf(key) !== -1;
+        } else if (self2.match) {
+          return key.match(self2.match);
+        } else {
+          return !self2.whitelist.length || self2.whitelist.indexOf(key) !== -1;
+        }
+      }).forEach(function(key) {
+        var val = env[key];
+        if (self2.parseValues) {
+          val = common2.parseValues(val);
+        }
+        if (self2.separator) {
+          self2.set(common2.key.apply(common2, key.split(self2.separator)), val);
+        } else {
+          self2.set(key, val);
+        }
+      });
+      this.readOnly = true;
+      return this.store;
+    };
+  }
+});
+var require_secure_keys = __commonJS({
+  "node_modules/.deno/secure-keys@1.0.0/node_modules/secure-keys/index.js"(exports, module) {
+    "use strict";
+    var crypto2 = __require2("crypto");
+    var json = {
+      stringify: function(obj, replacer, spacing) {
+        return JSON.stringify(obj, replacer || null, spacing || 2);
+      },
+      parse: JSON.parse
+    };
+    module.exports = Secure;
+    function Secure(opts) {
+      opts = opts || {};
+      this.secret = typeof opts !== "string" ? opts.secret : opts;
+      this.format = opts.format || json;
+      this.alg = opts.alg || "aes-256-ctr";
+      if (!this.secret) throw new Error("Secret is a required option");
+    }
+    Secure.prototype.encrypt = function encrypt2(data, callback) {
+      var self2 = this;
+      return Object.keys(data).reduce(function(acc, key) {
+        var value = self2.format.stringify(data[key]);
+        acc[key] = {
+          alg: self2.alg,
+          value: cipherConvert(value, {
+            alg: self2.alg,
+            secret: self2.secret,
+            encs: { input: "utf8", output: "hex" }
+          })
+        };
+        return acc;
+      }, {});
+    };
+    Secure.prototype.decrypt = function decrypt2(data, callback) {
+      var self2 = this;
+      return Object.keys(data).reduce(function(acc, key) {
+        var decrypted = cipherConvert(data[key].value, {
+          alg: data[key].alg || self2.alg,
+          secret: self2.secret,
+          encs: { input: "hex", output: "utf8" }
+        });
+        acc[key] = self2.format.parse(decrypted);
+        return acc;
+      }, {});
+    };
+    function cipherConvert(contents, opts) {
+      var encs = opts.encs;
+      var cipher = crypto2.createCipher(opts.alg, opts.secret);
+      return cipher.update(contents, encs.input, encs.output) + cipher.final(encs.output);
+    }
+  }
+});
+var require_file = __commonJS({
+  "node_modules/.deno/nconf@0.13.0/node_modules/nconf/lib/nconf/stores/file.js"(exports) {
+    var fs = __require2("fs");
+    var path = __require2("path");
+    var util = __require2("util");
+    var Secure = require_secure_keys();
+    var formats = require_formats();
+    var Memory = require_memory().Memory;
+    var exists = fs.exists || path.exists;
+    var existsSync = fs.existsSync || path.existsSync;
+    var File2 = exports.File = function(options2) {
+      if (!options2 || !options2.file) {
+        throw new Error("Missing required option `file`");
+      }
+      Memory.call(this, options2);
+      this.type = "file";
+      this.file = options2.file;
+      this.dir = options2.dir || process.cwd();
+      this.format = options2.format || formats.json;
+      this.secure = options2.secure;
+      this.spacing = options2.json_spacing || options2.spacing || 2;
+      if (this.secure) {
+        this.secure = Buffer.isBuffer(this.secure) || typeof this.secure === "string" ? { secret: this.secure.toString() } : this.secure;
+        this.secure.alg = this.secure.alg || "aes-256-ctr";
+        if (this.secure.secretPath) {
+          this.secure.secret = fs.readFileSync(this.secure.secretPath, "utf8");
+        }
+        if (!this.secure.secret) {
+          throw new Error("secure.secret option is required");
+        }
+        this.keys = new Secure({
+          secret: this.secure.secret,
+          alg: this.secure.alg,
+          format: this.format
+        });
+      }
+      if (options2.search) {
+        this.search(this.dir);
+      }
+    };
+    util.inherits(File2, Memory);
+    File2.prototype.save = function(value, callback) {
+      this.saveToFile(this.file, value, callback);
+    };
+    File2.prototype.saveToFile = function(path2, format22, callback) {
+      if (!callback) {
+        callback = format22;
+        format22 = this.format;
+      }
+      fs.writeFile(path2, this.stringify(format22), callback);
+    };
+    File2.prototype.saveSync = function() {
+      fs.writeFileSync(this.file, this.stringify());
+      return this.store;
+    };
+    File2.prototype.load = function(callback) {
+      var self2 = this;
+      exists(self2.file, function(exists2) {
+        if (!exists2) {
+          return callback(null, {});
+        }
+        fs.readFile(self2.file, function(err, data) {
+          if (err) {
+            return callback(err);
+          }
+          try {
+            var stringData = data.toString();
+            if (stringData.charAt(0) === "\uFEFF") {
+              stringData = stringData.substr(1);
+            }
+            self2.store = self2.parse(stringData);
+          } catch (ex) {
+            return callback(new Error("Error parsing your configuration file: [" + self2.file + "]: " + ex.message));
+          }
+          callback(null, self2.store);
+        });
+      });
+    };
+    File2.prototype.loadSync = function() {
+      if (!existsSync(this.file)) {
+        this.store = {};
+        return this.store;
+      }
+      try {
+        var fileData = fs.readFileSync(this.file, "utf8");
+        if (fileData.charAt(0) === "\uFEFF") {
+          fileData = fileData.substr(1);
+        }
+        this.store = this.parse(fileData);
+      } catch (ex) {
+        throw new Error("Error parsing your configuration file: [" + this.file + "]: " + ex.message);
+      }
+      return this.store;
+    };
+    File2.prototype.stringify = function(format22) {
+      var data = this.store;
+      if (!format22) {
+        format22 = this.format;
+      }
+      if (this.secure) {
+        data = this.keys.encrypt(data);
+      }
+      return format22.stringify(data, null, this.spacing);
+    };
+    File2.prototype.parse = function(contents) {
+      var parsed = this.format.parse(contents);
+      if (!this.secure) {
+        return parsed;
+      }
+      return this.keys.decrypt(parsed);
+    };
+    File2.prototype.search = function(base2) {
+      var looking = true, fullpath, previous, stats;
+      base2 = base2 || process.cwd();
+      if (this.file[0] === "/") {
+        try {
+          stats = fs.statSync(fs.realpathSync(this.file));
+          if (stats.isFile()) {
+            fullpath = this.file;
+            looking = false;
+          }
+        } catch (ex) {
+        }
+      }
+      if (looking && base2) {
+        try {
+          var stat = fs.statSync(fs.realpathSync(base2));
+          looking = stat.isDirectory();
+        } catch (ex) {
+          return false;
+        }
+      }
+      while (looking) {
+        try {
+          stats = fs.statSync(fs.realpathSync(fullpath = path.join(base2, this.file)));
+          looking = stats.isDirectory();
+        } catch (ex) {
+          previous = base2;
+          base2 = path.dirname(base2);
+          if (previous === base2) {
+            try {
+              stats = fs.statSync(fs.realpathSync(fullpath = path.join(this.dir, this.file)));
+              if (stats.isDirectory()) {
+                fullpath = void 0;
+              }
+            } catch (ex2) {
+            }
+            looking = false;
+          }
+        }
+      }
+      this.file = fullpath || this.file;
+      return fullpath;
+    };
+  }
+});
+var require_literal = __commonJS({
+  "node_modules/.deno/nconf@0.13.0/node_modules/nconf/lib/nconf/stores/literal.js"(exports) {
+    var util = __require2("util");
+    var Memory = require_memory().Memory;
+    var Literal = exports.Literal = function Literal2(options2) {
+      Memory.call(this, options2);
+      options2 = options2 || {};
+      this.type = "literal";
+      this.readOnly = true;
+      this.store = options2.store || options2;
+    };
+    util.inherits(Literal, Memory);
+    Literal.prototype.loadSync = function() {
+      return this.store;
+    };
+  }
+});
+var require_nconf = __commonJS({
+  "node_modules/.deno/nconf@0.13.0/node_modules/nconf/lib/nconf.js"(exports, module) {
+    var common2 = require_common();
+    var Provider = require_provider().Provider;
+    var nconf3 = module.exports = new Provider();
+    nconf3.version = require_package().version;
+    nconf3.__defineGetter__("Argv", function() {
+      return require_argv().Argv;
+    });
+    nconf3.__defineGetter__("Env", function() {
+      return require_env().Env;
+    });
+    nconf3.__defineGetter__("File", function() {
+      return require_file().File;
+    });
+    nconf3.__defineGetter__("Literal", function() {
+      return require_literal().Literal;
+    });
+    nconf3.__defineGetter__("Memory", function() {
+      return require_memory().Memory;
+    });
+    nconf3.key = common2.key;
+    nconf3.path = common2.path;
+    nconf3.loadFiles = common2.loadFiles;
+    nconf3.loadFilesSync = common2.loadFilesSync;
+    nconf3.formats = require_formats();
+    nconf3.Provider = Provider;
+  }
+});
 var requiredMethodNames;
 var DatabaseBackend;
 var init_DatabaseBackend = __esm({
@@ -12485,8 +21089,8 @@ var database_fs_exports = {};
 __export(database_fs_exports, {
   default: () => FsBackend
 });
-async function testCaseSensitivity(backend) {
-  const { readData, writeData, deleteData } = backend;
+async function testCaseSensitivity(backend2) {
+  const { readData, writeData, deleteData } = backend2;
   const date = /* @__PURE__ */ new Date();
   const dateString = date.toISOString();
   const originalKey = `_private_testCaseSensitivity_${date.getTime()}_${(0, Math.random)().toFixed(8).slice(2)}`;
@@ -12523,11 +21127,13 @@ var init_database_fs = __esm({
       dataFolder = "";
       depth = 0;
       keyChunkLength = 2;
+      skipFsCaseSensitivityCheck = false;
       constructor(options2 = {}) {
         super();
         this.dataFolder = resolve6(options2.dirname);
         if (options2.depth) this.depth = options2.depth;
         if (options2.keyChunkLength) this.keyChunkLength = options2.keyChunkLength;
+        if (options2.skipFsCaseSensitivityCheck) this.skipFsCaseSensitivityCheck = true;
       }
       // Maps a given key to a real path on the filesystem.
       mapKey(key) {
@@ -12538,7 +21144,7 @@ var init_database_fs = __esm({
       }
       async init() {
         await mkdir(this.dataFolder, { mode: 488, recursive: true });
-        if (process3.env.SKIP_DB_FS_CASE_SENSITIVITY_CHECK === void 0) {
+        if (!this.skipFsCaseSensitivityCheck) {
           await testCaseSensitivity(this);
         }
       }
@@ -12556,9 +21162,9 @@ var init_database_fs = __esm({
         });
       }
       async writeData(key, value) {
-        const path2 = this.mapKey(key);
-        if (this.depth) await mkdir(dirname6(path2), { mode: 488, recursive: true });
-        await writeFile(path2, value);
+        const path = this.mapKey(key);
+        if (this.depth) await mkdir(dirname6(path), { mode: 488, recursive: true });
+        await writeFile(path, value);
       }
       async deleteData(key) {
         await unlink(this.mapKey(key)).catch((e2) => {
@@ -19656,8 +28262,8 @@ var require_MODULE_LOAD = __commonJS({
        * @param moduleArguments - Optional arguments to pass to the module
        * @see https://redis.io/commands/module-load/
        */
-      parseCommand(parser, path2, moduleArguments) {
-        parser.push("MODULE", "LOAD", path2);
+      parseCommand(parser, path, moduleArguments) {
+        parser.push("MODULE", "LOAD", path);
         if (moduleArguments) {
           parser.push(...moduleArguments);
         }
@@ -26711,8 +35317,8 @@ var require_commands_queue = __commonJS({
           return;
         }
         ;
-        return new Promise((resolve42) => {
-          this.#waitingForReply.events.on("empty", resolve42);
+        return new Promise((resolve32) => {
+          this.#waitingForReply.events.on("empty", resolve32);
         });
       }
       addCommand(args, options2) {
@@ -26721,14 +35327,14 @@ var require_commands_queue = __commonJS({
         } else if (options2?.abortSignal?.aborted) {
           return Promise.reject(new errors_1.AbortError());
         }
-        return new Promise((resolve42, reject) => {
+        return new Promise((resolve32, reject) => {
           let node;
           const value = {
             args,
             chainId: options2?.chainId,
             abort: void 0,
             timeout: void 0,
-            resolve: resolve42,
+            resolve: resolve32,
             reject,
             channelsCounter: void 0,
             typeMapping: options2?.typeMapping
@@ -26762,7 +35368,7 @@ var require_commands_queue = __commonJS({
         });
       }
       #addPubSubCommand(command, asap = false, chainId) {
-        return new Promise((resolve42, reject) => {
+        return new Promise((resolve32, reject) => {
           this.#toWrite.add({
             args: command.args,
             chainId,
@@ -26770,7 +35376,7 @@ var require_commands_queue = __commonJS({
             timeout: void 0,
             resolve() {
               command.resolve();
-              resolve42();
+              resolve32();
             },
             reject(err) {
               command.reject?.();
@@ -26789,8 +35395,8 @@ var require_commands_queue = __commonJS({
             if (this.#onPush(reply))
               return;
             if (PONG.equals(reply[0])) {
-              const { resolve: resolve42, typeMapping } = this.#waitingForReply.shift(), buffer = reply[1].length === 0 ? reply[0] : reply[1];
-              resolve42(typeMapping?.[decoder_1.RESP_TYPES.SIMPLE_STRING] === Buffer ? buffer : buffer.toString());
+              const { resolve: resolve32, typeMapping } = this.#waitingForReply.shift(), buffer = reply[1].length === 0 ? reply[0] : reply[1];
+              resolve32(typeMapping?.[decoder_1.RESP_TYPES.SIMPLE_STRING] === Buffer ? buffer : buffer.toString());
               return;
             }
           }
@@ -26814,12 +35420,12 @@ var require_commands_queue = __commonJS({
         if (!command)
           return;
         if (command && this.#respVersion === 2) {
-          const { resolve: resolve42 } = command;
+          const { resolve: resolve32 } = command;
           command.resolve = () => {
             if (!this.#pubSub.isActive) {
               this.#resetDecoderCallbacks();
             }
-            resolve42();
+            resolve32();
           };
         }
         return this.#addPubSubCommand(command);
@@ -26852,7 +35458,7 @@ var require_commands_queue = __commonJS({
         return this.#pubSub.listeners[type];
       }
       monitor(callback, options2) {
-        return new Promise((resolve42, reject) => {
+        return new Promise((resolve32, reject) => {
           const typeMapping = options2?.typeMapping ?? {};
           this.#toWrite.add({
             args: ["MONITOR"],
@@ -26867,7 +35473,7 @@ var require_commands_queue = __commonJS({
                 this.decoder.onReply = callback;
               }
               this.decoder.getTypeMapping = () => typeMapping;
-              resolve42();
+              resolve32();
             },
             reject,
             channelsCounter: void 0,
@@ -26881,7 +35487,7 @@ var require_commands_queue = __commonJS({
       }
       #resetFallbackOnReply;
       async reset(chainId, typeMapping) {
-        return new Promise((resolve42, reject) => {
+        return new Promise((resolve32, reject) => {
           this.#resetFallbackOnReply = this.decoder.onReply;
           this.decoder.onReply = (reply) => {
             if (typeof reply === "string" && reply === "RESET" || reply instanceof Buffer && RESET.equals(reply)) {
@@ -26898,7 +35504,7 @@ var require_commands_queue = __commonJS({
             chainId,
             abort: void 0,
             timeout: void 0,
-            resolve: resolve42,
+            resolve: resolve32,
             reject,
             channelsCounter: void 0,
             typeMapping
@@ -28159,7 +36765,7 @@ var require_pool = __commonJS({
         this._self.#returnClient(node);
       }
       execute(fn) {
-        return new Promise((resolve42, reject) => {
+        return new Promise((resolve32, reject) => {
           const client = this._self.#idleClients.shift(), { tail } = this._self.#tasksQueue;
           if (!client) {
             let timeout;
@@ -28172,7 +36778,7 @@ var require_pool = __commonJS({
             const task = this._self.#tasksQueue.push({
               timeout,
               // @ts-ignore
-              resolve: resolve42,
+              resolve: resolve32,
               reject,
               fn
             });
@@ -28182,15 +36788,15 @@ var require_pool = __commonJS({
             return;
           }
           const node = this._self.#clientsInUse.push(client);
-          this._self.#executeTask(node, resolve42, reject, fn);
+          this._self.#executeTask(node, resolve32, reject, fn);
         });
       }
-      #executeTask(node, resolve42, reject, fn) {
+      #executeTask(node, resolve32, reject, fn) {
         const result = fn(node.value);
         if (result instanceof Promise) {
-          result.then(resolve42, reject).finally(() => this.#returnClient(node));
+          result.then(resolve32, reject).finally(() => this.#returnClient(node));
         } else {
-          resolve42(result);
+          resolve32(result);
           this.#returnClient(node);
         }
       }
@@ -28265,7 +36871,7 @@ var require_pool = __commonJS({
     exports.RedisClientPool = RedisClientPool;
   }
 });
-var require_package = __commonJS({
+var require_package2 = __commonJS({
   "node_modules/.deno/@redis+client@5.9.0/node_modules/@redis/client/dist/package.json"(exports, module) {
     module.exports = {
       name: "@redis/client",
@@ -28331,7 +36937,7 @@ var require_client = __commonJS({
     var cache_1 = require_cache();
     var parser_1 = require_parser();
     var single_entry_cache_1 = __importDefault(require_single_entry_cache());
-    var package_json_1 = require_package();
+    var package_json_1 = require_package2();
     var enterprise_maintenance_manager_1 = __importDefault(require_enterprise_maintenance_manager());
     var RedisClient = class extends node_events_1.EventEmitter {
       static #createCommand(command, resp) {
@@ -29184,20 +37790,20 @@ var require_client = __commonJS({
        * Close the client. Wait for pending commands.
        */
       close() {
-        return new Promise((resolve42) => {
+        return new Promise((resolve32) => {
           clearTimeout(this._self.#pingTimer);
           this._self.#socket.close();
           this._self.#clientSideCache?.onClose();
           if (this._self.#queue.isEmpty()) {
             this._self.#socket.destroySocket();
-            return resolve42();
+            return resolve32();
           }
           const maybeClose = () => {
             if (!this._self.#queue.isEmpty())
               return;
             this._self.#socket.off("data", maybeClose);
             this._self.#socket.destroySocket();
-            resolve42();
+            resolve32();
           };
           this._self.#socket.on("data", maybeClose);
           this._self.#credentialsSubscription?.dispose();
@@ -30932,9 +39538,9 @@ var require_wait_queue = __commonJS({
       #list = new linked_list_1.SinglyLinkedList();
       #queue = new linked_list_1.SinglyLinkedList();
       push(value) {
-        const resolve42 = this.#queue.shift();
-        if (resolve42 !== void 0) {
-          resolve42(value);
+        const resolve32 = this.#queue.shift();
+        if (resolve32 !== void 0) {
+          resolve32(value);
           return;
         }
         this.#list.push(value);
@@ -30943,7 +39549,7 @@ var require_wait_queue = __commonJS({
         return this.#list.shift();
       }
       wait() {
-        return new Promise((resolve42) => this.#queue.push(resolve42));
+        return new Promise((resolve32) => this.#queue.push(resolve32));
       }
     };
     exports.WaitQueue = WaitQueue;
@@ -33736,10 +42342,10 @@ var require_ARRAPPEND = __commonJS({
        * @param json - The first value to append
        * @param jsons - Additional values to append
        */
-      parseCommand(parser, key, path2, json, ...jsons) {
+      parseCommand(parser, key, path, json, ...jsons) {
         parser.push("JSON.ARRAPPEND");
         parser.pushKey(key);
-        parser.push(path2, (0, generic_transformers_1.transformRedisJsonArgument)(json));
+        parser.push(path, (0, generic_transformers_1.transformRedisJsonArgument)(json));
         for (let i2 = 0; i2 < jsons.length; i2++) {
           parser.push((0, generic_transformers_1.transformRedisJsonArgument)(jsons[i2]));
         }
@@ -33767,10 +42373,10 @@ var require_ARRINDEX = __commonJS({
        * @param options.range.start - Starting index for the search
        * @param options.range.stop - Optional ending index for the search
        */
-      parseCommand(parser, key, path2, json, options2) {
+      parseCommand(parser, key, path, json, options2) {
         parser.push("JSON.ARRINDEX");
         parser.pushKey(key);
-        parser.push(path2, (0, generic_transformers_1.transformRedisJsonArgument)(json));
+        parser.push(path, (0, generic_transformers_1.transformRedisJsonArgument)(json));
         if (options2?.range) {
           parser.push(options2.range.start.toString());
           if (options2.range.stop !== void 0) {
@@ -33800,10 +42406,10 @@ var require_ARRINSERT = __commonJS({
        * @param json - The first value to insert
        * @param jsons - Additional values to insert
        */
-      parseCommand(parser, key, path2, index, json, ...jsons) {
+      parseCommand(parser, key, path, index, json, ...jsons) {
         parser.push("JSON.ARRINSERT");
         parser.pushKey(key);
-        parser.push(path2, index.toString(), (0, generic_transformers_1.transformRedisJsonArgument)(json));
+        parser.push(path, index.toString(), (0, generic_transformers_1.transformRedisJsonArgument)(json));
         for (let i2 = 0; i2 < jsons.length; i2++) {
           parser.push((0, generic_transformers_1.transformRedisJsonArgument)(jsons[i2]));
         }
@@ -33887,10 +42493,10 @@ var require_ARRTRIM = __commonJS({
        * @param start - Starting index (inclusive)
        * @param stop - Ending index (inclusive)
        */
-      parseCommand(parser, key, path2, start, stop) {
+      parseCommand(parser, key, path, start, stop) {
         parser.push("JSON.ARRTRIM");
         parser.pushKey(key);
-        parser.push(path2, start.toString(), stop.toString());
+        parser.push(path, start.toString(), stop.toString());
       },
       transformReply: void 0
     };
@@ -34043,10 +42649,10 @@ var require_MERGE3 = __commonJS({
        * @param path - Path to merge into
        * @param value - JSON value to merge
        */
-      parseCommand(parser, key, path2, value) {
+      parseCommand(parser, key, path, value) {
         parser.push("JSON.MERGE");
         parser.pushKey(key);
-        parser.push(path2, (0, generic_transformers_1.transformRedisJsonArgument)(value));
+        parser.push(path, (0, generic_transformers_1.transformRedisJsonArgument)(value));
       },
       transformReply: void 0
     };
@@ -34067,10 +42673,10 @@ var require_MGET2 = __commonJS({
        * @param keys - Array of keys containing JSON documents
        * @param path - Path to retrieve from each document
        */
-      parseCommand(parser, keys, path2) {
+      parseCommand(parser, keys, path) {
         parser.push("JSON.MGET");
         parser.pushKeys(keys);
-        parser.push(path2);
+        parser.push(path);
       },
       transformReply(reply) {
         return reply.map((json) => (0, generic_transformers_1.transformRedisJsonNullReply)(json));
@@ -34121,10 +42727,10 @@ var require_NUMINCRBY = __commonJS({
        * @param path - Path to the numeric value
        * @param by - Amount to increment by
        */
-      parseCommand(parser, key, path2, by) {
+      parseCommand(parser, key, path, by) {
         parser.push("JSON.NUMINCRBY");
         parser.pushKey(key);
-        parser.push(path2, by.toString());
+        parser.push(path, by.toString());
       },
       transformReply: {
         2: (reply) => {
@@ -34154,10 +42760,10 @@ var require_NUMMULTBY = __commonJS({
        * @param path - Path to the numeric value
        * @param by - Amount to multiply by
        */
-      parseCommand(parser, key, path2, by) {
+      parseCommand(parser, key, path, by) {
         parser.push("JSON.NUMMULTBY");
         parser.pushKey(key);
-        parser.push(path2, by.toString());
+        parser.push(path, by.toString());
       },
       transformReply: NUMINCRBY_1.default.transformReply
     };
@@ -34235,10 +42841,10 @@ var require_SET2 = __commonJS({
        * @deprecated options.NX - Use options.condition instead
        * @deprecated options.XX - Use options.condition instead
        */
-      parseCommand(parser, key, path2, json, options2) {
+      parseCommand(parser, key, path, json, options2) {
         parser.push("JSON.SET");
         parser.pushKey(key);
-        parser.push(path2, (0, generic_transformers_1.transformRedisJsonArgument)(json));
+        parser.push(path, (0, generic_transformers_1.transformRedisJsonArgument)(json));
         if (options2?.condition) {
           parser.push(options2?.condition);
         } else if (options2?.NX) {
@@ -34320,10 +42926,10 @@ var require_TOGGLE = __commonJS({
        * @param key - The key containing the JSON document
        * @param path - Path to the boolean value
        */
-      parseCommand(parser, key, path2) {
+      parseCommand(parser, key, path) {
         parser.push("JSON.TOGGLE");
         parser.pushKey(key);
-        parser.push(path2);
+        parser.push(path);
       },
       transformReply: void 0
     };
@@ -38167,12 +46773,12 @@ var init_database_sqlite = __esm({
         this.db.prepare(sql).run();
       }
       async init() {
-        const { dataFolder: dataFolder2, filename } = this;
-        await mkdir2(dataFolder2, { mode: 488, recursive: true });
+        const { dataFolder, filename } = this;
+        await mkdir2(dataFolder, { mode: 488, recursive: true });
         if (this.db) {
           throw new Error(`The ${filename} SQLite database is already open.`);
         }
-        this.db = new Database(join22(dataFolder2, filename));
+        this.db = new Database(join22(dataFolder, filename));
         this.run("CREATE TABLE IF NOT EXISTS Data(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)");
         console.info(`Connected to the ${filename} SQLite database.`);
         this.readStatement = this.db.prepare("SELECT value FROM Data WHERE key = ?");
@@ -38233,32 +46839,23 @@ var database_router_exports = {};
 __export(database_router_exports, {
   default: () => RouterBackend
 });
-var GI_PERSIST_ROUTER_CONFIG;
-var GI_PERSIST_ROUTER_CONFIG_PATH;
 var RouterBackend;
 var init_database_router = __esm({
   "src/serve/database-router.ts"() {
     "use strict";
     init_DatabaseBackend();
     init_();
-    ({
-      GI_PERSIST_ROUTER_CONFIG: (
-        // Tried first by the config lookup.
-        // Define this if your config JSON comes as a string from an envar's contents.
-        GI_PERSIST_ROUTER_CONFIG
-      ),
-      GI_PERSIST_ROUTER_CONFIG_PATH: (
-        // Tried next.
-        // Define this if your config comes from a JSON file.
-        GI_PERSIST_ROUTER_CONFIG_PATH
-      ) = "./database-router-config.json"
-    } = process4.env);
     RouterBackend = class extends DatabaseBackend {
       backends;
       config;
-      constructor(options2 = {}) {
+      constructor(config = {}) {
         super();
-        if (options2.config) this.config = options2.config;
+        const configCopy = Object.fromEntries(Object.entries(config).sort((a, b) => b[0].length - a[0].length));
+        const errors = this.validateConfig(configCopy);
+        if (errors.length) {
+          throw new Error(`[${this.constructor.name}] ${errors.length} error(s) found in your config.`, { cause: errors });
+        }
+        this.config = configCopy;
       }
       lookupBackend(key) {
         const { backends, config } = this;
@@ -38269,16 +46866,6 @@ var init_database_router = __esm({
           }
         }
         return backends["*"];
-      }
-      async readConfig() {
-        if (GI_PERSIST_ROUTER_CONFIG) {
-          console.info("[database-router] Reading config from envar GI_PERSIST_ROUTER_CONFIG");
-        } else {
-          console.info("[database-router] Reading config from path", GI_PERSIST_ROUTER_CONFIG_PATH);
-        }
-        const configString = GI_PERSIST_ROUTER_CONFIG || await readFile2(resolve32(GI_PERSIST_ROUTER_CONFIG_PATH), "utf8");
-        const config = JSON.parse(configString);
-        return Object.fromEntries(Object.entries(config).sort((a, b) => b[0].length - a[0].length));
       }
       validateConfig(config) {
         const errors = [];
@@ -38299,19 +46886,14 @@ var init_database_router = __esm({
         return errors;
       }
       async init() {
-        if (!this.config) this.config = await this.readConfig();
-        const errors = this.validateConfig(this.config);
-        if (errors.length) {
-          throw new Error(`[${this.constructor.name}] ${errors.length} error(s) found in your config.`, { cause: errors });
-        }
         this.backends = /* @__PURE__ */ Object.create(null);
         const entries = Object.entries(this.config);
         await Promise.all(entries.map(async (entry) => {
           const [keyPrefix, { name, options: options2 }] = entry;
           const Ctor = (await globImport_database_ts(`./database-${name}.ts`)).default;
-          const backend = new Ctor(options2);
-          await backend.init();
-          this.backends[keyPrefix] = backend;
+          const backend2 = new Ctor(options2);
+          await backend2.init();
+          this.backends[keyPrefix] = backend2;
         }));
       }
       async readData(key) {
@@ -38324,34 +46906,34 @@ var init_database_router = __esm({
         return await this.lookupBackend(key).deleteData(key);
       }
       async clear() {
-        for (const backend of new Set(Object.values(this.backends))) {
+        for (const backend2 of new Set(Object.values(this.backends))) {
           try {
-            await backend.clear();
+            await backend2.clear();
           } catch (e2) {
-            const prefix = Object.entries(this.backends).find(([, b]) => b === backend)[0];
+            const prefix = Object.entries(this.backends).find(([, b]) => b === backend2)[0];
             console.error(e2, `Error clearing DB for prefix ${prefix}`);
           }
         }
       }
       async close() {
-        for (const backend of new Set(Object.values(this.backends))) {
+        for (const backend2 of new Set(Object.values(this.backends))) {
           try {
-            await backend.close();
+            await backend2.close();
           } catch (e2) {
-            const prefix = Object.entries(this.backends).find(([, b]) => b === backend)[0];
+            const prefix = Object.entries(this.backends).find(([, b]) => b === backend2)[0];
             console.error(e2, `Error closing DB for prefix ${prefix}`);
           }
         }
       }
       async *iterKeys() {
-        for (const backend of new Set(Object.values(this.backends))) {
-          yield* backend.iterKeys();
+        for (const backend2 of new Set(Object.values(this.backends))) {
+          yield* backend2.iterKeys();
         }
       }
       async keyCount() {
         let count = 0;
-        for (const backend of new Set(Object.values(this.backends))) {
-          count += await backend.keyCount();
+        for (const backend2 of new Set(Object.values(this.backends))) {
+          count += await backend2.keyCount();
         }
         return count;
       }
@@ -38384,7 +46966,7 @@ var init_database_router_test = __esm({
         }
       }
     };
-    db = new RouterBackend({ config: validConfig });
+    db = new RouterBackend(validConfig);
     Deno.test({
       name: "DatabaseRouter::validateConfig",
       async fn(t) {
@@ -38694,8 +47276,8 @@ var require_req = __commonJS({
       if (req.originalUrl) {
         _req.url = req.originalUrl;
       } else {
-        const path2 = req.path;
-        _req.url = typeof path2 === "string" ? path2 : req.url ? req.url.path || req.url : void 0;
+        const path = req.path;
+        _req.url = typeof path === "string" ? path : req.url ? req.url.path || req.url : void 0;
       }
       if (req.query) {
         _req.query = req.query;
@@ -38872,17 +47454,17 @@ var require_parse = __commonJS({
       const wildcards = [];
       var wcLen = 0;
       const secret = paths.reduce(function(o2, strPath, ix) {
-        var path2 = strPath.match(rx).map((p) => p.replace(/'|"|`/g, ""));
+        var path = strPath.match(rx).map((p) => p.replace(/'|"|`/g, ""));
         const leadingBracket = strPath[0] === "[";
-        path2 = path2.map((p) => {
+        path = path.map((p) => {
           if (p[0] === "[") return p.substr(1, p.length - 2);
           else return p;
         });
-        const star = path2.indexOf("*");
+        const star = path.indexOf("*");
         if (star > -1) {
-          const before = path2.slice(0, star);
+          const before = path.slice(0, star);
           const beforeStr = before.join(".");
-          const after = path2.slice(star + 1, path2.length);
+          const after = path.slice(star + 1, path.length);
           const nested = after.length > 0;
           wcLen++;
           wildcards.push({
@@ -38893,7 +47475,7 @@ var require_parse = __commonJS({
           });
         } else {
           o2[strPath] = {
-            path: path2,
+            path,
             val: void 0,
             precensored: false,
             circle: "",
@@ -38937,20 +47519,20 @@ var require_redactor = __commonJS({
       return redact;
     }
     function redactTmpl(secret, isCensorFct, censorFctTakesPath) {
-      return Object.keys(secret).map((path2) => {
-        const { escPath, leadingBracket, path: arrPath } = secret[path2];
+      return Object.keys(secret).map((path) => {
+        const { escPath, leadingBracket, path: arrPath } = secret[path];
         const skip = leadingBracket ? 1 : 0;
         const delim = leadingBracket ? "" : ".";
         const hops = [];
         var match;
-        while ((match = rx.exec(path2)) !== null) {
+        while ((match = rx.exec(path)) !== null) {
           const [, ix] = match;
           const { index, input } = match;
           if (index > skip) hops.push(input.substring(0, index - (ix ? 0 : 1)));
         }
         var existence = hops.map((p) => `o${delim}${p}`).join(" && ");
-        if (existence.length === 0) existence += `o${delim}${path2} != null`;
-        else existence += ` && o${delim}${path2} != null`;
+        if (existence.length === 0) existence += `o${delim}${path} != null`;
+        else existence += ` && o${delim}${path} != null`;
         const circularDetection = `
       switch (true) {
         ${hops.reverse().map((p) => `
@@ -38963,12 +47545,12 @@ var require_redactor = __commonJS({
         const censorArgs = censorFctTakesPath ? `val, ${JSON.stringify(arrPath)}` : `val`;
         return `
       if (${existence}) {
-        const val = o${delim}${path2}
+        const val = o${delim}${path}
         if (val === censor) {
           secret[${escPath}].precensored = true
         } else {
           secret[${escPath}].val = val
-          o${delim}${path2} = ${isCensorFct ? `censor(${censorArgs})` : "censor"}
+          o${delim}${path} = ${isCensorFct ? `censor(${censorArgs})` : "censor"}
           ${circularDetection}
         }
       }
@@ -39018,13 +47600,13 @@ var require_modifiers = __commonJS({
         target[k] = values[i2];
       }
     }
-    function groupRedact(o2, path2, censor, isCensorFct, censorFctTakesPath) {
-      const target = get(o2, path2);
+    function groupRedact(o2, path, censor, isCensorFct, censorFctTakesPath) {
+      const target = get(o2, path);
       if (target == null || typeof target === "string") return { keys: null, values: null, target, flat: true };
       const keys = Object.keys(target);
       const keysLength = keys.length;
-      const pathLength = path2.length;
-      const pathWithKey = censorFctTakesPath ? [...path2] : void 0;
+      const pathLength = path.length;
+      const pathWithKey = censorFctTakesPath ? [...path] : void 0;
       const values = new Array(keysLength);
       for (var i2 = 0; i2 < keysLength; i2++) {
         const key = keys[i2];
@@ -39042,29 +47624,29 @@ var require_modifiers = __commonJS({
     }
     function nestedRestore(instructions) {
       for (let i2 = 0; i2 < instructions.length; i2++) {
-        const { target, path: path2, value } = instructions[i2];
+        const { target, path, value } = instructions[i2];
         let current = target;
-        for (let i3 = path2.length - 1; i3 > 0; i3--) {
-          current = current[path2[i3]];
+        for (let i3 = path.length - 1; i3 > 0; i3--) {
+          current = current[path[i3]];
         }
-        current[path2[0]] = value;
+        current[path[0]] = value;
       }
     }
-    function nestedRedact(store, o2, path2, ns, censor, isCensorFct, censorFctTakesPath) {
-      const target = get(o2, path2);
+    function nestedRedact(store, o2, path, ns, censor, isCensorFct, censorFctTakesPath) {
+      const target = get(o2, path);
       if (target == null) return;
       const keys = Object.keys(target);
       const keysLength = keys.length;
       for (var i2 = 0; i2 < keysLength; i2++) {
         const key = keys[i2];
-        specialSet(store, target, key, path2, ns, censor, isCensorFct, censorFctTakesPath);
+        specialSet(store, target, key, path, ns, censor, isCensorFct, censorFctTakesPath);
       }
       return store;
     }
     function has2(obj, prop) {
       return obj !== void 0 && obj !== null ? "hasOwn" in Object ? Object.hasOwn(obj, prop) : Object.prototype.hasOwnProperty.call(obj, prop) : false;
     }
-    function specialSet(store, o2, k, path2, afterPath, censor, isCensorFct, censorFctTakesPath) {
+    function specialSet(store, o2, k, path, afterPath, censor, isCensorFct, censorFctTakesPath) {
       const afterPathLen = afterPath.length;
       const lastPathIndex = afterPathLen - 1;
       const originalKey = k;
@@ -39107,7 +47689,7 @@ var require_modifiers = __commonJS({
             if (consecutive) {
               redactPathCurrent = node(redactPathCurrent, wck, depth);
               level = i2;
-              ov = iterateNthLevel(wcov, level - 1, k, path2, afterPath, censor, isCensorFct, censorFctTakesPath, originalKey, n, nv, ov, kIsWc, wck, i2, lastPathIndex, redactPathCurrent, store, o2[originalKey], depth + 1);
+              ov = iterateNthLevel(wcov, level - 1, k, path, afterPath, censor, isCensorFct, censorFctTakesPath, originalKey, n, nv, ov, kIsWc, wck, i2, lastPathIndex, redactPathCurrent, store, o2[originalKey], depth + 1);
             } else {
               if (kIsWc || typeof wcov === "object" && wcov !== null && k in wcov) {
                 if (kIsWc) {
@@ -39115,7 +47697,7 @@ var require_modifiers = __commonJS({
                 } else {
                   ov = wcov[k];
                 }
-                nv = i2 !== lastPathIndex ? ov : isCensorFct ? censorFctTakesPath ? censor(ov, [...path2, originalKey, ...afterPath]) : censor(ov) : censor;
+                nv = i2 !== lastPathIndex ? ov : isCensorFct ? censorFctTakesPath ? censor(ov, [...path, originalKey, ...afterPath]) : censor(ov) : censor;
                 if (kIsWc) {
                   const rv = restoreInstr(node(redactPathCurrent, wck, depth), ov, o2[originalKey]);
                   store.push(rv);
@@ -39138,7 +47720,7 @@ var require_modifiers = __commonJS({
         } else {
           ov = n[k];
           redactPathCurrent = node(redactPathCurrent, k, depth);
-          nv = i2 !== lastPathIndex ? ov : isCensorFct ? censorFctTakesPath ? censor(ov, [...path2, originalKey, ...afterPath]) : censor(ov) : censor;
+          nv = i2 !== lastPathIndex ? ov : isCensorFct ? censorFctTakesPath ? censor(ov, [...path, originalKey, ...afterPath]) : censor(ov) : censor;
           if (has2(n, k) && nv === ov || nv === void 0 && censor !== void 0) {
           } else {
             const rv = restoreInstr(redactPathCurrent, ov, o2[originalKey]);
@@ -39161,7 +47743,7 @@ var require_modifiers = __commonJS({
       }
       return n;
     }
-    function iterateNthLevel(wcov, level, k, path2, afterPath, censor, isCensorFct, censorFctTakesPath, originalKey, n, nv, ov, kIsWc, wck, i2, lastPathIndex, redactPathCurrent, store, parent, depth) {
+    function iterateNthLevel(wcov, level, k, path, afterPath, censor, isCensorFct, censorFctTakesPath, originalKey, n, nv, ov, kIsWc, wck, i2, lastPathIndex, redactPathCurrent, store, parent, depth) {
       if (level === 0) {
         if (kIsWc || typeof wcov === "object" && wcov !== null && k in wcov) {
           if (kIsWc) {
@@ -39169,7 +47751,7 @@ var require_modifiers = __commonJS({
           } else {
             ov = wcov[k];
           }
-          nv = i2 !== lastPathIndex ? ov : isCensorFct ? censorFctTakesPath ? censor(ov, [...path2, originalKey, ...afterPath]) : censor(ov) : censor;
+          nv = i2 !== lastPathIndex ? ov : isCensorFct ? censorFctTakesPath ? censor(ov, [...path, originalKey, ...afterPath]) : censor(ov) : censor;
           if (kIsWc) {
             const rv = restoreInstr(redactPathCurrent, ov, parent);
             store.push(rv);
@@ -39188,7 +47770,7 @@ var require_modifiers = __commonJS({
       for (const key in wcov) {
         if (typeof wcov[key] === "object") {
           redactPathCurrent = node(redactPathCurrent, key, depth);
-          iterateNthLevel(wcov[key], level - 1, k, path2, afterPath, censor, isCensorFct, censorFctTakesPath, originalKey, n, nv, ov, kIsWc, wck, i2, lastPathIndex, redactPathCurrent, store, parent, depth + 1);
+          iterateNthLevel(wcov[key], level - 1, k, path, afterPath, censor, isCensorFct, censorFctTakesPath, originalKey, n, nv, ov, kIsWc, wck, i2, lastPathIndex, redactPathCurrent, store, parent, depth + 1);
         }
       }
     }
@@ -39210,12 +47792,12 @@ var require_modifiers = __commonJS({
     }
     function restoreInstr(node2, value, target) {
       let current = node2;
-      const path2 = [];
+      const path = [];
       do {
-        path2.push(current.key);
+        path.push(current.key);
         current = current.parent;
       } while (current.parent != null);
-      return { path: path2, value, target };
+      return { path, value, target };
     }
   }
 });
@@ -39243,10 +47825,10 @@ var require_restorer = __commonJS({
       };
     }
     function resetTmpl(secret, paths) {
-      return paths.map((path2) => {
-        const { circle, escPath, leadingBracket } = secret[path2];
+      return paths.map((path) => {
+        const { circle, escPath, leadingBracket } = secret[path];
         const delim = leadingBracket ? "" : ".";
-        const reset = circle ? `o.${circle} = secret[${escPath}].val` : `o${delim}${path2} = secret[${escPath}].val`;
+        const reset = circle ? `o.${circle} = secret[${escPath}].val` : `o${delim}${path} = secret[${escPath}].val`;
         const clear = `secret[${escPath}].val = undefined`;
         return `
       if (secret[${escPath}].val !== undefined) {
@@ -39470,8 +48052,8 @@ var require_redaction = __commonJS({
         if (shape[k] === null) {
           o2[k] = (value) => topCensor(value, [k]);
         } else {
-          const wrappedCensor = typeof censor === "function" ? (value, path2) => {
-            return censor(value, [k, ...path2]);
+          const wrappedCensor = typeof censor === "function" ? (value, path) => {
+            return censor(value, [k, ...path]);
           } : censor;
           o2[k] = fastRedact({
             paths: shape[k],
@@ -39663,10 +48245,10 @@ var require_atomic_sleep = __commonJS({
 var require_sonic_boom = __commonJS({
   "node_modules/.deno/sonic-boom@3.8.1/node_modules/sonic-boom/index.js"(exports, module) {
     "use strict";
-    var fs2 = __require2("fs");
+    var fs = __require2("fs");
     var EventEmitter = __require2("events");
     var inherits = __require2("util").inherits;
-    var path2 = __require2("path");
+    var path = __require2("path");
     var sleep = require_atomic_sleep();
     var BUSY_WRITE_TIMEOUT = 100;
     var kEmptyBuffer = Buffer.allocUnsafe(0);
@@ -39717,20 +48299,20 @@ var require_sonic_boom = __commonJS({
       const mode = sonic.mode;
       if (sonic.sync) {
         try {
-          if (sonic.mkdir) fs2.mkdirSync(path2.dirname(file), { recursive: true });
-          const fd = fs2.openSync(file, flags, mode);
+          if (sonic.mkdir) fs.mkdirSync(path.dirname(file), { recursive: true });
+          const fd = fs.openSync(file, flags, mode);
           fileOpened(null, fd);
         } catch (err) {
           fileOpened(err);
           throw err;
         }
       } else if (sonic.mkdir) {
-        fs2.mkdir(path2.dirname(file), { recursive: true }, (err) => {
+        fs.mkdir(path.dirname(file), { recursive: true }, (err) => {
           if (err) return fileOpened(err);
-          fs2.open(file, flags, mode, fileOpened);
+          fs.open(file, flags, mode, fileOpened);
         });
       } else {
-        fs2.open(file, flags, mode, fileOpened);
+        fs.open(file, flags, mode, fileOpened);
       }
     }
     function SonicBoom(opts) {
@@ -39769,16 +48351,16 @@ var require_sonic_boom = __commonJS({
         this.flush = flushBuffer;
         this.flushSync = flushBufferSync;
         this._actualWrite = actualWriteBuffer;
-        fsWriteSync = () => fs2.writeSync(this.fd, this._writingBuf);
-        fsWrite = () => fs2.write(this.fd, this._writingBuf, this.release);
+        fsWriteSync = () => fs.writeSync(this.fd, this._writingBuf);
+        fsWrite = () => fs.write(this.fd, this._writingBuf, this.release);
       } else if (contentMode === void 0 || contentMode === kContentModeUtf8) {
         this._writingBuf = "";
         this.write = write;
         this.flush = flush;
         this.flushSync = flushSync;
         this._actualWrite = actualWrite;
-        fsWriteSync = () => fs2.writeSync(this.fd, this._writingBuf, "utf8");
-        fsWrite = () => fs2.write(this.fd, this._writingBuf, "utf8", this.release);
+        fsWriteSync = () => fs.writeSync(this.fd, this._writingBuf, "utf8");
+        fsWrite = () => fs.write(this.fd, this._writingBuf, "utf8", this.release);
       } else {
         throw new Error(`SonicBoom supports "${kContentModeUtf8}" and "${kContentModeBuffer}", but passed ${contentMode}`);
       }
@@ -39834,7 +48416,7 @@ var require_sonic_boom = __commonJS({
           }
         }
         if (this._fsync) {
-          fs2.fsyncSync(this.fd);
+          fs.fsyncSync(this.fd);
         }
         const len = this._len;
         if (this._reopening) {
@@ -39941,7 +48523,7 @@ var require_sonic_boom = __commonJS({
       this._flushPending = true;
       const onDrain = () => {
         if (!this._fsync) {
-          fs2.fsync(this.fd, (err) => {
+          fs.fsync(this.fd, (err) => {
             this._flushPending = false;
             cb(err);
           });
@@ -40040,7 +48622,7 @@ var require_sonic_boom = __commonJS({
       const fd = this.fd;
       this.once("ready", () => {
         if (fd !== this.fd) {
-          fs2.close(fd, (err) => {
+          fs.close(fd, (err) => {
             if (err) {
               return this.emit("error", err);
             }
@@ -40089,7 +48671,7 @@ var require_sonic_boom = __commonJS({
           buf2 = this._bufs[0];
         }
         try {
-          const n = fs2.writeSync(this.fd, buf2, "utf8");
+          const n = fs.writeSync(this.fd, buf2, "utf8");
           const releasedBufObj = releaseWritingBuf(buf2, this._len, n);
           buf2 = releasedBufObj.writingBuf;
           this._len = releasedBufObj.len;
@@ -40105,7 +48687,7 @@ var require_sonic_boom = __commonJS({
         }
       }
       try {
-        fs2.fsyncSync(this.fd);
+        fs.fsyncSync(this.fd);
       } catch {
       }
     }
@@ -40126,7 +48708,7 @@ var require_sonic_boom = __commonJS({
           buf2 = mergeBuf(this._bufs[0], this._lens[0]);
         }
         try {
-          const n = fs2.writeSync(this.fd, buf2);
+          const n = fs.writeSync(this.fd, buf2);
           buf2 = buf2.subarray(n);
           this._len = Math.max(this._len - n, 0);
           if (buf2.length <= 0) {
@@ -40154,13 +48736,13 @@ var require_sonic_boom = __commonJS({
       this._writingBuf = this._writingBuf || this._bufs.shift() || "";
       if (this.sync) {
         try {
-          const written = fs2.writeSync(this.fd, this._writingBuf, "utf8");
+          const written = fs.writeSync(this.fd, this._writingBuf, "utf8");
           release(null, written);
         } catch (err) {
           release(err);
         }
       } else {
-        fs2.write(this.fd, this._writingBuf, "utf8", release);
+        fs.write(this.fd, this._writingBuf, "utf8", release);
       }
     }
     function actualWriteBuffer() {
@@ -40169,13 +48751,13 @@ var require_sonic_boom = __commonJS({
       this._writingBuf = this._writingBuf.length ? this._writingBuf : mergeBuf(this._bufs.shift(), this._lens.shift());
       if (this.sync) {
         try {
-          const written = fs2.writeSync(this.fd, this._writingBuf);
+          const written = fs.writeSync(this.fd, this._writingBuf);
           release(null, written);
         } catch (err) {
           release(err);
         }
       } else {
-        fs2.write(this.fd, this._writingBuf, release);
+        fs.write(this.fd, this._writingBuf, release);
       }
     }
     function actualClose(sonic) {
@@ -40186,10 +48768,10 @@ var require_sonic_boom = __commonJS({
       sonic.destroyed = true;
       sonic._bufs = [];
       sonic._lens = [];
-      fs2.fsync(sonic.fd, closeWrapped);
+      fs.fsync(sonic.fd, closeWrapped);
       function closeWrapped() {
         if (sonic.fd !== 1 && sonic.fd !== 2) {
-          fs2.close(sonic.fd, done);
+          fs.close(sonic.fd, done);
         } else {
           done();
         }
@@ -40302,7 +48884,7 @@ var require_on_exit_leak_free = __commonJS({
     };
   }
 });
-var require_package2 = __commonJS({
+var require_package3 = __commonJS({
   "node_modules/.deno/thread-stream@2.7.0/node_modules/thread-stream/package.json"(exports, module) {
     module.exports = {
       name: "thread-stream",
@@ -40431,7 +49013,7 @@ var require_indexes = __commonJS({
 var require_thread_stream = __commonJS({
   "node_modules/.deno/thread-stream@2.7.0/node_modules/thread-stream/index.js"(exports, module) {
     "use strict";
-    var { version } = require_package2();
+    var { version } = require_package3();
     var { EventEmitter } = __require2("events");
     var { Worker } = __require2("worker_threads");
     var { join: join32 } = __require2("path");
@@ -44277,13 +52859,13 @@ var ArrayBufferToUint8ArrayStream = async function(connectionURL, s) {
 var computeChunkDescriptors = (inStream) => {
   let length2 = 0;
   const [lengthStream, cidStream] = inStream.tee();
-  const lengthPromise = new Promise((resolve42, reject) => {
+  const lengthPromise = new Promise((resolve32, reject) => {
     lengthStream.pipeTo(new WritableStream({
       write(chunk) {
         length2 += chunk.byteLength;
       },
       close() {
-        resolve42(length2);
+        resolve32(length2);
       },
       abort(reason) {
         reject(reason);
@@ -48053,12 +56635,13 @@ init_esm();
 var import_npm_lru_cache = __toESM(require_lru_cache());
 var SERVER_EXITING = "server-exiting";
 init_esm();
+var import_npm_nconf = __toESM(require_nconf());
 var vapidPublicKey;
 var vapidPrivateKey;
-if (!process2.env.VAPID_EMAIL) {
-  console.warn('Missing VAPID identification. Please set VAPID_EMAIL to a value like "mailto:some@example".');
+var vapidEmail = import_npm_nconf.default.get("server:vapid:email");
+if (!vapidEmail) {
+  console.warn('Missing VAPID identification. Please set `server:vapid:email` to a value like "some@example".');
 }
-var vapid = { VAPID_EMAIL: process2.env.VAPID_EMAIL || "mailto:test@example.com" };
 var initVapid = async () => {
   const vapidKeyPair = await esm_default("chelonia.db/get", "_private_immutable_vapid_key").then(async (vapidKeyPair2) => {
     if (!vapidKeyPair2) {
@@ -48126,6 +56709,7 @@ var initZkpp = async () => {
   registrationSecret = Buffer9.from(hashStringArray("private/registrationSecret", IKM)).toString("base64");
   hashUpdateSecret = Buffer9.from(hashStringArray("private/hashUpdateSecret", IKM)).toString("base64");
 };
+var import_npm_nconf2 = __toESM(require_nconf());
 var globImport_database_ts2 = __glob({
   "./database-fs.ts": () => Promise.resolve().then(() => (init_database_fs(), database_fs_exports)),
   "./database-redis.ts": () => Promise.resolve().then(() => (init_database_redis(), database_redis_exports)),
@@ -48133,24 +56717,12 @@ var globImport_database_ts2 = __glob({
   "./database-router.ts": () => Promise.resolve().then(() => (init_database_router(), database_router_exports)),
   "./database-sqlite.ts": () => Promise.resolve().then(() => (init_database_sqlite(), database_sqlite_exports))
 });
-var production = process5.env.NODE_ENV === "production";
-var persistence = process5.env.GI_PERSIST || (production ? "fs" : void 0);
-var dbRootPath = process5.env.DB_PATH || "./data";
-var options = {
-  fs: {
-    depth: 0,
-    dirname: dbRootPath,
-    keyChunkLength: 2
-  },
-  sqlite: {
-    filepath: path.join(dbRootPath, "groupincome.db")
-  }
-};
+var ARCHIVE_MODE = import_npm_nconf2.default.get("chelonia:archiveMode");
+var backend = import_npm_nconf2.default.get("database:backend");
+var production = process2.env.NODE_ENV === "production";
+var persistence = backend || (production ? "fs" : void 0);
+var options = import_npm_nconf2.default.get("database:backendOptions");
 var KEYOP_SEGMENT_LENGTH = 1e4;
-var dataFolder = path.resolve(options.fs.dirname);
-if (!fs.existsSync(dataFolder)) {
-  fs.mkdirSync(dataFolder, { mode: 488 });
-}
 var updateSize = async (resourceID, sizeKey, size, skipIfDeleted) => {
   if (!Number.isSafeInteger(size)) {
     throw new TypeError(`Invalid given size ${size} for ${resourceID}`);
@@ -48171,7 +56743,8 @@ var updateSize = async (resourceID, sizeKey, size, skipIfDeleted) => {
 };
 var database_default = esm_default("sbp/selectors/register", {
   "backend/db/streamEntriesAfter": async function(contractID, height, requestedLimit, options2 = {}) {
-    const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, process5.env.MAX_EVENTS_BATCH_SIZE ? parseInt(process5.env.MAX_EVENTS_BATCH_SIZE) || 500 : 500);
+    const batchMaxSize = import_npm_nconf2.default.get("server:maxEventsBatchSize") ?? 500;
+    const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, batchMaxSize);
     const latestHEADinfo = await esm_default("chelonia/db/latestHEADinfo", contractID);
     if (latestHEADinfo === "") {
       throw import_boom.default.resourceGone(`contractID ${contractID} has been deleted!`);
@@ -48280,7 +56853,7 @@ function namespaceKey(name) {
   return "name=" + name;
 }
 var initDB = async ({ skipDbPreloading } = {}) => {
-  if (persistence) {
+  if (persistence && persistence !== "mem") {
     const Ctor = (await globImport_database_ts2(`./database-${persistence}.ts`)).default;
     const { init: init2, readData, writeData, deleteData, iterKeys, keyCount, close } = new Ctor(options[persistence]);
     await init2();
@@ -48294,7 +56867,7 @@ var initDB = async ({ skipDbPreloading } = {}) => {
       });
     });
     const cache2 = new import_npm_lru_cache.default({
-      max: Number(process5.env.GI_LRU_NUM_ITEMS) || 1e4
+      max: import_npm_nconf2.default.get("database:lruNumItems") ?? 1e4
     });
     const prefixes = Object.keys(prefixHandlers);
     esm_default("sbp/selectors/overwrite", {
@@ -48315,7 +56888,7 @@ var initDB = async ({ skipDbPreloading } = {}) => {
         return value;
       },
       "chelonia.db/set": async function(key, value) {
-        if (process5.env.CHELONIA_ARCHIVE_MODE) throw new Error("Unable to write in archive mode");
+        if (ARCHIVE_MODE) throw new Error("Unable to write in archive mode");
         checkKey(key);
         if (key.startsWith("_private_immutable")) {
           const existingValue = await readData(key);
@@ -48329,7 +56902,7 @@ var initDB = async ({ skipDbPreloading } = {}) => {
         });
       },
       "chelonia.db/delete": async function(key) {
-        if (process5.env.CHELONIA_ARCHIVE_MODE) throw new Error("Unable to write in archive mode");
+        if (ARCHIVE_MODE) throw new Error("Unable to write in archive mode");
         checkKey(key);
         if (key.startsWith("_private_immutable")) {
           throw new Error("Cannot delete immutable key");
@@ -48349,37 +56922,6 @@ var initDB = async ({ skipDbPreloading } = {}) => {
     esm_default("sbp/selectors/lock", ["chelonia.db/get", "chelonia.db/set", "chelonia.db/delete", "chelonia.db/iterKeys"]);
   }
   if (skipDbPreloading) return;
-  if (persistence !== "fs" || options.fs.dirname !== dbRootPath) {
-    const HASH_LENGTH = 56;
-    const keys = (await readdir2(dataFolder)).filter((k) => {
-      if (k.length !== HASH_LENGTH) return false;
-      const parsed = maybeParseCID(k);
-      return parsed && [
-        multicodes.SHELTER_CONTRACT_MANIFEST,
-        multicodes.SHELTER_CONTRACT_TEXT
-      ].includes(parsed.code);
-    });
-    const numKeys = keys.length;
-    let numVisitedKeys = 0;
-    let numNewKeys = 0;
-    const savedProgress = { value: 0, numKeys: 0 };
-    console.info("[chelonia.db] Preloading...");
-    for (const key of keys) {
-      if (!persistence || !await esm_default("chelonia.db/get", key)) {
-        const value = await readFile3(path.join(dataFolder, key), "utf8");
-        await esm_default("chelonia.db/set", key, value);
-        numNewKeys++;
-      }
-      numVisitedKeys++;
-      const progress = numVisitedKeys === numKeys ? 100 : Math.floor(100 * numVisitedKeys / numKeys);
-      if (progress === 100 || progress - savedProgress.value >= 10 && numVisitedKeys - savedProgress.numKeys >= 10) {
-        console.info(`[chelonia.db] Preloading... ${progress}% done`);
-        savedProgress.numKeys = numVisitedKeys;
-        savedProgress.value = progress;
-      }
-    }
-    numNewKeys && console.info(`[chelonia.db] Preloaded ${numNewKeys} new entries`);
-  }
   await Promise.all([initVapid(), initZkpp()]);
 };
 var appendToIndexFactory = (key) => {
@@ -48450,7 +56992,7 @@ var lookupUltimateOwner = async (resourceID) => {
 };
 init_esm();
 var import_npm_pino = __toESM(require_pino());
-var prettyPrint = process6.env.NODE_ENV === "development" || process6.env.CI || process6.env.CYPRESS_RECORD_KEY || process6.env.PRETTY;
+var prettyPrint = process3.env.NODE_ENV === "development" || process3.env.CI || process3.env.CYPRESS_RECORD_KEY || process3.env.PRETTY;
 function logMethod(args, method) {
   const stringIdx = typeof args[0] === "string" ? 0 : 1;
   if (args.length > 1) {
@@ -48479,7 +57021,7 @@ if (prettyPrint) {
 } else {
   logger = (0, import_npm_pino.default)({ hooks: { logMethod } });
 }
-var logLevel = process6.env.LOG_LEVEL || (prettyPrint ? "debug" : "info");
+var logLevel = process3.env.LOG_LEVEL || (prettyPrint ? "debug" : "info");
 if (Object.keys(logger.levels.values).includes(logLevel)) {
   logger.level = logLevel;
 } else {
