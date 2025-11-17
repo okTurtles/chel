@@ -7,7 +7,6 @@ const parseConfig = () => {
   nconf
     .env({
       separator: '__',
-      lowerCase: true,
       parseValues: true
     })
     .argv(parseArgs())
@@ -54,6 +53,8 @@ const parseConfig = () => {
         }
       }
     })
+
+    console.error('@@@@', nconf.get('database'))
 }
 
 export default parseConfig

@@ -115686,7 +115686,6 @@ var parseArgs_default = parseArgs;
 var parseConfig = () => {
   import_npm_nconf7.default.env({
     separator: "__",
-    lowerCase: true,
     parseValues: true
   }).argv(parseArgs_default()).file({ file: "chel.toml", format: { parse: parse6, stringify } }).defaults({
     "server": {
@@ -115730,6 +115729,7 @@ var parseConfig = () => {
       }
     }
   });
+  console.error("@@@@", import_npm_nconf7.default.get("database"));
 };
 var parseConfig_default = parseConfig;
 init_database();
@@ -115747,7 +115747,9 @@ parentPort.on("message", ([port, ...msg]) => {
   });
 });
 esm_default("okTurtles.eventQueue/queueEvent", readyQueueName, async () => {
-  parseConfig_default();
+  if (typeof WorkerGlobalScope !== "function" || !(globalThis instanceof WorkerGlobalScope)) {
+    parseConfig_default();
+  }
   await initDB({ skipDbPreloading: true });
   parentPort.postMessage("ready");
 });

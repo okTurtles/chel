@@ -21,7 +21,10 @@ parentPort!.on('message', ([port, ...msg]: [MessagePort, ...unknown[]]) => {
 })
 
 sbp('okTurtles.eventQueue/queueEvent', readyQueueName, async () => {
-  parseConfig()
+  if (typeof WorkerGlobalScope !== 'function' || !(globalThis instanceof WorkerGlobalScope)) {
+    // Skip parsing config when running as a WebWorker (used in tests)
+    parseConfig()
+  }
   await initDB({ skipDbPreloading: true })
   parentPort!.postMessage('ready')
 })
