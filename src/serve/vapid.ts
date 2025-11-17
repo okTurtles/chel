@@ -5,19 +5,20 @@ import nconf from 'npm:nconf'
 
 let vapidPublicKey: string
 let vapidPrivateKey: CryptoKey
-
-const vapidEmail = nconf.get('server:vapid:email')
-
-// The Voluntary Application Server Identification (VAPID) email field is "a
-// stable identity for the application server" that "can be used by a push
-// service to establish behavioral expectations for an application server"
-// RFC 8292
-if (!vapidEmail) {
-  console.warn('Missing VAPID identification. Please set `server:vapid:email` to a value like "some@example".')
-}
-const vapid = { VAPID_EMAIL: vapidEmail || 'test@example.com' }
+let vapid: { VAPID_EMAIL: string }
 
 export const initVapid = async () => {
+  const vapidEmail = nconf.get('server:vapid:email')
+
+  // The Voluntary Application Server Identification (VAPID) email field is "a
+  // stable identity for the application server" that "can be used by a push
+  // service to establish behavioral expectations for an application server"
+  // RFC 8292
+  if (!vapidEmail) {
+    console.warn('Missing VAPID identification. Please set `server:vapid:email` to a value like "some@domain.example".')
+  }
+  vapid = { VAPID_EMAIL: vapidEmail || 'test@example.com' }
+
   const vapidKeyPair = await sbp('chelonia.db/get', '_private_immutable_vapid_key').then(async (vapidKeyPair: string): Promise<[object, string]> => {
     if (!vapidKeyPair) {
       console.info('Generating new VAPID keypair...')

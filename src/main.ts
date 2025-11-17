@@ -9,89 +9,18 @@
 // Third-party modules:
 // https://deno.land/x
 
-import process from 'node:process'
-import * as commands from './commands.ts'
-// @deno-types="npm:@types/nconf"
-import nconf from 'npm:nconf'
-import { parse, stringify } from 'npm:smol-toml'
-// @deno-types="npm:@types/yargs"
-import yargs, { type ArgumentsCamelCase, type CommandModule as YCommandModule } from 'npm:yargs'
-import { hideBin } from 'npm:yargs/helpers'
+import sbp from 'npm:@sbp/sbp'
+import parseConfig, { postHandler } from './parseConfig.ts'
+import { SERVER_EXITING } from './serve/events.ts'
 
-let postHandler: () => void | Promise<void> = () => {}
+parseConfig()
 
-const handlerWrapper = <T, U>(commandModule: commands.CommandModule<T, U>): YCommandModule<T, U> => {
-  return {
-    ...commandModule,
-    handler: (argv: ArgumentsCamelCase<U>) => {
-      postHandler = () => commandModule.postHandler(argv)
-      if (commandModule.handler) {
-        return commandModule.handler(argv)
-      }
-    }
-  }
+try {
+  // `postHandler` is set by `parseArgs` (called by `parseConfig`)
+  // Run the selected subcommand
+  await postHandler()
+} finally {
+  // Indicate that we're done, which is useful for cleaning up, closing DB
+  // connections, etc.
+  sbp('okTurtles.events/emit', SERVER_EXITING)
 }
-
-// Typecasting seems to be required
-const commandModules = Object.values(commands).map(
-  (c) => handlerWrapper(c as commands.CommandModule<object, object>)
-)
-
-nconf
-  .env({
-    separator: '__',
-    lowerCase: true,
-    parseValues: true
-  })
-  .argv(yargs(hideBin(process.argv))
-    .version(import.meta.VERSION)
-    .strict()
-    .command(commandModules)
-    .demandCommand()
-    .help()
-  )
-  .file({ file: 'chel.toml', format: { parse, stringify } })
-  .defaults({
-    'server': {
-      'appDir': '.',
-      'port': 8000,
-      'dashboardPort': 8888,
-      'fileUploadMaxBytes': 31457280,
-      'signup': {
-        'disabled': false,
-        'limit': {
-          'disabled': false,
-          'minute': 2,
-          'hour': 10,
-          'day': 50
-        },
-        'vapid': {
-          'email': undefined
-        }
-      },
-      'logLevel': 'debug',
-      'messages': [],
-      'maxEventsBatchSize': 500
-    },
-    'chelonia': {
-      'registrationDisabled': false,
-      'archiveMode': false
-    },
-    'database': {
-      'lruNumItems': 10000,
-      'backend': 'mem',
-      'backendOptions': {
-        'fs': {
-          'depth': 0,
-          'keyChunkLength': 2,
-          'dirname': './data',
-          'skipFsCaseSensitivityCheck': false
-        },
-        'sqlite': {
-          'filepath': './data/chelonia.db'
-        }
-      }
-    }
-  })
-
-await postHandler()

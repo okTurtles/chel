@@ -1,5 +1,6 @@
 import * as colors from 'jsr:@std/fmt/colors'
 import * as path from 'jsr:@std/path/'
+import { Buffer } from 'node:buffer'
 import sbp from 'npm:@sbp/sbp'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { initDB } from './serve/database.ts'
@@ -64,7 +65,7 @@ async function uploadEntryToURL ([cid, buffer]: Entry, url: string): Promise<str
 }
 
 function uploadEntryToDB ([cid, buffer]: Entry): Promise<string> {
-  return sbp('chelonia.db/set', cid, buffer).then(() => cid)
+  return sbp('chelonia.db/set', cid, Buffer.from(buffer)).then(() => cid)
 }
 
 type ResponseTypeFn = 'arrayBuffer' | 'blob' | 'clone' | 'formData' | 'json' | 'text'

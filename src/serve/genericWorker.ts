@@ -1,5 +1,6 @@
 import { parentPort } from 'node:worker_threads'
 import sbp from 'npm:@sbp/sbp'
+import parseConfig from '../parseConfig.ts'
 import { initDB } from './database.ts'
 import './logger.ts'
 
@@ -20,6 +21,7 @@ parentPort!.on('message', ([port, ...msg]: [MessagePort, ...unknown[]]) => {
 })
 
 sbp('okTurtles.eventQueue/queueEvent', readyQueueName, async () => {
+  parseConfig()
   await initDB({ skipDbPreloading: true })
   parentPort!.postMessage('ready')
 })

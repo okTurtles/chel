@@ -14,14 +14,7 @@ import { initZkpp } from './zkppSalt.ts'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
 
-const ARCHIVE_MODE = nconf.get('chelonia:archiveMode')
-const backend = nconf.get('database:backend')
-
 const production = process.env.NODE_ENV === 'production'
-// Defaults to `fs` in production.
-const persistence = backend || (production ? 'fs' : undefined)
-
-const options = nconf.get('database:backendOptions')
 
 // Segment length for keyop index. Changing this value will require rebuilding
 // this index. The value should be a power of 10 (e.g., 10, 100, 1000, 10000)
@@ -214,6 +207,12 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
   // If persistence must be enabled:
   // - load and initialize the selected storage backend
   // - then overwrite 'chelonia.db/get' and '-set' to use it with an LRU cache
+  const backend = nconf.get('database:backend')
+  // Defaults to `fs` in production.
+  const persistence = backend || (production ? 'fs' : undefined)
+  const options = nconf.get('database:backendOptions')
+  const ARCHIVE_MODE = nconf.get('chelonia:archiveMode')
+
   if (persistence && persistence !== 'mem') {
     const Ctor = (await import(`./database-${persistence}.ts`)).default
     // Destructuring is safe because these methods have been bound using rebindMethods().
