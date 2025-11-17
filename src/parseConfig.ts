@@ -54,7 +54,7 @@ const parseConfig = () => {
       }
     })
 
-    console.error('@@@@', nconf.get('database'))
+  console.error('@@@@', nconf.get('database'))
 }
 
 export default parseConfig
