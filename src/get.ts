@@ -51,7 +51,7 @@ export const module = {
         type: 'string'
       })
   },
-  command: 'get [--url REMOTE_ADDRESS] <key>',
+  command: 'get <key>',
   describe: 'Retrieves the entry associated with a given <hash> key, from a given database or server.\n\n' +
   '- The output can be piped to a file, like this:' +
   '  chel get https://url.com mygreatlongkey > file.png',

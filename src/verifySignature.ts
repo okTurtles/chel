@@ -139,7 +139,7 @@ export const module = {
       })
   },
   command: 'verifySignature <manifestFile>',
-  describe: '',
+  describe: 'Verify a manifest signature',
   postHandler: (argv) => {
     return verifySignature(argv)
   }

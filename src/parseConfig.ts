@@ -31,10 +31,7 @@ const parseConfig = () => {
         },
         'logLevel': 'debug',
         'messages': [],
-        'maxEventsBatchSize': 500
-      },
-      'chelonia': {
-        'registrationDisabled': false,
+        'maxEventsBatchSize': 500,
         'archiveMode': false
       },
       'database': {
@@ -53,8 +50,6 @@ const parseConfig = () => {
         }
       }
     })
-
-  console.error('@@@@', nconf.get('database'))
 }
 
 export default parseConfig

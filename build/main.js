@@ -53865,7 +53865,7 @@ var init_database = __esm({
       const backend = import_npm_nconf2.default.get("database:backend");
       const persistence = backend || (production ? "fs" : void 0);
       const options2 = import_npm_nconf2.default.get("database:backendOptions");
-      const ARCHIVE_MODE3 = import_npm_nconf2.default.get("chelonia:archiveMode");
+      const ARCHIVE_MODE3 = import_npm_nconf2.default.get("server:archiveMode");
       if (persistence && persistence !== "mem") {
         const Ctor = (await globImport_database_ts2(`./database-${persistence}.ts`)).default;
         const { init: init2, readData, writeData, deleteData, iterKeys, keyCount, close } = new Ctor(options2[persistence]);
@@ -103082,7 +103082,7 @@ var init_routes = __esm({
     SIGNUP_LIMIT_HOUR = import_npm_nconf5.default.get("server:signup:limit:hour") || 10;
     SIGNUP_LIMIT_DAY = import_npm_nconf5.default.get("server:signup:limit:day") || 50;
     SIGNUP_LIMIT_DISABLED = process7.env.NODE_ENV !== "production" || import_npm_nconf5.default.get("server:signup:limit:disabled");
-    ARCHIVE_MODE = import_npm_nconf5.default.get("chelonia:archiveMode");
+    ARCHIVE_MODE = import_npm_nconf5.default.get("server:archiveMode");
     limiterPerMinute = new import_npm_bottleneck.default.Group({
       strategy: import_npm_bottleneck.default.strategy.LEAK,
       highWater: 0,
@@ -103976,7 +103976,7 @@ var init_server = __esm({
     init_pubsub2();
     init_push();
     import_npm_nconf6 = __toESM(require_nconf());
-    ARCHIVE_MODE2 = import_npm_nconf6.default.get("chelonia:archiveMode");
+    ARCHIVE_MODE2 = import_npm_nconf6.default.get("server:archiveMode");
     createWorker = (path8) => {
       let worker;
       let ready;
@@ -110955,7 +110955,7 @@ var module2 = {
       type: "string"
     });
   },
-  command: "upload [--url REMOTE_URL] <files..>",
+  command: "upload <files..>",
   describe: "Requires read and write access to the destination.",
   postHandler: (argv) => {
     return void upload(argv);
@@ -110995,7 +110995,7 @@ var module3 = {
       type: "string"
     });
   },
-  command: "deploy [--url REMOTE_URL] <manifests..>",
+  command: "deploy <manifests..>",
   describe: "",
   postHandler: (argv) => {
     return deploy(argv);
@@ -111068,7 +111068,7 @@ var module4 = {
       type: "number"
     });
   },
-  command: "eventsAfter [--limit LIMIT] [--url REMOTE_URL] <contractID> <height>",
+  command: "eventsAfter <contractID> <height>",
   describe: "Displays a JSON array of the N first events that happened in a given contract, since a given entry identified by its hash.\n\n- Older events are displayed first.\n- The output is parseable with tools such as 'jq'.\n- If <hash> is the same as <contractID>, then the oldest events will be returned.\n- If <url-or-localpath> is a URL, then its /eventsAfter REST endpoint will be called.\n",
   postHandler: (argv) => {
     return eventsAfter2(argv);
@@ -111103,7 +111103,7 @@ var module5 = {
       type: "string"
     });
   },
-  command: "get [--url REMOTE_ADDRESS] <key>",
+  command: "get <key>",
   describe: "Retrieves the entry associated with a given <hash> key, from a given database or server.\n\n- The output can be piped to a file, like this:  chel get https://url.com mygreatlongkey > file.png",
   postHandler: (argv) => {
     return get(argv);
@@ -111164,7 +111164,7 @@ var module7 = {
       string: true
     });
   },
-  command: "keygen [--out <filename>] [--pubout <filename>]",
+  command: "keygen",
   describe: "",
   postHandler: (argv) => {
     return keygen2(argv);
@@ -111375,7 +111375,7 @@ var module9 = {
       string: true
     }).strict(false).strictCommands(true);
   },
-  command: "migrate [--from <backend>] [--to <backend>]",
+  command: "migrate",
   describe: "Reads all key-value pairs from a given database and creates or updates another database accordingly.\n\n- The output database will be created if necessary.\n- The source database won't be modified nor deleted.\n- Invalid key-value pairs entries will be skipped.\n- Requires read and write access to the source.\n",
   postHandler: (argv) => {
     return migrate(argv);
@@ -115704,10 +115704,7 @@ var parseConfig = () => {
       },
       "logLevel": "debug",
       "messages": [],
-      "maxEventsBatchSize": 500
-    },
-    "chelonia": {
-      "registrationDisabled": false,
+      "maxEventsBatchSize": 500,
       "archiveMode": false
     },
     "database": {
@@ -115726,7 +115723,6 @@ var parseConfig = () => {
       }
     }
   });
-  console.error("@@@@", import_npm_nconf7.default.get("database"));
 };
 var parseConfig_default = parseConfig;
 init_events2();

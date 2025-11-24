@@ -85,12 +85,11 @@ export const module = {
         type: 'number'
       })
   },
-  command: 'eventsAfter [--limit LIMIT] [--url REMOTE_URL] <contractID> <height>',
-  describe: 'Displays a JSON array of the N first events that happened in a given contract, since a given entry identified by its hash.\n\n' +
+  command: 'eventsAfter <contractID> <height>',
+  describe: 'Displays a JSON array of the first LIMIT events that happened in a given contract, since a given entry identified by its hash.\n\n' +
   '- Older events are displayed first.\n' +
   '- The output is parseable with tools such as \'jq\'.\n' +
-  '- If <hash> is the same as <contractID>, then the oldest events will be returned.\n' +
-  '- If <url-or-localpath> is a URL, then its /eventsAfter REST endpoint will be called.\n',
+  '- If --url is given, then its /eventsAfter REST endpoint will be called.\n',
   postHandler: (argv) => {
     return eventsAfter(argv)
   }

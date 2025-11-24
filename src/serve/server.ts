@@ -34,7 +34,7 @@ import { addChannelToSubscription, deleteChannelFromSubscription, postEvent, pus
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
 
-const ARCHIVE_MODE = nconf.get('chelonia:archiveMode')
+const ARCHIVE_MODE = nconf.get('server:archiveMode')
 
 type WorkerType = {
   ready: Promise<void>,

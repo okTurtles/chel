@@ -119,7 +119,7 @@ export const module = {
       .strict(false)
       .strictCommands(true)
   },
-  command: 'migrate [--from <backend>] [--to <backend>]',
+  command: 'migrate',
   describe: 'Reads all key-value pairs from a given database and creates or updates another database accordingly.\n\n' +
   '- The output database will be created if necessary.\n' +
   '- The source database won\'t be modified nor deleted.\n' +

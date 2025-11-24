@@ -211,7 +211,7 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
   // Defaults to `fs` in production.
   const persistence = backend || (production ? 'fs' : undefined)
   const options = nconf.get('database:backendOptions')
-  const ARCHIVE_MODE = nconf.get('chelonia:archiveMode')
+  const ARCHIVE_MODE = nconf.get('server:archiveMode')
 
   if (persistence && persistence !== 'mem') {
     const Ctor = (await import(`./database-${persistence}.ts`)).default

@@ -42,7 +42,7 @@ const SIGNUP_LIMIT_MIN = nconf.get('server:signup:limit:minute') || 2
 const SIGNUP_LIMIT_HOUR = nconf.get('server:signup:limit:hour') || 10
 const SIGNUP_LIMIT_DAY = nconf.get('server:signup:limit:day') || 50
 const SIGNUP_LIMIT_DISABLED = process.env.NODE_ENV !== 'production' || nconf.get('server:signup:limit:disabled')
-const ARCHIVE_MODE = nconf.get('chelonia:archiveMode')
+const ARCHIVE_MODE = nconf.get('server:archiveMode')
 
 const limiterPerMinute = new Bottleneck.Group({
   strategy: Bottleneck.strategy.LEAK,
