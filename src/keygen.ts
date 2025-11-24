@@ -1,9 +1,12 @@
-import { colors, flags, EDWARDS25519SHA512BATCH, keygen as cryptoKeygen, keyId, serializeKey } from './deps.ts'
+import * as colors from 'jsr:@std/fmt/colors'
+import { EDWARDS25519SHA512BATCH, keygen as cryptoKeygen, keyId, serializeKey } from 'npm:@chelonia/crypto'
+import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { revokeNet } from './utils.ts'
 
-export const keygen = async (args: string[]): Promise<void> => {
+type Params = {out?: string, pubout?: string }
+
+export const keygen = async (args: ArgumentsCamelCase<Params>): Promise<void> => {
   await revokeNet()
-  const parsedArgs = flags.parse(args)
   const key = cryptoKeygen(EDWARDS25519SHA512BATCH)
   const pubKeyData = {
     version: '1.0.0',
@@ -17,8 +20,8 @@ export const keygen = async (args: string[]): Promise<void> => {
   const pubResult = JSON.stringify(pubKeyData)
 
   const idx = keyId(key).slice(-12)
-  const outFile = parsedArgs.out || `${EDWARDS25519SHA512BATCH}-${idx}.json`
-  const pubOutFile = parsedArgs.pubout || `${EDWARDS25519SHA512BATCH}-${idx}.pub.json`
+  const outFile = args.out || `${EDWARDS25519SHA512BATCH}-${idx}.json`
+  const pubOutFile = args.pubout || `${EDWARDS25519SHA512BATCH}-${idx}.pub.json`
 
   await Deno.writeTextFile(outFile, result)
   console.log(colors.green('wrote:'), outFile, colors.blue('(secret)'))
@@ -26,3 +29,24 @@ export const keygen = async (args: string[]): Promise<void> => {
   await Deno.writeTextFile(pubOutFile, pubResult)
   console.log(colors.green('wrote:'), pubOutFile, colors.blue('(public)'))
 }
+
+export const module = {
+  builder: (yargs) => {
+    return yargs
+      .option('out', {
+        describe: 'File name for the secret key',
+        requiresArg: true,
+        string: true
+      })
+      .option('pubout', {
+        describe: 'File name for the public key',
+        requiresArg: true,
+        string: true
+      })
+  },
+  command: 'keygen [--out <filename>] [--pubout <filename>]',
+  describe: '',
+  postHandler: (argv) => {
+    return keygen(argv)
+  }
+} as CommandModule<object, Params>

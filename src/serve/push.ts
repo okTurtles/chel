@@ -1,20 +1,16 @@
 // deno-lint-ignore-file no-this-alias
 /* eslint-disable @typescript-eslint/no-this-alias */
 import { Buffer } from 'node:buffer'
+import { aes128gcm } from 'npm:@apeleghq/rfc8188/encodings'
+import encrypt from 'npm:@apeleghq/rfc8188/encrypt'
+import { getSubscriptionId } from 'npm:@chelonia/lib/functions'
+import { PUSH_SERVER_ACTION_TYPE, REQUEST_TYPE, createMessage } from 'npm:@chelonia/lib/pubsub'
+import sbp from 'npm:@sbp/sbp'
 import { appendToIndexFactory, removeFromIndexFactory } from './database.ts'
 import { PUBSUB_INSTANCE } from './instance-keys.ts'
+import type { WS, WSS } from './pubsub.ts'
 import rfc8291Ikm from './rfc8291Ikm.ts'
 import { getVapidPublicKey, vapidAuthorization } from './vapid.ts'
-import {
-  sbp,
-  getSubscriptionId,
-  PUSH_SERVER_ACTION_TYPE,
-  REQUEST_TYPE,
-  createMessage,
-  aes128gcm,
-  rfc8188Encrypt as encrypt
-} from '~/deps.ts'
-import type { WS, WSS } from './pubsub.ts'
 
 // TypeScript interfaces for push server types
 interface StoreSubscriptionPayload {
@@ -35,7 +31,7 @@ export interface PushSubscriptionInfo {
     p256dh: string; // base64url encoded
   };
   id: string;
-  encryptionKeys: Promise<[Buffer, Buffer]>;
+  encryptionKeys: Promise<[ArrayBuffer, ArrayBuffer]>;
   settings: {
     heartbeatInterval?: number,
   };
@@ -105,7 +101,7 @@ const removeSubscription = async (subscriptionId: string): Promise<void> => {
 // Wrap a SubscriptionInfo object to include a subscription ID and encryption
 // keys
 export const subscriptionInfoWrapper = (subscriptionId: string, subscriptionInfo: PushSubscriptionJSON, extra: { channelIDs?: string[], settings?: unknown }): PushSubscriptionInfo => {
-  (subscriptionInfo as unknown as PushSubscriptionInfo).endpoint = new URL(subscriptionInfo.endpoint || '')
+  (subscriptionInfo as unknown as PushSubscriptionInfo).endpoint = new URL(subscriptionInfo.endpoint!)
 
   Object.defineProperties(subscriptionInfo, {
     'id': {
@@ -118,9 +114,9 @@ export const subscriptionInfoWrapper = (subscriptionId: string, subscriptionInfo
     'encryptionKeys': {
       get: (() => {
         let count = 0
-        let resultPromise: Promise<unknown> | undefined
-        let salt: Buffer
-        let uaPublic: Buffer
+        let resultPromise: Promise<[ArrayBuffer, ArrayBuffer]> | undefined
+        let salt: Buffer<ArrayBuffer>
+        let uaPublic: Buffer<ArrayBuffer>
 
         return function (this: PushSubscriptionInfo) {
           // Rotate encryption keys every 2**32 messages
@@ -183,12 +179,12 @@ export const subscriptionInfoWrapper = (subscriptionId: string, subscriptionInfo
 // push notifications that isn't already public or could be derived from other
 // public sources. The main concern if the encryption is compromised would be
 // the ability to infer which channels a client is subscribed to.
-const encryptPayload = async (subscription: { encryptionKeys: Promise<[Buffer, Buffer]> }, data: string): Promise<Buffer> => {
+const encryptPayload = async (subscription: PushSubscriptionInfo, data: string): Promise<Buffer<ArrayBuffer>> => {
   const readableStream = new Response(data).body
   if (!readableStream) throw new Error('Failed to create readable stream')
   const [asPublic, IKM] = await subscription.encryptionKeys
 
-  return encrypt(aes128gcm, readableStream as unknown as ReadableStream<BufferSource>, 32768, asPublic.buffer as Readonly<ArrayBufferLike>, IKM.buffer as Readonly<ArrayBufferLike>).then(async (bodyStream: ReadableStream<ArrayBufferLike>) => {
+  return encrypt(aes128gcm, readableStream, 32768, asPublic, IKM).then(async (bodyStream) => {
     const chunks: Uint8Array[] = []
     const reader = bodyStream.getReader()
     for (;;) {

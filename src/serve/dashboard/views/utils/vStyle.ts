@@ -1,4 +1,4 @@
-import { Vue } from '../../deps.ts'
+import Vue from 'npm:vue'
 /*
 * Style tag overload because Vue is trying to compile
 * the content inside the tag otherwise

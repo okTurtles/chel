@@ -54,7 +54,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import "@assets/style/_variables.scss";
+@use "@assets/style/_variables.scss" as *;
 
 .c-navigation {
   overflow-y: auto;

@@ -1,4 +1,6 @@
-import { sbp, dompurify, Vue } from '../deps.ts'
+import sbp from 'npm:@sbp/sbp'
+import dompurify from 'npm:dompurify'
+import Vue from 'npm:vue'
 import { defaultConfig as defaultDompurifyConfig } from '../views/utils/custom-directives/vSafeHtml.ts'
 import template from './stringTemplate.ts'
 

@@ -1,10 +1,19 @@
 // deno-lint-ignore-file no-this-alias
 /* eslint-disable @typescript-eslint/no-this-alias */
-import { Hapi, Inert, sbp, chalk, SPMessage, SERVER, multicodes, parseCID, Boom } from '~/deps.ts'
+import { SPMessage } from 'npm:@chelonia/lib/SPMessage'
+import 'npm:@chelonia/lib/chelonia'
+import { multicodes, parseCID } from 'npm:@chelonia/lib/functions'
+import 'npm:@chelonia/lib/persistent-actions'
+import { SERVER } from 'npm:@chelonia/lib/presets'
+import Boom from 'npm:@hapi/boom'
+import * as Hapi from 'npm:@hapi/hapi'
+import Inert from 'npm:@hapi/inert'
+import sbp from 'npm:@sbp/sbp'
+import chalk from 'npm:chalk'
 // import type { SubMessage, UnsubMessage } from './pubsub.ts' // TODO: Use for type checking
 import { basename, join } from 'node:path'
-import { Worker } from 'node:worker_threads'
 import process from 'node:process'
+import { Worker } from 'node:worker_threads'
 import authPlugin from './auth.ts'
 import { CREDITS_WORKER_TASK_TIME_INTERVAL, OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL } from './constants.ts'
 import { KEYOP_SEGMENT_LENGTH, appendToIndexFactory, initDB, lookupUltimateOwner, removeFromIndexFactory, updateSize } from './database.ts'
@@ -14,14 +23,18 @@ import { PUBSUB_INSTANCE, SERVER_INSTANCE } from './instance-keys.ts'
 import {
   NOTIFICATION_TYPE,
   REQUEST_TYPE,
-  type WSS,
   createKvMessage,
   createMessage,
   createNotification,
   createPushErrorResponse,
-  createServer
+  createServer,
+  type WSS
 } from './pubsub.ts'
 import { addChannelToSubscription, deleteChannelFromSubscription, postEvent, pushServerActionhandlers, subscriptionInfoWrapper } from './push.ts'
+// @deno-types="npm:@types/nconf"
+import nconf from 'npm:nconf'
+
+const ARCHIVE_MODE = nconf.get('chelonia:archiveMode')
 
 type WorkerType = {
   ready: Promise<void>,
@@ -78,7 +91,7 @@ const createWorker = (path: string): WorkerType => {
         cleanup()
         reject(Error('Message error'))
       }
-      worker.postMessage([mc.port1, ...args], [mc.port1] as unknown as readonly import('node:worker_threads').Transferable[])
+      worker.postMessage([mc.port1, ...args], [mc.port1] as unknown as readonly import('node:worker_threads').TransferListItem[])
       // If the worker itself breaks during an SBP call, we want to make sure
       // this promise immediately rejects
       worker.once('error', reject)
@@ -98,12 +111,12 @@ if (CREDITS_WORKER_TASK_TIME_INTERVAL && OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTER
 }
 
 // Initialize workers for size calculation and credits processing
-const ownerSizeTotalWorker = process.env.CHELONIA_ARCHIVE_MODE || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL
+const ownerSizeTotalWorker = ARCHIVE_MODE || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL
   ? undefined
-  : createWorker(join(import.meta.dirname || '/', 'serve', 'ownerSizeTotalWorker.js'))
-const creditsWorker = process.env.CHELONIA_ARCHIVE_MODE || !CREDITS_WORKER_TASK_TIME_INTERVAL
+  : createWorker(join(import.meta.dirname || '.', 'serve', 'ownerSizeTotalWorker.js'))
+const creditsWorker = ARCHIVE_MODE || !CREDITS_WORKER_TASK_TIME_INTERVAL
   ? undefined
-  : createWorker(join(import.meta.dirname || '/', 'serve', 'creditsWorker.js'))
+  : createWorker(join(import.meta.dirname || '.', 'serve', 'creditsWorker.js'))
 
 const { CONTRACTS_VERSION, GI_VERSION } = process.env
 
@@ -112,7 +125,7 @@ const hapi = new Hapi.Server({
   // debug: false, // <- Hapi v16 was outputing too many unnecessary debug statements
   //               // v17 doesn't seem to do this anymore so I've re-enabled the logging
   // debug: { log: ['error'], request: ['error'] },
-  port: process.env.API_PORT,
+  port: nconf.get('server:port'),
   // See: https://github.com/hapijs/discuss/issues/262#issuecomment-204616831
   routes: {
     cors: {
@@ -214,38 +227,38 @@ sbp('sbp/selectors/register', {
   },
   'backend/server/appendToContractIndex': appendToIndexFactory('_private_cheloniaState_index'),
   'backend/server/broadcastKV': async function (contractID: string, key: string, entry: string) {
-    const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE)
+    const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE) as WSS
     const pubsubMessage = createKvMessage(contractID, key, entry)
     const subscribers = pubsub.enumerateSubscribers(contractID, key)
     console.debug(chalk.blue.bold(`[pubsub] Broadcasting KV change on ${contractID} to key ${key}`))
     await pubsub.broadcast(pubsubMessage, { to: subscribers, wsOnly: true })
   },
-  'backend/server/broadcastEntry': async function (deserializedHEAD: unknown, entry: string) {
-    const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE)
-    const contractID = (deserializedHEAD as Record<string, unknown>).contractID
+  'backend/server/broadcastEntry': async function (deserializedHEAD: ReturnType<typeof SPMessage.deserializeHEAD>, entry: string) {
+    const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE) as WSS
+    const contractID = deserializedHEAD.contractID
     const contractType = sbp('chelonia/rootState').contracts[contractID as string]?.type
     const pubsubMessage = createMessage(NOTIFICATION_TYPE.ENTRY, entry, { contractID, contractType })
-    const subscribers = ((pubsub as Record<string, unknown>).enumerateSubscribers as (id: string) => unknown)(contractID as string)
-    console.debug(chalk.blue.bold(`[pubsub] Broadcasting ${((deserializedHEAD as Record<string, unknown>).description as () => string)()}`))
-    await ((pubsub as Record<string, unknown>).broadcast as (msg: unknown, opts: unknown) => Promise<void>)(pubsubMessage, { to: subscribers })
+    const subscribers = pubsub.enumerateSubscribers(contractID)
+    console.debug(chalk.blue.bold(`[pubsub] Broadcasting ${deserializedHEAD.description()}`))
+    await pubsub.broadcast(pubsubMessage, { to: subscribers })
   },
   'backend/server/broadcastDeletion': async function (contractID: string) {
-    const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE)
+    const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE) as WSS
     const pubsubMessage = createMessage(NOTIFICATION_TYPE.DELETION, contractID)
-    const subscribers = ((pubsub as Record<string, unknown>).enumerateSubscribers as (id: string) => unknown)(contractID)
+    const subscribers = pubsub.enumerateSubscribers(contractID)
     console.debug(chalk.blue.bold(`[pubsub] Broadcasting deletion of ${contractID}`))
-    await ((pubsub as Record<string, unknown>).broadcast as (msg: unknown, opts: unknown) => Promise<void>)(pubsubMessage, { to: subscribers })
+    await pubsub.broadcast(pubsubMessage, { to: subscribers })
   },
-  'backend/server/handleEntry': async function (deserializedHEAD: unknown, entry: string) {
-    const contractID = (deserializedHEAD as Record<string, unknown>).contractID
-    if (((deserializedHEAD as Record<string, unknown>).head as Record<string, unknown>).op === SPMessage.OP_CONTRACT) {
+  'backend/server/handleEntry': async function (deserializedHEAD: ReturnType<typeof SPMessage.deserializeHEAD>, entry: string) {
+    const contractID = deserializedHEAD.contractID
+    if (deserializedHEAD.head.op === SPMessage.OP_CONTRACT) {
       sbp('okTurtles.data/get', PUBSUB_INSTANCE).channels.add(contractID)
     }
     await sbp('chelonia/private/in/enqueueHandleEvent', contractID, entry)
     // Persist the Chelonia state after processing a message
     await sbp('backend/server/persistState', deserializedHEAD, entry)
     // No await on broadcast for faster responses
-    sbp('backend/server/broadcastEntry', deserializedHEAD, entry).catch((e: unknown) => console.error(e, 'Error broadcasting entry', contractID, (deserializedHEAD as Record<string, unknown>).hash))
+    sbp('backend/server/broadcastEntry', deserializedHEAD, entry).catch((e: unknown) => console.error(e, 'Error broadcasting entry', contractID, deserializedHEAD.hash))
   },
   'backend/server/saveOwner': async function (ownerID: string, resourceID: string) {
     // Store the owner for the current resource
@@ -464,6 +477,7 @@ sbp('sbp/selectors/register', {
       contractsPendingDeletion.delete(cid)
     }).catch((e: unknown) => {
       console.error(e, 'Error in contract deletion cleanup')
+      throw e
     })
   }
 })
@@ -522,7 +536,7 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
 
       if (handler) {
         try {
-          await (handler as (this: unknown, payload: unknown) => Promise<void>).call(socket, payload)
+          await (handler as (this: typeof socket, payload: unknown) => Promise<void>).call(socket, payload)
         } catch (error) {
           const message = (error as Error)?.message || `push server failed to perform [${action}] action`
           console.warn(error, `[${socket.ip}] Action '${action}' for '${REQUEST_TYPE.PUSH_ACTION}' handler failed: ${message}`)
@@ -640,12 +654,12 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
 
   setInterval(() => {
     const now = Date.now()
-    const pubsub = (sbp('okTurtles.data/get', PUBSUB_INSTANCE) || {}) as WSS
+    const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE) as WSS | undefined
     // Notification text
     const notification = JSON.stringify({ type: 'recurring' })
     // Find push subscriptions that do _not_ have a WS open. This means clients
     // that are 'asleep' and that might be woken up by the push event
-    Object.values(pubsub.pushSubscriptions)
+    Object.values(pubsub?.pushSubscriptions || {})
       .filter((pushSubscription) =>
         !!pushSubscription.settings.heartbeatInterval && pushSubscription.sockets.size === 0
       ).forEach((pushSubscription) => {

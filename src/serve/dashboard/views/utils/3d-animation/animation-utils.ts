@@ -1,4 +1,5 @@
-import { Three } from '../../../deps.ts'
+// @deno-types="npm:@types/three"
+import * as Three from 'npm:three'
 const {
   LineBasicMaterial, LineDashedMaterial, BufferGeometry, CircleGeometry, CylinderGeometry,
   Group, Line, Vector3, MeshLambertMaterial, Mesh, EdgesGeometry, LineSegments, DoubleSide
@@ -86,7 +87,7 @@ class CombineWithEdge extends Three.Group {
 }
 
 class Edgify extends LineSegments {
-  data: { geometry: Three.EdgesGeometry, material: Three.LineBasicMaterial }
+  data: { geometry?: Three.BufferGeometry | null, material: Three.LineBasicMaterial }
 
   constructor ({
     color = '#000000', geometry = null
@@ -98,7 +99,7 @@ class Edgify extends LineSegments {
     const material = new LineBasicMaterial({ color })
 
     super(edgeGeometry, material)
-    this.data = { geometry: edgeGeometry, material }
+    this.data = { geometry, material }
   }
 }
 
@@ -164,13 +165,6 @@ function degreeToRadian (deg: number): number {
 }
 
 export {
-  resizeRendererToDisplaySize,
-  adjustCameraAspect,
-  randomFromMinMax,
-  degreeToRadian,
-  LineMesh,
-  CombineWithEdge,
-  Edgify,
-  Column,
-  Axes
+  Axes, Column, CombineWithEdge,
+  Edgify, LineMesh, adjustCameraAspect, degreeToRadian, randomFromMinMax, resizeRendererToDisplaySize
 }

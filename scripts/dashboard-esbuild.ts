@@ -104,9 +104,7 @@ async function build () {
         'process.env.NODE_ENV': `'${NODE_ENV}'`,
         'process.env.EXPOSE_SBP': `'${EXPOSE_SBP}'`,
         'process.env.ENABLE_UNSAFE_NULL_CRYPTO': `'${ENABLE_UNSAFE_NULL_CRYPTO}'`,
-        'process.env.UNSAFE_TRUST_ALL_MANIFEST_SIGNING_KEYS': `'${UNSAFE_TRUST_ALL_MANIFEST_SIGNING_KEYS}'`,
-        // Define NODE_ENV directly for router.ts
-        'NODE_ENV': `'${NODE_ENV}'`
+        'process.env.UNSAFE_TRUST_ALL_MANIFEST_SIGNING_KEYS': `'${UNSAFE_TRUST_ALL_MANIFEST_SIGNING_KEYS}'`
       },
       alias,
       loader: {
@@ -126,7 +124,7 @@ async function build () {
       ],
       plugins: [
         sassPlugin({
-          type: 'css',
+          type: 'css'
         }),
         vuePlugin({ aliases: alias }),
         // Plugin to resolve npm: prefixes (as suggested by @corrideat)

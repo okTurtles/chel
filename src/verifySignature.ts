@@ -1,6 +1,11 @@
-import { hash } from './commands.ts'
-import { colors, flags, path, verifySignature as cryptoVerifySignature, deserializeKey, keyId } from './deps.ts'
+import * as colors from 'jsr:@std/fmt/colors'
+import * as path from 'jsr:@std/path/'
+import { verifySignature as cryptoVerifySignature, deserializeKey, keyId } from 'npm:@chelonia/crypto'
+import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
+import { hash } from './hash.ts'
 import { exit, multicodes, readJsonFile, revokeNet } from './utils.ts'
+
+type Params = { key?: string, manifestFile: string }
 
 interface ExternalKeyDescriptor {
   pubkey: string
@@ -33,11 +38,9 @@ function isManifest (obj: unknown): obj is Manifest {
   )
 }
 
-export const verifySignature = async (args: string[], internal = false): Promise<void> => {
+export const verifySignature = async (args: ArgumentsCamelCase<Params>, internal = false): Promise<void> => {
   await revokeNet()
-  const parsedArgs = flags.parse(args)
-  const [manifestFile] = parsedArgs._
-  const keyFile = parsedArgs.k
+  const { key: keyFile, manifestFile } = args
   const [externalKeyDescriptorRaw, manifestRaw] = await Promise.all([
     typeof keyFile === 'string' ? readJsonFile(keyFile) : null,
     readJsonFile(manifestFile)
@@ -105,13 +108,13 @@ export const verifySignature = async (args: string[], internal = false): Promise
   if (!body.contract?.file) {
     exit('Invalid manifest: no contract file', internal)
   }
-  const computedHash = await hash([path.join(parsedFilepath.dir, body.contract.file)], multicodes.SHELTER_CONTRACT_TEXT, true)
+  const computedHash = await hash({ ...args, filename: path.join(parsedFilepath.dir, body.contract.file) }, multicodes.SHELTER_CONTRACT_TEXT, true)
   if (computedHash !== body.contract.hash) {
     exit(`Invalid contract file hash. Expected ${body.contract.hash} but got ${computedHash}`, internal)
   }
 
   if (body.contractSlim) {
-    const computedHash = await hash([path.join(parsedFilepath.dir, body.contractSlim.file)], multicodes.SHELTER_CONTRACT_TEXT, true)
+    const computedHash = await hash({ ...args, filename: path.join(parsedFilepath.dir, body.contractSlim.file) }, multicodes.SHELTER_CONTRACT_TEXT, true)
     if (computedHash !== body.contractSlim.hash) {
       exit(`Invalid slim contract file hash. Expected ${body.contractSlim.hash} but got ${computedHash}`, internal)
     }
@@ -119,3 +122,25 @@ export const verifySignature = async (args: string[], internal = false): Promise
 
   if (!internal) console.log(colors.green('ok'), 'all checks passed')
 }
+
+export const module = {
+  builder: (yargs) => {
+    return yargs
+      .option('key', {
+        describe: 'Public key',
+        requiresArg: true,
+        string: true,
+      })
+      .alias('k', 'key')
+      .positional('manifestFile', {
+        describe: 'Manifest file',
+        demandOption: true,
+        type: 'string'
+      })
+  },
+  command: 'verifySignature <manifestFile>',
+  describe: '',
+  postHandler: (argv) => {
+    return verifySignature(argv)
+  }
+} as CommandModule<object, Params>

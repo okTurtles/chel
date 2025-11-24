@@ -1,4 +1,4 @@
-import { Vue } from '../../deps.ts'
+import Vue from 'npm:vue'
 
 // TypeScript interfaces for Vue directive
 interface DirectiveBinding {

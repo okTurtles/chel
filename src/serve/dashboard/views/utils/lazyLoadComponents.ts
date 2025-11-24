@@ -1,4 +1,4 @@
-import { Vue } from '../../deps.ts'
+import Vue from 'npm:vue'
 import LoadingPage from '@pages/miscellaneous/Loading.vue'
 import ErrorPage from '@pages/miscellaneous/ErrorLoading.vue'
 

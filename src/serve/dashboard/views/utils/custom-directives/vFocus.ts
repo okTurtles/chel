@@ -1,4 +1,4 @@
-import { Vue } from '../../../deps.ts'
+import Vue from 'npm:vue'
 
 Vue.directive('focus', {
   inserted: (el: HTMLElement, args: { value?: boolean }) => {

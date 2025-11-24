@@ -1,9 +1,13 @@
 {
   "compilerOptions": {
-    "lib": ["dom", "dom.iterable"]
+    "lib": ["es2019", "dom", "dom.iterable"]
   },
   "imports": {
     "~/": "./src/",
+    "@common/": "./common/",
+    "@components/": "./views/components/",
+    "@containers/": "./views/containers/",
+    "@pages/": "./views/pages/",
     "npm:@types/node": "npm:@types/node@24.0.13",
     "npm:@vue/component-compiler": "npm:@vue/component-compiler@4.2.4",
     "npm:@sbp/sbp": "npm:@sbp/sbp@2.4.1",
@@ -17,11 +21,13 @@
     "npm:esbuild-sass-plugin": "npm:esbuild-sass-plugin@3.3.1",
     "npm:typescript-eslint": "npm:typescript-eslint@8.37.0",
     "npm:three": "npm:three@0.151.3",
-    "npm:vue": "npm:vue@2.7.16",
+    "npm:vue": "npm:vue@2.7.16/dist/vue.esm.js",
     "npm:vue-clickaway": "npm:vue-clickaway@2.2.2",
     "npm:vue-router": "npm:vue-router@3.6.5",
     "npm:vuelidate": "npm:vuelidate@0.7.6",
-    "npm:vuex": "npm:vuex@3.6.0"
+    "npm:vuex": "npm:vuex@3.6.0",
+    "npm:turtledash": "npm:turtledash@1.0.3",
+    "npm:@chelonia/lib/": "npm:@chelonia/lib@1.2.7/"
   },
   "lint": {
     "rules": {

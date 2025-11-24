@@ -1,5 +1,5 @@
-import { debounce } from '../../common/cdLodash.ts'
-import { validationMixin as vuelidateSetup } from '../../deps.ts'
+import { debounce } from 'npm:turtledash'
+import { validationMixin as vuelidateSetup } from 'npm:vuelidate'
 
 // TypeScript interfaces for Vue component with vuelidate
 interface VuelidateField {
@@ -84,7 +84,7 @@ export default {
      */
     debounceValidation: debounce(function (this: ValidationMixinContext, fieldName: string, value: unknown) {
       this.updateField(fieldName, value)
-    }, 800),
+    } as (...args: unknown[]) => void, 800),
 
     // sometimes, validations for all fields need to be done all at once.
     // e.g) validate all fields at the same time when 'submit' is clicked.

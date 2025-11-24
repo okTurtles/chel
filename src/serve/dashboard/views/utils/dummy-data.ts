@@ -1,7 +1,7 @@
 /* eslint-disable */
 
 // dummy placeholder data to be used in various pages
-import { createCID } from '../../deps.ts'
+import { createCID } from 'npm:@chelonia/lib/functions'
 import { addTimeToDate, MONTHS_MILLIS } from '../../common/cdTimeUtils.ts'
 import L from '../../common/translations.ts'
 
@@ -42,7 +42,7 @@ const fakeUsers: string[] = ['Flex Kubin', 'Attila Hun', 'Childish Gambino', 'Ke
 const PAST_THREE_MONTHS: number = -3 * MONTHS_MILLIS
 const randomPastDate = (): Date => addTimeToDate(new Date(), Math.floor(Math.random() * PAST_THREE_MONTHS))
 const randomFromArray = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)]
-const randomHash = (): string => createCID()
+const randomHash = (): string => createCID(Math.random().toString(16).slice(2))
 
 // Contracts.vue //
 const contractDummyData: ContractItem[] = []

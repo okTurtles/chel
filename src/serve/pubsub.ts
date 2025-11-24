@@ -4,6 +4,7 @@
 
 import { Buffer } from 'node:buffer'
 import process from 'node:process'
+import { has } from 'npm:turtledash'
 
 /*
  * Pub/Sub server implementation using the `ws` library.
@@ -11,28 +12,35 @@ import process from 'node:process'
  */
 
 import {
+  createClient,
+  createKvMessage,
+  createMessage,
+  messageParser,
   NOTIFICATION_TYPE,
   REQUEST_TYPE,
-  RESPONSE_TYPE,
-  createClient,
-  createMessage,
-  createKvMessage,
-  messageParser
-} from '~/deps.ts'
+  RESPONSE_TYPE
+} from 'npm:@chelonia/lib/pubsub'
 
 import type {
-  Message, PubMessage, SubMessage, UnsubMessage,
-  NotificationTypeEnum
-} from '~/deps.ts'
+  Message,
+  NotificationTypeEnum,
+  PubMessage, SubMessage, UnsubMessage
+} from 'npm:@chelonia/lib/pubsub'
+import { postEvent, PushSubscriptionInfo } from './push.ts'
+
+const isPushSubscriptionInfo = (x: unknown): x is PushSubscriptionInfo => {
+  return has(x, 'endpoint')
+}
 
 // Define JSON types locally since they're not exported from the module
 type JSONType = string | number | boolean | null | JSONObject | JSONType[]
 type JSONObject = { [key: string]: JSONType }
-import { postEvent, PushSubscriptionInfo } from './push.ts'
 // TODO: Use logger for debugging WebSocket events
-// import { logger } from './logger.ts'
-import { chalk, WebSocket, WebSocketServer } from '~/deps.ts'
-import { IncomingMessage } from 'node:http'
+import logger from './logger.ts'
+import type { IncomingMessage } from 'node:http'
+import chalk from 'npm:chalk'
+// @deno-types="npm:@types/ws"
+import WebSocket, { WebSocketServer } from 'npm:ws'
 
 const { bold } = chalk
 
@@ -56,11 +64,10 @@ const generateSocketID = (() => {
   return (debugID?: string) => String(counter++) + (debugID ? '-' + debugID : '')
 })()
 
-const log = logger.info.bind(logger, tag) as unknown as {
-  (...args: unknown[]): void;
-  bold: (...args: unknown[]) => void;
-  debug: (...args: unknown[]) => void;
-  error: (error: unknown, ...args: unknown[]) => void;
+const log = logger.info.bind(logger, tag) as typeof logger.info & {
+  bold: typeof logger.debug;
+  debug: typeof logger.debug;
+  error: typeof logger.error;
 }
 log.bold = (...args: unknown[]) => logger.debug(bold(tag, ...args))
 log.debug = logger.debug.bind(logger, tag)
@@ -69,7 +76,7 @@ log.error = (error: unknown, ...args: unknown[]) => logger.error(error, bold.red
 // ====== API ====== //
 
 // Re-export some useful things from the shared module.
-export { createClient, createMessage, createKvMessage, NOTIFICATION_TYPE, REQUEST_TYPE, RESPONSE_TYPE }
+export { createClient, createKvMessage, createMessage, NOTIFICATION_TYPE, REQUEST_TYPE, RESPONSE_TYPE }
 
 export function createErrorResponse (data: JSONType): string {
   return JSON.stringify({ type: ERROR, data })
@@ -122,7 +129,7 @@ export interface WS extends Omit<WebSocket, 'send'> {
   send(msg: {
     type: string;
     data: JSONType;
-    [x: string]: unknown
+    [x: string]: JSONType
   }, cb?: (err?: Error) => void): void;
   send(data: BufferLike, cb?: (err?: Error) => void): void;
   send(
@@ -245,8 +252,8 @@ export function createServer (httpServer: import('node:http').Server, options: S
       if (server.clients.size && server.options.logPingRounds) {
         log.debug('Pinging clients')
       }
-      (server.clients as Set<unknown> as Set<WS>).forEach((client) => {
-        if ((client as unknown as PushSubscriptionInfo).endpoint) return
+      server.clients.forEach((client) => {
+        if (isPushSubscriptionInfo(client)) return
         if (client.pinged && !client.activeSinceLastPing) {
           log(`Disconnecting irresponsive client ${client.id}`)
           return client.terminate()
@@ -501,7 +508,7 @@ const publicMethods: Partial<WSS> = {
       // Duplicate message sending (over both WS and push) is handled on the
       // WS logic, for the `close` event (to remove the WS and send over push)
       // and for the `STORE_SUBSCRIPTION` WS action.
-      if (!wsOnly && (client as PushSubscriptionInfo).endpoint) {
+      if (!wsOnly && isPushSubscriptionInfo(client)) {
         // `client.endpoint` means the client is a subscription info object
         // The max length for push notifications in many providers is 4 KiB.
         // However, encrypting adds a slight overhead of 17 bytes at the end

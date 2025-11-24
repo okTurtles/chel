@@ -1,7 +1,7 @@
 #!/usr/bin/env -S deno run --allow-run --allow-read --allow-env --allow-write=./build --allow-net
 
 import * as esbuild from 'npm:esbuild@0.25.6'
-import { colors } from '../src/deps.ts'
+import * as colors from 'jsr:@std/fmt/colors'
 
 const { default: { version } } = await import('../package.json', { with: { type: 'json' } })
 
@@ -19,7 +19,14 @@ const options: esbuild.BuildOptions = {
   platform: 'node',
   outdir: 'build',
   splitting: false,
+  write: false,
   plugins: [
+    {
+      name: 'npm',
+      setup (build) {
+        build.onResolve({ filter: /^npm:/, namespace: 'file' }, ({ path, ...args }) => build.resolve(path.slice(4), args))
+      }
+    },
     {
       name: 'skip',
       setup (build) {
@@ -39,5 +46,27 @@ if (result.errors.length) {
   console.warn(colors.yellow('build warnings:'), result.warnings)
 }
 console.log(colors.green('built:'), options.outdir)
+
+for (const outfile of result.outputFiles!) {
+  const tmpFile = outfile.path + '-tmp'
+  try {
+    Deno.writeFileSync(tmpFile, outfile.contents)
+    try {
+      Deno.removeSync(outfile.path)
+    } catch (e) {
+      if (e instanceof Error && e.name !== 'NotFound') throw e
+    }
+    const output = await new Deno.Command(Deno.execPath(), {
+      args: ['bundle', '-o', outfile.path, tmpFile]
+    }).output()
+    if (!output.success) {
+      Deno.stdout.writeSync(output.stdout)
+      Deno.stderr.writeSync(output.stderr)
+      throw new Error('Failed to call \'deno bundle\'')
+    }
+  } finally {
+    Deno.removeSync(tmpFile)
+  }
+}
 
 esbuild.stop()

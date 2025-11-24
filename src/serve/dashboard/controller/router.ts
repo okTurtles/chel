@@ -1,7 +1,7 @@
-import { Vue, VueRouter as Router } from '../deps.ts'
+import Router from 'npm:vue-router'
+import Vue from 'npm:vue'
 
-// This will be replaced by esbuild at build time via define: { 'NODE_ENV': '...' }
-declare const NODE_ENV: string
+declare const process: { env: Record<string, string | undefined> }
 
 import Landing from '@pages/miscellaneous/Landing.vue'
 import L from '../common/translations.ts'
@@ -23,7 +23,7 @@ const router = new (Router as unknown as new (options: {
   routes: unknown[];
 }) => { beforeEach: (guard: unknown) => void })({
   mode: 'history',
-  base: NODE_ENV === 'production' ? '' : '/dashboard',
+  base: process.env.NODE_ENV === 'production' ? '' : '/dashboard',
   scrollBehavior () {
     return { x: 0, y: 0 }
   },

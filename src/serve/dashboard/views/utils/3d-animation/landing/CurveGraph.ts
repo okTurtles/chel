@@ -1,9 +1,11 @@
-import { Three } from '../../../../deps.ts'
+// @deno-types="npm:@types/three"
+import * as Three from 'npm:three'
+import GraphBackground from './GraphBackground.ts'
+
 const {
   MeshLambertMaterial, CatmullRomCurve3, SphereGeometry, TubeGeometry,
   Mesh, Group, DoubleSide
 } = Three
-import GraphBackground from './GraphBackground.ts'
 
 export default class CurveGraph extends Group {
   constructor ({

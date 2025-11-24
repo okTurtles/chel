@@ -1,6 +1,7 @@
-import { initDB } from './database.ts'
-import { tweetnacl, AUTHSALT, CONTRACTSALT, CS, SALT_LENGTH_IN_OCTETS, SU } from '~/deps.ts'
 import { Buffer } from 'node:buffer'
+import { AUTHSALT, CONTRACTSALT, CS, SALT_LENGTH_IN_OCTETS, SU } from 'npm:@chelonia/lib/zkppConstants'
+import tweetnacl from 'npm:tweetnacl'
+import { initDB } from './database.ts'
 
 const nacl = tweetnacl
 

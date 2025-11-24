@@ -1,7 +1,9 @@
-import { Three } from '../../../../deps.ts'
-const { Group, BoxGeometry, Mesh, MeshLambertMaterial } = Three
-import { randomFromMinMax, CombineWithEdge } from '../animation-utils.ts'
+// @deno-types="npm:@types/three"
+import * as Three from 'npm:three'
+import { CombineWithEdge, randomFromMinMax } from '../animation-utils.ts'
 import GraphBackground from './GraphBackground.ts'
+
+const { Group, BoxGeometry, Mesh, MeshLambertMaterial } = Three
 
 const BG_WIDTH = 28
 const BG_HEIGHT = 16

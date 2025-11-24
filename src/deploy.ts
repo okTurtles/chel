@@ -1,6 +1,8 @@
 // chel deploy <url-or-dir-or-sqlitedb> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
 
-import { path, z } from './deps.ts'
+import * as path from 'jsr:@std/path/'
+import * as z from 'npm:zod'
+import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { upload } from './upload.ts'
 
 // Prefixes to use to select the correct CID to use
@@ -12,9 +14,10 @@ const ContractBodySchema = z.object({
   contractSlim: z.object({ file: z.string() }).optional(),
 })
 
-export async function deploy (args: string[]): Promise<void> {
-  const [urlOrDirOrSqliteFile, ...manifests] = args
-  if (manifests.length === 0) throw new Error('missing url or manifests!')
+type Params = { manifests: string[], url: string }
+
+export async function deploy (args: ArgumentsCamelCase<Params>): Promise<void> {
+  const { manifests } = args
   const toUpload = []
   for (const manifestPath of manifests) {
     const json = JSON.parse(Deno.readTextFileSync(manifestPath)) as { body: string }
@@ -26,5 +29,27 @@ export async function deploy (args: string[]): Promise<void> {
     }
     toUpload.push(CONTRACT_MANIFEST_PREFIX + manifestPath)
   }
-  await upload([urlOrDirOrSqliteFile, ...toUpload], true)
+  await upload({ ...args, files: toUpload }, true)
 }
+
+export const module = {
+  builder: (yargs) => {
+    return yargs
+      .option('url', {
+        describe: 'URL of a remote server',
+        requiresArg: true,
+        string: true
+      })
+      .positional('manifests', {
+        describe: 'Manifest files to deploy',
+        demandOption: true,
+        array: true,
+        type: 'string'
+      })
+  },
+  command: 'deploy [--url REMOTE_URL] <manifests..>',
+  describe: '',
+  postHandler: (argv) => {
+    return deploy(argv)
+  }
+} as CommandModule<object, Params>

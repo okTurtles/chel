@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Discuss the `chel` command
+    url: https://github.com/okTurtles/chel/discussions
+    about: Use issues to report bugs or request features. Everything else goes here.

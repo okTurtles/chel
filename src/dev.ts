@@ -1,11 +1,12 @@
-import { flags, colors } from './deps.ts'
-import { exit } from './utils.ts'
+import * as colors from 'jsr:@std/fmt/colors'
+import { existsSync, readFileSync, readdirSync, watch } from 'node:fs'
 import { readFile } from 'node:fs/promises'
-import { readFileSync, existsSync, watch, readdirSync } from 'node:fs'
-import { resolve, join } from 'node:path'
+import { join, resolve } from 'node:path'
 import process from 'node:process'
-import { serve } from './serve.ts'
 import { deploy } from './deploy.ts'
+import { flags } from './deps.ts'
+import { serve } from './serve.ts'
+import { exit } from './utils.ts'
 
 /**
  * Sanitize contract name for filesystem safety

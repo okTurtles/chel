@@ -178,6 +178,36 @@ chel dev --debug
 
 If `"encrypted"` doesn't exist - it means the `"privkey"` was saved in the clear.
 
+### `chel serve`
+
+Starts a local development server for Chelonia applications.
+
+```
+chel serve [options] <directory>
+
+OPTIONS
+
+--dp <port>        set dashboard port (default: 8888)
+--port <port>      set application port (default: 8000)
+--db-type <type>   one of: files, sqlite, mem (default: mem)
+--db-location <loc>  for "files", a directory, for "sqlite", path to sqlite database
+```
+
+**Example:**
+```bash
+# Serve Group Income app from extracted directory
+chel serve ./gi-v2.0.0
+
+# Serve with custom ports and SQLite database
+chel serve --dp 8888 --port 8000 --db-type sqlite --db-location ./app.db ./my-app
+```
+
+The serve command will:
+- Start a dashboard server (default: http://localhost:8888)
+- Start an application server (default: http://localhost:8000)
+- Serve static assets and handle API routes
+- Support different database backends (memory, filesystem, SQLite)
+
 ### `chel manifest`
 
 Let's say you have the following files:

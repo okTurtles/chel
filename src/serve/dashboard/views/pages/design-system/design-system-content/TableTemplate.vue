@@ -15,7 +15,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import "@assets/style/_variables.scss";
+@use "@assets/style/_variables.scss" as *;
 
 @mixin from600 {
   @media screen and (min-width: 600px) {

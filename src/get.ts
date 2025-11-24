@@ -1,4 +1,4 @@
-// chel get <url-or-dir-or-sqlitedb> <key>
+// chel get [<url>] <key>
 /*
 When using a URL, this queries the GET /file/<key> route.
 
@@ -7,19 +7,23 @@ If it's a binary file, for example an image, the command will be used like this:
 chel get https://url.com mygreatlongkey > file.png
 */
 
-import { flags, writeAll } from './deps.ts'
-import { exit, getBackend, isURL, readRemoteData } from './utils.ts'
+import { writeAll } from 'jsr:@std/io/'
+import sbp from 'npm:@sbp/sbp'
+import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
+import { initDB } from './serve/database.ts'
+import { exit, readRemoteData } from './utils.ts'
 
-export async function get (args: string[]): Promise<void> {
-  const parsedArgs = flags.parse(args)
+type Params = { url?: string, key: string }
 
-  const [urlOrLocalPath, key] = parsedArgs._.map(String)
-  const src = urlOrLocalPath
+export async function get ({ key, url }: ArgumentsCamelCase<Params>): Promise<void> {
+  if (!url) {
+    await initDB({ skipDbPreloading: true })
+  }
 
   try {
-    const data = isURL(src)
-      ? await readRemoteData(src, key)
-      : await (await getBackend(src)).readData(key)
+    const data = url
+      ? await readRemoteData(url, key)
+      : await sbp('chelonia.db/get', key)
 
     if (data === undefined) exit(`no entry found for ${key as string}`)
 
@@ -33,3 +37,25 @@ export async function get (args: string[]): Promise<void> {
     exit(error)
   }
 }
+
+export const module = {
+  builder: (yargs) => {
+    return yargs
+      .option('url', {
+        describe: 'URL of a remote server',
+        string: true
+      })
+      .positional('key', {
+        describe: 'Database key',
+        demandOption: true,
+        type: 'string'
+      })
+  },
+  command: 'get [--url REMOTE_ADDRESS] <key>',
+  describe: 'Retrieves the entry associated with a given <hash> key, from a given database or server.\n\n' +
+  '- The output can be piped to a file, like this:' +
+  '  chel get https://url.com mygreatlongkey > file.png',
+  postHandler: (argv) => {
+    return get(argv)
+  }
+} as CommandModule<object, Params>

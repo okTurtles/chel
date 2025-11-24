@@ -1,10 +1,12 @@
-import { flags, colors, deserializeKey, keyId, serializeKey, sign } from './deps.ts'
-import { exit, readJsonFile } from './utils.ts'
-import { readFile, writeFile, mkdir, copyFile } from 'node:fs/promises'
+import * as colors from 'jsr:@std/fmt/colors'
 import { existsSync } from 'node:fs'
-import { join, dirname, basename } from 'node:path'
+import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises'
+import { basename, dirname, join } from 'node:path'
 import process from 'node:process'
+import { deserializeKey, keyId, serializeKey, sign } from 'npm:@chelonia/crypto'
+import { flags } from './deps.ts'
 import { hash } from './hash.ts'
+import { exit, readJsonFile } from './utils.ts'
 
 interface SigningKeyDescriptor {
   privkey: string

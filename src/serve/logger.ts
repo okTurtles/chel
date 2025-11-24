@@ -1,20 +1,7 @@
-import { pino } from '~/deps.ts'
 import process from 'node:process'
+import pino from 'npm:pino'
 
 const prettyPrint = process.env.NODE_ENV === 'development' || process.env.CI || process.env.CYPRESS_RECORD_KEY || process.env.PRETTY
-
-/* module globalThis {
-  logger: {
-    level: string;
-    levels: {
-        values: Record<string, unknown>;
-    };
-    debug: (...args: unknown[]) => void;
-    info: (...args: unknown[]) => void;
-    warn: (...args: unknown[]) => void;
-    error: (...args: unknown[]) => void;
-  }
-} */
 
 function logMethod (this: unknown, args: unknown[], method: (...args: unknown[]) => void): void {
   const stringIdx = typeof args[0] === 'string' ? 0 : 1
@@ -61,9 +48,10 @@ if (Object.keys(logger.levels.values).includes(logLevel)) {
   logger.warn(`Unknown log level: ${logLevel}`)
 }
 
-(globalThis as unknown as { logger: typeof logger }).logger = logger // TypeScript global assignment
 console.debug = logger.debug.bind(logger)
 console.info = logger.info.bind(logger)
 console.log = logger.info.bind(logger)
 console.warn = logger.warn.bind(logger)
 console.error = logger.error.bind(logger)
+
+export default logger

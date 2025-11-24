@@ -1,4 +1,5 @@
-import { flags, colors } from './deps.ts'
+import * as colors from 'jsr:@std/fmt/colors'
+import { flags } from './deps.ts'
 import { exit } from './utils.ts'
 import { readFile, readdir, stat } from 'node:fs/promises'
 import { existsSync } from 'node:fs'

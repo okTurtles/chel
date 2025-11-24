@@ -1,4 +1,4 @@
-import { ChelErrorGenerator } from '~/deps.ts'
+import { ChelErrorGenerator } from 'npm:@chelonia/lib/errors'
 
 export const BackendErrorNotFound = ChelErrorGenerator('BackendErrorNotFound')
 export const BackendErrorGone = ChelErrorGenerator('BackendErrorGone')

@@ -1,6 +1,9 @@
-import { Hapi, Inert } from '~/deps.ts'
 import path from 'node:path'
 import process from 'node:process'
+import * as Hapi from 'npm:@hapi/hapi'
+import Inert from 'npm:@hapi/inert'
+// @deno-types="npm:@types/nconf"
+import nconf from 'npm:nconf'
 
 // Get the current directory for dashboard assets
 const getDashboardPath = () => {
@@ -8,10 +11,11 @@ const getDashboardPath = () => {
   return path.resolve(import.meta.dirname || process.cwd(), 'dist-dashboard')
 }
 
-export async function startDashboard (port: number): Promise<void> {
+export async function startDashboard (): Promise<void> {
   // Create a separate Hapi server for the dashboard
+  const port = nconf.get('server:dashboardPort')
   const dashboardServer = new Hapi.Server({
-    port: port,
+    port,
     host: 'localhost',
     routes: {
       files: {
@@ -62,7 +66,6 @@ export async function startDashboard (port: number): Promise<void> {
 
   // Start the dashboard server
   await dashboardServer.start()
-  console.log(`📊 Dashboard server running at: http://localhost:${port}`)
 }
 
 export default startDashboard

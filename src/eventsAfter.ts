@@ -1,29 +1,22 @@
-// chel eventsAfter [--limit N] <url-or-localpath> <contractID> <hash>
+// chel eventsAfter [--limit N] [--url url] <contractID> <height>
 
-import { base64, flags } from './deps.ts'
-import { type Backend, exit, isArrayLength, getBackend, isURL } from './utils.ts'
+import * as base64 from 'jsr:@std/encoding/base64'
+import sbp from 'npm:@sbp/sbp'
+import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
+import { initDB } from './serve/database.ts'
+import { exit } from './utils.ts'
 
-let backend: Backend
+type Params = { limit: number, url: string | undefined, contractID: string, height: number }
 
-const defaultLimit = 50
-const headPrefix = 'head='
-
-export async function eventsAfter (args: string[]): Promise<void> {
-  const parsedArgs = flags.parse(args)
-
-  const limit = Number(parsedArgs.limit ?? defaultLimit)
-  if (!isArrayLength(limit)) exit('argument --limit must be a valid array length')
-  const [urlOrLocalPath, contractID] = parsedArgs._.map(String)
-  const height = Number(parsedArgs._[2])
-  const src = urlOrLocalPath
-
+export async function eventsAfter ({ limit, url, contractID, height }: ArgumentsCamelCase<Params>): Promise<void> {
   try {
     let messages
 
-    if (isURL(src)) {
-      messages = await getRemoteMessagesSince(src, contractID, height, limit)
+    if (url) {
+      messages = await getRemoteMessagesSince(url, contractID, height, limit)
     } else {
-      messages = await getMessagesSince(src, contractID, height, limit)
+      await initDB({ skipDbPreloading: true })
+      messages = await getMessagesSince(contractID, height, limit)
     }
     console.log(JSON.stringify(messages, null, 2))
   } catch (error) {
@@ -31,36 +24,27 @@ export async function eventsAfter (args: string[]): Promise<void> {
   }
 }
 
-async function getMessage (hash: string): Promise<ReturnType<typeof JSON.parse>> {
-  const value = await readString(hash)
-  if (!value) throw new Error(`no entry for ${hash}!`)
-  return JSON.parse(value)
-}
+async function getMessagesSince (contractID: string, sinceHeight: number, limit: number): Promise<string[]> {
+  const readable = await sbp('backend/db/streamEntriesAfter', contractID, sinceHeight, limit)
 
-async function getMessagesSince (src: string, contractID: string, sinceHeight: number, limit: number): Promise<string[]> {
-  backend = await getBackend(src)
+  return new Promise((resolve, reject) => {
+    const data: string[] = []
+    readable.on('readable', () => {
+      let chunk
+      while (null !== (chunk = readable.read())) {
+        data.push(chunk)
+      }
+    })
 
-  const contractHEAD: string | undefined = await readString(`${headPrefix}${contractID}`)
-  if (contractHEAD === undefined) {
-    throw new Deno.errors.NotFound(`contract ${contractID} doesn't exist!`)
-  }
-  const entries = []
-  let currentHEAD = JSON.parse(contractHEAD).HEAD
-  let currentHeight: number
-  while (true) {
-    const entry = await getMessage(currentHEAD)
-    if (!entry) {
-      throw new Deno.errors.NotFound(`entry ${currentHEAD} no longer exists.`)
-    }
-    const head = JSON.parse(entry.head)
-    currentHeight = head.height
-    entries.push(entry)
-    if (currentHeight === sinceHeight) {
-      break
-    }
-    currentHEAD = head.previousHEAD
-  }
-  return entries.reverse().slice(0, limit)
+    readable.on('error', reject)
+
+    readable.on('end', () => {
+      const events = JSON.parse(data.join('')).map((s: string) => {
+        return JSON.parse(new TextDecoder().decode(base64.decodeBase64(s)))
+      })
+      resolve(events)
+    })
+  })
 }
 
 async function getRemoteMessagesSince (src: string, contractID: string, sinceHeight: number, limit: number): Promise<string[]> {
@@ -77,8 +61,37 @@ async function getRemoteMessagesSince (src: string, contractID: string, sinceHei
   return b64messages.map(b64str => JSON.parse(new TextDecoder().decode(base64.decodeBase64(b64str))))
 }
 
-async function readString (key: string): Promise<string | undefined> {
-  const rv = await backend.readData(key)
-  if (rv === undefined) return undefined
-  return typeof rv === 'string' ? rv : new TextDecoder().decode(rv)
-}
+export const module = {
+  builder: (yargs) => {
+    return yargs
+      .option('limit', {
+        describe: 'Limit',
+        default: 50,
+        number: true,
+        requiresArg: true
+      })
+      .option('url', {
+        describe: 'URL of a remote server',
+        string: true
+      })
+      .positional('contractID', {
+        describe: 'Contract ID',
+        demandOption: true,
+        type: 'string'
+      })
+      .positional('height', {
+        describe: 'Height',
+        demandOption: true,
+        type: 'number'
+      })
+  },
+  command: 'eventsAfter [--limit LIMIT] [--url REMOTE_URL] <contractID> <height>',
+  describe: 'Displays a JSON array of the N first events that happened in a given contract, since a given entry identified by its hash.\n\n' +
+  '- Older events are displayed first.\n' +
+  '- The output is parseable with tools such as \'jq\'.\n' +
+  '- If <hash> is the same as <contractID>, then the oldest events will be returned.\n' +
+  '- If <url-or-localpath> is a URL, then its /eventsAfter REST endpoint will be called.\n',
+  postHandler: (argv) => {
+    return eventsAfter(argv)
+  }
+} as CommandModule<object, Params>

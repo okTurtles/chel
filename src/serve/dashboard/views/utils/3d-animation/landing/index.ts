@@ -1,10 +1,13 @@
-import { Three } from '../../../../deps.ts'
-import { throttle } from '../../../../common/cdLodash.ts'
+import { throttle } from 'npm:turtledash'
+// @deno-types="npm:@types/three"
+import * as Three from 'npm:three'
 import {
-  resizeRendererToDisplaySize, adjustCameraAspect, degreeToRadian, Edgify
+  Edgify,
+  adjustCameraAspect, degreeToRadian,
+  resizeRendererToDisplaySize
 } from '../animation-utils.ts'
-import CurveGraph from './CurveGraph.ts'
 import BarGraphs from './BarGraphs.ts'
+import CurveGraph from './CurveGraph.ts'
 
 const {
   WebGLRenderer, Scene, Group, PerspectiveCamera,

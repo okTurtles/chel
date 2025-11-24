@@ -26,8 +26,8 @@
 </template>
 
 <script>
-import { cloneDeep } from '@common/cdLodash.js'
 import Dropdown from '@forms/Dropdown.vue'
+import { cloneDeep } from 'npm:turtledash'
 
 const genRandomId = () => Math.random().toString(20).slice(2)
 
@@ -95,7 +95,7 @@ export default {
 </script>
 
 <style lang='scss' scoped>
-@import "@assets/style/_variables.scss";
+@use "@assets/style/_variables.scss" as *;
 
 @mixin button-common {
   border: 1px solid rgba(0, 0, 0, 0);

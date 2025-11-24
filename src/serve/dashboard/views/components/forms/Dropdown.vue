@@ -19,7 +19,7 @@
 
 <script>
 import L from '@common/translations.js'
-import { clickaway } from '../../../deps.ts'
+import { clickaway } from 'npm:vue-clickaway'
 
 export default {
   name: 'Dropdown',
@@ -97,7 +97,7 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import "@assets/style/_variables.scss";
+@use "@assets/style/_variables.scss" as *;
 
 .c-dropdown-wrapper {
   position: relative;

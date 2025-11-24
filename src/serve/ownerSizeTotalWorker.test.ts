@@ -1,5 +1,6 @@
-import { sbp, createCID } from '~/deps.ts'
-// import { assert, path } from '~/deps.ts' // TODO: Use for additional test assertions
+import { createCID } from 'npm:@chelonia/lib/functions'
+import sbp from 'npm:@sbp/sbp'
+// import { assert } from 'jsr:@std/assert' // TODO: Use for additional test assertions
 import { appendToIndexFactory, initDB, updateSize as updateSize_ } from './database.ts'
 
 let worker = new Worker(new URL('./ownerSizeTotalWorker.ts', import.meta.url), {
