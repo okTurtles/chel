@@ -15,7 +15,12 @@ export async function compile (): Promise<void> {
     const bin = arch.includes('windows') ? 'chel.exe' : 'chel'
     // note: could also use https://examples.deno.land/temporary-files
     await $(`mkdir -vp ${dir}`)
-    await $(`deno compile --allow-env --allow-ffi --allow-sys=hostname --allow-read=./ --allow-write=./ --allow-net -o ${dir}/${bin} --target ${arch} --exclude node_modules --include ./build/serve --include ./build/dist-dashboard ./build/main.js`)
+    // --allow-read instead of --allow-read=. needed because Deno might try to
+    // load things from the Deno cache, and the location of the cache isn't
+    // known at the time the binary is generated.
+    // TODO: This should either be fixed in Deno or by programmatically dropping
+    // permissions at runtime.
+    await $(`deno compile --allow-env --allow-ffi --allow-sys=hostname --allow-read --allow-write=./ --allow-net -o ${dir}/${bin} --target ${arch} --exclude node_modules --include ./build/serve --include ./build/dist-dashboard ./build/main.js`)
     await $(`tar -C ./dist/tmp -czvf ./dist/chel-v${version}-${arch}.tar.gz ${arch}`)
   }
   await $(`sha256sum dist/chel-v${version}-*`)
