@@ -4,77 +4,11 @@ import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import process from 'node:process'
 import { deserializeKey, keyId, serializeKey, sign } from 'npm:@chelonia/crypto'
-import { flags } from './deps.ts'
 import { hash } from './hash.ts'
 import { exit, readJsonFile } from './utils.ts'
+import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 
-interface SigningKeyDescriptor {
-  privkey: string
-}
-
-function isSigningKeyDescriptor (obj: unknown): obj is SigningKeyDescriptor {
-  return obj !== null && typeof obj === 'object' && typeof (obj as Record<string, unknown>).privkey === 'string'
-}
-
-/**
- * Re-sign a manifest file with a new key
- */
-async function resignManifest (
-  manifestSource: string,
-  manifestTarget: string,
-  keyFile: string,
-  contractFiles: { main: string, slim?: string },
-  targetDir: string
-) {
-  // Read the existing manifest
-  const existingManifest = JSON.parse(await readFile(manifestSource, 'utf8'))
-  const existingBody = JSON.parse(existingManifest.body)
-
-  // Read the signing key
-  const signingKeyDescriptorRaw = await readJsonFile(keyFile)
-  if (!isSigningKeyDescriptor(signingKeyDescriptorRaw)) {
-    exit('Invalid signing key file: missing or invalid privkey')
-  }
-  const signingKey = deserializeKey(signingKeyDescriptorRaw.privkey)
-
-  // Update the body with new hashes for the contract files in the target directory
-  const mainFilePath = join(targetDir, contractFiles.main)
-  const body = {
-    ...existingBody,
-    contract: {
-      ...existingBody.contract,
-      hash: await hash([mainFilePath], 0x511e01, true) // SHELTER_CONTRACT_TEXT
-    },
-    signingKeys: [serializeKey(signingKey, false)]
-  }
-
-  // Update slim contract hash if it exists
-  if (contractFiles.slim) {
-    const slimFilePath = join(targetDir, contractFiles.slim)
-    body.contractSlim = {
-      ...existingBody.contractSlim,
-      file: contractFiles.slim,
-      hash: await hash([slimFilePath], 0x511e01, true) // SHELTER_CONTRACT_TEXT
-    }
-  }
-
-  // Create new signature
-  const serializedBody = JSON.stringify(body)
-  const head = { manifestVersion: '1.0.0' }
-  const serializedHead = JSON.stringify(head)
-  const newManifest = JSON.stringify({
-    head: serializedHead,
-    body: serializedBody,
-    signature: {
-      keyId: keyId(signingKey),
-      value: sign(signingKey, serializedBody + serializedHead)
-    }
-  })
-
-  // Write the re-signed manifest
-  await writeFile(manifestTarget, newManifest)
-  console.log(colors.green(`✅ Re-signed manifest: ${basename(manifestTarget)}`))
-}
+type Params = { overwrite: boolean, 'only-changed': boolean, version: string, manifest: string }
 
 let projectRoot: string
 let cheloniaConfig: { contracts: Record<string, { version: string, path: string }> }
@@ -83,17 +17,9 @@ function sanitizeContractName (contractName: string): string {
   return contractName.replace(/[/\\:*?"<>|]/g, '_')
 }
 
-export async function pin (args: string[]): Promise<void> {
-  const parsedArgs = flags.parse(args, {
-    boolean: ['overwrite', 'only-changed'],
-    alias: {
-      o: 'overwrite',
-      c: 'only-changed'
-    }
-  })
-
-  const version = parsedArgs._[0]?.toString()
-  const manifestPath = parsedArgs._[1]?.toString()
+export async function pin (args: ArgumentsCamelCase<Params>): Promise<void> {
+  const version = args.version
+  const manifestPath = args.manifest
   projectRoot = process.cwd()
 
   // If no arguments, show usage
@@ -101,12 +27,6 @@ export async function pin (args: string[]): Promise<void> {
     await loadCheloniaConfig()
     showUsage()
     return
-  }
-
-  const options = {
-    overwrite: parsedArgs.overwrite as boolean,
-    onlyChanged: parsedArgs['only-changed'] as boolean,
-    keyFile: parsedArgs.key as string | undefined
   }
 
   try {
@@ -153,7 +73,7 @@ export async function pin (args: string[]): Promise<void> {
     const contractVersionDir = join(projectRoot, 'contracts', contractName, version)
 
     if (existsSync(contractVersionDir)) {
-      if (!options.overwrite && !options.onlyChanged) {
+      if (!args.overwrite && !args['only-changed']) {
         exit(`Version ${version} already exists for contract ${contractName}. Use --overwrite to replace it, or --only-changed to update only changed files`)
       }
       console.log(colors.yellow(`Version ${version} already exists for ${contractName} - checking files...`))
@@ -161,7 +81,7 @@ export async function pin (args: string[]): Promise<void> {
       await createVersionDirectory(contractName, version)
     }
 
-    await copyContractFiles(contractFiles, manifestPath, contractName, version, options)
+    await copyContractFiles(contractFiles, manifestPath, contractName, version, args)
     await updateCheloniaConfig(contractName, version, manifestPath)
 
     console.log(colors.green(`✅ Successfully pinned ${contractName} to version ${version}`))
@@ -237,7 +157,7 @@ async function copyContractFiles (
   manifestPath: string,
   contractName: string,
   version: string,
-  options: { overwrite: boolean, onlyChanged: boolean, keyFile?: string }
+  args: ArgumentsCamelCase<Params>
 ) {
   const sourceDir = dirname(join(projectRoot, manifestPath))
   const targetDir = join(projectRoot, 'contracts', contractName, version)
@@ -247,13 +167,13 @@ async function copyContractFiles (
   // First, copy the contract files to the target directory
   const mainSource = join(sourceDir, contractFiles.main)
   const mainTarget = join(targetDir, contractFiles.main)
-  await copyFileIfNeeded(mainSource, mainTarget, contractFiles.main, options)
+  await copyFileIfNeeded(mainSource, mainTarget, contractFiles.main, args)
 
   if (contractFiles.slim) {
     const slimSource = join(sourceDir, contractFiles.slim)
     const slimTarget = join(targetDir, contractFiles.slim)
     try {
-      await copyFileIfNeeded(slimSource, slimTarget, contractFiles.slim, options)
+      await copyFileIfNeeded(slimSource, slimTarget, contractFiles.slim, args)
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error)
       console.error(colors.yellow(`⚠️  Could not copy slim file: ${errorMessage}`))
@@ -264,21 +184,14 @@ async function copyContractFiles (
   const manifestSource = join(projectRoot, manifestPath)
   const manifestTarget = join(targetDir, basename(manifestPath))
 
-  if (options.keyFile) {
-    // Re-sign the manifest with the provided key
-    console.log(colors.blue(`🔐 Re-signing manifest with key: ${options.keyFile}`))
-    await resignManifest(manifestSource, manifestTarget, options.keyFile, contractFiles, targetDir)
-  } else {
-    // Just copy the existing signed manifest
-    await copyFileIfNeeded(manifestSource, manifestTarget, basename(manifestPath), options)
-  }
+  await copyFileIfNeeded(manifestSource, manifestTarget, basename(manifestPath), args)
 }
 
 async function copyFileIfNeeded (
   sourcePath: string,
   targetPath: string,
   fileName: string,
-  options: { overwrite: boolean, onlyChanged: boolean }
+  args: ArgumentsCamelCase<Params>
 ) {
   const targetExists = existsSync(targetPath)
 
@@ -288,12 +201,12 @@ async function copyFileIfNeeded (
     return
   }
 
-  if (targetExists && !options.overwrite) {
+  if (targetExists && !args.overwrite) {
     console.log(colors.yellow(`⏭️  Skipping: ${fileName} (already exists, use --overwrite to replace)`))
     return
   }
 
-  if (options.onlyChanged) {
+  if (args['only-changed']) {
     const sourceContent = await readFile(sourcePath, 'utf8')
     const targetContent = await readFile(targetPath, 'utf8')
 
@@ -347,3 +260,36 @@ async function updateCheloniaConfig (contractName: string, version: string, mani
   await writeFile(configPath, configContent, 'utf8')
   console.log(colors.green('✅ Updated chelonia.json'))
 }
+
+export const module = {
+  builder: (yargs) => {
+    return yargs
+      .option('overwrite', {
+        default: false,
+        describe: 'Overwrite existing files',
+        requiresArg: false,
+        boolean: true
+      })
+      .alias('o', 'overwrite')
+      .option('only-changed', {
+        default: false,
+        describe: 'Only copy changed files',
+        requiresArg: false,
+        boolean: true
+      })
+      .alias('c', 'only-changed')
+      .positional('version', {
+        describe: 'Manifest version',
+        type: 'string'
+      })
+      .positional('manifest', {
+        describe: 'Manifest file path',
+        type: 'string'
+      })
+  },
+  command: 'pin <version> <manifest>',
+  describe: 'Pin a manifest version',
+  postHandler: (argv) => {
+    return pin(argv)
+  }
+} as CommandModule<object, Params>
