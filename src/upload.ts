@@ -92,7 +92,7 @@ export const module = {
         type: 'string'
       })
   },
-  command: 'upload [--url REMOTE_URL] <files..>',
+  command: 'upload <files..>',
   describe: 'Requires read and write access to the destination.',
   postHandler: (argv) => {
     return void upload(argv)

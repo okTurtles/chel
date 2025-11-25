@@ -116,10 +116,12 @@ export const module = {
         requiresArg: true,
         string: true
       })
+      // strict(false) to support non-enumerated flags, which can be used for
+      // configuring backend settings. However, `from-config` should be preferred.
       .strict(false)
       .strictCommands(true)
   },
-  command: 'migrate [--from <backend>] [--to <backend>]',
+  command: 'migrate',
   describe: 'Reads all key-value pairs from a given database and creates or updates another database accordingly.\n\n' +
   '- The output database will be created if necessary.\n' +
   '- The source database won\'t be modified nor deleted.\n' +

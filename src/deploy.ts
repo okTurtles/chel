@@ -47,7 +47,7 @@ export const module = {
         type: 'string'
       })
   },
-  command: 'deploy [--url REMOTE_URL] <manifests..>',
+  command: 'deploy <manifests..>',
   describe: '',
   postHandler: (argv) => {
     return deploy(argv)

@@ -14,6 +14,7 @@ const parseConfig = () => {
     .defaults({
       'server': {
         'appDir': '.',
+        'host': '0.0.0.0',
         'port': 8000,
         'dashboardPort': 8888,
         'fileUploadMaxBytes': 31457280,
@@ -31,10 +32,7 @@ const parseConfig = () => {
         },
         'logLevel': 'debug',
         'messages': [],
-        'maxEventsBatchSize': 500
-      },
-      'chelonia': {
-        'registrationDisabled': false,
+        'maxEventsBatchSize': 500,
         'archiveMode': false
       },
       'database': {
@@ -53,8 +51,6 @@ const parseConfig = () => {
         }
       }
     })
-
-  console.error('@@@@', nconf.get('database'))
 }
 
 export default parseConfig

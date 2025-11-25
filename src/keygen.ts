@@ -44,7 +44,7 @@ export const module = {
         string: true
       })
   },
-  command: 'keygen [--out <filename>] [--pubout <filename>]',
+  command: 'keygen',
   describe: '',
   postHandler: (argv) => {
     return keygen(argv)

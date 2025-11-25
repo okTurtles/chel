@@ -16,7 +16,7 @@ export async function startDashboard (): Promise<void> {
   const port = nconf.get('server:dashboardPort')
   const dashboardServer = new Hapi.Server({
     port,
-    host: 'localhost',
+    host: nconf.get('server:host'),
     routes: {
       files: {
         relativeTo: getDashboardPath()

@@ -211,7 +211,7 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
   // Defaults to `fs` in production.
   const persistence = backend || (production ? 'fs' : undefined)
   const options = nconf.get('database:backendOptions')
-  const ARCHIVE_MODE = nconf.get('chelonia:archiveMode')
+  const ARCHIVE_MODE = nconf.get('server:archiveMode')
 
   if (persistence && persistence !== 'mem') {
     const Ctor = (await import(`./database-${persistence}.ts`)).default
@@ -299,6 +299,10 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
   }
   if (skipDbPreloading) return
   /*
+  // Preloading logic preserved for historical reasons. Preloading should no
+  // longer be necessary, since `chel deploy` can be used for accomplishing
+  // the same in a more reliable way and without requiring the `fs` backend.
+  //
   // TODO: Update this to only run when persistence is disabled when `chel deploy` can target SQLite.
   if (persistence !== 'fs' || options.fs.dirname !== dbRootPath) {
     // Remember to keep these values up-to-date.
