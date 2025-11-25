@@ -1,7 +1,6 @@
+import { Buffer } from 'node:buffer'
 import { mkdir, readdir, readFile, rm, unlink, writeFile } from 'node:fs/promises'
 import { basename, dirname, join, normalize, resolve } from 'node:path'
-import process from 'node:process'
-import { Buffer } from 'node:buffer'
 import { checkKey } from 'npm:@chelonia/lib/db'
 import DatabaseBackend from './DatabaseBackend.ts'
 
@@ -45,12 +44,14 @@ export default class FsBackend extends DatabaseBackend {
   dataFolder: string = ''
   depth: number = 0
   keyChunkLength: number = 2
+  skipFsCaseSensitivityCheck: boolean = false
 
-  constructor (options: { dirname?: string; depth?: number; keyChunkLength?: number } = {}) {
+  constructor (options: { dirname?: string; depth?: number; keyChunkLength?: number, skipFsCaseSensitivityCheck?: boolean } = {}) {
     super()
     this.dataFolder = resolve(options.dirname!)
     if (options.depth) this.depth = options.depth
     if (options.keyChunkLength) this.keyChunkLength = options.keyChunkLength
+    if (options.skipFsCaseSensitivityCheck) this.skipFsCaseSensitivityCheck = true
   }
 
   // Maps a given key to a real path on the filesystem.
@@ -70,7 +71,7 @@ export default class FsBackend extends DatabaseBackend {
 
   async init () {
     await mkdir(this.dataFolder, { mode: 0o750, recursive: true })
-    if (process.env.SKIP_DB_FS_CASE_SENSITIVITY_CHECK === undefined) {
+    if (!this.skipFsCaseSensitivityCheck) {
       await testCaseSensitivity(this)
     }
   }
@@ -108,7 +109,7 @@ export default class FsBackend extends DatabaseBackend {
     })
   }
 
-  close () {}
+  close () { }
 
   async * iterKeys () {
     const entries = await readdir(this.dataFolder, { withFileTypes: true })

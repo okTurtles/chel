@@ -1,19 +1,18 @@
 import * as colors from 'jsr:@std/fmt/colors'
 import * as path from 'jsr:@std/path/'
+import { Buffer } from 'node:buffer'
 import sbp from 'npm:@sbp/sbp'
+import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { initDB } from './serve/database.ts'
 import { createEntryFromFile, multicodes, type Entry } from './utils.ts'
 
-// chel upload [<url>] <file1> [<file2> [<file3> ...]]
+type Params = { url?: string, files: string[] }
 
-export async function upload (files: string[], internal = false): Promise<[string, string][]> {
-  const url = URL.canParse(files[0]) ? files[0] : null
-  if (url) {
-    files.shift()
-  } else {
+export async function upload (args: ArgumentsCamelCase<Params>, internal = false): Promise<[string, string][]> {
+  const { url, files } = args
+  if (!url) {
     await initDB({ skipDbPreloading: true })
   }
-  if (files.length === 0) throw new Error('missing files!')
   const uploaded: Array<[string, string]> = []
   const uploaderFn = url
     ? uploadEntryToURL
@@ -66,7 +65,7 @@ async function uploadEntryToURL ([cid, buffer]: Entry, url: string): Promise<str
 }
 
 function uploadEntryToDB ([cid, buffer]: Entry): Promise<string> {
-  return sbp('chelonia.db/set', cid, buffer).then(() => cid)
+  return sbp('chelonia.db/set', cid, Buffer.from(buffer)).then(() => cid)
 }
 
 type ResponseTypeFn = 'arrayBuffer' | 'blob' | 'clone' | 'formData' | 'json' | 'text'
@@ -77,3 +76,25 @@ export function handleFetchResult (type: ResponseTypeFn): ((r: Response) => unkn
     return await r[type]()
   }
 }
+
+export const module = {
+  builder: (yargs) => {
+    return yargs
+      .option('url', {
+        describe: 'URL of a remote server',
+        requiresArg: true,
+        string: true
+      })
+      .positional('files', {
+        describe: 'Files to upload',
+        demandOption: true,
+        array: true,
+        type: 'string'
+      })
+  },
+  command: 'upload <files..>',
+  describe: 'Requires read and write access to the destination.',
+  postHandler: (argv) => {
+    return void upload(argv)
+  }
+} as CommandModule<object, Params>

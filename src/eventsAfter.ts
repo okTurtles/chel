@@ -1,26 +1,19 @@
 // chel eventsAfter [--limit N] [--url url] <contractID> <height>
 
 import * as base64 from 'jsr:@std/encoding/base64'
-import * as flags from 'jsr:@std/flags/'
 import sbp from 'npm:@sbp/sbp'
+import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { initDB } from './serve/database.ts'
-import { exit, isArrayLength } from './utils.ts'
+import { exit } from './utils.ts'
 
-const defaultLimit = 50
+type Params = { limit: number, url: string | undefined, contractID: string, height: number }
 
-export async function eventsAfter (args: string[]): Promise<void> {
-  const parsedArgs = flags.parse(args)
-
-  const limit = Number(parsedArgs.limit ?? defaultLimit)
-  if (!isArrayLength(limit)) exit('argument --limit must be a valid array length')
-  const [contractID] = parsedArgs._.map(String)
-  const height = Number(parsedArgs._[2])
-
+export async function eventsAfter ({ limit, url, contractID, height }: ArgumentsCamelCase<Params>): Promise<void> {
   try {
     let messages
 
-    if (parsedArgs.url) {
-      messages = await getRemoteMessagesSince(parsedArgs.url, contractID, height, limit)
+    if (url) {
+      messages = await getRemoteMessagesSince(url, contractID, height, limit)
     } else {
       await initDB({ skipDbPreloading: true })
       messages = await getMessagesSince(contractID, height, limit)
@@ -67,3 +60,43 @@ async function getRemoteMessagesSince (src: string, contractID: string, sinceHei
   }
   return b64messages.map(b64str => JSON.parse(new TextDecoder().decode(base64.decodeBase64(b64str))))
 }
+
+export const module = {
+  builder: (yargs) => {
+    return yargs
+      .option('limit', {
+        describe: 'Limit',
+        default: 50,
+        number: true,
+        requiresArg: true,
+        coerce (v: number) {
+          if (!Number.isSafeInteger(v) || v < 0) {
+            throw new Error('--limit must be a valid non-negative integer')
+          }
+          return v
+        }
+      })
+      .option('url', {
+        describe: 'URL of a remote server',
+        string: true
+      })
+      .positional('contractID', {
+        describe: 'Contract ID',
+        demandOption: true,
+        type: 'string'
+      })
+      .positional('height', {
+        describe: 'Height',
+        demandOption: true,
+        type: 'number'
+      })
+  },
+  command: 'eventsAfter <contractID> <height>',
+  describe: 'Displays a JSON array of the first LIMIT events that happened in a given contract, since a given entry identified by its hash.\n\n' +
+  '- Older events are displayed first.\n' +
+  '- The output is parseable with tools such as \'jq\'.\n' +
+  '- If --url is given, then its /eventsAfter REST endpoint will be called.\n',
+  postHandler: (argv) => {
+    return eventsAfter(argv)
+  }
+} as CommandModule<object, Params>

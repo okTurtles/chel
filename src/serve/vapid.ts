@@ -1,20 +1,26 @@
 import { Buffer } from 'node:buffer'
-import process from 'node:process'
 import sbp from 'npm:@sbp/sbp'
+// @deno-types="npm:@types/nconf"
+import nconf from 'npm:nconf'
 
 let vapidPublicKey: string
 let vapidPrivateKey: CryptoKey
-
-// The Voluntary Application Server Identification (VAPID) email field is "a
-// stable identity for the application server" that "can be used by a push
-// service to establish behavioral expectations for an application server"
-// RFC 8292
-if (!process.env.VAPID_EMAIL) {
-  console.warn('Missing VAPID identification. Please set VAPID_EMAIL to a value like "mailto:some@example".')
-}
-const vapid = { VAPID_EMAIL: process.env.VAPID_EMAIL || 'mailto:test@example.com' }
+let vapid: { VAPID_EMAIL: string }
 
 export const initVapid = async () => {
+  const vapidEmail = nconf.get('server:vapid:email')
+
+  // The Voluntary Application Server Identification (VAPID) email field is "a
+  // stable identity for the application server" that "can be used by a push
+  // service to establish behavioral expectations for an application server"
+  // RFC 8292
+  if (!vapidEmail) {
+    console.warn('Missing VAPID identification. Please set `server:vapid:email` to a value like "some@domain.example".')
+  }
+  // Avoid accidentally including the scheme twice, if the vapidEmail already
+  // includes `mailto:`.
+  vapid = { VAPID_EMAIL: vapidEmail?.replace(/^mailto:/i, '') || 'test@example.com' }
+
   const vapidKeyPair = await sbp('chelonia.db/get', '_private_immutable_vapid_key').then(async (vapidKeyPair: string): Promise<[object, string]> => {
     if (!vapidKeyPair) {
       console.info('Generating new VAPID keypair...')
@@ -86,7 +92,7 @@ const generateJwt = async (endpoint: URL): Promise<string> => {
       ['nbf', now - 300],
       // URI used for identifying ourselves. This can be used by the push
       // provider to get in touch in case of issues.
-      ['sub', vapid.VAPID_EMAIL]
+      ['sub', `mailto:${vapid.VAPID_EMAIL}`]
     ])
 
   )).toString('base64url')
