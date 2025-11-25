@@ -9339,10 +9339,8 @@ var require_build4 = __commonJS({
           const arg = args.shift();
           const observedType = guessType2(arg);
           const matchingTypes = optional2.cmd.filter((type) => type === observedType || type === "*");
-          if (matchingTypes.length === 0) {
-            console.error(arg);
+          if (matchingTypes.length === 0)
             argumentTypeError2(observedType, optional2.cmd, position);
-          }
           position += 1;
         });
       } catch (err) {
