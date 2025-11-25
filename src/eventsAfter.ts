@@ -68,7 +68,13 @@ export const module = {
         describe: 'Limit',
         default: 50,
         number: true,
-        requiresArg: true
+        requiresArg: true,
+        coerce (v: number) {
+          if (!Number.isSafeInteger(v) || v < 0) {
+            throw new Error('--limit must be a valid non-negative integer')
+          }
+          return v
+        }
       })
       .option('url', {
         describe: 'URL of a remote server',

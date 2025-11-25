@@ -299,6 +299,10 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
   }
   if (skipDbPreloading) return
   /*
+  // Preloading logic preserved for historical reasons. Preloading should no
+  // longer be necessary, since `chel deploy` can be used for accomplishing
+  // the same in a more reliable way and without requiring the `fs` backend.
+  //
   // TODO: Update this to only run when persistence is disabled when `chel deploy` can target SQLite.
   if (persistence !== 'fs' || options.fs.dirname !== dbRootPath) {
     // Remember to keep these values up-to-date.

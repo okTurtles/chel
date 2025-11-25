@@ -27288,7 +27288,7 @@ var init_vapid = __esm({
       if (!vapidEmail) {
         console.warn('Missing VAPID identification. Please set `server:vapid:email` to a value like "some@domain.example".');
       }
-      vapid = { VAPID_EMAIL: vapidEmail || "test@example.com" };
+      vapid = { VAPID_EMAIL: vapidEmail.replace(/^mailto:/i, "") || "test@example.com" };
       const vapidKeyPair = await esm_default("chelonia.db/get", "_private_immutable_vapid_key").then(async (vapidKeyPair2) => {
         if (!vapidKeyPair2) {
           console.info("Generating new VAPID keypair...");
@@ -80487,7 +80487,7 @@ async function startDashboard() {
   const port = import_npm_nconf4.default.get("server:dashboardPort");
   const dashboardServer = new Hapi.Server({
     port,
-    host: "localhost",
+    host: import_npm_nconf4.default.get("server:host"),
     routes: {
       files: {
         relativeTo: getDashboardPath()
@@ -104041,6 +104041,7 @@ var init_server = __esm({
       // debug: false, // <- Hapi v16 was outputing too many unnecessary debug statements
       //               // v17 doesn't seem to do this anymore so I've re-enabled the logging
       // debug: { log: ['error'], request: ['error'] },
+      host: import_npm_nconf6.default.get("server:host"),
       port: import_npm_nconf6.default.get("server:port"),
       // See: https://github.com/hapijs/discuss/issues/262#issuecomment-204616831
       routes: {
@@ -111056,7 +111057,13 @@ var module4 = {
       describe: "Limit",
       default: 50,
       number: true,
-      requiresArg: true
+      requiresArg: true,
+      coerce(v2) {
+        if (!Number.isSafeInteger(v2) || v2 < 0) {
+          throw new Error("--limit must be a valid non-negative integer");
+        }
+        return v2;
+      }
     }).option("url", {
       describe: "URL of a remote server",
       string: true
@@ -111071,7 +111078,7 @@ var module4 = {
     });
   },
   command: "eventsAfter <contractID> <height>",
-  describe: "Displays a JSON array of the N first events that happened in a given contract, since a given entry identified by its hash.\n\n- Older events are displayed first.\n- The output is parseable with tools such as 'jq'.\n- If <hash> is the same as <contractID>, then the oldest events will be returned.\n- If <url-or-localpath> is a URL, then its /eventsAfter REST endpoint will be called.\n",
+  describe: "Displays a JSON array of the first LIMIT events that happened in a given contract, since a given entry identified by its hash.\n\n- Older events are displayed first.\n- The output is parseable with tools such as 'jq'.\n- If --url is given, then its /eventsAfter REST endpoint will be called.\n",
   postHandler: (argv) => {
     return eventsAfter2(argv);
   }
@@ -111529,7 +111536,7 @@ var module11 = {
     });
   },
   command: "verifySignature <manifestFile>",
-  describe: "",
+  describe: "Verify a manifest signature",
   postHandler: (argv) => {
     return verifySignature2(argv);
   }
@@ -115689,6 +115696,7 @@ var parseConfig = () => {
   }).argv(parseArgs_default()).file({ file: "chel.toml", format: { parse: parse6, stringify } }).defaults({
     "server": {
       "appDir": ".",
+      "host": "0.0.0.0",
       "port": 8e3,
       "dashboardPort": 8888,
       "fileUploadMaxBytes": 31457280,

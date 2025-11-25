@@ -14,6 +14,7 @@ const parseConfig = () => {
     .defaults({
       'server': {
         'appDir': '.',
+        'host': '0.0.0.0',
         'port': 8000,
         'dashboardPort': 8888,
         'fileUploadMaxBytes': 31457280,
