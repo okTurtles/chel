@@ -27286,7 +27286,7 @@ var init_vapid = __esm({
       if (!vapidEmail) {
         console.warn('Missing VAPID identification. Please set `server:vapid:email` to a value like "some@domain.example".');
       }
-      vapid = { VAPID_EMAIL: vapidEmail.replace(/^mailto:/i, "") || "test@example.com" };
+      vapid = { VAPID_EMAIL: vapidEmail?.replace(/^mailto:/i, "") || "test@example.com" };
       const vapidKeyPair = await esm_default("chelonia.db/get", "_private_immutable_vapid_key").then(async (vapidKeyPair2) => {
         if (!vapidKeyPair2) {
           console.info("Generating new VAPID keypair...");
