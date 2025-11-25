@@ -19,7 +19,7 @@ export const initVapid = async () => {
   }
   // Avoid accidentally including the scheme twice, if the vapidEmail already
   // includes `mailto:`.
-  vapid = { VAPID_EMAIL: vapidEmail.replace(/^mailto:/i, '') || 'test@example.com' }
+  vapid = { VAPID_EMAIL: vapidEmail?.replace(/^mailto:/i, '') || 'test@example.com' }
 
   const vapidKeyPair = await sbp('chelonia.db/get', '_private_immutable_vapid_key').then(async (vapidKeyPair: string): Promise<[object, string]> => {
     if (!vapidKeyPair) {
