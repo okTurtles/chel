@@ -3,10 +3,8 @@ import { existsSync } from 'node:fs'
 import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import process from 'node:process'
-import { deserializeKey, keyId, serializeKey, sign } from 'npm:@chelonia/crypto'
-import { hash } from './hash.ts'
-import { exit, readJsonFile } from './utils.ts'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
+import { exit } from './utils.ts'
 
 type Params = { overwrite: boolean, 'only-changed': boolean, version: string, manifest: string }
 
