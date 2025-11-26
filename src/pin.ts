@@ -9,28 +9,20 @@ import { exit } from './utils.ts'
 type Params = { overwrite: boolean, 'only-changed': boolean, version: string, manifest: string }
 
 let projectRoot: string
-let cheloniaConfig: { contracts: Record<string, { version: string, path: string }> }
+let cheloniaConfig: { contracts: Record<string, { 'manifest-version': string, path: string }> }
 
 function sanitizeContractName (contractName: string): string {
   return contractName.replace(/[/\\:*?"<>|]/g, '_')
 }
 
 export async function pin (args: ArgumentsCamelCase<Params>): Promise<void> {
-  const version = args.version
+  const version = args['manifest-version']
   const manifestPath = args.manifest
   projectRoot = process.cwd()
-
-  // If no arguments, show usage
-  if (!version) {
-    await loadCheloniaConfig()
-    showUsage()
-    return
-  }
 
   try {
     if (!manifestPath) {
       await loadCheloniaConfig()
-      showUsage()
       return
     }
 
@@ -113,34 +105,6 @@ async function parseManifest (manifestPath: string) {
       main: mainFile,
       slim: slimFile
     }
-  }
-}
-
-function showUsage () {
-  console.log(colors.cyan('📋 Contract Pinning Usage:'))
-  console.log(colors.gray('Usage: chel pin <version> <manifest-file-path> [--key <key-file>]'))
-  console.log()
-  console.log(colors.yellow('📝 Options:'))
-  console.log(colors.gray('   --key <key-file>     Re-sign manifest with your own key during pinning'))
-  console.log(colors.gray('   --overwrite          Overwrite existing files'))
-  console.log(colors.gray('   --only-changed       Only copy changed files'))
-  console.log()
-  console.log(colors.yellow('📝 Examples:'))
-  console.log(colors.gray('   # Pin with existing signature:'))
-  console.log(colors.gray('   chel pin 1.0.0 ./contracts/chatroom.1.0.0.manifest.json'))
-  console.log(colors.gray('   # Pin and re-sign with your key:'))
-  console.log(colors.gray('   chel pin 1.0.0 ./contracts/chatroom.1.0.0.manifest.json --key key.json'))
-  console.log()
-
-  if (Object.keys(cheloniaConfig.contracts).length > 0) {
-    console.log(colors.cyan('📌 Currently pinned contracts:'))
-    for (const [name, config] of Object.entries(cheloniaConfig.contracts)) {
-      console.log(`  ${colors.green(name)} - ${colors.blue(config.version)} (${colors.gray(config.path)})`)
-    }
-    console.log()
-  } else {
-    console.log(colors.gray('No contracts currently pinned.'))
-    console.log()
   }
 }
 
@@ -276,18 +240,21 @@ export const module = {
         boolean: true
       })
       .alias('c', 'only-changed')
-      .positional('version', {
+      .positional('manifest-version', {
         describe: 'Manifest version',
+        demandOption: true,
         type: 'string'
       })
       .positional('manifest', {
         describe: 'Manifest file path',
+        demandOption: true,
         type: 'string'
       })
   },
-  command: 'pin <version> <manifest>',
+  command: 'pin <manifest-version> <manifest>',
   describe: 'Pin a manifest version',
   postHandler: (argv) => {
+    console.error(argv)
     return pin(argv)
   }
 } as CommandModule<object, Params>
