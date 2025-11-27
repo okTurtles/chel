@@ -3461,12 +3461,13 @@ import { Buffer as Buffer14 } from "node:buffer";
 import { isIP } from "node:net";
 import path6 from "node:path";
 import process8 from "node:process";
-import { basename as basename52, join as join62 } from "node:path";
+import { basename as basename52, join as join7 } from "node:path";
 import process9 from "node:process";
 import { Worker } from "node:worker_threads";
 import process10 from "node:process";
 import process12 from "node:process";
 import { Buffer as Buffer12 } from "node:buffer";
+import { join as join42 } from "node:path";
 
 // deno:https://jsr.io/@std/encoding/1.0.10/_common64.ts
 var padding = "=".charCodeAt(0);
@@ -3555,7 +3556,7 @@ import { readFile as readFile2 } from "node:fs/promises";
 import process3 from "node:process";
 import { existsSync } from "node:fs";
 import { copyFile, mkdir as mkdir3, readFile as readFile3, writeFile as writeFile2 } from "node:fs/promises";
-import { basename as basename42, dirname as dirname42, join as join52 } from "node:path";
+import { basename as basename42, dirname as dirname42, join as join62 } from "node:path";
 import process4 from "node:process";
 import process11 from "node:process";
 import { notStrictEqual, strictEqual } from "node:assert";
@@ -9174,7 +9175,7 @@ var require_require_directory = __commonJS({
   "node_modules/.deno/require-directory@2.1.1/node_modules/require-directory/index.js"(exports2, module14) {
     "use strict";
     var fs = __require2("fs");
-    var join8 = __require2("path").join;
+    var join9 = __require2("path").join;
     var resolve8 = __require2("path").resolve;
     var dirname7 = __require2("path").dirname;
     var defaultOptions4 = {
@@ -9211,7 +9212,7 @@ var require_require_directory = __commonJS({
       }
       path8 = !path8 ? dirname7(m3.filename) : resolve8(dirname7(m3.filename), path8);
       fs.readdirSync(path8).forEach(function(filename) {
-        var joined = join8(path8, filename), files, key, obj;
+        var joined = join9(path8, filename), files, key, obj;
         if (fs.statSync(joined).isDirectory() && options2.recurse) {
           files = requireDirectory(m3, joined, options2);
           if (Object.keys(files).length) {
@@ -83156,7 +83157,7 @@ var require_thread_stream = __commonJS({
     var { version: version4 } = require_package6();
     var { EventEmitter } = __require2("events");
     var { Worker: Worker2 } = __require2("worker_threads");
-    var { join: join8 } = __require2("path");
+    var { join: join9 } = __require2("path");
     var { pathToFileURL } = __require2("url");
     var { wait } = require_wait2();
     var {
@@ -83192,7 +83193,7 @@ var require_thread_stream = __commonJS({
     function createWorker2(stream, opts) {
       const { filename, workerData } = opts;
       const bundlerOverrides = "__bundlerPathsOverrides" in globalThis ? globalThis.__bundlerPathsOverrides : {};
-      const toExecute = bundlerOverrides["thread-stream-worker"] || join8(__dirname, "lib", "worker.js");
+      const toExecute = bundlerOverrides["thread-stream-worker"] || join9(__dirname, "lib", "worker.js");
       const worker = new Worker2(toExecute, {
         ...opts.workerOpts,
         trackUnmanagedFds: false,
@@ -83576,7 +83577,7 @@ var require_transport = __commonJS({
     "use strict";
     var { createRequire } = __require2("module");
     var getCallers = require_caller();
-    var { join: join8, isAbsolute: isAbsolute6, sep } = __require2("path");
+    var { join: join9, isAbsolute: isAbsolute6, sep } = __require2("path");
     var sleep = require_atomic_sleep();
     var onExit = require_on_exit_leak_free();
     var ThreadStream = require_thread_stream();
@@ -83635,7 +83636,7 @@ var require_transport = __commonJS({
         throw new Error("only one of target or targets can be specified");
       }
       if (targets) {
-        target = bundlerOverrides["pino-worker"] || join8(__dirname, "worker.js");
+        target = bundlerOverrides["pino-worker"] || join9(__dirname, "worker.js");
         options2.targets = targets.map((dest) => {
           return {
             ...dest,
@@ -83643,7 +83644,7 @@ var require_transport = __commonJS({
           };
         });
       } else if (pipeline) {
-        target = bundlerOverrides["pino-pipeline-worker"] || join8(__dirname, "worker-pipeline.js");
+        target = bundlerOverrides["pino-pipeline-worker"] || join9(__dirname, "worker-pipeline.js");
         options2.targets = pipeline.map((dest) => {
           return {
             ...dest,
@@ -83664,7 +83665,7 @@ var require_transport = __commonJS({
           return origin;
         }
         if (origin === "pino/file") {
-          return join8(__dirname, "..", "file.js");
+          return join9(__dirname, "..", "file.js");
         }
         let fixTarget2;
         for (const filePath of callers) {
@@ -84602,7 +84603,7 @@ var require_safe_stable_stringify = __commonJS({
               return circularValue;
             }
             let res = "";
-            let join8 = ",";
+            let join9 = ",";
             const originalIndentation = indentation;
             if (Array.isArray(value)) {
               if (value.length === 0) {
@@ -84616,7 +84617,7 @@ var require_safe_stable_stringify = __commonJS({
                 indentation += spacer;
                 res += `
 ${indentation}`;
-                join8 = `,
+                join9 = `,
 ${indentation}`;
               }
               const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
@@ -84624,13 +84625,13 @@ ${indentation}`;
               for (; i2 < maximumValuesToStringify - 1; i2++) {
                 const tmp2 = stringifyFnReplacer(String(i2), value, stack, replacer, spacer, indentation);
                 res += tmp2 !== void 0 ? tmp2 : "null";
-                res += join8;
+                res += join9;
               }
               const tmp = stringifyFnReplacer(String(i2), value, stack, replacer, spacer, indentation);
               res += tmp !== void 0 ? tmp : "null";
               if (value.length - 1 > maximumBreadth) {
                 const removedKeys = value.length - maximumBreadth - 1;
-                res += `${join8}"... ${getItemCount(removedKeys)} not stringified"`;
+                res += `${join9}"... ${getItemCount(removedKeys)} not stringified"`;
               }
               if (spacer !== "") {
                 res += `
@@ -84651,7 +84652,7 @@ ${originalIndentation}`;
             let separator = "";
             if (spacer !== "") {
               indentation += spacer;
-              join8 = `,
+              join9 = `,
 ${indentation}`;
               whitespace = " ";
             }
@@ -84665,13 +84666,13 @@ ${indentation}`;
               const tmp = stringifyFnReplacer(key2, value, stack, replacer, spacer, indentation);
               if (tmp !== void 0) {
                 res += `${separator}${strEscape(key2)}:${whitespace}${tmp}`;
-                separator = join8;
+                separator = join9;
               }
             }
             if (keyLength > maximumBreadth) {
               const removedKeys = keyLength - maximumBreadth;
               res += `${separator}"...":${whitespace}"${getItemCount(removedKeys)} not stringified"`;
-              separator = join8;
+              separator = join9;
             }
             if (spacer !== "" && separator.length > 1) {
               res = `
@@ -84712,7 +84713,7 @@ ${originalIndentation}`;
             }
             const originalIndentation = indentation;
             let res = "";
-            let join8 = ",";
+            let join9 = ",";
             if (Array.isArray(value)) {
               if (value.length === 0) {
                 return "[]";
@@ -84725,7 +84726,7 @@ ${originalIndentation}`;
                 indentation += spacer;
                 res += `
 ${indentation}`;
-                join8 = `,
+                join9 = `,
 ${indentation}`;
               }
               const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
@@ -84733,13 +84734,13 @@ ${indentation}`;
               for (; i2 < maximumValuesToStringify - 1; i2++) {
                 const tmp2 = stringifyArrayReplacer(String(i2), value[i2], stack, replacer, spacer, indentation);
                 res += tmp2 !== void 0 ? tmp2 : "null";
-                res += join8;
+                res += join9;
               }
               const tmp = stringifyArrayReplacer(String(i2), value[i2], stack, replacer, spacer, indentation);
               res += tmp !== void 0 ? tmp : "null";
               if (value.length - 1 > maximumBreadth) {
                 const removedKeys = value.length - maximumBreadth - 1;
-                res += `${join8}"... ${getItemCount(removedKeys)} not stringified"`;
+                res += `${join9}"... ${getItemCount(removedKeys)} not stringified"`;
               }
               if (spacer !== "") {
                 res += `
@@ -84752,7 +84753,7 @@ ${originalIndentation}`;
             let whitespace = "";
             if (spacer !== "") {
               indentation += spacer;
-              join8 = `,
+              join9 = `,
 ${indentation}`;
               whitespace = " ";
             }
@@ -84761,7 +84762,7 @@ ${indentation}`;
               const tmp = stringifyArrayReplacer(key2, value[key2], stack, replacer, spacer, indentation);
               if (tmp !== void 0) {
                 res += `${separator}${strEscape(key2)}:${whitespace}${tmp}`;
-                separator = join8;
+                separator = join9;
               }
             }
             if (spacer !== "" && separator.length > 1) {
@@ -84819,20 +84820,20 @@ ${originalIndentation}`;
               indentation += spacer;
               let res2 = `
 ${indentation}`;
-              const join9 = `,
+              const join10 = `,
 ${indentation}`;
               const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
               let i2 = 0;
               for (; i2 < maximumValuesToStringify - 1; i2++) {
                 const tmp2 = stringifyIndent(String(i2), value[i2], stack, spacer, indentation);
                 res2 += tmp2 !== void 0 ? tmp2 : "null";
-                res2 += join9;
+                res2 += join10;
               }
               const tmp = stringifyIndent(String(i2), value[i2], stack, spacer, indentation);
               res2 += tmp !== void 0 ? tmp : "null";
               if (value.length - 1 > maximumBreadth) {
                 const removedKeys = value.length - maximumBreadth - 1;
-                res2 += `${join9}"... ${getItemCount(removedKeys)} not stringified"`;
+                res2 += `${join10}"... ${getItemCount(removedKeys)} not stringified"`;
               }
               res2 += `
 ${originalIndentation}`;
@@ -84848,16 +84849,16 @@ ${originalIndentation}`;
               return '"[Object]"';
             }
             indentation += spacer;
-            const join8 = `,
+            const join9 = `,
 ${indentation}`;
             let res = "";
             let separator = "";
             let maximumPropertiesToStringify = Math.min(keyLength, maximumBreadth);
             if (isTypedArrayWithEntries(value)) {
-              res += stringifyTypedArray(value, join8, maximumBreadth);
+              res += stringifyTypedArray(value, join9, maximumBreadth);
               keys = keys.slice(value.length);
               maximumPropertiesToStringify -= value.length;
-              separator = join8;
+              separator = join9;
             }
             if (deterministic) {
               keys = sort(keys, comparator);
@@ -84868,13 +84869,13 @@ ${indentation}`;
               const tmp = stringifyIndent(key2, value[key2], stack, spacer, indentation);
               if (tmp !== void 0) {
                 res += `${separator}${strEscape(key2)}: ${tmp}`;
-                separator = join8;
+                separator = join9;
               }
             }
             if (keyLength > maximumBreadth) {
               const removedKeys = keyLength - maximumBreadth;
               res += `${separator}"...": "${getItemCount(removedKeys)} not stringified"`;
-              separator = join8;
+              separator = join9;
             }
             if (separator !== "") {
               res = `
@@ -104054,8 +104055,8 @@ var init_server = __esm({
       process9.stderr.write("The size calculation worker must run more frequently than the credits worker for accurate billing");
       process9.exit(1);
     }
-    ownerSizeTotalWorker = ARCHIVE_MODE2 || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker(join62(import.meta.dirname || ".", "serve", "ownerSizeTotalWorker.js"));
-    creditsWorker = ARCHIVE_MODE2 || !CREDITS_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker(join62(import.meta.dirname || ".", "serve", "creditsWorker.js"));
+    ownerSizeTotalWorker = ARCHIVE_MODE2 || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker(join7(import.meta.dirname || ".", "serve", "ownerSizeTotalWorker.js"));
+    creditsWorker = ARCHIVE_MODE2 || !CREDITS_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker(join7(import.meta.dirname || ".", "serve", "creditsWorker.js"));
     ({ CONTRACTS_VERSION, GI_VERSION } = process9.env);
     hapi = new Hapi2.Server({
       // debug: false, // <- Hapi v16 was outputing too many unnecessary debug statements
@@ -110989,10 +110990,40 @@ var ContractBodySchema = object({
   contract: object({ file: string2() }),
   contractSlim: object({ file: string2() }).optional()
 });
+var findManifestFiles = async (path8) => {
+  const entries = Deno.readDir(path8);
+  const manifests = /* @__PURE__ */ new Set();
+  for await (const entry of entries) {
+    const realPath = await Deno.realPath(join42(path8, entry.name));
+    const info = await Deno.lstat(realPath);
+    if (info.isDirectory) {
+      const subitems = await findManifestFiles(realPath);
+      for (const item of subitems) {
+        manifests.add(item);
+      }
+    } else if (entry.name.toLowerCase().endsWith(".manifest.json")) {
+      manifests.add(join42(path8, entry.name));
+    }
+  }
+  return manifests;
+};
 async function deploy(args) {
   const { manifests } = args;
   const toUpload = [];
+  const manifestSet = /* @__PURE__ */ new Set();
   for (const manifestPath of manifests) {
+    const realPath = await Deno.realPath(manifestPath);
+    const info = await Deno.lstat(realPath);
+    if (info.isDirectory) {
+      const items = await findManifestFiles(realPath);
+      for (const item of items) {
+        manifestSet.add(item);
+      }
+    } else {
+      manifestSet.add(realPath);
+    }
+  }
+  for (const manifestPath of manifestSet) {
     const json = JSON.parse(Deno.readTextFileSync(manifestPath));
     const body = ContractBodySchema.parse(JSON.parse(json.body));
     const dirname7 = dirname5(manifestPath);
@@ -111011,7 +111042,7 @@ var module3 = {
       requiresArg: true,
       string: true
     }).positional("manifests", {
-      describe: "Manifest files to deploy",
+      describe: "Manifest files to deploy (directories are also accepted)",
       demandOption: true,
       array: true,
       type: "string"
@@ -111426,7 +111457,7 @@ async function pin(args) {
     console.log(cyan(`\u{1F4CC} Requesting pin to version: ${version4}`));
     console.log(gray(`Manifest: ${manifestPath}`));
     await loadCheloniaConfig();
-    const fullManifestPath = join52(projectRoot, manifestPath);
+    const fullManifestPath = join62(projectRoot, manifestPath);
     if (!existsSync(fullManifestPath)) {
       exit(`Manifest file not found: ${manifestPath}`);
     }
@@ -111449,7 +111480,7 @@ async function pin(args) {
     } else {
       console.log(cyan(`\u{1F4CC} Pinning ${contractName} to version ${version4} (first time)`));
     }
-    const contractVersionDir = join52(projectRoot, "contracts", contractName, version4);
+    const contractVersionDir = join62(projectRoot, "contracts", contractName, version4);
     if (existsSync(contractVersionDir)) {
       if (!args.overwrite && !args["only-changed"]) {
         exit(`Version ${version4} already exists for contract ${contractName}. Use --overwrite to replace it, or --only-changed to update only changed files`);
@@ -111489,20 +111520,20 @@ async function parseManifest(manifestPath) {
   };
 }
 async function createVersionDirectory(contractName, version4) {
-  const versionDir = join52(projectRoot, "contracts", contractName, version4);
+  const versionDir = join62(projectRoot, "contracts", contractName, version4);
   console.log(blue(`\u{1F4C1} Creating directory: contracts/${contractName}/${version4}/`));
   await mkdir3(versionDir, { recursive: true });
 }
 async function copyContractFiles(contractFiles, manifestPath, contractName, version4, args) {
-  const sourceDir = dirname42(join52(projectRoot, manifestPath));
-  const targetDir = join52(projectRoot, "contracts", contractName, version4);
+  const sourceDir = dirname42(join62(projectRoot, manifestPath));
+  const targetDir = join62(projectRoot, "contracts", contractName, version4);
   console.log(gray(`\u{1F4CB} Copying files from manifest: ${contractFiles.main}${contractFiles.slim ? `, ${contractFiles.slim}` : ""}, manifest`));
-  const mainSource = join52(sourceDir, contractFiles.main);
-  const mainTarget = join52(targetDir, contractFiles.main);
+  const mainSource = join62(sourceDir, contractFiles.main);
+  const mainTarget = join62(targetDir, contractFiles.main);
   await copyFileIfNeeded(mainSource, mainTarget, contractFiles.main, args);
   if (contractFiles.slim) {
-    const slimSource = join52(sourceDir, contractFiles.slim);
-    const slimTarget = join52(targetDir, contractFiles.slim);
+    const slimSource = join62(sourceDir, contractFiles.slim);
+    const slimTarget = join62(targetDir, contractFiles.slim);
     try {
       await copyFileIfNeeded(slimSource, slimTarget, contractFiles.slim, args);
     } catch (error) {
@@ -111510,8 +111541,8 @@ async function copyContractFiles(contractFiles, manifestPath, contractName, vers
       console.error(yellow(`\u26A0\uFE0F  Could not copy slim file: ${errorMessage}`));
     }
   }
-  const manifestSource = join52(projectRoot, manifestPath);
-  const manifestTarget = join52(targetDir, basename42(manifestPath));
+  const manifestSource = join62(projectRoot, manifestPath);
+  const manifestTarget = join62(targetDir, basename42(manifestPath));
   await copyFileIfNeeded(manifestSource, manifestTarget, basename42(manifestPath), args);
 }
 async function copyFileIfNeeded(sourcePath, targetPath, fileName, args) {
@@ -111541,7 +111572,7 @@ async function copyFileIfNeeded(sourcePath, targetPath, fileName, args) {
   await copyFile(sourcePath, targetPath);
 }
 async function loadCheloniaConfig() {
-  const configPath = join52(projectRoot, "chelonia.json");
+  const configPath = join62(projectRoot, "chelonia.json");
   cheloniaConfig = { contracts: {} };
   if (existsSync(configPath)) {
     try {
@@ -111565,7 +111596,7 @@ async function updateCheloniaConfig(contractName, version4, manifestPath) {
     version: version4,
     path: pinnedManifestPath
   };
-  const configPath = join52(projectRoot, "chelonia.json");
+  const configPath = join62(projectRoot, "chelonia.json");
   const configContent = JSON.stringify(cheloniaConfig, null, 2) + "\n";
   await writeFile2(configPath, configContent, "utf8");
   console.log(green("\u2705 Updated chelonia.json"));
