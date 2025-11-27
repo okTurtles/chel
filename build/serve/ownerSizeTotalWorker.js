@@ -111598,7 +111598,6 @@ var module10 = {
   command: "pin <manifest-version> <manifest>",
   describe: "Pin a manifest version",
   postHandler: (argv) => {
-    console.error(argv);
     return pin(argv);
   }
 };

@@ -6,10 +6,10 @@ import process from 'node:process'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { exit } from './utils.ts'
 
-type Params = { overwrite: boolean, 'only-changed': boolean, version: string, manifest: string }
+type Params = { overwrite: boolean, 'only-changed': boolean, 'manifest-version': string, manifest: string }
 
 let projectRoot: string
-let cheloniaConfig: { contracts: Record<string, { 'manifest-version': string, path: string }> }
+let cheloniaConfig: { contracts: Record<string, { version: string, path: string }> }
 
 function sanitizeContractName (contractName: string): string {
   return contractName.replace(/[/\\:*?"<>|]/g, '_')
@@ -254,7 +254,6 @@ export const module = {
   command: 'pin <manifest-version> <manifest>',
   describe: 'Pin a manifest version',
   postHandler: (argv) => {
-    console.error(argv)
     return pin(argv)
   }
 } as CommandModule<object, Params>
