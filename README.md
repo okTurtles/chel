@@ -118,18 +118,6 @@ Useful command:
 cp -r path/to/contracts/* test/assets/ && ls ./test/assets/*-slim.js | sed -En 's/.*\/(.*)-slim.js/\1/p' | xargs -I {} ./src/main.ts manifest --out=test/assets/{}.manifest.json --slim test/assets/{}-slim.js key.json test/assets/{}.js && ls ./test/assets/*.manifest.json | xargs ./src/main.ts deploy http://127.0.0.1:8888
 ```
 
-### sha256sum
-
-Current release hashes will always be listed here.
-
-```
-8a267d23405085ac4b01e55fca235b68f07875d1f7898f711c07da5b1d384b80  dist/chel-v3.0.0-aarch64-apple-darwin.tar.gz
-e46f8b42bb8c2c1f0c0263ffa7b28d0b4030f0892f68e65541fe4e4dd7b2f7e4  dist/chel-v3.0.0-aarch64-unknown-linux-gnu.tar.gz
-497468d57887e2a922045d5f82200c99336fd807762f200621a8dc8a761032c1  dist/chel-v3.0.0-x86_64-apple-darwin.tar.gz
-f8fc1dba11045519d172868c54433a983de04248a1bb61edf206eacee6ad65fa  dist/chel-v3.0.0-x86_64-pc-windows-msvc.tar.gz
-301e5fd7fc483f40520090f810d0d463f092b50855e0259aa2dec8b15ee67029  dist/chel-v3.0.0-x86_64-unknown-linux-gnu.tar.gz
-```
-
 ## History
 
 See [HISTORY.md](HISTORY.md)
@@ -137,4 +125,3 @@ See [HISTORY.md](HISTORY.md)
 ## License
 
 [AGPL-3.0](LICENSE)
-
