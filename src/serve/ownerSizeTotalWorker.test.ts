@@ -1,40 +1,16 @@
 import { createCID } from 'npm:@chelonia/lib/functions'
 import sbp from 'npm:@sbp/sbp'
 // import { assert } from 'jsr:@std/assert' // TODO: Use for additional test assertions
+import createWorker from './createWorker.ts'
 import { appendToIndexFactory, initDB, updateSize as updateSize_ } from './database.ts'
 
-let worker = new Worker(new URL('./ownerSizeTotalWorker.ts', import.meta.url), {
-  type: 'module'
-})
-const workerReady = new Promise<void>((resolve, reject) => {
-  worker.onmessage = (event: MessageEvent) => {
-    if (event.data === 'ready') resolve()
-  }
-  worker.onerror = reject
-})
+let worker = createWorker(new URL('./ownerSizeTotalWorker.ts', import.meta.url).toString())
 
 const randInt = (upperBound: number) => Math.random() * upperBound | 0
 
 const updateSize = (resourceID: string, sizeKey: string, size: number) => {
   return updateSize_(resourceID, sizeKey, size).then(() => {
-    return new Promise<void>((resolve, reject) => {
-      const mc = new MessageChannel()
-      mc.port2.onmessage = (event: MessageEvent) => {
-        const [success, result]: [boolean, unknown] = event.data
-        // Ensure ports are closed to prevent resource leaks
-        mc.port1.close()
-        mc.port2.close()
-        if (success) return resolve()
-        reject(result)
-      }
-      mc.port2.onmessageerror = () => {
-        // Close ports on error as well
-        mc.port1.close()
-        mc.port2.close()
-        reject(Error('Message error'))
-      }
-      worker.postMessage([mc.port1, 'worker/updateSizeSideEffects', { resourceID, sizeKey, size }], [mc.port1 as MessagePort])
-    })
+    return worker.rpcSbp('worker/updateSizeSideEffects', { resourceID, sizeKey, size })
   })
 }
 
@@ -224,37 +200,15 @@ async function * randomOp (iterations: number): AsyncGenerator<void, Contract[],
       }
       case 7: {
         console.log('Simulating forcible computation')
-        await new Promise<void>((resolve, reject) => {
-          const mc = new MessageChannel()
-          mc.port2.onmessage = (event: MessageEvent) => {
-            const [success, result]: [boolean, unknown] = event.data
-            mc.port1.close()
-            mc.port2.close()
-            if (success) return resolve()
-            reject(result)
-          }
-          mc.port2.onmessageerror = () => {
-            mc.port1.close()
-            mc.port2.close()
-            reject(Error('Message error'))
-          }
-          worker.postMessage([mc.port1, 'backend/server/computeSizeTaskDeltas'], [mc.port1 as MessagePort])
-        })
+        await worker.rpcSbp('backend/server/computeSizeTaskDeltas')
         break
       }
       case 8: {
         console.log('Simulating server restart')
         await new Promise<void>(resolve => setTimeout(resolve, 250))
         await worker.terminate()
-        worker = new Worker(new URL('./ownerSizeTotalWorker.ts', import.meta.url), {
-          type: 'module'
-        })
-        await new Promise<void>((resolve, reject) => {
-          worker.onmessage = (event: MessageEvent) => {
-            if (event.data === 'ready') resolve()
-          }
-          worker.onerror = reject
-        })
+        worker = createWorker(new URL('./ownerSizeTotalWorker.ts', import.meta.url).toString())
+        await worker.ready
         break
       }
     }
@@ -263,22 +217,7 @@ async function * randomOp (iterations: number): AsyncGenerator<void, Contract[],
   }
 
   // Wait for transactions to be written
-  await new Promise<void>((resolve, reject) => {
-    const mc = new MessageChannel()
-    mc.port2.onmessage = (event: MessageEvent) => {
-      const [success, result]: [boolean, unknown] = event.data
-      mc.port1.close()
-      mc.port2.close()
-      if (success) return resolve()
-      reject(result)
-    }
-    mc.port2.onmessageerror = () => {
-      mc.port1.close()
-      mc.port2.close()
-      reject(Error('Message error'))
-    }
-    worker.postMessage([mc.port1, 'backend/server/computeSizeTaskDeltas'], [mc.port1 as MessagePort])
-  })
+  await worker.rpcSbp('backend/server/computeSizeTaskDeltas')
   return mainContracts
 }
 
@@ -287,7 +226,7 @@ Deno.test({
   async fn (t: Deno.TestContext) {
     // Setup
     await initDB()
-    await workerReady
+    await worker.ready
 
     try {
       await t.step('Simulated events have the expected size', async () => {

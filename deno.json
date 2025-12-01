@@ -62,7 +62,8 @@
     "npm:yargs": "npm:yargs@16.2.0",
     "npm:@types/nconf": "npm:@types/nconf@0.10.7",
     "npm:@types/yargs": "npm:@types/yargs@17.0.34",
-    "npm:smol-toml": "npm:smol-toml@1.4.2"
+    "npm:smol-toml": "npm:smol-toml@1.4.2",
+    "npm:@chelonia/serdes": "npm:@chelonia/serdes@1.0.0"
   },
   "nodeModulesDir": "auto",
   "fmt": {

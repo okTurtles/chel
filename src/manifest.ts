@@ -6,9 +6,10 @@
 import * as colors from 'jsr:@std/fmt/colors'
 import * as path from 'jsr:@std/path/'
 import { EDWARDS25519SHA512BATCH, deserializeKey, keyId, serializeKey, sign } from 'npm:@chelonia/crypto'
+import { multicodes } from 'npm:@chelonia/lib/functions'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { hash } from './hash.ts'
-import { exit, multicodes, readJsonFile, revokeNet } from './utils.ts'
+import { exit, readJsonFile, revokeNet } from './utils.ts'
 
 // import { writeAllSync } from "https://deno.land/std@0.141.0/streams/mod.ts"
 

@@ -4,6 +4,7 @@ import * as path from 'jsr:@std/path/'
 import * as z from 'npm:zod'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { upload } from './upload.ts'
+import { findManifestFiles } from './utils.ts'
 
 // Prefixes to use to select the correct CID to use
 const CONTRACT_TEXT_PREFIX = 't|'
@@ -14,12 +15,27 @@ const ContractBodySchema = z.object({
   contractSlim: z.object({ file: z.string() }).optional(),
 })
 
-type Params = { manifests: string[], url: string }
+type Params = { manifests: string[], url?: string }
 
 export async function deploy (args: ArgumentsCamelCase<Params>): Promise<void> {
   const { manifests } = args
   const toUpload = []
+  const manifestSet = new Set<string>()
+
   for (const manifestPath of manifests) {
+    const realPath = await Deno.realPath(manifestPath)
+    const info = await Deno.lstat(realPath)
+    if (info.isDirectory) {
+      const items = await findManifestFiles(realPath)
+      for (const item of items) {
+        manifestSet.add(item)
+      }
+    } else {
+      manifestSet.add(realPath)
+    }
+  }
+
+  for (const manifestPath of manifestSet) {
     const json = JSON.parse(Deno.readTextFileSync(manifestPath)) as { body: string }
     const body = ContractBodySchema.parse(JSON.parse(json.body))
     const dirname = path.dirname(manifestPath)
@@ -29,6 +45,7 @@ export async function deploy (args: ArgumentsCamelCase<Params>): Promise<void> {
     }
     toUpload.push(CONTRACT_MANIFEST_PREFIX + manifestPath)
   }
+
   await upload({ ...args, files: toUpload }, true)
 }
 
@@ -41,7 +58,7 @@ export const module = {
         string: true
       })
       .positional('manifests', {
-        describe: 'Manifest files to deploy',
+        describe: 'Manifest files to deploy (directories are also accepted)',
         demandOption: true,
         array: true,
         type: 'string'
