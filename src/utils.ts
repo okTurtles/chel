@@ -1,5 +1,6 @@
 import * as colors from 'jsr:@std/fmt/colors'
 import * as path from 'jsr:@std/path/'
+import { join } from 'node:path'
 import blake from 'npm:@multiformats/blake2'
 import { base58btc } from 'npm:multiformats/bases/base58'
 import { CID } from 'npm:multiformats/cid'
@@ -141,4 +142,23 @@ export async function shell (
   }
 
   return decoder.decode(stdout).trim()
+}
+
+export const findManifestFiles = async (path: string) => {
+  const entries = Deno.readDir(path)
+  const manifests = new Set<string>()
+  for await (const entry of entries) {
+    const realPath = await Deno.realPath(join(path, entry.name))
+    const info = await Deno.lstat(realPath)
+    if (info.isDirectory) {
+      const subitems = await findManifestFiles(realPath)
+      for (const item of subitems) {
+        manifests.add(item)
+      }
+    } else if (entry.name.toLowerCase().endsWith('.manifest.json')) {
+      manifests.add(join(path, entry.name))
+    }
+  }
+
+  return manifests
 }

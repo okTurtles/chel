@@ -4,7 +4,7 @@ import * as path from 'jsr:@std/path/'
 import * as z from 'npm:zod'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { upload } from './upload.ts'
-import { join } from 'node:path'
+import { findManifestFiles } from './utils.ts'
 
 // Prefixes to use to select the correct CID to use
 const CONTRACT_TEXT_PREFIX = 't|'
@@ -15,26 +15,7 @@ const ContractBodySchema = z.object({
   contractSlim: z.object({ file: z.string() }).optional(),
 })
 
-type Params = { manifests: string[], url: string }
-
-const findManifestFiles = async (path) => {
-  const entries = Deno.readDir(path)
-  const manifests= new Set<string>()
-  for await (const entry of entries) {
-    const realPath = await Deno.realPath(join(path, entry.name))
-    const info = await Deno.lstat(realPath)
-    if (info.isDirectory) {
-      const subitems = await findManifestFiles(realPath)
-      for (const item of subitems) {
-        manifests.add(item)
-      }
-    } else if (entry.name.toLowerCase().endsWith('.manifest.json')) {
-      manifests.add(join(path, entry.name))
-    }
-  }
-
-  return manifests
-}
+type Params = { manifests: string[], url?: string }
 
 export async function deploy (args: ArgumentsCamelCase<Params>): Promise<void> {
   const { manifests } = args

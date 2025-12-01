@@ -3467,7 +3467,7 @@ import process10 from "node:process";
 import { parentPort } from "node:worker_threads";
 import process12 from "node:process";
 import { Buffer as Buffer12 } from "node:buffer";
-import { join as join42 } from "node:path";
+import { join as join32 } from "node:path";
 
 // deno:https://jsr.io/@std/encoding/1.0.10/_common64.ts
 var padding = "=".charCodeAt(0);
@@ -53743,6 +53743,7 @@ var production;
 var KEYOP_SEGMENT_LENGTH;
 var updateSize;
 var database_default;
+var initedDB;
 var initDB;
 var appendToIndexFactory;
 var appendToNamesIndex;
@@ -53891,81 +53892,86 @@ var init_database = __esm({
         return value;
       }
     });
+    initedDB = false;
     initDB = async ({ skipDbPreloading } = {}) => {
-      const backend = import_npm_nconf2.default.get("database:backend");
-      const persistence = backend || (production ? "fs" : void 0);
-      const options2 = import_npm_nconf2.default.get("database:backendOptions");
-      const ARCHIVE_MODE3 = import_npm_nconf2.default.get("server:archiveMode");
-      if (persistence && persistence !== "mem") {
-        const Ctor = (await globImport_database_ts2(`./database-${persistence}.ts`)).default;
-        const { init: init2, readData, writeData, deleteData, iterKeys, keyCount, close } = new Ctor(options2[persistence]);
-        await init2();
-        esm_default("okTurtles.events/once", SERVER_EXITING, () => {
-          esm_default("okTurtles.eventQueue/queueEvent", SERVER_EXITING, async () => {
-            try {
-              await close();
-            } catch (e2) {
-              console.error(e2, `Error closing DB ${persistence}`);
+      if (!initedDB) {
+        const backend = import_npm_nconf2.default.get("database:backend");
+        const persistence = backend || (production ? "fs" : void 0);
+        const options2 = import_npm_nconf2.default.get("database:backendOptions");
+        const ARCHIVE_MODE3 = import_npm_nconf2.default.get("server:archiveMode");
+        if (persistence && persistence !== "mem") {
+          const Ctor = (await globImport_database_ts2(`./database-${persistence}.ts`)).default;
+          const { init: init2, readData, writeData, deleteData, iterKeys, keyCount, close } = new Ctor(options2[persistence]);
+          await init2();
+          esm_default("okTurtles.events/once", SERVER_EXITING, () => {
+            esm_default("okTurtles.eventQueue/queueEvent", SERVER_EXITING, async () => {
+              try {
+                await close();
+              } catch (e2) {
+                console.error(e2, `Error closing DB ${persistence}`);
+              }
+            });
+          });
+          const cache3 = new import_npm_lru_cache.default({
+            max: import_npm_nconf2.default.get("database:lruNumItems") ?? 1e4
+          });
+          const prefixes = Object.keys(prefixHandlers);
+          esm_default("sbp/selectors/overwrite", {
+            "chelonia.db/get": async function(prefixableKey, { bypassCache } = {}) {
+              if (!bypassCache) {
+                const lookupValue = cache3.get(prefixableKey);
+                if (lookupValue !== void 0) {
+                  return lookupValue;
+                }
+              }
+              const [prefix, key] = parsePrefixableKey(prefixableKey);
+              let value = await readData(key);
+              if (value === void 0) {
+                return;
+              }
+              value = prefixHandlers[prefix](value);
+              cache3.set(prefixableKey, value);
+              return value;
+            },
+            "chelonia.db/set": async function(key, value) {
+              if (ARCHIVE_MODE3) throw new Error("Unable to write in archive mode");
+              checkKey(key);
+              if (key.startsWith("_private_immutable")) {
+                const existingValue = await readData(key);
+                if (existingValue !== void 0) {
+                  throw new Error("Cannot set already set immutable key");
+                }
+              }
+              await writeData(key, value);
+              prefixes.forEach((prefix) => {
+                cache3.delete(prefix + key);
+              });
+            },
+            "chelonia.db/delete": async function(key) {
+              if (ARCHIVE_MODE3) throw new Error("Unable to write in archive mode");
+              checkKey(key);
+              if (key.startsWith("_private_immutable")) {
+                throw new Error("Cannot delete immutable key");
+              }
+              await deleteData(key);
+              prefixes.forEach((prefix) => {
+                cache3.delete(prefix + key);
+              });
+            },
+            "chelonia.db/iterKeys": () => {
+              return iterKeys();
+            },
+            "chelonia.db/keyCount": () => {
+              return keyCount();
             }
           });
-        });
-        const cache3 = new import_npm_lru_cache.default({
-          max: import_npm_nconf2.default.get("database:lruNumItems") ?? 1e4
-        });
-        const prefixes = Object.keys(prefixHandlers);
-        esm_default("sbp/selectors/overwrite", {
-          "chelonia.db/get": async function(prefixableKey, { bypassCache } = {}) {
-            if (!bypassCache) {
-              const lookupValue = cache3.get(prefixableKey);
-              if (lookupValue !== void 0) {
-                return lookupValue;
-              }
-            }
-            const [prefix, key] = parsePrefixableKey(prefixableKey);
-            let value = await readData(key);
-            if (value === void 0) {
-              return;
-            }
-            value = prefixHandlers[prefix](value);
-            cache3.set(prefixableKey, value);
-            return value;
-          },
-          "chelonia.db/set": async function(key, value) {
-            if (ARCHIVE_MODE3) throw new Error("Unable to write in archive mode");
-            checkKey(key);
-            if (key.startsWith("_private_immutable")) {
-              const existingValue = await readData(key);
-              if (existingValue !== void 0) {
-                throw new Error("Cannot set already set immutable key");
-              }
-            }
-            await writeData(key, value);
-            prefixes.forEach((prefix) => {
-              cache3.delete(prefix + key);
-            });
-          },
-          "chelonia.db/delete": async function(key) {
-            if (ARCHIVE_MODE3) throw new Error("Unable to write in archive mode");
-            checkKey(key);
-            if (key.startsWith("_private_immutable")) {
-              throw new Error("Cannot delete immutable key");
-            }
-            await deleteData(key);
-            prefixes.forEach((prefix) => {
-              cache3.delete(prefix + key);
-            });
-          },
-          "chelonia.db/iterKeys": () => {
-            return iterKeys();
-          },
-          "chelonia.db/keyCount": () => {
-            return keyCount();
-          }
-        });
-        esm_default("sbp/selectors/lock", ["chelonia.db/get", "chelonia.db/set", "chelonia.db/delete", "chelonia.db/iterKeys"]);
+          esm_default("sbp/selectors/lock", ["chelonia.db/get", "chelonia.db/set", "chelonia.db/delete", "chelonia.db/iterKeys"]);
+        }
+        initedDB = true;
       }
-      if (skipDbPreloading) return;
+      if (skipDbPreloading || initedDB === "preloaded") return;
       await Promise.all([initVapid(), initZkpp()]);
+      initedDB = "preloaded";
     };
     appendToIndexFactory = (key) => {
       return (value) => {
@@ -104534,7 +104540,7 @@ var init_serve = __esm({
     };
     ["backend"].forEach((domain) => esm_default("sbp/filters/domain/add", domain, logSBP));
     [].forEach((sel) => esm_default("sbp/filters/selector/add", sel, logSBP));
-    serve_default = new Promise((resolve8, reject) => {
+    serve_default = () => new Promise((resolve8, reject) => {
       esm_default("okTurtles.events/on", SERVER_RUNNING, function() {
         console.info(import_npm_chalk4.default.bold("backend startup sequence complete."));
         resolve8();
@@ -104592,10 +104598,6 @@ var init_serve = __esm({
       ["SIGUSR1", 10],
       ["SIGUSR2", 11]
     ].forEach(([signal, code2]) => handleSignal(signal, code2));
-    process10.on("message", (message) => {
-      console.info("message received in child, shutting down...", message);
-      exit2(0);
-    });
   }
 });
 init_esm();
@@ -110911,6 +110913,23 @@ var readJsonFile = async (file) => {
   const contents = await Deno.readTextFile(resolve5(String(file)));
   return JSON.parse(contents);
 };
+var findManifestFiles = async (path8) => {
+  const entries = Deno.readDir(path8);
+  const manifests = /* @__PURE__ */ new Set();
+  for await (const entry of entries) {
+    const realPath = await Deno.realPath(join32(path8, entry.name));
+    const info = await Deno.lstat(realPath);
+    if (info.isDirectory) {
+      const subitems = await findManifestFiles(realPath);
+      for (const item of subitems) {
+        manifests.add(item);
+      }
+    } else if (entry.name.toLowerCase().endsWith(".manifest.json")) {
+      manifests.add(join32(path8, entry.name));
+    }
+  }
+  return manifests;
+};
 async function upload(args, internal = false) {
   const { url, files } = args;
   if (!url) {
@@ -110993,23 +111012,6 @@ var ContractBodySchema = object({
   contract: object({ file: string2() }),
   contractSlim: object({ file: string2() }).optional()
 });
-var findManifestFiles = async (path8) => {
-  const entries = Deno.readDir(path8);
-  const manifests = /* @__PURE__ */ new Set();
-  for await (const entry of entries) {
-    const realPath = await Deno.realPath(join42(path8, entry.name));
-    const info = await Deno.lstat(realPath);
-    if (info.isDirectory) {
-      const subitems = await findManifestFiles(realPath);
-      for (const item of subitems) {
-        manifests.add(item);
-      }
-    } else if (entry.name.toLowerCase().endsWith(".manifest.json")) {
-      manifests.add(join42(path8, entry.name));
-    }
-  }
-  return manifests;
-};
 async function deploy(args) {
   const { manifests } = args;
   const toUpload = [];
@@ -111632,21 +111634,79 @@ var module10 = {
     return pin(argv);
   }
 };
+init_esm();
+init_esm5();
+async function watch(args) {
+  const dir = args["manifests-dir"];
+  const manifests = await findManifestFiles(dir);
+  await deploy({
+    ...args,
+    manifests: Array.from(manifests)
+  });
+  const manifestSet = /* @__PURE__ */ new Set();
+  const watcher = Deno.watchFs(dir, { recursive: true });
+  const queueName = "internal:manifests-watch";
+  const debouncedRedeploy = debounce(() => {
+    if (manifestSet.size === 0) return;
+    esm_default("okTurtles.eventQueue/queueEvent", queueName, () => {
+      const manifests2 = Array.from(manifestSet);
+      manifestSet.clear();
+      deploy({
+        ...args,
+        manifests: manifests2
+      }).catch((e2) => {
+        console.warn(e2, "Error deploying contracts");
+      });
+    });
+  }, 100);
+  (async () => {
+    for await (const event of watcher) {
+      if (event.kind === "remove") {
+        event.paths.forEach((path8) => manifestSet.delete(path8));
+        continue;
+      }
+      if (event.kind !== "create" && event.kind !== "modify") continue;
+      const manifests2 = event.paths.filter((path8) => path8.toLowerCase().endsWith(".manifest.json"));
+      for (const manifestPath of manifests2) {
+        try {
+          await esm_default("okTurtles.eventQueue/queueEvent", queueName, async () => {
+            const realPath = await Deno.realPath(manifestPath);
+            const info = await Deno.lstat(realPath);
+            if (!info.isDirectory) {
+              manifestSet.add(manifestPath);
+            }
+          });
+        } catch (e2) {
+          console.warn(e2, "Error during watch");
+        }
+      }
+      debouncedRedeploy();
+    }
+  })();
+}
 async function startDashboardServer() {
   const dashboardServer = await Promise.resolve().then(() => (init_dashboard_server(), dashboard_server_exports));
   await dashboardServer.startDashboard();
 }
 async function startApplicationServer() {
   const startServer = await Promise.resolve().then(() => (init_serve(), serve_exports));
-  await startServer.default;
+  await startServer.default();
 }
-async function serve(_args) {
+async function serve(args) {
   try {
     try {
       await startDashboardServer();
     } catch (error) {
       console.error(red("\u274C Failed to start dashboard server:"), error);
       throw error;
+    }
+    if (args.dev) {
+      try {
+        await watch(args);
+      } catch (error) {
+        console.error(red("\u274C Failed to preload contracts:"), error);
+        throw error;
+      }
     }
     try {
       await startApplicationServer();
@@ -111673,7 +111733,17 @@ var module11 = {
       describe: "Port to listen on (dashboard)",
       requiresArg: true,
       number: true
-    }).alias("d", "dashboard-port").alias("server:dashboardPort", "dashboard-port").positional("directory", {
+    }).alias("a", "dashboard-port").alias("server:dashboardPort", "dashboard-port").option("dev", {
+      default: false,
+      describe: "Development mode",
+      requiresArg: false,
+      boolean: true
+    }).alias("d", "dev").option("manifests-dir", {
+      default: "contracts",
+      describe: "Directory for contracts",
+      requiresArg: true,
+      string: true
+    }).alias("m", "manifests-dir").positional("directory", {
       default: ".",
       describe: "Directory",
       type: "string"
