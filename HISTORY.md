@@ -1,5 +1,15 @@
 # HISTORY
 
+### v3.1.0
+
+- `chel serve` now serves apps (thx @akhileshthite and @corrideat)
+- `chel migrate` now migrates the database from one backend to another
+- adds full Redis database backend support (thx @corrideat)
+- configuration now powered by `nconf` via `chel.toml` (thx @corrideat)
+- `npx` replaced with `deno` (thx @taoeffect)
+- `axios` replaced with `fetch` (thx @harshjainh2j)
+- SASS deprecation warnings removed (thx @SebinSong)
+
 ### v3.0.0
 
 - Breaking change: sses new Shelter Protocol CIDs to be able to identify hashes for manifests, contracts, events, and files.
