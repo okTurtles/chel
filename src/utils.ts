@@ -1,23 +1,7 @@
 import * as colors from 'jsr:@std/fmt/colors'
 import * as path from 'jsr:@std/path/'
 import { join } from 'node:path'
-import blake from 'npm:@multiformats/blake2'
-import { base58btc } from 'npm:multiformats/bases/base58'
-import { CID } from 'npm:multiformats/cid'
-
-// We can update these constants later if we want.
-const multibase = base58btc
-// Values from https://github.com/multiformats/multicodec/blob/master/table.csv
-export const multicodes = {
-  RAW: 0x00,
-  JSON: 0x0200,
-  SHELTER_CONTRACT_MANIFEST: 0x511e00,
-  SHELTER_CONTRACT_TEXT: 0x511e01,
-  SHELTER_CONTRACT_DATA: 0x511e02,
-  SHELTER_FILE_MANIFEST: 0x511e03,
-  SHELTER_FILE_CHUNK: 0x511e04
-}
-const multihasher = blake.blake2b.blake2b256
+import { createCID } from 'npm:@chelonia/lib/functions'
 
 // For now our entry keys are CIDs serialized to base58btc and our values are always Uint8Array instances.
 export type Entry = [string, Uint8Array<ArrayBuffer>]
@@ -32,14 +16,6 @@ export async function createEntryFromFile (filepath: string, multicode: number):
   const buffer = await Deno.readFile(filepath)
   const key = createCID(buffer, multicode)
   return [key, buffer]
-}
-
-// TODO: implement a streaming hashing function for large files.
-// Note: in fact this returns a serialized CID, not a CID object.
-export function createCID (data: string | Uint8Array, multicode = multicodes.RAW): string {
-  const uint8array = typeof data === 'string' ? new TextEncoder().encode(data) : data
-  const digest = multihasher.digest(uint8array)
-  return CID.create(1, multicode, digest).toString(multibase.encoder)
 }
 
 export function exit (x: unknown, internal = false): never {

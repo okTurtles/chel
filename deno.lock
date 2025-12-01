@@ -27,16 +27,14 @@
     "npm:@apeleghq/rfc8188@*": "1.0.7",
     "npm:@apeleghq/rfc8188@1.0.7": "1.0.7",
     "npm:@chelonia/crypto@*": "1.0.1",
-    "npm:@chelonia/crypto@1.0.1": "1.0.1",
     "npm:@chelonia/lib@*": "1.2.7_@sbp+sbp@2.4.1",
     "npm:@chelonia/lib@1.2.7": "1.2.7_@sbp+sbp@2.4.1",
     "npm:@chelonia/lib@1.2.8": "1.2.8_@sbp+sbp@2.4.1",
+    "npm:@chelonia/serdes@1.0.0": "1.0.0",
     "npm:@eslint/js@9.31.0": "9.31.0",
     "npm:@hapi/boom@10.0.1": "10.0.1",
     "npm:@hapi/hapi@21.4.3": "21.4.3",
     "npm:@hapi/inert@7.1.0": "7.1.0",
-    "npm:@multiformats/blake2@*": "1.0.13",
-    "npm:@multiformats/blake2@1.0.13": "1.0.13",
     "npm:@sbp/okturtles.data@0.1.5": "0.1.5_@sbp+sbp@2.4.1",
     "npm:@sbp/okturtles.data@0.1.7": "0.1.7_@sbp+sbp@2.4.1",
     "npm:@sbp/okturtles.eventqueue@1.2.0": "1.2.0_@sbp+sbp@2.4.1",
@@ -63,7 +61,6 @@
     "npm:pino@8.19.0": "8.19.0",
     "npm:redis@5.9.0": "5.9.0_@redis+client@5.9.0",
     "npm:rimraf@3.0.2": "3.0.2",
-    "npm:scrypt-async@2.0.1": "2.0.1",
     "npm:smol-toml@1.4.2": "1.4.2",
     "npm:tar@6.2.1": "6.2.1",
     "npm:three@0.151.3": "0.151.3",
@@ -848,13 +845,6 @@
     "@humanwhocodes/retry@0.4.3": {
       "integrity": "sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ=="
     },
-    "@multiformats/blake2@1.0.13": {
-      "integrity": "sha512-T1Kzya0wjj85CaVeRSpJ858EnSvW1pw94GSitxYf84VsNdv5XYbJ6QG8y26Ft1bVALzrUCmqkQrR53QHSyu6RA==",
-      "dependencies": [
-        "blakejs",
-        "multiformats@9.9.0"
-      ]
-    },
     "@nodelib/fs.scandir@2.1.5": {
       "integrity": "sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==",
       "dependencies": [
@@ -1013,7 +1003,7 @@
     "@sbp/okturtles.eventqueue@1.2.0_@sbp+sbp@2.4.1": {
       "integrity": "sha512-u+ErtLInzVXs3eUV9I7B2l7Jj0NxDBJD9erCGmIZmgNwJfkH3B8iLk6HMyA3nGe/PHgv6GbBBC1tKjNuazhXNg==",
       "dependencies": [
-        "@sbp/okturtles.data@0.1.5_@sbp+sbp@2.4.1",
+        "@sbp/okturtles.data@0.1.7_@sbp+sbp@2.4.1",
         "@sbp/sbp"
       ]
     },
@@ -1026,14 +1016,14 @@
     "@sbp/okturtles.events@1.0.0_@sbp+sbp@2.4.1": {
       "integrity": "sha512-5Yv0xwgo79rGC84oDYCqvbY857SxqntfYVh4645HuAzQsbjuHdjaao2/0/zU/QptiVd7a9tgkzIDFEqFlsHdZw==",
       "dependencies": [
-        "@sbp/okturtles.data@0.1.5_@sbp+sbp@2.4.1",
+        "@sbp/okturtles.data@0.1.7_@sbp+sbp@2.4.1",
         "@sbp/sbp"
       ]
     },
     "@sbp/okturtles.events@1.0.1_@sbp+sbp@2.4.1": {
       "integrity": "sha512-cFPGjx0sw9fBLK7yWaumM2HYJc+kW+4tP7zTpio6MfMsdKA1iTM/mNkxjIHTCnp50YUYA7ZYcresj2WZLrB0zA==",
       "dependencies": [
-        "@sbp/okturtles.data@0.1.6_@sbp+sbp@2.4.1",
+        "@sbp/okturtles.data@0.1.7_@sbp+sbp@2.4.1",
         "@sbp/sbp"
       ]
     },
@@ -2261,9 +2251,6 @@
     "multiformats@11.0.2": {
       "integrity": "sha512-b5mYMkOkARIuVZCpvijFj9a6m5wMVLC7cf/jIPd5D/ARDOfLC5+IFkbgDXQgcU2goIsTD/O9NY4DI/Mt4OGvlg=="
     },
-    "multiformats@9.9.0": {
-      "integrity": "sha512-HoMUjhH9T8DDBNT+6xzkrd9ga/XiBI4xLr58LJACwK6G3HTOPeMz4nB4KJs33L2BelrIJa7P0VuNaVF3hMYfjg=="
-    },
     "nanoid@3.3.11": {
       "integrity": "sha512-N8SpfPUnUp1bK+PMYW8qSWdl9U+wwNWI4QKxOYDy9JAro3WMX7p2OeVRF9v+347pnakNevPmiHhNmZ2HbFA76w==",
       "bin": true
@@ -3149,6 +3136,7 @@
       "jsr:@std/streams@1.0.10",
       "npm:@apeleghq/rfc8188@1.0.7",
       "npm:@chelonia/lib@1.2.8",
+      "npm:@chelonia/serdes@1.0.0",
       "npm:@eslint/js@9.31.0",
       "npm:@hapi/boom@10.0.1",
       "npm:@hapi/hapi@21.4.3",

@@ -1,9 +1,10 @@
 import * as colors from 'jsr:@std/fmt/colors'
 import * as path from 'jsr:@std/path/'
 import { verifySignature as cryptoVerifySignature, deserializeKey, keyId } from 'npm:@chelonia/crypto'
+import { multicodes } from 'npm:@chelonia/lib/functions'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { hash } from './hash.ts'
-import { exit, multicodes, readJsonFile, revokeNet } from './utils.ts'
+import { exit, readJsonFile, revokeNet } from './utils.ts'
 
 type Params = { key?: string, manifestFile: string }
 
