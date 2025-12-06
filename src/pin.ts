@@ -12,7 +12,7 @@ let projectRoot: string
 let cheloniaConfig: { contracts: Record<string, { version: string, path: string }> }
 
 function sanitizeContractName (contractName: string): string {
-  return contractName.replace(/[/\\:*?"<>|]/g, '_')
+  return contractName.replace(/[/\\:*?"<>|]/g, '_').replace(/\.\./g, '__')
 }
 
 export async function pin (args: ArgumentsCamelCase<Params>): Promise<void> {

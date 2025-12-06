@@ -4693,6 +4693,7 @@ esm_default("sbp/selectors/register", {
   "chelonia.db/*": rpc
 });
 self.addEventListener("message", (ev) => {
+  if (!Array.isArray(ev.data) || ev.data.length < 1) return;
   const [port, ...msg] = ev.data;
   if (!port) return;
   esm_default("okTurtles.eventQueue/queueEvent", readyQueueName, () => {

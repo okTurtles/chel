@@ -8,6 +8,7 @@
     "test": "deno task lint && database__backendOptions__fs__skipFsCaseSensitivityCheck=true deno test --unstable-worker-options --allow-read=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-write=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-env --allow-ffi --allow-net --allow-sys"
   },
   "imports": {
+    "@db/sqlite": "jsr:@db/sqlite@^0.13.0",
     "~/": "./src/",
     "assert": "node:assert",
     "buffer": "node:buffer",
@@ -23,7 +24,7 @@
     "jsr:@std/path/": "jsr:@std/path@1.1.1/",
     "jsr:@std/streams/": "jsr:@std/streams@1.0.10/",
     "jsr:@std/io/": "jsr:@std/io@0.225.2/",
-    "jsr:@db/sqlite": "jsr:@db/sqlite@0.12.0",
+    "jsr:@db/sqlite": "jsr:@db/sqlite@0.13.0",
     "npm:@types/node": "npm:@types/node@24.0.13",
     "npm:@vue/component-compiler": "npm:@vue/component-compiler@4.2.4",
     "npm:@sbp/sbp": "npm:@sbp/sbp@2.4.1",

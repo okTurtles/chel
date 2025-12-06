@@ -120,21 +120,32 @@ export async function shell (
   return decoder.decode(stdout).trim()
 }
 
-export const findManifestFiles = async (path: string) => {
-  const entries = Deno.readDir(path)
-  const manifests = new Set<string>()
-  for await (const entry of entries) {
-    const realPath = await Deno.realPath(join(path, entry.name))
-    const info = await Deno.lstat(realPath)
-    if (info.isDirectory) {
-      const subitems = await findManifestFiles(realPath)
-      for (const item of subitems) {
-        manifests.add(item)
-      }
-    } else if (entry.name.toLowerCase().endsWith('.manifest.json')) {
-      manifests.add(join(path, entry.name))
+export const findManifestFiles = async (path: string): Promise<Set<string>> => {
+  const visited = new Set<string>()
+  const internal = async (path: string) => {
+    const entries = Deno.readDir(path)
+    if (visited.has(path)) {
+      return new Set<string>()
     }
+    visited.add(path)
+
+    const manifests = new Set<string>()
+    for await (const entry of entries) {
+      const realPath = await Deno.realPath(join(path, entry.name))
+      const info = await Deno.lstat(realPath)
+      if (info.isDirectory) {
+        const subitems = await internal(realPath)
+        for (const item of subitems) {
+          manifests.add(item)
+        }
+      } else if (entry.name.toLowerCase().endsWith('.manifest.json')) {
+        manifests.add(join(path, entry.name))
+      }
+    }
+
+    return manifests
   }
 
-  return manifests
+  const realPath = await Deno.realPath(path)
+  return internal(realPath)
 }

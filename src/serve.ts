@@ -34,27 +34,33 @@ async function watch (args: ArgumentsCamelCase<Params>): Promise<void> {
   }, 100)
 
   ;(async () => {
-    for await (const event of watcher) {
-      if (event.kind === 'remove') {
-        event.paths.forEach((path) => manifestSet.delete(path))
-        continue
-      }
-      if (event.kind !== 'create' && event.kind !== 'modify') continue
-      const manifests = event.paths.filter((path) => path.toLowerCase().endsWith('.manifest.json'))
-      for (const manifestPath of manifests) {
-        try {
-          await sbp('okTurtles.eventQueue/queueEvent', queueName, async () => {
-            const realPath = await Deno.realPath(manifestPath)
-            const info = await Deno.lstat(realPath)
-            if (!info.isDirectory) {
-              manifestSet.add(manifestPath)
-            }
-          })
-        } catch (e) {
-          console.warn(e, 'Error during watch')
+    try {
+      for await (const event of watcher) {
+        if (event.kind === 'remove') {
+          event.paths.forEach((path) => manifestSet.delete(path))
+          continue
         }
+        if (event.kind !== 'create' && event.kind !== 'modify') continue
+        const manifests = event.paths.filter((path) => path.toLowerCase().endsWith('.manifest.json'))
+        for (const manifestPath of manifests) {
+          try {
+            await sbp('okTurtles.eventQueue/queueEvent', queueName, async () => {
+              const realPath = await Deno.realPath(manifestPath)
+              const info = await Deno.lstat(realPath)
+              if (!info.isDirectory) {
+                manifestSet.add(manifestPath)
+              }
+            })
+          } catch (e) {
+            console.warn(e, 'Error during watch')
+          }
+        }
+        debouncedRedeploy()
       }
-      debouncedRedeploy()
+    } catch (e) {
+      console.error('Watch loop error:', e)
+    } finally {
+      watcher.close()
     }
   })()
 }

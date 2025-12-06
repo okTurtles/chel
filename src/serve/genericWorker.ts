@@ -66,7 +66,8 @@ sbp('sbp/selectors/register', {
 })
 
 self.addEventListener('message', (ev) => {
-  const [port, ...msg]: [MessagePort, ...unknown[]] = ev.data
+  if (!Array.isArray(ev.data) || ev.data.length < 1) return
+  const [port, ...msg] = ev.data as [MessagePort, ...unknown[]]
   if (!port) return
 
   sbp('okTurtles.eventQueue/queueEvent', readyQueueName, () => {

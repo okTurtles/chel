@@ -8,9 +8,8 @@ Modern CLI for Chelonia contract development, deployment, and management.
 chel
 chel help [command]
 chel version
-chel dev [--dp <port>] [--port <port>] [--debug]
 chel build
-chel pin <version> <manifest-file-path> [--only-changed | --overwrite] [--key <keyfile>]
+chel pin <version> <manifest-file-path> [--only-changed | --overwrite]
 chel test
 chel keygen [--out=<key.json>]
 chel manifest [-k|--key <pubkey1> [-k|--key <pubkey2> ...]] [--out=<manifest.json>] [-s|--slim <contract-slim.js>] [-v|--version <version>] <key.json> <contract-bundle.js>
@@ -40,11 +39,7 @@ Note: in many (if not all) instances, the `<url>` parameter can refer to a local
 **Workflow:**
 1. **Generate keys**: Use `chel keygen` to create cryptographic key files (required for production)
 2. **Pin from manifest**: Use `chel pin` with the manifest file path
-3. **Re-sign**: Use `--key` flag to re-sign manifest after copying contract files
-4. **Contract files copied**: Contract files (main/slim) and manifest are copied to new structure
-
-**Why Re-signing is Important:**
-Contract manifests contain contract hashes and original signing keys - re-signing with `--key` is required for further operations with your own cryptographic keys.
+3. **Contract files copied**: Contract files (main/slim) and manifest are copied to new structure
 
 **Usage Examples:**
 ```bash
@@ -52,11 +47,11 @@ Contract manifests contain contract hashes and original signing keys - re-signin
 chel keygen
 
 # Then pin contracts with re-signing
-chel pin <version> <manifest-file-path> --key <keyfile>
+chel pin <version> <manifest-file-path>
 
 # Pin specific contract to a version using its manifest (from dist/contracts)
-chel pin 2.0.5 dist/contracts/2.0.5/chatroom.2.0.5.manifest.json --key edwards25519sha512batch-xxxxx.json
-chel pin 2.0.0 dist/contracts/2.0.0/group.2.0.0.manifest.json --key edwards25519sha512batch-yyyyy.json
+chel pin 2.0.5 dist/contracts/2.0.5/chatroom.2.0.5.manifest.json
+chel pin 2.0.0 dist/contracts/2.0.0/group.2.0.0.manifest.json
 
 # Switch versions efficiently with --only-changed
 chel pin 2.0.6 dist/contracts/2.0.6/chatroom.2.0.6.manifest.json --only-changed
@@ -108,14 +103,13 @@ chel serve [options] <directory>
 
 OPTIONS
 
---dp <port>        set dashboard port (default: 8888)
---port <port>      set application port (default: 8000)
---db-type <type>   one of: files, sqlite, mem (default: mem)
---db-location <loc>  for "files", a directory, for "sqlite", path to sqlite database
+--dashboard-port <port>  set dashboard port (default: 8888)
+--port           <port>  set application port (default: 8000)
+--dev                    start in development mode (watch and redeploy contract manifests)
 ```
 
 > [!IMPORTANT]  
-> **Prerequisites:** Ensure your application directory contains a `contracts/` directory with the correct contract structure before running `chel serve`. The server automatically preloads all contract manifests found in `contracts/<contract-name>/<version>/` directories into the database on startup.
+> **Prerequisites:** Ensure your application directory contains a `contracts/` directory with the correct contract structure before running `chel serve`. The server automatically preloads all contract manifests found in `contracts/<contract-name>/<version>/` directories into the database on startup in development mode.
 
 **Example Output:**
 ```bash
@@ -140,7 +134,7 @@ chel serve
 chel serve ./gi-v2.0.0
 
 # Serve with custom ports and SQLite database
-chel serve --dp 8888 --port 8000 --db-type sqlite --db-location ./app.db ./my-app
+chel serve --dashboard-port 8888 --port 8000 ./my-app
 ```
 
 **What happens during startup:**
@@ -149,20 +143,6 @@ chel serve --dp 8888 --port 8000 --db-type sqlite --db-location ./app.db ./my-ap
 3. **Database Preloading** - Deploys all contracts with content-addressed storage
 4. **Server Startup** - Starts dashboard and application servers
 5. **Ready for Development** - All historical contracts available for message processing
-
-### `chel dev` - Live Development Environment
-
-🧪 **Live-testing environment with hot reload and contract interaction**
-
-It provides a complete development server with automatic contract redeployment when files change.
-
-**Usage:**
-```bash
-chel dev
-chel dev --dp 8888
-chel dev --port 8000
-chel dev --debug
-```
 
 ### `chel keygen`
 
@@ -187,10 +167,8 @@ chel serve [options] <directory>
 
 OPTIONS
 
---dp <port>        set dashboard port (default: 8888)
---port <port>      set application port (default: 8000)
---db-type <type>   one of: files, sqlite, mem (default: mem)
---db-location <loc>  for "files", a directory, for "sqlite", path to sqlite database
+--dashboard-port <port>    set dashboard port (default: 8888)
+--port           <port>    set application port (default: 8000)
 ```
 
 **Example:**
@@ -199,14 +177,14 @@ OPTIONS
 chel serve ./gi-v2.0.0
 
 # Serve with custom ports and SQLite database
-chel serve --dp 8888 --port 8000 --db-type sqlite --db-location ./app.db ./my-app
+chel serve --dashboard-port 8888 --port 8000 ./my-app
 ```
 
 The serve command will:
 - Start a dashboard server (default: http://localhost:8888)
 - Start an application server (default: http://localhost:8000)
 - Serve static assets and handle API routes
-- Support different database backends (memory, filesystem, SQLite)
+- Support different database backends (memory, filesystem, SQLite, Redis)
 
 ### `chel manifest`
 

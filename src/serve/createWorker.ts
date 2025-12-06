@@ -1,5 +1,6 @@
 import { Buffer } from 'node:buffer'
 import { basename } from 'node:path'
+import process from 'node:process'
 import { deserializer, serdesDeserializeSymbol, serdesSerializeSymbol, serdesTagSymbol, serializer } from 'npm:@chelonia/serdes'
 import sbp from 'npm:@sbp/sbp'
 
@@ -87,7 +88,7 @@ const createWorker = (path: string): WorkerType => {
       }
       mc.port2.onmessageerror = () => {
         cleanup()
-        reject(Error('Message error'))
+        reject(new Error('Message error'))
       }
       worker.postMessage([mc.port1, ...args], [mc.port1])
       // If the worker itself breaks during an SBP call, we want to make sure
