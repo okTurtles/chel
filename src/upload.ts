@@ -1,10 +1,11 @@
 import * as colors from 'jsr:@std/fmt/colors'
 import * as path from 'jsr:@std/path/'
 import { Buffer } from 'node:buffer'
+import { multicodes } from 'npm:@chelonia/lib/functions'
 import sbp from 'npm:@sbp/sbp'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { initDB } from './serve/database.ts'
-import { createEntryFromFile, multicodes, type Entry } from './utils.ts'
+import { createEntryFromFile, type Entry } from './utils.ts'
 
 type Params = { url?: string, files: string[] }
 

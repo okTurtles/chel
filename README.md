@@ -1,11 +1,16 @@
 # Chel: Chelonia Command-line Interface
 
-🚧 Under construction! 🚧
+Modern CLI for Chelonia contract development, deployment, and management.
+
+## All Available Commands
 
 ```
 chel
 chel help [command]
 chel version
+chel build
+chel pin <version> <manifest-file-path> [--only-changed | --overwrite]
+chel test
 chel keygen [--out=<key.json>]
 chel manifest [-k|--key <pubkey1> [-k|--key <pubkey2> ...]] [--out=<manifest.json>] [-s|--slim <contract-slim.js>] [-v|--version <version>] <key.json> <contract-bundle.js>
 chel deploy <url-or-dir-or-sqlitedb> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
@@ -19,6 +24,125 @@ chel migrate --from <backend> --to <backend> --out <dir-or-sqlitedb>
 ```
 
 Note: in many (if not all) instances, the `<url>` parameter can refer to a local folder path, in which case the command will operate without making a network connection, and will instead use the folder's contents to perform its operations.
+
+### `chel pin` - Per-Contract Versioning System
+
+🎯 Pin individual contracts to specific versions independently!
+
+**Key Features:**
+- ✅ **Per-contract versioning** using `chelonia.json` configuration
+- ✅ **Individual contract pinning** by specifying manifest file path
+- ✅ **New directory structure**: `contracts/<contract-name>/<version>/`
+- ✅ **Manifest-based workflow** - requires existing manifest files
+- ✅ **Ecosystem-agnostic** - no coupling to Node.js/npm
+
+**Workflow:**
+1. **Generate keys**: Use `chel keygen` to create cryptographic key files (required for production)
+2. **Pin from manifest**: Use `chel pin` with the manifest file path
+3. **Contract files copied**: Contract files (main/slim) and manifest are copied to new structure
+
+**Usage Examples:**
+```bash
+# First, generate cryptographic keys (required for production)
+chel keygen
+
+# Then pin contracts with re-signing
+chel pin <version> <manifest-file-path>
+
+# Pin specific contract to a version using its manifest (from dist/contracts)
+chel pin 2.0.5 dist/contracts/2.0.5/chatroom.2.0.5.manifest.json
+chel pin 2.0.0 dist/contracts/2.0.0/group.2.0.0.manifest.json
+
+# Switch versions efficiently with --only-changed
+chel pin 2.0.6 dist/contracts/2.0.6/chatroom.2.0.6.manifest.json --only-changed
+
+# Note: Contracts are pinned to the contracts/ output directory
+```
+
+**Configuration (`chelonia.json`):**
+```json
+{
+  "contracts": {
+    "chatroom": {
+      "version": "2.0.6",
+      "path": "contracts/gi.contracts_chatroom/2.0.6/chatroom.2.0.6.manifest.json"
+    },
+    "group": {
+      "version": "2.0.0",
+      "path": "contracts/gi.contracts_group/2.0.0/group.2.0.0.manifest.json"
+    }
+  }
+}
+```
+
+**Directory Structure Created:**
+```
+contracts/
+├── gi.contracts_chatroom/
+│   ├── 2.0.5/
+│   │   ├── chatroom.js
+│   │   └── chatroom-slim.js
+│   └── 2.0.6/
+│       ├── chatroom.js
+│       └── chatroom-slim.js
+└── gi.contracts_group/
+    └── 2.0.0/
+        ├── group.js
+        └── group-slim.js
+```
+
+**Command Options:**
+- **`--only-changed`**: Efficiently switch versions or create new versions
+- **`--overwrite`**: Force overwrite existing versions
+- **Default**: Create new version by copying from source
+
+### `chel serve` - Development Server with Contract Preloading
+
+```
+chel serve [options] <directory>
+
+OPTIONS
+
+--dashboard-port <port>  set dashboard port (default: 8888)
+--port           <port>  set application port (default: 8000)
+--dev                    start in development mode (watch and redeploy contract manifests)
+```
+
+> [!IMPORTANT]  
+> **Prerequisites:** Ensure your application directory contains a `contracts/` directory with the correct contract structure before running `chel serve`. The server automatically preloads all contract manifests found in `contracts/<contract-name>/<version>/` directories into the database on startup in development mode.
+
+**Example Output:**
+```bash
+$ chel serve
+🚀 Starting Chelonia app server...
+📦 Step 1: Preloading contracts...
+📋 Found 4 contract manifest(s) to deploy
+contracts/gi.contracts_chatroom/2.0.6/chatroom.js: /data/zLAeVmpcc88g...
+contracts/gi.contracts_group/2.0.0/group.js: /data/zLAeVmpcc88g...
+✅ Successfully preloaded 4 contract(s) into database
+🚀 Step 2: Starting dashboard server...
+📊 Dashboard server running at: http://localhost:8888
+🚀 Step 3: Starting application server...
+```
+
+**Usage Examples:**
+```bash
+# Start with automatic contract preloading
+chel serve
+
+# Serve Group Income app from extracted directory
+chel serve ./gi-v2.0.0
+
+# Serve with custom ports and SQLite database
+chel serve --dashboard-port 8888 --port 8000 ./my-app
+```
+
+**What happens during startup:**
+1. **Contract Discovery** - Scans `contracts/<name>/<version>/` directories
+2. **Manifest Collection** - Finds all `.manifest.json` files
+3. **Database Preloading** - Deploys all contracts with content-addressed storage
+4. **Server Startup** - Starts dashboard and application servers
+5. **Ready for Development** - All historical contracts available for message processing
 
 ### `chel keygen`
 
@@ -43,10 +167,8 @@ chel serve [options] <directory>
 
 OPTIONS
 
---dp <port>        set dashboard port (default: 8888)
---port <port>      set application port (default: 8000)
---db-type <type>   one of: files, sqlite, mem (default: mem)
---db-location <loc>  for "files", a directory, for "sqlite", path to sqlite database
+--dashboard-port <port>    set dashboard port (default: 8888)
+--port           <port>    set application port (default: 8000)
 ```
 
 **Example:**
@@ -55,14 +177,14 @@ OPTIONS
 chel serve ./gi-v2.0.0
 
 # Serve with custom ports and SQLite database
-chel serve --dp 8888 --port 8000 --db-type sqlite --db-location ./app.db ./my-app
+chel serve --dashboard-port 8888 --port 8000 ./my-app
 ```
 
 The serve command will:
 - Start a dashboard server (default: http://localhost:8888)
 - Start an application server (default: http://localhost:8000)
 - Serve static assets and handle API routes
-- Support different database backends (memory, filesystem, SQLite)
+- Support different database backends (memory, filesystem, SQLite, Redis)
 
 ### `chel manifest`
 

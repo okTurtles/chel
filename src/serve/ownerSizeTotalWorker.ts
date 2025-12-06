@@ -1,6 +1,6 @@
 import sbp from 'npm:@sbp/sbp'
 import { OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL as TASK_TIME_INTERVAL } from './constants.ts'
-import { appendToIndexFactory, lookupUltimateOwner, removeFromIndexFactory, updateSize } from './database.ts'
+import { appendToIndexFactory, lookupUltimateOwner, removeFromIndexFactory, updateSize } from './db-utils.ts'
 import { readyQueueName } from './genericWorker.ts'
 
 // This file defines two different methods for doing size computations:

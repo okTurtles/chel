@@ -2,4 +2,6 @@
 *.DS_Store
 dist/
 dist-dashboard/
-data
+data/
+chelonia.json
+chel.toml

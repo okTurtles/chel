@@ -30,7 +30,7 @@ function logSBP (_domain: string, selector: string, data: Array<unknown>) {
 // any specific selectors outside of backend namespace to log
 ;[].forEach(sel => sbp('sbp/filters/selector/add', sel, logSBP))
 
-export default (new Promise<void>((resolve, reject) => {
+export default () => (new Promise<void>((resolve, reject) => {
   sbp('okTurtles.events/on', SERVER_RUNNING, function () {
     console.info(chalk.bold('backend startup sequence complete.'))
     resolve()
@@ -104,11 +104,3 @@ const handleSignal = (signal: string, code: number) => {
   ['SIGUSR1', 10],
   ['SIGUSR2', 11]
 ] as [string, number][]).forEach(([signal, code]) => handleSignal(signal, code))
-
-// TODO: should we use Bluebird to handle swallowed errors
-// http://jamesknelson.com/are-es6-promises-swallowing-your-errors/
-// when spawned via grunt, listen for message to cleanly shutdown and relinquish port
-process.on('message', (message) => {
-  console.info('message received in child, shutting down...', message)
-  exit(0)
-})
