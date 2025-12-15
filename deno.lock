@@ -27,7 +27,7 @@
     "npm:@chelonia/crypto@*": "1.0.1",
     "npm:@chelonia/lib@*": "1.2.7_@sbp+sbp@2.4.1",
     "npm:@chelonia/lib@1.2.7": "1.2.7_@sbp+sbp@2.4.1",
-    "npm:@chelonia/lib@1.2.8": "1.2.8_@sbp+sbp@2.4.1",
+    "npm:@chelonia/lib@1.2.9": "1.2.9_@sbp+sbp@2.4.1",
     "npm:@chelonia/serdes@1.0.0": "1.0.0",
     "npm:@eslint/js@9.31.0": "9.31.0",
     "npm:@hapi/boom@10.0.1": "10.0.1",
@@ -216,8 +216,8 @@
         "tweetnacl"
       ]
     },
-    "@chelonia/lib@1.2.8_@sbp+sbp@2.4.1": {
-      "integrity": "sha512-KuH0i602wleRpjgi/GquZ1SUVKFHmqs+MYTkRosnluNObNI0ijnnLBRdtRjVkod3G1xbqjb+i0ctK4XCPoOQ0w==",
+    "@chelonia/lib@1.2.9_@sbp+sbp@2.4.1": {
+      "integrity": "sha512-vyr/4V0Jcr97S3873xJL0+pXE4kxIqwsSin84hdNaIpSoJ8hIjizHpznV2loe/eQmtq7uReTkezJcyhzjQ5JfA==",
       "dependencies": [
         "@apeleghq/multipart-parser",
         "@apeleghq/rfc8188@1.0.8",
@@ -3136,7 +3136,7 @@
       "jsr:@std/path@1.1.1",
       "jsr:@std/streams@1.0.10",
       "npm:@apeleghq/rfc8188@1.0.7",
-      "npm:@chelonia/lib@1.2.8",
+      "npm:@chelonia/lib@1.2.9",
       "npm:@chelonia/serdes@1.0.0",
       "npm:@eslint/js@9.31.0",
       "npm:@hapi/boom@10.0.1",

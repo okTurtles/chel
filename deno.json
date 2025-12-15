@@ -47,7 +47,7 @@
     "npm:multiformats/": "npm:multiformats@11.0.2/",
     "npm:@hapi/hapi": "npm:@hapi/hapi@21.4.3",
     "npm:@hapi/boom": "npm:@hapi/boom@10.0.1",
-    "npm:@chelonia/lib/": "npm:@chelonia/lib@1.2.8/",
+    "npm:@chelonia/lib/": "npm:@chelonia/lib@1.2.9/",
     "npm:lru-cache": "npm:lru-cache@7.14.0",
     "npm:pino": "npm:pino@8.19.0",
     "npm:tweetnacl": "npm:tweetnacl@1.0.3",

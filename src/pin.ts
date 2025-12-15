@@ -6,7 +6,7 @@ import process from 'node:process'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { exit } from './utils.ts'
 
-type Params = { overwrite: boolean, 'only-changed': boolean, 'manifest-version': string, manifest: string }
+type Params = { overwrite: boolean, 'dir'?: string, 'manifest-version'?: string, manifest: string }
 
 let projectRoot: string
 let cheloniaConfig: { contracts: Record<string, { version: string, path: string }> }
@@ -18,7 +18,7 @@ function sanitizeContractName (contractName: string): string {
 export async function pin (args: ArgumentsCamelCase<Params>): Promise<void> {
   const version = args['manifest-version']
   const manifestPath = args.manifest
-  projectRoot = process.cwd()
+  projectRoot = args['dir'] || process.cwd()
 
   try {
     if (!manifestPath) {
@@ -40,42 +40,44 @@ export async function pin (args: ArgumentsCamelCase<Params>): Promise<void> {
     console.log(colors.blue(`Contract name: ${contractName}`))
     console.log(colors.blue(`Manifest version: ${manifestVersion}`))
 
-    if (version !== manifestVersion) {
-      console.error(colors.red(`❌ Version mismatch: CLI version (${version}) does not match manifest version (${manifestVersion})`))
-      console.error(colors.yellow(`💡 To pin this contract, use: chel pin ${manifestVersion} ${manifestPath}`))
-      exit('Version mismatch between CLI and manifest')
+    if (version) {
+      if (version !== manifestVersion) {
+        console.error(colors.red(`❌ Version mismatch: CLI version (${version}) does not match manifest version (${manifestVersion})`))
+        console.error(colors.yellow(`💡 To pin this contract, use: chel pin ${manifestVersion} ${manifestPath}`))
+        exit('Version mismatch between CLI and manifest')
+      }
+
+      console.log(colors.green(`✅ Version validation passed: ${version}`))
     }
 
-    console.log(colors.green(`✅ Version validation passed: ${version}`))
-
     const currentPinnedVersion = cheloniaConfig.contracts[contractName]?.version
-    if (currentPinnedVersion === version) {
-      console.log(colors.yellow(`✨ Contract ${contractName} is already pinned to version ${version} - no action needed`))
+    if (currentPinnedVersion === manifestVersion) {
+      console.log(colors.yellow(`✨ Contract ${contractName} is already pinned to version ${manifestVersion} - no action needed`))
       return
     }
 
     if (currentPinnedVersion) {
-      console.log(colors.cyan(`📌 Updating ${contractName} from version ${currentPinnedVersion} to ${version}`))
+      console.log(colors.cyan(`📌 Updating ${contractName} from version ${currentPinnedVersion} to ${manifestVersion}`))
     } else {
-      console.log(colors.cyan(`📌 Pinning ${contractName} to version ${version} (first time)`))
+      console.log(colors.cyan(`📌 Pinning ${contractName} to version ${manifestVersion} (first time)`))
     }
 
-    const contractVersionDir = join(projectRoot, 'contracts', contractName, version)
+    const contractVersionDir = join(projectRoot, 'contracts', contractName, manifestVersion)
 
     if (existsSync(contractVersionDir)) {
-      if (!args.overwrite && !args['only-changed']) {
-        exit(`Version ${version} already exists for contract ${contractName}. Use --overwrite to replace it, or --only-changed to update only changed files`)
+      if (!args.overwrite) {
+        exit(`Version ${manifestVersion} already exists for contract ${contractName}. Use --overwrite to replace it.`)
       }
-      console.log(colors.yellow(`Version ${version} already exists for ${contractName} - checking files...`))
+      console.log(colors.yellow(`Version ${manifestVersion} already exists for ${contractName} - checking files...`))
     } else {
-      await createVersionDirectory(contractName, version)
+      await createVersionDirectory(contractName, manifestVersion)
     }
 
-    await copyContractFiles(contractFiles, manifestPath, contractName, version, args)
-    await updateCheloniaConfig(contractName, version, manifestPath)
+    await copyContractFiles(contractFiles, manifestPath, contractName, manifestVersion, args)
+    await updateCheloniaConfig(contractName, manifestVersion, manifestPath)
 
     console.log(colors.green(`✅ Successfully pinned ${contractName} to version ${version}`))
-    console.log(colors.gray(`Location: contracts/${contractName}/${version}/`))
+    console.log(colors.gray(`Location: contracts/${contractName}/${manifestVersion}/`))
   } catch (error) {
     exit(error)
   }
@@ -168,20 +170,6 @@ async function copyFileIfNeeded (
     return
   }
 
-  if (args['only-changed']) {
-    const sourceContent = await readFile(sourcePath, 'utf8')
-    const targetContent = await readFile(targetPath, 'utf8')
-
-    if (sourceContent === targetContent) {
-      console.log(colors.gray(`⏭️  Skipping: ${fileName} (unchanged)`))
-      return
-    } else {
-      console.log(colors.blue(`📄 Copying: ${fileName} (changed)`))
-      await copyFile(sourcePath, targetPath)
-      return
-    }
-  }
-
   console.log(colors.blue(`📄 Copying: ${fileName} (overwriting)`))
   await copyFile(sourcePath, targetPath)
 }
@@ -233,25 +221,25 @@ export const module = {
         boolean: true
       })
       .alias('o', 'overwrite')
-      .option('only-changed', {
+      .option('dir', {
         default: false,
-        describe: 'Only copy changed files',
+        describe: 'Output directory',
         requiresArg: false,
-        boolean: true
+        string: true
       })
-      .alias('c', 'only-changed')
-      .positional('manifest-version', {
-        describe: 'Manifest version',
-        demandOption: true,
-        type: 'string'
-      })
+      .alias('d', 'dir')
       .positional('manifest', {
         describe: 'Manifest file path',
         demandOption: true,
         type: 'string'
       })
+      .positional('manifest-version', {
+        describe: 'Manifest version',
+        demandOption: false,
+        type: 'string'
+      })
   },
-  command: 'pin <manifest-version> <manifest>',
+  command: 'pin <manifest> [<manifest-version>]',
   describe: 'Pin a manifest version',
   postHandler: (argv) => {
     return pin(argv)
