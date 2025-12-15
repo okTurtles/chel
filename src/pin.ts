@@ -187,7 +187,7 @@ async function loadCheloniaConfig () {
       console.warn(colors.yellow(`Warning: Could not parse chelonia.json: ${error}`))
     }
   } else {
-    console.log(colors.blue('📄 Creating new chelonia.json'))
+    console.log(colors.blue('📄 No existing chelonia.json found'))
   }
 
   if (!cheloniaConfig.contracts) {
@@ -208,7 +208,7 @@ async function updateCheloniaConfig (contractName: string, version: string, mani
   const configContent = JSON.stringify(cheloniaConfig, null, 2) + '\n'
 
   await writeFile(configPath, configContent, 'utf8')
-  console.log(colors.green('✅ Updated chelonia.json'))
+  console.log(colors.green('✅ Saved chelonia.json'))
 }
 
 export const module = {
