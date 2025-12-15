@@ -65,7 +65,7 @@ for (const outfile of result.outputFiles!) {
       throw new Error('Failed to call \'deno bundle\'')
     }
   } finally {
-    // Deno.removeSync(tmpFile)
+    Deno.removeSync(tmpFile)
   }
 }
 

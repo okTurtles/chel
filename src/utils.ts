@@ -123,12 +123,12 @@ export async function shell (
 export const findManifestFiles = async (path: string): Promise<Set<string>> => {
   const visited = new Set<string>()
   const internal = async (path: string) => {
-    const entries = Deno.readDir(path)
     if (visited.has(path)) {
       return new Set<string>()
     }
     visited.add(path)
 
+    const entries = Deno.readDir(path)
     const manifests = new Set<string>()
     for await (const entry of entries) {
       const realPath = await Deno.realPath(join(path, entry.name))

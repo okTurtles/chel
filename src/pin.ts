@@ -215,7 +215,6 @@ export const module = {
   builder: (yargs) => {
     return yargs
       .option('overwrite', {
-        default: false,
         describe: 'Overwrite existing files',
         requiresArg: false,
         boolean: true

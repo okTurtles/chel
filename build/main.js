@@ -109076,11 +109076,11 @@ var readJsonFile = async (file) => {
 var findManifestFiles = async (path8) => {
   const visited = /* @__PURE__ */ new Set();
   const internal = async (path9) => {
-    const entries = Deno.readDir(path9);
     if (visited.has(path9)) {
       return /* @__PURE__ */ new Set();
     }
     visited.add(path9);
+    const entries = Deno.readDir(path9);
     const manifests = /* @__PURE__ */ new Set();
     for await (const entry of entries) {
       const realPath2 = await Deno.realPath(join32(path9, entry.name));
@@ -109755,7 +109755,7 @@ async function loadCheloniaConfig() {
       console.warn(yellow(`Warning: Could not parse chelonia.json: ${error}`));
     }
   } else {
-    console.log(blue("\u{1F4C4} Creating new chelonia.json"));
+    console.log(blue("\u{1F4C4} No existing chelonia.json found"));
   }
   if (!cheloniaConfig.contracts) {
     cheloniaConfig.contracts = {};
@@ -109771,12 +109771,11 @@ async function updateCheloniaConfig(contractName, version3, manifestPath) {
   const configPath = join62(projectRoot, "chelonia.json");
   const configContent = JSON.stringify(cheloniaConfig, null, 2) + "\n";
   await writeFile2(configPath, configContent, "utf8");
-  console.log(green("\u2705 Updated chelonia.json"));
+  console.log(green("\u2705 Saved chelonia.json"));
 }
 var module10 = {
   builder: (yargs) => {
     return yargs.option("overwrite", {
-      default: false,
       describe: "Overwrite existing files",
       requiresArg: false,
       boolean: true
