@@ -44,10 +44,10 @@ if (CREDITS_WORKER_TASK_TIME_INTERVAL && OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTER
 // Initialize workers for size calculation and credits processing
 const ownerSizeTotalWorker = ARCHIVE_MODE || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL
   ? undefined
-  : createWorker(join(import.meta.dirname || '.', 'serve', 'ownerSizeTotalWorker.js'))
+  : createWorker(join(import.meta.dirname || '.', import.meta.workerDir || '.', 'ownerSizeTotalWorker.js'))
 const creditsWorker = ARCHIVE_MODE || !CREDITS_WORKER_TASK_TIME_INTERVAL
   ? undefined
-  : createWorker(join(import.meta.dirname || '.', 'serve', 'creditsWorker.js'))
+  : createWorker(join(import.meta.dirname || '.', import.meta.workerDir || '.', 'creditsWorker.js'))
 
 const { CONTRACTS_VERSION, GI_VERSION } = process.env
 

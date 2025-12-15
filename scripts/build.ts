@@ -13,7 +13,8 @@ const options: esbuild.BuildOptions = {
   ],
   bundle: true,
   define: {
-    'import.meta.VERSION': JSON.stringify(version)
+    'import.meta.VERSION': JSON.stringify(version),
+    'import.meta.workerDir': '"serve"'
   },
   format: 'esm',
   platform: 'node',

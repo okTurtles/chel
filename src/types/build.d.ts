@@ -1,5 +1,6 @@
 interface ImportMeta {
   VERSION: string
+  workerDir?: string
 }
 
 declare const logger: {
