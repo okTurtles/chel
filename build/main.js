@@ -28412,7 +28412,8 @@ var init_db_utils = __esm({
               // Check if the value is at the end
               currentIndex.endsWith("\0" + value) || // Check if the value is at the start
               currentIndex.startsWith(value + "\0") || // Check if the current index is exactly the value
-              currentIndex === value
+              currentIndex === value || // Check if the value is in the middle
+              currentIndex.includes("\0" + value + "\0")
             ) {
               return;
             }

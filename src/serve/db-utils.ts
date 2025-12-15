@@ -61,7 +61,9 @@ export const appendToIndexFactory = (key: string): (value: string) => Promise<vo
           // Check if the value is at the start
           currentIndex.startsWith(value + '\x00') ||
           // Check if the current index is exactly the value
-          currentIndex === value
+          currentIndex === value ||
+          // Check if the value is in the middle
+          currentIndex.includes('\x00' + value + '\x00')
         ) {
           // Exit if the value already exists
           return
