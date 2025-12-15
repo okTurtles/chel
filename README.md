@@ -8,7 +8,7 @@ Modern CLI for Chelonia contract development, deployment, and management.
 chel
 chel help [command]
 chel version
-chel pin <version> <manifest-file-path> [--only-changed | --overwrite]
+chel pin [--dir <output-directory>] [--overwrite] <manifest-file-path> <version>
 chel test
 chel keygen [--out=<key.json>]
 chel manifest [-k|--key <pubkey1> [-k|--key <pubkey2> ...]] [--out=<manifest.json>] [-s|--slim <contract-slim.js>] [-v|--version <version>] <key.json> <contract-bundle.js>
