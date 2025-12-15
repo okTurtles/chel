@@ -8,7 +8,7 @@
     "test": "deno task lint && database__backendOptions__fs__skipFsCaseSensitivityCheck=true deno test --unstable-worker-options --allow-read=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-write=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-env --allow-ffi --allow-net --allow-sys"
   },
   "imports": {
-    "@db/sqlite": "jsr:@db/sqlite@^0.13.0",
+    "@db/sqlite": "jsr:@db/sqlite@0.13.0",
     "~/": "./src/",
     "assert": "node:assert",
     "buffer": "node:buffer",

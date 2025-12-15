@@ -54086,7 +54086,7 @@ var init_database_sqlite = __esm({
         this.db = new Database(join22(dataFolder, filename));
         this.run("CREATE TABLE IF NOT EXISTS Data(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)");
         console.info(`Connected to the ${filename} SQLite database.`);
-        this.readStatement = this.db.prepare("SELECT value FROM Data WHERE key = ?");
+        this.readStatement = this.db.prepare("SELECT CAST(value AS BLOB) value FROM Data WHERE key = ?");
         this.writeStatement = this.db.prepare("REPLACE INTO Data(key, value) VALUES(?, ?)");
         this.deleteStatement = this.db.prepare("DELETE FROM Data WHERE key = ?");
         this.iterKeysStatement = this.db.prepare("SELECT key FROM Data");
