@@ -15187,7 +15187,7 @@ var strToBuf;
 var strToB64;
 var getSubscriptionId;
 var init_functions = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/functions.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.9/node_modules/@chelonia/lib/dist/esm/functions.mjs"() {
     init_base58();
     init_blake2b();
     init_blake2bstream();
@@ -15540,6 +15540,31 @@ var init_esm5 = __esm({
     has = Function.prototype.call.bind(Object.prototype.hasOwnProperty);
   }
 });
+function runWithRetry(client, channelID, type, getPayload) {
+  let attemptNo = 0;
+  const { socket, options: options2 } = client;
+  const instance = {};
+  client.pendingOperations.tSet(type, channelID, instance);
+  const send = () => {
+    if (client.socket !== socket || socket?.readyState !== WebSocket.OPEN)
+      return;
+    const currentInstance = client.pendingOperations.tGet(type, channelID);
+    if (currentInstance !== instance)
+      return;
+    if (attemptNo++ > options2.maxOpRetries) {
+      console.warn(`[pubsub] Giving up ${type} for channel`, channelID);
+      client.pendingOperations.tDelete(type, channelID);
+      return;
+    }
+    const payload = getPayload();
+    socket.send(createRequest(type, payload));
+    const minDelay = (attemptNo - 1) * options2.opRetryInterval;
+    const jitter = randomIntFromRange(0, options2.opRetryInterval);
+    const delay2 = Math.min(200, minDelay) + jitter;
+    setTimeout(send, delay2);
+  };
+  send();
+}
 function createClient(url, options2 = {}) {
   const client = {
     customEventHandlers: options2.handlers || {},
@@ -15554,9 +15579,7 @@ function createClient(url, options2 = {}) {
     messageHandlers: { ...defaultMessageHandlers, ...options2.messageHandlers },
     nextConnectionAttemptDelayID: void 0,
     options: { ...defaultOptions, ...options2 },
-    // Requested subscriptions for which we didn't receive a response yet.
-    pendingSubscriptionSet: /* @__PURE__ */ new Set(),
-    pendingUnsubscriptionSet: /* @__PURE__ */ new Set(),
+    pendingOperations: new TieredMap(),
     pingTimeoutID: void 0,
     shouldReconnect: true,
     // The underlying WebSocket object.
@@ -15623,6 +15646,9 @@ var PUBSUB_RECONNECTION_FAILED;
 var PUBSUB_RECONNECTION_SCHEDULED;
 var PUBSUB_RECONNECTION_SUCCEEDED;
 var PUBSUB_SUBSCRIPTION_SUCCEEDED;
+var TieredMap;
+var isKvFilterFresh;
+var pubPayloadFactory;
 var defaultClientEventHandlers;
 var defaultMessageHandlers;
 var globalEventNames;
@@ -15632,9 +15658,10 @@ var isDefinetelyOffline;
 var messageParser;
 var publicMethods;
 var init_pubsub = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/pubsub/index.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.9/node_modules/@chelonia/lib/dist/esm/pubsub/index.mjs"() {
     init_esm4();
     init_esm();
+    init_esm5();
     NOTIFICATION_TYPE = Object.freeze({
       ENTRY: "entry",
       DELETION: "deletion",
@@ -15676,7 +15703,9 @@ var init_pubsub = __esm({
       // respond because of a failed authentication.
       reconnectOnTimeout: false,
       reconnectionDelayGrowFactor: 2,
-      timeout: 6e4
+      timeout: 6e4,
+      maxOpRetries: 4,
+      opRetryInterval: 2e3
     };
     PUBSUB_ERROR = "pubsub-error";
     PUBSUB_RECONNECTION_ATTEMPT = "pubsub-reconnection-attempt";
@@ -15684,6 +15713,58 @@ var init_pubsub = __esm({
     PUBSUB_RECONNECTION_SCHEDULED = "pubsub-reconnection-scheduled";
     PUBSUB_RECONNECTION_SUCCEEDED = "pubsub-reconnection-succeeded";
     PUBSUB_SUBSCRIPTION_SUCCEEDED = "pubsub-subscription-succeeded";
+    TieredMap = class extends Map {
+      tGet(k1, k2) {
+        return this.get(k1)?.get(k2);
+      }
+      tHas(k1, k2) {
+        return !!this.get(k1)?.has(k2);
+      }
+      tSet(k1, k2, v2) {
+        let submap = this.get(k1);
+        if (!submap) {
+          submap = /* @__PURE__ */ new Map();
+          this.set(k1, submap);
+        }
+        return submap.set(k2, v2);
+      }
+      tDelete(k1, k2) {
+        const submap = this.get(k1);
+        if (submap) {
+          const result = submap.delete(k2);
+          if (submap.size === 0) {
+            this.delete(k1);
+          }
+          return result;
+        }
+        return false;
+      }
+      tClear(k1) {
+        this.delete(k1);
+      }
+    };
+    isKvFilterFresh = (ourKvFilter, theirKvFilter) => {
+      if (!ourKvFilter !== !theirKvFilter) {
+        return false;
+      } else if (ourKvFilter && theirKvFilter) {
+        if (ourKvFilter.length !== theirKvFilter.length) {
+          return false;
+        } else {
+          const sortedA = [...ourKvFilter].sort();
+          const sortedB = [...theirKvFilter].sort();
+          for (let i2 = 0; i2 < sortedA.length; i2++) {
+            if (sortedA[i2] !== sortedB[i2]) {
+              return false;
+            }
+          }
+        }
+      }
+      return true;
+    };
+    pubPayloadFactory = (client, channelID) => () => {
+      const kvFilter = client.kvFilter.get(channelID);
+      return kvFilter ? { kvFilter, channelID } : { channelID };
+    };
     defaultClientEventHandlers = {
       // Emitted when the connection is closed.
       close(event) {
@@ -15698,14 +15779,21 @@ var init_pubsub = __esm({
         client.socket = null;
         client.clearAllTimers();
         if (client.shouldReconnect) {
+          const pendingSubscriptionMap = client.pendingOperations.get(REQUEST_TYPE.SUB);
+          if (pendingSubscriptionMap) {
+            for (const [channelID] of pendingSubscriptionMap) {
+              pendingSubscriptionMap.set(channelID, {});
+            }
+          }
           client.subscriptionSet.forEach((channelID) => {
-            if (!client.pendingUnsubscriptionSet.has(channelID)) {
-              client.pendingSubscriptionSet.add(channelID);
+            if (!client.pendingOperations.tHas(REQUEST_TYPE.UNSUB, channelID)) {
+              client.pendingOperations.tSet(REQUEST_TYPE.SUB, channelID, {});
             }
           });
         }
         client.subscriptionSet.clear();
-        client.pendingUnsubscriptionSet.clear();
+        client.pendingOperations.tClear(REQUEST_TYPE.UNSUB);
+        client.pendingOperations.tClear(REQUEST_TYPE.KV_FILTER);
         if (client.shouldReconnect && client.options.reconnectOnDisconnection) {
           if (client.failedConnectionAttempts > client.options.maxRetries) {
             esm_default("okTurtles.events/emit", PUBSUB_RECONNECTION_FAILED, client);
@@ -15783,10 +15871,9 @@ var init_pubsub = __esm({
             client.socket?.close();
           }, options2.pingTimeout);
         }
-        client.pendingSubscriptionSet.forEach((channelID) => {
-          const kvFilter = this.kvFilter.get(channelID);
-          client.socket?.send(createRequest(REQUEST_TYPE.SUB, kvFilter ? { channelID, kvFilter } : { channelID }));
-        });
+        for (const [channelID] of client.pendingOperations.get(REQUEST_TYPE.SUB) || []) {
+          runWithRetry(client, channelID, REQUEST_TYPE.SUB, pubPayloadFactory(client, channelID));
+        }
       },
       "reconnection-attempt"() {
         console.info("[pubsub] Trying to reconnect...");
@@ -15842,12 +15929,12 @@ var init_pubsub = __esm({
         switch (type) {
           case REQUEST_TYPE.SUB: {
             console.warn(`[pubsub] Could not subscribe to ${channelID}: ${reason}`);
-            client.pendingSubscriptionSet.delete(channelID);
+            client.pendingOperations.tDelete(REQUEST_TYPE.SUB, channelID);
             break;
           }
           case REQUEST_TYPE.UNSUB: {
             console.warn(`[pubsub] Could not unsubscribe from ${channelID}: ${reason}`);
-            client.pendingUnsubscriptionSet.delete(channelID);
+            client.pendingOperations.tDelete(REQUEST_TYPE.UNSUB, channelID);
             break;
           }
           case REQUEST_TYPE.PUSH_ACTION: {
@@ -15855,29 +15942,56 @@ var init_pubsub = __esm({
             console.warn(`[pubsub] Received ERROR for PUSH_ACTION request with the action type '${actionType}' and the following message: ${message}`);
             break;
           }
+          case REQUEST_TYPE.KV_FILTER: {
+            console.warn(`[pubsub] Could not set KV filter for ${channelID}: ${reason}`);
+            client.pendingOperations.tDelete(REQUEST_TYPE.KV_FILTER, channelID);
+            break;
+          }
           default: {
             console.error(`[pubsub] Malformed response: invalid request type ${type}`);
           }
         }
       },
-      [RESPONSE_TYPE.OK]({ data: { type, channelID } }) {
+      [RESPONSE_TYPE.OK]({ data: { type, channelID, kvFilter } }) {
         const client = this;
         switch (type) {
           case REQUEST_TYPE.SUB: {
-            client.pendingSubscriptionSet.delete(channelID);
-            client.subscriptionSet.add(channelID);
-            esm_default("okTurtles.events/emit", PUBSUB_SUBSCRIPTION_SUCCEEDED, client, { channelID });
+            if (client.pendingOperations.tHas(REQUEST_TYPE.SUB, channelID)) {
+              client.pendingOperations.tDelete(REQUEST_TYPE.SUB, channelID);
+              client.subscriptionSet.add(channelID);
+              esm_default("okTurtles.events/emit", PUBSUB_SUBSCRIPTION_SUCCEEDED, client, { channelID });
+              const ourKvFilter = client.kvFilter.get(channelID);
+              if (!isKvFilterFresh(ourKvFilter, kvFilter)) {
+                console.debug(`[pubsub] Subscribed to ${channelID}, need to set new KV filter`);
+                this.setKvFilter(channelID, ourKvFilter);
+              }
+            } else {
+              console.debug(`[pubsub] Received unexpected sub for ${channelID}`);
+            }
             break;
           }
           case REQUEST_TYPE.UNSUB: {
-            console.debug(`[pubsub] Unsubscribed from ${channelID}`);
-            client.pendingUnsubscriptionSet.delete(channelID);
-            client.subscriptionSet.delete(channelID);
-            client.kvFilter.delete(channelID);
+            if (client.pendingOperations.tHas(REQUEST_TYPE.UNSUB, channelID)) {
+              console.debug(`[pubsub] Unsubscribed from ${channelID}`);
+              client.pendingOperations.tDelete(REQUEST_TYPE.UNSUB, channelID);
+              client.subscriptionSet.delete(channelID);
+            } else {
+              console.debug(`[pubsub] Received unexpected unsub for ${channelID}`);
+            }
             break;
           }
           case REQUEST_TYPE.KV_FILTER: {
-            console.debug(`[pubsub] Set KV filter for ${channelID}`);
+            if (client.pendingOperations.tHas(REQUEST_TYPE.KV_FILTER, channelID)) {
+              const ourKvFilter = client.kvFilter.get(channelID);
+              if (isKvFilterFresh(ourKvFilter, kvFilter)) {
+                console.debug(`[pubsub] Set KV filter for ${channelID}`, kvFilter);
+                client.pendingOperations.tDelete(REQUEST_TYPE.KV_FILTER, channelID);
+              } else {
+                console.debug(`[pubsub] Received stale KV filter ack for ${channelID}`, kvFilter, ourKvFilter);
+              }
+            } else {
+              console.debug(`[pubsub] Received unexpected kv-filter for ${channelID}`);
+            }
             break;
           }
           default: {
@@ -15965,8 +16079,7 @@ var init_pubsub = __esm({
       destroy() {
         const client = this;
         client.clearAllTimers();
-        client.pendingSubscriptionSet.clear();
-        client.pendingUnsubscriptionSet.clear();
+        client.pendingOperations.clear();
         client.subscriptionSet.clear();
         if (typeof self === "object" && self instanceof EventTarget) {
           for (const name of globalEventNames) {
@@ -16034,14 +16147,9 @@ var init_pubsub = __esm({
        */
       sub(channelID) {
         const client = this;
-        const { socket } = this;
-        if (!client.pendingSubscriptionSet.has(channelID)) {
-          client.pendingSubscriptionSet.add(channelID);
-          client.pendingUnsubscriptionSet.delete(channelID);
-          if (socket?.readyState === WebSocket.OPEN) {
-            const kvFilter = client.kvFilter.get(channelID);
-            socket.send(createRequest(REQUEST_TYPE.SUB, kvFilter ? { channelID, kvFilter } : { channelID }));
-          }
+        if (!client.pendingOperations.tHas(REQUEST_TYPE.SUB, channelID) && !client.subscriptionSet.has(channelID)) {
+          client.pendingOperations.tDelete(REQUEST_TYPE.UNSUB, channelID);
+          runWithRetry(client, channelID, REQUEST_TYPE.SUB, pubPayloadFactory(client, channelID));
         }
       },
       /**
@@ -16049,16 +16157,13 @@ var init_pubsub = __esm({
        */
       setKvFilter(channelID, kvFilter) {
         const client = this;
-        const { socket } = this;
         if (kvFilter) {
           client.kvFilter.set(channelID, kvFilter);
         } else {
           client.kvFilter.delete(channelID);
         }
-        if (client.subscriptionSet.has(channelID)) {
-          if (socket?.readyState === WebSocket.OPEN) {
-            socket.send(createRequest(REQUEST_TYPE.KV_FILTER, kvFilter ? { channelID, kvFilter } : { channelID }));
-          }
+        if (client.subscriptionSet.has(channelID) && !client.pendingOperations.tHas(REQUEST_TYPE.UNSUB, channelID)) {
+          runWithRetry(client, channelID, REQUEST_TYPE.KV_FILTER, pubPayloadFactory(client, channelID));
         }
       },
       /**
@@ -16072,13 +16177,10 @@ var init_pubsub = __esm({
        */
       unsub(channelID) {
         const client = this;
-        const { socket } = this;
-        if (!client.pendingUnsubscriptionSet.has(channelID)) {
-          client.pendingSubscriptionSet.delete(channelID);
-          client.pendingUnsubscriptionSet.add(channelID);
-          if (socket?.readyState === WebSocket.OPEN) {
-            socket.send(createRequest(REQUEST_TYPE.UNSUB, { channelID }));
-          }
+        if (!client.pendingOperations.tHas(REQUEST_TYPE.UNSUB, channelID) && (client.subscriptionSet.has(channelID) || client.pendingOperations.tHas(REQUEST_TYPE.SUB, channelID))) {
+          client.pendingOperations.tDelete(REQUEST_TYPE.SUB, channelID);
+          client.kvFilter.delete(channelID);
+          runWithRetry(client, channelID, REQUEST_TYPE.UNSUB, () => ({ channelID }));
         }
       }
     };
@@ -19205,7 +19307,7 @@ var ChelErrorFetchServerTimeFailed;
 var ChelErrorUnexpectedHttpResponseCode;
 var ChelErrorResourceGone;
 var init_errors = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/errors.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.9/node_modules/@chelonia/lib/dist/esm/errors.mjs"() {
     ChelErrorGenerator = (name, base2 = Error) => class extends base2 {
       constructor(...params) {
         super(...params);
@@ -19253,7 +19355,7 @@ var PERSISTENT_ACTION_FAILURE;
 var PERSISTENT_ACTION_SUCCESS;
 var PERSISTENT_ACTION_TOTAL_FAILURE;
 var init_events = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/events.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.9/node_modules/@chelonia/lib/dist/esm/events.mjs"() {
     CHELONIA_RESET = "chelonia-reset";
     CONTRACT_IS_SYNCING = "contract-is-syncing";
     CONTRACTS_MODIFIED = "contracts-modified";
@@ -19455,7 +19557,7 @@ var signedDataKeyId;
 var isRawSignedData;
 var rawSignedIncomingData;
 var init_signedData = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/signedData.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.9/node_modules/@chelonia/lib/dist/esm/signedData.mjs"() {
     init_esm7();
     init_esm();
     init_esm5();
@@ -19728,7 +19830,7 @@ var isRawEncryptedData;
 var unwrapMaybeEncryptedData;
 var maybeEncryptedIncomingData;
 var init_encryptedData = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/encryptedData.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.9/node_modules/@chelonia/lib/dist/esm/encryptedData.mjs"() {
     init_esm7();
     init_esm();
     init_esm5();
@@ -19993,7 +20095,7 @@ var decryptedAndVerifiedDeserializedMessage;
 var SPMessage;
 var keyOps;
 var init_SPMessage = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/SPMessage.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.9/node_modules/@chelonia/lib/dist/esm/SPMessage.mjs"() {
     init_esm7();
     init_esm8();
     init_esm5();
@@ -20391,7 +20493,7 @@ var init_SPMessage = __esm({
 });
 var chelonia_utils_default;
 var init_chelonia_utils = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/chelonia-utils.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.9/node_modules/@chelonia/lib/dist/esm/chelonia-utils.mjs"() {
     init_esm();
     chelonia_utils_default = esm_default("sbp/selectors/register", {
       // This selector is a wrapper for the `chelonia/kv/set` selector that uses
@@ -20714,7 +20816,7 @@ var init_encrypt = __esm({
 var wm;
 var Secret;
 var init_Secret = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/Secret.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.9/node_modules/@chelonia/lib/dist/esm/Secret.mjs"() {
     init_esm8();
     wm = /* @__PURE__ */ new WeakMap();
     Secret = class {
@@ -20738,7 +20840,7 @@ var init_Secret = __esm({
 });
 var INVITE_STATUS;
 var init_constants = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/constants.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.9/node_modules/@chelonia/lib/dist/esm/constants.mjs"() {
     INVITE_STATUS = {
       REVOKED: "revoked",
       VALID: "valid",
@@ -20980,7 +21082,7 @@ var collectEventStream;
 var logEvtError;
 var handleFetchResult;
 var init_utils = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/utils.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.9/node_modules/@chelonia/lib/dist/esm/utils.mjs"() {
     init_esm7();
     init_esm();
     init_esm5();
@@ -21455,7 +21557,7 @@ var noneHandlers;
 var cipherHandlers;
 var files_default;
 var init_files = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/files.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.9/node_modules/@chelonia/lib/dist/esm/files.mjs"() {
     init_encodeMultipartMessage();
     init_decrypt();
     init_encodings();
@@ -21809,7 +21911,7 @@ var prefixHandlers;
 var dbPrimitiveSelectors;
 var db_default;
 var init_db = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/db.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.9/node_modules/@chelonia/lib/dist/esm/db.mjs"() {
     init_esm3();
     init_esm2();
     init_esm();
@@ -22020,7 +22122,7 @@ var reprocessDebounced;
 var handleEvent;
 var notImplemented;
 var init_internals = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/internals.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.9/node_modules/@chelonia/lib/dist/esm/internals.mjs"() {
     init_esm();
     init_functions();
     init_esm5();
@@ -23811,7 +23913,7 @@ var watchdog;
 var syncServerTime;
 var time_sync_default;
 var init_time_sync = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/time-sync.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.9/node_modules/@chelonia/lib/dist/esm/time-sync.mjs"() {
     init_esm();
     wallBase = Date.now();
     monotonicBase = performance.now();
@@ -24044,7 +24146,7 @@ function gettersProxy(state, getters) {
 var ACTION_REGEX;
 var chelonia_default;
 var init_chelonia = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/chelonia.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.9/node_modules/@chelonia/lib/dist/esm/chelonia.mjs"() {
     init_esm2();
     init_esm4();
     init_esm();
@@ -27902,7 +28004,7 @@ var CS;
 var SU;
 var SALT_LENGTH_IN_OCTETS;
 var init_zkppConstants = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/zkppConstants.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.9/node_modules/@chelonia/lib/dist/esm/zkppConstants.mjs"() {
     AUTHSALT = "AUTHSALT";
     CONTRACTSALT = "CONTRACTSALT";
     CS = "CS";
@@ -27926,7 +28028,7 @@ var boxKeyPair;
 var saltAgreement;
 var parseRegisterSalt;
 var init_zkpp = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/zkpp.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.9/node_modules/@chelonia/lib/dist/esm/zkpp.mjs"() {
     import_scrypt_async2 = __toESM(require_scrypt_async(), 1);
     import_tweetnacl2 = __toESM(require_nacl_fast(), 1);
     init_zkppConstants();
@@ -85916,7 +86018,7 @@ var tag;
 var PersistentAction;
 var persistent_actions_default;
 var init_persistent_actions = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/persistent-actions.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.9/node_modules/@chelonia/lib/dist/esm/persistent-actions.mjs"() {
     init_esm4();
     init_esm();
     init_events();
@@ -86113,7 +86215,7 @@ var init_persistent_actions = __esm({
 });
 var SERVER;
 var init_presets = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.8/node_modules/@chelonia/lib/dist/esm/presets.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.2.9/node_modules/@chelonia/lib/dist/esm/presets.mjs"() {
     SERVER = {
       // We don't check the subscriptionSet in the server because we accpt new
       // contract registrations, and are also not subcribed to contracts the same
@@ -109528,7 +109630,7 @@ function sanitizeContractName(contractName) {
 async function pin(args) {
   const version3 = args["manifest-version"];
   const manifestPath = args.manifest;
-  projectRoot = process4.cwd();
+  projectRoot = args["dir"] || process4.cwd();
   try {
     if (!manifestPath) {
       await loadCheloniaConfig();
@@ -109544,35 +109646,37 @@ async function pin(args) {
     const { contractName, contractFiles, manifestVersion } = await parseManifest(fullManifestPath);
     console.log(blue(`Contract name: ${contractName}`));
     console.log(blue(`Manifest version: ${manifestVersion}`));
-    if (version3 !== manifestVersion) {
-      console.error(red(`\u274C Version mismatch: CLI version (${version3}) does not match manifest version (${manifestVersion})`));
-      console.error(yellow(`\u{1F4A1} To pin this contract, use: chel pin ${manifestVersion} ${manifestPath}`));
-      exit("Version mismatch between CLI and manifest");
+    if (version3) {
+      if (version3 !== manifestVersion) {
+        console.error(red(`\u274C Version mismatch: CLI version (${version3}) does not match manifest version (${manifestVersion})`));
+        console.error(yellow(`\u{1F4A1} To pin this contract, use: chel pin ${manifestVersion} ${manifestPath}`));
+        exit("Version mismatch between CLI and manifest");
+      }
+      console.log(green(`\u2705 Version validation passed: ${version3}`));
     }
-    console.log(green(`\u2705 Version validation passed: ${version3}`));
     const currentPinnedVersion = cheloniaConfig.contracts[contractName]?.version;
-    if (currentPinnedVersion === version3) {
-      console.log(yellow(`\u2728 Contract ${contractName} is already pinned to version ${version3} - no action needed`));
+    if (currentPinnedVersion === manifestVersion) {
+      console.log(yellow(`\u2728 Contract ${contractName} is already pinned to version ${manifestVersion} - no action needed`));
       return;
     }
     if (currentPinnedVersion) {
-      console.log(cyan(`\u{1F4CC} Updating ${contractName} from version ${currentPinnedVersion} to ${version3}`));
+      console.log(cyan(`\u{1F4CC} Updating ${contractName} from version ${currentPinnedVersion} to ${manifestVersion}`));
     } else {
-      console.log(cyan(`\u{1F4CC} Pinning ${contractName} to version ${version3} (first time)`));
+      console.log(cyan(`\u{1F4CC} Pinning ${contractName} to version ${manifestVersion} (first time)`));
     }
-    const contractVersionDir = join62(projectRoot, "contracts", contractName, version3);
+    const contractVersionDir = join62(projectRoot, "contracts", contractName, manifestVersion);
     if (existsSync(contractVersionDir)) {
-      if (!args.overwrite && !args["only-changed"]) {
-        exit(`Version ${version3} already exists for contract ${contractName}. Use --overwrite to replace it, or --only-changed to update only changed files`);
+      if (!args.overwrite) {
+        exit(`Version ${manifestVersion} already exists for contract ${contractName}. Use --overwrite to replace it.`);
       }
-      console.log(yellow(`Version ${version3} already exists for ${contractName} - checking files...`));
+      console.log(yellow(`Version ${manifestVersion} already exists for ${contractName} - checking files...`));
     } else {
-      await createVersionDirectory(contractName, version3);
+      await createVersionDirectory(contractName, manifestVersion);
     }
-    await copyContractFiles(contractFiles, manifestPath, contractName, version3, args);
-    await updateCheloniaConfig(contractName, version3, manifestPath);
+    await copyContractFiles(contractFiles, manifestPath, contractName, manifestVersion, args);
+    await updateCheloniaConfig(contractName, manifestVersion, manifestPath);
     console.log(green(`\u2705 Successfully pinned ${contractName} to version ${version3}`));
-    console.log(gray(`Location: contracts/${contractName}/${version3}/`));
+    console.log(gray(`Location: contracts/${contractName}/${manifestVersion}/`));
   } catch (error) {
     exit(error);
   }
@@ -109636,18 +109740,6 @@ async function copyFileIfNeeded(sourcePath, targetPath, fileName, args) {
     console.log(yellow(`\u23ED\uFE0F  Skipping: ${fileName} (already exists, use --overwrite to replace)`));
     return;
   }
-  if (args["only-changed"]) {
-    const sourceContent = await readFile3(sourcePath, "utf8");
-    const targetContent = await readFile3(targetPath, "utf8");
-    if (sourceContent === targetContent) {
-      console.log(gray(`\u23ED\uFE0F  Skipping: ${fileName} (unchanged)`));
-      return;
-    } else {
-      console.log(blue(`\u{1F4C4} Copying: ${fileName} (changed)`));
-      await copyFile(sourcePath, targetPath);
-      return;
-    }
-  }
   console.log(blue(`\u{1F4C4} Copying: ${fileName} (overwriting)`));
   await copyFile(sourcePath, targetPath);
 }
@@ -109688,22 +109780,22 @@ var module10 = {
       describe: "Overwrite existing files",
       requiresArg: false,
       boolean: true
-    }).alias("o", "overwrite").option("only-changed", {
+    }).alias("o", "overwrite").option("dir", {
       default: false,
-      describe: "Only copy changed files",
+      describe: "Output directory",
       requiresArg: false,
-      boolean: true
-    }).alias("c", "only-changed").positional("manifest-version", {
-      describe: "Manifest version",
-      demandOption: true,
-      type: "string"
-    }).positional("manifest", {
+      string: true
+    }).alias("d", "dir").positional("manifest", {
       describe: "Manifest file path",
       demandOption: true,
       type: "string"
+    }).positional("manifest-version", {
+      describe: "Manifest version",
+      demandOption: false,
+      type: "string"
     });
   },
-  command: "pin <manifest-version> <manifest>",
+  command: "pin <manifest> [<manifest-version>]",
   describe: "Pin a manifest version",
   postHandler: (argv) => {
     return pin(argv);
