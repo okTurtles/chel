@@ -1,42 +1,38 @@
 {
   "version": "5",
   "specifiers": {
-    "jsr:@db/sqlite@0.12.0": "0.12.0",
+    "jsr:@db/sqlite@0.13.0": "0.13.0",
     "jsr:@denosaurs/plug@1": "1.1.0",
-    "jsr:@std/assert@0.217": "0.217.0",
     "jsr:@std/assert@0.224": "0.224.0",
     "jsr:@std/assert@1.0.13": "1.0.13",
     "jsr:@std/bytes@^1.0.5": "1.0.6",
     "jsr:@std/bytes@^1.0.6": "1.0.6",
     "jsr:@std/encoding@*": "1.0.10",
     "jsr:@std/encoding@1": "1.0.10",
-    "jsr:@std/encoding@1.0.10": "1.0.10",
     "jsr:@std/flags@0.224.0": "0.224.0",
     "jsr:@std/fmt@1": "1.0.8",
     "jsr:@std/fmt@1.0.8": "1.0.8",
-    "jsr:@std/fs@1": "1.0.19",
-    "jsr:@std/fs@1.0.19": "1.0.19",
-    "jsr:@std/internal@^1.0.6": "1.0.10",
-    "jsr:@std/internal@^1.0.9": "1.0.10",
+    "jsr:@std/fs@1": "1.0.20",
+    "jsr:@std/internal@^1.0.12": "1.0.12",
+    "jsr:@std/internal@^1.0.6": "1.0.12",
+    "jsr:@std/internal@^1.0.9": "1.0.12",
     "jsr:@std/io@0.225.2": "0.225.2",
-    "jsr:@std/path@0.217": "0.217.0",
-    "jsr:@std/path@1": "1.1.1",
+    "jsr:@std/path@1": "1.1.3",
+    "jsr:@std/path@1.0": "1.0.9",
     "jsr:@std/path@1.1.1": "1.1.1",
-    "jsr:@std/path@^1.1.1": "1.1.1",
+    "jsr:@std/path@^1.1.3": "1.1.3",
     "jsr:@std/streams@1.0.10": "1.0.10",
     "npm:@apeleghq/rfc8188@*": "1.0.7",
     "npm:@apeleghq/rfc8188@1.0.7": "1.0.7",
     "npm:@chelonia/crypto@*": "1.0.1",
-    "npm:@chelonia/crypto@1.0.1": "1.0.1",
     "npm:@chelonia/lib@*": "1.2.7_@sbp+sbp@2.4.1",
     "npm:@chelonia/lib@1.2.7": "1.2.7_@sbp+sbp@2.4.1",
-    "npm:@chelonia/lib@1.2.8": "1.2.8_@sbp+sbp@2.4.1",
+    "npm:@chelonia/lib@1.2.9": "1.2.9_@sbp+sbp@2.4.1",
+    "npm:@chelonia/serdes@1.0.0": "1.0.0",
     "npm:@eslint/js@9.31.0": "9.31.0",
     "npm:@hapi/boom@10.0.1": "10.0.1",
     "npm:@hapi/hapi@21.4.3": "21.4.3",
     "npm:@hapi/inert@7.1.0": "7.1.0",
-    "npm:@multiformats/blake2@*": "1.0.13",
-    "npm:@multiformats/blake2@1.0.13": "1.0.13",
     "npm:@sbp/okturtles.data@0.1.5": "0.1.5_@sbp+sbp@2.4.1",
     "npm:@sbp/okturtles.data@0.1.7": "0.1.7_@sbp+sbp@2.4.1",
     "npm:@sbp/okturtles.eventqueue@1.2.0": "1.2.0_@sbp+sbp@2.4.1",
@@ -63,7 +59,6 @@
     "npm:pino@8.19.0": "8.19.0",
     "npm:redis@5.9.0": "5.9.0_@redis+client@5.9.0",
     "npm:rimraf@3.0.2": "3.0.2",
-    "npm:scrypt-async@2.0.1": "2.0.1",
     "npm:smol-toml@1.4.2": "1.4.2",
     "npm:tar@6.2.1": "6.2.1",
     "npm:three@0.151.3": "0.151.3",
@@ -83,11 +78,11 @@
     "npm:zod@4.0.5": "4.0.5"
   },
   "jsr": {
-    "@db/sqlite@0.12.0": {
-      "integrity": "dd1ef7f621ad50fc1e073a1c3609c4470bd51edc0994139c5bf9851de7a6d85f",
+    "@db/sqlite@0.13.0": {
+      "integrity": "4545c635e0b3d4ddfdc0f2240f932f24b8ad0178e9c2e3a0f9403e7b18ae2fb5",
       "dependencies": [
         "jsr:@denosaurs/plug",
-        "jsr:@std/path@0.217"
+        "jsr:@std/path@1.0"
       ]
     },
     "@denosaurs/plug@1.1.0": {
@@ -95,12 +90,9 @@
       "dependencies": [
         "jsr:@std/encoding@1",
         "jsr:@std/fmt@1",
-        "jsr:@std/fs@1",
+        "jsr:@std/fs",
         "jsr:@std/path@1"
       ]
-    },
-    "@std/assert@0.217.0": {
-      "integrity": "c98e279362ca6982d5285c3b89517b757c1e3477ee9f14eb2fdf80a45aaa9642"
     },
     "@std/assert@0.224.0": {
       "integrity": "8643233ec7aec38a940a8264a6e3eed9bfa44e7a71cc6b3c8874213ff401967f"
@@ -126,15 +118,18 @@
     "@std/fmt@1.0.8": {
       "integrity": "71e1fc498787e4434d213647a6e43e794af4fd393ef8f52062246e06f7e372b7"
     },
-    "@std/fs@1.0.19": {
-      "integrity": "051968c2b1eae4d2ea9f79a08a3845740ef6af10356aff43d3e2ef11ed09fb06",
+    "@std/fs@1.0.20": {
+      "integrity": "e953206aae48d46ee65e8783ded459f23bec7dd1f3879512911c35e5484ea187",
       "dependencies": [
-        "jsr:@std/internal@^1.0.9",
-        "jsr:@std/path@^1.1.1"
+        "jsr:@std/internal@^1.0.12",
+        "jsr:@std/path@^1.1.3"
       ]
     },
     "@std/internal@1.0.10": {
       "integrity": "e3be62ce42cab0e177c27698e5d9800122f67b766a0bea6ca4867886cbde8cf7"
+    },
+    "@std/internal@1.0.12": {
+      "integrity": "972a634fd5bc34b242024402972cd5143eac68d8dffaca5eaa4dba30ce17b027"
     },
     "@std/io@0.225.2": {
       "integrity": "3c740cd4ee4c082e6cfc86458f47e2ab7cb353dc6234d5e9b1f91a2de5f4d6c7",
@@ -142,16 +137,19 @@
         "jsr:@std/bytes@^1.0.5"
       ]
     },
-    "@std/path@0.217.0": {
-      "integrity": "1217cc25534bca9a2f672d7fe7c6f356e4027df400c0e85c0ef3e4343bc67d11",
-      "dependencies": [
-        "jsr:@std/assert@0.217"
-      ]
+    "@std/path@1.0.9": {
+      "integrity": "260a49f11edd3db93dd38350bf9cd1b4d1366afa98e81b86167b4e3dd750129e"
     },
     "@std/path@1.1.1": {
       "integrity": "fe00026bd3a7e6a27f73709b83c607798be40e20c81dde655ce34052fd82ec76",
       "dependencies": [
         "jsr:@std/internal@^1.0.9"
+      ]
+    },
+    "@std/path@1.1.3": {
+      "integrity": "b015962d82a5e6daea980c32b82d2c40142149639968549c649031a230b1afb3",
+      "dependencies": [
+        "jsr:@std/internal@^1.0.12"
       ]
     },
     "@std/streams@1.0.10": {
@@ -218,8 +216,8 @@
         "tweetnacl"
       ]
     },
-    "@chelonia/lib@1.2.8_@sbp+sbp@2.4.1": {
-      "integrity": "sha512-KuH0i602wleRpjgi/GquZ1SUVKFHmqs+MYTkRosnluNObNI0ijnnLBRdtRjVkod3G1xbqjb+i0ctK4XCPoOQ0w==",
+    "@chelonia/lib@1.2.9_@sbp+sbp@2.4.1": {
+      "integrity": "sha512-vyr/4V0Jcr97S3873xJL0+pXE4kxIqwsSin84hdNaIpSoJ8hIjizHpznV2loe/eQmtq7uReTkezJcyhzjQ5JfA==",
       "dependencies": [
         "@apeleghq/multipart-parser",
         "@apeleghq/rfc8188@1.0.8",
@@ -848,13 +846,6 @@
     "@humanwhocodes/retry@0.4.3": {
       "integrity": "sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ=="
     },
-    "@multiformats/blake2@1.0.13": {
-      "integrity": "sha512-T1Kzya0wjj85CaVeRSpJ858EnSvW1pw94GSitxYf84VsNdv5XYbJ6QG8y26Ft1bVALzrUCmqkQrR53QHSyu6RA==",
-      "dependencies": [
-        "blakejs",
-        "multiformats@9.9.0"
-      ]
-    },
     "@nodelib/fs.scandir@2.1.5": {
       "integrity": "sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==",
       "dependencies": [
@@ -1013,7 +1004,7 @@
     "@sbp/okturtles.eventqueue@1.2.0_@sbp+sbp@2.4.1": {
       "integrity": "sha512-u+ErtLInzVXs3eUV9I7B2l7Jj0NxDBJD9erCGmIZmgNwJfkH3B8iLk6HMyA3nGe/PHgv6GbBBC1tKjNuazhXNg==",
       "dependencies": [
-        "@sbp/okturtles.data@0.1.5_@sbp+sbp@2.4.1",
+        "@sbp/okturtles.data@0.1.7_@sbp+sbp@2.4.1",
         "@sbp/sbp"
       ]
     },
@@ -1026,14 +1017,14 @@
     "@sbp/okturtles.events@1.0.0_@sbp+sbp@2.4.1": {
       "integrity": "sha512-5Yv0xwgo79rGC84oDYCqvbY857SxqntfYVh4645HuAzQsbjuHdjaao2/0/zU/QptiVd7a9tgkzIDFEqFlsHdZw==",
       "dependencies": [
-        "@sbp/okturtles.data@0.1.5_@sbp+sbp@2.4.1",
+        "@sbp/okturtles.data@0.1.7_@sbp+sbp@2.4.1",
         "@sbp/sbp"
       ]
     },
     "@sbp/okturtles.events@1.0.1_@sbp+sbp@2.4.1": {
       "integrity": "sha512-cFPGjx0sw9fBLK7yWaumM2HYJc+kW+4tP7zTpio6MfMsdKA1iTM/mNkxjIHTCnp50YUYA7ZYcresj2WZLrB0zA==",
       "dependencies": [
-        "@sbp/okturtles.data@0.1.6_@sbp+sbp@2.4.1",
+        "@sbp/okturtles.data@0.1.7_@sbp+sbp@2.4.1",
         "@sbp/sbp"
       ]
     },
@@ -2261,9 +2252,6 @@
     "multiformats@11.0.2": {
       "integrity": "sha512-b5mYMkOkARIuVZCpvijFj9a6m5wMVLC7cf/jIPd5D/ARDOfLC5+IFkbgDXQgcU2goIsTD/O9NY4DI/Mt4OGvlg=="
     },
-    "multiformats@9.9.0": {
-      "integrity": "sha512-HoMUjhH9T8DDBNT+6xzkrd9ga/XiBI4xLr58LJACwK6G3HTOPeMz4nB4KJs33L2BelrIJa7P0VuNaVF3hMYfjg=="
-    },
     "nanoid@3.3.11": {
       "integrity": "sha512-N8SpfPUnUp1bK+PMYW8qSWdl9U+wwNWI4QKxOYDy9JAro3WMX7p2OeVRF9v+347pnakNevPmiHhNmZ2HbFA76w==",
       "bin": true
@@ -3138,7 +3126,7 @@
   },
   "workspace": {
     "dependencies": [
-      "jsr:@db/sqlite@0.12.0",
+      "jsr:@db/sqlite@0.13.0",
       "jsr:@std/assert@1.0.13",
       "jsr:@std/encoding@1.0.10",
       "jsr:@std/flags@0.224.0",
@@ -3148,7 +3136,8 @@
       "jsr:@std/path@1.1.1",
       "jsr:@std/streams@1.0.10",
       "npm:@apeleghq/rfc8188@1.0.7",
-      "npm:@chelonia/lib@1.2.8",
+      "npm:@chelonia/lib@1.2.9",
+      "npm:@chelonia/serdes@1.0.0",
       "npm:@eslint/js@9.31.0",
       "npm:@hapi/boom@10.0.1",
       "npm:@hapi/hapi@21.4.3",

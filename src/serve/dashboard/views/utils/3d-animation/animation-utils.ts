@@ -168,4 +168,3 @@ export {
   Axes, Column, CombineWithEdge,
   Edgify, LineMesh, adjustCameraAspect, degreeToRadian, randomFromMinMax, resizeRendererToDisplaySize
 }
-

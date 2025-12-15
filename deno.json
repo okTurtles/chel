@@ -8,6 +8,7 @@
     "test": "deno task lint && database__backendOptions__fs__skipFsCaseSensitivityCheck=true deno test --unstable-worker-options --allow-read=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-write=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-env --allow-ffi --allow-net --allow-sys"
   },
   "imports": {
+    "@db/sqlite": "jsr:@db/sqlite@0.13.0",
     "~/": "./src/",
     "assert": "node:assert",
     "buffer": "node:buffer",
@@ -23,7 +24,7 @@
     "jsr:@std/path/": "jsr:@std/path@1.1.1/",
     "jsr:@std/streams/": "jsr:@std/streams@1.0.10/",
     "jsr:@std/io/": "jsr:@std/io@0.225.2/",
-    "jsr:@db/sqlite": "jsr:@db/sqlite@0.12.0",
+    "jsr:@db/sqlite": "jsr:@db/sqlite@0.13.0",
     "npm:@types/node": "npm:@types/node@24.0.13",
     "npm:@vue/component-compiler": "npm:@vue/component-compiler@4.2.4",
     "npm:@sbp/sbp": "npm:@sbp/sbp@2.4.1",
@@ -46,7 +47,7 @@
     "npm:multiformats/": "npm:multiformats@11.0.2/",
     "npm:@hapi/hapi": "npm:@hapi/hapi@21.4.3",
     "npm:@hapi/boom": "npm:@hapi/boom@10.0.1",
-    "npm:@chelonia/lib/": "npm:@chelonia/lib@1.2.8/",
+    "npm:@chelonia/lib/": "npm:@chelonia/lib@1.2.9/",
     "npm:lru-cache": "npm:lru-cache@7.14.0",
     "npm:pino": "npm:pino@8.19.0",
     "npm:tweetnacl": "npm:tweetnacl@1.0.3",
@@ -62,7 +63,8 @@
     "npm:yargs": "npm:yargs@16.2.0",
     "npm:@types/nconf": "npm:@types/nconf@0.10.7",
     "npm:@types/yargs": "npm:@types/yargs@17.0.34",
-    "npm:smol-toml": "npm:smol-toml@1.4.2"
+    "npm:smol-toml": "npm:smol-toml@1.4.2",
+    "npm:@chelonia/serdes": "npm:@chelonia/serdes@1.0.0"
   },
   "nodeModulesDir": "auto",
   "fmt": {

@@ -10,10 +10,10 @@ import * as Hapi from 'npm:@hapi/hapi'
 import Inert from 'npm:@hapi/inert'
 import sbp from 'npm:@sbp/sbp'
 import chalk from 'npm:chalk'
+import createWorker from './createWorker.ts'
 // import type { SubMessage, UnsubMessage } from './pubsub.ts' // TODO: Use for type checking
-import { basename, join } from 'node:path'
+import { join } from 'node:path'
 import process from 'node:process'
-import { Worker } from 'node:worker_threads'
 import authPlugin from './auth.ts'
 import { CREDITS_WORKER_TASK_TIME_INTERVAL, OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL } from './constants.ts'
 import { KEYOP_SEGMENT_LENGTH, appendToIndexFactory, initDB, lookupUltimateOwner, removeFromIndexFactory, updateSize } from './database.ts'
@@ -36,75 +36,6 @@ import nconf from 'npm:nconf'
 
 const ARCHIVE_MODE = nconf.get('server:archiveMode')
 
-type WorkerType = {
-  ready: Promise<void>,
-  rpcSbp: (...args: unknown[]) => Promise<unknown>,
-  terminate: () => Promise<number>
-}
-
-const createWorker = (path: string): WorkerType => {
-  let worker: Worker
-  let ready: Promise<void>
-
-  const launchWorker = (): Promise<void> => {
-    worker = new Worker(path)
-    return new Promise<void>((resolve, reject) => {
-      const msgHandler = (msg: unknown) => {
-        if (msg === 'ready') {
-          worker.off('error', reject)
-          worker.on('error', (e: unknown) => {
-            console.error(e, `Running worker ${basename(path)} terminated. Attempting relaunch...`)
-            worker.off('message', msgHandler)
-            // This won't result in an infinite loop because of exiting and
-            // because this handler is only executed after the 'ready' event
-            // Relaunch can happen multiple times, so long as the worker doesn't
-            // immediately fail.
-            ready = launchWorker().catch((e: unknown) => {
-              console.error(e, `Error on worker ${basename(path)} relaunch`)
-              process.exit(1)
-            })
-          })
-          resolve()
-        }
-      }
-      worker.on('message', msgHandler)
-      worker.once('error', reject)
-    })
-  }
-  ready = launchWorker()
-
-  const rpcSbp = (...args: unknown[]): Promise<unknown> => {
-    return ready.then(() => new Promise<unknown>((resolve, reject) => {
-      const mc = new MessageChannel()
-      const cleanup = ((worker: Worker) => () => {
-        worker.off('error', reject)
-        mc.port2.onmessage = null
-        mc.port2.onmessageerror = null
-      })(worker)
-      mc.port2.onmessage = (event) => {
-        cleanup()
-        const [success, result] = (event.data as unknown) as [boolean, unknown]
-        if (success) return resolve(result)
-        reject(result)
-      }
-      mc.port2.onmessageerror = () => {
-        cleanup()
-        reject(Error('Message error'))
-      }
-      worker.postMessage([mc.port1, ...args], [mc.port1] as unknown as readonly import('node:worker_threads').TransferListItem[])
-      // If the worker itself breaks during an SBP call, we want to make sure
-      // this promise immediately rejects
-      worker.once('error', reject)
-    }))
-  }
-
-  return {
-    ready,
-    rpcSbp,
-    terminate: () => worker.terminate()
-  }
-}
-
 if (CREDITS_WORKER_TASK_TIME_INTERVAL && OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL > CREDITS_WORKER_TASK_TIME_INTERVAL) {
   process.stderr.write('The size calculation worker must run more frequently than the credits worker for accurate billing')
   process.exit(1)
@@ -113,10 +44,10 @@ if (CREDITS_WORKER_TASK_TIME_INTERVAL && OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTER
 // Initialize workers for size calculation and credits processing
 const ownerSizeTotalWorker = ARCHIVE_MODE || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL
   ? undefined
-  : createWorker(join(import.meta.dirname || '.', 'serve', 'ownerSizeTotalWorker.js'))
+  : createWorker(join(import.meta.dirname || '.', import.meta.workerDir || '.', 'ownerSizeTotalWorker.js'))
 const creditsWorker = ARCHIVE_MODE || !CREDITS_WORKER_TASK_TIME_INTERVAL
   ? undefined
-  : createWorker(join(import.meta.dirname || '.', 'serve', 'creditsWorker.js'))
+  : createWorker(join(import.meta.dirname || '.', import.meta.workerDir || '.', 'creditsWorker.js'))
 
 const { CONTRACTS_VERSION, GI_VERSION } = process.env
 

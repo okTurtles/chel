@@ -1,5 +1,6 @@
+import { multicodes } from 'npm:@chelonia/lib/functions'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
-import { createEntryFromFile, multicodes } from './utils.ts'
+import { createEntryFromFile } from './utils.ts'
 
 // TODO: use https://doc.deno.land/https://deno.land/std@0.140.0/streams/mod.ts/~/iterateReader instead to read in large files, and then use blake2b[Init,Update,Final] to iteratively calculate the hash
 //       Verify that it returns the same hash as when we use readAll https://doc.deno.land/https://deno.land/std@0.140.0/streams/mod.ts/~/readAll

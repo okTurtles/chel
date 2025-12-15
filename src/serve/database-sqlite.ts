@@ -38,7 +38,8 @@ export default class SqliteBackend extends DatabaseBackend {
     this.db = new sqlite.Database(join(dataFolder, filename))
     this.run('CREATE TABLE IF NOT EXISTS Data(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)')
     console.info(`Connected to the ${filename} SQLite database.`)
-    this.readStatement = this.db.prepare('SELECT value FROM Data WHERE key = ?')
+    // Case to BLOB to avoid https://github.com/denodrivers/sqlite3/issues/158
+    this.readStatement = this.db.prepare('SELECT CAST(value AS BLOB) value FROM Data WHERE key = ?')
     this.writeStatement = this.db.prepare('REPLACE INTO Data(key, value) VALUES(?, ?)')
     this.deleteStatement = this.db.prepare('DELETE FROM Data WHERE key = ?')
     this.iterKeysStatement = this.db.prepare('SELECT key FROM Data')
