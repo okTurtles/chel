@@ -1,6 +1,7 @@
 // chel migrate --to <backend>
 
 import * as colors from 'jsr:@std/fmt/colors'
+import type { Buffer } from 'node:buffer'
 import { readFile } from 'node:fs/promises'
 import process from 'node:process'
 import sbp from 'npm:@sbp/sbp'
@@ -46,7 +47,7 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
   let numVisitedKeys = 0
 
   const reportStatus = () => {
-    console.log(`[chel] ${colors.green('Migrated:')} ${numMigratedKeys} entries`)
+    console.log(`${colors.green('Migrated:')} ${numMigratedKeys} entries`)
   }
 
   const checkAndExit = (() => {
@@ -94,30 +95,32 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
   for await (const key of sbp('chelonia.db/iterKeys')) {
     numVisitedKeys++
     if (!isValidKey(key)) {
-      console.debug('[chel] Skipping invalid key', key)
+      console.debug('Skipping invalid key', key)
       continue
     }
     // `any:` prefix needed to get the raw value, else the default is getting
     // a string, which will be encoded as UTF-8. This can cause data loss.
-    let value: unknown
+    let value: Buffer | string
     try {
       value = await sbp('chelonia.db/get', `any:${key}`)
     } catch (e) {
       reportStatus()
-      console.error('Error reading from source databse', key, e)
+      console.error(`Error reading from source database key '${key}'`, e)
+      await backendTo.close()
       exit(1)
     }
     await checkAndExit()
     // Make `deno check` happy.
     if (value === undefined) {
-      console.debug('[chel] Skipping empty key', key)
+      console.debug('Skipping empty key', key)
       continue
     }
     try {
       await backendTo.writeData(key, value)
     } catch (e) {
       reportStatus()
-      console.error('Error writing to target databse', key, e)
+      console.error(`Error writing to target database key '${key}'`, e)
+      await backendTo.close()
       exit(1)
     }
     await checkAndExit()
@@ -126,7 +129,7 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
     const percentage = Math.floor((numVisitedKeys / numKeys) * 100)
     if (percentage - lastReportedPercentage >= 10) {
       lastReportedPercentage = percentage
-      console.log(`[chel] Migrating... ${percentage}% done`)
+      console.log(`Migrating... ${percentage}% done`)
     }
   }
   reportStatus()

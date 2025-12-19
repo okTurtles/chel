@@ -109560,7 +109560,7 @@ async function migrate(args) {
   let numMigratedKeys = 0;
   let numVisitedKeys = 0;
   const reportStatus = () => {
-    console.log(`[chel] ${green("Migrated:")} ${numMigratedKeys} entries`);
+    console.log(`${green("Migrated:")} ${numMigratedKeys} entries`);
   };
   const checkAndExit = (() => {
     let interruptCount = 0;
@@ -109598,7 +109598,7 @@ async function migrate(args) {
   for await (const key of esm_default("chelonia.db/iterKeys")) {
     numVisitedKeys++;
     if (!isValidKey(key)) {
-      console.debug("[chel] Skipping invalid key", key);
+      console.debug("Skipping invalid key", key);
       continue;
     }
     let value;
@@ -109606,19 +109606,21 @@ async function migrate(args) {
       value = await esm_default("chelonia.db/get", `any:${key}`);
     } catch (e2) {
       reportStatus();
-      console.error("Error reading from source databse", key, e2);
+      console.error(`Error reading from source database key '${key}'`, e2);
+      await backendTo.close();
       exit(1);
     }
     await checkAndExit();
     if (value === void 0) {
-      console.debug("[chel] Skipping empty key", key);
+      console.debug("Skipping empty key", key);
       continue;
     }
     try {
       await backendTo.writeData(key, value);
     } catch (e2) {
       reportStatus();
-      console.error("Error writing to target databse", key, e2);
+      console.error(`Error writing to target database key '${key}'`, e2);
+      await backendTo.close();
       exit(1);
     }
     await checkAndExit();
@@ -109626,7 +109628,7 @@ async function migrate(args) {
     const percentage = Math.floor(numVisitedKeys / numKeys2 * 100);
     if (percentage - lastReportedPercentage >= 10) {
       lastReportedPercentage = percentage;
-      console.log(`[chel] Migrating... ${percentage}% done`);
+      console.log(`Migrating... ${percentage}% done`);
     }
   }
   reportStatus();
