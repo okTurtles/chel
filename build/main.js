@@ -109555,48 +109555,86 @@ async function migrate(args) {
     await backendTo.init();
   } catch (error) {
     exit(error);
+    throw error;
   }
   const numKeys2 = await esm_default("chelonia.db/keyCount");
+  let numMigratedKeys = 0;
   let numVisitedKeys = 0;
-  let shouldExit = 0;
-  const handleSignal2 = (signal, code2) => {
-    process3.on(signal, () => {
-      console.error(`Received signal ${signal} (${code2}). Finishing current operation.`);
-      shouldExit = 128 + code2;
-    });
+  const reportStatus = () => {
+    console.log(`${green("Migrated:")} ${numMigratedKeys} entries`);
   };
-  [
-    ["SIGHUP", 1],
-    ["SIGINT", 2],
-    ["SIGQUIT", 3],
-    ["SIGTERM", 15],
-    ["SIGUSR1", 10],
-    ["SIGUSR2", 11]
-  ].forEach(([signal, code2]) => handleSignal2(signal, code2));
+  const checkAndExit = (() => {
+    let interruptCount = 0;
+    let shouldExit = 0;
+    const handleSignal2 = (signal, code2) => {
+      process3.on(signal, () => {
+        shouldExit = 128 + code2;
+        if (++interruptCount < 3) {
+          console.error(`Received signal ${signal} (${code2}). Finishing current operation.`);
+        } else {
+          console.error(`Received signal ${signal} (${code2}). Force quitting.`);
+          reportStatus();
+          exit(shouldExit);
+        }
+      });
+    };
+    const checkAndExit2 = async () => {
+      if (shouldExit) {
+        await backendTo.close();
+        reportStatus();
+        exit(shouldExit);
+      }
+    };
+    [
+      ["SIGHUP", 1],
+      ["SIGINT", 2],
+      ["SIGQUIT", 3],
+      ["SIGTERM", 15],
+      ["SIGUSR1", 10],
+      ["SIGUSR2", 11]
+    ].forEach(([signal, code2]) => handleSignal2(signal, code2));
+    return checkAndExit2;
+  })();
   let lastReportedPercentage = 0;
   for await (const key of esm_default("chelonia.db/iterKeys")) {
-    if (!isValidKey(key)) continue;
-    const value = await esm_default("chelonia.db/get", key);
-    if (shouldExit) {
-      exit(shouldExit);
-    }
-    if (value === void 0) {
-      console.debug("[chel] Skipping empty key", key);
+    numVisitedKeys++;
+    if (!isValidKey(key)) {
+      console.debug("Skipping invalid key", key);
       continue;
     }
-    await backendTo.writeData(key, value);
-    if (shouldExit) {
+    let value;
+    try {
+      value = await esm_default("chelonia.db/get", `any:${key}`);
+    } catch (e2) {
+      reportStatus();
+      console.error(`Error reading from source database key '${key}'`, e2);
       await backendTo.close();
-      exit(shouldExit);
+      exit(1);
+      throw e2;
     }
-    ++numVisitedKeys;
+    await checkAndExit();
+    if (value === void 0) {
+      console.debug("Skipping empty key", key);
+      continue;
+    }
+    try {
+      await backendTo.writeData(key, value);
+    } catch (e2) {
+      reportStatus();
+      console.error(`Error writing to target database key '${key}'`, e2);
+      await backendTo.close();
+      exit(1);
+      throw e2;
+    }
+    await checkAndExit();
+    ++numMigratedKeys;
     const percentage = Math.floor(numVisitedKeys / numKeys2 * 100);
     if (percentage - lastReportedPercentage >= 10) {
       lastReportedPercentage = percentage;
-      console.log(`[chel] Migrating... ${percentage}% done`);
+      console.log(`Migrating... ${percentage}% done`);
     }
   }
-  numVisitedKeys && console.log(`[chel] ${green("Migrated:")} ${numVisitedKeys} entries`);
+  reportStatus();
   await backendTo.close();
 }
 var module9 = {

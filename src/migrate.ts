@@ -1,6 +1,7 @@
 // chel migrate --to <backend>
 
 import * as colors from 'jsr:@std/fmt/colors'
+import type { Buffer } from 'node:buffer'
 import { readFile } from 'node:fs/promises'
 import process from 'node:process'
 import sbp from 'npm:@sbp/sbp'
@@ -39,58 +40,102 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
     await backendTo.init()
   } catch (error) {
     exit(error)
+    throw error
   }
 
   const numKeys = await sbp('chelonia.db/keyCount')
+  let numMigratedKeys = 0
   let numVisitedKeys = 0
-  let shouldExit = 0
 
-  const handleSignal = (signal: string, code: number) => {
-    process.on(signal, () => {
-      console.error(`Received signal ${signal} (${code}). Finishing current operation.`)
-      // Exit codes follow the 128 + signal code convention.
-      // See <https://tldp.org/LDP/abs/html/exitcodes.html>
-      shouldExit = 128 + code
-    })
+  const reportStatus = () => {
+    console.log(`${colors.green('Migrated:')} ${numMigratedKeys} entries`)
   }
 
-  // Codes from <signal.h>
-  ;([
-    ['SIGHUP', 1],
-    ['SIGINT', 2],
-    ['SIGQUIT', 3],
-    ['SIGTERM', 15],
-    ['SIGUSR1', 10],
-    ['SIGUSR2', 11]
-  ] as [string, number][]).forEach(([signal, code]) => handleSignal(signal, code))
+  const checkAndExit = (() => {
+    let interruptCount = 0
+    let shouldExit = 0
+
+    const handleSignal = (signal: string, code: number) => {
+      process.on(signal, () => {
+        // Exit codes follow the 128 + signal code convention.
+        // See <https://tldp.org/LDP/abs/html/exitcodes.html>
+        shouldExit = 128 + code
+
+        if (++interruptCount < 3) {
+          console.error(`Received signal ${signal} (${code}). Finishing current operation.`)
+        } else {
+          console.error(`Received signal ${signal} (${code}). Force quitting.`)
+          reportStatus()
+          exit(shouldExit)
+        }
+      })
+    }
+
+    const checkAndExit = async () => {
+      if (shouldExit) {
+        await backendTo.close()
+        reportStatus()
+        exit(shouldExit)
+      }
+    }
+
+    // Codes from <signal.h>
+    ;([
+      ['SIGHUP', 1],
+      ['SIGINT', 2],
+      ['SIGQUIT', 3],
+      ['SIGTERM', 15],
+      ['SIGUSR1', 10],
+      ['SIGUSR2', 11]
+    ] as [string, number][]).forEach(([signal, code]) => handleSignal(signal, code))
+
+    return checkAndExit
+  })()
 
   let lastReportedPercentage = 0
   for await (const key of sbp('chelonia.db/iterKeys')) {
-    if (!isValidKey(key)) continue
-    const value = await sbp('chelonia.db/get', key)
-    if (shouldExit) {
-      exit(shouldExit)
-    }
-    // Make `deno check` happy.
-    if (value === undefined) {
-      console.debug('[chel] Skipping empty key', key)
-      // ++numVisitedKeys
+    numVisitedKeys++
+    if (!isValidKey(key)) {
+      console.debug('Skipping invalid key', key)
       continue
     }
-    await backendTo.writeData(key, value)
-    if (shouldExit) {
+    // `any:` prefix needed to get the raw value, else the default is getting
+    // a string, which will be encoded as UTF-8. This can cause data loss.
+    let value: Buffer | string | undefined
+    try {
+      value = await sbp('chelonia.db/get', `any:${key}`)
+    } catch (e) {
+      reportStatus()
+      console.error(`Error reading from source database key '${key}'`, e)
       await backendTo.close()
-      exit(shouldExit)
+      exit(1)
+      throw e
     }
-    ++numVisitedKeys
+    await checkAndExit()
+    // Make `deno check` happy.
+    if (value === undefined) {
+      console.debug('Skipping empty key', key)
+      continue
+    }
+    try {
+      await backendTo.writeData(key, value)
+    } catch (e) {
+      reportStatus()
+      console.error(`Error writing to target database key '${key}'`, e)
+      await backendTo.close()
+      exit(1)
+      throw e
+    }
+    await checkAndExit()
+    ++numMigratedKeys
     // Prints a message roughly every 10% of progress.
     const percentage = Math.floor((numVisitedKeys / numKeys) * 100)
     if (percentage - lastReportedPercentage >= 10) {
       lastReportedPercentage = percentage
-      console.log(`[chel] Migrating... ${percentage}% done`)
+      console.log(`Migrating... ${percentage}% done`)
     }
   }
-  numVisitedKeys && console.log(`[chel] ${colors.green('Migrated:')} ${numVisitedKeys} entries`)
+  reportStatus()
   await backendTo.close()
 }
 
