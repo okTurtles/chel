@@ -38,17 +38,7 @@ const parseConfig = () => {
       'database': {
         'lruNumItems': 10000,
         'backend': 'mem',
-        'backendOptions': {
-          'fs': {
-            'depth': 0,
-            'keyChunkLength': 2,
-            'dirname': './data',
-            'skipFsCaseSensitivityCheck': false
-          },
-          'sqlite': {
-            'filepath': './data/chelonia.db'
-          }
-        }
+        'backendOptions': {}
       }
     })
 }

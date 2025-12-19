@@ -41,14 +41,14 @@ const splitAndGroup = (input: string, chunkLength: number, depth: number): strin
 }, [])
 
 export default class FsBackend extends DatabaseBackend {
-  dataFolder: string = ''
+  dataFolder: string = 'data'
   depth: number = 0
   keyChunkLength: number = 2
   skipFsCaseSensitivityCheck: boolean = false
 
   constructor (options: { dirname?: string; depth?: number; keyChunkLength?: number, skipFsCaseSensitivityCheck?: boolean } = {}) {
     super()
-    this.dataFolder = resolve(options.dirname!)
+    if (options.dirname) this.dataFolder = resolve(options.dirname)
     if (options.depth) this.depth = options.depth
     if (options.keyChunkLength) this.keyChunkLength = options.keyChunkLength
     if (options.skipFsCaseSensitivityCheck) this.skipFsCaseSensitivityCheck = true
