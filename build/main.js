@@ -109597,13 +109597,13 @@ async function migrate(args) {
       continue;
     }
     const value = await esm_default("chelonia.db/get", `any:${key}`);
-    checkAndExit();
+    await checkAndExit();
     if (value === void 0) {
       console.debug("[chel] Skipping empty key", key);
       continue;
     }
     await backendTo.writeData(key, value);
-    checkAndExit();
+    await checkAndExit();
     ++numMigratedKeys;
     const percentage = Math.floor(numVisitedKeys / numKeys2 * 100);
     if (percentage - lastReportedPercentage >= 10) {

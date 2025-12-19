@@ -94,14 +94,14 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
     // `any:` prefix needed to get the raw value, else the default is getting
     // a string, which will be encoded as UTF-8. This can cause data loss.
     const value = await sbp('chelonia.db/get', `any:${key}`)
-    checkAndExit()
+    await checkAndExit()
     // Make `deno check` happy.
     if (value === undefined) {
       console.debug('[chel] Skipping empty key', key)
       continue
     }
     await backendTo.writeData(key, value)
-    checkAndExit()
+    await checkAndExit()
     ++numMigratedKeys
     // Prints a message roughly every 10% of progress.
     const percentage = Math.floor((numVisitedKeys / numKeys) * 100)
