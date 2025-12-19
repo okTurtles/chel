@@ -109557,6 +109557,7 @@ async function migrate(args) {
     exit(error);
   }
   const numKeys2 = await esm_default("chelonia.db/keyCount");
+  let numMigratedKeys = 0;
   let numVisitedKeys = 0;
   let shouldExit = 0;
   const handleSignal2 = (signal, code2) => {
@@ -109575,8 +109576,12 @@ async function migrate(args) {
   ].forEach(([signal, code2]) => handleSignal2(signal, code2));
   let lastReportedPercentage = 0;
   for await (const key of esm_default("chelonia.db/iterKeys")) {
-    if (!isValidKey(key)) continue;
-    const value = await esm_default("chelonia.db/get", key);
+    numVisitedKeys++;
+    if (!isValidKey(key)) {
+      console.debug("[chel] Skipping invalid key", key);
+      continue;
+    }
+    const value = await esm_default("chelonia.db/get", `any:${key}`);
     if (shouldExit) {
       exit(shouldExit);
     }
@@ -109589,14 +109594,14 @@ async function migrate(args) {
       await backendTo.close();
       exit(shouldExit);
     }
-    ++numVisitedKeys;
+    ++numMigratedKeys;
     const percentage = Math.floor(numVisitedKeys / numKeys2 * 100);
     if (percentage - lastReportedPercentage >= 10) {
       lastReportedPercentage = percentage;
       console.log(`[chel] Migrating... ${percentage}% done`);
     }
   }
-  numVisitedKeys && console.log(`[chel] ${green("Migrated:")} ${numVisitedKeys} entries`);
+  console.log(`[chel] ${green("Migrated:")} ${numMigratedKeys} entries`);
   await backendTo.close();
 }
 var module9 = {

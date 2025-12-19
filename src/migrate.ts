@@ -42,6 +42,7 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
   }
 
   const numKeys = await sbp('chelonia.db/keyCount')
+  let numMigratedKeys = 0
   let numVisitedKeys = 0
   let shouldExit = 0
 
@@ -66,15 +67,20 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
 
   let lastReportedPercentage = 0
   for await (const key of sbp('chelonia.db/iterKeys')) {
-    if (!isValidKey(key)) continue
-    const value = await sbp('chelonia.db/get', key)
+    numVisitedKeys++
+    if (!isValidKey(key)) {
+      console.debug('[chel] Skipping invalid key', key)
+      continue
+    }
+    // `any:` prefix needed to get the raw value, else the default is getting
+    // a string, which will be encoded as UTF-8. This can cause data loss.
+    const value = await sbp('chelonia.db/get', `any:${key}`)
     if (shouldExit) {
       exit(shouldExit)
     }
     // Make `deno check` happy.
     if (value === undefined) {
       console.debug('[chel] Skipping empty key', key)
-      // ++numVisitedKeys
       continue
     }
     await backendTo.writeData(key, value)
@@ -82,7 +88,7 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
       await backendTo.close()
       exit(shouldExit)
     }
-    ++numVisitedKeys
+    ++numMigratedKeys
     // Prints a message roughly every 10% of progress.
     const percentage = Math.floor((numVisitedKeys / numKeys) * 100)
     if (percentage - lastReportedPercentage >= 10) {
@@ -90,7 +96,7 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
       console.log(`[chel] Migrating... ${percentage}% done`)
     }
   }
-  numVisitedKeys && console.log(`[chel] ${colors.green('Migrated:')} ${numVisitedKeys} entries`)
+  console.log(`[chel] ${colors.green('Migrated:')} ${numMigratedKeys} entries`)
   await backendTo.close()
 }
 
