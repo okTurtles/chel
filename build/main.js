@@ -109555,6 +109555,7 @@ async function migrate(args) {
     await backendTo.init();
   } catch (error) {
     exit(error);
+    throw error;
   }
   const numKeys2 = await esm_default("chelonia.db/keyCount");
   let numMigratedKeys = 0;
@@ -109609,6 +109610,7 @@ async function migrate(args) {
       console.error(`Error reading from source database key '${key}'`, e2);
       await backendTo.close();
       exit(1);
+      throw e2;
     }
     await checkAndExit();
     if (value === void 0) {
@@ -109622,6 +109624,7 @@ async function migrate(args) {
       console.error(`Error writing to target database key '${key}'`, e2);
       await backendTo.close();
       exit(1);
+      throw e2;
     }
     await checkAndExit();
     ++numMigratedKeys;

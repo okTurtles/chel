@@ -40,6 +40,7 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
     await backendTo.init()
   } catch (error) {
     exit(error)
+    throw error
   }
 
   const numKeys = await sbp('chelonia.db/keyCount')
@@ -100,7 +101,7 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
     }
     // `any:` prefix needed to get the raw value, else the default is getting
     // a string, which will be encoded as UTF-8. This can cause data loss.
-    let value: Buffer | string
+    let value: Buffer | string | undefined
     try {
       value = await sbp('chelonia.db/get', `any:${key}`)
     } catch (e) {
@@ -108,6 +109,7 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
       console.error(`Error reading from source database key '${key}'`, e)
       await backendTo.close()
       exit(1)
+      throw e
     }
     await checkAndExit()
     // Make `deno check` happy.
@@ -122,6 +124,7 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
       console.error(`Error writing to target database key '${key}'`, e)
       await backendTo.close()
       exit(1)
+      throw e
     }
     await checkAndExit()
     ++numMigratedKeys
