@@ -45,8 +45,12 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
   let numMigratedKeys = 0
   let numVisitedKeys = 0
 
+  const reportStatus = () => {
+    console.log(`[chel] ${colors.green('Migrated:')} ${numMigratedKeys} entries`)
+  }
+
   const checkAndExit = (() => {
-    let interruputCount = 0
+    let interruptCount = 0
     let shouldExit = 0
 
     const handleSignal = (signal: string, code: number) => {
@@ -55,10 +59,11 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
         // See <https://tldp.org/LDP/abs/html/exitcodes.html>
         shouldExit = 128 + code
 
-        if (++interruputCount < 3) {
+        if (++interruptCount < 3) {
           console.error(`Received signal ${signal} (${code}). Finishing current operation.`)
         } else {
           console.error(`Received signal ${signal} (${code}). Force quitting.`)
+          reportStatus()
           exit(shouldExit)
         }
       })
@@ -67,6 +72,7 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
     const checkAndExit = async () => {
       if (shouldExit) {
         await backendTo.close()
+        reportStatus()
         exit(shouldExit)
       }
     }
@@ -93,14 +99,27 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
     }
     // `any:` prefix needed to get the raw value, else the default is getting
     // a string, which will be encoded as UTF-8. This can cause data loss.
-    const value = await sbp('chelonia.db/get', `any:${key}`)
+    let value: unknown
+    try {
+      value = await sbp('chelonia.db/get', `any:${key}`)
+    } catch (e) {
+      reportStatus()
+      console.error('Error reading from source databse', key, e)
+      exit(1)
+    }
     await checkAndExit()
     // Make `deno check` happy.
     if (value === undefined) {
       console.debug('[chel] Skipping empty key', key)
       continue
     }
-    await backendTo.writeData(key, value)
+    try {
+      await backendTo.writeData(key, value)
+    } catch (e) {
+      reportStatus()
+      console.error('Error writing to target databse', key, e)
+      exit(1)
+    }
     await checkAndExit()
     ++numMigratedKeys
     // Prints a message roughly every 10% of progress.
@@ -110,7 +129,7 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
       console.log(`[chel] Migrating... ${percentage}% done`)
     }
   }
-  console.log(`[chel] ${colors.green('Migrated:')} ${numMigratedKeys} entries`)
+  reportStatus()
   await backendTo.close()
 }
 

@@ -109559,16 +109559,20 @@ async function migrate(args) {
   const numKeys2 = await esm_default("chelonia.db/keyCount");
   let numMigratedKeys = 0;
   let numVisitedKeys = 0;
+  const reportStatus = () => {
+    console.log(`[chel] ${green("Migrated:")} ${numMigratedKeys} entries`);
+  };
   const checkAndExit = (() => {
-    let interruputCount = 0;
+    let interruptCount = 0;
     let shouldExit = 0;
     const handleSignal2 = (signal, code2) => {
       process3.on(signal, () => {
         shouldExit = 128 + code2;
-        if (++interruputCount < 3) {
+        if (++interruptCount < 3) {
           console.error(`Received signal ${signal} (${code2}). Finishing current operation.`);
         } else {
           console.error(`Received signal ${signal} (${code2}). Force quitting.`);
+          reportStatus();
           exit(shouldExit);
         }
       });
@@ -109576,6 +109580,7 @@ async function migrate(args) {
     const checkAndExit2 = async () => {
       if (shouldExit) {
         await backendTo.close();
+        reportStatus();
         exit(shouldExit);
       }
     };
@@ -109596,13 +109601,26 @@ async function migrate(args) {
       console.debug("[chel] Skipping invalid key", key);
       continue;
     }
-    const value = await esm_default("chelonia.db/get", `any:${key}`);
+    let value;
+    try {
+      value = await esm_default("chelonia.db/get", `any:${key}`);
+    } catch (e2) {
+      reportStatus();
+      console.error("Error reading from source databse", key, e2);
+      exit(1);
+    }
     await checkAndExit();
     if (value === void 0) {
       console.debug("[chel] Skipping empty key", key);
       continue;
     }
-    await backendTo.writeData(key, value);
+    try {
+      await backendTo.writeData(key, value);
+    } catch (e2) {
+      reportStatus();
+      console.error("Error writing to target databse", key, e2);
+      exit(1);
+    }
     await checkAndExit();
     ++numMigratedKeys;
     const percentage = Math.floor(numVisitedKeys / numKeys2 * 100);
@@ -109611,7 +109629,7 @@ async function migrate(args) {
       console.log(`[chel] Migrating... ${percentage}% done`);
     }
   }
-  console.log(`[chel] ${green("Migrated:")} ${numMigratedKeys} entries`);
+  reportStatus();
   await backendTo.close();
 }
 var module9 = {
