@@ -109559,21 +109559,36 @@ async function migrate(args) {
   const numKeys2 = await esm_default("chelonia.db/keyCount");
   let numMigratedKeys = 0;
   let numVisitedKeys = 0;
-  let shouldExit = 0;
-  const handleSignal2 = (signal, code2) => {
-    process3.on(signal, () => {
-      console.error(`Received signal ${signal} (${code2}). Finishing current operation.`);
-      shouldExit = 128 + code2;
-    });
-  };
-  [
-    ["SIGHUP", 1],
-    ["SIGINT", 2],
-    ["SIGQUIT", 3],
-    ["SIGTERM", 15],
-    ["SIGUSR1", 10],
-    ["SIGUSR2", 11]
-  ].forEach(([signal, code2]) => handleSignal2(signal, code2));
+  const checkAndExit = (() => {
+    let interruputCount = 0;
+    let shouldExit = 0;
+    const handleSignal2 = (signal, code2) => {
+      process3.on(signal, () => {
+        shouldExit = 128 + code2;
+        if (++interruputCount < 3) {
+          console.error(`Received signal ${signal} (${code2}). Finishing current operation.`);
+        } else {
+          console.error(`Received signal ${signal} (${code2}). Force quitting.`);
+          exit(shouldExit);
+        }
+      });
+    };
+    const checkAndExit2 = async () => {
+      if (shouldExit) {
+        await backendTo.close();
+        exit(shouldExit);
+      }
+    };
+    [
+      ["SIGHUP", 1],
+      ["SIGINT", 2],
+      ["SIGQUIT", 3],
+      ["SIGTERM", 15],
+      ["SIGUSR1", 10],
+      ["SIGUSR2", 11]
+    ].forEach(([signal, code2]) => handleSignal2(signal, code2));
+    return checkAndExit2;
+  })();
   let lastReportedPercentage = 0;
   for await (const key of esm_default("chelonia.db/iterKeys")) {
     numVisitedKeys++;
@@ -109582,18 +109597,13 @@ async function migrate(args) {
       continue;
     }
     const value = await esm_default("chelonia.db/get", `any:${key}`);
-    if (shouldExit) {
-      exit(shouldExit);
-    }
+    checkAndExit();
     if (value === void 0) {
       console.debug("[chel] Skipping empty key", key);
       continue;
     }
     await backendTo.writeData(key, value);
-    if (shouldExit) {
-      await backendTo.close();
-      exit(shouldExit);
-    }
+    checkAndExit();
     ++numMigratedKeys;
     const percentage = Math.floor(numVisitedKeys / numKeys2 * 100);
     if (percentage - lastReportedPercentage >= 10) {
