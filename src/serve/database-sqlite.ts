@@ -6,9 +6,9 @@ import { basename, dirname, join, resolve } from 'node:path'
 import DatabaseBackend from './DatabaseBackend.ts'
 
 export default class SqliteBackend extends DatabaseBackend {
-  dataFolder: string = ''
+  dataFolder: string = 'data'
   db: SQLiteDB | null = null
-  filename: string = ''
+  filename: string = 'chelonia.db'
   readStatement: { get: (key: string) => { value?: Buffer | string } | undefined } | null = null
   writeStatement: { run: (key: string, value: Buffer | string) => unknown } | null = null
   deleteStatement: { run: (key: string) => unknown } | null = null
@@ -18,7 +18,8 @@ export default class SqliteBackend extends DatabaseBackend {
   constructor (options: { filepath?: string } = {}) {
     super()
     const { filepath } = options
-    const resolvedPath = resolve(filepath!)
+    if (!filepath) return
+    const resolvedPath = resolve(filepath)
     this.dataFolder = dirname(resolvedPath)
     this.filename = basename(resolvedPath)
   }

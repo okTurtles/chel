@@ -28532,13 +28532,13 @@ var init_database_fs = __esm({
       return acc;
     }, []);
     FsBackend = class extends DatabaseBackend {
-      dataFolder = "";
+      dataFolder = "data";
       depth = 0;
       keyChunkLength = 2;
       skipFsCaseSensitivityCheck = false;
       constructor(options2 = {}) {
         super();
-        this.dataFolder = resolve9(options2.dirname);
+        if (options2.dirname) this.dataFolder = resolve9(options2.dirname);
         if (options2.depth) this.depth = options2.depth;
         if (options2.keyChunkLength) this.keyChunkLength = options2.keyChunkLength;
         if (options2.skipFsCaseSensitivityCheck) this.skipFsCaseSensitivityCheck = true;
@@ -54162,9 +54162,9 @@ var init_database_sqlite = __esm({
     "use strict";
     init_DatabaseBackend();
     SqliteBackend = class extends DatabaseBackend {
-      dataFolder = "";
+      dataFolder = "data";
       db = null;
-      filename = "";
+      filename = "chelonia.db";
       readStatement = null;
       writeStatement = null;
       deleteStatement = null;
@@ -54173,6 +54173,7 @@ var init_database_sqlite = __esm({
       constructor(options2 = {}) {
         super();
         const { filepath } = options2;
+        if (!filepath) return;
         const resolvedPath = resolve22(filepath);
         this.dataFolder = dirname22(resolvedPath);
         this.filename = basename22(resolvedPath);
@@ -109580,11 +109581,12 @@ async function migrate(args) {
       exit(shouldExit);
     }
     if (value === void 0) {
-      ++numVisitedKeys;
+      console.debug("[chel] Skipping empty key", key);
       continue;
     }
     await backendTo.writeData(key, value);
     if (shouldExit) {
+      await backendTo.close();
       exit(shouldExit);
     }
     ++numVisitedKeys;
@@ -109595,6 +109597,7 @@ async function migrate(args) {
     }
   }
   numVisitedKeys && console.log(`[chel] ${green("Migrated:")} ${numVisitedKeys} entries`);
+  await backendTo.close();
 }
 var module9 = {
   builder: (yargs) => {
@@ -114206,17 +114209,7 @@ var parseConfig = () => {
     "database": {
       "lruNumItems": 1e4,
       "backend": "mem",
-      "backendOptions": {
-        "fs": {
-          "depth": 0,
-          "keyChunkLength": 2,
-          "dirname": "./data",
-          "skipFsCaseSensitivityCheck": false
-        },
-        "sqlite": {
-          "filepath": "./data/chelonia.db"
-        }
-      }
+      "backendOptions": {}
     }
   });
 };

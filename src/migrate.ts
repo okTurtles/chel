@@ -73,11 +73,13 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
     }
     // Make `deno check` happy.
     if (value === undefined) {
-      ++numVisitedKeys
+      console.debug('[chel] Skipping empty key', key)
+      // ++numVisitedKeys
       continue
     }
     await backendTo.writeData(key, value)
     if (shouldExit) {
+      await backendTo.close()
       exit(shouldExit)
     }
     ++numVisitedKeys
@@ -89,6 +91,7 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
     }
   }
   numVisitedKeys && console.log(`[chel] ${colors.green('Migrated:')} ${numVisitedKeys} entries`)
+  await backendTo.close()
 }
 
 export const module = {
