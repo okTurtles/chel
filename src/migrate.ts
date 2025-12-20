@@ -29,7 +29,13 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
     nconf.set(`database:backendOptions:${backend}`, fromConfigOpts)
   }
 
-  await initDB({ skipDbPreloading: true })
+  try {
+    await initDB({ skipDbPreloading: true })
+  } catch (e) {
+    console.error('Error setting up database')
+    exit(e)
+    throw e
+  }
 
   let backendTo: DatabaseBackend
   try {

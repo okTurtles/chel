@@ -1,6 +1,11 @@
 import { Buffer } from 'node:buffer'
 import { RESP_TYPES, createClient, type RedisClientType } from 'npm:redis'
+import * as z from 'npm:zod'
 import DatabaseBackend from './DatabaseBackend.ts'
+
+const ConfigSchema = z.strictObject({
+  url: z.optional(z.string('').url({ protocol: /^rediss?$/ })),
+})
 
 export default class RedisBackend extends DatabaseBackend {
   db: RedisClientType | null = null
@@ -8,6 +13,7 @@ export default class RedisBackend extends DatabaseBackend {
 
   constructor (options: { url?: string } = {}) {
     super()
+    ConfigSchema.parse(options)
     this.url = options.url
   }
 

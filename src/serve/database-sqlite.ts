@@ -3,7 +3,12 @@ import * as sqlite from 'jsr:@db/sqlite'
 import { Buffer } from 'node:buffer'
 import { mkdir } from 'node:fs/promises'
 import { basename, dirname, join, resolve } from 'node:path'
+import * as z from 'npm:zod'
 import DatabaseBackend from './DatabaseBackend.ts'
+
+const ConfigSchema = z.strictObject({
+  filepath: z.optional(z.string()),
+})
 
 export default class SqliteBackend extends DatabaseBackend {
   dataFolder: string = 'data'
@@ -17,6 +22,7 @@ export default class SqliteBackend extends DatabaseBackend {
 
   constructor (options: { filepath?: string } = {}) {
     super()
+    ConfigSchema.parse(options)
     const { filepath } = options
     if (!filepath) return
     const resolvedPath = resolve(filepath)
