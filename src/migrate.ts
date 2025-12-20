@@ -11,9 +11,9 @@ import { initDB } from './serve/database.ts'
 import { exit, isValidKey } from './utils.ts'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
-import { parse } from 'npm:smol-toml'
+import { parse, type TomlTable } from 'npm:smol-toml'
 
-type Params = { from?: string, fromConfig?: string, to: string, toConfig?: string }
+type Params = { from: string, fromConfig?: string, to: string, toConfig?: string }
 
 export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> {
   const { to } = args
@@ -21,22 +21,32 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
   if (args.fromConfig) {
     const fromConfig = parse(await readFile(args.fromConfig, { encoding: 'utf-8', flag: 'r' }))
     const backend = nconf.get('database:backend')
-    nconf.overrides({ database: { backendOptions: { [backend]: fromConfig } } })
+    const fromBackend = (fromConfig?.database as TomlTable)?.backend
+    if (fromBackend !== backend) {
+      console.warn(`--from-config has backend ${fromBackend} but --from is ${backend}`)
+    }
+    const fromConfigOpts = ((fromConfig?.database as TomlTable)?.backendOptions as TomlTable)?.[backend] || {}
+    nconf.set(`database:backendOptions:${backend}`, fromConfigOpts)
   }
 
   await initDB({ skipDbPreloading: true })
 
-  if (!to) exit('missing argument: --to')
-
   let backendTo: DatabaseBackend
   try {
-    let toConfig = {}
+    let toConfigOpts: unknown
     if (args.toConfig) {
-      toConfig = parse(await readFile(args.toConfig, { encoding: 'utf-8', flag: 'r' }))
+      const toConfig = parse(await readFile(args.toConfig, { encoding: 'utf-8', flag: 'r' }))
+      const toBackend = (toConfig?.database as TomlTable)?.backend as string
+      if (toBackend !== to) {
+        console.warn(`--to-config has backend ${toBackend} but --to is ${to}`)
+      }
+      toConfigOpts = ((toConfig?.database as TomlTable)?.backendOptions as TomlTable)?.[to] || {}
+    } else {
+      toConfigOpts = nconf.get(`database:backendOptions:${to}`) || {}
     }
 
     const Ctor = (await import(`./serve/database-${to}.ts`)).default
-    backendTo = new Ctor(toConfig)
+    backendTo = new Ctor(toConfigOpts)
     await backendTo.init()
   } catch (error) {
     exit(error)
@@ -144,6 +154,7 @@ export const module = {
     return yargs
       .option('from', {
         describe: 'Source backend',
+        demandOption: true,
         requiresArg: true,
         string: true
       })

@@ -109540,18 +109540,29 @@ async function migrate(args) {
   if (args.fromConfig) {
     const fromConfig = parse8(await readFile2(args.fromConfig, { encoding: "utf-8", flag: "r" }));
     const backend = import_npm_nconf3.default.get("database:backend");
-    import_npm_nconf3.default.overrides({ database: { backendOptions: { [backend]: fromConfig } } });
+    const fromBackend = fromConfig?.database?.backend;
+    if (fromBackend !== backend) {
+      console.warn(`--from-config has backend ${fromBackend} but --from is ${backend}`);
+    }
+    const fromConfigOpts = fromConfig?.database?.backendOptions?.[backend] || {};
+    import_npm_nconf3.default.set(`database:backendOptions:${backend}`, fromConfigOpts);
   }
   await initDB({ skipDbPreloading: true });
-  if (!to) exit("missing argument: --to");
   let backendTo;
   try {
-    let toConfig = {};
+    let toConfigOpts;
     if (args.toConfig) {
-      toConfig = parse8(await readFile2(args.toConfig, { encoding: "utf-8", flag: "r" }));
+      const toConfig = parse8(await readFile2(args.toConfig, { encoding: "utf-8", flag: "r" }));
+      const toBackend = toConfig?.database?.backend;
+      if (toBackend !== to) {
+        console.warn(`--to-config has backend ${toBackend} but --to is ${to}`);
+      }
+      toConfigOpts = toConfig?.database?.backendOptions?.[to] || {};
+    } else {
+      toConfigOpts = import_npm_nconf3.default.get(`database:backendOptions:${to}`) || {};
     }
     const Ctor = (await globImport_serve_database_ts(`./serve/database-${to}.ts`)).default;
-    backendTo = new Ctor(toConfig);
+    backendTo = new Ctor(toConfigOpts);
     await backendTo.init();
   } catch (error) {
     exit(error);
@@ -109641,6 +109652,7 @@ var module9 = {
   builder: (yargs) => {
     return yargs.option("from", {
       describe: "Source backend",
+      demandOption: true,
       requiresArg: true,
       string: true
     }).alias("database:backend", "from").option("from-config", {
