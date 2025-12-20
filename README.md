@@ -19,7 +19,7 @@ chel latestState <url> <contractID>
 chel eventsAfter [--limit N] <url> <contractID> <hash>
 chel eventsBefore [--limit N] <url> <contractID> <hash>
 chel hash <file>
-chel migrate --from <backend> --to <backend> --out <dir-or-sqlitedb>
+chel migrate --from <backend> --to <backend> [--from-config <from-config.toml>] [--to-config <to-config.toml>]
 ```
 
 Note: in many (if not all) instances, the `<url>` parameter can refer to a local folder path, in which case the command will operate without making a network connection, and will instead use the folder's contents to perform its operations.
@@ -233,6 +233,49 @@ Useful command:
 
 ```
 cp -r path/to/contracts/* test/assets/ && ls ./test/assets/*-slim.js | sed -En 's/.*\/(.*)-slim.js/\1/p' | xargs -I {} ./src/main.ts manifest --out=test/assets/{}.manifest.json --slim test/assets/{}-slim.js key.json test/assets/{}.js && ls ./test/assets/*.manifest.json | xargs ./src/main.ts deploy http://127.0.0.1:8888
+```
+
+### `chel migrate`
+
+Performs a non-destructive migration from one backend (`--from`) to another
+one (`--to`). For example, this can be used to migrate from the `fs` backend to
+the `sqlite` backend.
+
+Since some backends may require additional configuration, `chel migrate` allows
+for specifying additional options for these backends with the `--from-config`
+and `--to-config` options.
+
+By default, the general `chel` configuration will be used both for the `--from`
+and `--to` backends (such as the values given in `chel.toml`). However, if
+`--from-config` or `--to-config` are specified, those will take precedence.
+
+The configuration files for `--from-config` and `--to-config` follow the same
+syntax and structure as `chel.toml`. This makes it easy to migrate to a new
+backend by writing a new `chel.toml` for that backend.
+
+#### Examples
+
+```sh
+# Migrate from sqlite to redis using default values (possibly overridden in chel.toml)
+chel migrate --from sqlite --to redis
+```
+
+```sh
+# Migrate from sqlite to redis using default values (possibly overridden in chel.toml)
+# for redis and the configuration in sqlite.toml for sqlite
+chel migrate --from sqlite --from-config sqlite.toml --to redis
+```
+
+```sh
+# Migrate from sqlite to redis using default values (possibly overridden in chel.toml)
+# for sqlite and the configuration in redis.toml for redis
+chel migrate --from sqlite --to redis --to-config redis.toml
+```
+
+```sh
+# Migrate from sqlite to redis using the configuration in sqlite.toml for sqlite
+# and the configuration in redis.toml for redis
+chel migrate --from sqlite --from-config sqlite.toml --to redis --to-config redis.toml
 ```
 
 ## History
