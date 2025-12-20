@@ -109544,7 +109544,7 @@ async function migrate(args) {
     if (fromBackend !== backend) {
       console.warn(`--from-config has backend ${fromBackend} but --from is ${backend}`);
     }
-    const fromConfigOpts = fromConfig?.database?.backendOptions?.[to] || {};
+    const fromConfigOpts = fromConfig?.database?.backendOptions?.[backend] || {};
     import_npm_nconf3.default.set(`database:backendOptions:${backend}`, fromConfigOpts);
   }
   await initDB({ skipDbPreloading: true });

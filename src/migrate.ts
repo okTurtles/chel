@@ -13,7 +13,7 @@ import { exit, isValidKey } from './utils.ts'
 import nconf from 'npm:nconf'
 import { parse, type TomlTable } from 'npm:smol-toml'
 
-type Params = { from?: string, fromConfig?: string, to: string, toConfig?: string }
+type Params = { from: string, fromConfig?: string, to: string, toConfig?: string }
 
 export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> {
   const { to } = args
@@ -25,7 +25,7 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
     if (fromBackend !== backend) {
       console.warn(`--from-config has backend ${fromBackend} but --from is ${backend}`)
     }
-    const fromConfigOpts = ((fromConfig?.database as TomlTable)?.backendOptions as TomlTable)?.[to] || {}
+    const fromConfigOpts = ((fromConfig?.database as TomlTable)?.backendOptions as TomlTable)?.[backend] || {}
     nconf.set(`database:backendOptions:${backend}`, fromConfigOpts)
   }
 
