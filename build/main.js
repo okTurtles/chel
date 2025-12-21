@@ -71,33 +71,33 @@ var deno_default = {
 var isWindows = globalThis.Deno?.build.os === "windows" || globalThis.navigator?.platform?.startsWith("Win") || globalThis.process?.platform?.startsWith("win") || false;
 
 // deno:https://jsr.io/@std/path/1.0.9/_common/from_file_url.ts
-function assertArg3(url) {
-  url = url instanceof URL ? url : new URL(url);
-  if (url.protocol !== "file:") {
-    throw new TypeError(`URL must be a file URL: received "${url.protocol}"`);
+function assertArg3(url2) {
+  url2 = url2 instanceof URL ? url2 : new URL(url2);
+  if (url2.protocol !== "file:") {
+    throw new TypeError(`URL must be a file URL: received "${url2.protocol}"`);
   }
-  return url;
+  return url2;
 }
 
 // deno:https://jsr.io/@std/path/1.0.9/posix/from_file_url.ts
-function fromFileUrl(url) {
-  url = assertArg3(url);
-  return decodeURIComponent(url.pathname.replace(/%(?![0-9A-Fa-f]{2})/g, "%25"));
+function fromFileUrl(url2) {
+  url2 = assertArg3(url2);
+  return decodeURIComponent(url2.pathname.replace(/%(?![0-9A-Fa-f]{2})/g, "%25"));
 }
 
 // deno:https://jsr.io/@std/path/1.0.9/windows/from_file_url.ts
-function fromFileUrl2(url) {
-  url = assertArg3(url);
-  let path = decodeURIComponent(url.pathname.replace(/\//g, "\\").replace(/%(?![0-9A-Fa-f]{2})/g, "%25")).replace(/^\\*([A-Za-z]:)(\\|$)/, "$1\\");
-  if (url.hostname !== "") {
-    path = `\\\\${url.hostname}${path}`;
+function fromFileUrl2(url2) {
+  url2 = assertArg3(url2);
+  let path = decodeURIComponent(url2.pathname.replace(/\//g, "\\").replace(/%(?![0-9A-Fa-f]{2})/g, "%25")).replace(/^\\*([A-Za-z]:)(\\|$)/, "$1\\");
+  if (url2.hostname !== "") {
+    path = `\\\\${url2.hostname}${path}`;
   }
   return path;
 }
 
 // deno:https://jsr.io/@std/path/1.0.9/from_file_url.ts
-function fromFileUrl3(url) {
-  return isWindows ? fromFileUrl2(url) : fromFileUrl(url);
+function fromFileUrl3(url2) {
+  return isWindows ? fromFileUrl2(url2) : fromFileUrl(url2);
 }
 
 // deno:https://jsr.io/@std/internal/1.0.12/_os.ts
@@ -118,18 +118,18 @@ function assertPath2(path) {
 }
 
 // deno:https://jsr.io/@std/path/1.1.3/_common/from_file_url.ts
-function assertArg5(url) {
-  url = url instanceof URL ? url : new URL(url);
-  if (url.protocol !== "file:") {
-    throw new TypeError(`URL must be a file URL: received "${url.protocol}"`);
+function assertArg5(url2) {
+  url2 = url2 instanceof URL ? url2 : new URL(url2);
+  if (url2.protocol !== "file:") {
+    throw new TypeError(`URL must be a file URL: received "${url2.protocol}"`);
   }
-  return url;
+  return url2;
 }
 
 // deno:https://jsr.io/@std/path/1.1.3/posix/from_file_url.ts
-function fromFileUrl4(url) {
-  url = assertArg5(url);
-  return decodeURIComponent(url.pathname.replace(/%(?![0-9A-Fa-f]{2})/g, "%25"));
+function fromFileUrl4(url2) {
+  url2 = assertArg5(url2);
+  return decodeURIComponent(url2.pathname.replace(/%(?![0-9A-Fa-f]{2})/g, "%25"));
 }
 
 // deno:https://jsr.io/@std/path/1.1.3/_common/strip_trailing_separators.ts
@@ -175,11 +175,11 @@ function isWindowsDeviceRoot2(code2) {
 }
 
 // deno:https://jsr.io/@std/path/1.1.3/windows/from_file_url.ts
-function fromFileUrl5(url) {
-  url = assertArg5(url);
-  let path = decodeURIComponent(url.pathname.replace(/\//g, "\\").replace(/%(?![0-9A-Fa-f]{2})/g, "%25")).replace(/^\\*([A-Za-z]:)(\\|$)/, "$1\\");
-  if (url.hostname !== "") {
-    path = `\\\\${url.hostname}${path}`;
+function fromFileUrl5(url2) {
+  url2 = assertArg5(url2);
+  let path = decodeURIComponent(url2.pathname.replace(/\//g, "\\").replace(/%(?![0-9A-Fa-f]{2})/g, "%25")).replace(/^\\*([A-Za-z]:)(\\|$)/, "$1\\");
+  if (url2.hostname !== "") {
+    path = `\\\\${url2.hostname}${path}`;
   }
   return path;
 }
@@ -375,8 +375,8 @@ function extname5(path) {
 }
 
 // deno:https://jsr.io/@std/path/1.1.3/from_file_url.ts
-function fromFileUrl6(url) {
-  return isWindows2 ? fromFileUrl5(url) : fromFileUrl4(url);
+function fromFileUrl6(url2) {
+  return isWindows2 ? fromFileUrl5(url2) : fromFileUrl4(url2);
 }
 
 // deno:https://jsr.io/@std/path/1.1.3/posix/is_absolute.ts
@@ -777,9 +777,9 @@ function toFileUrl3(path) {
   if (!isAbsolute3(path)) {
     throw new TypeError(`Path must be absolute: received "${path}"`);
   }
-  const url = new URL("file:///");
-  url.pathname = encodeWhitespace2(path.replace(/%/g, "%25").replace(/\\/g, "%5C"));
-  return url;
+  const url2 = new URL("file:///");
+  url2.pathname = encodeWhitespace2(path.replace(/%/g, "%25").replace(/\\/g, "%5C"));
+  return url2;
 }
 
 // deno:https://jsr.io/@std/path/1.1.3/windows/to_file_url.ts
@@ -788,15 +788,15 @@ function toFileUrl4(path) {
     throw new TypeError(`Path must be absolute: received "${path}"`);
   }
   const [, hostname2, pathname] = path.match(/^(?:[/\\]{2}([^/\\]+)(?=[/\\](?:[^/\\]|$)))?(.*)/);
-  const url = new URL("file:///");
-  url.pathname = encodeWhitespace2(pathname.replace(/%/g, "%25"));
+  const url2 = new URL("file:///");
+  url2.pathname = encodeWhitespace2(pathname.replace(/%/g, "%25"));
   if (hostname2 !== void 0 && hostname2 !== "localhost") {
-    url.hostname = hostname2;
-    if (!url.hostname) {
-      throw new TypeError(`Invalid hostname: "${url.hostname}"`);
+    url2.hostname = hostname2;
+    if (!url2.hostname) {
+      throw new TypeError(`Invalid hostname: "${url2.hostname}"`);
     }
   }
-  return url;
+  return url2;
 }
 
 // deno:https://jsr.io/@std/path/1.1.3/to_file_url.ts
@@ -948,15 +948,15 @@ function encodeHex(src2) {
 
 // deno:https://jsr.io/@denosaurs/plug/1.1.0/util.ts
 var encoder = new TextEncoder();
-function baseUrlToFilename(url) {
+function baseUrlToFilename(url2) {
   const out = [];
-  const protocol = url.protocol.replace(":", "");
+  const protocol = url2.protocol.replace(":", "");
   out.push(protocol);
   switch (protocol) {
     case "http":
     case "https": {
-      const host = url.hostname;
-      const hostPort = url.port;
+      const host = url2.hostname;
+      const hostPort = url2.port;
       out.push(hostPort ? `${host}_PORT${hostPort}` : host);
       break;
     }
@@ -969,15 +969,15 @@ function baseUrlToFilename(url) {
   }
   return join5(...out);
 }
-function stringToURL(url) {
-  return url.startsWith("file://") || url.startsWith("http://") || url.startsWith("https://") ? new URL(url) : toFileUrl5(resolve5(url));
+function stringToURL(url2) {
+  return url2.startsWith("file://") || url2.startsWith("http://") || url2.startsWith("https://") ? new URL(url2) : toFileUrl5(resolve5(url2));
 }
 async function hash(value) {
   return encodeHex(new Uint8Array(await crypto.subtle.digest("SHA-256", encoder.encode(value))));
 }
-async function urlToFilename(url) {
-  const cacheFilename = baseUrlToFilename(url);
-  const hashedFilename = await hash(url.pathname + url.search);
+async function urlToFilename(url2) {
+  const cacheFilename = baseUrlToFilename(url2);
+  const hashedFilename = await hash(url2.pathname + url2.search);
   return join5(cacheFilename, hashedFilename);
 }
 async function isFile(filePath) {
@@ -1120,25 +1120,25 @@ function createDownloadURL(options2) {
       options2.extensions[os] = options2.extensions[os].replace(/\.?(.+)/, "$1");
     }
   }
-  let url;
+  let url2;
   if (options2.url instanceof URL) {
-    url = options2.url;
+    url2 = options2.url;
   } else if (typeof options2.url === "string") {
-    url = stringToURL(options2.url);
+    url2 = stringToURL(options2.url);
   } else {
     const tmpUrl = getCrossOption(options2.url);
     if (tmpUrl === void 0) {
       throw new TypeError(`An URL for the "${Deno.build.os}-${Deno.build.arch}" target was not provided.`);
     }
     if (typeof tmpUrl === "string") {
-      url = stringToURL(tmpUrl);
+      url2 = stringToURL(tmpUrl);
     } else {
-      url = tmpUrl;
+      url2 = tmpUrl;
     }
   }
-  if ("name" in options2 && !Object.values(options2.extensions).includes(extname5(url.pathname))) {
-    if (!url.pathname.endsWith("/")) {
-      url.pathname = `${url.pathname}/`;
+  if ("name" in options2 && !Object.values(options2.extensions).includes(extname5(url2.pathname))) {
+    if (!url2.pathname.endsWith("/")) {
+      url2.pathname = `${url2.pathname}/`;
     }
     const prefix = getCrossOption(options2.prefixes) ?? "";
     const suffix = getCrossOption(options2.suffixes) ?? "";
@@ -1147,9 +1147,9 @@ function createDownloadURL(options2) {
       throw new TypeError(`Expected the "name" property for an automatically assembled URL.`);
     }
     const filename = `${prefix}${options2.name}${suffix}.${extension}`;
-    url = new URL(filename, url);
+    url2 = new URL(filename, url2);
   }
-  return url;
+  return url2;
 }
 async function ensureCacheLocation(location = "deno") {
   if (location === "deno") {
@@ -1185,25 +1185,25 @@ async function ensureCacheLocation(location = "deno") {
 async function download(options2) {
   const location = (typeof options2 === "object" && "location" in options2 ? options2.location : void 0) ?? "deno";
   const setting = (typeof options2 === "object" && "cache" in options2 ? options2.cache : void 0) ?? "use";
-  const url = createDownloadURL(options2);
+  const url2 = createDownloadURL(options2);
   const directory = await ensureCacheLocation(location);
-  const cacheBasePath = join5(directory, await urlToFilename(url));
-  const cacheFilePath = `${cacheBasePath}${extname5(url.pathname)}`;
+  const cacheBasePath = join5(directory, await urlToFilename(url2));
+  const cacheFilePath = `${cacheBasePath}${extname5(url2.pathname)}`;
   const cacheMetaPath = `${cacheBasePath}.metadata.json`;
   const cached2 = setting === "use" ? await isFile(cacheFilePath) : setting === "only" || setting !== "reloadAll";
   await ensureDir(dirname5(cacheBasePath));
   if (!cached2) {
     const meta = {
-      url
+      url: url2
     };
-    switch (url.protocol) {
+    switch (url2.protocol) {
       case "http:":
       case "https:": {
-        console.log(`${green("Downloading")} ${url}`);
-        const response = await fetch(url.toString());
+        console.log(`${green("Downloading")} ${url2}`);
+        const response = await fetch(url2.toString());
         if (!response.ok) {
           if (response.status === 404) {
-            throw new Error(`Could not find ${url}`);
+            throw new Error(`Could not find ${url2}`);
           } else {
             throw new Deno.errors.Http(`${response.status} ${response.statusText}`);
           }
@@ -1212,21 +1212,21 @@ async function download(options2) {
         break;
       }
       case "file:": {
-        console.log(`${green("Copying")} ${url}`);
-        await Deno.copyFile(fromFileUrl6(url), cacheFilePath);
+        console.log(`${green("Copying")} ${url2}`);
+        await Deno.copyFile(fromFileUrl6(url2), cacheFilePath);
         if (Deno.build.os !== "windows") {
           await Deno.chmod(cacheFilePath, 420);
         }
         break;
       }
       default: {
-        throw new TypeError(`Cannot fetch to cache using the "${url.protocol}" protocol`);
+        throw new TypeError(`Cannot fetch to cache using the "${url2.protocol}" protocol`);
       }
     }
     await Deno.writeTextFile(cacheMetaPath, JSON.stringify(meta));
   }
   if (!await isFile(cacheFilePath)) {
-    throw new Error(`Could not find "${url}" in cache.`);
+    throw new Error(`Could not find "${url2}" in cache.`);
   }
   return cacheFilePath;
 }
@@ -3142,18 +3142,18 @@ function assertArgs5(path, suffix) {
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/_common/from_file_url.ts
-function assertArg9(url) {
-  url = url instanceof URL ? url : new URL(url);
-  if (url.protocol !== "file:") {
-    throw new TypeError(`URL must be a file URL: received "${url.protocol}"`);
+function assertArg9(url2) {
+  url2 = url2 instanceof URL ? url2 : new URL(url2);
+  if (url2.protocol !== "file:") {
+    throw new TypeError(`URL must be a file URL: received "${url2.protocol}"`);
   }
-  return url;
+  return url2;
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/posix/from_file_url.ts
-function fromFileUrl7(url) {
-  url = assertArg9(url);
-  return decodeURIComponent(url.pathname.replace(/%(?![0-9A-Fa-f]{2})/g, "%25"));
+function fromFileUrl7(url2) {
+  url2 = assertArg9(url2);
+  return decodeURIComponent(url2.pathname.replace(/%(?![0-9A-Fa-f]{2})/g, "%25"));
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/_common/strip_trailing_separators.ts
@@ -3210,11 +3210,11 @@ function isWindowsDeviceRoot3(code2) {
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/windows/from_file_url.ts
-function fromFileUrl8(url) {
-  url = assertArg9(url);
-  let path = decodeURIComponent(url.pathname.replace(/\//g, "\\").replace(/%(?![0-9A-Fa-f]{2})/g, "%25")).replace(/^\\*([A-Za-z]:)(\\|$)/, "$1\\");
-  if (url.hostname !== "") {
-    path = `\\\\${url.hostname}${path}`;
+function fromFileUrl8(url2) {
+  url2 = assertArg9(url2);
+  let path = decodeURIComponent(url2.pathname.replace(/\//g, "\\").replace(/%(?![0-9A-Fa-f]{2})/g, "%25")).replace(/^\\*([A-Za-z]:)(\\|$)/, "$1\\");
+  if (url2.hostname !== "") {
+    path = `\\\\${url2.hostname}${path}`;
   }
   return path;
 }
@@ -14593,11 +14593,11 @@ var init_schemas = __esm({
       inst._zod.check = (payload) => {
         try {
           const orig = payload.value;
-          const url = new URL(orig);
-          const href = url.href;
+          const url2 = new URL(orig);
+          const href = url2.href;
           if (def.hostname) {
             def.hostname.lastIndex = 0;
-            if (!def.hostname.test(url.hostname)) {
+            if (!def.hostname.test(url2.hostname)) {
               payload.issues.push({
                 code: "invalid_format",
                 format: "url",
@@ -14611,7 +14611,7 @@ var init_schemas = __esm({
           }
           if (def.protocol) {
             def.protocol.lastIndex = 0;
-            if (!def.protocol.test(url.protocol.endsWith(":") ? url.protocol.slice(0, -1) : url.protocol)) {
+            if (!def.protocol.test(url2.protocol.endsWith(":") ? url2.protocol.slice(0, -1) : url2.protocol)) {
               payload.issues.push({
                 code: "invalid_format",
                 format: "url",
@@ -16144,6 +16144,9 @@ var init_parse2 = __esm({
 });
 function string2(params) {
   return _string(ZodString, params);
+}
+function url(params) {
+  return _url(ZodURL, params);
 }
 function number2(params) {
   return _number(ZodNumber, params);
@@ -19431,14 +19434,14 @@ function runWithRetry(client, channelID, type, getPayload) {
   };
   send();
 }
-function createClient(url, options2 = {}) {
+function createClient(url2, options2 = {}) {
   const client = {
     customEventHandlers: options2.handlers || {},
     // The current number of connection attempts that failed.
     // Reset to 0 upon successful connection.
     // Used to compute how long to wait before the next reconnection attempt.
     failedConnectionAttempts: 0,
-    isLocal: /\/\/(localhost|127\.0\.0\.1)([:?/]|$)/.test(url),
+    isLocal: /\/\/(localhost|127\.0\.0\.1)([:?/]|$)/.test(url2),
     // True if this client has never been connected yet.
     isNew: true,
     listeners: /* @__PURE__ */ Object.create(null),
@@ -19454,7 +19457,7 @@ function createClient(url, options2 = {}) {
     subscriptionSet: /* @__PURE__ */ new Set(),
     kvFilter: /* @__PURE__ */ new Map(),
     connectionTimeoutID: void 0,
-    url: url.replace(/^http/, "ws"),
+    url: url2.replace(/^http/, "ws"),
     ...publicMethods
   };
   for (const name of Object.keys(defaultClientEventHandlers)) {
@@ -28851,8 +28854,8 @@ var init_chelonia = __esm({
         const local = await esm_default("chelonia.db/get", cid);
         if (local != null)
           return local;
-        const url = `${this.config.connectionURL}/file/${cid}`;
-        const data = await this.config.fetch(url, { signal: this.abortController.signal }).then(handleFetchResult("text"));
+        const url2 = `${this.config.connectionURL}/file/${cid}`;
+        const data = await this.config.fetch(url2, { signal: this.abortController.signal }).then(handleFetchResult("text"));
         const ourHash = createCID(data, parsedCID.code);
         if (ourHash !== cid) {
           throw new Error(`expected hash ${cid}. Got: ${ourHash}`);
@@ -29392,7 +29395,7 @@ var init_chelonia = __esm({
       // the `onconflict` handler will be called.
       "chelonia/kv/set": async function(contractID, key, data, { ifMatch, innerSigningKeyId, encryptionKeyId, signingKeyId, maxAttempts, onconflict }) {
         maxAttempts = maxAttempts ?? 3;
-        const url = `${this.config.connectionURL}/kv/${encodeURIComponent(contractID)}/${encodeURIComponent(key)}`;
+        const url2 = `${this.config.connectionURL}/kv/${encodeURIComponent(contractID)}/${encodeURIComponent(key)}`;
         const hasOnconflict = typeof onconflict === "function";
         let response;
         const resolveData = async () => {
@@ -29438,7 +29441,7 @@ var init_chelonia = __esm({
               data,
               meta: key
             });
-            response = await this.config.fetch(url, {
+            response = await this.config.fetch(url2, {
               headers: new Headers([
                 ["authorization", buildShelterAuthorizationHeader.call(this, contractID)],
                 ["if-match", ifMatch || '""']
@@ -29451,7 +29454,7 @@ var init_chelonia = __esm({
             if (!hasOnconflict) {
               throw TypeError("onconflict required with empty data");
             }
-            response = await this.config.fetch(url, {
+            response = await this.config.fetch(url2, {
               headers: new Headers([
                 ["authorization", buildShelterAuthorizationHeader.call(this, contractID)]
               ]),
@@ -45249,9 +45252,9 @@ var require_enterprise_maintenance_manager = __commonJS({
         switch (type) {
           case PN.MOVING: {
             const afterSeconds = push[2];
-            const url = push[3] ? String(push[3]) : null;
-            (0, exports2.dbgMaintenance)("Received MOVING:", afterSeconds, url);
-            this.#onMoving(afterSeconds, url);
+            const url2 = push[3] ? String(push[3]) : null;
+            (0, exports2.dbgMaintenance)("Received MOVING:", afterSeconds, url2);
+            this.#onMoving(afterSeconds, url2);
             return true;
           }
           case PN.MIGRATING:
@@ -45281,11 +45284,11 @@ var require_enterprise_maintenance_manager = __commonJS({
       //  4. [EVENT] In-flight commands completed
       //  5. [ACTION] Destroy old socket
       //  6. [ACTION] Resume writing -> we are going to write to the new socket from now on
-      #onMoving = async (afterSeconds, url) => {
+      #onMoving = async (afterSeconds, url2) => {
         this.#onMigrating();
         let host;
         let port;
-        if (url === null) {
+        if (url2 === null) {
           (0, node_assert_1.default)(this.#options.maintEndpointType === "none");
           (0, node_assert_1.default)(this.#options.socket !== void 0);
           (0, node_assert_1.default)("host" in this.#options.socket);
@@ -45297,7 +45300,7 @@ var require_enterprise_maintenance_manager = __commonJS({
           (0, exports2.dbgMaintenance)(`Wait for ${waitTime}ms`);
           await (0, promises_2.setTimeout)(waitTime);
         } else {
-          const split = url.split(":");
+          const split = url2.split(":");
           host = split[0];
           port = Number(split[1]);
         }
@@ -48295,8 +48298,8 @@ var require_client = __commonJS({
         }
         return options2;
       }
-      static parseURL(url) {
-        const { hostname: hostname2, port, protocol, username, password, pathname } = new node_url_1.URL(url), parsed = {
+      static parseURL(url2) {
+        const { hostname: hostname2, port, protocol, username, password, pathname } = new node_url_1.URL(url2), parsed = {
           socket: {
             host: hostname2,
             tls: false
@@ -57985,7 +57988,7 @@ var init_database_redis = __esm({
     init_zod();
     init_DatabaseBackend();
     ConfigSchema2 = strictObject({
-      url: optional(string2("").url({ protocol: /^rediss?$/ }))
+      url: optional(url({ protocol: /^rediss?$/ }))
     });
     RedisBackend = class extends DatabaseBackend {
       db = null;
@@ -64078,11 +64081,11 @@ var require_request = __commonJS({
           autoDestroy: true
           // This is the default in node 14+
         });
-        let url = options2.url;
-        if (typeof url === "object") {
-          url = Url.format(url);
+        let url2 = options2.url;
+        if (typeof url2 === "object") {
+          url2 = Url.format(url2);
         }
-        const uri = Url.parse(url);
+        const uri = Url.parse(url2);
         this.url = uri.path;
         this.httpVersion = "1.1";
         this.method = options2.method ? options2.method.toUpperCase() : "GET";
@@ -78228,7 +78231,7 @@ var require_lib30 = __commonJS({
         options2 = Hoek.applyToDefaults(this._defaults, options2, { shallow: internals.shallowOptions });
         return new internals.Client(options2);
       }
-      request(method, url, options2 = {}) {
+      request(method, url2, options2 = {}) {
         try {
           options2 = Hoek.applyToDefaults(this._defaults, options2, { shallow: internals.shallowOptions });
           Hoek.assert(options2.payload === void 0 || typeof options2.payload === "string" || typeof options2.payload === "object", "options.payload must be a string, a Buffer, a Stream, or an Object");
@@ -78240,11 +78243,11 @@ var require_lib30 = __commonJS({
           return Promise.reject(err);
         }
         if (options2.baseUrl) {
-          url = internals.resolveUrl(options2.baseUrl, url);
+          url2 = internals.resolveUrl(options2.baseUrl, url2);
           delete options2.baseUrl;
         }
         const relay = {};
-        const req = this._request(method, url, options2, relay);
+        const req = this._request(method, url2, options2, relay);
         const promise = new Promise((resolve82, reject) => {
           relay.callback = (err, res) => {
             if (err) {
@@ -78258,11 +78261,11 @@ var require_lib30 = __commonJS({
         promise.req = req;
         return promise;
       }
-      _request(method, url, options2, relay, _trace) {
+      _request(method, url2, options2, relay, _trace) {
         const uri = {};
         if (options2.socketPath) {
           uri.socketPath = options2.socketPath;
-          const parsedUri = new Url.URL(url, `unix://${options2.socketPath}`);
+          const parsedUri = new Url.URL(url2, `unix://${options2.socketPath}`);
           internals.applyUrlToOptions(uri, {
             host: "",
             // host must be empty according to https://tools.ietf.org/html/rfc2616#section-14.23
@@ -78275,7 +78278,7 @@ var require_lib30 = __commonJS({
           });
         } else {
           uri.setHost = false;
-          const parsedUri = new Url.URL(url);
+          const parsedUri = new Url.URL(url2);
           internals.applyUrlToOptions(uri, parsedUri);
         }
         uri.method = method.toUpperCase();
@@ -78307,7 +78310,7 @@ var require_lib30 = __commonJS({
         }
         let redirects = options2.hasOwnProperty("redirects") ? options2.redirects : false;
         _trace = _trace ?? [];
-        _trace.push({ method: uri.method, url });
+        _trace.push({ method: uri.method, url: url2 });
         const client = uri.protocol === "https:" ? Https : Http;
         for (const option of internals.httpOptions) {
           if (options2[option] !== void 0) {
@@ -78577,8 +78580,8 @@ var require_lib30 = __commonJS({
       if (!path8) {
         return baseUrl;
       }
-      const url = new Url.URL(path8, baseUrl);
-      return Url.format(url);
+      const url2 = new Url.URL(path8, baseUrl);
+      return Url.format(url2);
     };
     internals.deferPipeUntilSocketConnects = function(req, stream) {
       const onSocket = (socket) => {
@@ -78625,24 +78628,24 @@ var require_lib30 = __commonJS({
       }
       return next(null, payload);
     };
-    internals.applyUrlToOptions = (options2, url) => {
-      options2.host = url.host;
-      options2.origin = url.origin;
-      options2.searchParams = url.searchParams;
-      options2.protocol = url.protocol;
-      options2.hostname = typeof url.hostname === "string" && url.hostname.startsWith("[") ? url.hostname.slice(1, -1) : url.hostname;
-      options2.hash = url.hash;
-      options2.search = url.search;
-      options2.pathname = url.pathname;
-      options2.path = `${url.pathname}${url.search}`;
-      options2.href = url.href;
-      if (url.port !== "") {
-        options2.port = Number(url.port);
+    internals.applyUrlToOptions = (options2, url2) => {
+      options2.host = url2.host;
+      options2.origin = url2.origin;
+      options2.searchParams = url2.searchParams;
+      options2.protocol = url2.protocol;
+      options2.hostname = typeof url2.hostname === "string" && url2.hostname.startsWith("[") ? url2.hostname.slice(1, -1) : url2.hostname;
+      options2.hash = url2.hash;
+      options2.search = url2.search;
+      options2.pathname = url2.pathname;
+      options2.path = `${url2.pathname}${url2.search}`;
+      options2.href = url2.href;
+      if (url2.port !== "") {
+        options2.port = Number(url2.port);
       }
-      if (url.username || url.password) {
-        options2.auth = `${url.username}:${url.password}`;
-        options2.username = url.username;
-        options2.password = url.password;
+      if (url2.username || url2.password) {
+        options2.auth = `${url2.username}:${url2.password}`;
+        options2.username = url2.username;
+        options2.password = url2.password;
       }
       return options2;
     };
@@ -80588,37 +80591,37 @@ var require_request2 = __commonJS({
           this._urlError = Boom5.boomify(err, { statusCode: 400, override: false });
         }
       }
-      setUrl(url, stripTrailingSlash) {
+      setUrl(url2, stripTrailingSlash) {
         Hoek.assert(this.params === null, "Cannot change request URL after routing");
-        if (url instanceof Url.URL) {
-          url = url.href;
+        if (url2 instanceof Url.URL) {
+          url2 = url2.href;
         }
-        Hoek.assert(typeof url === "string", "Url must be a string or URL object");
-        this._setUrl(url, stripTrailingSlash, { fast: false });
+        Hoek.assert(typeof url2 === "string", "Url must be a string or URL object");
+        this._setUrl(url2, stripTrailingSlash, { fast: false });
       }
       _setUrl(source, stripTrailingSlash, { fast }) {
-        const url = this._parseUrl(source, { stripTrailingSlash, _fast: fast });
-        this.query = this._parseQuery(url.searchParams);
-        this.path = url.pathname;
+        const url2 = this._parseUrl(source, { stripTrailingSlash, _fast: fast });
+        this.query = this._parseQuery(url2.searchParams);
+        this.path = url2.pathname;
       }
       _parseUrl(source, options2) {
         if (source[0] === "/") {
           if (options2._fast) {
-            const url = {
+            const url2 = {
               pathname: source,
               searchParams: ""
             };
             const q = source.indexOf("?");
             const h2 = source.indexOf("#");
             if (q !== -1 && (h2 === -1 || q < h2)) {
-              url.pathname = source.slice(0, q);
+              url2.pathname = source.slice(0, q);
               const query = h2 === -1 ? source.slice(q + 1) : source.slice(q + 1, h2);
-              url.searchParams = Querystring.parse(query);
+              url2.searchParams = Querystring.parse(query);
             } else {
-              url.pathname = h2 === -1 ? source : source.slice(0, h2);
+              url2.pathname = h2 === -1 ? source : source.slice(0, h2);
             }
-            this._normalizePath(url, options2);
-            return url;
+            this._normalizePath(url2, options2);
+            return url2;
           }
           this._url = new Url.URL(`${this._core.info.protocol}://${this.info.host || `${this._core.info.host}:${this._core.info.port}`}${source}`);
         } else {
@@ -80630,12 +80633,12 @@ var require_request2 = __commonJS({
         this._urlError = null;
         return this._url;
       }
-      _normalizePath(url, options2) {
-        let path8 = this._core.router.normalize(url.pathname);
+      _normalizePath(url2, options2) {
+        let path8 = this._core.router.normalize(url2.pathname);
         if (options2.stripTrailingSlash && path8.length > 1 && path8[path8.length - 1] === "/") {
           path8 = path8.slice(0, -1);
         }
-        url.pathname = path8;
+        url2.pathname = path8;
       }
       _parseQuery(searchParams) {
         let query = /* @__PURE__ */ Object.create(null);
@@ -94129,8 +94132,8 @@ var init_pubsub2 = __esm({
        */
       connection(socket, request) {
         const server = this;
-        const url = request.url;
-        const urlSearch = url?.includes("?") ? url.slice(url.lastIndexOf("?")) : "";
+        const url2 = request.url;
+        const urlSearch = url2?.includes("?") ? url2.slice(url2.lastIndexOf("?")) : "";
         const debugID = new URLSearchParams(urlSearch).get("debugID") || "";
         const send = socket.send.bind(socket);
         socket.id = generateSocketID(debugID);
@@ -110023,12 +110026,12 @@ var findManifestFiles = async (path8) => {
   return internal(realPath);
 };
 async function upload(args, internal = false) {
-  const { url, files } = args;
-  if (!url) {
+  const { url: url2, files } = args;
+  if (!url2) {
     await initDB({ skipDbPreloading: true });
   }
   const uploaded = [];
-  const uploaderFn = url ? uploadEntryToURL : uploadEntryToDB;
+  const uploaderFn = url2 ? uploadEntryToURL : uploadEntryToDB;
   for (const filepath_ of files) {
     let type = multicodes.RAW;
     let filepath = filepath_;
@@ -110049,7 +110052,7 @@ async function upload(args, internal = false) {
       filepath = filepath_.slice(2);
     }
     const entry = await createEntryFromFile(filepath, type);
-    const destination = await uploaderFn(entry, url);
+    const destination = await uploaderFn(entry, url2);
     if (!internal) {
       console.log(green("uploaded:"), destination);
     } else {
@@ -110059,15 +110062,15 @@ async function upload(args, internal = false) {
   }
   return uploaded;
 }
-async function uploadEntryToURL([cid, buffer], url) {
+async function uploadEntryToURL([cid, buffer], url2) {
   const form = new FormData();
   form.append("hash", cid);
   form.append("data", new Blob([buffer]));
-  return await fetch(`${url}/dev-file`, { method: "POST", body: form }).then(handleFetchResult2("text")).then((r) => {
+  return await fetch(`${url2}/dev-file`, { method: "POST", body: form }).then(handleFetchResult2("text")).then((r) => {
     if (r !== `/file/${cid}`) {
       throw new Error(`server returned bad URL: ${r}`);
     }
-    return `${url}${r}`;
+    return `${url2}${r}`;
   });
 }
 function uploadEntryToDB([cid, buffer]) {
@@ -110159,11 +110162,11 @@ var module3 = {
 };
 init_esm();
 init_database();
-async function eventsAfter2({ limit, url, contractID, height }) {
+async function eventsAfter2({ limit, url: url2, contractID, height }) {
   try {
     let messages;
-    if (url) {
-      messages = await getRemoteMessagesSince(url, contractID, height, limit);
+    if (url2) {
+      messages = await getRemoteMessagesSince(url2, contractID, height, limit);
     } else {
       await initDB({ skipDbPreloading: true });
       messages = await getMessagesSince(contractID, height, limit);
@@ -110238,12 +110241,12 @@ var module4 = {
 };
 init_esm();
 init_database();
-async function get({ key, url }) {
-  if (!url) {
+async function get({ key, url: url2 }) {
+  if (!url2) {
     await initDB({ skipDbPreloading: true });
   }
   try {
-    const data = url ? await readRemoteData(url, key) : await esm_default("chelonia.db/get", key);
+    const data = url2 ? await readRemoteData(url2, key) : await esm_default("chelonia.db/get", key);
     if (data === void 0) exit(`no entry found for ${key}`);
     if (typeof data === "string") {
       console.log(data);

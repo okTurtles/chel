@@ -4,7 +4,7 @@ import * as z from 'npm:zod'
 import DatabaseBackend from './DatabaseBackend.ts'
 
 const ConfigSchema = z.strictObject({
-  url: z.optional(z.string('').url({ protocol: /^rediss?$/ })),
+  url: z.optional(z.url({ protocol: /^rediss?$/ })),
 })
 
 export default class RedisBackend extends DatabaseBackend {
