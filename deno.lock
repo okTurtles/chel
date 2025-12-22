@@ -3174,7 +3174,8 @@
       "npm:vuelidate@0.7.6",
       "npm:vuex@3.6.0",
       "npm:ws@8.5.0",
-      "npm:yargs@16.2.0"
+      "npm:yargs@16.2.0",
+      "npm:zod@4.0.5"
     ],
     "packageJson": {
       "dependencies": [

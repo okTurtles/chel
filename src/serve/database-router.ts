@@ -1,5 +1,15 @@
 import type { Buffer } from 'node:buffer'
+import * as z from 'npm:zod'
 import DatabaseBackend from './DatabaseBackend.ts'
+
+const ConfigEntrySchema = z.strictObject({
+  name: z.string(),
+  options: z.object()
+})
+const ConfigSchema = z.intersection(
+  z.object({ '*': ConfigEntrySchema }),
+  z.record(z.string(), ConfigEntrySchema)
+)
 
 type ConfigEntry = { name: string; options: Record<string, unknown> }
 type Config = {
@@ -13,6 +23,7 @@ export default class RouterBackend extends DatabaseBackend {
   constructor (config: Config = {}) {
     super()
     // Return a sorted copy where entries with longer keys come first.
+    ConfigSchema.parse(config)
     const configCopy = Object.fromEntries(Object.entries(config).sort((a, b) => b[0].length - a[0].length)) as Config
     const errors = this.validateConfig(configCopy)
     if (errors.length) {
