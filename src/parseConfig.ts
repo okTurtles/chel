@@ -18,6 +18,7 @@ const parseConfig = () => {
         'port': 8000,
         'dashboardPort': 8888,
         'fileUploadMaxBytes': 31457280,
+        'serverId': undefined,
         'signup': {
           'disabled': false,
           'limit': {

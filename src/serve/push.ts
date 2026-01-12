@@ -7,6 +7,8 @@ import { getSubscriptionId } from 'npm:@chelonia/lib/functions'
 import { PUSH_SERVER_ACTION_TYPE, REQUEST_TYPE, createMessage } from 'npm:@chelonia/lib/pubsub'
 import sbp from 'npm:@sbp/sbp'
 import { appendToIndexFactory, removeFromIndexFactory } from './database.ts'
+// @deno-types="npm:@types/nconf"
+import nconf from 'npm:nconf'
 import { PUBSUB_INSTANCE } from './instance-keys.ts'
 import type { WS, WSS } from './pubsub.ts'
 import rfc8291Ikm from './rfc8291Ikm.ts'
@@ -55,7 +57,8 @@ const saveSubscription = (server: WSS, subscriptionId: string): Promise<void> =>
   return sbp('chelonia.db/set', `_private_webpush_${subscriptionId}`, JSON.stringify({
     settings: server.pushSubscriptions[subscriptionId].settings,
     subscriptionInfo: server.pushSubscriptions[subscriptionId],
-    channelIDs: [...server.pushSubscriptions[subscriptionId].subscriptions]
+    channelIDs: [...server.pushSubscriptions[subscriptionId].subscriptions],
+    serverId: nconf.get('server:serverId')
   })).catch((e: unknown) => {
     console.error(e, 'Error saving subscription', subscriptionId)
     throw e // rethrow
