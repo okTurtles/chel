@@ -1,4 +1,7 @@
 {
+  "compilerOptions": {
+    "types": ["./src/types/hapi-inert.d.ts"]
+  },
   "tasks": {
     "chel": "deno task lint && deno task build && deno run --allow-net --allow-read=.,../locales,../../../locales,$HOME/.cache/deno,$HOME/Library/Caches/deno --allow-ffi --allow-write=. --allow-sys --allow-env build/main.js",
     "lint": "deno run --allow-env --allow-read --allow-sys='cpus' npm:eslint@9.31.0 ./src ./scripts",
