@@ -2,6 +2,8 @@ import * as colors from 'jsr:@std/fmt/colors'
 import process from 'node:process'
 import sbp from 'npm:@sbp/sbp'
 import { debounce } from 'npm:turtledash'
+// @deno-types="npm:@types/nconf"
+import nconf from 'npm:nconf'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { deploy } from './deploy.ts'
 import { findManifestFiles } from './utils.ts'
@@ -80,6 +82,15 @@ async function startApplicationServer (): Promise<void> {
 }
 
 export async function serve (args: ArgumentsCamelCase<Params>) {
+  // Check that serverId is configured - required to prevent push notification issues
+  // when sharing a database between multiple server environments
+  const serverId = nconf.get('server:serverId')
+  if (serverId === undefined) {
+    console.error(colors.red('Error: server.serverId must be specified in chel.toml'))
+    console.error(colors.yellow('Hint: Run "chel init" to generate a template configuration file'))
+    process.exit(1)
+  }
+
   try {
     // Start dashboard server on port 7000 first
     try {

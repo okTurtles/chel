@@ -556,7 +556,7 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
       // Skip subscriptions that have a different serverId than the current server
       // This prevents sending push notifications to clients registered on a different server
       // (e.g., production vs staging) when sharing the same database
-      if (currentServerId !== undefined && serverId !== undefined && serverId !== currentServerId) {
+      if (serverId !== currentServerId) {
         console.debug(`[server] skipping subscription '${subscriptionId}' because serverId '${serverId}' does not match current serverId '${currentServerId}'`)
         return
       }
