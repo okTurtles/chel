@@ -32381,7 +32381,7 @@ async function testCaseSensitivity(backend) {
       throw new Error("Unexpected value: original key does not have the correct value");
     }
     if (valueDifferentCase?.toString() === dateString) {
-      const errStr = "Filesystem database backend only works on case-sensitive filesystems. This appears to be a case insensitive file system. Set SKIP_DB_FS_CASE_SENSITIVITY_CHECK=true to skip.";
+      const errStr = "Filesystem database backend only works on case-sensitive filesystems. This appears to be a case insensitive file system. Set `skipFsCaseSensitivityCheck: true` on the FS backend configuration to skip.";
       console.error(errStr);
       throw new Error(errStr);
     }
@@ -58273,7 +58273,8 @@ var init_database_router_test = __esm({
       "*": {
         name: "fs",
         options: {
-          dirname: "./test/temp"
+          dirname: "./test/temp",
+          skipFsCaseSensitivityCheck: true
         }
       }
     };

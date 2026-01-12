@@ -5,7 +5,7 @@
     "compile": "deno run --allow-env --allow-ffi --allow-sys='hostname' --allow-run --allow-read --allow-write=./dist scripts/compile.ts",
     "build": "deno run --node-modules-dir --allow-ffi --allow-run --allow-read --allow-env --allow-write=./build --allow-sys='cpus,homedir' scripts/dashboard-esbuild.ts && deno run --node-modules-dir --allow-ffi --allow-run --allow-read --allow-env --allow-write=./build --allow-sys='cpus,homedir,hostname' scripts/build.ts",
     "dist": "deno task lint && deno task build && deno task compile",
-    "test": "deno task lint && database__backendOptions__fs__skipFsCaseSensitivityCheck=true deno test --unstable-worker-options --allow-read=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-write=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-env --allow-ffi --allow-net --allow-sys"
+    "test": "deno task lint && deno test --unstable-worker-options --allow-read=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-write=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-env --allow-ffi --allow-net --allow-sys"
   },
   "imports": {
     "@db/sqlite": "jsr:@db/sqlite@0.13.0",
