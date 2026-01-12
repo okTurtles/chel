@@ -20,7 +20,8 @@ const validConfig = {
   '*': {
     name: 'fs',
     options: {
-      dirname: './test/temp'
+      dirname: './test/temp',
+      skipFsCaseSensitivityCheck: true,
     }
   }
 }
