@@ -544,6 +544,7 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
   const savedWebPushIndex = await sbp('chelonia.db/get', '_private_webpush_index')
   if (savedWebPushIndex) {
     const { pushSubscriptions, subscribersByChannelID } = sbp('okTurtles.data/get', PUBSUB_INSTANCE)
+    const currentServerId = nconf.get('server:serverId')
     await Promise.all(savedWebPushIndex.split('\x00').map(async (subscriptionId: string) => {
       const subscriptionSerialized = await sbp('chelonia.db/get', `_private_webpush_${subscriptionId}`)
       if (!subscriptionSerialized) {
@@ -551,7 +552,14 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
         // TODO: implement removing the missing subscriptionId from the index
         return
       }
-      const { settings, subscriptionInfo, channelIDs } = JSON.parse(subscriptionSerialized)
+      const { settings, subscriptionInfo, channelIDs, serverId } = JSON.parse(subscriptionSerialized)
+      // Skip subscriptions that have a different serverId than the current server
+      // This prevents sending push notifications to clients registered on a different server
+      // (e.g., production vs staging) when sharing the same database
+      if (currentServerId !== undefined && serverId !== undefined && serverId !== currentServerId) {
+        console.debug(`[server] skipping subscription '${subscriptionId}' because serverId '${serverId}' does not match current serverId '${currentServerId}'`)
+        return
+      }
       pushSubscriptions[subscriptionId] = subscriptionInfoWrapper(subscriptionId, subscriptionInfo, { channelIDs, settings })
       channelIDs.forEach((channelID: string) => {
         if (!subscribersByChannelID[channelID]) subscribersByChannelID[channelID] = new Set()
