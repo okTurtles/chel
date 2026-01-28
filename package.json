@@ -21,7 +21,6 @@
   ],
   "dependencies": {
     "rimraf": "3.0.2",
-    "tar": "7.5.3"
-  },
-  "devDependencies": {}
+    "tar": "7.5.7"
+  }
 }
