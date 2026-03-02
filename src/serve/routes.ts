@@ -858,7 +858,7 @@ route.POST('/kv/{contractID}/{key}', {
   }
 
   const strategy = request.auth.strategy
-  let isOwner = false
+  const expectedTokenDgst = await sbp('chelonia.db/get', `_private_deletionTokenDgst_${contractID}_kv_${key}`)
   switch (strategy) {
     case 'chel-shelter': {
       if (!ctEq(request.auth.credentials.billableContractID as string, contractID)) {
@@ -868,16 +868,15 @@ route.POST('/kv/{contractID}/{key}', {
         if (!ctEq(request.auth.credentials.billableContractID as string, ultimateOwner)) {
           return Boom.unauthorized('Invalid shelter auth', 'shelter')
         }
-        isOwner = true
-      } else {
-        const existing = await sbp('chelonia.db/get', `_private_kv_${contractID}_${key}`)
-        // This type of SAK authorization is only allowed for creating new keys
-        if (existing) return Boom.unauthorized('Invalid shelter auth', 'shelter')
+      } else if (expectedTokenDgst) {
+        // This type of SAK authorization is only allowed:
+        //  (1) for creating new keys
+        //  (2) for modifying keys that haven't opted-in to having an 'owner'
+        return Boom.unauthorized('Invalid shelter auth', 'shelter')
       }
       break
     }
     case 'chel-bearer': {
-      const expectedTokenDgst = await sbp('chelonia.db/get', `_private_deletionTokenDgst_${contractID}_kv_${key}`)
       if (!expectedTokenDgst) {
         return Boom.notFound()
       }
@@ -887,7 +886,6 @@ route.POST('/kv/{contractID}/{key}', {
       if (!ctEq(expectedTokenDgst, tokenDgst)) {
         return Boom.unauthorized('Invalid token', 'bearer')
       }
-      isOwner = true
       break
     }
     default:
@@ -898,7 +896,9 @@ route.POST('/kv/{contractID}/{key}', {
   // that's being deleted or updated)
   return sbp('chelonia/queueInvocation', contractID, async () => {
     const existing = await sbp('chelonia.db/get', `_private_kv_${contractID}_${key}`)
-    if (isOwner && !existing) return Boom.conflict()
+    // Error: We saw a token (which means that the key existed), but now the key
+    // seemingly doesn't exist. The auth we did likely isn't valid.
+    if (expectedTokenDgst && !existing) return Boom.conflict()
 
     // Some protection against accidental overwriting by implementing the if-match
     // header
