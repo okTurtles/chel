@@ -107811,7 +107811,7 @@ var init_routes = __esm({
         options: {
           allowUnknown: true
         },
-        payload: import_npm_joi.default.string().required()
+        payload: import_npm_joi.default.string().min(1).max(import_npm_nconf5.default.get("server:maxEventSize")).required()
       }
     }, async function(request) {
       if (ARCHIVE_MODE) return import_boom3.default.notImplemented("Server in archive mode");
@@ -115185,6 +115185,7 @@ var parseConfig = () => {
       "logLevel": "debug",
       "messages": [],
       "maxEventsBatchSize": 500,
+      "maxEventSize": 512 * 1024,
       "archiveMode": false
     },
     "database": {
