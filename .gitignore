@@ -5,3 +5,4 @@ dist-dashboard/
 data/
 chelonia.json
 chel.toml
+/.agents/
