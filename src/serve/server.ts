@@ -280,6 +280,7 @@ sbp('sbp/selectors/register', {
     await sbp('chelonia.db/delete', `_private_owner_${cid}`)
     await sbp('chelonia.db/delete', `_private_size_${cid}`)
     await sbp('chelonia.db/delete', `_private_deletionTokenDgst_${cid}`)
+    await sbp('chelonia.db/delete', `_private_deletionTokenHint_${cid}`)
 
     await sbp('chelonia.db/set', cid, '')
     await sbp('backend/server/updateContractFilesTotalSize', owner, -Number(size))
@@ -366,7 +367,11 @@ sbp('sbp/selectors/register', {
       const kvKeys = await sbp('chelonia.db/get', kvIndexKey)
       if (kvKeys) {
         await Promise.all(kvKeys.split('\x00').map((key: string) => {
-          return sbp('chelonia.db/delete', `_private_kv_${cid}_${key}`)
+          return Promise.all([
+            sbp('chelonia.db/delete', `_private_kv_${cid}_${key}`),
+            sbp('chelonia.db/delete', `_private_deletionTokenDgst_${cid}_kv_${key}`),
+            sbp('chelonia.db/delete', `_private_deletionTokenHint_${cid}_kv_${key}`),
+          ])
         }))
       }
       await sbp('chelonia.db/delete', kvIndexKey)
