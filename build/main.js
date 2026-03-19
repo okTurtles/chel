@@ -115156,7 +115156,7 @@ var parseArgs = () => {
   const commandModules = Object.values(commands_exports).map(
     (c) => handlerWrapper(c)
   );
-  return yargs_default(hideBin(process13.argv)).version("3.2.1").strict().command(commandModules).demandCommand();
+  return yargs_default(hideBin(process13.argv)).version("3.2.1").strict().command(commandModules).demandCommand().help();
 };
 var parseArgs_default = parseArgs;
 var parseConfig = () => {

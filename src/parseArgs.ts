@@ -30,6 +30,7 @@ const parseArgs = () => {
     .strict()
     .command(commandModules)
     .demandCommand()
+    .help()
 }
 
 export default parseArgs
