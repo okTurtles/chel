@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run --allow-net --allow-read=. --allow-write=. --allow-sys --allow-env
-import { createRequire } from "node:module";
-var __require = createRequire(import.meta.url);
+import { createRequire as __deno_internal_createRequire } from "node:module";
+var __require = __deno_internal_createRequire(import.meta.url);
 
 
 // build/main.js-tmp
