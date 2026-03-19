@@ -110353,7 +110353,7 @@ async function manifest(args) {
   const parsedFilepath = parse7(contractFile);
   const { name: contractFileName, base: contractBasename, dir: contractDir } = parsedFilepath;
   const name = args.name || contractFileName;
-  const version3 = args.version || "x";
+  const version3 = args.contractVersion || "x";
   const slim = args.slim;
   const outFile = args.out || join8(contractDir, `${contractFileName}.${version3}.manifest.json`);
   if (!keyFile) exit("Missing signing key file");
@@ -110430,11 +110430,11 @@ var module8 = {
       describe: "Slim contract bundle",
       requiresArg: true,
       string: true
-    }).alias("s", "slim").option("version", {
+    }).alias("s", "slim").option("contract-version", {
       describe: "Contract version",
       requiresArg: true,
       string: true
-    }).alias("v", "version").positional("signingKey", {
+    }).alias("V", "contract-version").positional("signingKey", {
       describe: "Signing key file",
       demandOption: true,
       type: "string"
@@ -110444,7 +110444,7 @@ var module8 = {
       type: "string"
     });
   },
-  command: "manifest [-k|--key <pubkey1>] [-k|--key <pubkey2> ...] [--out <manifest.json>] [-s|--slim <contract-slim.js>] [-v|--version <version>] <signingKey> <contractBundle>",
+  command: "manifest [-k|--key <pubkey1>] [-k|--key <pubkey2> ...] [--out <manifest.json>] [-s|--slim <contract-slim.js>] [-V|--contract-version <version>] <signingKey> <contractBundle>",
   describe: "Produce a signed manifest from a contract.\nIf unspecified, <version> is set to 'x'.",
   postHandler: (argv) => {
     return manifest(argv);
@@ -111012,7 +111012,7 @@ var module12 = {
   }
 };
 function version2() {
-  console.log("3.2.0");
+  console.log("3.2.1");
 }
 var module13 = {
   command: "version",
@@ -115156,7 +115156,7 @@ var parseArgs = () => {
   const commandModules = Object.values(commands_exports).map(
     (c) => handlerWrapper(c)
   );
-  return yargs_default(hideBin(process13.argv)).version("3.2.0").strict().command(commandModules).demandCommand().help();
+  return yargs_default(hideBin(process13.argv)).version("3.2.1").strict().command(commandModules).demandCommand().help();
 };
 var parseArgs_default = parseArgs;
 var parseConfig = () => {
