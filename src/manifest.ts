@@ -1,4 +1,4 @@
-// chel manifest [-k|--key <pubkey1> [-k|--key <pubkey2> ...]] [--out=<manifest.json>] [-s|--slim <contract-slim.js>] [-v|--version <version>] <key.json> <contract-bundle.js>
+// chel manifest [-k|--key <pubkey1>] [-k|--key <pubkey2> ...] [--out=<manifest.json>] [-s|--slim <contract-slim.js>] [-V|--contract-version <version>] <key.json> <contract-bundle.js>
 
 // TODO: consider a --copy-files option that works with --out which copies version-stamped
 //       contracts to the same folder as --out.
