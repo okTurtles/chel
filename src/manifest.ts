@@ -18,7 +18,7 @@ type Params = {
   out?: string;
   slim?: string;
   name?: string;
-  version?: string;
+  contractVersion?: string;
   signingKey: string;
   contractBundle: string;
 }
@@ -41,7 +41,7 @@ export async function manifest (args: ArgumentsCamelCase<Params>): Promise<void>
   const parsedFilepath = path.parse(contractFile)
   const { name: contractFileName, base: contractBasename, dir: contractDir } = parsedFilepath
   const name = args.name || contractFileName
-  const version = args.version || 'x'
+  const version = args.contractVersion || 'x'
   const slim = args.slim
   const outFile: string = args.out || path.join(contractDir, `${contractFileName}.${version}.manifest.json`)
   if (!keyFile) exit('Missing signing key file')
@@ -133,12 +133,12 @@ export const module = {
         string: true
       })
       .alias('s', 'slim')
-      .option('version', {
+      .option('contract-version', {
         describe: 'Contract version',
         requiresArg: true,
         string: true
       })
-      .alias('v', 'version')
+      .alias('V', 'contract-version')
       .positional('signingKey', {
         describe: 'Signing key file',
         demandOption: true,
@@ -150,7 +150,7 @@ export const module = {
         type: 'string'
       })
   },
-  command: 'manifest [-k|--key <pubkey1>] [-k|--key <pubkey2> ...] [--out <manifest.json>] [-s|--slim <contract-slim.js>] [-v|--version <version>] <signingKey> <contractBundle>',
+  command: 'manifest [-k|--key <pubkey1>] [-k|--key <pubkey2> ...] [--out <manifest.json>] [-s|--slim <contract-slim.js>] [-V|--contract-version <version>] <signingKey> <contractBundle>',
   describe: 'Produce a signed manifest from a contract.\n' + 'If unspecified, <version> is set to \'x\'.',
   postHandler: (argv) => {
     return manifest(argv)
