@@ -296,7 +296,11 @@ route.POST('/event', {
         }
         const deletionTokenDgst = request.headers['shelter-deletion-token-digest']
         if (deletionTokenDgst) {
+          const deletionTokenHint = request.headers['shelter-deletion-token-hint']
           await sbp('chelonia.db/set', `_private_deletionTokenDgst_${deserializedHEAD.contractID}`, deletionTokenDgst)
+          if (deletionTokenHint) {
+            await sbp('chelonia.db/set', `_private_deletionTokenHint_${deserializedHEAD.contractID}`, deletionTokenHint)
+          }
         }
       }
       // Store size information
@@ -651,7 +655,11 @@ route.POST('/file', {
     // Store deletion token
     const deletionTokenDgst = request.headers['shelter-deletion-token-digest']
     if (deletionTokenDgst) {
+      const deletionTokenHint = request.headers['shelter-deletion-token-hint']
       await sbp('chelonia.db/set', `_private_deletionTokenDgst_${manifestHash}`, deletionTokenDgst)
+      if (deletionTokenHint) {
+        await sbp('chelonia.db/set', `_private_deletionTokenHint_${manifestHash}`, deletionTokenHint)
+      }
     }
     return h.response(manifestHash)
   } catch (err) {
@@ -826,7 +834,7 @@ route.POST('/deleteContract/{hash}', {
 
 route.POST('/kv/{contractID}/{key}', {
   auth: {
-    strategies: ['chel-shelter'],
+    strategies: ['chel-shelter', 'chel-bearer'],
     mode: 'required'
   },
   payload: {
@@ -840,7 +848,7 @@ route.POST('/kv/{contractID}/{key}', {
       key: Joi.string().regex(KV_KEY_REGEX).required()
     })
   }
-}, function (request, h) {
+}, async function (request, h) {
   if (ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
   const { contractID, key } = request.params
 
@@ -849,14 +857,48 @@ route.POST('/kv/{contractID}/{key}', {
     return Boom.badRequest()
   }
 
-  if (!ctEq(request.auth.credentials.billableContractID as string, contractID)) {
-    return Boom.unauthorized(null, 'shelter')
+  const strategy = request.auth.strategy
+  const expectedTokenDgst = await sbp('chelonia.db/get', `_private_deletionTokenDgst_${contractID}_kv_${key}`)
+  switch (strategy) {
+    case 'chel-shelter': {
+      if (!ctEq(request.auth.credentials.billableContractID as string, contractID)) {
+        const ultimateOwner = await lookupUltimateOwner(contractID)
+        // Check that the user making the request is the ultimate owner (i.e.,
+        // that they have permission to delete this file)
+        if (!ctEq(request.auth.credentials.billableContractID as string, ultimateOwner)) {
+          return Boom.unauthorized('Invalid shelter auth', 'shelter')
+        }
+      } else if (expectedTokenDgst) {
+        // This type of SAK authorization is only allowed:
+        //  (1) for creating new keys
+        //  (2) for modifying keys that haven't opted-in to having an 'owner'
+        return Boom.unauthorized('Invalid shelter auth', 'shelter')
+      }
+      break
+    }
+    case 'chel-bearer': {
+      if (!expectedTokenDgst) {
+        return Boom.notFound()
+      }
+      const tokenDgst = blake32Hash(request.auth.credentials.token as string)
+      // Constant-time comparison
+      // Check that the token provided matches the deletion token for this file
+      if (!ctEq(expectedTokenDgst, tokenDgst)) {
+        return Boom.unauthorized('Invalid token', 'bearer')
+      }
+      break
+    }
+    default:
+      return Boom.unauthorized('Missing or invalid auth strategy')
   }
 
   // Use a queue to prevent race conditions (for example, writing to a contract
   // that's being deleted or updated)
   return sbp('chelonia/queueInvocation', contractID, async () => {
     const existing = await sbp('chelonia.db/get', `_private_kv_${contractID}_${key}`)
+    // Error: We saw a token (which means that the key existed), but now the key
+    // seemingly doesn't exist. The auth we did likely isn't valid.
+    if (expectedTokenDgst && !existing) return Boom.conflict()
 
     // Some protection against accidental overwriting by implementing the if-match
     // header
@@ -916,6 +958,16 @@ route.POST('/kv/{contractID}/{key}', {
     await sbp('chelonia.db/set', `_private_kv_${contractID}_${key}`, request.payload)
     await sbp('backend/server/updateSize', contractID, (request.payload as Buffer).byteLength - existingSize)
     await appendToIndexFactory(`_private_kvIdx_${contractID}`)(key)
+
+    const deletionTokenDgst = request.headers['shelter-deletion-token-digest']
+    if (deletionTokenDgst) {
+      const deletionTokenHint = request.headers['shelter-deletion-token-hint']
+      await sbp('chelonia.db/set', `_private_deletionTokenDgst_${contractID}_kv_${key}`, deletionTokenDgst)
+      if (deletionTokenHint) {
+        await sbp('chelonia.db/set', `_private_deletionTokenHint_${contractID}_kv_${key}`, deletionTokenHint)
+      }
+    }
+
     // No await on broadcast for faster responses
     sbp('backend/server/broadcastKV', contractID, key, request.payload.toString()).catch((e: Error) => console.error(e, 'Error broadcasting KV update', contractID, key))
 
