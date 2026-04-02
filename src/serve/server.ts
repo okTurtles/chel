@@ -31,14 +31,15 @@ import {
   type WSS
 } from './pubsub.ts'
 import { addChannelToSubscription, deleteChannelFromSubscription, postEvent, pushServerActionhandlers, subscriptionInfoWrapper } from './push.ts'
+import { pathToFileURL } from 'node:url'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
 
 const cheloniaAppManifest = await (async () => {
   try {
-    return await import(join(process.cwd(), 'chelonia.json'), {
+    return (await import(pathToFileURL(join(process.cwd(), 'chelonia.json')).toString(), {
       with: { type: 'json' }
-    })
+    })).default
   } catch {
     console.warn('`chelonia.json` not found. Version information will be unavailable.')
   }
@@ -435,10 +436,10 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
     connection (socket) {
       const versionInfo = {
         appVersion: cheloniaAppManifest?.appVersion || null,
-        contractsVersion: Object.fromEntries(
-          Object.entries(cheloniaAppManifest?.contracts || {})
+        contractsVersion: cheloniaAppManifest?.contracts ? Object.fromEntries(
+          Object.entries(cheloniaAppManifest?.contracts)
             .map(([k, v]) => [k, (v as Record<string, number | string>).version])
-        )
+        ) : null
       }
       socket.send(createNotification(NOTIFICATION_TYPE.VERSION_INFO, versionInfo))
     }
