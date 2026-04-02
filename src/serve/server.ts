@@ -31,8 +31,19 @@ import {
   type WSS
 } from './pubsub.ts'
 import { addChannelToSubscription, deleteChannelFromSubscription, postEvent, pushServerActionhandlers, subscriptionInfoWrapper } from './push.ts'
+import { pathToFileURL } from 'node:url'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
+
+const cheloniaAppManifest = await (async () => {
+  try {
+    return (await import(pathToFileURL(join(process.cwd(), 'chelonia.json')).toString(), {
+      with: { type: 'json' }
+    })).default
+  } catch {
+    console.warn('`chelonia.json` not found. Version information will be unavailable.')
+  }
+})()
 
 const ARCHIVE_MODE = nconf.get('server:archiveMode')
 
@@ -48,8 +59,6 @@ const ownerSizeTotalWorker = ARCHIVE_MODE || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_
 const creditsWorker = ARCHIVE_MODE || !CREDITS_WORKER_TASK_TIME_INTERVAL
   ? undefined
   : createWorker(join(import.meta.dirname || '.', import.meta.workerDir || '.', 'creditsWorker.js'))
-
-const { CONTRACTS_VERSION, GI_VERSION } = process.env
 
 // Dynamic runtime import to bypass bundling issues with npm: specifier
 const hapi = new Hapi.Server({
@@ -426,8 +435,11 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
   serverHandlers: {
     connection (socket) {
       const versionInfo = {
-        GI_VERSION: GI_VERSION || null,
-        CONTRACTS_VERSION: CONTRACTS_VERSION || null
+        appVersion: cheloniaAppManifest?.appVersion || null,
+        contractsVersion: cheloniaAppManifest?.contracts ? Object.fromEntries(
+          Object.entries(cheloniaAppManifest?.contracts)
+            .map(([k, v]) => [k, (v as Record<string, number | string>).version])
+        ) : null
       }
       socket.send(createNotification(NOTIFICATION_TYPE.VERSION_INFO, versionInfo))
     }
