@@ -1,5 +1,5 @@
-import { createRequire as __deno_internal_createRequire } from "node:module";
-var __require = __deno_internal_createRequire(import.meta.url);
+import { createRequire } from "node:module";
+var __require = createRequire(import.meta.url);
 
 
 // build/serve/creditsWorker.js-tmp

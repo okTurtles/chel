@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run --allow-net --allow-read=. --allow-write=. --allow-sys --allow-env
-import { createRequire as __deno_internal_createRequire } from "node:module";
-var __require = __deno_internal_createRequire(import.meta.url);
+import { createRequire } from "node:module";
+var __require = createRequire(import.meta.url);
 
 
 // build/main.js-tmp
@@ -3094,6 +3094,7 @@ import path6 from "node:path";
 import process9 from "node:process";
 import { join as join72 } from "node:path";
 import process10 from "node:process";
+import { pathToFileURL } from "node:url";
 import process11 from "node:process";
 import process13 from "node:process";
 
@@ -87653,7 +87654,7 @@ var require_thread_stream = __commonJS({
     var { EventEmitter } = __require2("events");
     var { Worker: Worker2 } = __require2("worker_threads");
     var { join: join92 } = __require2("path");
-    var { pathToFileURL } = __require2("url");
+    var { pathToFileURL: pathToFileURL2 } = __require2("url");
     var { wait } = require_wait2();
     var {
       WRITE_INDEX,
@@ -87693,7 +87694,7 @@ var require_thread_stream = __commonJS({
         ...opts.workerOpts,
         trackUnmanagedFds: false,
         workerData: {
-          filename: filename.indexOf("file://") === 0 ? filename : pathToFileURL(filename).href,
+          filename: filename.indexOf("file://") === 0 ? filename : pathToFileURL2(filename).href,
           dataBuf: stream[kImpl].dataBuf,
           stateBuf: stream[kImpl].stateBuf,
           workerData: {
@@ -108555,15 +108556,14 @@ var Hapi2;
 var import_inert2;
 var import_npm_chalk3;
 var import_npm_nconf6;
+var cheloniaAppManifest;
 var ARCHIVE_MODE2;
 var ownerSizeTotalWorker;
 var creditsWorker;
-var CONTRACTS_VERSION;
-var GI_VERSION;
 var hapi;
 var appendToOrphanedNamesIndex;
 var init_server = __esm({
-  "src/serve/server.ts"() {
+  async "src/serve/server.ts"() {
     "use strict";
     init_SPMessage();
     init_chelonia();
@@ -108585,6 +108585,15 @@ var init_server = __esm({
     init_pubsub2();
     init_push();
     import_npm_nconf6 = __toESM(require_nconf());
+    cheloniaAppManifest = await (async () => {
+      try {
+        return (await import(pathToFileURL(join72(process10.cwd(), "chelonia.json")).toString(), {
+          with: { type: "json" }
+        })).default;
+      } catch {
+        console.warn("`chelonia.json` not found. Version information will be unavailable.");
+      }
+    })();
     ARCHIVE_MODE2 = import_npm_nconf6.default.get("server:archiveMode");
     if (CREDITS_WORKER_TASK_TIME_INTERVAL && OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL > CREDITS_WORKER_TASK_TIME_INTERVAL) {
       process10.stderr.write("The size calculation worker must run more frequently than the credits worker for accurate billing");
@@ -108592,7 +108601,6 @@ var init_server = __esm({
     }
     ownerSizeTotalWorker = ARCHIVE_MODE2 || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker_default(join72(import.meta.dirname || ".", "serve", "ownerSizeTotalWorker.js"));
     creditsWorker = ARCHIVE_MODE2 || !CREDITS_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker_default(join72(import.meta.dirname || ".", "serve", "creditsWorker.js"));
-    ({ CONTRACTS_VERSION, GI_VERSION } = process10.env);
     hapi = new Hapi2.Server({
       // debug: false, // <- Hapi v16 was outputing too many unnecessary debug statements
       //               // v17 doesn't seem to do this anymore so I've re-enabled the logging
@@ -108874,8 +108882,10 @@ var init_server = __esm({
       serverHandlers: {
         connection(socket) {
           const versionInfo = {
-            GI_VERSION: GI_VERSION || null,
-            CONTRACTS_VERSION: CONTRACTS_VERSION || null
+            appVersion: cheloniaAppManifest?.appVersion || null,
+            contractsVersion: cheloniaAppManifest?.contracts ? Object.fromEntries(
+              Object.entries(cheloniaAppManifest?.contracts).map(([k, v2]) => [k, v2.version])
+            ) : null
           };
           socket.send(createNotification(NOTIFICATION_TYPE.VERSION_INFO, versionInfo));
         }
@@ -109074,7 +109084,7 @@ var init_serve = __esm({
         console.info(import_npm_chalk4.default.bold("backend startup sequence complete."));
         resolve82();
       });
-      Promise.resolve().then(() => (init_server(), server_exports)).catch(reject);
+      init_server().then(() => server_exports).catch(reject);
     });
     esm_default("okTurtles.events/once", SERVER_EXITING, () => {
       esm_default("okTurtles.data/apply", PUBSUB_INSTANCE, function(pubsub) {
@@ -110628,8 +110638,8 @@ async function pin(args) {
     if (!existsSync(fullManifestPath)) {
       exit(`Manifest file not found: ${manifestPath}`);
     }
-    const { contractName, contractFiles, manifestVersion } = await parseManifest(fullManifestPath);
-    console.log(blue(`Contract name: ${contractName}`));
+    const { contractName, fullContractName, contractFiles, manifestVersion } = await parseManifest(fullManifestPath);
+    console.log(blue(`Contract name: ${fullContractName}`));
     console.log(blue(`Manifest version: ${manifestVersion}`));
     if (version3) {
       if (version3 !== manifestVersion) {
@@ -110639,27 +110649,27 @@ async function pin(args) {
       }
       console.log(green(`\u2705 Version validation passed: ${version3}`));
     }
-    const currentPinnedVersion = cheloniaConfig.contracts[contractName]?.version;
+    const currentPinnedVersion = cheloniaConfig.contracts[fullContractName]?.version;
     if (currentPinnedVersion === manifestVersion) {
-      console.log(yellow(`\u2728 Contract ${contractName} is already pinned to version ${manifestVersion} - no action needed`));
+      console.log(yellow(`\u2728 Contract ${fullContractName} is already pinned to version ${manifestVersion} - no action needed`));
       return;
     }
     if (currentPinnedVersion) {
-      console.log(cyan(`\u{1F4CC} Updating ${contractName} from version ${currentPinnedVersion} to ${manifestVersion}`));
+      console.log(cyan(`\u{1F4CC} Updating ${fullContractName} from version ${currentPinnedVersion} to ${manifestVersion}`));
     } else {
-      console.log(cyan(`\u{1F4CC} Pinning ${contractName} to version ${manifestVersion} (first time)`));
+      console.log(cyan(`\u{1F4CC} Pinning ${fullContractName} to version ${manifestVersion} (first time)`));
     }
     const contractVersionDir = join62(projectRoot, "contracts", contractName, manifestVersion);
     if (existsSync(contractVersionDir)) {
       if (!args.overwrite) {
-        exit(`Version ${manifestVersion} already exists for contract ${contractName}. Use --overwrite to replace it.`);
+        exit(`Version ${manifestVersion} already exists for contract ${fullContractName}. Use --overwrite to replace it.`);
       }
-      console.log(yellow(`Version ${manifestVersion} already exists for ${contractName} - checking files...`));
+      console.log(yellow(`Version ${manifestVersion} already exists for ${fullContractName} - checking files...`));
     } else {
       await createVersionDirectory(contractName, manifestVersion);
     }
     await copyContractFiles(contractFiles, manifestPath, contractName, manifestVersion, args);
-    await updateCheloniaConfig(contractName, manifestVersion, manifestPath);
+    await updateCheloniaConfig(fullContractName, manifestVersion, manifestPath);
     console.log(green(`\u2705 Successfully pinned ${contractName} to version ${version3}`));
     console.log(gray(`Location: contracts/${contractName}/${manifestVersion}/`));
   } catch (error2) {
@@ -110682,6 +110692,7 @@ async function parseManifest(manifestPath) {
   return {
     contractName,
     manifestVersion,
+    fullContractName,
     contractFiles: {
       main: mainFile,
       slim: slimFile
