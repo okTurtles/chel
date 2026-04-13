@@ -5,9 +5,9 @@ import 'npm:@chelonia/lib/chelonia'
 import 'npm:@chelonia/lib/db'
 import { checkKey, parsePrefixableKey, prefixHandlers } from 'npm:@chelonia/lib/db'
 import { strToB64 } from 'npm:@chelonia/lib/functions'
-import Boom from 'npm:@hapi/boom'
 import sbp from 'npm:@sbp/sbp'
 import LRU from 'npm:lru-cache'
+import { BackendErrorConflict, BackendErrorGone, BackendErrorNotFound } from './errors.ts'
 import { SERVER_EXITING } from './events.ts'
 import { initVapid } from './vapid.ts'
 import { initZkpp } from './zkppSalt.ts'
@@ -25,10 +25,10 @@ export default sbp('sbp/selectors/register', {
     const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, batchMaxSize)
     const latestHEADinfo = await sbp('chelonia/db/latestHEADinfo', contractID)
     if (latestHEADinfo === '') {
-      throw Boom.resourceGone(`contractID ${contractID} has been deleted!`)
+      throw new BackendErrorGone(`contractID ${contractID} has been deleted!`)
     }
     if (!latestHEADinfo) {
-      throw Boom.notFound(`contractID ${contractID} doesn't exist!`)
+      throw new BackendErrorNotFound(`contractID ${contractID} doesn't exist!`)
     }
     // Number of entries pushed.
     let counter = 0
@@ -159,7 +159,7 @@ export default sbp('sbp/selectors/register', {
   'backend/db/registerName': async function (name: string, value: string): Promise<{ name: string, value: string }> {
     const exists = await sbp('backend/db/lookupName', name)
     if (exists) {
-      throw Boom.conflict('exists')
+      throw new BackendErrorConflict('exists')
     }
     await sbp('chelonia.db/set', namespaceKey(name), value)
     await sbp('chelonia.db/set', `_private_cid2name_${value}`, name)

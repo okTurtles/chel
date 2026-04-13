@@ -5,12 +5,11 @@ import { SPMessage } from 'npm:@chelonia/lib/SPMessage'
 import 'npm:@chelonia/lib/chelonia'
 import { blake32Hash, createCID, maybeParseCID, multicodes } from 'npm:@chelonia/lib/functions'
 import 'npm:@chelonia/lib/persistent-actions'
-import Boom from 'npm:@hapi/boom'
-import * as Hapi from 'npm:@hapi/hapi'
 import sbp from 'npm:@sbp/sbp'
 import Bottleneck from 'npm:bottleneck'
 import chalk from 'npm:chalk'
-import Joi from 'npm:joi'
+import { HTTPException } from 'npm:hono/http-exception'
+import { getConnInfo } from 'npm:@hono/node-server/conninfo'
 // TODO: Use logger for debugging route handlers
 import { isIP } from 'node:net'
 import path from 'node:path'
@@ -21,6 +20,9 @@ import logger from './logger.ts'
 import { getChallenge, getContractSalt, redeemSaltRegistrationToken, redeemSaltUpdateToken, register, registrationKey, updateContractSalt } from './zkppSalt.ts'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
+import { authMiddleware, type AuthCredentials } from './auth.ts'
+import type { Hono, Context } from 'npm:hono'
+import { Readable } from 'node:stream'
 
 const MEGABYTE = 1048576 // TODO: add settings for these
 const SECOND = 1000
@@ -146,240 +148,225 @@ const ctEq = (expected: string, actual: string): boolean => {
   return r === 0
 }
 
-// Boom and Joi already imported above
 const isCheloniaDashboard = process.env.IS_CHELONIA_DASHBOARD_DEV
 const appDir = nconf.get('server:appDir') || '.'
 const dashboardDir = import.meta.dirname || './build/dist-dashboard'
-const staticServeConfig = {
+export const staticServeConfig = {
   routePath: isCheloniaDashboard ? '/dashboard/{path*}' : '/app/{path*}',
   distAssets: path.resolve(path.join(isCheloniaDashboard ? dashboardDir : appDir, 'assets')),
   distIndexHtml: path.resolve(path.join(isCheloniaDashboard ? dashboardDir : appDir, 'index.html')),
   redirect: isCheloniaDashboard ? '/dashboard/' : '/app/'
 }
 
-const errorMapper = (e: Error): ReturnType<typeof Boom.notFound> => {
+const errorMapper = (e: Error): never => {
   switch (e?.name) {
     case 'BackendErrorNotFound':
-      return Boom.notFound()
+      throw new HTTPException(404)
     case 'BackendErrorGone':
-      return Boom.resourceGone()
+      throw new HTTPException(410)
     case 'BackendErrorBadData':
-      return Boom.badData(e.message)
+      throw new HTTPException(422, { message: e.message })
     default:
       console.error(e, 'Unexpected backend error')
-      return Boom.internal(e.message ?? 'internal error')
+      throw new HTTPException(500, { message: e.message ?? 'internal error' })
   }
 }
 
-// We define a `Proxy` for route so that we can use `route.VERB` syntax for
-// defining routes instead of calling `server.route` with an object, and to
-// dynamically get the HAPI server object from the `SERVER_INSTANCE`, which is
-// defined in `server.js`.
-interface RouteHandler {
-  (path: string, options: Hapi.RouteOptions, handler: Hapi.Lifecycle.Method | Hapi.HandlerDecorations): void;
-}
-
-type RouteProxy = Record<Hapi.RouteDefMethods, RouteHandler>
-
-const route = new Proxy({} as RouteProxy, {
-  get: function (_obj, prop: Hapi.RouteDefMethods): RouteHandler {
-    return function (path, options, handler): void {
-      sbp('okTurtles.data/apply', SERVER_INSTANCE, function (server: Hapi.Server) {
-        server.route({ path, method: prop, options, handler })
-      })
-    }
+function getClientIP (c: Context): string {
+  const headerIP = c.req.header('x-real-ip')
+  if (headerIP) return headerIP
+  try {
+    const info = getConnInfo(c)
+    return info.remote.address || 'unknown'
+  } catch {
+    return 'unknown'
   }
-})
+}
 
 // helper function that returns 404 and prevents client from caching the 404 response
 // which can sometimes break things: https://github.com/okTurtles/group-income/issues/2608
-function notFoundNoCache (h: Hapi.ResponseToolkit): ReturnType<typeof h.response> {
-  return h.response().code(404).header('Cache-Control', 'no-store')
+function notFoundNoCache (c: Context): Response {
+  return c.body(null, 404, { 'Cache-Control': 'no-store' })
 }
+
+// Get the Hono app via SERVER_INSTANCE
+const app: Hono = sbp('okTurtles.data/get', SERVER_INSTANCE)
 
 // RESTful API routes
 
 // NOTE: We could get rid of this RESTful API and just rely on pubsub.js to do this
 //       —BUT HTTP2 might be better than websockets and so we keep this around.
 //       See related TODO in pubsub.js and the reddit discussion link.
-route.POST('/event', {
-  auth: {
-    strategy: 'chel-shelter',
-    mode: 'optional'
-  },
-  validate: {
-    headers: Joi.object({
-      'shelter-namespace-registration': Joi.string().regex(NAME_REGEX)
-    }),
-    options: {
-      allowUnknown: true
-    },
-    payload: Joi.string().required()
-  }
-}, async function (request) {
-  if (ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
-  // IMPORTANT: IT IS A REQUIREMENT THAT ANY PROXY SERVERS (E.G. nginx) IN FRONT OF US SET THE
-  // X-Real-IP HEADER! OTHERWISE THIS IS EASILY SPOOFED!
-  const ip = request.headers['x-real-ip'] || request.info.remoteAddress
-  try {
-    const deserializedHEAD = SPMessage.deserializeHEAD(request.payload as string)
+app.post('/event',
+  authMiddleware('chel-shelter', 'optional'),
+  async function (c) {
+    if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
+    // IMPORTANT: IT IS A REQUIREMENT THAT ANY PROXY SERVERS (E.G. nginx) IN FRONT OF US SET THE
+    // X-Real-IP HEADER! OTHERWISE THIS IS EASILY SPOOFED!
+    const ip = getClientIP(c)
     try {
-      const parsed = maybeParseCID(deserializedHEAD.head.manifest)
-      if (parsed?.code !== multicodes.SHELTER_CONTRACT_MANIFEST) {
-        return Boom.badData('Invalid manifest')
+      const payload = await c.req.text()
+      const namespaceRegistration = c.req.header('shelter-namespace-registration')
+      if (namespaceRegistration && !NAME_REGEX.test(namespaceRegistration)) {
+        throw new HTTPException(400, { message: 'Invalid shelter-namespace-registration header' })
       }
-      const credentials = request.auth.credentials
-      // Only allow identity contracts to be created without attribution
-      if (!credentials?.billableContractID && deserializedHEAD.isFirstMessage) {
-        const manifest = await sbp('chelonia.db/get', deserializedHEAD.head.manifest)
-        const parsedManifest = JSON.parse(manifest)
-        const { name } = JSON.parse(parsedManifest.body)
-        if (name !== 'gi.contracts/identity') {
-          return Boom.unauthorized('This contract type requires ownership information', 'shelter')
+      const deserializedHEAD = SPMessage.deserializeHEAD(payload)
+      try {
+        const parsed = maybeParseCID(deserializedHEAD.head.manifest)
+        if (parsed?.code !== multicodes.SHELTER_CONTRACT_MANIFEST) {
+          throw new HTTPException(422, { message: 'Invalid manifest' })
         }
-        if (nconf.get('server:signup:disabled')) {
-          return Boom.forbidden('Registration disabled')
-        }
-        // rate limit signups in production
-        if (!SIGNUP_LIMIT_DISABLED) {
-          try {
-            // See discussion: https://github.com/okTurtles/group-income/pull/2280#pullrequestreview-2219347378
-            const keyedIp = limiterKey(ip)
-            await limiterPerMinute.key(keyedIp).schedule(() => Promise.resolve())
-            await limiterPerHour.key(keyedIp).schedule(() => Promise.resolve())
-            await limiterPerDay.key(keyedIp).schedule(() => Promise.resolve())
-          } catch {
-            console.warn('rate limit hit for IP:', ip)
-            throw Boom.tooManyRequests('Rate limit exceeded')
+        const credentials = c.get('credentials') as AuthCredentials | undefined
+        // Only allow identity contracts to be created without attribution
+        if (!credentials?.billableContractID && deserializedHEAD.isFirstMessage) {
+          const manifest = await sbp('chelonia.db/get', deserializedHEAD.head.manifest)
+          const parsedManifest = JSON.parse(manifest)
+          const { name } = JSON.parse(parsedManifest.body)
+          if (name !== 'gi.contracts/identity') {
+            throw new HTTPException(401, { message: 'This contract type requires ownership information' })
           }
-        }
-      }
-      const saltUpdateToken = request.headers['shelter-salt-update-token']
-      let updateSalts
-      if (saltUpdateToken) {
-        // If we've got a salt update token (i.e., a password change),
-        // validate the token
-        updateSalts = await redeemSaltUpdateToken(deserializedHEAD.contractID, saltUpdateToken)
-      }
-      await sbp('backend/server/handleEntry', deserializedHEAD, request.payload)
-      // If it's a salt update, do it now after handling the message. This way
-      // we make it less likely that someone will end up locked out from their
-      // identity contract.
-      await updateSalts?.(deserializedHEAD.hash)
-      if (deserializedHEAD.isFirstMessage) {
-        // Store attribution information
-        if (credentials?.billableContractID) {
-          await sbp('backend/server/saveOwner', credentials.billableContractID, deserializedHEAD.contractID)
-        // A billable entity has been created
-        } else {
-          await sbp('backend/server/registerBillableEntity', deserializedHEAD.contractID)
-        }
-        // If this is the first message in a contract and the
-        // `shelter-namespace-registration` header is present, proceed with also
-        // registering a name for the new contract
-        const name = request.headers['shelter-namespace-registration']
-        if (name) {
-        // Name registation is enabled only for identity contracts
-          const cheloniaState = sbp('chelonia/rootState')
-          if (cheloniaState.contracts[deserializedHEAD.contractID]?.type === 'gi.contracts/identity') {
-            const r = await sbp('backend/db/registerName', name, deserializedHEAD.contractID)
-            if (Boom.isBoom(r)) {
-              return r
-            }
-            const saltRegistrationToken = request.headers['shelter-salt-registration-token']
-            console.info(`new user: ${name}=${deserializedHEAD.contractID} (${ip})`)
-            if (saltRegistrationToken) {
-              // If we've got a salt registration token, redeem it
-              await redeemSaltRegistrationToken(name, deserializedHEAD.contractID, saltRegistrationToken)
+          if (nconf.get('server:signup:disabled')) {
+            throw new HTTPException(403, { message: 'Registration disabled' })
+          }
+          // rate limit signups in production
+          if (!SIGNUP_LIMIT_DISABLED) {
+            try {
+              // See discussion: https://github.com/okTurtles/group-income/pull/2280#pullrequestreview-2219347378
+              const keyedIp = limiterKey(ip)
+              await limiterPerMinute.key(keyedIp).schedule(() => Promise.resolve())
+              await limiterPerHour.key(keyedIp).schedule(() => Promise.resolve())
+              await limiterPerDay.key(keyedIp).schedule(() => Promise.resolve())
+            } catch {
+              console.warn('rate limit hit for IP:', ip)
+              throw new HTTPException(429, { message: 'Rate limit exceeded' })
             }
           }
         }
-        const deletionTokenDgst = request.headers['shelter-deletion-token-digest']
-        if (deletionTokenDgst) {
-          await sbp('chelonia.db/set', `_private_deletionTokenDgst_${deserializedHEAD.contractID}`, deletionTokenDgst)
+        const saltUpdateToken = c.req.header('shelter-salt-update-token')
+        let updateSalts
+        if (saltUpdateToken) {
+          // If we've got a salt update token (i.e., a password change),
+          // validate the token
+          updateSalts = await redeemSaltUpdateToken(deserializedHEAD.contractID, saltUpdateToken)
         }
+        await sbp('backend/server/handleEntry', deserializedHEAD, payload)
+        // If it's a salt update, do it now after handling the message. This way
+        // we make it less likely that someone will end up locked out from their
+        // identity contract.
+        await updateSalts?.(deserializedHEAD.hash)
+        if (deserializedHEAD.isFirstMessage) {
+          // Store attribution information
+          if (credentials?.billableContractID) {
+            await sbp('backend/server/saveOwner', credentials.billableContractID, deserializedHEAD.contractID)
+          // A billable entity has been created
+          } else {
+            await sbp('backend/server/registerBillableEntity', deserializedHEAD.contractID)
+          }
+          // If this is the first message in a contract and the
+          // `shelter-namespace-registration` header is present, proceed with also
+          // registering a name for the new contract
+          const name = c.req.header('shelter-namespace-registration')
+          if (name) {
+          // Name registation is enabled only for identity contracts
+            const cheloniaState = sbp('chelonia/rootState')
+            if (cheloniaState.contracts[deserializedHEAD.contractID]?.type === 'gi.contracts/identity') {
+              try {
+                await sbp('backend/db/registerName', name, deserializedHEAD.contractID)
+              } catch (registerErr: unknown) {
+                if ((registerErr as Error).name === 'BackendErrorConflict') {
+                  throw new HTTPException(409, { message: 'Name already exists' })
+                }
+                throw registerErr
+              }
+              const saltRegistrationToken = c.req.header('shelter-salt-registration-token')
+              console.info(`new user: ${name}=${deserializedHEAD.contractID} (${ip})`)
+              if (saltRegistrationToken) {
+                // If we've got a salt registration token, redeem it
+                await redeemSaltRegistrationToken(name, deserializedHEAD.contractID, saltRegistrationToken)
+              }
+            }
+          }
+          const deletionTokenDgst = c.req.header('shelter-deletion-token-digest')
+          if (deletionTokenDgst) {
+            await sbp('chelonia.db/set', `_private_deletionTokenDgst_${deserializedHEAD.contractID}`, deletionTokenDgst)
+          }
+        }
+        // Store size information
+        await sbp('backend/server/updateSize', deserializedHEAD.contractID, Buffer.byteLength(payload), deserializedHEAD.isFirstMessage && !credentials?.billableContractID ? deserializedHEAD.contractID : undefined)
+      } catch (err: unknown) {
+        if (err instanceof HTTPException) throw err
+        console.error(err, chalk.bold.yellow((err as Error).name))
+        if ((err as Error).name === 'ChelErrorDBBadPreviousHEAD' || (err as Error).name === 'ChelErrorAlreadyProcessed') {
+          const HEADinfo = await sbp('chelonia/db/latestHEADinfo', deserializedHEAD.contractID) ?? { HEAD: null, height: 0 }
+          return c.json({ message: (err as Error).message, data: { HEADinfo } }, 409, {
+            'shelter-headinfo-head': HEADinfo.HEAD,
+            'shelter-headinfo-height': String(HEADinfo.height)
+          })
+        } else if ((err as Error).name === 'ChelErrorSignatureError') {
+          throw new HTTPException(422, { message: 'Invalid signature' })
+        } else if ((err as Error).name === 'ChelErrorSignatureKeyUnauthorized') {
+          throw new HTTPException(403, { message: 'Unauthorized signing key' })
+        }
+        throw err // rethrow error
       }
-      // Store size information
-      await sbp('backend/server/updateSize', deserializedHEAD.contractID, Buffer.byteLength(request.payload as Buffer), deserializedHEAD.isFirstMessage && !credentials?.billableContractID ? deserializedHEAD.contractID : undefined)
-    } catch (err: unknown) {
-      console.error(err, chalk.bold.yellow((err as Error).name))
-      if ((err as Error).name === 'ChelErrorDBBadPreviousHEAD' || (err as Error).name === 'ChelErrorAlreadyProcessed') {
-        const HEADinfo = await sbp('chelonia/db/latestHEADinfo', deserializedHEAD.contractID) ?? { HEAD: null, height: 0 }
-        const r = Boom.conflict((err as Error).message, { HEADinfo })
-        Object.assign(r.output.headers, {
-          'shelter-headinfo-head': HEADinfo.HEAD,
-          'shelter-headinfo-height': HEADinfo.height
-        })
-        return r
-      } else if ((err as Error).name === 'ChelErrorSignatureError') {
-        return Boom.badData('Invalid signature')
-      } else if ((err as Error).name === 'ChelErrorSignatureKeyUnauthorized') {
-        return Boom.forbidden('Unauthorized signing key')
+      return c.text(deserializedHEAD.hash)
+    } catch (err) {
+      if (err instanceof HTTPException) throw err
+      ;(err as unknown as { ip: string }).ip = ip
+      logger.error(err, 'POST /event', (err as Error).message)
+      throw err
+    }
+  })
+
+app.get('/eventsAfter/:contractID/:since/:limit?',
+  async function (c) {
+    const contractID = c.req.param('contractID')
+    const since = c.req.param('since')
+    const limit = c.req.param('limit')
+
+    if (!CID_REGEX.test(contractID)) throw new HTTPException(400, { message: 'Invalid contractID' })
+    if (!POSITIVE_INTEGER_REGEX.test(since)) throw new HTTPException(400, { message: 'Invalid since' })
+    if (limit !== undefined && !POSITIVE_INTEGER_REGEX.test(limit)) throw new HTTPException(400, { message: 'Invalid limit' })
+
+    const keyOps = c.req.query('keyOps')
+    const ip = getClientIP(c)
+    try {
+      const parsed = maybeParseCID(contractID)
+      if (parsed?.code !== multicodes.SHELTER_CONTRACT_DATA) {
+        throw new HTTPException(400)
       }
-      throw err // rethrow error
-    }
-    return deserializedHEAD.hash
-  } catch (err) {
-    (err as unknown as { ip: string }).ip = ip
-    logger.error(err, 'POST /event', (err as Error).message)
-    return err
-  }
-})
 
-route.GET('/eventsAfter/{contractID}/{since}/{limit?}', {
-  validate: {
-    params: Joi.object({
-      contractID: Joi.string().regex(CID_REGEX).required(),
-      since: Joi.string().regex(POSITIVE_INTEGER_REGEX).required(),
-      limit: Joi.string().regex(POSITIVE_INTEGER_REGEX)
-    }),
-    query: Joi.object({
-      keyOps: Joi.boolean()
-    })
-  }
-}, async function (request) {
-  const { contractID, since, limit } = request.params
-  const ip = request.headers['x-real-ip'] || request.info.remoteAddress
-  try {
-    const parsed = maybeParseCID(contractID)
-    if (parsed?.code !== multicodes.SHELTER_CONTRACT_DATA) {
-      return Boom.badRequest()
+      const stream = await sbp('backend/db/streamEntriesAfter', contractID, Number(since), limit == null ? undefined : Number(limit), { keyOps: keyOps === 'true' }) as Readable
+      // "On an HTTP server, make sure to manually close your streams if a request is aborted."
+      // From: http://knexjs.org/#Interfaces-Streams
+      //       https://github.com/tgriesser/knex/wiki/Manually-Closing-Streams
+      // Use the request abort signal to destroy the stream when the client disconnects
+      c.req.raw.signal.addEventListener('abort', () => stream.destroy())
+      // Convert the Node Readable stream to a web ReadableStream for the Response
+      const webStream = Readable.toWeb(stream) as ReadableStream
+      return new Response(webStream, {
+        headers: { 'content-type': 'application/octet-stream' }
+      })
+    } catch (err) {
+      if (err instanceof HTTPException) throw err
+      ;(err as unknown as { ip: string }).ip = ip
+      logger.error(err, `GET /eventsAfter/${contractID}/${since}`, (err as Error).message)
+      throw err
     }
-
-    const stream = await sbp('backend/db/streamEntriesAfter', contractID, Number(since), limit == null ? undefined : Number(limit), { keyOps: !!request.query['keyOps'] })
-    // "On an HTTP server, make sure to manually close your streams if a request is aborted."
-    // From: http://knexjs.org/#Interfaces-Streams
-    //       https://github.com/tgriesser/knex/wiki/Manually-Closing-Streams
-    // Plus: https://hapijs.com/api#request-events
-    // request.on('disconnect', stream.end.bind(stream))
-    // NOTE: since rewriting database.js to remove objection.js and knex,
-    //       we're currently returning a Readable stream, which doesn't have
-    //       '.end'. If there are any issues we can try switching to returning a
-    //       Writable stream. Both types however do have .destroy.
-    request.events.once('disconnect', stream.destroy.bind(stream))
-    return stream
-  } catch (err) {
-    (err as unknown as { ip: string }).ip = ip
-    logger.error(err, `GET /eventsAfter/${contractID}/${since}`, (err as Error).message)
-    return err as object[]
-  }
-})
+  })
 
 // This endpoint returns to anyone in possession of a contract's SAK all of the
 // resources that that contract owns (without recursion). This is useful for
 // APIs and for some UI actions (e.g., to warn users about resources that would
 // be (cascade) deleted following a delete)
-route.GET('/ownResources', {
-  auth: {
-    strategies: ['chel-shelter'],
-    mode: 'required'
-  }
-}, async function (request): Promise<string[]> {
-  const billableContractID = request.auth.credentials.billableContractID
-  const resources = (await sbp('chelonia.db/get', `_private_resources_${billableContractID}`))?.split('\x00')
+app.get('/ownResources',
+  authMiddleware('chel-shelter', 'required'),
+  async function (c) {
+    const billableContractID = (c.get('credentials') as AuthCredentials).billableContractID
+    const resources = (await sbp('chelonia.db/get', `_private_resources_${billableContractID}`))?.split('\x00')
 
-  return resources || []
-})
+    return c.json(resources || [])
+  })
 
 if (process.env.NODE_ENV === 'development') {
   const levelToColor = {
@@ -389,19 +376,14 @@ if (process.env.NODE_ENV === 'development') {
     info: chalk.green,
     debug: chalk.blue
   }
-  route.POST('/log', {
-    validate: {
-      payload: Joi.object({
-        level: Joi.string().required(),
-        value: Joi.string().required()
-      })
-    }
-  }, function (request, h) {
-    if (ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
-    const ip = request.headers['x-real-ip'] || request.info.remoteAddress
-    const log = (levelToColor as Record<string, (text: string) => string>)[(request.payload as { level: string }).level]
-    console.debug(chalk.bold.yellow(`REMOTE LOG (${ip}): `) + log(`[${(request.payload as { level: string }).level}] ${(request.payload as { value: string }).value}`))
-    return h.response().code(200)
+  app.post('/log', async function (c) {
+    if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
+    const body = await c.req.json() as { level: string, value: string }
+    if (!body.level || !body.value) throw new HTTPException(400, { message: 'level and value are required' })
+    const ip = getClientIP(c)
+    const log = (levelToColor as Record<string, (text: string) => string>)[body.level]
+    console.debug(chalk.bold.yellow(`REMOTE LOG (${ip}): `) + log(`[${body.level}] ${body.value}`))
+    return c.body(null, 200)
   })
 }
 
@@ -409,77 +391,61 @@ if (process.env.NODE_ENV === 'development') {
 // The following endpoint is disabled because name registrations are handled
 // through the `shelter-namespace-registration` header when registering a
 // new contract
-route.POST('/name', {
-  validate: {
-    payload: Joi.object({
-      name: Joi.string().required(),
-      value: Joi.string().required()
-    })
-  }
-}, async function (request, h): Promise<unknown> {
+app.post('/name', async function (c) {
   try {
-    const { name, value } = request.payload
-    if (value.startsWith('_private')) return Boom.badData()
-    return await sbp('backend/db/registerName', name, value)
+    const { name, value } = await c.req.json()
+    if (!name || !value) throw new HTTPException(400)
+    if (value.startsWith('_private')) throw new HTTPException(422)
+    return c.json(await sbp('backend/db/registerName', name, value))
   } catch (err) {
+    if (err instanceof HTTPException) throw err
     logger.error(err, 'POST /name', (err as Error).message)
-    return err
+    throw err
   }
 })
 */
 
-route.GET('/name/{name}', {
-  validate: {
-    params: Joi.object({
-      name: Joi.string().regex(NAME_REGEX).required()
-    })
-  }
-}, async function (request, h): Promise<unknown> {
-  const { name } = request.params
+app.get('/name/:name', async function (c) {
+  const name = c.req.param('name')
+  if (!NAME_REGEX.test(name)) throw new HTTPException(400, { message: 'Invalid name' })
   try {
     const lookupResult = await sbp('backend/db/lookupName', name)
     return lookupResult
-      ? h.response(lookupResult).type('text/plain')
-      : notFoundNoCache(h)
+      ? c.text(lookupResult)
+      : notFoundNoCache(c)
   } catch (err) {
     logger.error(err, `GET /name/${name}`, (err as Error).message)
-    return err
+    throw err
   }
 })
 
-route.GET('/latestHEADinfo/{contractID}', {
-  cache: { otherwise: 'no-store' },
-  validate: {
-    params: Joi.object({
-      contractID: Joi.string().regex(CID_REGEX).required()
-    })
-  }
-}, async function (request, h): Promise<unknown> {
-  const { contractID } = request.params
+app.get('/latestHEADinfo/:contractID', async function (c) {
+  const contractID = c.req.param('contractID')
+  if (!CID_REGEX.test(contractID)) throw new HTTPException(400, { message: 'Invalid contractID' })
   try {
     const parsed = maybeParseCID(contractID)
-    if (parsed?.code !== multicodes.SHELTER_CONTRACT_DATA) return Boom.badRequest()
+    if (parsed?.code !== multicodes.SHELTER_CONTRACT_DATA) throw new HTTPException(400)
 
     const HEADinfo = await sbp('chelonia/db/latestHEADinfo', contractID)
     if (HEADinfo === '') {
-      return Boom.resourceGone()
+      throw new HTTPException(410)
     }
     if (!HEADinfo) {
       console.warn(`[backend] latestHEADinfo not found for ${contractID}`)
-      return notFoundNoCache(h)
+      return notFoundNoCache(c)
     }
-    return HEADinfo
+    return c.json(HEADinfo, 200, { 'Cache-Control': 'no-store' })
   } catch (err) {
+    if (err instanceof HTTPException) throw err
     logger.error(err, `GET /latestHEADinfo/${contractID}`, (err as Error).message)
-    return err
+    throw err
   }
 })
 
-route.GET('/time', {}, function (_request, h) {
-  return h
-    .response(new Date().toISOString())
-    .header('cache-control', 'no-store')
-    .type('text/plain')
+app.get('/time', function (c) {
+  return c.text(new Date().toISOString(), 200, {
+    'Cache-Control': 'no-store'
+  })
 })
 
 // TODO: if the browser deletes our cache then not everyone
@@ -487,701 +453,669 @@ route.GET('/time', {}, function (_request, h) {
 //       new coordinating server... I don't like that.
 
 // API endpoint to check for streams support
-route.POST('/streams-test', {
-  payload: {
-    parse: false
-  }
-},
-function (request, h) {
-  if (
-    (request.payload as Buffer).byteLength === 2 &&
-    Buffer.from(request.payload as Buffer).toString() === 'ok'
-  ) {
-    return h.response().code(204)
+app.post('/streams-test', async function (c) {
+  const raw = await c.req.arrayBuffer()
+  const buf = Buffer.from(raw)
+  if (buf.byteLength === 2 && buf.toString() === 'ok') {
+    return c.body(null, 204)
   } else {
-    return Boom.badRequest()
+    throw new HTTPException(400)
   }
-}
-)
+})
 
 // Development file upload route. The difference between this and /file is that
 // this endpoint bypasses checks in /file for well-formedness, and it also
 // doesn't set or read accounting information.
 // If accepted, the file will be stored in Chelonia DB.
 if (process.env.NODE_ENV === 'development') {
-  route.POST('/dev-file', {
-    payload: {
-      output: 'data',
-      multipart: true,
-      allow: 'multipart/form-data',
-      failAction: function (_request, _h, err) {
-        console.error('failAction error:', err)
-        return Boom.isBoom(err) ? err : Boom.boomify(err instanceof Error ? err : new Error(err))
-      },
-      maxBytes: 6 * MEGABYTE, // TODO: make this a configurable setting
-      timeout: 10 * SECOND // TODO: make this a configurable setting
-    }
-  }, async function (request): Promise<unknown> {
-    if (ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
+  app.post('/dev-file', async function (c) {
+    if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
     try {
       console.log('FILE UPLOAD!')
-      const { hash, data } = request.payload as ({hash: string, data: string})
-      if (!hash) return Boom.badRequest('missing hash')
-      if (!data) return Boom.badRequest('missing data')
+      const formData = await c.req.parseBody({ all: true })
+      const hash = formData['hash'] as string
+      const data = formData['data'] as string
+      if (!hash) throw new HTTPException(400, { message: 'missing hash' })
+      if (!data) throw new HTTPException(400, { message: 'missing data' })
 
       const parsed = maybeParseCID(hash)
-      if (!parsed) return Boom.badRequest('invalid hash')
+      if (!parsed) throw new HTTPException(400, { message: 'invalid hash' })
 
       const ourHash = createCID(data, parsed.code)
       if (ourHash !== hash) {
         console.error(`hash(${hash}) != ourHash(${ourHash})`)
-        return Boom.badRequest('bad hash!')
+        throw new HTTPException(400, { message: 'bad hash!' })
       }
       await sbp('chelonia.db/set', hash, data)
-      return '/file/' + hash
+      return c.text('/file/' + hash)
     } catch (err) {
+      if (err instanceof HTTPException) throw err
       logger.error(err)
-      return Boom.internal('File upload failed')
+      throw new HTTPException(500, { message: 'File upload failed' })
     }
   })
 }
 
 // File upload route.
 // If accepted, the file will be stored in Chelonia DB.
-route.POST('/file', {
-  auth: {
-    strategies: ['chel-shelter'],
-    mode: 'required'
-  },
-  payload: {
-    parse: true,
-    output: 'stream',
-    multipart: { output: 'annotated' },
-    allow: 'multipart/form-data',
-    failAction: function (_request, _h, err) {
-      console.error(err, 'failAction error')
-      return Boom.isBoom(err) ? err : Boom.boomify(err instanceof Error ? err : new Error(err))
-    },
-    maxBytes: FILE_UPLOAD_MAX_BYTES,
-    timeout: 10 * SECOND // TODO: make this a configurable setting
-  }
-}, async function (request, h): Promise<unknown> {
-  if (ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
-  try {
-    console.info('FILE UPLOAD!')
-    const credentials = request.auth.credentials
-    if (!credentials?.billableContractID) {
-      return Boom.unauthorized('Uploading files requires ownership information', 'shelter')
-    }
-    const manifestMeta = (request.payload as { manifest: Record<string, unknown> })['manifest']
-    if (typeof manifestMeta !== 'object') return Boom.badRequest('missing manifest')
-    if (manifestMeta.filename !== 'manifest.json') return Boom.badRequest('wrong manifest filename')
-    if (!(manifestMeta.payload instanceof Uint8Array)) return Boom.badRequest('wrong manifest format')
-    const manifest = (() => {
-      try {
-        return JSON.parse(Buffer.from(manifestMeta.payload).toString())
-      } catch {
-        throw Boom.badData('Error parsing manifest')
+app.post('/file',
+  authMiddleware('chel-shelter', 'required'),
+  async function (c) {
+    if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
+    try {
+      console.info('FILE UPLOAD!')
+      const credentials = c.get('credentials') as AuthCredentials
+      if (!credentials?.billableContractID) {
+        throw new HTTPException(401, { message: 'Uploading files requires ownership information' })
       }
-    })()
-    if (typeof manifest !== 'object') return Boom.badData('manifest format is invalid')
-    if (manifest.version !== '1.0.0') return Boom.badData('unsupported manifest version')
-    if (manifest.cipher !== 'aes256gcm') return Boom.badData('unsupported cipher')
-    if (!Array.isArray(manifest.chunks) || !manifest.chunks.length) return Boom.badData('missing chunks')
 
-    // Now that the manifest format looks right, validate the chunks
-    let ourSize = 0
-    const chunks = manifest.chunks.map((chunk: { hash: string; size: number }, i: number) => {
-      // Validate the chunk information
-      if (
-        !Array.isArray(chunk) ||
-        chunk.length !== 2 ||
-        typeof chunk[0] !== 'number' ||
-        typeof chunk[1] !== 'string' ||
-        !Number.isSafeInteger(chunk[0]) ||
-        chunk[0] <= 0
-      ) {
-        throw Boom.badData('bad chunk description')
+      const contentType = c.req.header('content-type') || ''
+      if (!contentType.includes('multipart/form-data')) {
+        throw new HTTPException(400, { message: 'Expected multipart/form-data' })
       }
-      if (!(request.payload as unknown[])[i] || !((request.payload as { payload: unknown }[])[i].payload instanceof Uint8Array)) {
-        throw Boom.badRequest('chunk missing in submitted data')
-      }
-      const ourHash = createCID((request.payload as { payload: Uint8Array }[])[i].payload, multicodes.SHELTER_FILE_CHUNK)
-      if ((request.payload as { payload: Uint8Array }[])[i].payload.byteLength !== chunk[0]) {
-        throw Boom.badRequest('bad chunk size')
-      }
-      if (ourHash !== chunk[1]) {
-        throw Boom.badRequest('bad chunk hash')
-      }
-      // We're done validating the chunk
-      ourSize += chunk[0]
-      return [ourHash, (request.payload as { payload: Uint8Array }[])[i].payload]
-    })
-    // Finally, verify the size is correct
-    if (ourSize !== manifest.size) return Boom.badRequest('Mismatched total size')
 
-    const manifestHash = createCID(manifestMeta.payload, multicodes.SHELTER_FILE_MANIFEST)
-
-    // Check that we're not overwriting data. At best this is a useless operation
-    // since there is no need to write things that exist. However, overwriting
-    // data would also make it ambiguous in terms of ownership. For example,
-    // someone could upload a file F1 using some existing chunks (from a
-    // different file F2) and then request to delete their file F1, which would
-    // result in corrupting F2.
-    // Ensure that the manifest doesn't exist
-    if (await sbp('chelonia.db/get', manifestHash)) {
-      throw new Error(`Manifest ${manifestHash} already exists`)
-    }
-    // Ensure that the chunks do not exist
-    await Promise.all(chunks.map(async ([cid]: [string]) => {
-      const exists = !!(await sbp('chelonia.db/get', cid))
-      if (exists) {
-        throw new Error(`Chunk ${cid} already exists`)
+      // Check content-length before reading body
+      const contentLength = parseInt(c.req.header('content-length') || '0', 10)
+      if (contentLength > FILE_UPLOAD_MAX_BYTES) {
+        throw new HTTPException(413, { message: 'Payload too large' })
       }
-    }))
-    // Now, store all chunks and the manifest
-    await Promise.all(chunks.map(([cid, data]: [string, unknown]) => sbp('chelonia.db/set', cid, data)))
-    await sbp('chelonia.db/set', manifestHash, manifestMeta.payload)
-    // Store attribution information
-    await sbp('backend/server/saveOwner', credentials.billableContractID, manifestHash)
-    // Store size information
-    const size = manifest.size + manifestMeta.payload.byteLength
-    await sbp('backend/server/updateSize', manifestHash, size)
-    await sbp('backend/server/updateContractFilesTotalSize', credentials.billableContractID, size)
-    // Store deletion token
-    const deletionTokenDgst = request.headers['shelter-deletion-token-digest']
-    if (deletionTokenDgst) {
-      await sbp('chelonia.db/set', `_private_deletionTokenDgst_${manifestHash}`, deletionTokenDgst)
+
+      const formData = await c.req.formData()
+      const manifestFile = formData.get('manifest') as File | null
+      if (!manifestFile) throw new HTTPException(400, { message: 'missing manifest' })
+      if (manifestFile.name !== 'manifest.json') throw new HTTPException(400, { message: 'wrong manifest filename' })
+      const manifestPayload = new Uint8Array(await manifestFile.arrayBuffer())
+
+      const manifest = (() => {
+        try {
+          return JSON.parse(Buffer.from(manifestPayload).toString())
+        } catch {
+          throw new HTTPException(422, { message: 'Error parsing manifest' })
+        }
+      })()
+      if (typeof manifest !== 'object') throw new HTTPException(422, { message: 'manifest format is invalid' })
+      if (manifest.version !== '1.0.0') throw new HTTPException(422, { message: 'unsupported manifest version' })
+      if (manifest.cipher !== 'aes256gcm') throw new HTTPException(422, { message: 'unsupported cipher' })
+      if (!Array.isArray(manifest.chunks) || !manifest.chunks.length) throw new HTTPException(422, { message: 'missing chunks' })
+
+      // Collect all chunk files from form data (numbered keys: 0, 1, 2, ...)
+      const chunkFiles: File[] = []
+      for (let i = 0; ; i++) {
+        const chunkFile = formData.get(String(i)) as File | null
+        if (!chunkFile) break
+        chunkFiles.push(chunkFile)
+      }
+
+      // Now that the manifest format looks right, validate the chunks
+      let ourSize = 0
+      const chunks: [string, Uint8Array][] = await Promise.all(manifest.chunks.map(async (chunk: [number, string], i: number) => {
+        // Validate the chunk information
+        if (
+          !Array.isArray(chunk) ||
+          chunk.length !== 2 ||
+          typeof chunk[0] !== 'number' ||
+          typeof chunk[1] !== 'string' ||
+          !Number.isSafeInteger(chunk[0]) ||
+          chunk[0] <= 0
+        ) {
+          throw new HTTPException(422, { message: 'bad chunk description' })
+        }
+        if (!chunkFiles[i]) {
+          throw new HTTPException(400, { message: 'chunk missing in submitted data' })
+        }
+        const chunkPayload = new Uint8Array(await chunkFiles[i].arrayBuffer())
+        const ourHash = createCID(chunkPayload, multicodes.SHELTER_FILE_CHUNK)
+        if (chunkPayload.byteLength !== chunk[0]) {
+          throw new HTTPException(400, { message: 'bad chunk size' })
+        }
+        if (ourHash !== chunk[1]) {
+          throw new HTTPException(400, { message: 'bad chunk hash' })
+        }
+        // We're done validating the chunk
+        ourSize += chunk[0]
+        return [ourHash, chunkPayload] as [string, Uint8Array]
+      }))
+      // Finally, verify the size is correct
+      if (ourSize !== manifest.size) throw new HTTPException(400, { message: 'Mismatched total size' })
+
+      const manifestHash = createCID(manifestPayload, multicodes.SHELTER_FILE_MANIFEST)
+
+      // Check that we're not overwriting data. At best this is a useless operation
+      // since there is no need to write things that exist. However, overwriting
+      // data would also make it ambiguous in terms of ownership. For example,
+      // someone could upload a file F1 using some existing chunks (from a
+      // different file F2) and then request to delete their file F1, which would
+      // result in corrupting F2.
+      // Ensure that the manifest doesn't exist
+      if (await sbp('chelonia.db/get', manifestHash)) {
+        throw new Error(`Manifest ${manifestHash} already exists`)
+      }
+      // Ensure that the chunks do not exist
+      await Promise.all(chunks.map(async ([cid]) => {
+        const exists = !!(await sbp('chelonia.db/get', cid))
+        if (exists) {
+          throw new Error(`Chunk ${cid} already exists`)
+        }
+      }))
+      // Now, store all chunks and the manifest
+      await Promise.all(chunks.map(([cid, data]) => sbp('chelonia.db/set', cid, data)))
+      await sbp('chelonia.db/set', manifestHash, manifestPayload)
+      // Store attribution information
+      await sbp('backend/server/saveOwner', credentials.billableContractID, manifestHash)
+      // Store size information
+      const size = manifest.size + manifestPayload.byteLength
+      await sbp('backend/server/updateSize', manifestHash, size)
+      await sbp('backend/server/updateContractFilesTotalSize', credentials.billableContractID, size)
+      // Store deletion token
+      const deletionTokenDgst = c.req.header('shelter-deletion-token-digest')
+      if (deletionTokenDgst) {
+        await sbp('chelonia.db/set', `_private_deletionTokenDgst_${manifestHash}`, deletionTokenDgst)
+      }
+      return c.text(manifestHash)
+    } catch (err) {
+      if (err instanceof HTTPException) throw err
+      logger.error(err, 'POST /file', (err as Error).message)
+      throw err
     }
-    return h.response(manifestHash)
-  } catch (err) {
-    logger.error(err, 'POST /file', (err as Error).message)
-    return err
-  }
-})
+  })
 
 // Serve data from Chelonia DB.
 // Note that a `Last-Modified` header isn't included in the response.
-route.GET('/file/{hash}', {
-  validate: {
-    params: Joi.object({
-      hash: Joi.string().regex(CID_REGEX).required()
-    })
-  }
-}, async function (request, h): Promise<unknown> {
-  const { hash } = request.params
+app.get('/file/:hash', async function (c) {
+  const hash = c.req.param('hash')
+  if (!CID_REGEX.test(hash)) throw new HTTPException(400, { message: 'Invalid hash' })
 
   const parsed = maybeParseCID(hash)
   if (!parsed) {
-    return Boom.badRequest()
+    throw new HTTPException(400)
   }
 
   const blobOrString = await sbp('chelonia.db/get', `any:${hash}`)
   if (blobOrString?.length === 0) {
-    return Boom.resourceGone()
+    throw new HTTPException(410)
   } else if (!blobOrString) {
-    return notFoundNoCache(h)
+    return notFoundNoCache(c)
   }
 
   const type = cidLookupTable[parsed.code] || 'application/octet-stream'
 
-  return h
-    .response(blobOrString)
-    .etag(hash)
-    .header('Cache-Control', 'public,max-age=31536000,immutable')
+  return c.body(blobOrString, 200, {
+    'ETag': `"${hash}"`,
+    'Cache-Control': 'public,max-age=31536000,immutable',
     // CSP to disable everything -- this only affects direct navigation to the
     // `/file` URL.
     // The CSP below prevents any sort of resource loading or script execution
     // on direct navigation. The `nosniff` header instructs the browser to
     // honour the provided content-type.
-    .header('content-security-policy', 'default-src \'none\'; frame-ancestors \'none\'; form-action \'none\'; upgrade-insecure-requests; sandbox')
-    .header('x-content-type-options', 'nosniff')
-    .type(type)
-})
-
-route.POST('/deleteFile/{hash}', {
-  auth: {
-    // Allow file deletion, and allow either the bearer of the deletion token or
-    // the file owner to delete it
-    strategies: ['chel-shelter', 'chel-bearer'],
-    mode: 'required'
-  },
-  validate: {
-    params: Joi.object({
-      hash: Joi.string().regex(CID_REGEX).required()
-    })
-  }
-}, async function (request, h): Promise<unknown> {
-  if (ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
-  const { hash } = request.params
-  const strategy = request.auth.strategy
-  const parsed = maybeParseCID(hash)
-  if (parsed?.code !== multicodes.SHELTER_FILE_MANIFEST) {
-    return Boom.badRequest()
-  }
-
-  const owner = await sbp('chelonia.db/get', `_private_owner_${hash}`)
-  if (!owner) {
-    return Boom.notFound()
-  }
-
-  switch (strategy) {
-    case 'chel-shelter': {
-      const ultimateOwner = await lookupUltimateOwner(owner)
-      // Check that the user making the request is the ultimate owner (i.e.,
-      // that they have permission to delete this file)
-      if (!ctEq(request.auth.credentials.billableContractID as string, ultimateOwner)) {
-        return Boom.unauthorized('Invalid shelter auth', 'shelter')
-      }
-      break
-    }
-    case 'chel-bearer': {
-      const expectedTokenDgst = await sbp('chelonia.db/get', `_private_deletionTokenDgst_${hash}`)
-      if (!expectedTokenDgst) {
-        return Boom.notFound()
-      }
-      const tokenDgst = blake32Hash(request.auth.credentials.token as string)
-      // Constant-time comparison
-      // Check that the token provided matches the deletion token for this file
-      if (!ctEq(expectedTokenDgst, tokenDgst)) {
-        return Boom.unauthorized('Invalid token', 'bearer')
-      }
-      break
-    }
-    default:
-      return Boom.unauthorized('Missing or invalid auth strategy')
-  }
-
-  // Authentication passed, now proceed to delete the file and its associated
-  // keys
-  try {
-    await sbp('backend/deleteFile', hash, null, true)
-    return h.response()
-  } catch (e) {
-    return errorMapper(e as Error)
-  }
-})
-
-route.POST('/deleteContract/{hash}', {
-  auth: {
-    // Allow file deletion, and allow either the bearer of the deletion token or
-    // the file owner to delete it
-    strategies: ['chel-shelter', 'chel-bearer'],
-    mode: 'required'
-  }
-}, async function (request, h): Promise<unknown> {
-  if (ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
-  const { hash } = request.params
-  const strategy = request.auth.strategy
-  if (!hash || hash.startsWith('_private')) return Boom.notFound()
-
-  switch (strategy) {
-    case 'chel-shelter': {
-      const owner = await sbp('chelonia.db/get', `_private_owner_${hash}`)
-      if (!owner) {
-        return Boom.notFound()
-      }
-
-      const ultimateOwner = await lookupUltimateOwner(owner)
-      // Check that the user making the request is the ultimate owner (i.e.,
-      // that they have permission to delete this file)
-      if (!ctEq(request.auth.credentials.billableContractID as string, ultimateOwner)) {
-        return Boom.unauthorized('Invalid shelter auth', 'shelter')
-      }
-      break
-    }
-    case 'chel-bearer': {
-      const expectedTokenDgst = await sbp('chelonia.db/get', `_private_deletionTokenDgst_${hash}`)
-      if (!expectedTokenDgst) {
-        return Boom.notFound()
-      }
-      const tokenDgst = blake32Hash(request.auth.credentials.token as string)
-      // Constant-time comparison
-      // Check that the token provided matches the deletion token for this contract
-      if (!ctEq(expectedTokenDgst, tokenDgst)) {
-        return Boom.unauthorized('Invalid token', 'bearer')
-      }
-      break
-    }
-    default:
-      return Boom.unauthorized('Missing or invalid auth strategy')
-  }
-
-  const username = await sbp('chelonia.db/get', `_private_cid2name_${hash}`)
-  // Authentication passed, now proceed to delete the contract and its associated
-  // keys
-  try {
-    const [id] = sbp('chelonia.persistentActions/enqueue', ['backend/deleteContract', hash, null, true])
-    if (username) {
-      const ip = request.headers['x-real-ip'] || request.info.remoteAddress
-      console.info({ contractID: hash, username, ip, taskId: id }, 'Scheduled deletion on named contract')
-    }
-    // We return the queue ID to allow users to track progress
-    // TODO: Tracking progress not yet implemented
-    return h.response({ id }).code(202)
-  } catch (e) {
-    return errorMapper(e as Error)
-  }
-})
-
-route.POST('/kv/{contractID}/{key}', {
-  auth: {
-    strategies: ['chel-shelter'],
-    mode: 'required'
-  },
-  payload: {
-    parse: false,
-    maxBytes: 6 * MEGABYTE, // TODO: make this a configurable setting
-    timeout: 10 * SECOND // TODO: make this a configurable setting
-  },
-  validate: {
-    params: Joi.object({
-      contractID: Joi.string().regex(CID_REGEX).required(),
-      key: Joi.string().regex(KV_KEY_REGEX).required()
-    })
-  }
-}, function (request, h) {
-  if (ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
-  const { contractID, key } = request.params
-
-  const parsed = maybeParseCID(contractID)
-  if (parsed?.code !== multicodes.SHELTER_CONTRACT_DATA) {
-    return Boom.badRequest()
-  }
-
-  if (!ctEq(request.auth.credentials.billableContractID as string, contractID)) {
-    return Boom.unauthorized(null, 'shelter')
-  }
-
-  // Use a queue to prevent race conditions (for example, writing to a contract
-  // that's being deleted or updated)
-  return sbp('chelonia/queueInvocation', contractID, async () => {
-    const existing = await sbp('chelonia.db/get', `_private_kv_${contractID}_${key}`)
-
-    // Some protection against accidental overwriting by implementing the if-match
-    // header
-    // If-Match contains a list of ETags or '*'
-    // If `If-Match` contains a known ETag, allow the request through, otherwise
-    // return 412 Precondition Failed.
-    // This is useful to clients to avoid accidentally overwriting existing data
-    // For example, client A and client B want to write to key 'K', which contains
-    // an array. Let's say that the array is originally empty (`[]`) and A and B
-    // want to append `A` and `B` to it, respectively. If both write at the same
-    // time, the following could happen:
-    // t = 0: A reads `K`, gets `[]`
-    // t = 1: B reads `K`, gets `[]`
-    // t = 2: A writes `['A']` to `K`
-    // t = 3: B writes `['B']` to `K` <-- ERROR: B should have written `['A', 'B']`
-    // To avoid this situation, A and B could use `If-Match`, which would have
-    // given B a 412 response
-    const expectedEtag = request.headers['if-match']
-    if (!expectedEtag) {
-      return Boom.badRequest('if-match is required')
-    }
-    // "Quote" string (to match ETag format)
-    const cid = existing ? createCID(existing, multicodes.RAW) : ''
-
-    if (expectedEtag === '*') {
-    // pass through
-    } else {
-      if (!expectedEtag.split(',').map((v: string) => v.trim()).includes(`"${cid}"`)) {
-        // We need this `x-cid` because HAPI modifies Etags
-        return h.response(existing || '').etag(cid).header('x-cid', `"${cid}"`).code(412)
-      }
-    }
-
-    try {
-      const serializedData = JSON.parse(request.payload.toString())
-      const { contracts } = sbp('chelonia/rootState')
-      // Check that the height is the latest value. Not only should the height be
-      // the latest, but also enforcing this lets us check that signatures are
-      // using the latest (cryptograhpic) keys. Since the KV is detached from the
-      // contract, in isolation it's impossible to know if an old signature is
-      // just because it was created in the past, or if it's because someone
-      // is reusing a previously good key that has since been revoked.
-      if (contracts[contractID].height !== Number(serializedData.height)) {
-        return h.response(existing || '').etag(cid).header('x-cid', `"${cid}"`).code(409)
-      }
-      // Check that the signature is valid
-      sbp('chelonia/parseEncryptedOrUnencryptedDetachedMessage', {
-        contractID,
-        serializedData,
-        meta: key
-      })
-    } catch {
-      return Boom.badData()
-    }
-
-    const existingSize = existing ? Buffer.from(existing).byteLength : 0
-    await sbp('chelonia.db/set', `_private_kv_${contractID}_${key}`, request.payload)
-    await sbp('backend/server/updateSize', contractID, (request.payload as Buffer).byteLength - existingSize)
-    await appendToIndexFactory(`_private_kvIdx_${contractID}`)(key)
-    // No await on broadcast for faster responses
-    sbp('backend/server/broadcastKV', contractID, key, request.payload.toString()).catch((e: Error) => console.error(e, 'Error broadcasting KV update', contractID, key))
-
-    return h.response().code(204)
+    'Content-Security-Policy': 'default-src \'none\'; frame-ancestors \'none\'; form-action \'none\'; upgrade-insecure-requests; sandbox',
+    'X-Content-Type-Options': 'nosniff',
+    'Content-Type': type
   })
 })
 
-route.GET('/kv/{contractID}/{key}', {
-  auth: {
-    strategies: ['chel-shelter'],
-    mode: 'required'
-  },
-  cache: { otherwise: 'no-store' },
-  validate: {
-    params: Joi.object({
-      contractID: Joi.string().regex(CID_REGEX).required(),
-      key: Joi.string().regex(KV_KEY_REGEX).required()
+app.post('/deleteFile/:hash',
+  authMiddleware(['chel-shelter', 'chel-bearer'], 'required'),
+  async function (c) {
+    if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
+    const hash = c.req.param('hash')
+    if (!CID_REGEX.test(hash)) throw new HTTPException(400, { message: 'Invalid hash' })
+    const strategy = c.get('authStrategy')
+    const parsed = maybeParseCID(hash)
+    if (parsed?.code !== multicodes.SHELTER_FILE_MANIFEST) {
+      throw new HTTPException(400)
+    }
+
+    const owner = await sbp('chelonia.db/get', `_private_owner_${hash}`)
+    if (!owner) {
+      throw new HTTPException(404)
+    }
+
+    const credentials = c.get('credentials') as AuthCredentials
+    switch (strategy) {
+      case 'chel-shelter': {
+        const ultimateOwner = await lookupUltimateOwner(owner)
+        // Check that the user making the request is the ultimate owner (i.e.,
+        // that they have permission to delete this file)
+        if (!ctEq(credentials.billableContractID as string, ultimateOwner)) {
+          throw new HTTPException(401, { message: 'Invalid shelter auth' })
+        }
+        break
+      }
+      case 'chel-bearer': {
+        const expectedTokenDgst = await sbp('chelonia.db/get', `_private_deletionTokenDgst_${hash}`)
+        if (!expectedTokenDgst) {
+          throw new HTTPException(404)
+        }
+        const tokenDgst = blake32Hash(credentials.token as string)
+        // Constant-time comparison
+        // Check that the token provided matches the deletion token for this file
+        if (!ctEq(expectedTokenDgst, tokenDgst)) {
+          throw new HTTPException(401, { message: 'Invalid token' })
+        }
+        break
+      }
+      default:
+        throw new HTTPException(401, { message: 'Missing or invalid auth strategy' })
+    }
+
+    // Authentication passed, now proceed to delete the file and its associated
+    // keys
+    try {
+      await sbp('backend/deleteFile', hash, null, true)
+      return c.body(null, 200)
+    } catch (e) {
+      errorMapper(e as Error)
+    }
+  })
+
+app.post('/deleteContract/:hash',
+  authMiddleware(['chel-shelter', 'chel-bearer'], 'required'),
+  async function (c) {
+    if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
+    const hash = c.req.param('hash')
+    const strategy = c.get('authStrategy')
+    if (!hash || hash.startsWith('_private')) throw new HTTPException(404)
+
+    const credentials = c.get('credentials') as AuthCredentials
+    switch (strategy) {
+      case 'chel-shelter': {
+        const owner = await sbp('chelonia.db/get', `_private_owner_${hash}`)
+        if (!owner) {
+          throw new HTTPException(404)
+        }
+
+        const ultimateOwner = await lookupUltimateOwner(owner)
+        // Check that the user making the request is the ultimate owner (i.e.,
+        // that they have permission to delete this file)
+        if (!ctEq(credentials.billableContractID as string, ultimateOwner)) {
+          throw new HTTPException(401, { message: 'Invalid shelter auth' })
+        }
+        break
+      }
+      case 'chel-bearer': {
+        const expectedTokenDgst = await sbp('chelonia.db/get', `_private_deletionTokenDgst_${hash}`)
+        if (!expectedTokenDgst) {
+          throw new HTTPException(404)
+        }
+        const tokenDgst = blake32Hash(credentials.token as string)
+        // Constant-time comparison
+        // Check that the token provided matches the deletion token for this contract
+        if (!ctEq(expectedTokenDgst, tokenDgst)) {
+          throw new HTTPException(401, { message: 'Invalid token' })
+        }
+        break
+      }
+      default:
+        throw new HTTPException(401, { message: 'Missing or invalid auth strategy' })
+    }
+
+    const username = await sbp('chelonia.db/get', `_private_cid2name_${hash}`)
+    // Authentication passed, now proceed to delete the contract and its associated
+    // keys
+    try {
+      const [id] = sbp('chelonia.persistentActions/enqueue', ['backend/deleteContract', hash, null, true])
+      if (username) {
+        const ip = getClientIP(c)
+        console.info({ contractID: hash, username, ip, taskId: id }, 'Scheduled deletion on named contract')
+      }
+      // We return the queue ID to allow users to track progress
+      // TODO: Tracking progress not yet implemented
+      return c.json({ id }, 202)
+    } catch (e) {
+      errorMapper(e as Error)
+    }
+  })
+
+app.post('/kv/:contractID/:key',
+  authMiddleware('chel-shelter', 'required'),
+  async function (c) {
+    if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
+    const contractID = c.req.param('contractID')
+    const key = c.req.param('key')
+
+    if (!CID_REGEX.test(contractID)) throw new HTTPException(400, { message: 'Invalid contractID' })
+    if (!KV_KEY_REGEX.test(key)) throw new HTTPException(400, { message: 'Invalid key' })
+
+    const parsed = maybeParseCID(contractID)
+    if (parsed?.code !== multicodes.SHELTER_CONTRACT_DATA) {
+      throw new HTTPException(400)
+    }
+
+    const credentials = c.get('credentials') as AuthCredentials
+    if (!ctEq(credentials.billableContractID as string, contractID)) {
+      throw new HTTPException(401)
+    }
+
+    const payloadBuffer = Buffer.from(await c.req.arrayBuffer())
+
+    // Use a queue to prevent race conditions (for example, writing to a contract
+    // that's being deleted or updated)
+    return sbp('chelonia/queueInvocation', contractID, async () => {
+      const existing = await sbp('chelonia.db/get', `_private_kv_${contractID}_${key}`)
+
+      // Some protection against accidental overwriting by implementing the if-match
+      // header
+      const expectedEtag = c.req.header('if-match')
+      if (!expectedEtag) {
+        throw new HTTPException(400, { message: 'if-match is required' })
+      }
+      // "Quote" string (to match ETag format)
+      const cid = existing ? createCID(existing, multicodes.RAW) : ''
+
+      if (expectedEtag === '*') {
+      // pass through
+      } else {
+        if (!expectedEtag.split(',').map((v: string) => v.trim()).includes(`"${cid}"`)) {
+          return new Response(existing || '', {
+            status: 412,
+            headers: {
+              'ETag': `"${cid}"`,
+              'x-cid': `"${cid}"`
+            }
+          })
+        }
+      }
+
+      try {
+        const serializedData = JSON.parse(payloadBuffer.toString())
+        const { contracts } = sbp('chelonia/rootState')
+        // Check that the height is the latest value
+        if (contracts[contractID].height !== Number(serializedData.height)) {
+          return new Response(existing || '', {
+            status: 409,
+            headers: {
+              'ETag': `"${cid}"`,
+              'x-cid': `"${cid}"`
+            }
+          })
+        }
+        // Check that the signature is valid
+        sbp('chelonia/parseEncryptedOrUnencryptedDetachedMessage', {
+          contractID,
+          serializedData,
+          meta: key
+        })
+      } catch (parseErr) {
+        if (parseErr instanceof Response) throw parseErr
+        throw new HTTPException(422)
+      }
+
+      const existingSize = existing ? Buffer.from(existing).byteLength : 0
+      await sbp('chelonia.db/set', `_private_kv_${contractID}_${key}`, payloadBuffer)
+      await sbp('backend/server/updateSize', contractID, payloadBuffer.byteLength - existingSize)
+      await appendToIndexFactory(`_private_kvIdx_${contractID}`)(key)
+      // No await on broadcast for faster responses
+      sbp('backend/server/broadcastKV', contractID, key, payloadBuffer.toString()).catch((e: Error) => console.error(e, 'Error broadcasting KV update', contractID, key))
+
+      return c.body(null, 204)
     })
-  }
-}, async function (request, h): Promise<unknown> {
-  const { contractID, key } = request.params
+  })
 
-  const parsed = maybeParseCID(contractID)
-  if (parsed?.code !== multicodes.SHELTER_CONTRACT_DATA) {
-    return Boom.badRequest()
-  }
+app.get('/kv/:contractID/:key',
+  authMiddleware('chel-shelter', 'required'),
+  async function (c) {
+    const contractID = c.req.param('contractID')
+    const key = c.req.param('key')
 
-  if (!ctEq(request.auth.credentials.billableContractID as string, contractID)) {
-    return Boom.unauthorized(null, 'shelter')
-  }
+    if (!CID_REGEX.test(contractID)) throw new HTTPException(400, { message: 'Invalid contractID' })
+    if (!KV_KEY_REGEX.test(key)) throw new HTTPException(400, { message: 'Invalid key' })
 
-  const result = await sbp('chelonia.db/get', `_private_kv_${contractID}_${key}`)
-  if (!result) {
-    return notFoundNoCache(h)
-  }
+    const parsed = maybeParseCID(contractID)
+    if (parsed?.code !== multicodes.SHELTER_CONTRACT_DATA) {
+      throw new HTTPException(400)
+    }
 
-  const cid = createCID(result, multicodes.RAW)
-  return h.response(result).etag(cid).header('x-cid', `"${cid}"`)
-})
+    const credentials = c.get('credentials') as AuthCredentials
+    if (!ctEq(credentials.billableContractID as string, contractID)) {
+      throw new HTTPException(401)
+    }
 
-route.GET('/serverMessages', { cache: { otherwise: 'no-store' } }, (_request, h) => {
+    const result = await sbp('chelonia.db/get', `_private_kv_${contractID}_${key}`)
+    if (!result) {
+      return notFoundNoCache(c)
+    }
+
+    const cid = createCID(result, multicodes.RAW)
+    return new Response(result, {
+      headers: {
+        'ETag': `"${cid}"`,
+        'x-cid': `"${cid}"`,
+        'Cache-Control': 'no-store'
+      }
+    })
+  })
+
+app.get('/serverMessages', function (c) {
   const messages = nconf.get('server:messages')
-  if (!messages) return []
-  return h.response(messages)
+  if (!messages) return c.json([])
+  return c.json(messages, 200, { 'Cache-Control': 'no-store' })
 })
 
 // SPA routes
 
-route.GET('/assets/{subpath*}', {
-  ext: {
-    onPostHandler: {
-      method (request, h) {
-        // since our JS is placed under /assets/ and since service workers
-        // have their scope limited by where they are, we must add this
-        // header to allow the service worker to function. Details:
-        // https://w3c.github.io/ServiceWorker/#service-worker-allowed
-        if (request.path.includes('assets/js/sw-')) {
-          // If `response` is an error, then no SW is being served
-          if (!(request.response instanceof Boom.Boom)) {
-            console.debug('adding header: Service-Worker-Allowed /')
-            request.response.header('Service-Worker-Allowed', '/')
-          }
-        }
-        return h.continue
-      }
-    }
-  },
-  files: {
-    relativeTo: staticServeConfig.distAssets
-  }
-}, function (request, h) {
-  const { subpath } = request.params
+app.get('/assets/:subpath{.+}', async function (c) {
+  const subpath = c.req.param('subpath')
   const basename = path.basename(subpath)
-  // In the build config we told our bundler to use the `[name]-[hash]-cached` template
-  // to name immutable assets. This is useful because `dist/assets/` currently includes
-  // a few files without hash in their name.
-  if (basename.includes('-cached')) {
-    return h.file(subpath, { etagMethod: false })
-      .etag(basename)
-      .header('Cache-Control', 'public,max-age=31536000,immutable')
-  }
-  // Files like `main.js` or `main.css` should be revalidated before use. Se we use the default headers.
-  // This should also be suitable for serving unversioned fonts and images.
-  return h.file(subpath)
-})
+  const filePath = path.join(staticServeConfig.distAssets, subpath)
 
-// Dashboard-specific assets route (when IS_CHELONIA_DASHBOARD_DEV is set)
-if (isCheloniaDashboard) {
-  route.GET('/dashboard/assets/{subpath*}', {
-    ext: {
-      onPostHandler: {
-        method (request, h) {
-          // since our JS is placed under /assets/ and since service workers
-          // have their scope limited by where they are, we must add this
-          // header to allow the service worker to function. Details:
-          // https://w3c.github.io/ServiceWorker/#service-worker-allowed
-          if (request.path.includes('assets/js/sw-')) {
-            // If `response` is an error, then no SW is being served
-            if (!(request.response instanceof Boom.Boom)) {
-              console.debug('adding header: Service-Worker-Allowed /')
-              request.response.header('Service-Worker-Allowed', '/')
-            }
-          }
-          return h.continue
-        }
-      }
-    },
-    files: {
-      relativeTo: staticServeConfig.distAssets
-    }
-  }, function (request, h) {
-    const { subpath } = request.params
-    const basename = path.basename(subpath)
+  try {
+    const file = await Deno.readFile(filePath)
+    const headers: Record<string, string> = {}
+
     // In the build config we told our bundler to use the `[name]-[hash]-cached` template
     // to name immutable assets. This is useful because `dist/assets/` currently includes
     // a few files without hash in their name.
     if (basename.includes('-cached')) {
-      return h.file(subpath, { etagMethod: false })
-        .etag(basename)
-        .header('Cache-Control', 'public,max-age=31536000,immutable')
+      headers['ETag'] = `"${basename}"`
+      headers['Cache-Control'] = 'public,max-age=31536000,immutable'
     }
-    // Files like `main.js` or `main.css` should be revalidated before use. Se we use the default headers.
-    // This should also be suitable for serving unversioned fonts and images.
-    return h.file(subpath)
+
+    // since our JS is placed under /assets/ and since service workers
+    // have their scope limited by where they are, we must add this
+    // header to allow the service worker to function. Details:
+    // https://w3c.github.io/ServiceWorker/#service-worker-allowed
+    if (subpath.includes('js/sw-')) {
+      console.debug('adding header: Service-Worker-Allowed /')
+      headers['Service-Worker-Allowed'] = '/'
+    }
+
+    const ext = path.extname(subpath).toLowerCase()
+    const mimeTypes: Record<string, string> = {
+      '.js': 'application/javascript',
+      '.mjs': 'application/javascript',
+      '.css': 'text/css',
+      '.html': 'text/html',
+      '.json': 'application/json',
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.gif': 'image/gif',
+      '.svg': 'image/svg+xml',
+      '.ico': 'image/x-icon',
+      '.woff': 'font/woff',
+      '.woff2': 'font/woff2',
+      '.ttf': 'font/ttf',
+      '.otf': 'font/otf',
+      '.webp': 'image/webp',
+      '.mp4': 'video/mp4',
+      '.webm': 'video/webm',
+      '.map': 'application/json'
+    }
+    const contentType = mimeTypes[ext] || 'application/octet-stream'
+    headers['Content-Type'] = contentType
+
+    return c.body(file, 200, headers)
+  } catch {
+    return notFoundNoCache(c)
+  }
+})
+
+// Dashboard-specific assets route (when IS_CHELONIA_DASHBOARD_DEV is set)
+if (isCheloniaDashboard) {
+  app.get('/dashboard/assets/:subpath{.+}', async function (c) {
+    const subpath = c.req.param('subpath')
+    const basename = path.basename(subpath)
+    const filePath = path.join(staticServeConfig.distAssets, subpath)
+
+    try {
+      const file = await Deno.readFile(filePath)
+      const headers: Record<string, string> = {}
+
+      if (basename.includes('-cached')) {
+        headers['ETag'] = `"${basename}"`
+        headers['Cache-Control'] = 'public,max-age=31536000,immutable'
+      }
+
+      if (subpath.includes('js/sw-')) {
+        console.debug('adding header: Service-Worker-Allowed /')
+        headers['Service-Worker-Allowed'] = '/'
+      }
+
+      const ext = path.extname(subpath).toLowerCase()
+      const mimeTypes: Record<string, string> = {
+        '.js': 'application/javascript',
+        '.mjs': 'application/javascript',
+        '.css': 'text/css',
+        '.html': 'text/html',
+        '.json': 'application/json',
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.gif': 'image/gif',
+        '.svg': 'image/svg+xml',
+        '.ico': 'image/x-icon',
+        '.woff': 'font/woff',
+        '.woff2': 'font/woff2',
+        '.ttf': 'font/ttf',
+        '.otf': 'font/otf',
+        '.webp': 'image/webp',
+        '.mp4': 'video/mp4',
+        '.webm': 'video/webm',
+        '.map': 'application/json'
+      }
+      const contentType = mimeTypes[ext] || 'application/octet-stream'
+      headers['Content-Type'] = contentType
+
+      return c.body(file, 200, headers)
+    } catch {
+      return notFoundNoCache(c)
+    }
   })
 }
 
-route.GET(staticServeConfig.routePath, {}, {
-  file: staticServeConfig.distIndexHtml
-})
-
-route.GET('/', {}, function (_req, h) {
-  return h.redirect(staticServeConfig.redirect)
-})
-
-route.POST('/zkpp/register/{name}', {
-  validate: {
-    params: Joi.object({
-      name: Joi.string().regex(NAME_REGEX).required()
-    }),
-    payload: Joi.alternatives([
-      {
-        // b is a hash of a random public key (`g^r`) with secret key `r`,
-        // which is used by the requester to commit to that particular `r`
-        b: Joi.string().required()
-      },
-      {
-        // `r` is the value used to derive `b` (in this case, it's the public
-        // key `g^r`)
-        r: Joi.string().required(),
-        // `s` is an opaque (to the client) value that was earlier returned by
-        // the server
-        s: Joi.string().required(),
-        // `sig` is an opaque (to the client) value returned by the server
-        // to validate the request (ensuring that (`r`, `s`) come from a
-        // previous request
-        sig: Joi.string().required(),
-        // `Eh` is the  Eh = E_{S_A + S_C}(h), where S_A and S_C are salts and
-        //                                     h = H\_{S_A}(P)
-        Eh: Joi.string().required()
-      }
-    ])
+// SPA catch-all route
+app.get(isCheloniaDashboard ? '/dashboard/*' : '/app/*', async function (c) {
+  try {
+    const file = await Deno.readFile(staticServeConfig.distIndexHtml)
+    return c.body(file, 200, { 'Content-Type': 'text/html' })
+  } catch {
+    return notFoundNoCache(c)
   }
-}, async function (req) {
-  if (ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
-  const lookupResult = await sbp('backend/db/lookupName', req.params['name'])
+})
+
+app.get('/', function (c) {
+  return c.redirect(staticServeConfig.redirect)
+})
+
+app.post('/zkpp/register/:name', async function (c) {
+  const name = c.req.param('name')
+  if (!NAME_REGEX.test(name)) throw new HTTPException(400, { message: 'Invalid name' })
+  if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
+  const lookupResult = await sbp('backend/db/lookupName', name)
   if (lookupResult) {
     // If the username is already registered, abort
-    return Boom.conflict()
+    throw new HTTPException(409)
   }
   try {
-    const { payload } = req as { payload: { b: string, r: string, s: string, sig: string, Eh: string } }
-    if (payload['b']) {
-      const result = registrationKey(req.params['name'], payload['b'])
+    const payload = await c.req.json() as { b?: string, r?: string, s?: string, sig?: string, Eh?: string }
+    // Validate: must be either { b } or { r, s, sig, Eh }
+    if (payload.b) {
+      if (typeof payload.b !== 'string') throw new HTTPException(400)
+      const result = registrationKey(name, payload.b)
 
       if (result) {
-        return result
+        return c.json(result)
+      }
+    } else if (payload.r && payload.s && payload.sig && payload.Eh) {
+      if (typeof payload.r !== 'string' || typeof payload.s !== 'string' ||
+          typeof payload.sig !== 'string' || typeof payload.Eh !== 'string') {
+        throw new HTTPException(400)
+      }
+      const result = register(name, payload.r, payload.s, payload.sig, payload.Eh)
+
+      if (result) {
+        return c.json(result)
       }
     } else {
-      const result = register(req.params['name'], payload['r'], payload['s'], payload['sig'], payload['Eh'])
-
-      if (result) {
-        return result
-      }
+      throw new HTTPException(400, { message: 'Invalid payload' })
     }
   } catch (e) {
-    (e as { ip: string }).ip = req.headers['x-real-ip'] || req.info.remoteAddress
+    if (e instanceof HTTPException) throw e
+    ;(e as { ip: string }).ip = getClientIP(c)
     console.error(e, 'Error at POST /zkpp/{name}: ' + (e as Error).message)
   }
 
-  return Boom.internal('internal error')
+  throw new HTTPException(500, { message: 'internal error' })
 })
 
-route.GET('/zkpp/{contractID}/auth_hash', {
-  validate: {
-    params: Joi.object({
-      contractID: Joi.string().regex(CID_REGEX).required()
-    }),
-    query: Joi.object({ b: Joi.string().required() })
-  }
-}, async function (req, h) {
+app.get('/zkpp/:contractID/auth_hash', async function (c) {
+  const contractID = c.req.param('contractID')
+  if (!CID_REGEX.test(contractID)) throw new HTTPException(400, { message: 'Invalid contractID' })
+  const b = c.req.query('b')
+  if (!b) throw new HTTPException(400, { message: 'b is required' })
   try {
-    const challenge = await getChallenge(req.params['contractID'], req.query['b'])
+    const challenge = await getChallenge(contractID, b)
 
-    return challenge || notFoundNoCache(h)
+    return challenge ? c.json(challenge) : notFoundNoCache(c)
   } catch (e) {
-    (e as unknown as { ip: string }).ip = req.headers['x-real-ip'] || req.info.remoteAddress
+    ;(e as unknown as { ip: string }).ip = getClientIP(c)
     console.error(e, 'Error at GET /zkpp/{contractID}/auth_hash: ' + (e as Error).message)
   }
 
-  return Boom.internal('internal error')
+  throw new HTTPException(500, { message: 'internal error' })
 })
 
-route.GET('/zkpp/{contractID}/contract_hash', {
-  validate: {
-    params: Joi.object({
-      contractID: Joi.string().regex(CID_REGEX).required()
-    }),
-    query: Joi.object({
-      r: Joi.string().required(),
-      s: Joi.string().required(),
-      sig: Joi.string().required(),
-      hc: Joi.string().required()
-    })
-  }
-}, async function (req) {
+app.get('/zkpp/:contractID/contract_hash', async function (c) {
+  const contractID = c.req.param('contractID')
+  if (!CID_REGEX.test(contractID)) throw new HTTPException(400, { message: 'Invalid contractID' })
+  const r = c.req.query('r')
+  const s = c.req.query('s')
+  const sig = c.req.query('sig')
+  const hc = c.req.query('hc')
+  if (!r || !s || !sig || !hc) throw new HTTPException(400, { message: 'r, s, sig, and hc are required' })
   try {
-    const salt = await getContractSalt(req.params['contractID'], req.query['r'], req.query['s'], req.query['sig'], req.query['hc'])
+    const salt = await getContractSalt(contractID, r, s, sig, hc)
 
     if (salt) {
-      return salt
+      return c.json(salt)
     }
   } catch (e) {
-    (e as { ip: string }).ip = req.headers['x-real-ip'] || req.info.remoteAddress
+    ;(e as { ip: string }).ip = getClientIP(c)
     console.error(e, 'Error at GET /zkpp/{contractID}/contract_hash: ' + (e as Error).message)
   }
 
-  return Boom.internal('internal error')
+  throw new HTTPException(500, { message: 'internal error' })
 })
 
-route.POST('/zkpp/{contractID}/updatePasswordHash', {
-  validate: {
-    params: Joi.object({
-      contractID: Joi.string().regex(CID_REGEX).required()
-    }),
-    payload: Joi.object({
-      r: Joi.string().required(),
-      s: Joi.string().required(),
-      sig: Joi.string().required(),
-      hc: Joi.string().required(),
-      Ea: Joi.string().required()
-    })
-  }
-}, async function (req) {
-  if (ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
+app.post('/zkpp/:contractID/updatePasswordHash', async function (c) {
+  const contractID = c.req.param('contractID')
+  if (!CID_REGEX.test(contractID)) throw new HTTPException(400, { message: 'Invalid contractID' })
+  if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
   try {
-    const { payload } = req as { payload: { r: string, s: string, sig: string, hc: string, Ea: string } }
-    const result = await updateContractSalt(req.params['contractID'], payload['r'], payload['s'], payload['sig'], payload['hc'], payload['Ea'])
+    const payload = await c.req.json() as { r: string, s: string, sig: string, hc: string, Ea: string }
+    if (!payload.r || !payload.s || !payload.sig || !payload.hc || !payload.Ea) {
+      throw new HTTPException(400, { message: 'r, s, sig, hc, and Ea are required' })
+    }
+    const result = await updateContractSalt(contractID, payload.r, payload.s, payload.sig, payload.hc, payload.Ea)
 
     if (result) {
-      return result
+      return c.json(result)
     }
   } catch (e) {
-    (e as unknown as { ip: string }).ip = req.headers['x-real-ip'] || req.info.remoteAddress
+    if (e instanceof HTTPException) throw e
+    ;(e as unknown as { ip: string }).ip = getClientIP(c)
     console.error(e, 'Error at POST /zkpp/{contractID}/updatePasswordHash: ' + (e as Error).message)
   }
 
-  return Boom.internal('internal error')
+  throw new HTTPException(500, { message: 'internal error' })
 })

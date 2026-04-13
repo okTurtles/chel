@@ -46,7 +46,7 @@ sbp('okTurtles.events/once', SERVER_EXITING, () => {
         pubsub.on('close', async function () {
           try {
             await sbp('backend/server/stop')
-            console.info('Hapi server down')
+            console.info('Server down')
           } catch (err) {
             console.error(err, 'Error during shutdown')
           } finally {

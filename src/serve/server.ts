@@ -5,16 +5,15 @@ import 'npm:@chelonia/lib/chelonia'
 import { multicodes, parseCID } from 'npm:@chelonia/lib/functions'
 import 'npm:@chelonia/lib/persistent-actions'
 import { SERVER } from 'npm:@chelonia/lib/presets'
-import Boom from 'npm:@hapi/boom'
-import * as Hapi from 'npm:@hapi/hapi'
-import Inert from 'npm:@hapi/inert'
 import sbp from 'npm:@sbp/sbp'
 import chalk from 'npm:chalk'
+import { Hono } from 'npm:hono'
+import { cors } from 'npm:hono/cors'
+import { createAdaptorServer } from 'npm:@hono/node-server'
+import type { Server } from 'node:http'
 import createWorker from './createWorker.ts'
-// import type { SubMessage, UnsubMessage } from './pubsub.ts' // TODO: Use for type checking
 import { join } from 'node:path'
 import process from 'node:process'
-import authPlugin from './auth.ts'
 import { CREDITS_WORKER_TASK_TIME_INTERVAL, OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL } from './constants.ts'
 import { KEYOP_SEGMENT_LENGTH, appendToIndexFactory, initDB, lookupUltimateOwner, removeFromIndexFactory, updateSize } from './database.ts'
 import { BackendErrorBadData, BackendErrorGone, BackendErrorNotFound } from './errors.ts'
@@ -60,50 +59,33 @@ const creditsWorker = ARCHIVE_MODE || !CREDITS_WORKER_TASK_TIME_INTERVAL
   ? undefined
   : createWorker(join(import.meta.dirname || '.', import.meta.workerDir || '.', 'creditsWorker.js'))
 
-// Dynamic runtime import to bypass bundling issues with npm: specifier
-const hapi = new Hapi.Server({
-  // debug: false, // <- Hapi v16 was outputing too many unnecessary debug statements
-  //               // v17 doesn't seem to do this anymore so I've re-enabled the logging
-  // debug: { log: ['error'], request: ['error'] },
-  host: nconf.get('server:host'),
-  port: nconf.get('server:port'),
-  // See: https://github.com/hapijs/discuss/issues/262#issuecomment-204616831
-  routes: {
-    cors: {
-      // TODO: figure out if we can live with '*' or if we need to restrict it
-      origin: ['*']
-      // origin: [
-      //   process.env.API_URL,
-      //   // improve support for browsersync proxy
-      //   ...(process.env.NODE_ENV === 'development' && ['http://localhost:3000'])
-      // ]
-    }
-  }
+// Create Hono app
+export const app = new Hono()
+
+// Global middleware: CORS
+app.use('*', cors({ origin: '*' }))
+
+// Global middleware: X-Frame-Options on every response
+app.use('*', async (c, next) => {
+  await next()
+  c.header('X-Frame-Options', 'DENY')
 })
 
-// See https://stackoverflow.com/questions/26213255/hapi-set-header-before-sending-response
-hapi.ext({
-  type: 'onPreResponse',
-  method: function (request, h) {
-    try {
-      // Hapi Boom error responses don't have `.header()`,
-      // but custom headers can be manually added using `.output.headers`.
-      // See https://hapi.dev/module/boom/api/.
-      if (!(request.response instanceof Boom.Boom)) {
-        request.response.header('X-Frame-Options', 'DENY')
-      } else {
-        request.response.output.headers['X-Frame-Options'] = 'DENY'
-      }
-    } catch (err) {
-      console.warn(chalk.yellow('[backend] Could not set X-Frame-Options header:', (err as Error).message))
-    }
-    return h.continue
-  }
-})
+// Dev logging middleware
+if (process.env.NODE_ENV === 'development' && !process.env.CI) {
+  app.use('*', async (c, next) => {
+    await next()
+    const ip = c.req.header('x-real-ip') || 'unknown'
+    console.debug(chalk`{grey ${ip}: ${c.req.method} ${c.req.path} --> ${c.res.status}}`)
+  })
+}
+
+// Create the Node http.Server (without listening yet) via @hono/node-server
+const httpServer = createAdaptorServer({ fetch: app.fetch }) as Server
 
 const appendToOrphanedNamesIndex = appendToIndexFactory('_private_orphaned_names_index')
 
-sbp('okTurtles.data/set', SERVER_INSTANCE, hapi)
+sbp('okTurtles.data/set', SERVER_INSTANCE, app)
 
 sbp('sbp/selectors/register', {
   'backend/server/persistState': async function (deserializedHEAD: unknown) {
@@ -256,7 +238,12 @@ sbp('sbp/selectors/register', {
     return updateSize(resourceID, sizeKey, size, true)
   },
   'backend/server/stop': function () {
-    return hapi.stop()
+    return new Promise<void>((resolve, reject) => {
+      httpServer.close((err) => {
+        if (err) reject(err)
+        else resolve()
+      })
+    })
   },
   async 'backend/deleteFile' (cid: string, ultimateOwnerID: string | null | undefined, skipIfDeleted: boolean | null | undefined): Promise<void> {
     const owner = await sbp('chelonia.db/get', `_private_owner_${cid}`)
@@ -423,15 +410,7 @@ sbp('sbp/selectors/register', {
   }
 })
 
-if (process.env.NODE_ENV === 'development' && !process.env.CI) {
-  hapi.events.on('response', (req) => {
-    const ip = req.headers['x-real-ip'] || req.info.remoteAddress
-    const statusCode = req.response instanceof Boom.Boom ? req.response.output.statusCode : req.response.statusCode
-    console.debug(chalk`{grey ${ip}: ${req.method} ${req.path} --> ${statusCode}}`)
-  })
-}
-
-sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
+sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(httpServer, {
   serverHandlers: {
     connection (socket) {
       const versionInfo = {
@@ -574,22 +553,15 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
   sbp('chelonia.persistentActions/load').catch((e: unknown) => {
     console.error(e, 'Error loading persistent actions')
   })
-  // https://hapi.dev/tutorials/plugins
-  await hapi.register([
-    { plugin: authPlugin },
-    { plugin: Inert }
-    // {
-    //   plugin: require('hapi-pino'),
-    //   options: {
-    //     instance: logger
-    //   }
-    // }
-  ])
-  // Import routes after plugins are registered
+  // Import routes (they will register themselves on the Hono app via SERVER_INSTANCE)
   await import('./routes.ts')
-  await hapi.start()
-  console.info('Backend server running at:', hapi.info.uri)
-  sbp('okTurtles.events/emit', SERVER_RUNNING, hapi)
+  // Start listening
+  const host = nconf.get('server:host') || '0.0.0.0'
+  const port = nconf.get('server:port') || 8000
+  httpServer.listen(port, host, () => {
+    console.info(`Backend server running at: http://${host}:${port}`)
+    sbp('okTurtles.events/emit', SERVER_RUNNING, app)
+  })
 })()
 
 // Recurring task to send messages to push clients (for periodic notifications)
