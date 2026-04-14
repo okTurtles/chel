@@ -187,6 +187,129 @@ Deno.test({
         const [retrievedContractSalt] = JSON.parse(Buffer.from(decrypted).toString())
         if (!retrievedContractSalt) throw new Error('Expected non-empty contract salt')
       })
+
+      await t.step('POST /zkpp/register step 1 with form-urlencoded body', async () => {
+        const keyPair = nacl.box.keyPair()
+        const publicKeyHash = Buffer.from(nacl.hash(Buffer.from(
+          Buffer.from(keyPair.publicKey).toString('base64url')
+        ))).toString('base64url')
+        const res = await fetch(`${baseURL}/zkpp/register/zkppformuser1`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/x-www-form-urlencoded' },
+          body: `b=${encodeURIComponent(publicKeyHash)}`
+        })
+        if (res.status !== 200) throw new Error(`Expected 200 but got ${res.status}`)
+        const body = await res.json()
+        if (!body.s) throw new Error('Expected s in response')
+        if (!body.p) throw new Error('Expected p in response')
+        if (!body.sig) throw new Error('Expected sig in response')
+      })
+
+      await t.step('POST /zkpp/register step 2 with form-urlencoded body', async () => {
+        const keyPair = nacl.box.keyPair()
+        const publicKey = Buffer.from(keyPair.publicKey).toString('base64url')
+        const publicKeyHash = Buffer.from(nacl.hash(Buffer.from(publicKey))).toString('base64url')
+
+        const res1 = await fetch(`${baseURL}/zkpp/register/zkppformuser2`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/x-www-form-urlencoded' },
+          body: `b=${encodeURIComponent(publicKeyHash)}`
+        })
+        if (res1.status !== 200) throw new Error(`Step 1 failed: ${res1.status}`)
+        const step1 = await res1.json()
+
+        const [, , encryptedHashedPassword] = saltsAndEncryptedHashedPassword(step1.p, keyPair.secretKey, 'testhash')
+        const res2 = await fetch(`${baseURL}/zkpp/register/zkppformuser2`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            r: publicKey,
+            s: step1.s,
+            sig: step1.sig,
+            Eh: encryptedHashedPassword
+          }).toString()
+        })
+        if (res2.status !== 200) throw new Error(`Step 2 failed: ${res2.status}`)
+        const token = await res2.text()
+        if (!token) throw new Error('Expected registration token')
+      })
+
+      await t.step('POST /zkpp/{contractID}/updatePasswordHash with form-urlencoded body returns 400 for missing params', async () => {
+        const cid = createCID('zkpp-form-test', multicodes.SHELTER_CONTRACT_DATA)
+        const res = await fetch(`${baseURL}/zkpp/${cid}/updatePasswordHash`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ r: 'a', s: 'b' }).toString()
+        })
+        await res.body?.cancel()
+        if (res.status !== 400) throw new Error(`Expected 400 but got ${res.status}`)
+      })
+
+      await t.step('ZKPP full flow with form-urlencoded registration', async () => {
+        const keyPair = nacl.box.keyPair()
+        const publicKey = Buffer.from(keyPair.publicKey).toString('base64url')
+        const publicKeyHash = Buffer.from(nacl.hash(Buffer.from(publicKey))).toString('base64url')
+        const hash = 'myhash-form'
+        const name = 'zkppformfull'
+
+        const res1 = await fetch(`${baseURL}/zkpp/register/${name}`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/x-www-form-urlencoded' },
+          body: `b=${encodeURIComponent(publicKeyHash)}`
+        })
+        if (res1.status !== 200) throw new Error(`Reg step 1 failed: ${res1.status}`)
+        const step1 = await res1.json()
+
+        const [authSalt, , encryptedHashedPassword] = saltsAndEncryptedHashedPassword(step1.p, keyPair.secretKey, hash)
+        const res2 = await fetch(`${baseURL}/zkpp/register/${name}`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            r: publicKey,
+            s: step1.s,
+            sig: step1.sig,
+            Eh: encryptedHashedPassword
+          }).toString()
+        })
+        if (res2.status !== 200) throw new Error(`Reg step 2 failed: ${res2.status}`)
+        const encryptedToken = (await res2.text()).replace(/^"|"$/g, '')
+        const token = decryptRegistrationRedemptionToken(step1.p, keyPair.secretKey, encryptedToken)
+
+        const contractCID = createCID(`${name}-contract`, multicodes.SHELTER_CONTRACT_DATA)
+        await sbp('backend/db/registerName', name, contractCID)
+
+        const { redeemSaltRegistrationToken } = await import('./zkppSalt.ts')
+        await redeemSaltRegistrationToken(name, contractCID, token)
+
+        const r = 'challenge-r-form'
+        const b = Buffer.from(nacl.hash(Buffer.from(r))).toString('base64url')
+        const challengeRes = await fetch(`${baseURL}/zkpp/${contractCID}/auth_hash?b=${encodeURIComponent(b)}`)
+        if (challengeRes.status !== 200) throw new Error(`auth_hash failed: ${challengeRes.status}`)
+        const challenge = await challengeRes.json()
+        if (!challenge.authSalt) throw new Error('Expected authSalt')
+        if (challenge.authSalt !== authSalt) throw new Error(`authSalt mismatch: ${challenge.authSalt} !== ${authSalt}`)
+
+        const ħ = nacl.hash(Buffer.concat([nacl.hash(Buffer.from(r)), nacl.hash(Buffer.from(challenge.s))]))
+        const c = nacl.hash(Buffer.concat([nacl.hash(Buffer.from(hash)), nacl.hash(ħ)]))
+        const hc = nacl.hash(c)
+
+        const saltRes = await fetch(
+          `${baseURL}/zkpp/${contractCID}/contract_hash?` +
+          `r=${encodeURIComponent(r)}&s=${encodeURIComponent(challenge.s)}` +
+          `&sig=${encodeURIComponent(challenge.sig)}&hc=${encodeURIComponent(Buffer.from(hc).toString('base64url'))}`
+        )
+        if (saltRes.status !== 200) throw new Error(`contract_hash failed: ${saltRes.status}`)
+        const encryptedSalt = await saltRes.text()
+        if (!encryptedSalt) throw new Error('Expected encrypted salt response')
+
+        const saltBuf = Buffer.from(encryptedSalt.replace(/^"|"$/g, ''), 'base64url')
+        const nonce = saltBuf.slice(0, nacl.secretbox.nonceLength)
+        const encryptionKey = nacl.hash(Buffer.concat([Buffer.from(CS), c])).slice(0, nacl.secretbox.keyLength)
+        const decrypted = nacl.secretbox.open(saltBuf.slice(nacl.secretbox.nonceLength), nonce, encryptionKey)
+        if (!decrypted) throw new Error('Failed to decrypt contract salt')
+        const [retrievedContractSalt] = JSON.parse(Buffer.from(decrypted).toString())
+        if (!retrievedContractSalt) throw new Error('Expected non-empty contract salt')
+      })
     } finally {
       await stopTestServer()
     }
