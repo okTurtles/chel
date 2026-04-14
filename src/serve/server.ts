@@ -557,7 +557,7 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(httpServer, {
   await import('./routes.ts')
   // Start listening
   const host = nconf.get('server:host') || '0.0.0.0'
-  const port = nconf.get('server:port') || 8000
+  const port = nconf.get('server:port') ?? 8000
   httpServer.listen(port, host, () => {
     const addr = httpServer.address() as { address: string; port: number }
     const uri = `http://${addr.address}:${addr.port}`

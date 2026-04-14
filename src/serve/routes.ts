@@ -189,6 +189,14 @@ function notFoundNoCache (c: Context): Response {
   return c.body(null, 404, { 'Cache-Control': 'no-store' })
 }
 
+async function parseRequestBody<T = Record<string, unknown>> (c: Context): Promise<T> {
+  const contentType = c.req.header('content-type') || ''
+  if (contentType.includes('application/json')) {
+    return await c.req.json() as T
+  }
+  return await c.req.parseBody() as T
+}
+
 // Get the Hono app via SERVER_INSTANCE
 const app: Hono = sbp('okTurtles.data/get', SERVER_INSTANCE)
 
@@ -1029,7 +1037,7 @@ app.post('/zkpp/register/:name', async function (c) {
     throw new HTTPException(409)
   }
   try {
-    const payload = await c.req.json() as { b?: string, r?: string, s?: string, sig?: string, Eh?: string }
+    const payload = await parseRequestBody<{ b?: string, r?: string, s?: string, sig?: string, Eh?: string }>(c)
     // Validate: must be either { b } or { r, s, sig, Eh }
     if (payload.b) {
       if (typeof payload.b !== 'string') throw new HTTPException(400)
@@ -1104,7 +1112,7 @@ app.post('/zkpp/:contractID/updatePasswordHash', async function (c) {
   if (!CID_REGEX.test(contractID)) throw new HTTPException(400, { message: 'Invalid contractID' })
   if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
   try {
-    const payload = await c.req.json() as { r: string, s: string, sig: string, hc: string, Ea: string }
+    const payload = await parseRequestBody<{ r: string, s: string, sig: string, hc: string, Ea: string }>(c)
     if (!payload.r || !payload.s || !payload.sig || !payload.hc || !payload.Ea) {
       throw new HTTPException(400, { message: 'r, s, sig, hc, and Ea are required' })
     }

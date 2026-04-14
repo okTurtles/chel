@@ -72654,6 +72654,13 @@ function getClientIP(c) {
 function notFoundNoCache(c) {
   return c.body(null, 404, { "Cache-Control": "no-store" });
 }
+async function parseRequestBody(c) {
+  const contentType = c.req.header("content-type") || "";
+  if (contentType.includes("application/json")) {
+    return await c.req.json();
+  }
+  return await c.req.parseBody();
+}
 var import_npm_bottleneck;
 var import_npm_chalk2;
 var import_npm_nconf5;
@@ -73468,7 +73475,7 @@ var init_routes = __esm({
         throw new HTTPException(409);
       }
       try {
-        const payload = await c.req.json();
+        const payload = await parseRequestBody(c);
         if (payload.b) {
           if (typeof payload.b !== "string") throw new HTTPException(400);
           const result = registrationKey(name, payload.b);
@@ -73533,7 +73540,7 @@ var init_routes = __esm({
       if (!CID_REGEX.test(contractID)) throw new HTTPException(400, { message: "Invalid contractID" });
       if (ARCHIVE_MODE) throw new HTTPException(501, { message: "Server in archive mode" });
       try {
-        const payload = await c.req.json();
+        const payload = await parseRequestBody(c);
         if (!payload.r || !payload.s || !payload.sig || !payload.hc || !payload.Ea) {
           throw new HTTPException(400, { message: "r, s, sig, hc, and Ea are required" });
         }
@@ -73986,7 +73993,7 @@ var init_server = __esm({
       });
       await Promise.resolve().then(() => (init_routes(), routes_exports));
       const host = import_npm_nconf6.default.get("server:host") || "0.0.0.0";
-      const port = import_npm_nconf6.default.get("server:port") || 8e3;
+      const port = import_npm_nconf6.default.get("server:port") ?? 8e3;
       httpServer.listen(port, host, () => {
         const addr = httpServer.address();
         const uri = `http://${addr.address}:${addr.port}`;
