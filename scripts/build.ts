@@ -48,10 +48,23 @@ if (result.errors.length) {
 }
 console.log(colors.green('built:'), options.outdir)
 
+import { builtinModules } from 'node:module'
+
+const nodeBuiltins = new Set(builtinModules.filter((m: string) => !m.startsWith('_')))
+const bareBuiltinRe = /\bfrom\s+"([^"]+)"/g
+
+function addNodePrefix (source: string): string {
+  return source.replace(bareBuiltinRe, (match, specifier) => {
+    return nodeBuiltins.has(specifier) ? `from "node:${specifier}"` : match
+  })
+}
+
 for (const outfile of result.outputFiles!) {
   const tmpFile = outfile.path + '-tmp'
   try {
-    Deno.writeFileSync(tmpFile, outfile.contents)
+    const text = new TextDecoder().decode(outfile.contents)
+    const patched = addNodePrefix(text)
+    Deno.writeFileSync(tmpFile, new TextEncoder().encode(patched))
     try {
       Deno.removeSync(outfile.path)
     } catch (e) {
