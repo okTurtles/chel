@@ -206,6 +206,7 @@ app.post('/event',
     const ip = getClientIP(c)
     try {
       const payload = await c.req.text()
+      if (!payload) throw new HTTPException(400, { message: 'Invalid request payload input' })
       const namespaceRegistration = c.req.header('shelter-namespace-registration')
       if (namespaceRegistration && !NAME_REGEX.test(namespaceRegistration)) {
         throw new HTTPException(400, { message: 'Invalid shelter-namespace-registration header' })
@@ -343,15 +344,16 @@ app.get('/eventsAfter/:contractID/:since/:limit?',
       // Use the request abort signal to destroy the stream when the client disconnects
       c.req.raw.signal.addEventListener('abort', () => stream.destroy())
       // Convert the Node Readable stream to a web ReadableStream for the Response
+      const streamHeaders = (stream as { headers?: Record<string, string> }).headers || {}
       const webStream = Readable.toWeb(stream) as ReadableStream
       return new Response(webStream, {
-        headers: { 'content-type': 'application/octet-stream' }
+        headers: { 'content-type': 'application/octet-stream', ...streamHeaders }
       })
     } catch (err) {
       if (err instanceof HTTPException) throw err
       ;(err as unknown as { ip: string }).ip = ip
       logger.error(err, `GET /eventsAfter/${contractID}/${since}`, (err as Error).message)
-      throw err
+      errorMapper(err as Error)
     }
   })
 

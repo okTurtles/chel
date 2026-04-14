@@ -559,8 +559,10 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(httpServer, {
   const host = nconf.get('server:host') || '0.0.0.0'
   const port = nconf.get('server:port') || 8000
   httpServer.listen(port, host, () => {
-    console.info(`Backend server running at: http://${host}:${port}`)
-    sbp('okTurtles.events/emit', SERVER_RUNNING, app)
+    const addr = httpServer.address() as { address: string; port: number }
+    const uri = `http://${addr.address}:${addr.port}`
+    console.info('Backend server running at:', uri)
+    sbp('okTurtles.events/emit', SERVER_RUNNING, { info: { uri } })
   })
 })()
 
