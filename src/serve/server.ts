@@ -250,7 +250,9 @@ sbp('sbp/selectors/register', {
     clearInterval(pushHeartbeatIntervalID)
     ownerSizeTotalWorker?.terminate()
     creditsWorker?.terminate()
-    await sbp('backend/server/stopRateLimiters')
+    if (sbp('sbp/selectors/fn', 'backend/server/stopRateLimiters')) {
+      await sbp('backend/server/stopRateLimiters')
+    }
     return hapi.stop()
   },
   async 'backend/deleteFile' (cid: string, ultimateOwnerID: string | null | undefined, skipIfDeleted: boolean | null | undefined): Promise<void> {
