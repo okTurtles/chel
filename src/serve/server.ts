@@ -246,11 +246,11 @@ sbp('sbp/selectors/register', {
     const sizeKey = `_private_contractFilesTotalSize_${resourceID}`
     return updateSize(resourceID, sizeKey, size, true)
   },
-  'backend/server/stop': function () {
+  'backend/server/stop': async function () {
     clearInterval(pushHeartbeatIntervalID)
     ownerSizeTotalWorker?.terminate()
     creditsWorker?.terminate()
-    sbp('backend/server/stopRateLimiters')
+    await sbp('backend/server/stopRateLimiters')
     return hapi.stop()
   },
   async 'backend/deleteFile' (cid: string, ultimateOwnerID: string | null | undefined, skipIfDeleted: boolean | null | undefined): Promise<void> {

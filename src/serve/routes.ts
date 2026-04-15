@@ -68,9 +68,11 @@ const limiterPerDay = new Bottleneck.Group({
 
 sbp('sbp/selectors/register', {
   'backend/server/stopRateLimiters': function () {
-    clearInterval((limiterPerMinute as unknown as Record<string, ReturnType<typeof setInterval>>).interval)
-    clearInterval((limiterPerHour as unknown as Record<string, ReturnType<typeof setInterval>>).interval)
-    clearInterval((limiterPerDay as unknown as Record<string, ReturnType<typeof setInterval>>).interval)
+    return Promise.allSettled([
+      limiterPerMinute.disconnect(),
+      limiterPerHour.disconnect(),
+      limiterPerDay.disconnect()
+    ])
   }
 })
 
