@@ -159,5 +159,4 @@ export async function stopTestServer (): Promise<void> {
     })
     sbp('okTurtles.events/emit', SERVER_EXITING)
   })
-  await sbp('backend/server/stop')
 }
