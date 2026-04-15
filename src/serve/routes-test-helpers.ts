@@ -41,21 +41,21 @@ export function buildSignedKvPayload (
 export function saltsAndEncryptedHashedPassword (p: string, secretKey: Uint8Array, hash: string) {
   const nonce = nacl.randomBytes(nacl.secretbox.nonceLength)
   const dhKey = nacl.hash(nacl.box.before(Buffer.from(p, 'base64url'), secretKey))
-  const authSalt = Buffer.from(nacl.hash(Buffer.concat([nacl.hash(Buffer.from(AUTHSALT)), dhKey]))).slice(0, SALT_LENGTH_IN_OCTETS).toString('base64')
-  const contractSalt = Buffer.from(nacl.hash(Buffer.concat([nacl.hash(Buffer.from(CONTRACTSALT)), dhKey]))).slice(0, SALT_LENGTH_IN_OCTETS).toString('base64')
-  const encryptionKey = nacl.hash(Buffer.from(authSalt + contractSalt)).slice(0, nacl.secretbox.keyLength)
+  const authSalt = Buffer.from(nacl.hash(Buffer.concat([nacl.hash(Buffer.from(AUTHSALT)), dhKey]))).subarray(0, SALT_LENGTH_IN_OCTETS).toString('base64')
+  const contractSalt = Buffer.from(nacl.hash(Buffer.concat([nacl.hash(Buffer.from(CONTRACTSALT)), dhKey]))).subarray(0, SALT_LENGTH_IN_OCTETS).toString('base64')
+  const encryptionKey = nacl.hash(Buffer.from(authSalt + contractSalt)).subarray(0, nacl.secretbox.keyLength)
   const encryptedHashedPassword = Buffer.concat([nonce, nacl.secretbox(Buffer.from(hash), nonce, encryptionKey)]).toString('base64url')
   return [authSalt, contractSalt, encryptedHashedPassword]
 }
 
 export function decryptRegistrationRedemptionToken (p: string, secretKey: Uint8Array, encryptedToken: string) {
   const dhKey = nacl.hash(nacl.box.before(Buffer.from(p, 'base64url'), secretKey))
-  const authSalt = Buffer.from(nacl.hash(Buffer.concat([nacl.hash(Buffer.from(AUTHSALT)), dhKey]))).slice(0, SALT_LENGTH_IN_OCTETS).toString('base64')
-  const contractSalt = Buffer.from(nacl.hash(Buffer.concat([nacl.hash(Buffer.from(CONTRACTSALT)), dhKey]))).slice(0, SALT_LENGTH_IN_OCTETS).toString('base64')
-  const encryptionKey = nacl.hash(Buffer.concat([Buffer.from(CS), nacl.hash(Buffer.from(authSalt + contractSalt)).slice(0, nacl.secretbox.keyLength)])).slice(0, nacl.secretbox.keyLength)
+  const authSalt = Buffer.from(nacl.hash(Buffer.concat([nacl.hash(Buffer.from(AUTHSALT)), dhKey]))).subarray(0, SALT_LENGTH_IN_OCTETS).toString('base64')
+  const contractSalt = Buffer.from(nacl.hash(Buffer.concat([nacl.hash(Buffer.from(CONTRACTSALT)), dhKey]))).subarray(0, SALT_LENGTH_IN_OCTETS).toString('base64')
+  const encryptionKey = nacl.hash(Buffer.concat([Buffer.from(CS), nacl.hash(Buffer.from(authSalt + contractSalt)).subarray(0, nacl.secretbox.keyLength)])).subarray(0, nacl.secretbox.keyLength)
   const encryptedTokenBuf = Buffer.from(encryptedToken, 'base64url')
-  const nonce = encryptedTokenBuf.slice(0, nacl.secretbox.nonceLength)
-  const ciphertext = encryptedTokenBuf.slice(nacl.secretbox.nonceLength)
+  const nonce = encryptedTokenBuf.subarray(0, nacl.secretbox.nonceLength)
+  const ciphertext = encryptedTokenBuf.subarray(nacl.secretbox.nonceLength)
   const decrypted = nacl.secretbox.open(ciphertext, nonce, encryptionKey)
   if (!decrypted) throw new Error('Failed to decrypt token')
   return Buffer.from(decrypted).toString()
@@ -128,12 +128,6 @@ export async function startTestServer (): Promise<string> {
       backendOptions: {}
     }
   })
-
-  nconf.set('server:host', '127.0.0.1')
-  nconf.set('server:port', TEST_PORT)
-  nconf.set('database:backend', 'mem')
-  nconf.set('server:messages', [{ type: 'info', text: 'test message' }])
-  nconf.set('server:archiveMode', false)
 
   const serverAddress = await new Promise<string>((resolve, reject) => {
     const unregister = sbp('okTurtles.events/once', SERVER_RUNNING, function (hapi: { info: { uri: string } }) {
