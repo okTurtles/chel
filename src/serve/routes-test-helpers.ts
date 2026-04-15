@@ -21,7 +21,7 @@ export const nacl = tweetnacl
 const TEST_PORT = 0
 
 export function buildSignedKvPayload (
-  contractID: string,
+  _contractID: string,
   key: string,
   height: number,
   data: unknown,
@@ -136,10 +136,15 @@ export async function startTestServer (): Promise<string> {
   nconf.set('server:archiveMode', false)
 
   const serverAddress = await new Promise<string>((resolve, reject) => {
-    sbp('okTurtles.events/on', SERVER_RUNNING, function (hapi: { info: { uri: string } }) {
+    const unregister = sbp('okTurtles.events/once', SERVER_RUNNING, function (hapi: { info: { uri: string } }) {
       resolve(hapi.info.uri)
     })
-    import('./server.ts').catch(reject)
+    import('./index.ts').then(({ default: start }) => {
+      return start()
+    }).catch((e) => {
+      unregister()
+      reject(e)
+    })
   })
 
   return serverAddress

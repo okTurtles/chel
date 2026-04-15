@@ -10,6 +10,7 @@ import * as Hapi from 'npm:@hapi/hapi'
 import Inert from 'npm:@hapi/inert'
 import sbp from 'npm:@sbp/sbp'
 import chalk from 'npm:chalk'
+import type { ImportMeta } from '../types/build.d.ts'
 import createWorker from './createWorker.ts'
 // import type { SubMessage, UnsubMessage } from './pubsub.ts' // TODO: Use for type checking
 import { join } from 'node:path'
@@ -44,10 +45,10 @@ if (CREDITS_WORKER_TASK_TIME_INTERVAL && OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTER
 // Initialize workers for size calculation and credits processing
 const ownerSizeTotalWorker = ARCHIVE_MODE || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL
   ? undefined
-  : createWorker(join(import.meta.dirname || '.', import.meta.workerDir || '.', 'ownerSizeTotalWorker.js'))
+  : createWorker(join(import.meta.dirname || '.', (import.meta as ImportMeta).workerDir || '.', 'ownerSizeTotalWorker.js'))
 const creditsWorker = ARCHIVE_MODE || !CREDITS_WORKER_TASK_TIME_INTERVAL
   ? undefined
-  : createWorker(join(import.meta.dirname || '.', import.meta.workerDir || '.', 'creditsWorker.js'))
+  : createWorker(join(import.meta.dirname || '.', (import.meta as ImportMeta).workerDir || '.', 'creditsWorker.js'))
 
 const { CONTRACTS_VERSION, GI_VERSION } = process.env
 
