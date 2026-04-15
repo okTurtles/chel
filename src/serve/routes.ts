@@ -68,6 +68,21 @@ const limiterPerDay = new Bottleneck.Group({
   reservoirRefreshAmount: SIGNUP_LIMIT_DAY
 })
 
+sbp('sbp/selectors/register', {
+  'backend/server/stopRateLimiters': async function () {
+    await Promise.allSettled([
+      limiterPerMinute.disconnect(),
+      limiterPerHour.disconnect(),
+      limiterPerDay.disconnect()
+    ])
+    // The following needs to be done using a private API because `disconnect()`
+    // isn't enough.
+    clearInterval((limiterPerMinute as unknown as { interval: ReturnType<typeof setInterval> }).interval)
+    clearInterval((limiterPerHour as unknown as { interval: ReturnType<typeof setInterval> }).interval)
+    clearInterval((limiterPerDay as unknown as { interval: ReturnType<typeof setInterval> }).interval)
+  }
+})
+
 const cidLookupTable = {
   [multicodes.SHELTER_CONTRACT_MANIFEST]: 'application/vnd.shelter.contractmanifest+json',
   [multicodes.SHELTER_CONTRACT_TEXT]: 'application/vnd.shelter.contracttext',

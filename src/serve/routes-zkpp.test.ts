@@ -14,8 +14,6 @@ import { CS } from 'npm:@chelonia/lib/zkppConstants'
 
 Deno.test({
   name: 'routes: ZKPP endpoints',
-  sanitizeResources: false,
-  sanitizeOps: false,
   async fn (t: Deno.TestContext) {
     const baseURL = await startTestServer()
 

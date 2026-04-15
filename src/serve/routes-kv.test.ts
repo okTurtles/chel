@@ -12,8 +12,6 @@ import {
 
 Deno.test({
   name: 'routes: KV store endpoints',
-  sanitizeResources: false,
-  sanitizeOps: false,
   async fn (t: Deno.TestContext) {
     const baseURL = await startTestServer()
 
@@ -132,6 +130,7 @@ Deno.test({
         if (!etag) throw new Error('Expected ETag header')
         const xcid = res.headers.get('x-cid')
         if (!xcid) throw new Error('Expected x-cid header')
+        if (!etag.startsWith('W/') && etag !== xcid) throw new Error('Expected x-cid to match ETag')
       })
 
       await t.step('GET /kv with valid auth for nonexistent key returns 404', async () => {
@@ -167,9 +166,12 @@ Deno.test({
         const getRes = await fetch(`${baseURL}/kv/${owner.contractID}/testkey`, {
           headers: { authorization: auth1 }
         })
+        const etag = getRes.headers.get('etag')
         const xcid = getRes.headers.get('x-cid')
         await getRes.body?.cancel()
         if (!xcid) throw new Error('Expected x-cid from GET')
+        if (!etag) throw new Error('Expected ETag from GET')
+        if (!etag.startsWith('W/') && etag !== xcid) throw new Error('Expected x-cid to match ETag')
 
         const auth2 = buildShelterAuthHeader(owner.contractID, owner.SAK)
         const payload = buildSignedKvPayload(owner.contractID, 'testkey', 0, { updated: true }, owner.SAK)

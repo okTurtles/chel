@@ -69496,6 +69496,7 @@ var init_pubsub2 = __esm({
     log.error = (error2, ...args) => logger_default.error(error2, bold.red(tag2, ...args));
     defaultServerHandlers = {
       close() {
+        clearInterval(this.pingIntervalID);
         log("Server closed");
       },
       /**
@@ -72739,6 +72740,18 @@ var init_routes = __esm({
       reservoirRefreshInterval: 24 * 60 * 60 * SECOND,
       reservoirRefreshAmount: SIGNUP_LIMIT_DAY
     });
+    esm_default("sbp/selectors/register", {
+      "backend/server/stopRateLimiters": async function() {
+        await Promise.allSettled([
+          limiterPerMinute.disconnect(),
+          limiterPerHour.disconnect(),
+          limiterPerDay.disconnect()
+        ]);
+        clearInterval(limiterPerMinute.interval);
+        clearInterval(limiterPerHour.interval);
+        clearInterval(limiterPerDay.interval);
+      }
+    });
     cidLookupTable = {
       [multicodes.SHELTER_CONTRACT_MANIFEST]: "application/vnd.shelter.contractmanifest+json",
       [multicodes.SHELTER_CONTRACT_TEXT]: "application/vnd.shelter.contracttext",
@@ -73570,6 +73583,7 @@ var creditsWorker;
 var app2;
 var httpServer;
 var appendToOrphanedNamesIndex;
+var pushHeartbeatIntervalID;
 var init_server = __esm({
   async "src/serve/server.ts"() {
     "use strict";
@@ -73606,8 +73620,8 @@ var init_server = __esm({
       process10.stderr.write("The size calculation worker must run more frequently than the credits worker for accurate billing");
       process10.exit(1);
     }
-    ownerSizeTotalWorker = ARCHIVE_MODE2 || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker_default(join82(import.meta.dirname || ".", "serve", "ownerSizeTotalWorker.js"));
-    creditsWorker = ARCHIVE_MODE2 || !CREDITS_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker_default(join82(import.meta.dirname || ".", "serve", "creditsWorker.js"));
+    ownerSizeTotalWorker = ARCHIVE_MODE2 || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker_default("./serve/ownerSizeTotalWorker.js");
+    creditsWorker = ARCHIVE_MODE2 || !CREDITS_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker_default("./serve/creditsWorker.js");
     app2 = new Hono2();
     app2.use("*", cors({ origin: "*" }));
     app2.use("*", async (c, next) => {
@@ -73722,11 +73736,20 @@ var init_server = __esm({
         const sizeKey = `_private_contractFilesTotalSize_${resourceID}`;
         return updateSize(resourceID, sizeKey, size, true);
       },
-      "backend/server/stop": function() {
+      "backend/server/stop": async function() {
+        clearInterval(pushHeartbeatIntervalID);
+        ownerSizeTotalWorker?.terminate();
+        creditsWorker?.terminate();
+        if (esm_default("sbp/selectors/fn", "backend/server/stopRateLimiters")) {
+          await esm_default("backend/server/stopRateLimiters");
+        }
         return new Promise((resolve82, reject) => {
           httpServer.close((err) => {
-            if (err) reject(err);
-            else resolve82();
+            if (err) {
+              reject(err);
+            } else {
+              resolve82();
+            }
           });
         });
       },
@@ -74003,7 +74026,7 @@ var init_server = __esm({
     })();
     (() => {
       const map = /* @__PURE__ */ new WeakMap();
-      setInterval(() => {
+      pushHeartbeatIntervalID = setInterval(() => {
         const now = Date.now();
         const pubsub = esm_default("okTurtles.data/get", PUBSUB_INSTANCE);
         const notification = JSON.stringify({ type: "recurring" });
@@ -74024,7 +74047,8 @@ var init_server = __esm({
 });
 var serve_exports = {};
 __export(serve_exports, {
-  default: () => serve_default
+  default: () => serve_default,
+  removeSignalHandlers: () => removeSignalHandlers
 });
 function logSBP(_domain, selector, data) {
   if (!dontLog[selector]) {
@@ -74035,10 +74059,17 @@ function logSBP(_domain, selector, data) {
     }
   }
 }
+function removeSignalHandlers() {
+  for (const [signal, handler] of signalHandlers) {
+    process11.removeListener(signal, handler);
+  }
+  signalHandlers.length = 0;
+}
 var import_npm_chalk4;
 var dontLog;
 var serve_default;
 var exit2;
+var signalHandlers;
 var handleSignal;
 var init_serve = __esm({
   "src/serve/index.ts"() {
@@ -74072,6 +74103,8 @@ var init_serve = __esm({
           return new Promise((resolve82) => {
             pubsub.on("close", async function() {
               try {
+                removeSignalHandlers();
+                await esm_default("chelonia.persistentActions/unload");
                 await esm_default("backend/server/stop");
                 console.info("Server down");
               } catch (err) {
@@ -74103,11 +74136,14 @@ var init_serve = __esm({
       });
       esm_default("okTurtles.events/emit", SERVER_EXITING);
     };
+    signalHandlers = [];
     handleSignal = (signal, code2) => {
-      process11.on(signal, () => {
+      const handler = () => {
         console.error(`Exiting upon receiving ${signal} (${code2})`);
         exit2(128 + code2);
-      });
+      };
+      signalHandlers.push([signal, handler]);
+      process11.on(signal, handler);
     };
     [
       ["SIGHUP", 1],

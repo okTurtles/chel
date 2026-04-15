@@ -274,6 +274,7 @@ export function createServer (httpServer: import('node:http').Server, options: S
 // The `this` binding refers to the server object.
 const defaultServerHandlers: ServerHandlers = {
   close () {
+    clearInterval(this.pingIntervalID)
     log('Server closed')
   },
   /**

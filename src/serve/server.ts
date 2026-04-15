@@ -11,6 +11,7 @@ import { Hono } from 'npm:hono'
 import { cors } from 'npm:hono/cors'
 import { createAdaptorServer } from 'npm:@hono/node-server'
 import type { Server } from 'node:http'
+import type { ImportMeta } from '../types/build.d.ts'
 import createWorker from './createWorker.ts'
 import { join } from 'node:path'
 import process from 'node:process'
@@ -54,10 +55,10 @@ if (CREDITS_WORKER_TASK_TIME_INTERVAL && OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTER
 // Initialize workers for size calculation and credits processing
 const ownerSizeTotalWorker = ARCHIVE_MODE || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL
   ? undefined
-  : createWorker(join(import.meta.dirname || '.', import.meta.workerDir || '.', 'ownerSizeTotalWorker.js'))
+  : createWorker((import.meta as ImportMeta).ownerSizeTotalWorker || './ownerSizeTotalWorker.ts')
 const creditsWorker = ARCHIVE_MODE || !CREDITS_WORKER_TASK_TIME_INTERVAL
   ? undefined
-  : createWorker(join(import.meta.dirname || '.', import.meta.workerDir || '.', 'creditsWorker.js'))
+  : createWorker((import.meta as ImportMeta).creditsWorker || './creditsWorker.ts')
 
 // Create Hono app
 export const app = new Hono()
@@ -237,11 +238,20 @@ sbp('sbp/selectors/register', {
     const sizeKey = `_private_contractFilesTotalSize_${resourceID}`
     return updateSize(resourceID, sizeKey, size, true)
   },
-  'backend/server/stop': function () {
+  'backend/server/stop': async function () {
+    clearInterval(pushHeartbeatIntervalID)
+    ownerSizeTotalWorker?.terminate()
+    creditsWorker?.terminate()
+    if (sbp('sbp/selectors/fn', 'backend/server/stopRateLimiters')) {
+      await sbp('backend/server/stopRateLimiters')
+    }
     return new Promise<void>((resolve, reject) => {
       httpServer.close((err) => {
-        if (err) reject(err)
-        else resolve()
+        if (err) {
+          reject(err)
+        } else {
+          resolve()
+        }
       })
     })
   },
@@ -567,10 +577,11 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(httpServer, {
 })()
 
 // Recurring task to send messages to push clients (for periodic notifications)
+let pushHeartbeatIntervalID: ReturnType<typeof setInterval>
 ;(() => {
   const map = new WeakMap()
 
-  setInterval(() => {
+  pushHeartbeatIntervalID = setInterval(() => {
     const now = Date.now()
     const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE) as WSS | undefined
     // Notification text

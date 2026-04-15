@@ -45,6 +45,8 @@ sbp('okTurtles.events/once', SERVER_EXITING, () => {
       return new Promise<void>((resolve) => {
         pubsub.on('close', async function () {
           try {
+            removeSignalHandlers()
+            await sbp('chelonia.persistentActions/unload')
             await sbp('backend/server/stop')
             console.info('Server down')
           } catch (err) {
@@ -86,13 +88,17 @@ const exit = (code: number) => {
   sbp('okTurtles.events/emit', SERVER_EXITING)
 }
 
+const signalHandlers: Array<[string, () => void]> = []
+
 const handleSignal = (signal: string, code: number) => {
-  process.on(signal, () => {
+  const handler = () => {
     console.error(`Exiting upon receiving ${signal} (${code})`)
     // Exit codes follow the 128 + signal code convention.
     // See <https://tldp.org/LDP/abs/html/exitcodes.html>
     exit(128 + code)
-  })
+  }
+  signalHandlers.push([signal, handler])
+  process.on(signal, handler)
 }
 
 // Codes from <signal.h>
@@ -104,3 +110,10 @@ const handleSignal = (signal: string, code: number) => {
   ['SIGUSR1', 10],
   ['SIGUSR2', 11]
 ] as [string, number][]).forEach(([signal, code]) => handleSignal(signal, code))
+
+export function removeSignalHandlers () {
+  for (const [signal, handler] of signalHandlers) {
+    process.removeListener(signal, handler)
+  }
+  signalHandlers.length = 0
+}
