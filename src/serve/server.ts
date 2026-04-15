@@ -13,7 +13,6 @@ import chalk from 'npm:chalk'
 import type { ImportMeta } from '../types/build.d.ts'
 import createWorker from './createWorker.ts'
 // import type { SubMessage, UnsubMessage } from './pubsub.ts' // TODO: Use for type checking
-import { join } from 'node:path'
 import process from 'node:process'
 import authPlugin from './auth.ts'
 import { CREDITS_WORKER_TASK_TIME_INTERVAL, OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL } from './constants.ts'
@@ -45,10 +44,10 @@ if (CREDITS_WORKER_TASK_TIME_INTERVAL && OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTER
 // Initialize workers for size calculation and credits processing
 const ownerSizeTotalWorker = ARCHIVE_MODE || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL
   ? undefined
-  : createWorker(join(import.meta.dirname || '.', (import.meta as ImportMeta).workerDir || '.', 'ownerSizeTotalWorker.js'))
+  : createWorker((import.meta as ImportMeta).ownerSizeTotalWorker || './ownerSizeTotalWorker.ts')
 const creditsWorker = ARCHIVE_MODE || !CREDITS_WORKER_TASK_TIME_INTERVAL
   ? undefined
-  : createWorker(join(import.meta.dirname || '.', (import.meta as ImportMeta).workerDir || '.', 'creditsWorker.js'))
+  : createWorker((import.meta as ImportMeta).creditsWorker || './creditsWorker.ts')
 
 const { CONTRACTS_VERSION, GI_VERSION } = process.env
 
