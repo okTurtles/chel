@@ -247,6 +247,10 @@ sbp('sbp/selectors/register', {
     return updateSize(resourceID, sizeKey, size, true)
   },
   'backend/server/stop': function () {
+    clearInterval(pushHeartbeatIntervalID)
+    ownerSizeTotalWorker?.terminate()
+    creditsWorker?.terminate()
+    sbp('backend/server/stopRateLimiters')
     return hapi.stop()
   },
   async 'backend/deleteFile' (cid: string, ultimateOwnerID: string | null | undefined, skipIfDeleted: boolean | null | undefined): Promise<void> {
@@ -581,10 +585,11 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
 })()
 
 // Recurring task to send messages to push clients (for periodic notifications)
+let pushHeartbeatIntervalID: ReturnType<typeof setInterval>
 ;(() => {
   const map = new WeakMap()
 
-  setInterval(() => {
+  pushHeartbeatIntervalID = setInterval(() => {
     const now = Date.now()
     const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE) as WSS | undefined
     // Notification text

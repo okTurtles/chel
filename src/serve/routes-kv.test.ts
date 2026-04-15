@@ -12,8 +12,6 @@ import {
 
 Deno.test({
   name: 'routes: KV store endpoints',
-  sanitizeResources: false,
-  sanitizeOps: false,
   async fn (t: Deno.TestContext) {
     const baseURL = await startTestServer()
 

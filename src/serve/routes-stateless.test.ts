@@ -3,8 +3,6 @@ import { startTestServer, stopTestServer } from './routes-test-helpers.ts'
 
 Deno.test({
   name: 'routes: stateless endpoints',
-  sanitizeResources: false,
-  sanitizeOps: false,
   async fn (t: Deno.TestContext) {
     const baseURL = await startTestServer()
 

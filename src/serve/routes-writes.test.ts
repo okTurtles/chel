@@ -12,8 +12,6 @@ import {
 
 Deno.test({
   name: 'routes: write endpoints',
-  sanitizeResources: false,
-  sanitizeOps: false,
   async fn (t: Deno.TestContext) {
     const baseURL = await startTestServer()
 
