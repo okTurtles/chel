@@ -262,7 +262,8 @@ The project uses `vendor: true` in deno.json. Some dependencies are vendored. Ex
 
 Build process injects:
 - `import.meta.VERSION` - Package version from package.json
-- `import.meta.workerDir` - Worker directory path
+- `import.meta.ownerSizeTotalWorker` - 'Owner size total' worker path
+- `import.meta.creditsWorker` - 'Credits' worker path
 
 ### 6. No Network After Key Loading
 
