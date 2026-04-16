@@ -41,7 +41,7 @@ const cheloniaAppManifest = await (async () => {
       with: { type: 'json' }
     })).default
   } catch {
-    console.warn('`chelonia.json` not found. Version information will be unavailable.')
+    console.warn('`chelonia.json` unparsable or not found. Version information will be unavailable.')
   }
 })()
 
@@ -438,7 +438,7 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
         appVersion: cheloniaAppManifest?.appVersion || null,
         contractsVersion: cheloniaAppManifest?.contracts ? Object.fromEntries(
           Object.entries(cheloniaAppManifest?.contracts)
-            .map(([k, v]) => [k, (v as Record<string, number | string>).version])
+            .map(([k, v]) => [k, (v as { version: string }).version])
         ) : null
       }
       socket.send(createNotification(NOTIFICATION_TYPE.VERSION_INFO, versionInfo))

@@ -108591,7 +108591,7 @@ var init_server = __esm({
           with: { type: "json" }
         })).default;
       } catch {
-        console.warn("`chelonia.json` not found. Version information will be unavailable.");
+        console.warn("`chelonia.json` unparsable or not found. Version information will be unavailable.");
       }
     })();
     ARCHIVE_MODE2 = import_npm_nconf6.default.get("server:archiveMode");
@@ -110617,11 +110617,11 @@ var module9 = {
     return migrate(argv);
   }
 };
-var RESERVED_FILE_CHARS = /[/\\:*?"<>|]/g;
+var RESERVED_FILE_CHARS = /[/\\:*?"<>|]/;
 var projectRoot;
 var cheloniaConfig;
 function sanitizeContractName(contractName) {
-  return contractName.replace(RESERVED_FILE_CHARS, "_").replace(/\.\./g, "__");
+  return contractName.replaceAll(RESERVED_FILE_CHARS, "_").replace(/\.\./g, "__");
 }
 async function pin(args) {
   const version3 = args["manifest-version"];
