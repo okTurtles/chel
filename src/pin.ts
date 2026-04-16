@@ -6,7 +6,7 @@ import process from 'node:process'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { exit } from './utils.ts'
 
-const RESERVED_FILE_CHARS = /[/\\:*?"<>|]/g
+const RESERVED_FILE_CHARS = /[/\\:*?"<>|]/
 
 type Params = { overwrite: boolean, 'dir'?: string, 'manifest-version'?: string, manifest: string }
 
@@ -14,7 +14,7 @@ let projectRoot: string
 let cheloniaConfig: { contracts: Record<string, { version: string, path: string }> }
 
 function sanitizeContractName (contractName: string): string {
-  return contractName.replace(RESERVED_FILE_CHARS, '_').replace(/\.\./g, '__')
+  return contractName.replaceAll(RESERVED_FILE_CHARS, '_').replace(/\.\./g, '__')
 }
 
 export async function pin (args: ArgumentsCamelCase<Params>): Promise<void> {
