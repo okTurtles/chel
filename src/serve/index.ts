@@ -6,6 +6,7 @@ import sbp from 'npm:@sbp/sbp'
 import chalk from 'npm:chalk'
 import { SERVER_EXITING, SERVER_RUNNING } from './events.ts'
 import { PUBSUB_INSTANCE } from './instance-keys.ts'
+import { startServer as startServerImpl, stopServer as stopServerImpl } from './server.ts'
 import './logger.ts'
 
 console.info('NODE_ENV =', process.env.NODE_ENV)
@@ -30,49 +31,63 @@ function logSBP (_domain: string, selector: string, data: Array<unknown>) {
 // any specific selectors outside of backend namespace to log
 ;[].forEach(sel => sbp('sbp/filters/selector/add', sel, logSBP))
 
-export default () => (new Promise<void>((resolve, reject) => {
-  sbp('okTurtles.events/on', SERVER_RUNNING, function () {
-    console.info(chalk.bold('backend startup sequence complete.'))
-    resolve()
+// Signal handlers are installed only once per process
+let signalHandlersInstalled = false
+const signalHandlers: Array<[string, () => void]> = []
+
+// Global exception handlers are installed only once per process
+let globalExceptionHandlersInstalled = false
+
+// Helper to install global exception handlers (once per process)
+function installGlobalExceptionHandlers (): void {
+  if (globalExceptionHandlersInstalled) return
+  globalExceptionHandlersInstalled = true
+
+  process.on('uncaughtException', (err: Error) => {
+    console.error(err, '[server] Unhandled exception')
+    process.exit(1)
   })
-  // call this after we've registered listener for SERVER_RUNNING
-  import('./server.ts').catch(reject)
-}))
 
-sbp('okTurtles.events/once', SERVER_EXITING, () => {
-  sbp('okTurtles.data/apply', PUBSUB_INSTANCE, function (pubsub: { on: (event: string, callback: () => void) => void; close: () => void; clients: { forEach: (callback: (client: { terminate: () => void }) => void) => void } }) {
-    sbp('okTurtles.eventQueue/queueEvent', SERVER_EXITING, () => {
-      return new Promise<void>((resolve) => {
-        pubsub.on('close', async function () {
-          try {
-            removeSignalHandlers()
-            await sbp('chelonia.persistentActions/unload')
-            await sbp('backend/server/stop')
-            console.info('Server down')
-          } catch (err) {
-            console.error(err, 'Error during shutdown')
-          } finally {
-            resolve()
-          }
-        })
-        pubsub.close()
-        // Since `ws` v8.0, `WebSocketServer.close()` no longer closes remaining connections.
-        // See https://github.com/websockets/ws/commit/df7de574a07115e2321fdb5fc9b2d0fea55d27e8
-        pubsub.clients.forEach((client: { terminate: () => void }) => client.terminate())
-      })
-    })
+  process.on('unhandledRejection', (reason: unknown) => {
+    console.error(reason, '[server] Unhandled promise rejection:', reason)
+    process.exit(1)
   })
-})
+}
 
-process.on('uncaughtException', (err: Error) => {
-  console.error(err, '[server] Unhandled exception')
-  process.exit(1)
-})
+// Helper to install signal handlers
+function installSignalHandlers (): void {
+  if (signalHandlersInstalled) return
+  signalHandlersInstalled = true
 
-process.on('unhandledRejection', (reason: unknown) => {
-  console.error(reason, '[server] Unhandled promise rejection:', reason)
-  process.exit(1)
-})
+  const handleSignal = (signal: string, code: number) => {
+    const handler = () => {
+      console.error(`Exiting upon receiving ${signal} (${code})`)
+      // Exit codes follow the 128 + signal code convention.
+      // See <https://tldp.org/LDP/abs/html/exitcodes.html>
+      exit(128 + code)
+    }
+    signalHandlers.push([signal, handler])
+    process.on(signal, handler)
+  }
+
+  // Codes from <signal.h>
+  ;([
+    ['SIGHUP', 1],
+    ['SIGINT', 2],
+    ['SIGQUIT', 3],
+    ['SIGTERM', 15],
+    ['SIGUSR1', 10],
+    ['SIGUSR2', 11]
+  ] as [string, number][]).forEach(([signal, code]) => handleSignal(signal, code))
+}
+
+export function removeSignalHandlers (): void {
+  for (const [signal, handler] of signalHandlers) {
+    process.removeListener(signal, handler)
+  }
+  signalHandlers.length = 0
+  signalHandlersInstalled = false
+}
 
 const exit = (code: number) => {
   // Make sure `process.exit` is called after all existing SERVER_EXITING
@@ -88,32 +103,60 @@ const exit = (code: number) => {
   sbp('okTurtles.events/emit', SERVER_EXITING)
 }
 
-const signalHandlers: Array<[string, () => void]> = []
-
-const handleSignal = (signal: string, code: number) => {
-  const handler = () => {
-    console.error(`Exiting upon receiving ${signal} (${code})`)
-    // Exit codes follow the 128 + signal code convention.
-    // See <https://tldp.org/LDP/abs/html/exitcodes.html>
-    exit(128 + code)
-  }
-  signalHandlers.push([signal, handler])
-  process.on(signal, handler)
+export interface StartServerOptions {
+  installSignalHandlers?: boolean
 }
 
-// Codes from <signal.h>
-;([
-  ['SIGHUP', 1],
-  ['SIGINT', 2],
-  ['SIGQUIT', 3],
-  ['SIGTERM', 15],
-  ['SIGUSR1', 10],
-  ['SIGUSR2', 11]
-] as [string, number][]).forEach(([signal, code]) => handleSignal(signal, code))
+export async function startServer (options: StartServerOptions = {}): Promise<{ uri: string }> {
+  const { installSignalHandlers: shouldInstallSignalHandlers = true } = options
 
-export function removeSignalHandlers () {
-  for (const [signal, handler] of signalHandlers) {
-    process.removeListener(signal, handler)
+  // Install global exception handlers once per process (only if signal handlers are enabled)
+  if (shouldInstallSignalHandlers) {
+    installGlobalExceptionHandlers()
+    installSignalHandlers()
   }
-  signalHandlers.length = 0
+
+  // Register a SERVER_EXITING handler for this startServer call
+  // This handler self-removes when it fires
+  sbp('okTurtles.events/once', SERVER_EXITING, () => {
+    sbp('okTurtles.data/apply', PUBSUB_INSTANCE, function (pubsub: { on: (event: string, callback: () => void) => void; close: () => void; clients: { forEach: (callback: (client: { terminate: () => void }) => void) => void } }) {
+      sbp('okTurtles.eventQueue/queueEvent', SERVER_EXITING, () => {
+        return new Promise<void>((resolve) => {
+          pubsub.on('close', async function () {
+            try {
+              removeSignalHandlers()
+              await sbp('chelonia.persistentActions/unload')
+              await stopServer()
+              console.info('Server down')
+            } catch (err) {
+              console.error(err, 'Error during shutdown')
+            } finally {
+              resolve()
+            }
+          })
+          pubsub.close()
+          // Since `ws` v8.0, `WebSocketServer.close()` no longer closes remaining connections.
+          // See https://github.com/websockets/ws/commit/df7de574a07115e2321fdb5fc9b2d0fea55d27e8
+          pubsub.clients.forEach((client: { terminate: () => void }) => client.terminate())
+        })
+      })
+    })
+  })
+
+  // Start the server and wait for it to be running
+  return await new Promise((resolve, reject) => {
+    sbp('okTurtles.events/on', SERVER_RUNNING, function onRunning (info: { info: { uri: string } }) {
+      sbp('okTurtles.events/off', SERVER_RUNNING, onRunning)
+      console.info(chalk.bold('backend startup sequence complete.'))
+      resolve({ uri: info.info.uri })
+    })
+    startServerImpl().catch(reject)
+  })
 }
+
+export async function stopServer (): Promise<void> {
+  await stopServerImpl()
+}
+
+// Backwards compatibility: default export is startServer
+export default startServer

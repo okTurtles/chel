@@ -2,15 +2,15 @@
 
 // Deno APIs:
 // https://doc.deno.land/deno/stable
-// https://doc.deno.land/https://deno.land/std/
+// https://doc.deno.land/deno~land/std/
 // Deno examples:
-// https://doc.deno.land/https://deno.land/std@0.141.0/examples
+// https://doc.deno.land/deno~land/std@0.141.0/examples
 // https://examples.deno.land/
 // Third-party modules:
 // https://deno.land/x
 
 import sbp from 'npm:@sbp/sbp'
-import parseConfig, { postHandler } from './parseConfig.ts'
+import parseConfig, { handlerState } from './parseConfig.ts'
 import { SERVER_EXITING } from './serve/events.ts'
 
 parseConfig()
@@ -18,7 +18,7 @@ parseConfig()
 try {
   // `postHandler` is set by `parseArgs` (called by `parseConfig`)
   // Run the selected subcommand
-  await postHandler()
+  await handlerState.postHandler()
 } finally {
   // Indicate that we're done, which is useful for cleaning up, closing DB
   // connections, etc.

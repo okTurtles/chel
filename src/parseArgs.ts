@@ -5,14 +5,17 @@ import * as commands from './commands.ts'
 import yargs, { type ArgumentsCamelCase, type CommandModule as YCommandModule } from 'npm:yargs'
 import { hideBin } from 'npm:yargs/helpers'
 
-let postHandler: () => void | Promise<void> = () => {}
+// Use an object to hold the handler to ensure live binding works
+const handlerState: { postHandler: () => void | Promise<void> } = {
+  postHandler: () => {}
+}
 
 const parseArgs = () => {
   const handlerWrapper = <T, U>(commandModule: commands.CommandModule<T, U>): YCommandModule<T, U> => {
     return {
       ...commandModule,
       handler: (argv: ArgumentsCamelCase<U>) => {
-        postHandler = () => commandModule.postHandler(argv)
+        handlerState.postHandler = () => commandModule.postHandler(argv)
         if (commandModule.handler) {
           return commandModule.handler(argv)
         }
@@ -25,13 +28,18 @@ const parseArgs = () => {
     (c) => handlerWrapper(c as commands.CommandModule<object, object>)
   )
 
-  return yargs(hideBin(process.argv))
+  const yargsInstance = yargs(hideBin(process.argv))
     .version(import.meta.VERSION)
     .strict()
     .command(commandModules)
     .demandCommand()
     .help()
+
+  // Explicitly parse to trigger command handlers
+  yargsInstance.parse()
+
+  return yargsInstance
 }
 
 export default parseArgs
-export { postHandler }
+export { handlerState }

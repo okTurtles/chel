@@ -6,7 +6,11 @@ import { serveStatic } from 'npm:hono/deno'
 import nconf from 'npm:nconf'
 
 const getDashboardPath = () => {
-  return path.resolve(import.meta.dirname || process.cwd(), 'dist-dashboard')
+  // When running from build/main.js, the dashboard is in build/dist-dashboard
+  // import.meta.dirname points to the build/ directory in that case
+  const baseDir = import.meta.dirname || path.join(process.cwd(), 'build')
+  const dashboardPath = path.resolve(baseDir, 'dist-dashboard')
+  return dashboardPath
 }
 
 export async function startDashboard (): Promise<void> {
@@ -25,11 +29,12 @@ export async function startDashboard (): Promise<void> {
   app.get('/*', async (c) => {
     const staticResponse = await serveStatic({ root: dashboardRoot, rewriteRequestPath: (p) => p })(c, async () => {})
     // If static file exists and was served successfully, return it
-    if (staticResponse && staticResponse.status !== 404) {
+    if (staticResponse) {
       return staticResponse
     }
     // File not found, serve index.html for SPA routing
-    return serveStatic({ path: path.join(dashboardRoot, 'index.html') })(c, async () => {})
+    const indexResponse = await serveStatic({ path: path.join(dashboardRoot, 'index.html') })(c, async () => {})
+    return indexResponse || c.text('Not Found', 404)
   })
 
   await new Promise<void>((resolve) => {

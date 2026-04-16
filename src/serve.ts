@@ -5,6 +5,8 @@ import { debounce } from 'npm:turtledash'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { deploy } from './deploy.ts'
 import { findManifestFiles } from './utils.ts'
+import { startServer } from './serve/index.ts'
+import { startDashboard } from './serve/dashboard-server.ts'
 
 type Params = { port: number, 'dashboard-port': number, directory: string, dev: boolean, 'manifests-dir': string }
 
@@ -67,16 +69,12 @@ async function watch (args: ArgumentsCamelCase<Params>): Promise<void> {
 
 // Dashboard server function
 async function startDashboardServer (): Promise<void> {
-  // Import and start the dashboard server
-  const dashboardServer = await import('./serve/dashboard-server.ts')
-  await dashboardServer.startDashboard()
+  await startDashboard()
 }
 
 // Application server function
 async function startApplicationServer (): Promise<void> {
-  // Import and start the application server
-  const startServer = await import('./serve/index.ts')
-  await startServer.default()
+  await startServer()
 }
 
 export async function serve (args: ArgumentsCamelCase<Params>) {
