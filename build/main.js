@@ -1,6 +1,6 @@
 #!/usr/bin/env -S deno run --allow-net --allow-read=. --allow-write=. --allow-sys --allow-env
-import { createRequire } from "node:module";
-var __require = createRequire(import.meta.url);
+import { createRequire as __deno_internal_createRequire } from "node:module";
+var __require = __deno_internal_createRequire(import.meta.url);
 
 
 // build/main.js-tmp
@@ -110617,10 +110617,11 @@ var module9 = {
     return migrate(argv);
   }
 };
+var RESERVED_FILE_CHARS = /[/\\:*?"<>|]/g;
 var projectRoot;
 var cheloniaConfig;
 function sanitizeContractName(contractName) {
-  return contractName.replace(/[/\\:*?"<>|]/g, "_").replace(/\.\./g, "__");
+  return contractName.replace(RESERVED_FILE_CHARS, "_").replace(/\.\./g, "__");
 }
 async function pin(args) {
   const version3 = args["manifest-version"];
@@ -110639,6 +110640,9 @@ async function pin(args) {
       exit(`Manifest file not found: ${manifestPath}`);
     }
     const { contractName, fullContractName, contractFiles, manifestVersion } = await parseManifest(fullManifestPath);
+    if (RESERVED_FILE_CHARS.test(manifestVersion)) {
+      exit(`Invalid manifest version: ${manifestVersion}`);
+    }
     console.log(blue(`Contract name: ${fullContractName}`));
     console.log(blue(`Manifest version: ${manifestVersion}`));
     if (version3) {
@@ -110669,8 +110673,8 @@ async function pin(args) {
       await createVersionDirectory(contractName, manifestVersion);
     }
     await copyContractFiles(contractFiles, manifestPath, contractName, manifestVersion, args);
-    await updateCheloniaConfig(fullContractName, manifestVersion, manifestPath);
-    console.log(green(`\u2705 Successfully pinned ${contractName} to version ${version3}`));
+    await updateCheloniaConfig(fullContractName, contractName, manifestVersion, manifestPath);
+    console.log(green(`\u2705 Successfully pinned ${contractName} to version ${manifestVersion}`));
     console.log(gray(`Location: contracts/${contractName}/${manifestVersion}/`));
   } catch (error2) {
     exit(error2);
@@ -110757,10 +110761,10 @@ async function loadCheloniaConfig() {
     cheloniaConfig.contracts = {};
   }
 }
-async function updateCheloniaConfig(contractName, version3, manifestPath) {
+async function updateCheloniaConfig(fullContractName, contractName, version3, manifestPath) {
   const manifestFileName = basename42(manifestPath);
   const pinnedManifestPath = `contracts/${contractName}/${version3}/${manifestFileName}`;
-  cheloniaConfig.contracts[contractName] = {
+  cheloniaConfig.contracts[fullContractName] = {
     version: version3,
     path: pinnedManifestPath
   };
