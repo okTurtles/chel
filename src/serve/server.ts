@@ -36,8 +36,9 @@ import { pathToFileURL } from 'node:url'
 import nconf from 'npm:nconf'
 
 const cheloniaAppManifest = await (async () => {
+  const appDir = nconf.get('server:appDir') || process.cwd()
   try {
-    return (await import(pathToFileURL(join(process.cwd(), 'chelonia.json')).toString(), {
+    return (await import(pathToFileURL(join(appDir, 'chelonia.json')).toString(), {
       with: { type: 'json' }
     })).default
   } catch {

@@ -73607,8 +73607,9 @@ var init_server = __esm({
     init_push();
     import_npm_nconf6 = __toESM(require_nconf());
     cheloniaAppManifest = await (async () => {
+      const appDir2 = import_npm_nconf6.default.get("server:appDir") || process10.cwd();
       try {
-        return (await import(pathToFileURL(join82(process10.cwd(), "chelonia.json")).toString(), {
+        return (await import(pathToFileURL(join82(appDir2, "chelonia.json")).toString(), {
           with: { type: "json" }
         })).default;
       } catch {
@@ -75659,7 +75660,7 @@ async function pin(args) {
       exit(`Manifest file not found: ${manifestPath}`);
     }
     const { contractName, fullContractName, contractFiles, manifestVersion } = await parseManifest(fullManifestPath);
-    if (RESERVED_FILE_CHARS.test(manifestVersion)) {
+    if (RESERVED_FILE_CHARS.test(manifestVersion) || manifestVersion.startsWith(".") || manifestVersion.endsWith(".")) {
       exit(`Invalid manifest version: ${manifestVersion}`);
     }
     console.log(blue(`Contract name: ${fullContractName}`));
@@ -75693,7 +75694,7 @@ async function pin(args) {
     }
     await copyContractFiles(contractFiles, manifestPath, contractName, manifestVersion, args);
     await updateCheloniaConfig(fullContractName, contractName, manifestVersion, manifestPath);
-    console.log(green(`\u2705 Successfully pinned ${contractName} to version ${manifestVersion}`));
+    console.log(green(`\u2705 Successfully pinned ${fullContractName} to version ${manifestVersion}`));
     console.log(gray(`Location: contracts/${contractName}/${manifestVersion}/`));
   } catch (error2) {
     exit(error2);

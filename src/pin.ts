@@ -41,7 +41,11 @@ export async function pin (args: ArgumentsCamelCase<Params>): Promise<void> {
 
     const { contractName, fullContractName, contractFiles, manifestVersion } = await parseManifest(fullManifestPath)
 
-    if (RESERVED_FILE_CHARS.test(manifestVersion)) {
+    if (
+      RESERVED_FILE_CHARS.test(manifestVersion) ||
+      manifestVersion.startsWith('.') ||
+      manifestVersion.endsWith('.')
+    ) {
       exit(`Invalid manifest version: ${manifestVersion}`)
     }
 
@@ -84,7 +88,7 @@ export async function pin (args: ArgumentsCamelCase<Params>): Promise<void> {
     await copyContractFiles(contractFiles, manifestPath, contractName, manifestVersion, args)
     await updateCheloniaConfig(fullContractName, contractName, manifestVersion, manifestPath)
 
-    console.log(colors.green(`✅ Successfully pinned ${contractName} to version ${manifestVersion}`))
+    console.log(colors.green(`✅ Successfully pinned ${fullContractName} to version ${manifestVersion}`))
     console.log(colors.gray(`Location: contracts/${contractName}/${manifestVersion}/`))
   } catch (error) {
     exit(error)
