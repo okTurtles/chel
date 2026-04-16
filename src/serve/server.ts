@@ -240,12 +240,10 @@ sbp('sbp/selectors/register', {
   },
   'backend/server/stop': async function () {
     clearInterval(pushHeartbeatIntervalID)
-    ownerSizeTotalWorker?.terminate()
-    creditsWorker?.terminate()
     if (sbp('sbp/selectors/fn', 'backend/server/stopRateLimiters')) {
       await sbp('backend/server/stopRateLimiters')
     }
-    return new Promise<void>((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
       httpServer.close((err) => {
         if (err) {
           reject(err)
@@ -254,6 +252,10 @@ sbp('sbp/selectors/register', {
         }
       })
     })
+    await Promise.all([
+      ownerSizeTotalWorker?.terminate(),
+      creditsWorker?.terminate()
+    ])
   },
   async 'backend/deleteFile' (cid: string, ultimateOwnerID: string | null | undefined, skipIfDeleted: boolean | null | undefined): Promise<void> {
     const owner = await sbp('chelonia.db/get', `_private_owner_${cid}`)

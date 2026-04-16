@@ -73738,12 +73738,10 @@ var init_server = __esm({
       },
       "backend/server/stop": async function() {
         clearInterval(pushHeartbeatIntervalID);
-        ownerSizeTotalWorker?.terminate();
-        creditsWorker?.terminate();
         if (esm_default("sbp/selectors/fn", "backend/server/stopRateLimiters")) {
           await esm_default("backend/server/stopRateLimiters");
         }
-        return new Promise((resolve82, reject) => {
+        await new Promise((resolve82, reject) => {
           httpServer.close((err) => {
             if (err) {
               reject(err);
@@ -73752,6 +73750,10 @@ var init_server = __esm({
             }
           });
         });
+        await Promise.all([
+          ownerSizeTotalWorker?.terminate(),
+          creditsWorker?.terminate()
+        ]);
       },
       async "backend/deleteFile"(cid, ultimateOwnerID, skipIfDeleted) {
         const owner = await esm_default("chelonia.db/get", `_private_owner_${cid}`);

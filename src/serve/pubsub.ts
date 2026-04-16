@@ -191,7 +191,7 @@ export interface WSS extends Omit<WebSocketServer, 'clients' | 'options'> {
   customServerEventHandlers: Partial<ServerHandlers>;
   customSocketEventHandlers: Partial<SocketHandlers>;
   customMessageHandlers: Partial<MessageHandlers>;
-  pingIntervalID?: ReturnType<typeof setTimeout>
+  pingIntervalID?: ReturnType<typeof setInterval>
   subscribersByChannelID: Record<string, Set<WS | PushSubscriptionInfo>>
   pushSubscriptions: Record<string, PushSubscriptionInfo>;
   options: ServerOptions
