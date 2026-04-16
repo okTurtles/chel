@@ -11,6 +11,7 @@ declare module 'npm:hono' {
   interface ContextVariableMap {
     credentials: AuthCredentials
     authStrategy: string
+    validatedBody: unknown
   }
 }
 

@@ -21,7 +21,7 @@ import { getChallenge, getContractSalt, redeemSaltRegistrationToken, redeemSaltU
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
 import { authMiddleware, type AuthCredentials } from './auth.ts'
-import type { Hono, Context } from 'npm:hono'
+import type { Hono, Context, MiddlewareHandler } from 'npm:hono'
 import { zValidator } from 'npm:@hono/zod-validator'
 import * as z from 'npm:zod'
 import { bodyLimit } from 'npm:hono/body-limit'
@@ -41,6 +41,29 @@ const KV_KEY_REGEX = /^(?!_private)[^\x00]{1,256}$/
 //   - Allowed characters: lowercase letters, numbers, underscore and dashes
 const NAME_REGEX = /^(?![_-])((?!([_-])\2)[a-z\d_-]){1,80}(?<![_-])$/
 const POSITIVE_INTEGER_REGEX = /^\d{1,16}$/
+
+// MIME types for asset serving
+const MIME_TYPES: Record<string, string> = {
+  '.js': 'application/javascript',
+  '.mjs': 'application/javascript',
+  '.css': 'text/css',
+  '.html': 'text/html',
+  '.json': 'application/json',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.otf': 'font/otf',
+  '.webp': 'image/webp',
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
+  '.map': 'application/json'
+}
 
 // Zod schemas for declarative request validation
 const cidSchema = z.string().regex(CID_REGEX, 'Invalid CID')
@@ -83,6 +106,38 @@ const zkppUpdatePasswordBodySchema = z.object({
   Ea: z.string().min(1, 'Ea is required')
 })
 
+// Custom validator for endpoints that accept both JSON and form-urlencoded bodies
+function zValidatorFormOrJson<T extends z.ZodTypeAny> (
+  schema: T
+): MiddlewareHandler {
+  return async (c, next) => {
+    const contentType = c.req.header('content-type') || ''
+    let data: unknown
+
+    try {
+      if (contentType.includes('application/x-www-form-urlencoded')) {
+        const form = await c.req.parseBody()
+        data = Object.fromEntries(
+          Object.entries(form as Record<string, string | File>)
+            .filter(([, v]) => typeof v === 'string')
+        )
+      } else {
+        data = await c.req.json()
+      }
+    } catch {
+      throw new HTTPException(400, { message: 'Invalid request body' })
+    }
+
+    const result = schema.safeParse(data)
+    if (!result.success) {
+      throw new HTTPException(400, { message: 'Invalid request body' })
+    }
+
+    c.set('validatedBody', result.data as z.infer<T>)
+    return next()
+  }
+}
+
 const FILE_UPLOAD_MAX_BYTES = nconf.get('server:fileUploadMaxBytes') || 30 * MEGABYTE
 const SIGNUP_LIMIT_MIN = nconf.get('server:signup:limit:minute') || 2
 const SIGNUP_LIMIT_HOUR = nconf.get('server:signup:limit:hour') || 10
@@ -114,16 +169,14 @@ const limiterPerDay = new Bottleneck.Group({
 
 sbp('sbp/selectors/register', {
   'backend/server/stopRateLimiters': async function () {
-    await Promise.allSettled([
-      limiterPerMinute.disconnect(),
-      limiterPerHour.disconnect(),
-      limiterPerDay.disconnect()
-    ])
-    // The following needs to be done using a private API because `disconnect()`
-    // isn't enough.
-    clearInterval((limiterPerMinute as unknown as { interval: ReturnType<typeof setInterval> }).interval)
-    clearInterval((limiterPerHour as unknown as { interval: ReturnType<typeof setInterval> }).interval)
-    clearInterval((limiterPerDay as unknown as { interval: ReturnType<typeof setInterval> }).interval)
+    const limiters = [limiterPerMinute, limiterPerHour, limiterPerDay]
+    await Promise.allSettled(limiters.map(l => l.disconnect()))
+    // Bottleneck v2 Group.disconnect() only disconnects the Redis connection (if any).
+    // The internal `setInterval` from `_startAutoCleanup()` is not cleaned up, causing
+    // async leaks on shutdown. We must clear it via the private `interval` property.
+    for (const limiter of limiters) {
+      clearInterval((limiter as unknown as { interval: ReturnType<typeof setInterval> }).interval)
+    }
   }
 })
 
@@ -252,6 +305,34 @@ function safePathWithin (base: string, subpath: string): string | null {
   const resolved = path.resolve(base, subpath)
   if (!resolved.startsWith(base + path.sep) && resolved !== base) return null
   return resolved
+}
+
+// Helper to serve static assets with proper caching headers
+function serveAsset (c: Context, subpath: string, assetsDir: string): Promise<Response> {
+  const basename = path.basename(subpath)
+  const filePath = safePathWithin(assetsDir, subpath)
+  if (!filePath) return Promise.resolve(notFoundNoCache(c))
+
+  return Deno.readFile(filePath)
+    .then((file) => {
+      const headers: Record<string, string> = {}
+
+      if (basename.includes('-cached')) {
+        headers['ETag'] = `"${basename}"`
+        headers['Cache-Control'] = 'public,max-age=31536000,immutable'
+      }
+
+      if (subpath.includes('js/sw-')) {
+        console.debug('adding header: Service-Worker-Allowed /')
+        headers['Service-Worker-Allowed'] = '/'
+      }
+
+      const ext = path.extname(subpath).toLowerCase()
+      headers['Content-Type'] = MIME_TYPES[ext] || 'application/octet-stream'
+
+      return c.body(file, 200, headers)
+    })
+    .catch(() => notFoundNoCache(c))
 }
 
 // Get the Hono app via SERVER_INSTANCE
@@ -943,113 +1024,14 @@ app.get('/serverMessages', function (c) {
 
 app.get('/assets/:subpath{.+}', async function (c) {
   const subpath = c.req.param('subpath')
-  const basename = path.basename(subpath)
-  const filePath = safePathWithin(staticServeConfig.distAssets, subpath)
-  if (!filePath) return notFoundNoCache(c)
-
-  try {
-    const file = await Deno.readFile(filePath)
-    const headers: Record<string, string> = {}
-
-    // In the build config we told our bundler to use the `[name]-[hash]-cached` template
-    // to name immutable assets. This is useful because `dist/assets/` currently includes
-    // a few files without hash in their name.
-    if (basename.includes('-cached')) {
-      headers['ETag'] = `"${basename}"`
-      headers['Cache-Control'] = 'public,max-age=31536000,immutable'
-    }
-
-    // since our JS is placed under /assets/ and since service workers
-    // have their scope limited by where they are, we must add this
-    // header to allow the service worker to function. Details:
-    // https://w3c.github.io/ServiceWorker/#service-worker-allowed
-    if (subpath.includes('js/sw-')) {
-      console.debug('adding header: Service-Worker-Allowed /')
-      headers['Service-Worker-Allowed'] = '/'
-    }
-
-    const ext = path.extname(subpath).toLowerCase()
-    const mimeTypes: Record<string, string> = {
-      '.js': 'application/javascript',
-      '.mjs': 'application/javascript',
-      '.css': 'text/css',
-      '.html': 'text/html',
-      '.json': 'application/json',
-      '.png': 'image/png',
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.gif': 'image/gif',
-      '.svg': 'image/svg+xml',
-      '.ico': 'image/x-icon',
-      '.woff': 'font/woff',
-      '.woff2': 'font/woff2',
-      '.ttf': 'font/ttf',
-      '.otf': 'font/otf',
-      '.webp': 'image/webp',
-      '.mp4': 'video/mp4',
-      '.webm': 'video/webm',
-      '.map': 'application/json'
-    }
-    const contentType = mimeTypes[ext] || 'application/octet-stream'
-    headers['Content-Type'] = contentType
-
-    return c.body(file, 200, headers)
-  } catch {
-    return notFoundNoCache(c)
-  }
+  return serveAsset(c, subpath, staticServeConfig.distAssets)
 })
 
 // Dashboard-specific assets route (when IS_CHELONIA_DASHBOARD_DEV is set)
 if (isCheloniaDashboard) {
   app.get('/dashboard/assets/:subpath{.+}', async function (c) {
     const subpath = c.req.param('subpath')
-    const basename = path.basename(subpath)
-    const filePath = safePathWithin(staticServeConfig.distAssets, subpath)
-    if (!filePath) return notFoundNoCache(c)
-
-    try {
-      const file = await Deno.readFile(filePath)
-      const headers: Record<string, string> = {}
-
-      if (basename.includes('-cached')) {
-        headers['ETag'] = `"${basename}"`
-        headers['Cache-Control'] = 'public,max-age=31536000,immutable'
-      }
-
-      if (subpath.includes('js/sw-')) {
-        console.debug('adding header: Service-Worker-Allowed /')
-        headers['Service-Worker-Allowed'] = '/'
-      }
-
-      const ext = path.extname(subpath).toLowerCase()
-      const mimeTypes: Record<string, string> = {
-        '.js': 'application/javascript',
-        '.mjs': 'application/javascript',
-        '.css': 'text/css',
-        '.html': 'text/html',
-        '.json': 'application/json',
-        '.png': 'image/png',
-        '.jpg': 'image/jpeg',
-        '.jpeg': 'image/jpeg',
-        '.gif': 'image/gif',
-        '.svg': 'image/svg+xml',
-        '.ico': 'image/x-icon',
-        '.woff': 'font/woff',
-        '.woff2': 'font/woff2',
-        '.ttf': 'font/ttf',
-        '.otf': 'font/otf',
-        '.webp': 'image/webp',
-        '.mp4': 'video/mp4',
-        '.webm': 'video/webm',
-        '.map': 'application/json'
-      }
-      const contentType = mimeTypes[ext] || 'application/octet-stream'
-      headers['Content-Type'] = contentType
-
-      return c.body(file, 200, headers)
-    } catch {
-      return notFoundNoCache(c)
-    }
+    return serveAsset(c, subpath, staticServeConfig.distAssets)
   })
 }
 
@@ -1069,25 +1051,12 @@ app.get('/', function (c) {
 
 app.post('/zkpp/register/:name',
   zValidator('param', nameParamSchema),
+  zValidatorFormOrJson(zkppRegisterBodySchema),
   async function (c) {
     const { name } = c.req.valid('param')
     if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
 
-    // Parse body - support both JSON and form-urlencoded
-    const contentType = c.req.header('content-type') || ''
-    let payload: { b?: string, r?: string, s?: string, sig?: string, Eh?: string }
-    if (contentType.includes('application/x-www-form-urlencoded')) {
-      const form = await c.req.parseBody()
-      payload = form as Record<string, string>
-    } else {
-      payload = await c.req.json()
-    }
-
-    // Validate payload
-    const parseResult = zkppRegisterBodySchema.safeParse(payload)
-    if (!parseResult.success) {
-      throw new HTTPException(400, { message: 'Invalid request body' })
-    }
+    const payload = c.get('validatedBody') as z.infer<typeof zkppRegisterBodySchema>
 
     const lookupResult = await sbp('backend/db/lookupName', name)
     if (lookupResult) {
@@ -1095,14 +1064,14 @@ app.post('/zkpp/register/:name',
       throw new HTTPException(409)
     }
     try {
-      if ('b' in parseResult.data) {
-        const result = registrationKey(name, parseResult.data.b)
+      if ('b' in payload) {
+        const result = registrationKey(name, payload.b)
 
         if (result) {
           return c.json(result)
         }
       } else {
-        const result = register(name, parseResult.data.r, parseResult.data.s, parseResult.data.sig, parseResult.data.Eh)
+        const result = register(name, payload.r, payload.s, payload.sig, payload.Eh)
 
         if (result) {
           return c.json(result)
@@ -1111,7 +1080,7 @@ app.post('/zkpp/register/:name',
     } catch (e) {
       if (e instanceof HTTPException) throw e
       ;(e as { ip: string }).ip = getClientIP(c)
-      console.error(e, 'Error at POST /zkpp/{name}: ' + (e as Error).message)
+      console.error(e, 'Error at POST /zkpp/register/:name: ' + (e as Error).message)
     }
 
     throw new HTTPException(500, { message: 'internal error' })
