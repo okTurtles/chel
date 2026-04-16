@@ -73612,7 +73612,7 @@ var init_server = __esm({
           with: { type: "json" }
         })).default;
       } catch {
-        console.warn("`chelonia.json` not found. Version information will be unavailable.");
+        console.warn("`chelonia.json` unparsable or not found. Version information will be unavailable.");
       }
     })();
     ARCHIVE_MODE2 = import_npm_nconf6.default.get("server:archiveMode");
@@ -75633,10 +75633,12 @@ var module9 = {
     return migrate(argv);
   }
 };
+var RESERVED_FILE_CHARS = /[/\\:*?"<>|]/;
+var RESERVED_FILE_CHARS_REPLACE = /[/\\:*?"<>|]/g;
 var projectRoot;
 var cheloniaConfig;
 function sanitizeContractName(contractName) {
-  return contractName.replace(/[/\\:*?"<>|]/g, "_").replace(/\.\./g, "__");
+  return contractName.replace(RESERVED_FILE_CHARS_REPLACE, "_").replace(/\.\./g, "__");
 }
 async function pin(args) {
   const version3 = args["manifest-version"];
@@ -75655,6 +75657,9 @@ async function pin(args) {
       exit(`Manifest file not found: ${manifestPath}`);
     }
     const { contractName, fullContractName, contractFiles, manifestVersion } = await parseManifest(fullManifestPath);
+    if (RESERVED_FILE_CHARS.test(manifestVersion)) {
+      exit(`Invalid manifest version: ${manifestVersion}`);
+    }
     console.log(blue(`Contract name: ${fullContractName}`));
     console.log(blue(`Manifest version: ${manifestVersion}`));
     if (version3) {
@@ -75685,8 +75690,8 @@ async function pin(args) {
       await createVersionDirectory(contractName, manifestVersion);
     }
     await copyContractFiles(contractFiles, manifestPath, contractName, manifestVersion, args);
-    await updateCheloniaConfig(fullContractName, manifestVersion, manifestPath);
-    console.log(green(`\u2705 Successfully pinned ${contractName} to version ${version3}`));
+    await updateCheloniaConfig(fullContractName, contractName, manifestVersion, manifestPath);
+    console.log(green(`\u2705 Successfully pinned ${contractName} to version ${manifestVersion}`));
     console.log(gray(`Location: contracts/${contractName}/${manifestVersion}/`));
   } catch (error2) {
     exit(error2);
@@ -75773,10 +75778,10 @@ async function loadCheloniaConfig() {
     cheloniaConfig.contracts = {};
   }
 }
-async function updateCheloniaConfig(contractName, version3, manifestPath) {
+async function updateCheloniaConfig(fullContractName, contractName, version3, manifestPath) {
   const manifestFileName = basename42(manifestPath);
   const pinnedManifestPath = `contracts/${contractName}/${version3}/${manifestFileName}`;
-  cheloniaConfig.contracts[contractName] = {
+  cheloniaConfig.contracts[fullContractName] = {
     version: version3,
     path: pinnedManifestPath
   };

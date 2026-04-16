@@ -6,13 +6,16 @@ import process from 'node:process'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { exit } from './utils.ts'
 
+const RESERVED_FILE_CHARS = /[/\\:*?"<>|]/
+const RESERVED_FILE_CHARS_REPLACE = /[/\\:*?"<>|]/g
+
 type Params = { overwrite: boolean, 'dir'?: string, 'manifest-version'?: string, manifest: string }
 
 let projectRoot: string
 let cheloniaConfig: { contracts: Record<string, { version: string, path: string }> }
 
 function sanitizeContractName (contractName: string): string {
-  return contractName.replace(/[/\\:*?"<>|]/g, '_').replace(/\.\./g, '__')
+  return contractName.replace(RESERVED_FILE_CHARS_REPLACE, '_').replace(/\.\./g, '__')
 }
 
 export async function pin (args: ArgumentsCamelCase<Params>): Promise<void> {
@@ -37,6 +40,11 @@ export async function pin (args: ArgumentsCamelCase<Params>): Promise<void> {
     }
 
     const { contractName, fullContractName, contractFiles, manifestVersion } = await parseManifest(fullManifestPath)
+
+    if (RESERVED_FILE_CHARS.test(manifestVersion)) {
+      exit(`Invalid manifest version: ${manifestVersion}`)
+    }
+
     console.log(colors.blue(`Contract name: ${fullContractName}`))
     console.log(colors.blue(`Manifest version: ${manifestVersion}`))
 
@@ -74,9 +82,9 @@ export async function pin (args: ArgumentsCamelCase<Params>): Promise<void> {
     }
 
     await copyContractFiles(contractFiles, manifestPath, contractName, manifestVersion, args)
-    await updateCheloniaConfig(fullContractName, manifestVersion, manifestPath)
+    await updateCheloniaConfig(fullContractName, contractName, manifestVersion, manifestPath)
 
-    console.log(colors.green(`✅ Successfully pinned ${contractName} to version ${version}`))
+    console.log(colors.green(`✅ Successfully pinned ${contractName} to version ${manifestVersion}`))
     console.log(colors.gray(`Location: contracts/${contractName}/${manifestVersion}/`))
   } catch (error) {
     exit(error)
@@ -196,11 +204,11 @@ async function loadCheloniaConfig () {
   }
 }
 
-async function updateCheloniaConfig (contractName: string, version: string, manifestPath: string) {
+async function updateCheloniaConfig (fullContractName: string, contractName: string, version: string, manifestPath: string) {
   const manifestFileName = basename(manifestPath)
   const pinnedManifestPath = `contracts/${contractName}/${version}/${manifestFileName}`
 
-  cheloniaConfig.contracts[contractName] = {
+  cheloniaConfig.contracts[fullContractName] = {
     version,
     path: pinnedManifestPath
   }
