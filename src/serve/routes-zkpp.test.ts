@@ -18,7 +18,7 @@ Deno.test({
     const baseURL = await startTestServer()
 
     try {
-      await t.step('POST /zkpp/register step 1: returns {s, p, sig}', async () => {
+      await t.step('POST /zkpp/register step 1 with JSON body', async () => {
         const keyPair = nacl.box.keyPair()
         const publicKeyHash = Buffer.from(nacl.hash(Buffer.from(
           Buffer.from(keyPair.publicKey).toString('base64url')
@@ -35,7 +35,7 @@ Deno.test({
         if (!body.sig) throw new Error('Expected sig in response')
       })
 
-      await t.step('POST /zkpp/register step 2: completes registration', async () => {
+      await t.step('POST /zkpp/register step 2 with JSON body', async () => {
         const keyPair = nacl.box.keyPair()
         const publicKey = Buffer.from(keyPair.publicKey).toString('base64url')
         const publicKeyHash = Buffer.from(nacl.hash(Buffer.from(publicKey))).toString('base64url')
@@ -112,7 +112,7 @@ Deno.test({
         if (res.status !== 400) throw new Error(`Expected 400 but got ${res.status}`)
       })
 
-      await t.step('POST /zkpp/{contractID}/updatePasswordHash with missing params returns 400', async () => {
+      await t.step('POST /zkpp/{contractID}/updatePasswordHash with JSON body returns 400 for missing params', async () => {
         const cid = createCID('zkpp-test', multicodes.SHELTER_CONTRACT_DATA)
         const res = await fetch(`${baseURL}/zkpp/${cid}/updatePasswordHash`, {
           method: 'POST',

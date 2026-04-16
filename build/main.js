@@ -11863,7 +11863,7 @@ ${customMsgs.join("\n")}` : "";
       }
       let parseFn = null;
       let parseContext = null;
-      self2.parse = function parse52(args, shortCircuit, _parseFn) {
+      self2.parse = function parse62(args, shortCircuit, _parseFn) {
         argsert2("[string|array] [function|boolean|object] [function]", [args, shortCircuit, _parseFn], arguments.length);
         freeze();
         if (typeof args === "undefined") {
@@ -46454,7 +46454,7 @@ var require_single_entry_cache = __commonJS({
     exports2.default = SingleEntryCache;
     function makeCircularReplacer() {
       const seen = /* @__PURE__ */ new WeakSet();
-      return function serialize(_, value) {
+      return function serialize2(_, value) {
         if (value && typeof value === "object") {
           if (seen.has(value)) {
             return "circular";
@@ -60807,8 +60807,8 @@ var require_caller = __commonJS({
 var require_validator = __commonJS({
   "node_modules/.deno/fast-redact@3.5.0/node_modules/fast-redact/lib/validator.js"(exports2, module14) {
     "use strict";
-    module14.exports = validator;
-    function validator(opts = {}) {
+    module14.exports = validator2;
+    function validator2(opts = {}) {
       const {
         ERR_PATHS_MUST_BE_STRINGS = () => "fast-redact - Paths must be (non-empty) strings",
         ERR_INVALID_PATH = (s) => `fast-redact \u2013 Invalid path (${s})`
@@ -60847,8 +60847,8 @@ var require_parse = __commonJS({
   "node_modules/.deno/fast-redact@3.5.0/node_modules/fast-redact/lib/parse.js"(exports2, module14) {
     "use strict";
     var rx = require_rx();
-    module14.exports = parse52;
-    function parse52({ paths }) {
+    module14.exports = parse62;
+    function parse62({ paths }) {
       const wildcards = [];
       var wcLen = 0;
       const secret = paths.reduce(function(o2, strPath, ix) {
@@ -60892,10 +60892,10 @@ var require_redactor = __commonJS({
     "use strict";
     var rx = require_rx();
     module14.exports = redactor;
-    function redactor({ secret, serialize, wcLen, strict, isCensorFct, censorFctTakesPath }, state) {
+    function redactor({ secret, serialize: serialize2, wcLen, strict, isCensorFct, censorFctTakesPath }, state) {
       const redact = Function("o", `
     if (typeof o !== 'object' || o == null) {
-      ${strictImpl(strict, serialize)}
+      ${strictImpl(strict, serialize2)}
     }
     const { censor, secret } = this
     const originalSecret = {}
@@ -60908,10 +60908,10 @@ var require_redactor = __commonJS({
     this.compileRestore()
     ${dynamicRedactTmpl(wcLen > 0, isCensorFct, censorFctTakesPath)}
     this.secret = originalSecret
-    ${resultTmpl(serialize)}
+    ${resultTmpl(serialize2)}
   `).bind(state);
       redact.state = state;
-      if (serialize === false) {
+      if (serialize2 === false) {
         redact.restore = (o2) => state.restore(o2);
       }
       return redact;
@@ -60969,15 +60969,15 @@ var require_redactor = __commonJS({
     }
   ` : "";
     }
-    function resultTmpl(serialize) {
-      return serialize === false ? `return o` : `
+    function resultTmpl(serialize2) {
+      return serialize2 === false ? `return o` : `
     var s = this.serialize(o)
     this.restore(o)
     return s
   `;
     }
-    function strictImpl(strict, serialize) {
-      return strict === true ? `throw Error('fast-redact: primitives cannot be redacted')` : serialize === false ? `return o` : `return this.serialize(o)`;
+    function strictImpl(strict, serialize2) {
+      return strict === true ? `throw Error('fast-redact: primitives cannot be redacted')` : serialize2 === false ? `return o` : `return this.serialize(o)`;
     }
   }
 });
@@ -61268,14 +61268,14 @@ var require_state = __commonJS({
         secret,
         censor,
         compileRestore,
-        serialize,
+        serialize: serialize2,
         groupRedact,
         nestedRedact,
         wildcards,
         wcLen
       } = o2;
       const builder = [{ secret, censor, compileRestore }];
-      if (serialize !== false) builder.push({ serialize });
+      if (serialize2 !== false) builder.push({ serialize: serialize2 });
       if (wcLen > 0) builder.push({ groupRedact, nestedRedact, wildcards, wcLen });
       return Object.assign(...builder);
     }
@@ -61284,40 +61284,40 @@ var require_state = __commonJS({
 var require_fast_redact = __commonJS({
   "node_modules/.deno/fast-redact@3.5.0/node_modules/fast-redact/index.js"(exports2, module14) {
     "use strict";
-    var validator = require_validator();
-    var parse52 = require_parse();
+    var validator2 = require_validator();
+    var parse62 = require_parse();
     var redactor = require_redactor();
     var restorer = require_restorer();
     var { groupRedact, nestedRedact } = require_modifiers();
     var state = require_state();
     var rx = require_rx();
-    var validate = validator();
+    var validate = validator2();
     var noop = (o2) => o2;
     noop.restore = noop;
     var DEFAULT_CENSOR = "[REDACTED]";
     fastRedact.rx = rx;
-    fastRedact.validator = validator;
+    fastRedact.validator = validator2;
     module14.exports = fastRedact;
     function fastRedact(opts = {}) {
       const paths = Array.from(new Set(opts.paths || []));
-      const serialize = "serialize" in opts ? opts.serialize === false ? opts.serialize : typeof opts.serialize === "function" ? opts.serialize : JSON.stringify : JSON.stringify;
+      const serialize2 = "serialize" in opts ? opts.serialize === false ? opts.serialize : typeof opts.serialize === "function" ? opts.serialize : JSON.stringify : JSON.stringify;
       const remove = opts.remove;
-      if (remove === true && serialize !== JSON.stringify) {
+      if (remove === true && serialize2 !== JSON.stringify) {
         throw Error("fast-redact \u2013 remove option may only be set when serializer is JSON.stringify");
       }
       const censor = remove === true ? void 0 : "censor" in opts ? opts.censor : DEFAULT_CENSOR;
       const isCensorFct = typeof censor === "function";
       const censorFctTakesPath = isCensorFct && censor.length > 1;
-      if (paths.length === 0) return serialize || noop;
-      validate({ paths, serialize, censor });
-      const { wildcards, wcLen, secret } = parse52({ paths, censor });
+      if (paths.length === 0) return serialize2 || noop;
+      validate({ paths, serialize: serialize2, censor });
+      const { wildcards, wcLen, secret } = parse62({ paths, censor });
       const compileRestore = restorer();
       const strict = "strict" in opts ? opts.strict : true;
-      return redactor({ secret, wcLen, serialize, strict, isCensorFct, censorFctTakesPath }, state({
+      return redactor({ secret, wcLen, serialize: serialize2, strict, isCensorFct, censorFctTakesPath }, state({
         secret,
         censor,
         compileRestore,
-        serialize,
+        serialize: serialize2,
         groupRedact,
         nestedRedact,
         wildcards,
@@ -61400,14 +61400,14 @@ var require_redaction = __commonJS({
     "use strict";
     var fastRedact = require_fast_redact();
     var { redactFmtSym, wildcardFirstSym } = require_symbols();
-    var { rx, validator } = fastRedact;
-    var validate = validator({
+    var { rx, validator: validator2 } = fastRedact;
+    var validate = validator2({
       ERR_PATHS_MUST_BE_STRINGS: () => "pino \u2013 redacted paths must be strings",
       ERR_INVALID_PATH: (s) => `pino \u2013 redact paths array contains an invalid path (${s})`
     });
     var CENSOR = "[Redacted]";
     var strict = false;
-    function redaction(opts, serialize) {
+    function redaction(opts, serialize2) {
       const { paths, censor } = handle(opts);
       const shape = paths.reduce((o2, str) => {
         rx.lastIndex = 0;
@@ -61441,10 +61441,10 @@ var require_redaction = __commonJS({
         return o2;
       }, {});
       const result = {
-        [redactFmtSym]: fastRedact({ paths, censor, serialize, strict })
+        [redactFmtSym]: fastRedact({ paths, censor, serialize: serialize2, strict })
       };
       const topCensor = (...args) => {
-        return typeof censor === "function" ? serialize(censor(...args)) : serialize(censor);
+        return typeof censor === "function" ? serialize2(censor(...args)) : serialize2(censor);
       };
       return [...Object.keys(shape), ...Object.getOwnPropertySymbols(shape)].reduce((o2, k) => {
         if (shape[k] === null) {
@@ -61456,7 +61456,7 @@ var require_redaction = __commonJS({
           o2[k] = fastRedact({
             paths: shape[k],
             censor: wrappedCensor,
-            serialize,
+            serialize: serialize2,
             strict
           });
         }
@@ -68006,7 +68006,7 @@ var require_extension = __commonJS({
       if (dest[name] === void 0) dest[name] = [elem];
       else dest[name].push(elem);
     }
-    function parse52(header) {
+    function parse62(header) {
       const offers = /* @__PURE__ */ Object.create(null);
       let params = /* @__PURE__ */ Object.create(null);
       let mustUnescape = false;
@@ -68146,7 +68146,7 @@ var require_extension = __commonJS({
         }).join(", ");
       }).join(", ");
     }
-    module14.exports = { format: format52, parse: parse52 };
+    module14.exports = { format: format52, parse: parse62 };
   }
 });
 var require_websocket = __commonJS({
@@ -68176,7 +68176,7 @@ var require_websocket = __commonJS({
     var {
       EventTarget: { addEventListener: addEventListener2, removeEventListener }
     } = require_event_target();
-    var { format: format52, parse: parse52 } = require_extension();
+    var { format: format52, parse: parse62 } = require_extension();
     var { toBuffer } = require_buffer_util();
     var readyStates = ["CONNECTING", "OPEN", "CLOSING", "CLOSED"];
     var subprotocolRegex = /^[!#$%&'*+\-.0-9A-Z^_`|a-z~]+$/;
@@ -68814,7 +68814,7 @@ var require_websocket = __commonJS({
           }
           let extensions;
           try {
-            extensions = parse52(secWebSocketExtensions);
+            extensions = parse62(secWebSocketExtensions);
           } catch (err) {
             const message = "Invalid Sec-WebSocket-Extensions header";
             abortHandshake(websocket, socket, message);
@@ -68975,7 +68975,7 @@ var require_subprotocol = __commonJS({
   "node_modules/.deno/ws@8.5.0/node_modules/ws/lib/subprotocol.js"(exports2, module14) {
     "use strict";
     var { tokenChars } = require_validation();
-    function parse52(header) {
+    function parse62(header) {
       const protocols = /* @__PURE__ */ new Set();
       let start = -1;
       let end = -1;
@@ -69011,7 +69011,7 @@ var require_subprotocol = __commonJS({
       protocols.add(protocol);
       return protocols;
     }
-    module14.exports = { parse: parse52 };
+    module14.exports = { parse: parse62 };
   }
 });
 var require_websocket_server = __commonJS({
@@ -72589,14 +72589,14 @@ function extractBearer(c) {
   const authorization = c.req.header("authorization");
   if (!authorization) return null;
   const prefix = "bearer ";
-  if (authorization.slice(0, prefix.length) !== prefix) return null;
+  if (authorization.slice(0, prefix.length).toLowerCase() !== prefix) return null;
   return { token: authorization.slice(prefix.length) };
 }
 function extractShelter(c) {
   const authorization = c.req.header("authorization");
   if (!authorization) return null;
   const prefix = "shelter ";
-  if (authorization.slice(0, prefix.length) !== prefix) return null;
+  if (authorization.slice(0, prefix.length).toLowerCase() !== prefix) return null;
   try {
     const billableContractID = verifyShelterAuthorizationHeader(authorization);
     return { billableContractID };
@@ -72638,6 +72638,300 @@ var init_auth = __esm({
     };
   }
 });
+var validCookieNameRegEx;
+var validCookieValueRegEx;
+var trimCookieWhitespace;
+var parse42;
+var init_cookie = __esm({
+  "node_modules/.deno/hono@4.12.12/node_modules/hono/dist/utils/cookie.js"() {
+    init_url();
+    validCookieNameRegEx = /^[\w!#$%&'*.^`|~+-]+$/;
+    validCookieValueRegEx = /^[ !#-:<-[\]-~]*$/;
+    trimCookieWhitespace = (value) => {
+      let start = 0;
+      let end = value.length;
+      while (start < end) {
+        const charCode = value.charCodeAt(start);
+        if (charCode !== 32 && charCode !== 9) {
+          break;
+        }
+        start++;
+      }
+      while (end > start) {
+        const charCode = value.charCodeAt(end - 1);
+        if (charCode !== 32 && charCode !== 9) {
+          break;
+        }
+        end--;
+      }
+      return start === 0 && end === value.length ? value : value.slice(start, end);
+    };
+    parse42 = (cookie, name) => {
+      if (name && cookie.indexOf(name) === -1) {
+        return {};
+      }
+      const pairs = cookie.split(";");
+      const parsedCookie = {};
+      for (const pairStr of pairs) {
+        const valueStartPos = pairStr.indexOf("=");
+        if (valueStartPos === -1) {
+          continue;
+        }
+        const cookieName = trimCookieWhitespace(pairStr.substring(0, valueStartPos));
+        if (name && name !== cookieName || !validCookieNameRegEx.test(cookieName)) {
+          continue;
+        }
+        let cookieValue = trimCookieWhitespace(pairStr.substring(valueStartPos + 1));
+        if (cookieValue.startsWith('"') && cookieValue.endsWith('"')) {
+          cookieValue = cookieValue.slice(1, -1);
+        }
+        if (validCookieValueRegEx.test(cookieValue)) {
+          parsedCookie[cookieName] = cookieValue.indexOf("%") !== -1 ? tryDecode(cookieValue, decodeURIComponent_) : cookieValue;
+          if (name) {
+            break;
+          }
+        }
+      }
+      return parsedCookie;
+    };
+  }
+});
+var getCookie;
+var init_cookie2 = __esm({
+  "node_modules/.deno/hono@4.12.12/node_modules/hono/dist/helper/cookie/index.js"() {
+    init_cookie();
+    getCookie = (c, key, prefix) => {
+      const cookie = c.req.raw.headers.get("Cookie");
+      if (typeof key === "string") {
+        if (!cookie) {
+          return void 0;
+        }
+        let finalKey = key;
+        if (prefix === "secure") {
+          finalKey = "__Secure-" + key;
+        } else if (prefix === "host") {
+          finalKey = "__Host-" + key;
+        }
+        const obj2 = parse42(cookie, finalKey);
+        return obj2[finalKey];
+      }
+      if (!cookie) {
+        return {};
+      }
+      const obj = parse42(cookie);
+      return obj;
+    };
+  }
+});
+var init_crypto = __esm({
+  "node_modules/.deno/hono@4.12.12/node_modules/hono/dist/utils/crypto.js"() {
+  }
+});
+var bufferToFormData;
+var init_buffer = __esm({
+  "node_modules/.deno/hono@4.12.12/node_modules/hono/dist/utils/buffer.js"() {
+    init_crypto();
+    bufferToFormData = (arrayBuffer, contentType) => {
+      const response = new Response(arrayBuffer, {
+        headers: {
+          "Content-Type": contentType
+        }
+      });
+      return response.formData();
+    };
+  }
+});
+var jsonRegex;
+var multipartRegex;
+var urlencodedRegex;
+var validator;
+var init_validator = __esm({
+  "node_modules/.deno/hono@4.12.12/node_modules/hono/dist/validator/validator.js"() {
+    init_cookie2();
+    init_http_exception();
+    init_buffer();
+    jsonRegex = /^application\/([a-z-\.]+\+)?json(;\s*[a-zA-Z0-9\-]+\=([^;]+))*$/;
+    multipartRegex = /^multipart\/form-data(;\s?boundary=[a-zA-Z0-9'"()+_,\-./:=?]+)?$/;
+    urlencodedRegex = /^application\/x-www-form-urlencoded(;\s*[a-zA-Z0-9\-]+\=([^;]+))*$/;
+    validator = (target, validationFunc) => {
+      return async (c, next) => {
+        let value = {};
+        const contentType = c.req.header("Content-Type");
+        switch (target) {
+          case "json":
+            if (!contentType || !jsonRegex.test(contentType)) {
+              break;
+            }
+            try {
+              value = await c.req.json();
+            } catch {
+              const message = "Malformed JSON in request body";
+              throw new HTTPException(400, { message });
+            }
+            break;
+          case "form": {
+            if (!contentType || !(multipartRegex.test(contentType) || urlencodedRegex.test(contentType))) {
+              break;
+            }
+            let formData;
+            if (c.req.bodyCache.formData) {
+              formData = await c.req.bodyCache.formData;
+            } else {
+              try {
+                const arrayBuffer = await c.req.arrayBuffer();
+                formData = await bufferToFormData(arrayBuffer, contentType);
+                c.req.bodyCache.formData = formData;
+              } catch (e2) {
+                let message = "Malformed FormData request.";
+                message += e2 instanceof Error ? ` ${e2.message}` : ` ${String(e2)}`;
+                throw new HTTPException(400, { message });
+              }
+            }
+            const form = /* @__PURE__ */ Object.create(null);
+            formData.forEach((value2, key) => {
+              if (key.endsWith("[]")) {
+                ;
+                (form[key] ??= []).push(value2);
+              } else if (Array.isArray(form[key])) {
+                ;
+                form[key].push(value2);
+              } else if (Object.hasOwn(form, key)) {
+                form[key] = [form[key], value2];
+              } else {
+                form[key] = value2;
+              }
+            });
+            value = form;
+            break;
+          }
+          case "query":
+            value = Object.fromEntries(
+              Object.entries(c.req.queries()).map(([k, v2]) => {
+                return v2.length === 1 ? [k, v2[0]] : [k, v2];
+              })
+            );
+            break;
+          case "param":
+            value = c.req.param();
+            break;
+          case "header":
+            value = c.req.header();
+            break;
+          case "cookie":
+            value = getCookie(c);
+            break;
+        }
+        const res = await validationFunc(value, c);
+        if (res instanceof Response) {
+          return res;
+        }
+        c.req.addValidatedData(target, res);
+        return await next();
+      };
+    };
+  }
+});
+var init_validator2 = __esm({
+  "node_modules/.deno/hono@4.12.12/node_modules/hono/dist/validator/index.js"() {
+    init_validator();
+  }
+});
+function zValidatorFunction(target, schema, hook, options2) {
+  return validator(target, async (value, c) => {
+    let validatorValue = value;
+    if (target === "header" && "_def" in schema || target === "header" && "_zod" in schema) {
+      const schemaKeys = Object.keys("in" in schema ? schema.in.shape : schema.shape);
+      const caseInsensitiveKeymap = Object.fromEntries(schemaKeys.map((key) => [key.toLowerCase(), key]));
+      validatorValue = Object.fromEntries(Object.entries(value).map(([key, value$1]) => [caseInsensitiveKeymap[key] || key, value$1]));
+    }
+    const result = options2 && options2.validationFunction ? await options2.validationFunction(schema, validatorValue) : await schema.safeParseAsync(validatorValue);
+    if (hook) {
+      const hookResult = await hook({
+        data: validatorValue,
+        ...result,
+        target
+      }, c);
+      if (hookResult) {
+        if (hookResult instanceof Response) return hookResult;
+        if ("response" in hookResult) return hookResult.response;
+      }
+    }
+    if (!result.success) return c.json(result, 400);
+    return result.data;
+  });
+}
+var zValidator;
+var init_dist3 = __esm({
+  "node_modules/.deno/@hono+zod-validator@0.7.6/node_modules/@hono/zod-validator/dist/index.js"() {
+    init_validator2();
+    zValidator = zValidatorFunction;
+  }
+});
+var ERROR_MESSAGE;
+var BodyLimitError;
+var bodyLimit;
+var init_body_limit = __esm({
+  "node_modules/.deno/hono@4.12.12/node_modules/hono/dist/middleware/body-limit/index.js"() {
+    init_http_exception();
+    ERROR_MESSAGE = "Payload Too Large";
+    BodyLimitError = class extends Error {
+      constructor(message) {
+        super(message);
+        this.name = "BodyLimitError";
+      }
+    };
+    bodyLimit = (options2) => {
+      const onError = options2.onError || (() => {
+        const res = new Response(ERROR_MESSAGE, {
+          status: 413
+        });
+        throw new HTTPException(413, { res });
+      });
+      const maxSize = options2.maxSize;
+      return async function bodyLimit2(c, next) {
+        if (!c.req.raw.body) {
+          return next();
+        }
+        const hasTransferEncoding = c.req.raw.headers.has("transfer-encoding");
+        const hasContentLength = c.req.raw.headers.has("content-length");
+        if (hasTransferEncoding && hasContentLength) {
+        }
+        if (hasContentLength && !hasTransferEncoding) {
+          const contentLength = parseInt(c.req.raw.headers.get("content-length") || "0", 10);
+          return contentLength > maxSize ? onError(c) : next();
+        }
+        let size = 0;
+        const rawReader = c.req.raw.body.getReader();
+        const reader = new ReadableStream({
+          async start(controller) {
+            try {
+              for (; ; ) {
+                const { done, value } = await rawReader.read();
+                if (done) {
+                  break;
+                }
+                size += value.length;
+                if (size > maxSize) {
+                  controller.error(new BodyLimitError(ERROR_MESSAGE));
+                  break;
+                }
+                controller.enqueue(value);
+              }
+            } finally {
+              controller.close();
+            }
+          }
+        });
+        const requestInit = { body: reader, duplex: "half" };
+        c.req.raw = new Request(c.req.raw, requestInit);
+        await next();
+        if (c.error instanceof BodyLimitError) {
+          c.res = await onError(c);
+        }
+      };
+    };
+  }
+});
 var routes_exports = {};
 __export(routes_exports, {
   staticServeConfig: () => staticServeConfig
@@ -72655,13 +72949,6 @@ function getClientIP(c) {
 function notFoundNoCache(c) {
   return c.body(null, 404, { "Cache-Control": "no-store" });
 }
-async function parseRequestBody(c) {
-  const contentType = c.req.header("content-type") || "";
-  if (contentType.includes("application/json")) {
-    return await c.req.json();
-  }
-  return await c.req.parseBody();
-}
 var import_npm_bottleneck;
 var import_npm_chalk2;
 var import_npm_nconf5;
@@ -72671,6 +72958,21 @@ var CID_REGEX;
 var KV_KEY_REGEX;
 var NAME_REGEX;
 var POSITIVE_INTEGER_REGEX;
+var cidSchema;
+var nameSchema;
+var kvKeySchema;
+var positiveIntegerSchema;
+var cidParamSchema;
+var cidHashParamSchema;
+var nameParamSchema;
+var kvParamSchema;
+var eventsAfterParamSchema;
+var zkppContractParamSchema;
+var zkppAuthHashQuerySchema;
+var zkppContractHashQuerySchema;
+var eventHeaderSchema;
+var zkppRegisterBodySchema;
+var zkppUpdatePasswordBodySchema;
 var FILE_UPLOAD_MAX_BYTES;
 var SIGNUP_LIMIT_MIN;
 var SIGNUP_LIMIT_HOUR;
@@ -72707,12 +73009,53 @@ var init_routes = __esm({
     init_zkppSalt();
     import_npm_nconf5 = __toESM(require_nconf());
     init_auth();
+    init_dist3();
+    init_zod();
+    init_body_limit();
     MEGABYTE = 1048576;
     SECOND = 1e3;
     CID_REGEX = /^z[1-9A-HJ-NP-Za-km-z]{8,72}$/;
     KV_KEY_REGEX = /^(?!_private)[^\x00]{1,256}$/;
     NAME_REGEX = /^(?![_-])((?!([_-])\2)[a-z\d_-]){1,80}(?<![_-])$/;
     POSITIVE_INTEGER_REGEX = /^\d{1,16}$/;
+    cidSchema = string2().regex(CID_REGEX, "Invalid CID");
+    nameSchema = string2().regex(NAME_REGEX, "Invalid name");
+    kvKeySchema = string2().regex(KV_KEY_REGEX, "Invalid key");
+    positiveIntegerSchema = string2().regex(POSITIVE_INTEGER_REGEX, "Invalid positive integer");
+    cidParamSchema = object({ contractID: cidSchema });
+    cidHashParamSchema = object({ hash: cidSchema });
+    nameParamSchema = object({ name: nameSchema });
+    kvParamSchema = object({ contractID: cidSchema, key: kvKeySchema });
+    eventsAfterParamSchema = object({
+      contractID: cidSchema,
+      since: positiveIntegerSchema,
+      limit: positiveIntegerSchema.optional()
+    });
+    zkppContractParamSchema = object({ contractID: cidSchema });
+    zkppAuthHashQuerySchema = object({ b: string2().min(1, "b is required") });
+    zkppContractHashQuerySchema = object({
+      r: string2().min(1, "r is required"),
+      s: string2().min(1, "s is required"),
+      sig: string2().min(1, "sig is required"),
+      hc: string2().min(1, "hc is required")
+    });
+    eventHeaderSchema = object({
+      "shelter-namespace-registration": nameSchema.optional(),
+      "shelter-salt-update-token": string2().optional(),
+      "shelter-salt-registration-token": string2().optional(),
+      "shelter-deletion-token-digest": string2().optional()
+    });
+    zkppRegisterBodySchema = union([
+      object({ b: string2() }),
+      object({ r: string2(), s: string2(), sig: string2(), Eh: string2() })
+    ]);
+    zkppUpdatePasswordBodySchema = object({
+      r: string2().min(1, "r is required"),
+      s: string2().min(1, "s is required"),
+      sig: string2().min(1, "sig is required"),
+      hc: string2().min(1, "hc is required"),
+      Ea: string2().min(1, "Ea is required")
+    });
     FILE_UPLOAD_MAX_BYTES = import_npm_nconf5.default.get("server:fileUploadMaxBytes") || 30 * MEGABYTE;
     SIGNUP_LIMIT_MIN = import_npm_nconf5.default.get("server:signup:limit:minute") || 2;
     SIGNUP_LIMIT_HOUR = import_npm_nconf5.default.get("server:signup:limit:hour") || 10;
@@ -72832,17 +73175,16 @@ var init_routes = __esm({
     app = esm_default("okTurtles.data/get", SERVER_INSTANCE);
     app.post(
       "/event",
+      bodyLimit({ maxSize: MEGABYTE }),
       authMiddleware("chel-shelter", "optional"),
+      zValidator("header", eventHeaderSchema),
       async function(c) {
         if (ARCHIVE_MODE) throw new HTTPException(501, { message: "Server in archive mode" });
         const ip = getClientIP(c);
         try {
           const payload = await c.req.text();
           if (!payload) throw new HTTPException(400, { message: "Invalid request payload input" });
-          const namespaceRegistration = c.req.header("shelter-namespace-registration");
-          if (namespaceRegistration && !NAME_REGEX.test(namespaceRegistration)) {
-            throw new HTTPException(400, { message: "Invalid shelter-namespace-registration header" });
-          }
+          const validatedHeaders = c.req.valid("header");
           const deserializedHEAD = SPMessage.deserializeHEAD(payload);
           try {
             const parsed = maybeParseCID(deserializedHEAD.head.manifest);
@@ -72872,7 +73214,7 @@ var init_routes = __esm({
                 }
               }
             }
-            const saltUpdateToken = c.req.header("shelter-salt-update-token");
+            const saltUpdateToken = validatedHeaders["shelter-salt-update-token"];
             let updateSalts;
             if (saltUpdateToken) {
               updateSalts = await redeemSaltUpdateToken(deserializedHEAD.contractID, saltUpdateToken);
@@ -72885,7 +73227,7 @@ var init_routes = __esm({
               } else {
                 await esm_default("backend/server/registerBillableEntity", deserializedHEAD.contractID);
               }
-              const name = c.req.header("shelter-namespace-registration");
+              const name = validatedHeaders["shelter-namespace-registration"];
               if (name) {
                 const cheloniaState = esm_default("chelonia/rootState");
                 if (cheloniaState.contracts[deserializedHEAD.contractID]?.type === "gi.contracts/identity") {
@@ -72897,14 +73239,14 @@ var init_routes = __esm({
                     }
                     throw registerErr;
                   }
-                  const saltRegistrationToken = c.req.header("shelter-salt-registration-token");
+                  const saltRegistrationToken = validatedHeaders["shelter-salt-registration-token"];
                   console.info(`new user: ${name}=${deserializedHEAD.contractID} (${ip})`);
                   if (saltRegistrationToken) {
                     await redeemSaltRegistrationToken(name, deserializedHEAD.contractID, saltRegistrationToken);
                   }
                 }
               }
-              const deletionTokenDgst = c.req.header("shelter-deletion-token-digest");
+              const deletionTokenDgst = validatedHeaders["shelter-deletion-token-digest"];
               if (deletionTokenDgst) {
                 await esm_default("chelonia.db/set", `_private_deletionTokenDgst_${deserializedHEAD.contractID}`, deletionTokenDgst);
               }
@@ -72937,13 +73279,9 @@ var init_routes = __esm({
     );
     app.get(
       "/eventsAfter/:contractID/:since/:limit?",
+      zValidator("param", eventsAfterParamSchema),
       async function(c) {
-        const contractID = c.req.param("contractID");
-        const since = c.req.param("since");
-        const limit = c.req.param("limit");
-        if (!CID_REGEX.test(contractID)) throw new HTTPException(400, { message: "Invalid contractID" });
-        if (!POSITIVE_INTEGER_REGEX.test(since)) throw new HTTPException(400, { message: "Invalid since" });
-        if (limit !== void 0 && !POSITIVE_INTEGER_REGEX.test(limit)) throw new HTTPException(400, { message: "Invalid limit" });
+        const { contractID, since, limit } = c.req.valid("param");
         const keyOps2 = c.req.query("keyOps");
         const ip = getClientIP(c);
         try {
@@ -72993,9 +73331,8 @@ var init_routes = __esm({
         return c.body(null, 200);
       });
     }
-    app.get("/name/:name", async function(c) {
-      const name = c.req.param("name");
-      if (!NAME_REGEX.test(name)) throw new HTTPException(400, { message: "Invalid name" });
+    app.get("/name/:name", zValidator("param", nameParamSchema), async function(c) {
+      const { name } = c.req.valid("param");
       try {
         const lookupResult = await esm_default("backend/db/lookupName", name);
         return lookupResult ? c.text(lookupResult) : notFoundNoCache(c);
@@ -73004,9 +73341,8 @@ var init_routes = __esm({
         throw err;
       }
     });
-    app.get("/latestHEADinfo/:contractID", async function(c) {
-      const contractID = c.req.param("contractID");
-      if (!CID_REGEX.test(contractID)) throw new HTTPException(400, { message: "Invalid contractID" });
+    app.get("/latestHEADinfo/:contractID", zValidator("param", cidParamSchema), async function(c) {
+      const { contractID } = c.req.valid("param");
       try {
         const parsed = maybeParseCID(contractID);
         if (parsed?.code !== multicodes.SHELTER_CONTRACT_DATA) throw new HTTPException(400);
@@ -73040,7 +73376,7 @@ var init_routes = __esm({
       }
     });
     if (process9.env.NODE_ENV === "development") {
-      app.post("/dev-file", async function(c) {
+      app.post("/dev-file", bodyLimit({ maxSize: 6 * MEGABYTE }), async function(c) {
         if (ARCHIVE_MODE) throw new HTTPException(501, { message: "Server in archive mode" });
         try {
           console.log("FILE UPLOAD!");
@@ -73067,6 +73403,7 @@ var init_routes = __esm({
     }
     app.post(
       "/file",
+      bodyLimit({ maxSize: FILE_UPLOAD_MAX_BYTES }),
       authMiddleware("chel-shelter", "required"),
       async function(c) {
         if (ARCHIVE_MODE) throw new HTTPException(501, { message: "Server in archive mode" });
@@ -73079,10 +73416,6 @@ var init_routes = __esm({
           const contentType = c.req.header("content-type") || "";
           if (!contentType.includes("multipart/form-data")) {
             throw new HTTPException(400, { message: "Expected multipart/form-data" });
-          }
-          const contentLength = parseInt(c.req.header("content-length") || "0", 10);
-          if (contentLength > FILE_UPLOAD_MAX_BYTES) {
-            throw new HTTPException(413, { message: "Payload too large" });
           }
           const formData = await c.req.formData();
           const manifestFile = formData.get("manifest");
@@ -73154,9 +73487,8 @@ var init_routes = __esm({
         }
       }
     );
-    app.get("/file/:hash", async function(c) {
-      const hash3 = c.req.param("hash");
-      if (!CID_REGEX.test(hash3)) throw new HTTPException(400, { message: "Invalid hash" });
+    app.get("/file/:hash", zValidator("param", cidHashParamSchema), async function(c) {
+      const { hash: hash3 } = c.req.valid("param");
       const parsed = maybeParseCID(hash3);
       if (!parsed) {
         throw new HTTPException(400);
@@ -73184,10 +73516,10 @@ var init_routes = __esm({
     app.post(
       "/deleteFile/:hash",
       authMiddleware(["chel-shelter", "chel-bearer"], "required"),
+      zValidator("param", cidHashParamSchema),
       async function(c) {
         if (ARCHIVE_MODE) throw new HTTPException(501, { message: "Server in archive mode" });
-        const hash3 = c.req.param("hash");
-        if (!CID_REGEX.test(hash3)) throw new HTTPException(400, { message: "Invalid hash" });
+        const { hash: hash3 } = c.req.valid("param");
         const strategy = c.get("authStrategy");
         const parsed = maybeParseCID(hash3);
         if (parsed?.code !== multicodes.SHELTER_FILE_MANIFEST) {
@@ -73231,11 +73563,11 @@ var init_routes = __esm({
     app.post(
       "/deleteContract/:hash",
       authMiddleware(["chel-shelter", "chel-bearer"], "required"),
+      zValidator("param", cidHashParamSchema),
       async function(c) {
         if (ARCHIVE_MODE) throw new HTTPException(501, { message: "Server in archive mode" });
-        const hash3 = c.req.param("hash");
+        const { hash: hash3 } = c.req.valid("param");
         const strategy = c.get("authStrategy");
-        if (!hash3 || hash3.startsWith("_private")) throw new HTTPException(404);
         const credentials = c.get("credentials");
         switch (strategy) {
           case "chel-shelter": {
@@ -73278,13 +73610,12 @@ var init_routes = __esm({
     );
     app.post(
       "/kv/:contractID/:key",
+      bodyLimit({ maxSize: 6 * MEGABYTE }),
       authMiddleware("chel-shelter", "required"),
+      zValidator("param", kvParamSchema),
       async function(c) {
         if (ARCHIVE_MODE) throw new HTTPException(501, { message: "Server in archive mode" });
-        const contractID = c.req.param("contractID");
-        const key = c.req.param("key");
-        if (!CID_REGEX.test(contractID)) throw new HTTPException(400, { message: "Invalid contractID" });
-        if (!KV_KEY_REGEX.test(key)) throw new HTTPException(400, { message: "Invalid key" });
+        const { contractID, key } = c.req.valid("param");
         const parsed = maybeParseCID(contractID);
         if (parsed?.code !== multicodes.SHELTER_CONTRACT_DATA) {
           throw new HTTPException(400);
@@ -73346,11 +73677,9 @@ var init_routes = __esm({
     app.get(
       "/kv/:contractID/:key",
       authMiddleware("chel-shelter", "required"),
+      zValidator("param", kvParamSchema),
       async function(c) {
-        const contractID = c.req.param("contractID");
-        const key = c.req.param("key");
-        if (!CID_REGEX.test(contractID)) throw new HTTPException(400, { message: "Invalid contractID" });
-        if (!KV_KEY_REGEX.test(key)) throw new HTTPException(400, { message: "Invalid key" });
+        const { contractID, key } = c.req.valid("param");
         const parsed = maybeParseCID(contractID);
         if (parsed?.code !== multicodes.SHELTER_CONTRACT_DATA) {
           throw new HTTPException(400);
@@ -73479,95 +73808,97 @@ var init_routes = __esm({
     app.get("/", function(c) {
       return c.redirect(staticServeConfig.redirect);
     });
-    app.post("/zkpp/register/:name", async function(c) {
-      const name = c.req.param("name");
-      if (!NAME_REGEX.test(name)) throw new HTTPException(400, { message: "Invalid name" });
-      if (ARCHIVE_MODE) throw new HTTPException(501, { message: "Server in archive mode" });
-      const lookupResult = await esm_default("backend/db/lookupName", name);
-      if (lookupResult) {
-        throw new HTTPException(409);
+    app.post(
+      "/zkpp/register/:name",
+      zValidator("param", nameParamSchema),
+      zValidator("json", zkppRegisterBodySchema),
+      async function(c) {
+        const { name } = c.req.valid("param");
+        if (ARCHIVE_MODE) throw new HTTPException(501, { message: "Server in archive mode" });
+        const lookupResult = await esm_default("backend/db/lookupName", name);
+        if (lookupResult) {
+          throw new HTTPException(409);
+        }
+        try {
+          const payload = c.req.valid("json");
+          if ("b" in payload) {
+            const result = registrationKey(name, payload.b);
+            if (result) {
+              return c.json(result);
+            }
+          } else {
+            const result = register(name, payload.r, payload.s, payload.sig, payload.Eh);
+            if (result) {
+              return c.json(result);
+            }
+          }
+        } catch (e2) {
+          if (e2 instanceof HTTPException) throw e2;
+          e2.ip = getClientIP(c);
+          console.error(e2, "Error at POST /zkpp/{name}: " + e2.message);
+        }
+        throw new HTTPException(500, { message: "internal error" });
       }
-      try {
-        const payload = await parseRequestBody(c);
-        if (payload.b) {
-          if (typeof payload.b !== "string") throw new HTTPException(400);
-          const result = registrationKey(name, payload.b);
+    );
+    app.get(
+      "/zkpp/:contractID/auth_hash",
+      zValidator("param", zkppContractParamSchema),
+      zValidator("query", zkppAuthHashQuerySchema),
+      async function(c) {
+        const { contractID } = c.req.valid("param");
+        const { b } = c.req.valid("query");
+        try {
+          const challenge = await getChallenge(contractID, b);
+          return challenge ? c.json(challenge) : notFoundNoCache(c);
+        } catch (e2) {
+          ;
+          e2.ip = getClientIP(c);
+          console.error(e2, "Error at GET /zkpp/{contractID}/auth_hash: " + e2.message);
+        }
+        throw new HTTPException(500, { message: "internal error" });
+      }
+    );
+    app.get(
+      "/zkpp/:contractID/contract_hash",
+      zValidator("param", zkppContractParamSchema),
+      zValidator("query", zkppContractHashQuerySchema),
+      async function(c) {
+        const { contractID } = c.req.valid("param");
+        const { r, s, sig, hc } = c.req.valid("query");
+        try {
+          const salt = await getContractSalt(contractID, r, s, sig, hc);
+          if (salt) {
+            return c.json(salt);
+          }
+        } catch (e2) {
+          ;
+          e2.ip = getClientIP(c);
+          console.error(e2, "Error at GET /zkpp/{contractID}/contract_hash: " + e2.message);
+        }
+        throw new HTTPException(500, { message: "internal error" });
+      }
+    );
+    app.post(
+      "/zkpp/:contractID/updatePasswordHash",
+      zValidator("param", zkppContractParamSchema),
+      zValidator("json", zkppUpdatePasswordBodySchema),
+      async function(c) {
+        const { contractID } = c.req.valid("param");
+        if (ARCHIVE_MODE) throw new HTTPException(501, { message: "Server in archive mode" });
+        try {
+          const payload = c.req.valid("json");
+          const result = await updateContractSalt(contractID, payload.r, payload.s, payload.sig, payload.hc, payload.Ea);
           if (result) {
             return c.json(result);
           }
-        } else if (payload.r && payload.s && payload.sig && payload.Eh) {
-          if (typeof payload.r !== "string" || typeof payload.s !== "string" || typeof payload.sig !== "string" || typeof payload.Eh !== "string") {
-            throw new HTTPException(400);
-          }
-          const result = register(name, payload.r, payload.s, payload.sig, payload.Eh);
-          if (result) {
-            return c.json(result);
-          }
-        } else {
-          throw new HTTPException(400, { message: "Invalid payload" });
+        } catch (e2) {
+          if (e2 instanceof HTTPException) throw e2;
+          e2.ip = getClientIP(c);
+          console.error(e2, "Error at POST /zkpp/{contractID}/updatePasswordHash: " + e2.message);
         }
-      } catch (e2) {
-        if (e2 instanceof HTTPException) throw e2;
-        e2.ip = getClientIP(c);
-        console.error(e2, "Error at POST /zkpp/{name}: " + e2.message);
+        throw new HTTPException(500, { message: "internal error" });
       }
-      throw new HTTPException(500, { message: "internal error" });
-    });
-    app.get("/zkpp/:contractID/auth_hash", async function(c) {
-      const contractID = c.req.param("contractID");
-      if (!CID_REGEX.test(contractID)) throw new HTTPException(400, { message: "Invalid contractID" });
-      const b = c.req.query("b");
-      if (!b) throw new HTTPException(400, { message: "b is required" });
-      try {
-        const challenge = await getChallenge(contractID, b);
-        return challenge ? c.json(challenge) : notFoundNoCache(c);
-      } catch (e2) {
-        ;
-        e2.ip = getClientIP(c);
-        console.error(e2, "Error at GET /zkpp/{contractID}/auth_hash: " + e2.message);
-      }
-      throw new HTTPException(500, { message: "internal error" });
-    });
-    app.get("/zkpp/:contractID/contract_hash", async function(c) {
-      const contractID = c.req.param("contractID");
-      if (!CID_REGEX.test(contractID)) throw new HTTPException(400, { message: "Invalid contractID" });
-      const r = c.req.query("r");
-      const s = c.req.query("s");
-      const sig = c.req.query("sig");
-      const hc = c.req.query("hc");
-      if (!r || !s || !sig || !hc) throw new HTTPException(400, { message: "r, s, sig, and hc are required" });
-      try {
-        const salt = await getContractSalt(contractID, r, s, sig, hc);
-        if (salt) {
-          return c.json(salt);
-        }
-      } catch (e2) {
-        ;
-        e2.ip = getClientIP(c);
-        console.error(e2, "Error at GET /zkpp/{contractID}/contract_hash: " + e2.message);
-      }
-      throw new HTTPException(500, { message: "internal error" });
-    });
-    app.post("/zkpp/:contractID/updatePasswordHash", async function(c) {
-      const contractID = c.req.param("contractID");
-      if (!CID_REGEX.test(contractID)) throw new HTTPException(400, { message: "Invalid contractID" });
-      if (ARCHIVE_MODE) throw new HTTPException(501, { message: "Server in archive mode" });
-      try {
-        const payload = await parseRequestBody(c);
-        if (!payload.r || !payload.s || !payload.sig || !payload.hc || !payload.Ea) {
-          throw new HTTPException(400, { message: "r, s, sig, hc, and Ea are required" });
-        }
-        const result = await updateContractSalt(contractID, payload.r, payload.s, payload.sig, payload.hc, payload.Ea);
-        if (result) {
-          return c.json(result);
-        }
-      } catch (e2) {
-        if (e2 instanceof HTTPException) throw e2;
-        e2.ip = getClientIP(c);
-        console.error(e2, "Error at POST /zkpp/{contractID}/updatePasswordHash: " + e2.message);
-      }
-      throw new HTTPException(500, { message: "internal error" });
-    });
+    );
   }
 });
 var server_exports = {};
@@ -79601,7 +79932,7 @@ function Yargs(processArgs = [], cwd = shim3.process.cwd(), parentRequire) {
   }
   let parseFn = null;
   let parseContext = null;
-  self2.parse = function parse52(args, shortCircuit, _parseFn) {
+  self2.parse = function parse62(args, shortCircuit, _parseFn) {
     argsert("[string|array] [function|boolean|object] [function]", [args, shortCircuit, _parseFn], arguments.length);
     freeze();
     if (typeof args === "undefined") {

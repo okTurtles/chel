@@ -21,9 +21,16 @@ export async function startDashboard (): Promise<void> {
   app.get('/dashboard', serveStatic({ path: path.join(dashboardRoot, 'index.html') }))
   app.get('/dashboard/', serveStatic({ path: path.join(dashboardRoot, 'index.html') }))
 
-  app.get('/*', serveStatic({ root: dashboardRoot, rewriteRequestPath: (p) => p }))
-
-  app.get('/*', serveStatic({ path: path.join(dashboardRoot, 'index.html') }))
+  // SPA fallback: try static file first, then serve index.html for SPA routing
+  app.get('/*', async (c) => {
+    const staticResponse = await serveStatic({ root: dashboardRoot, rewriteRequestPath: (p) => p })(c, async () => {})
+    // If static file exists and was served successfully, return it
+    if (staticResponse && staticResponse.status !== 404) {
+      return staticResponse
+    }
+    // File not found, serve index.html for SPA routing
+    return serveStatic({ path: path.join(dashboardRoot, 'index.html') })(c, async () => {})
+  })
 
   await new Promise<void>((resolve) => {
     Deno.serve({ port, hostname: host, onListen: () => resolve() }, app.fetch)

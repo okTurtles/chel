@@ -18,7 +18,7 @@ function extractBearer (c: Context): AuthCredentials | null {
   const authorization = c.req.header('authorization')
   if (!authorization) return null
   const prefix = 'bearer '
-  if (authorization.slice(0, prefix.length) !== prefix) return null
+  if (authorization.slice(0, prefix.length).toLowerCase() !== prefix) return null
   return { token: authorization.slice(prefix.length) }
 }
 
@@ -26,7 +26,7 @@ function extractShelter (c: Context): AuthCredentials | null {
   const authorization = c.req.header('authorization')
   if (!authorization) return null
   const prefix = 'shelter '
-  if (authorization.slice(0, prefix.length) !== prefix) return null
+  if (authorization.slice(0, prefix.length).toLowerCase() !== prefix) return null
   try {
     const billableContractID = verifyShelterAuthorizationHeader(authorization)
     return { billableContractID }

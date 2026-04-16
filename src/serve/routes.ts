@@ -22,6 +22,9 @@ import { getChallenge, getContractSalt, redeemSaltRegistrationToken, redeemSaltU
 import nconf from 'npm:nconf'
 import { authMiddleware, type AuthCredentials } from './auth.ts'
 import type { Hono, Context } from 'npm:hono'
+import { zValidator } from 'npm:@hono/zod-validator'
+import * as z from 'npm:zod'
+import { bodyLimit } from 'npm:hono/body-limit'
 import { Readable } from 'node:stream'
 
 const MEGABYTE = 1048576 // TODO: add settings for these
@@ -38,6 +41,47 @@ const KV_KEY_REGEX = /^(?!_private)[^\x00]{1,256}$/
 //   - Allowed characters: lowercase letters, numbers, underscore and dashes
 const NAME_REGEX = /^(?![_-])((?!([_-])\2)[a-z\d_-]){1,80}(?<![_-])$/
 const POSITIVE_INTEGER_REGEX = /^\d{1,16}$/
+
+// Zod schemas for declarative request validation
+const cidSchema = z.string().regex(CID_REGEX, 'Invalid CID')
+const nameSchema = z.string().regex(NAME_REGEX, 'Invalid name')
+const kvKeySchema = z.string().regex(KV_KEY_REGEX, 'Invalid key')
+const positiveIntegerSchema = z.string().regex(POSITIVE_INTEGER_REGEX, 'Invalid positive integer')
+
+const cidParamSchema = z.object({ contractID: cidSchema })
+const cidHashParamSchema = z.object({ hash: cidSchema })
+const nameParamSchema = z.object({ name: nameSchema })
+const kvParamSchema = z.object({ contractID: cidSchema, key: kvKeySchema })
+const eventsAfterParamSchema = z.object({
+  contractID: cidSchema,
+  since: positiveIntegerSchema,
+  limit: positiveIntegerSchema.optional()
+})
+const zkppContractParamSchema = z.object({ contractID: cidSchema })
+const zkppAuthHashQuerySchema = z.object({ b: z.string().min(1, 'b is required') })
+const zkppContractHashQuerySchema = z.object({
+  r: z.string().min(1, 'r is required'),
+  s: z.string().min(1, 's is required'),
+  sig: z.string().min(1, 'sig is required'),
+  hc: z.string().min(1, 'hc is required')
+})
+const eventHeaderSchema = z.object({
+  'shelter-namespace-registration': nameSchema.optional(),
+  'shelter-salt-update-token': z.string().optional(),
+  'shelter-salt-registration-token': z.string().optional(),
+  'shelter-deletion-token-digest': z.string().optional()
+})
+const zkppRegisterBodySchema = z.union([
+  z.object({ b: z.string() }),
+  z.object({ r: z.string(), s: z.string(), sig: z.string(), Eh: z.string() })
+])
+const zkppUpdatePasswordBodySchema = z.object({
+  r: z.string().min(1, 'r is required'),
+  s: z.string().min(1, 's is required'),
+  sig: z.string().min(1, 'sig is required'),
+  hc: z.string().min(1, 'hc is required'),
+  Ea: z.string().min(1, 'Ea is required')
+})
 
 const FILE_UPLOAD_MAX_BYTES = nconf.get('server:fileUploadMaxBytes') || 30 * MEGABYTE
 const SIGNUP_LIMIT_MIN = nconf.get('server:signup:limit:minute') || 2
@@ -204,12 +248,10 @@ function notFoundNoCache (c: Context): Response {
   return c.body(null, 404, { 'Cache-Control': 'no-store' })
 }
 
-async function parseRequestBody<T = Record<string, unknown>> (c: Context): Promise<T> {
-  const contentType = c.req.header('content-type') || ''
-  if (contentType.includes('application/json')) {
-    return await c.req.json() as T
-  }
-  return await c.req.parseBody() as T
+function safePathWithin (base: string, subpath: string): string | null {
+  const resolved = path.resolve(base, subpath)
+  if (!resolved.startsWith(base + path.sep) && resolved !== base) return null
+  return resolved
 }
 
 // Get the Hono app via SERVER_INSTANCE
@@ -221,7 +263,9 @@ const app: Hono = sbp('okTurtles.data/get', SERVER_INSTANCE)
 //       —BUT HTTP2 might be better than websockets and so we keep this around.
 //       See related TODO in pubsub.js and the reddit discussion link.
 app.post('/event',
+  bodyLimit({ maxSize: MEGABYTE }),
   authMiddleware('chel-shelter', 'optional'),
+  zValidator('header', eventHeaderSchema),
   async function (c) {
     if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
     // IMPORTANT: IT IS A REQUIREMENT THAT ANY PROXY SERVERS (E.G. nginx) IN FRONT OF US SET THE
@@ -230,10 +274,7 @@ app.post('/event',
     try {
       const payload = await c.req.text()
       if (!payload) throw new HTTPException(400, { message: 'Invalid request payload input' })
-      const namespaceRegistration = c.req.header('shelter-namespace-registration')
-      if (namespaceRegistration && !NAME_REGEX.test(namespaceRegistration)) {
-        throw new HTTPException(400, { message: 'Invalid shelter-namespace-registration header' })
-      }
+      const validatedHeaders = c.req.valid('header')
       const deserializedHEAD = SPMessage.deserializeHEAD(payload)
       try {
         const parsed = maybeParseCID(deserializedHEAD.head.manifest)
@@ -266,7 +307,7 @@ app.post('/event',
             }
           }
         }
-        const saltUpdateToken = c.req.header('shelter-salt-update-token')
+        const saltUpdateToken = validatedHeaders['shelter-salt-update-token']
         let updateSalts
         if (saltUpdateToken) {
           // If we've got a salt update token (i.e., a password change),
@@ -289,7 +330,7 @@ app.post('/event',
           // If this is the first message in a contract and the
           // `shelter-namespace-registration` header is present, proceed with also
           // registering a name for the new contract
-          const name = c.req.header('shelter-namespace-registration')
+          const name = validatedHeaders['shelter-namespace-registration']
           if (name) {
           // Name registation is enabled only for identity contracts
             const cheloniaState = sbp('chelonia/rootState')
@@ -302,7 +343,7 @@ app.post('/event',
                 }
                 throw registerErr
               }
-              const saltRegistrationToken = c.req.header('shelter-salt-registration-token')
+              const saltRegistrationToken = validatedHeaders['shelter-salt-registration-token']
               console.info(`new user: ${name}=${deserializedHEAD.contractID} (${ip})`)
               if (saltRegistrationToken) {
                 // If we've got a salt registration token, redeem it
@@ -310,7 +351,7 @@ app.post('/event',
               }
             }
           }
-          const deletionTokenDgst = c.req.header('shelter-deletion-token-digest')
+          const deletionTokenDgst = validatedHeaders['shelter-deletion-token-digest']
           if (deletionTokenDgst) {
             await sbp('chelonia.db/set', `_private_deletionTokenDgst_${deserializedHEAD.contractID}`, deletionTokenDgst)
           }
@@ -343,14 +384,9 @@ app.post('/event',
   })
 
 app.get('/eventsAfter/:contractID/:since/:limit?',
+  zValidator('param', eventsAfterParamSchema),
   async function (c) {
-    const contractID = c.req.param('contractID')
-    const since = c.req.param('since')
-    const limit = c.req.param('limit')
-
-    if (!CID_REGEX.test(contractID)) throw new HTTPException(400, { message: 'Invalid contractID' })
-    if (!POSITIVE_INTEGER_REGEX.test(since)) throw new HTTPException(400, { message: 'Invalid since' })
-    if (limit !== undefined && !POSITIVE_INTEGER_REGEX.test(limit)) throw new HTTPException(400, { message: 'Invalid limit' })
+    const { contractID, since, limit } = c.req.valid('param')
 
     const keyOps = c.req.query('keyOps')
     const ip = getClientIP(c)
@@ -430,9 +466,8 @@ app.post('/name', async function (c) {
 })
 */
 
-app.get('/name/:name', async function (c) {
-  const name = c.req.param('name')
-  if (!NAME_REGEX.test(name)) throw new HTTPException(400, { message: 'Invalid name' })
+app.get('/name/:name', zValidator('param', nameParamSchema), async function (c) {
+  const { name } = c.req.valid('param')
   try {
     const lookupResult = await sbp('backend/db/lookupName', name)
     return lookupResult
@@ -444,9 +479,8 @@ app.get('/name/:name', async function (c) {
   }
 })
 
-app.get('/latestHEADinfo/:contractID', async function (c) {
-  const contractID = c.req.param('contractID')
-  if (!CID_REGEX.test(contractID)) throw new HTTPException(400, { message: 'Invalid contractID' })
+app.get('/latestHEADinfo/:contractID', zValidator('param', cidParamSchema), async function (c) {
+  const { contractID } = c.req.valid('param')
   try {
     const parsed = maybeParseCID(contractID)
     if (parsed?.code !== multicodes.SHELTER_CONTRACT_DATA) throw new HTTPException(400)
@@ -493,7 +527,7 @@ app.post('/streams-test', async function (c) {
 // doesn't set or read accounting information.
 // If accepted, the file will be stored in Chelonia DB.
 if (process.env.NODE_ENV === 'development') {
-  app.post('/dev-file', async function (c) {
+  app.post('/dev-file', bodyLimit({ maxSize: 6 * MEGABYTE }), async function (c) {
     if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
     try {
       console.log('FILE UPLOAD!')
@@ -524,6 +558,7 @@ if (process.env.NODE_ENV === 'development') {
 // File upload route.
 // If accepted, the file will be stored in Chelonia DB.
 app.post('/file',
+  bodyLimit({ maxSize: FILE_UPLOAD_MAX_BYTES }),
   authMiddleware('chel-shelter', 'required'),
   async function (c) {
     if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
@@ -537,12 +572,6 @@ app.post('/file',
       const contentType = c.req.header('content-type') || ''
       if (!contentType.includes('multipart/form-data')) {
         throw new HTTPException(400, { message: 'Expected multipart/form-data' })
-      }
-
-      // Check content-length before reading body
-      const contentLength = parseInt(c.req.header('content-length') || '0', 10)
-      if (contentLength > FILE_UPLOAD_MAX_BYTES) {
-        throw new HTTPException(413, { message: 'Payload too large' })
       }
 
       const formData = await c.req.formData()
@@ -646,9 +675,8 @@ app.post('/file',
 
 // Serve data from Chelonia DB.
 // Note that a `Last-Modified` header isn't included in the response.
-app.get('/file/:hash', async function (c) {
-  const hash = c.req.param('hash')
-  if (!CID_REGEX.test(hash)) throw new HTTPException(400, { message: 'Invalid hash' })
+app.get('/file/:hash', zValidator('param', cidHashParamSchema), async function (c) {
+  const { hash } = c.req.valid('param')
 
   const parsed = maybeParseCID(hash)
   if (!parsed) {
@@ -680,10 +708,10 @@ app.get('/file/:hash', async function (c) {
 
 app.post('/deleteFile/:hash',
   authMiddleware(['chel-shelter', 'chel-bearer'], 'required'),
+  zValidator('param', cidHashParamSchema),
   async function (c) {
     if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
-    const hash = c.req.param('hash')
-    if (!CID_REGEX.test(hash)) throw new HTTPException(400, { message: 'Invalid hash' })
+    const { hash } = c.req.valid('param')
     const strategy = c.get('authStrategy')
     const parsed = maybeParseCID(hash)
     if (parsed?.code !== multicodes.SHELTER_FILE_MANIFEST) {
@@ -735,11 +763,11 @@ app.post('/deleteFile/:hash',
 
 app.post('/deleteContract/:hash',
   authMiddleware(['chel-shelter', 'chel-bearer'], 'required'),
+  zValidator('param', cidHashParamSchema),
   async function (c) {
     if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
-    const hash = c.req.param('hash')
+    const { hash } = c.req.valid('param')
     const strategy = c.get('authStrategy')
-    if (!hash || hash.startsWith('_private')) throw new HTTPException(404)
 
     const credentials = c.get('credentials') as AuthCredentials
     switch (strategy) {
@@ -792,14 +820,12 @@ app.post('/deleteContract/:hash',
   })
 
 app.post('/kv/:contractID/:key',
+  bodyLimit({ maxSize: 6 * MEGABYTE }),
   authMiddleware('chel-shelter', 'required'),
+  zValidator('param', kvParamSchema),
   async function (c) {
     if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
-    const contractID = c.req.param('contractID')
-    const key = c.req.param('key')
-
-    if (!CID_REGEX.test(contractID)) throw new HTTPException(400, { message: 'Invalid contractID' })
-    if (!KV_KEY_REGEX.test(key)) throw new HTTPException(400, { message: 'Invalid key' })
+    const { contractID, key } = c.req.valid('param')
 
     const parsed = maybeParseCID(contractID)
     if (parsed?.code !== multicodes.SHELTER_CONTRACT_DATA) {
@@ -878,12 +904,9 @@ app.post('/kv/:contractID/:key',
 
 app.get('/kv/:contractID/:key',
   authMiddleware('chel-shelter', 'required'),
+  zValidator('param', kvParamSchema),
   async function (c) {
-    const contractID = c.req.param('contractID')
-    const key = c.req.param('key')
-
-    if (!CID_REGEX.test(contractID)) throw new HTTPException(400, { message: 'Invalid contractID' })
-    if (!KV_KEY_REGEX.test(key)) throw new HTTPException(400, { message: 'Invalid key' })
+    const { contractID, key } = c.req.valid('param')
 
     const parsed = maybeParseCID(contractID)
     if (parsed?.code !== multicodes.SHELTER_CONTRACT_DATA) {
@@ -921,7 +944,8 @@ app.get('/serverMessages', function (c) {
 app.get('/assets/:subpath{.+}', async function (c) {
   const subpath = c.req.param('subpath')
   const basename = path.basename(subpath)
-  const filePath = path.join(staticServeConfig.distAssets, subpath)
+  const filePath = safePathWithin(staticServeConfig.distAssets, subpath)
+  if (!filePath) return notFoundNoCache(c)
 
   try {
     const file = await Deno.readFile(filePath)
@@ -980,7 +1004,8 @@ if (isCheloniaDashboard) {
   app.get('/dashboard/assets/:subpath{.+}', async function (c) {
     const subpath = c.req.param('subpath')
     const basename = path.basename(subpath)
-    const filePath = path.join(staticServeConfig.distAssets, subpath)
+    const filePath = safePathWithin(staticServeConfig.distAssets, subpath)
+    if (!filePath) return notFoundNoCache(c)
 
     try {
       const file = await Deno.readFile(filePath)
@@ -1042,105 +1067,112 @@ app.get('/', function (c) {
   return c.redirect(staticServeConfig.redirect)
 })
 
-app.post('/zkpp/register/:name', async function (c) {
-  const name = c.req.param('name')
-  if (!NAME_REGEX.test(name)) throw new HTTPException(400, { message: 'Invalid name' })
-  if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
-  const lookupResult = await sbp('backend/db/lookupName', name)
-  if (lookupResult) {
-    // If the username is already registered, abort
-    throw new HTTPException(409)
-  }
-  try {
-    const payload = await parseRequestBody<{ b?: string, r?: string, s?: string, sig?: string, Eh?: string }>(c)
-    // Validate: must be either { b } or { r, s, sig, Eh }
-    if (payload.b) {
-      if (typeof payload.b !== 'string') throw new HTTPException(400)
-      const result = registrationKey(name, payload.b)
+app.post('/zkpp/register/:name',
+  zValidator('param', nameParamSchema),
+  async function (c) {
+    const { name } = c.req.valid('param')
+    if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
 
-      if (result) {
-        return c.json(result)
-      }
-    } else if (payload.r && payload.s && payload.sig && payload.Eh) {
-      if (typeof payload.r !== 'string' || typeof payload.s !== 'string' ||
-          typeof payload.sig !== 'string' || typeof payload.Eh !== 'string') {
-        throw new HTTPException(400)
-      }
-      const result = register(name, payload.r, payload.s, payload.sig, payload.Eh)
-
-      if (result) {
-        return c.json(result)
-      }
+    // Parse body - support both JSON and form-urlencoded
+    const contentType = c.req.header('content-type') || ''
+    let payload: { b?: string, r?: string, s?: string, sig?: string, Eh?: string }
+    if (contentType.includes('application/x-www-form-urlencoded')) {
+      const form = await c.req.parseBody()
+      payload = form as Record<string, string>
     } else {
-      throw new HTTPException(400, { message: 'Invalid payload' })
+      payload = await c.req.json()
     }
-  } catch (e) {
-    if (e instanceof HTTPException) throw e
-    ;(e as { ip: string }).ip = getClientIP(c)
-    console.error(e, 'Error at POST /zkpp/{name}: ' + (e as Error).message)
-  }
 
-  throw new HTTPException(500, { message: 'internal error' })
-})
-
-app.get('/zkpp/:contractID/auth_hash', async function (c) {
-  const contractID = c.req.param('contractID')
-  if (!CID_REGEX.test(contractID)) throw new HTTPException(400, { message: 'Invalid contractID' })
-  const b = c.req.query('b')
-  if (!b) throw new HTTPException(400, { message: 'b is required' })
-  try {
-    const challenge = await getChallenge(contractID, b)
-
-    return challenge ? c.json(challenge) : notFoundNoCache(c)
-  } catch (e) {
-    ;(e as unknown as { ip: string }).ip = getClientIP(c)
-    console.error(e, 'Error at GET /zkpp/{contractID}/auth_hash: ' + (e as Error).message)
-  }
-
-  throw new HTTPException(500, { message: 'internal error' })
-})
-
-app.get('/zkpp/:contractID/contract_hash', async function (c) {
-  const contractID = c.req.param('contractID')
-  if (!CID_REGEX.test(contractID)) throw new HTTPException(400, { message: 'Invalid contractID' })
-  const r = c.req.query('r')
-  const s = c.req.query('s')
-  const sig = c.req.query('sig')
-  const hc = c.req.query('hc')
-  if (!r || !s || !sig || !hc) throw new HTTPException(400, { message: 'r, s, sig, and hc are required' })
-  try {
-    const salt = await getContractSalt(contractID, r, s, sig, hc)
-
-    if (salt) {
-      return c.json(salt)
+    // Validate payload
+    const parseResult = zkppRegisterBodySchema.safeParse(payload)
+    if (!parseResult.success) {
+      throw new HTTPException(400, { message: 'Invalid request body' })
     }
-  } catch (e) {
-    ;(e as { ip: string }).ip = getClientIP(c)
-    console.error(e, 'Error at GET /zkpp/{contractID}/contract_hash: ' + (e as Error).message)
-  }
 
-  throw new HTTPException(500, { message: 'internal error' })
-})
-
-app.post('/zkpp/:contractID/updatePasswordHash', async function (c) {
-  const contractID = c.req.param('contractID')
-  if (!CID_REGEX.test(contractID)) throw new HTTPException(400, { message: 'Invalid contractID' })
-  if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
-  try {
-    const payload = await parseRequestBody<{ r: string, s: string, sig: string, hc: string, Ea: string }>(c)
-    if (!payload.r || !payload.s || !payload.sig || !payload.hc || !payload.Ea) {
-      throw new HTTPException(400, { message: 'r, s, sig, hc, and Ea are required' })
+    const lookupResult = await sbp('backend/db/lookupName', name)
+    if (lookupResult) {
+      // If the username is already registered, abort
+      throw new HTTPException(409)
     }
-    const result = await updateContractSalt(contractID, payload.r, payload.s, payload.sig, payload.hc, payload.Ea)
+    try {
+      if ('b' in parseResult.data) {
+        const result = registrationKey(name, parseResult.data.b)
 
-    if (result) {
-      return c.json(result)
+        if (result) {
+          return c.json(result)
+        }
+      } else {
+        const result = register(name, parseResult.data.r, parseResult.data.s, parseResult.data.sig, parseResult.data.Eh)
+
+        if (result) {
+          return c.json(result)
+        }
+      }
+    } catch (e) {
+      if (e instanceof HTTPException) throw e
+      ;(e as { ip: string }).ip = getClientIP(c)
+      console.error(e, 'Error at POST /zkpp/{name}: ' + (e as Error).message)
     }
-  } catch (e) {
-    if (e instanceof HTTPException) throw e
-    ;(e as unknown as { ip: string }).ip = getClientIP(c)
-    console.error(e, 'Error at POST /zkpp/{contractID}/updatePasswordHash: ' + (e as Error).message)
-  }
 
-  throw new HTTPException(500, { message: 'internal error' })
-})
+    throw new HTTPException(500, { message: 'internal error' })
+  })
+
+app.get('/zkpp/:contractID/auth_hash',
+  zValidator('param', zkppContractParamSchema),
+  zValidator('query', zkppAuthHashQuerySchema),
+  async function (c) {
+    const { contractID } = c.req.valid('param')
+    const { b } = c.req.valid('query')
+    try {
+      const challenge = await getChallenge(contractID, b)
+
+      return challenge ? c.json(challenge) : notFoundNoCache(c)
+    } catch (e) {
+      ;(e as unknown as { ip: string }).ip = getClientIP(c)
+      console.error(e, 'Error at GET /zkpp/{contractID}/auth_hash: ' + (e as Error).message)
+    }
+
+    throw new HTTPException(500, { message: 'internal error' })
+  })
+
+app.get('/zkpp/:contractID/contract_hash',
+  zValidator('param', zkppContractParamSchema),
+  zValidator('query', zkppContractHashQuerySchema),
+  async function (c) {
+    const { contractID } = c.req.valid('param')
+    const { r, s, sig, hc } = c.req.valid('query')
+    try {
+      const salt = await getContractSalt(contractID, r, s, sig, hc)
+
+      if (salt) {
+        return c.json(salt)
+      }
+    } catch (e) {
+      ;(e as { ip: string }).ip = getClientIP(c)
+      console.error(e, 'Error at GET /zkpp/{contractID}/contract_hash: ' + (e as Error).message)
+    }
+
+    throw new HTTPException(500, { message: 'internal error' })
+  })
+
+app.post('/zkpp/:contractID/updatePasswordHash',
+  zValidator('param', zkppContractParamSchema),
+  zValidator('json', zkppUpdatePasswordBodySchema),
+  async function (c) {
+    const { contractID } = c.req.valid('param')
+    if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
+    try {
+      const payload = c.req.valid('json')
+      const result = await updateContractSalt(contractID, payload.r, payload.s, payload.sig, payload.hc, payload.Ea)
+
+      if (result) {
+        return c.json(result)
+      }
+    } catch (e) {
+      if (e instanceof HTTPException) throw e
+      ;(e as unknown as { ip: string }).ip = getClientIP(c)
+      console.error(e, 'Error at POST /zkpp/{contractID}/updatePasswordHash: ' + (e as Error).message)
+    }
+
+    throw new HTTPException(500, { message: 'internal error' })
+  })
