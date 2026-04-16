@@ -110618,10 +110618,11 @@ var module9 = {
   }
 };
 var RESERVED_FILE_CHARS = /[/\\:*?"<>|]/;
+var RESERVED_FILE_CHARS_REPLACE = /[/\\:*?"<>|]/g;
 var projectRoot;
 var cheloniaConfig;
 function sanitizeContractName(contractName) {
-  return contractName.replaceAll(RESERVED_FILE_CHARS, "_").replace(/\.\./g, "__");
+  return contractName.replace(RESERVED_FILE_CHARS_REPLACE, "_").replace(/\.\./g, "__");
 }
 async function pin(args) {
   const version3 = args["manifest-version"];
