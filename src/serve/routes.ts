@@ -5,22 +5,22 @@ import { SPMessage } from 'npm:@chelonia/lib/SPMessage'
 import 'npm:@chelonia/lib/chelonia'
 import { blake32Hash, createCID, maybeParseCID, multicodes } from 'npm:@chelonia/lib/functions'
 import 'npm:@chelonia/lib/persistent-actions'
+import { getConnInfo } from 'npm:@hono/node-server/conninfo'
 import sbp from 'npm:@sbp/sbp'
 import Bottleneck from 'npm:bottleneck'
 import chalk from 'npm:chalk'
-import { getConnInfo } from 'npm:hono/deno'
 import { HTTPException } from 'npm:hono/http-exception'
 // TODO: Use logger for debugging route handlers
 import { isIP } from 'node:net'
 import path from 'node:path'
 import process from 'node:process'
-import { appendToIndexFactory, lookupUltimateOwner } from './database.ts'
-import logger from './logger.ts'
-import { getChallenge, getContractSalt, redeemSaltRegistrationToken, redeemSaltUpdateToken, register, registrationKey, updateContractSalt } from './zkppSalt.ts'
 import { Readable } from 'node:stream'
 import { zValidator } from 'npm:@hono/zod-validator'
 import type { Context, Hono, MiddlewareHandler } from 'npm:hono'
 import { bodyLimit } from 'npm:hono/body-limit'
+import { appendToIndexFactory, lookupUltimateOwner } from './database.ts'
+import logger from './logger.ts'
+import { getChallenge, getContractSalt, redeemSaltRegistrationToken, redeemSaltUpdateToken, register, registrationKey, updateContractSalt } from './zkppSalt.ts'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
 import * as z from 'npm:zod'
@@ -1144,12 +1144,12 @@ app.post('/name', async function (c) {
 
   app.post('/zkpp/:contractID/updatePasswordHash',
     zValidator('param', zkppContractParamSchema),
-    zValidator('json', zkppUpdatePasswordBodySchema),
+    zValidatorFormOrJson(zkppUpdatePasswordBodySchema),
     async function (c) {
       const { contractID } = c.req.valid('param')
       if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
       try {
-        const payload = c.req.valid('json')
+        const payload = c.get('validatedBody') as z.infer<typeof zkppUpdatePasswordBodySchema>
         const result = await updateContractSalt(contractID, payload.r, payload.s, payload.sig, payload.hc, payload.Ea)
 
         if (result) {

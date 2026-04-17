@@ -20,20 +20,24 @@ export async function startDashboard (): Promise<void> {
 
   const app = new Hono()
 
-  app.get('/assets/*', serveStatic({ root: dashboardRoot, rewriteRequestPath: (p) => p }))
+  // Cache middleware instances to avoid creating new ones on every request
+  const staticMiddleware = serveStatic({ root: dashboardRoot, rewriteRequestPath: (p) => p })
+  const indexMiddleware = serveStatic({ path: path.join(dashboardRoot, 'index.html') })
 
-  app.get('/dashboard', serveStatic({ path: path.join(dashboardRoot, 'index.html') }))
-  app.get('/dashboard/', serveStatic({ path: path.join(dashboardRoot, 'index.html') }))
+  app.get('/assets/*', staticMiddleware)
+
+  app.get('/dashboard', indexMiddleware)
+  app.get('/dashboard/', indexMiddleware)
 
   // SPA fallback: try static file first, then serve index.html for SPA routing
   app.get('/*', async (c) => {
-    const staticResponse = await serveStatic({ root: dashboardRoot, rewriteRequestPath: (p) => p })(c, async () => {})
+    const staticResponse = await staticMiddleware(c, async () => {})
     // If static file exists and was served successfully, return it
     if (staticResponse) {
       return staticResponse
     }
     // File not found, serve index.html for SPA routing
-    const indexResponse = await serveStatic({ path: path.join(dashboardRoot, 'index.html') })(c, async () => {})
+    const indexResponse = await indexMiddleware(c, async () => {})
     return indexResponse || c.text('Not Found', 404)
   })
 

@@ -52,7 +52,7 @@ console.log(colors.green('built:'), options.outdir)
 import { builtinModules } from 'node:module'
 
 const nodeBuiltins = new Set(builtinModules.filter((m: string) => !m.startsWith('_')))
-const bareBuiltinRe = /\bfrom\s+"([^"]+)"/g
+const bareBuiltinRe = /\bfrom\s+["']([^"']+)["']/g
 
 function addNodePrefix (source: string): string {
   return source.replace(bareBuiltinRe, (match, specifier) => {

@@ -23,6 +23,7 @@ const production = process.env.NODE_ENV === 'production'
 // backend + cache without needing to re-overwrite the selectors.
 let currentBackend: DatabaseBackend | null = null
 let currentCache: LRU<string, Buffer | string> | null = null
+let isClosing = false
 
 let baseSelectorsInstalled = false
 function installBaseSelectorsOnce () {
@@ -335,17 +336,23 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
 }
 
 export async function closeDB (): Promise<void> {
-  if (currentBackend) {
-    try {
-      await currentBackend.close()
-    } catch (e) {
-      console.error(e, 'Error closing DB')
+  if (isClosing) return
+  isClosing = true
+  try {
+    if (currentBackend) {
+      try {
+        await currentBackend.close()
+      } catch (e) {
+        console.error(e, 'Error closing DB')
+      }
+      currentBackend = null
     }
-    currentBackend = null
+    currentCache?.clear()
+    currentCache = null
+    initedDB = false
+  } finally {
+    isClosing = false
   }
-  currentCache?.clear()
-  currentCache = null
-  initedDB = false
 }
 
 export * from './db-utils.ts'

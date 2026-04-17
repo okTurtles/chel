@@ -4108,20 +4108,20 @@ import crypto2 from "node:crypto";
 import { Buffer as Buffer13 } from "node:buffer";
 import { basename as basename52 } from "node:path";
 import process5 from "node:process";
-import { join as join82 } from "node:path";
+import { join as join72 } from "node:path";
 import process9 from "node:process";
 import { Buffer as Buffer14 } from "node:buffer";
-import { join as join72 } from "node:path";
 import { isIP } from "node:net";
 import path5 from "node:path";
 import process7 from "node:process";
-import process6 from "node:process";
 import { Readable as Readable3 } from "node:stream";
+import process6 from "node:process";
 import process8 from "node:process";
 import { Buffer as Buffer15 } from "node:buffer";
 import { pathToFileURL } from "node:url";
 import path6 from "node:path";
 import process11 from "node:process";
+import { join as join82 } from "node:path";
 import { notStrictEqual, strictEqual } from "node:assert";
 import { dirname as dirname62, resolve as resolve42 } from "node:path";
 import { readdirSync, statSync } from "node:fs";
@@ -68311,6 +68311,7 @@ var globImport_database_ts2 = __glob({
 var production = process2.env.NODE_ENV === "production";
 var currentBackend = null;
 var currentCache = null;
+var isClosing = false;
 var baseSelectorsInstalled = false;
 function installBaseSelectorsOnce() {
   if (baseSelectorsInstalled) return;
@@ -68501,17 +68502,23 @@ var initDB = async ({ skipDbPreloading } = {}) => {
   initedDB = "preloaded";
 };
 async function closeDB() {
-  if (currentBackend) {
-    try {
-      await currentBackend.close();
-    } catch (e2) {
-      console.error(e2, "Error closing DB");
+  if (isClosing) return;
+  isClosing = true;
+  try {
+    if (currentBackend) {
+      try {
+        await currentBackend.close();
+      } catch (e2) {
+        console.error(e2, "Error closing DB");
+      }
+      currentBackend = null;
     }
-    currentBackend = null;
+    currentCache?.clear();
+    currentCache = null;
+    initedDB = false;
+  } finally {
+    isClosing = false;
   }
-  currentCache?.clear();
-  currentCache = null;
-  initedDB = false;
 }
 init_functions();
 async function createEntryFromFile(filepath, multicode) {
@@ -72506,335 +72513,22 @@ var createWorker = (path8) => {
 var createWorker_default = createWorker;
 init_SPMessage();
 init_functions();
+var getConnInfo = (c) => {
+  const bindings = c.env.server ? c.env.server : c.env;
+  const address = bindings.incoming.socket.remoteAddress;
+  const port = bindings.incoming.socket.remotePort;
+  const family = bindings.incoming.socket.remoteFamily;
+  return {
+    remote: {
+      address,
+      port,
+      addressType: family === "IPv4" ? "IPv4" : family === "IPv6" ? "IPv6" : void 0
+    }
+  };
+};
 init_esm();
 var import_npm_bottleneck = __toESM(require_lib6());
 var import_npm_chalk = __toESM(require_source());
-var COMPRESSIBLE_CONTENT_TYPE_REGEX = /^\s*(?:text\/(?!event-stream(?:[;\s]|$))[^;\s]+|application\/(?:javascript|json|xml|xml-dtd|ecmascript|dart|postscript|rtf|tar|toml|vnd\.dart|vnd\.ms-fontobject|vnd\.ms-opentype|wasm|x-httpd-php|x-javascript|x-ns-proxy-autoconfig|x-sh|x-tar|x-virtualbox-hdd|x-virtualbox-ova|x-virtualbox-ovf|x-virtualbox-vbox|x-virtualbox-vdi|x-virtualbox-vhd|x-virtualbox-vmdk|x-www-form-urlencoded)|font\/(?:otf|ttf)|image\/(?:bmp|vnd\.adobe\.photoshop|vnd\.microsoft\.icon|vnd\.ms-dds|x-icon|x-ms-bmp)|message\/rfc822|model\/gltf-binary|x-shader\/x-fragment|x-shader\/x-vertex|[^;\s]+?\+(?:json|text|xml|yaml))(?:[;\s]|$)/i;
-var getMimeType = (filename, mimes = baseMimes) => {
-  const regexp = /\.([a-zA-Z0-9]+?)$/;
-  const match2 = filename.match(regexp);
-  if (!match2) {
-    return;
-  }
-  let mimeType = mimes[match2[1].toLowerCase()];
-  if (mimeType && mimeType.startsWith("text")) {
-    mimeType += "; charset=utf-8";
-  }
-  return mimeType;
-};
-var _baseMimes = {
-  aac: "audio/aac",
-  avi: "video/x-msvideo",
-  avif: "image/avif",
-  av1: "video/av1",
-  bin: "application/octet-stream",
-  bmp: "image/bmp",
-  css: "text/css",
-  csv: "text/csv",
-  eot: "application/vnd.ms-fontobject",
-  epub: "application/epub+zip",
-  gif: "image/gif",
-  gz: "application/gzip",
-  htm: "text/html",
-  html: "text/html",
-  ico: "image/x-icon",
-  ics: "text/calendar",
-  jpeg: "image/jpeg",
-  jpg: "image/jpeg",
-  js: "text/javascript",
-  json: "application/json",
-  jsonld: "application/ld+json",
-  map: "application/json",
-  mid: "audio/x-midi",
-  midi: "audio/x-midi",
-  mjs: "text/javascript",
-  mp3: "audio/mpeg",
-  mp4: "video/mp4",
-  mpeg: "video/mpeg",
-  oga: "audio/ogg",
-  ogv: "video/ogg",
-  ogx: "application/ogg",
-  opus: "audio/opus",
-  otf: "font/otf",
-  pdf: "application/pdf",
-  png: "image/png",
-  rtf: "application/rtf",
-  svg: "image/svg+xml",
-  tif: "image/tiff",
-  tiff: "image/tiff",
-  ts: "video/mp2t",
-  ttf: "font/ttf",
-  txt: "text/plain",
-  wasm: "application/wasm",
-  webm: "video/webm",
-  weba: "audio/webm",
-  webmanifest: "application/manifest+json",
-  webp: "image/webp",
-  woff: "font/woff",
-  woff2: "font/woff2",
-  xhtml: "application/xhtml+xml",
-  xml: "application/xml",
-  zip: "application/zip",
-  "3gp": "video/3gpp",
-  "3g2": "video/3gpp2",
-  gltf: "model/gltf+json",
-  glb: "model/gltf-binary"
-};
-var baseMimes = _baseMimes;
-var defaultJoin = (...paths) => {
-  let result = paths.filter((p) => p !== "").join("/");
-  result = result.replace(/(?<=\/)\/+/g, "");
-  const segments = result.split("/");
-  const resolved = [];
-  for (const segment of segments) {
-    if (segment === ".." && resolved.length > 0 && resolved.at(-1) !== "..") {
-      resolved.pop();
-    } else if (segment !== ".") {
-      resolved.push(segment);
-    }
-  }
-  return resolved.join("/") || ".";
-};
-var ENCODINGS = {
-  br: ".br",
-  zstd: ".zst",
-  gzip: ".gz"
-};
-var ENCODINGS_ORDERED_KEYS = Object.keys(ENCODINGS);
-var DEFAULT_DOCUMENT = "index.html";
-var serveStatic = (options2) => {
-  const root = options2.root ?? "./";
-  const optionPath = options2.path;
-  const join10 = options2.join ?? defaultJoin;
-  return async (c, next) => {
-    if (c.finalized) {
-      return next();
-    }
-    let filename;
-    if (options2.path) {
-      filename = options2.path;
-    } else {
-      try {
-        filename = tryDecodeURI(c.req.path);
-        if (/(?:^|[\/\\])\.{1,2}(?:$|[\/\\])|[\/\\]{2,}/.test(filename)) {
-          throw new Error();
-        }
-      } catch {
-        await options2.onNotFound?.(c.req.path, c);
-        return next();
-      }
-    }
-    let path8 = join10(
-      root,
-      !optionPath && options2.rewriteRequestPath ? options2.rewriteRequestPath(filename) : filename
-    );
-    if (options2.isDir && await options2.isDir(path8)) {
-      path8 = join10(path8, DEFAULT_DOCUMENT);
-    }
-    const getContent = options2.getContent;
-    let content = await getContent(path8, c);
-    if (content instanceof Response) {
-      return c.newResponse(content.body, content);
-    }
-    if (content) {
-      const mimeType = options2.mimes && getMimeType(path8, options2.mimes) || getMimeType(path8);
-      c.header("Content-Type", mimeType || "application/octet-stream");
-      if (options2.precompressed && (!mimeType || COMPRESSIBLE_CONTENT_TYPE_REGEX.test(mimeType))) {
-        const acceptEncodingSet = new Set(
-          c.req.header("Accept-Encoding")?.split(",").map((encoding) => encoding.trim())
-        );
-        for (const encoding of ENCODINGS_ORDERED_KEYS) {
-          if (!acceptEncodingSet.has(encoding)) {
-            continue;
-          }
-          const compressedContent = await getContent(path8 + ENCODINGS[encoding], c);
-          if (compressedContent) {
-            content = compressedContent;
-            c.header("Content-Encoding", encoding);
-            c.header("Vary", "Accept-Encoding", { append: true });
-            break;
-          }
-        }
-      }
-      await options2.onFound?.(path8, c);
-      return c.body(content);
-    }
-    await options2.onNotFound?.(path8, c);
-    await next();
-    return;
-  };
-};
-var { open, lstatSync, errors } = Deno;
-var serveStatic2 = (options2) => {
-  return async function serveStatic22(c, next) {
-    const getContent = async (path8) => {
-      try {
-        if (isDir(path8)) {
-          return null;
-        }
-        const file = await open(path8);
-        return file.readable;
-      } catch (e2) {
-        if (!(e2 instanceof errors.NotFound)) {
-          console.warn(`${e2}`);
-        }
-        return null;
-      }
-    };
-    const isDir = (path8) => {
-      let isDir2;
-      try {
-        const stat = lstatSync(path8);
-        isDir2 = stat.isDirectory;
-      } catch {
-      }
-      return isDir2;
-    };
-    return serveStatic({
-      ...options2,
-      getContent,
-      join: join72,
-      isDir
-    })(c, next);
-  };
-};
-var X_HONO_DISABLE_SSG_HEADER_KEY = "x-hono-disable-ssg";
-var SSG_DISABLED_RESPONSE = (() => {
-  try {
-    return new Response("SSG is disabled", {
-      status: 404,
-      headers: { [X_HONO_DISABLE_SSG_HEADER_KEY]: "true" }
-    });
-  } catch {
-    return null;
-  }
-})();
-var WSContext = class {
-  #init;
-  constructor(init2) {
-    this.#init = init2;
-    this.raw = init2.raw;
-    this.url = init2.url ? new URL(init2.url) : null;
-    this.protocol = init2.protocol ?? null;
-  }
-  send(source, options2) {
-    this.#init.send(source, options2 ?? {});
-  }
-  raw;
-  binaryType = "arraybuffer";
-  get readyState() {
-    return this.#init.readyState;
-  }
-  url;
-  protocol;
-  close(code2, reason) {
-    this.#init.close(code2, reason);
-  }
-};
-var defineWebSocketHelper = (handler) => {
-  return (...args) => {
-    if (typeof args[0] === "function") {
-      const [createEvents, options2] = args;
-      return async function upgradeWebSocket2(c, next) {
-        const events = await createEvents(c);
-        const result = await handler(c, events, options2);
-        if (result) {
-          return result;
-        }
-        await next();
-      };
-    } else {
-      const [c, events, options2] = args;
-      return (async () => {
-        const upgraded = await handler(c, events, options2);
-        if (!upgraded) {
-          throw new Error("Failed to upgrade WebSocket");
-        }
-        return upgraded;
-      })();
-    }
-  };
-};
-var upgradeWebSocket = defineWebSocketHelper(async (c, events, options2) => {
-  if (c.req.header("upgrade") !== "websocket") {
-    return;
-  }
-  const { response, socket } = Deno.upgradeWebSocket(c.req.raw, options2 ?? {});
-  const wsContext = new WSContext({
-    close: (code2, reason) => socket.close(code2, reason),
-    get protocol() {
-      return socket.protocol;
-    },
-    raw: socket,
-    get readyState() {
-      return socket.readyState;
-    },
-    url: socket.url ? new URL(socket.url) : null,
-    send: (source) => socket.send(source)
-  });
-  socket.onopen = (evt) => events.onOpen?.(evt, wsContext);
-  socket.onmessage = (evt) => events.onMessage?.(evt, wsContext);
-  socket.onclose = (evt) => events.onClose?.(evt, wsContext);
-  socket.onerror = (evt) => events.onError?.(evt, wsContext);
-  return response;
-});
-var getConnInfo = (c) => {
-  const { remoteAddr } = c.env;
-  return {
-    remote: {
-      address: remoteAddr.hostname,
-      port: remoteAddr.port,
-      transport: remoteAddr.transport
-    }
-  };
-};
-var import_npm_pino = __toESM(require_pino());
-var prettyPrint = process6.env.NODE_ENV === "development" || process6.env.CI || process6.env.CYPRESS_RECORD_KEY || process6.env.PRETTY;
-function logMethod(args, method) {
-  const stringIdx = typeof args[0] === "string" ? 0 : 1;
-  if (args.length > 1) {
-    for (let i2 = stringIdx + 1; i2 < args.length; ++i2) {
-      args[stringIdx] += typeof args[i2] === "string" ? " %s" : " %o";
-    }
-  }
-  method.apply(this, args);
-}
-var logger;
-if (prettyPrint) {
-  try {
-    logger = (0, import_npm_pino.default)({
-      hooks: { logMethod },
-      transport: {
-        target: "pino-pretty",
-        options: {
-          colorize: true
-        }
-      }
-    });
-  } catch (e2) {
-    console.warn("pino-pretty transport unavailable, using basic logging", e2);
-    logger = (0, import_npm_pino.default)({ hooks: { logMethod } });
-  }
-} else {
-  logger = (0, import_npm_pino.default)({ hooks: { logMethod } });
-}
-var logLevel = process6.env.LOG_LEVEL || (prettyPrint ? "debug" : "info");
-if (Object.keys(logger.levels.values).includes(logLevel)) {
-  logger.level = logLevel;
-} else {
-  logger.warn(`Unknown log level: ${logLevel}`);
-}
-var loggerInitialized = false;
-function initializeLogger() {
-  if (loggerInitialized) return;
-  loggerInitialized = true;
-  console.debug = logger.debug.bind(logger);
-  console.info = logger.info.bind(logger);
-  console.log = logger.info.bind(logger);
-  console.warn = logger.warn.bind(logger);
-  console.error = logger.error.bind(logger);
-}
-var logger_default = logger;
 var validCookieNameRegEx = /^[\w!#$%&'*.^`|~+-]+$/;
 var validCookieValueRegEx = /^[ !#-:<-[\]-~]*$/;
 var trimCookieWhitespace = (value) => {
@@ -73074,6 +72768,53 @@ var bodyLimit = (options2) => {
     }
   };
 };
+var import_npm_pino = __toESM(require_pino());
+var prettyPrint = process6.env.NODE_ENV === "development" || process6.env.CI || process6.env.CYPRESS_RECORD_KEY || process6.env.PRETTY;
+function logMethod(args, method) {
+  const stringIdx = typeof args[0] === "string" ? 0 : 1;
+  if (args.length > 1) {
+    for (let i2 = stringIdx + 1; i2 < args.length; ++i2) {
+      args[stringIdx] += typeof args[i2] === "string" ? " %s" : " %o";
+    }
+  }
+  method.apply(this, args);
+}
+var logger;
+if (prettyPrint) {
+  try {
+    logger = (0, import_npm_pino.default)({
+      hooks: { logMethod },
+      transport: {
+        target: "pino-pretty",
+        options: {
+          colorize: true
+        }
+      }
+    });
+  } catch (e2) {
+    console.warn("pino-pretty transport unavailable, using basic logging", e2);
+    logger = (0, import_npm_pino.default)({ hooks: { logMethod } });
+  }
+} else {
+  logger = (0, import_npm_pino.default)({ hooks: { logMethod } });
+}
+var logLevel = process6.env.LOG_LEVEL || (prettyPrint ? "debug" : "info");
+if (Object.keys(logger.levels.values).includes(logLevel)) {
+  logger.level = logLevel;
+} else {
+  logger.warn(`Unknown log level: ${logLevel}`);
+}
+var loggerInitialized = false;
+function initializeLogger() {
+  if (loggerInitialized) return;
+  loggerInitialized = true;
+  console.debug = logger.debug.bind(logger);
+  console.info = logger.info.bind(logger);
+  console.log = logger.info.bind(logger);
+  console.warn = logger.warn.bind(logger);
+  console.error = logger.error.bind(logger);
+}
+var logger_default = logger;
 var import_npm_nconf4 = __toESM(require_nconf());
 init_zod();
 function extractBearer(c) {
@@ -74005,12 +73746,12 @@ function registerRoutes(app2) {
   app2.post(
     "/zkpp/:contractID/updatePasswordHash",
     zValidator("param", zkppContractParamSchema),
-    zValidator("json", zkppUpdatePasswordBodySchema),
+    zValidatorFormOrJson(zkppUpdatePasswordBodySchema),
     async function(c) {
       const { contractID } = c.req.valid("param");
       if (ARCHIVE_MODE) throw new HTTPException(501, { message: "Server in archive mode" });
       try {
-        const payload = c.req.valid("json");
+        const payload = c.get("validatedBody");
         const result = await updateContractSalt(contractID, payload.r, payload.s, payload.sig, payload.hc, payload.Ea);
         if (result) {
           return c.json(result);
@@ -74307,9 +74048,9 @@ var import_npm_chalk2 = __toESM(require_source());
 var import_stream2 = __toESM(require_stream(), 1);
 var import_receiver = __toESM(require_receiver(), 1);
 var import_sender = __toESM(require_sender(), 1);
-var import_websocket3 = __toESM(require_websocket(), 1);
+var import_websocket = __toESM(require_websocket(), 1);
 var import_websocket_server = __toESM(require_websocket_server(), 1);
-var wrapper_default = import_websocket3.default;
+var wrapper_default = import_websocket.default;
 var isPushSubscriptionInfo = (x3) => {
   return has(x3, "endpoint");
 };
@@ -74640,6 +74381,7 @@ var currentOwnerSizeTotalWorker = void 0;
 var currentCreditsWorker = void 0;
 var currentManifest = void 0;
 var currentPushHeartbeatIntervalID = void 0;
+var isStopping = false;
 var appendToOrphanedNamesIndex = appendToIndexFactory("_private_orphaned_names_index");
 var serverSelectorsInstalled = false;
 function installServerSelectorsOnce() {
@@ -74890,7 +74632,7 @@ async function startServer() {
     throw new Error("The size calculation worker must run more frequently than the credits worker for accurate billing");
   }
   try {
-    currentManifest = (await import(pathToFileURL(join82(appDir, "chelonia.json")).toString(), {
+    currentManifest = (await import(pathToFileURL(join72(appDir, "chelonia.json")).toString(), {
       with: { type: "json" }
     })).default;
   } catch {
@@ -75074,40 +74816,46 @@ async function startServer() {
   return { uri };
 }
 async function stopServer() {
-  if (currentPushHeartbeatIntervalID !== void 0) {
-    clearInterval(currentPushHeartbeatIntervalID);
-    currentPushHeartbeatIntervalID = void 0;
-  }
-  if (esm_default("sbp/selectors/fn", "backend/server/stopRateLimiters")) {
-    await esm_default("backend/server/stopRateLimiters");
-  }
-  const pubsub = esm_default("okTurtles.data/get", PUBSUB_INSTANCE);
-  if (pubsub) {
-    pubsub.clients.forEach((client) => client.terminate());
-    pubsub.close();
-    esm_default("okTurtles.data/delete", PUBSUB_INSTANCE);
-  }
-  if (currentHttpServer) {
-    await new Promise((resolve82, reject) => {
-      currentHttpServer.close((err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve82();
-        }
+  if (isStopping) return;
+  isStopping = true;
+  try {
+    if (currentPushHeartbeatIntervalID !== void 0) {
+      clearInterval(currentPushHeartbeatIntervalID);
+      currentPushHeartbeatIntervalID = void 0;
+    }
+    if (esm_default("sbp/selectors/fn", "backend/server/stopRateLimiters")) {
+      await esm_default("backend/server/stopRateLimiters");
+    }
+    const pubsub = esm_default("okTurtles.data/get", PUBSUB_INSTANCE);
+    if (pubsub) {
+      pubsub.clients.forEach((client) => client.terminate());
+      pubsub.close();
+      esm_default("okTurtles.data/delete", PUBSUB_INSTANCE);
+    }
+    if (currentHttpServer) {
+      await new Promise((resolve82, reject) => {
+        currentHttpServer.close((err) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve82();
+          }
+        });
       });
-    });
-    currentHttpServer = null;
+      currentHttpServer = null;
+    }
+    await Promise.all([
+      currentOwnerSizeTotalWorker?.terminate(),
+      currentCreditsWorker?.terminate()
+    ]);
+    currentOwnerSizeTotalWorker = void 0;
+    currentCreditsWorker = void 0;
+    await closeDB();
+    currentApp = null;
+    currentManifest = void 0;
+  } finally {
+    isStopping = false;
   }
-  await Promise.all([
-    currentOwnerSizeTotalWorker?.terminate(),
-    currentCreditsWorker?.terminate()
-  ]);
-  currentOwnerSizeTotalWorker = void 0;
-  currentCreditsWorker = void 0;
-  await closeDB();
-  currentApp = null;
-  currentManifest = void 0;
 }
 var app = new Proxy({}, {
   get(_target, prop) {
@@ -75226,6 +74974,275 @@ async function startServer2(options2 = {}) {
 async function stopServer2() {
   await stopServer();
 }
+var COMPRESSIBLE_CONTENT_TYPE_REGEX = /^\s*(?:text\/(?!event-stream(?:[;\s]|$))[^;\s]+|application\/(?:javascript|json|xml|xml-dtd|ecmascript|dart|postscript|rtf|tar|toml|vnd\.dart|vnd\.ms-fontobject|vnd\.ms-opentype|wasm|x-httpd-php|x-javascript|x-ns-proxy-autoconfig|x-sh|x-tar|x-virtualbox-hdd|x-virtualbox-ova|x-virtualbox-ovf|x-virtualbox-vbox|x-virtualbox-vdi|x-virtualbox-vhd|x-virtualbox-vmdk|x-www-form-urlencoded)|font\/(?:otf|ttf)|image\/(?:bmp|vnd\.adobe\.photoshop|vnd\.microsoft\.icon|vnd\.ms-dds|x-icon|x-ms-bmp)|message\/rfc822|model\/gltf-binary|x-shader\/x-fragment|x-shader\/x-vertex|[^;\s]+?\+(?:json|text|xml|yaml))(?:[;\s]|$)/i;
+var getMimeType = (filename, mimes = baseMimes) => {
+  const regexp = /\.([a-zA-Z0-9]+?)$/;
+  const match2 = filename.match(regexp);
+  if (!match2) {
+    return;
+  }
+  let mimeType = mimes[match2[1].toLowerCase()];
+  if (mimeType && mimeType.startsWith("text")) {
+    mimeType += "; charset=utf-8";
+  }
+  return mimeType;
+};
+var _baseMimes = {
+  aac: "audio/aac",
+  avi: "video/x-msvideo",
+  avif: "image/avif",
+  av1: "video/av1",
+  bin: "application/octet-stream",
+  bmp: "image/bmp",
+  css: "text/css",
+  csv: "text/csv",
+  eot: "application/vnd.ms-fontobject",
+  epub: "application/epub+zip",
+  gif: "image/gif",
+  gz: "application/gzip",
+  htm: "text/html",
+  html: "text/html",
+  ico: "image/x-icon",
+  ics: "text/calendar",
+  jpeg: "image/jpeg",
+  jpg: "image/jpeg",
+  js: "text/javascript",
+  json: "application/json",
+  jsonld: "application/ld+json",
+  map: "application/json",
+  mid: "audio/x-midi",
+  midi: "audio/x-midi",
+  mjs: "text/javascript",
+  mp3: "audio/mpeg",
+  mp4: "video/mp4",
+  mpeg: "video/mpeg",
+  oga: "audio/ogg",
+  ogv: "video/ogg",
+  ogx: "application/ogg",
+  opus: "audio/opus",
+  otf: "font/otf",
+  pdf: "application/pdf",
+  png: "image/png",
+  rtf: "application/rtf",
+  svg: "image/svg+xml",
+  tif: "image/tiff",
+  tiff: "image/tiff",
+  ts: "video/mp2t",
+  ttf: "font/ttf",
+  txt: "text/plain",
+  wasm: "application/wasm",
+  webm: "video/webm",
+  weba: "audio/webm",
+  webmanifest: "application/manifest+json",
+  webp: "image/webp",
+  woff: "font/woff",
+  woff2: "font/woff2",
+  xhtml: "application/xhtml+xml",
+  xml: "application/xml",
+  zip: "application/zip",
+  "3gp": "video/3gpp",
+  "3g2": "video/3gpp2",
+  gltf: "model/gltf+json",
+  glb: "model/gltf-binary"
+};
+var baseMimes = _baseMimes;
+var defaultJoin = (...paths) => {
+  let result = paths.filter((p) => p !== "").join("/");
+  result = result.replace(/(?<=\/)\/+/g, "");
+  const segments = result.split("/");
+  const resolved = [];
+  for (const segment of segments) {
+    if (segment === ".." && resolved.length > 0 && resolved.at(-1) !== "..") {
+      resolved.pop();
+    } else if (segment !== ".") {
+      resolved.push(segment);
+    }
+  }
+  return resolved.join("/") || ".";
+};
+var ENCODINGS = {
+  br: ".br",
+  zstd: ".zst",
+  gzip: ".gz"
+};
+var ENCODINGS_ORDERED_KEYS = Object.keys(ENCODINGS);
+var DEFAULT_DOCUMENT = "index.html";
+var serveStatic = (options2) => {
+  const root = options2.root ?? "./";
+  const optionPath = options2.path;
+  const join10 = options2.join ?? defaultJoin;
+  return async (c, next) => {
+    if (c.finalized) {
+      return next();
+    }
+    let filename;
+    if (options2.path) {
+      filename = options2.path;
+    } else {
+      try {
+        filename = tryDecodeURI(c.req.path);
+        if (/(?:^|[\/\\])\.{1,2}(?:$|[\/\\])|[\/\\]{2,}/.test(filename)) {
+          throw new Error();
+        }
+      } catch {
+        await options2.onNotFound?.(c.req.path, c);
+        return next();
+      }
+    }
+    let path8 = join10(
+      root,
+      !optionPath && options2.rewriteRequestPath ? options2.rewriteRequestPath(filename) : filename
+    );
+    if (options2.isDir && await options2.isDir(path8)) {
+      path8 = join10(path8, DEFAULT_DOCUMENT);
+    }
+    const getContent = options2.getContent;
+    let content = await getContent(path8, c);
+    if (content instanceof Response) {
+      return c.newResponse(content.body, content);
+    }
+    if (content) {
+      const mimeType = options2.mimes && getMimeType(path8, options2.mimes) || getMimeType(path8);
+      c.header("Content-Type", mimeType || "application/octet-stream");
+      if (options2.precompressed && (!mimeType || COMPRESSIBLE_CONTENT_TYPE_REGEX.test(mimeType))) {
+        const acceptEncodingSet = new Set(
+          c.req.header("Accept-Encoding")?.split(",").map((encoding) => encoding.trim())
+        );
+        for (const encoding of ENCODINGS_ORDERED_KEYS) {
+          if (!acceptEncodingSet.has(encoding)) {
+            continue;
+          }
+          const compressedContent = await getContent(path8 + ENCODINGS[encoding], c);
+          if (compressedContent) {
+            content = compressedContent;
+            c.header("Content-Encoding", encoding);
+            c.header("Vary", "Accept-Encoding", { append: true });
+            break;
+          }
+        }
+      }
+      await options2.onFound?.(path8, c);
+      return c.body(content);
+    }
+    await options2.onNotFound?.(path8, c);
+    await next();
+    return;
+  };
+};
+var { open, lstatSync, errors } = Deno;
+var serveStatic2 = (options2) => {
+  return async function serveStatic22(c, next) {
+    const getContent = async (path8) => {
+      try {
+        if (isDir(path8)) {
+          return null;
+        }
+        const file = await open(path8);
+        return file.readable;
+      } catch (e2) {
+        if (!(e2 instanceof errors.NotFound)) {
+          console.warn(`${e2}`);
+        }
+        return null;
+      }
+    };
+    const isDir = (path8) => {
+      let isDir2;
+      try {
+        const stat = lstatSync(path8);
+        isDir2 = stat.isDirectory;
+      } catch {
+      }
+      return isDir2;
+    };
+    return serveStatic({
+      ...options2,
+      getContent,
+      join: join82,
+      isDir
+    })(c, next);
+  };
+};
+var X_HONO_DISABLE_SSG_HEADER_KEY = "x-hono-disable-ssg";
+var SSG_DISABLED_RESPONSE = (() => {
+  try {
+    return new Response("SSG is disabled", {
+      status: 404,
+      headers: { [X_HONO_DISABLE_SSG_HEADER_KEY]: "true" }
+    });
+  } catch {
+    return null;
+  }
+})();
+var WSContext = class {
+  #init;
+  constructor(init2) {
+    this.#init = init2;
+    this.raw = init2.raw;
+    this.url = init2.url ? new URL(init2.url) : null;
+    this.protocol = init2.protocol ?? null;
+  }
+  send(source, options2) {
+    this.#init.send(source, options2 ?? {});
+  }
+  raw;
+  binaryType = "arraybuffer";
+  get readyState() {
+    return this.#init.readyState;
+  }
+  url;
+  protocol;
+  close(code2, reason) {
+    this.#init.close(code2, reason);
+  }
+};
+var defineWebSocketHelper = (handler) => {
+  return (...args) => {
+    if (typeof args[0] === "function") {
+      const [createEvents, options2] = args;
+      return async function upgradeWebSocket2(c, next) {
+        const events = await createEvents(c);
+        const result = await handler(c, events, options2);
+        if (result) {
+          return result;
+        }
+        await next();
+      };
+    } else {
+      const [c, events, options2] = args;
+      return (async () => {
+        const upgraded = await handler(c, events, options2);
+        if (!upgraded) {
+          throw new Error("Failed to upgrade WebSocket");
+        }
+        return upgraded;
+      })();
+    }
+  };
+};
+var upgradeWebSocket = defineWebSocketHelper(async (c, events, options2) => {
+  if (c.req.header("upgrade") !== "websocket") {
+    return;
+  }
+  const { response, socket } = Deno.upgradeWebSocket(c.req.raw, options2 ?? {});
+  const wsContext = new WSContext({
+    close: (code2, reason) => socket.close(code2, reason),
+    get protocol() {
+      return socket.protocol;
+    },
+    raw: socket,
+    get readyState() {
+      return socket.readyState;
+    },
+    url: socket.url ? new URL(socket.url) : null,
+    send: (source) => socket.send(source)
+  });
+  socket.onopen = (evt) => events.onOpen?.(evt, wsContext);
+  socket.onmessage = (evt) => events.onMessage?.(evt, wsContext);
+  socket.onclose = (evt) => events.onClose?.(evt, wsContext);
+  socket.onerror = (evt) => events.onError?.(evt, wsContext);
+  return response;
+});
 var import_npm_nconf6 = __toESM(require_nconf());
 var getDashboardPath = () => {
   const baseDir = import.meta.dirname || path6.join(process11.cwd(), "build");
@@ -75237,16 +75254,18 @@ async function startDashboard() {
   const host = import_npm_nconf6.default.get("server:host") || "0.0.0.0";
   const dashboardRoot = getDashboardPath();
   const app2 = new Hono2();
-  app2.get("/assets/*", serveStatic2({ root: dashboardRoot, rewriteRequestPath: (p) => p }));
-  app2.get("/dashboard", serveStatic2({ path: path6.join(dashboardRoot, "index.html") }));
-  app2.get("/dashboard/", serveStatic2({ path: path6.join(dashboardRoot, "index.html") }));
+  const staticMiddleware = serveStatic2({ root: dashboardRoot, rewriteRequestPath: (p) => p });
+  const indexMiddleware = serveStatic2({ path: path6.join(dashboardRoot, "index.html") });
+  app2.get("/assets/*", staticMiddleware);
+  app2.get("/dashboard", indexMiddleware);
+  app2.get("/dashboard/", indexMiddleware);
   app2.get("/*", async (c) => {
-    const staticResponse = await serveStatic2({ root: dashboardRoot, rewriteRequestPath: (p) => p })(c, async () => {
+    const staticResponse = await staticMiddleware(c, async () => {
     });
     if (staticResponse) {
       return staticResponse;
     }
-    const indexResponse = await serveStatic2({ path: path6.join(dashboardRoot, "index.html") })(c, async () => {
+    const indexResponse = await indexMiddleware(c, async () => {
     });
     return indexResponse || c.text("Not Found", 404);
   });

@@ -45,6 +45,7 @@ let currentOwnerSizeTotalWorker: ReturnType<typeof createWorker> | undefined = u
 let currentCreditsWorker: ReturnType<typeof createWorker> | undefined = undefined
 let currentManifest: Record<string, unknown> | undefined = undefined
 let currentPushHeartbeatIntervalID: ReturnType<typeof setInterval> | undefined = undefined
+let isStopping = false
 
 // Helper for appending to orphaned names index (stateless)
 const appendToOrphanedNamesIndex = appendToIndexFactory('_private_orphaned_names_index')
@@ -639,53 +640,59 @@ export async function startServer (): Promise<{ uri: string }> {
 }
 
 export async function stopServer (): Promise<void> {
-  // Clear push-heartbeat interval
-  if (currentPushHeartbeatIntervalID !== undefined) {
-    clearInterval(currentPushHeartbeatIntervalID)
-    currentPushHeartbeatIntervalID = undefined
-  }
+  if (isStopping) return
+  isStopping = true
+  try {
+    // Clear push-heartbeat interval
+    if (currentPushHeartbeatIntervalID !== undefined) {
+      clearInterval(currentPushHeartbeatIntervalID)
+      currentPushHeartbeatIntervalID = undefined
+    }
 
-  // Stop rate limiters if registered
-  if (sbp('sbp/selectors/fn', 'backend/server/stopRateLimiters')) {
-    await sbp('backend/server/stopRateLimiters')
-  }
+    // Stop rate limiters if registered
+    if (sbp('sbp/selectors/fn', 'backend/server/stopRateLimiters')) {
+      await sbp('backend/server/stopRateLimiters')
+    }
 
-  // Close pubsub server (clears its ping interval)
-  const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE) as { close: () => void; clients: Set<{ terminate: () => void }> } | undefined
-  if (pubsub) {
-    pubsub.clients.forEach((client) => client.terminate())
-    pubsub.close()
-    sbp('okTurtles.data/delete', PUBSUB_INSTANCE)
-  }
+    // Close pubsub server (clears its ping interval)
+    const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE) as { close: () => void; clients: Set<{ terminate: () => void }> } | undefined
+    if (pubsub) {
+      pubsub.clients.forEach((client) => client.terminate())
+      pubsub.close()
+      sbp('okTurtles.data/delete', PUBSUB_INSTANCE)
+    }
 
-  // Close HTTP server
-  if (currentHttpServer) {
-    await new Promise<void>((resolve, reject) => {
-      currentHttpServer!.close((err) => {
-        if (err) {
-          reject(err)
-        } else {
-          resolve()
-        }
+    // Close HTTP server
+    if (currentHttpServer) {
+      await new Promise<void>((resolve, reject) => {
+        currentHttpServer!.close((err) => {
+          if (err) {
+            reject(err)
+          } else {
+            resolve()
+          }
+        })
       })
-    })
-    currentHttpServer = null
+      currentHttpServer = null
+    }
+
+    // Terminate workers
+    await Promise.all([
+      currentOwnerSizeTotalWorker?.terminate(),
+      currentCreditsWorker?.terminate()
+    ])
+    currentOwnerSizeTotalWorker = undefined
+    currentCreditsWorker = undefined
+
+    // Close database
+    await closeDB()
+
+    // Clear app and manifest
+    currentApp = null
+    currentManifest = undefined
+  } finally {
+    isStopping = false
   }
-
-  // Terminate workers
-  await Promise.all([
-    currentOwnerSizeTotalWorker?.terminate(),
-    currentCreditsWorker?.terminate()
-  ])
-  currentOwnerSizeTotalWorker = undefined
-  currentCreditsWorker = undefined
-
-  // Close database
-  await closeDB()
-
-  // Clear app and manifest
-  currentApp = null
-  currentManifest = undefined
 }
 
 // Legacy: export the Hono app for backwards compatibility (deprecated)
