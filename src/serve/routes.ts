@@ -242,24 +242,23 @@ export function getStaticServeConfig () {
   const appDir = nconf.get('server:appDir') || '.'
   const dashboardDir = import.meta.dirname || './build/dist-dashboard'
   return {
-    routePath: isCheloniaDashboard ? '/dashboard/{path*}' : '/app/{path*}',
     distAssets: path.resolve(path.join(isCheloniaDashboard ? dashboardDir : appDir, 'assets')),
     distIndexHtml: path.resolve(path.join(isCheloniaDashboard ? dashboardDir : appDir, 'index.html')),
     redirect: isCheloniaDashboard ? '/dashboard/' : '/app/'
   }
 }
 
-const errorMapper = (e: Error): never => {
+const errorMapper = (e: Error): HTTPException => {
   switch (e?.name) {
     case 'BackendErrorNotFound':
-      throw new HTTPException(404)
+      return new HTTPException(404)
     case 'BackendErrorGone':
-      throw new HTTPException(410)
+      return new HTTPException(410)
     case 'BackendErrorBadData':
-      throw new HTTPException(422, { message: e.message })
+      return new HTTPException(422, { message: e.message })
     default:
       console.error(e, 'Unexpected backend error')
-      throw new HTTPException(500, { message: e.message ?? 'internal error' })
+      return new HTTPException(500, { message: e.message ?? 'internal error' })
   }
 }
 
@@ -511,7 +510,7 @@ export function registerRoutes (app: Hono): void {
         if (err instanceof HTTPException) throw err
         ;(err as unknown as { ip: string }).ip = ip
         logger.error(err, `GET /eventsAfter/${contractID}/${since}`, (err as Error).message)
-        errorMapper(err as Error)
+        throw errorMapper(err as Error)
       }
     })
 
@@ -856,7 +855,7 @@ app.post('/name', async function (c) {
         await sbp('backend/deleteFile', hash, null, true)
         return c.body(null, 200)
       } catch (e) {
-        errorMapper(e as Error)
+        throw errorMapper(e as Error)
       }
     })
 
@@ -914,7 +913,7 @@ app.post('/name', async function (c) {
         // TODO: Tracking progress not yet implemented
         return c.json({ id }, 202)
       } catch (e) {
-        errorMapper(e as Error)
+        throw errorMapper(e as Error)
       }
     })
 
@@ -1040,14 +1039,14 @@ app.post('/name', async function (c) {
 
   // SPA routes
 
-  app.get('/assets/:subpath{.+}', async function (c) {
+  app.get('/assets/:subpath{.+}', function (c) {
     const subpath = c.req.param('subpath')
     return serveAsset(c, subpath, staticServeConfig.distAssets)
   })
 
   // Dashboard-specific assets route (when IS_CHELONIA_DASHBOARD_DEV is set)
   if (isCheloniaDashboard) {
-    app.get('/dashboard/assets/:subpath{.+}', async function (c) {
+    app.get('/dashboard/assets/:subpath{.+}', function (c) {
       const subpath = c.req.param('subpath')
       return serveAsset(c, subpath, staticServeConfig.distAssets)
     })
