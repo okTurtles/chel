@@ -4718,11 +4718,17 @@ if (Object.keys(logger.levels.values).includes(logLevel)) {
 } else {
   logger.warn(`Unknown log level: ${logLevel}`);
 }
-console.debug = logger.debug.bind(logger);
-console.info = logger.info.bind(logger);
-console.log = logger.info.bind(logger);
-console.warn = logger.warn.bind(logger);
-console.error = logger.error.bind(logger);
+var loggerInitialized = false;
+function initializeLogger() {
+  if (loggerInitialized) return;
+  loggerInitialized = true;
+  console.debug = logger.debug.bind(logger);
+  console.info = logger.info.bind(logger);
+  console.log = logger.info.bind(logger);
+  console.warn = logger.warn.bind(logger);
+  console.error = logger.error.bind(logger);
+}
+initializeLogger();
 Object.defineProperties(Buffer2, {
   [serdesDeserializeSymbol]: {
     value(buf) {

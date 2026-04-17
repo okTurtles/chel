@@ -427,7 +427,7 @@ export async function startServer (): Promise<{ uri: string }> {
   if (process.env.NODE_ENV === 'development' && !process.env.CI) {
     currentApp.use('*', async (c, next) => {
       await next()
-      const ip = c.req.header('x-real-ip') || 'unknown'
+      const ip = c.req.header('x-real-ip') || c.req.header('x-forwarded-for')?.split(',')[0].trim() || 'unknown'
       console.debug(chalk`{grey ${ip}: ${c.req.method} ${c.req.path} --> ${c.res.status}}`)
     })
   }

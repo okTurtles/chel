@@ -2,7 +2,10 @@ import { Buffer } from 'node:buffer'
 import { deserializer, serdesDeserializeSymbol, serdesSerializeSymbol, serdesTagSymbol, serializer } from 'npm:@chelonia/serdes'
 import 'npm:@sbp/okturtles.eventqueue'
 import sbp from 'npm:@sbp/sbp'
-import './logger.ts'
+import { initializeLogger } from './logger.ts'
+
+// Initialize pino logger for worker processes
+initializeLogger()
 
 Object.defineProperties(Buffer, {
   [serdesDeserializeSymbol]: {

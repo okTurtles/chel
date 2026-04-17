@@ -7,7 +7,7 @@ import chalk from 'npm:chalk'
 import { SERVER_EXITING, SERVER_RUNNING } from './events.ts'
 import { PUBSUB_INSTANCE } from './instance-keys.ts'
 import { startServer as startServerImpl, stopServer as stopServerImpl } from './server.ts'
-import './logger.ts'
+import { initializeLogger } from './logger.ts'
 
 console.info('NODE_ENV =', process.env.NODE_ENV)
 
@@ -109,6 +109,9 @@ export interface StartServerOptions {
 
 export async function startServer (options: StartServerOptions = {}): Promise<{ uri: string }> {
   const { installSignalHandlers: shouldInstallSignalHandlers = true } = options
+
+  // Initialize pino logger (replaces console.* methods)
+  initializeLogger()
 
   // Install global exception handlers once per process (only if signal handlers are enabled)
   if (shouldInstallSignalHandlers) {
