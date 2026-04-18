@@ -73026,7 +73026,6 @@ function getStaticServeConfig() {
   const appDir = import_npm_nconf4.default.get("server:appDir") || ".";
   const dashboardDir = import.meta.dirname || "./build/dist-dashboard";
   return {
-    routePath: isCheloniaDashboard ? "/dashboard/{path*}" : "/app/{path*}",
     distAssets: path5.resolve(path5.join(isCheloniaDashboard ? dashboardDir : appDir, "assets")),
     distIndexHtml: path5.resolve(path5.join(isCheloniaDashboard ? dashboardDir : appDir, "index.html")),
     redirect: isCheloniaDashboard ? "/dashboard/" : "/app/"
@@ -73035,14 +73034,14 @@ function getStaticServeConfig() {
 var errorMapper = (e2) => {
   switch (e2?.name) {
     case "BackendErrorNotFound":
-      throw new HTTPException(404);
+      return new HTTPException(404);
     case "BackendErrorGone":
-      throw new HTTPException(410);
+      return new HTTPException(410);
     case "BackendErrorBadData":
-      throw new HTTPException(422, { message: e2.message });
+      return new HTTPException(422, { message: e2.message });
     default:
       console.error(e2, "Unexpected backend error");
-      throw new HTTPException(500, { message: e2.message ?? "internal error" });
+      return new HTTPException(500, { message: e2.message ?? "internal error" });
   }
 };
 function getClientIP(c) {
@@ -73245,7 +73244,7 @@ function registerRoutes(app2) {
         if (err instanceof HTTPException) throw err;
         err.ip = ip;
         logger_default.error(err, `GET /eventsAfter/${contractID}/${since}`, err.message);
-        errorMapper(err);
+        throw errorMapper(err);
       }
     }
   );
@@ -73501,7 +73500,7 @@ function registerRoutes(app2) {
         await esm_default("backend/deleteFile", hash3, null, true);
         return c.body(null, 200);
       } catch (e2) {
-        errorMapper(e2);
+        throw errorMapper(e2);
       }
     }
   );
@@ -73549,7 +73548,7 @@ function registerRoutes(app2) {
         }
         return c.json({ id }, 202);
       } catch (e2) {
-        errorMapper(e2);
+        throw errorMapper(e2);
       }
     }
   );
@@ -73652,12 +73651,12 @@ function registerRoutes(app2) {
     if (!messages) return c.json([]);
     return c.json(messages, 200, { "Cache-Control": "no-store" });
   });
-  app2.get("/assets/:subpath{.+}", async function(c) {
+  app2.get("/assets/:subpath{.+}", function(c) {
     const subpath = c.req.param("subpath");
     return serveAsset(c, subpath, staticServeConfig.distAssets);
   });
   if (isCheloniaDashboard) {
-    app2.get("/dashboard/assets/:subpath{.+}", async function(c) {
+    app2.get("/dashboard/assets/:subpath{.+}", function(c) {
       const subpath = c.req.param("subpath");
       return serveAsset(c, subpath, staticServeConfig.distAssets);
     });
