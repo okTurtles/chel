@@ -58,8 +58,8 @@ chel pin 2.0.0 dist/contracts/2.0.0/group.2.0.0.manifest.json
 **Configuration (`chelonia.json`):**
 ```json
 {
-  "gi.contracts/chatroom": {
-    "chatroom": {
+  "contracts": {
+    "gi.contracts/chatroom": {
       "version": "2.0.6",
       "path": "contracts/gi.contracts_chatroom/2.0.6/chatroom.2.0.6.manifest.json"
     },
