@@ -1259,10 +1259,10 @@ var require_atomic_sleep = __commonJS({
 var require_sonic_boom = __commonJS({
   "node_modules/.deno/sonic-boom@3.8.1/node_modules/sonic-boom/index.js"(exports, module) {
     "use strict";
-    var fs = __require2("fs");
-    var EventEmitter = __require2("events");
-    var inherits = __require2("util").inherits;
-    var path = __require2("path");
+    var fs = __require2("node:fs");
+    var EventEmitter = __require2("node:events");
+    var inherits = __require2("node:util").inherits;
+    var path = __require2("node:path");
     var sleep = require_atomic_sleep();
     var BUSY_WRITE_TIMEOUT = 100;
     var kEmptyBuffer = Buffer.allocUnsafe(0);
@@ -2028,17 +2028,17 @@ var require_thread_stream = __commonJS({
   "node_modules/.deno/thread-stream@2.7.0/node_modules/thread-stream/index.js"(exports, module) {
     "use strict";
     var { version } = require_package();
-    var { EventEmitter } = __require2("events");
-    var { Worker } = __require2("worker_threads");
-    var { join } = __require2("path");
-    var { pathToFileURL } = __require2("url");
+    var { EventEmitter } = __require2("node:events");
+    var { Worker } = __require2("node:worker_threads");
+    var { join } = __require2("node:path");
+    var { pathToFileURL } = __require2("node:url");
     var { wait } = require_wait();
     var {
       WRITE_INDEX,
       READ_INDEX
     } = require_indexes();
-    var buffer = __require2("buffer");
-    var assert = __require2("assert");
+    var buffer = __require2("node:buffer");
+    var assert = __require2("node:assert");
     var kImpl = Symbol("kImpl");
     var MAX_STRING = buffer.constants.MAX_STRING_LENGTH;
     var FakeWeakRef = class {
@@ -2448,9 +2448,9 @@ var require_thread_stream = __commonJS({
 var require_transport = __commonJS({
   "node_modules/.deno/pino@8.19.0/node_modules/pino/lib/transport.js"(exports, module) {
     "use strict";
-    var { createRequire } = __require2("module");
+    var { createRequire } = __require2("node:module");
     var getCallers = require_caller();
-    var { join, isAbsolute, sep } = __require2("path");
+    var { join, isAbsolute, sep } = __require2("node:path");
     var sleep = require_atomic_sleep();
     var onExit = require_on_exit_leak_free();
     var ThreadStream = require_thread_stream();
@@ -2584,7 +2584,7 @@ var require_tools = __commonJS({
       nestedKeyStrSym,
       msgPrefixSym
     } = require_symbols();
-    var { isMainThread } = __require2("worker_threads");
+    var { isMainThread } = __require2("node:worker_threads");
     var transport = require_transport();
     function noop() {
     }
@@ -3096,7 +3096,7 @@ var require_meta = __commonJS({
 var require_proto = __commonJS({
   "node_modules/.deno/pino@8.19.0/node_modules/pino/lib/proto.js"(exports, module) {
     "use strict";
-    var { EventEmitter } = __require2("events");
+    var { EventEmitter } = __require2("node:events");
     var {
       lsCacheSym,
       levelValSym,
@@ -4043,7 +4043,7 @@ var require_multistream = __commonJS({
 var require_pino = __commonJS({
   "node_modules/.deno/pino@8.19.0/node_modules/pino/pino.js"(exports, module) {
     "use strict";
-    var os = __require2("os");
+    var os = __require2("node:os");
     var stdSerializers = require_pino_std_serializers();
     var caller = require_caller();
     var redaction = require_redaction();

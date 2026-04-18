@@ -2,8 +2,11 @@
 
 import * as esbuild from 'npm:esbuild@0.25.6'
 import * as colors from 'jsr:@std/fmt/colors'
+import { builtinModules } from 'node:module'
 
 const { default: { version } } = await import('../package.json', { with: { type: 'json' } })
+
+const nodeBuiltins = new Set(builtinModules.filter((m: string) => !m.startsWith('_')))
 
 const options: esbuild.BuildOptions = {
   entryPoints: [
@@ -30,6 +33,17 @@ const options: esbuild.BuildOptions = {
       }
     },
     {
+      name: 'node-builtins',
+      setup (build) {
+        build.onResolve({ filter: /^[a-zA-Z]/, namespace: 'file' }, ({ path }) => {
+          if (nodeBuiltins.has(path)) {
+            return { path: `node:${path}`, external: true }
+          }
+          return null
+        })
+      }
+    },
+    {
       name: 'skip',
       setup (build) {
         build.onResolve({ filter: /^[\w\d]+:/, namespace: 'file' }, () => ({
@@ -49,23 +63,10 @@ if (result.errors.length) {
 }
 console.log(colors.green('built:'), options.outdir)
 
-import { builtinModules } from 'node:module'
-
-const nodeBuiltins = new Set(builtinModules.filter((m: string) => !m.startsWith('_')))
-const bareBuiltinRe = /\bfrom\s+(["'])([^"']+)\1/g
-
-function addNodePrefix (source: string): string {
-  return source.replace(bareBuiltinRe, (match, _, specifier) => {
-    return nodeBuiltins.has(specifier) ? `from "node:${specifier}"` : match
-  })
-}
-
 for (const outfile of result.outputFiles!) {
   const tmpFile = outfile.path + '-tmp'
   try {
-    const text = new TextDecoder().decode(outfile.contents)
-    const patched = addNodePrefix(text)
-    Deno.writeFileSync(tmpFile, new TextEncoder().encode(patched))
+    Deno.writeFileSync(tmpFile, outfile.contents)
     try {
       Deno.removeSync(outfile.path)
     } catch (e) {

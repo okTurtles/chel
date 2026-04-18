@@ -6453,7 +6453,7 @@ var require_memory = __commonJS({
 });
 var require_common = __commonJS({
   "node_modules/.deno/nconf@0.13.0/node_modules/nconf/lib/nconf/common.js"(exports2) {
-    var fs = __require2("fs");
+    var fs = __require2("node:fs");
     var async = require_async();
     var formats = require_formats();
     var Memory = require_memory().Memory;
@@ -6934,9 +6934,9 @@ var require_package = __commonJS({
 var require_build = __commonJS({
   "node_modules/.deno/y18n@5.0.8/node_modules/y18n/build/index.cjs"(exports2, module14) {
     "use strict";
-    var fs = __require2("fs");
-    var util = __require2("util");
-    var path8 = __require2("path");
+    var fs = __require2("node:fs");
+    var util = __require2("node:util");
+    var path8 = __require2("node:path");
     var shim4;
     var Y18N2 = class {
       constructor(opts) {
@@ -7120,9 +7120,9 @@ var require_build = __commonJS({
 var require_build2 = __commonJS({
   "node_modules/.deno/yargs-parser@20.2.9/node_modules/yargs-parser/build/index.cjs"(exports2, module14) {
     "use strict";
-    var util = __require2("util");
-    var fs = __require2("fs");
-    var path8 = __require2("path");
+    var util = __require2("node:util");
+    var fs = __require2("node:fs");
+    var path8 = __require2("node:path");
     function camelCase2(str) {
       const isCamelCase = str !== str.toLowerCase() && str !== str.toUpperCase();
       if (!isCamelCase) {
@@ -9695,8 +9695,8 @@ var require_build3 = __commonJS({
 });
 var require_sync = __commonJS({
   "node_modules/.deno/escalade@3.2.0/node_modules/escalade/sync/index.js"(exports2, module14) {
-    var { dirname: dirname82, resolve: resolve82 } = __require2("path");
-    var { readdirSync: readdirSync2, statSync: statSync3 } = __require2("fs");
+    var { dirname: dirname82, resolve: resolve82 } = __require2("node:path");
+    var { readdirSync: readdirSync2, statSync: statSync3 } = __require2("node:fs");
     module14.exports = function(start, callback) {
       let dir = resolve82(".", start);
       let tmp, stats = statSync3(dir);
@@ -9737,10 +9737,10 @@ var require_get_caller_file = __commonJS({
 var require_require_directory = __commonJS({
   "node_modules/.deno/require-directory@2.1.1/node_modules/require-directory/index.js"(exports2, module14) {
     "use strict";
-    var fs = __require2("fs");
-    var join10 = __require2("path").join;
-    var resolve82 = __require2("path").resolve;
-    var dirname82 = __require2("path").dirname;
+    var fs = __require2("node:fs");
+    var join10 = __require2("node:path").join;
+    var resolve82 = __require2("node:path").resolve;
+    var dirname82 = __require2("node:path").dirname;
     var defaultOptions4 = {
       extensions: ["js", "json", "coffee"],
       recurse: true,
@@ -9798,7 +9798,7 @@ var require_require_directory = __commonJS({
 var require_build4 = __commonJS({
   "node_modules/.deno/yargs@16.2.0/node_modules/yargs/build/index.cjs"(exports2, module14) {
     "use strict";
-    var assert2 = __require2("assert");
+    var assert2 = __require2("node:assert");
     var YError2 = class _YError2 extends Error {
       constructor(msg) {
         super(msg || "yargs error");
@@ -12436,9 +12436,9 @@ ${customMsgs.join("\n")}` : "";
     }
     var _a2;
     var _b;
-    var { readFileSync: readFileSync4 } = __require2("fs");
-    var { inspect: inspect2 } = __require2("util");
-    var { resolve: resolve82 } = __require2("path");
+    var { readFileSync: readFileSync4 } = __require2("node:fs");
+    var { inspect: inspect2 } = __require2("node:util");
+    var { resolve: resolve82 } = __require2("node:path");
     var y18n3 = require_build();
     var Parser2 = require_build2();
     var cjsPlatformShim = {
@@ -12456,7 +12456,7 @@ ${customMsgs.join("\n")}` : "";
       inspect: inspect2,
       mainFilename: (_b = (_a2 = __require2 === null || __require2 === void 0 ? void 0 : __require2.main) === null || _a2 === void 0 ? void 0 : _a2.filename) !== null && _b !== void 0 ? _b : process.cwd(),
       Parser: Parser2,
-      path: __require2("path"),
+      path: __require2("node:path"),
       process: {
         argv: () => process.argv,
         cwd: process.cwd,
@@ -12533,7 +12533,7 @@ var require_yargs = __commonJS({
 });
 var require_argv = __commonJS({
   "node_modules/.deno/nconf@0.13.0/node_modules/nconf/lib/nconf/stores/argv.js"(exports2) {
-    var util = __require2("util");
+    var util = __require2("node:util");
     var common4 = require_common();
     var Memory = require_memory().Memory;
     var Argv = exports2.Argv = function(options2, usage2) {
@@ -12606,7 +12606,7 @@ var require_argv = __commonJS({
 });
 var require_env = __commonJS({
   "node_modules/.deno/nconf@0.13.0/node_modules/nconf/lib/nconf/stores/env.js"(exports2) {
-    var util = __require2("util");
+    var util = __require2("node:util");
     var common4 = require_common();
     var Memory = require_memory().Memory;
     var Env = exports2.Env = function(options2) {
@@ -12682,7 +12682,7 @@ var require_env = __commonJS({
 var require_secure_keys = __commonJS({
   "node_modules/.deno/secure-keys@1.0.0/node_modules/secure-keys/index.js"(exports2, module14) {
     "use strict";
-    var crypto3 = __require2("crypto");
+    var crypto3 = __require2("node:crypto");
     var json = {
       stringify: function(obj, replacer, spacing) {
         return JSON.stringify(obj, replacer || null, spacing || 2);
@@ -12733,9 +12733,9 @@ var require_secure_keys = __commonJS({
 });
 var require_file = __commonJS({
   "node_modules/.deno/nconf@0.13.0/node_modules/nconf/lib/nconf/stores/file.js"(exports2) {
-    var fs = __require2("fs");
-    var path8 = __require2("path");
-    var util = __require2("util");
+    var fs = __require2("node:fs");
+    var path8 = __require2("node:path");
+    var util = __require2("node:util");
     var Secure = require_secure_keys();
     var formats = require_formats();
     var Memory = require_memory().Memory;
@@ -12889,7 +12889,7 @@ var require_file = __commonJS({
 });
 var require_literal = __commonJS({
   "node_modules/.deno/nconf@0.13.0/node_modules/nconf/lib/nconf/stores/literal.js"(exports2) {
-    var util = __require2("util");
+    var util = __require2("node:util");
     var Memory = require_memory().Memory;
     var Literal = exports2.Literal = function Literal2(options2) {
       Memory.call(this, options2);
@@ -22081,7 +22081,7 @@ var require_nacl_fast = __commonJS({
             cleanup(v2);
           });
         } else if (typeof __require2 !== "undefined") {
-          crypto3 = __require2("crypto");
+          crypto3 = __require2("node:crypto");
           if (crypto3 && crypto3.randomBytes) {
             nacl4.setPRNG(function(x3, n) {
               var i2, v2 = crypto3.randomBytes(n);
@@ -37493,8 +37493,8 @@ var require_enterprise_maintenance_manager = __commonJS({
     };
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.emitDiagnostics = exports2.dbgMaintenance = exports2.MAINTENANCE_EVENTS = void 0;
-    var net_1 = __require2("net");
-    var promises_1 = __require2("dns/promises");
+    var net_1 = __require2("node:net");
+    var promises_1 = __require2("node:dns/promises");
     var node_assert_1 = __importDefault(__require2("node:assert"));
     var promises_2 = __require2("node:timers/promises");
     var node_diagnostics_channel_1 = __importDefault(__require2("node:diagnostics_channel"));
@@ -38283,7 +38283,7 @@ var require_linked_list = __commonJS({
     };
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.EmptyAwareSinglyLinkedList = exports2.SinglyLinkedList = exports2.DoublyLinkedList = void 0;
-    var events_1 = __importDefault(__require2("events"));
+    var events_1 = __importDefault(__require2("node:events"));
     var DoublyLinkedList = class {
       #length = 0;
       get length() {
@@ -39575,7 +39575,7 @@ var require_cache = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.PooledNoRedirectClientSideCache = exports2.BasicPooledClientSideCache = exports2.PooledClientSideCacheProvider = exports2.BasicClientSideCache = exports2.ClientSideCacheProvider = exports2.CacheStats = void 0;
-    var stream_1 = __require2("stream");
+    var stream_1 = __require2("node:stream");
     var CacheStats = class _CacheStats {
       hitCount;
       missCount;
@@ -50684,8 +50684,8 @@ var require_has_flag = __commonJS({
 var require_supports_color = __commonJS({
   "node_modules/.deno/supports-color@7.2.0/node_modules/supports-color/index.js"(exports2, module14) {
     "use strict";
-    var os = __require2("os");
-    var tty = __require2("tty");
+    var os = __require2("node:os");
+    var tty = __require2("node:tty");
     var hasFlag = require_has_flag();
     var { env: env2 } = process;
     var forceColor;
@@ -55164,10 +55164,10 @@ var require_atomic_sleep = __commonJS({
 var require_sonic_boom = __commonJS({
   "node_modules/.deno/sonic-boom@3.8.1/node_modules/sonic-boom/index.js"(exports2, module14) {
     "use strict";
-    var fs = __require2("fs");
-    var EventEmitter = __require2("events");
-    var inherits = __require2("util").inherits;
-    var path8 = __require2("path");
+    var fs = __require2("node:fs");
+    var EventEmitter = __require2("node:events");
+    var inherits = __require2("node:util").inherits;
+    var path8 = __require2("node:path");
     var sleep = require_atomic_sleep();
     var BUSY_WRITE_TIMEOUT = 100;
     var kEmptyBuffer = Buffer.allocUnsafe(0);
@@ -55933,17 +55933,17 @@ var require_thread_stream = __commonJS({
   "node_modules/.deno/thread-stream@2.7.0/node_modules/thread-stream/index.js"(exports2, module14) {
     "use strict";
     var { version: version3 } = require_package3();
-    var { EventEmitter } = __require2("events");
-    var { Worker: Worker2 } = __require2("worker_threads");
-    var { join: join10 } = __require2("path");
-    var { pathToFileURL: pathToFileURL2 } = __require2("url");
+    var { EventEmitter } = __require2("node:events");
+    var { Worker: Worker2 } = __require2("node:worker_threads");
+    var { join: join10 } = __require2("node:path");
+    var { pathToFileURL: pathToFileURL2 } = __require2("node:url");
     var { wait } = require_wait();
     var {
       WRITE_INDEX,
       READ_INDEX
     } = require_indexes();
-    var buffer = __require2("buffer");
-    var assert2 = __require2("assert");
+    var buffer = __require2("node:buffer");
+    var assert2 = __require2("node:assert");
     var kImpl = Symbol("kImpl");
     var MAX_STRING = buffer.constants.MAX_STRING_LENGTH;
     var FakeWeakRef = class {
@@ -56353,9 +56353,9 @@ var require_thread_stream = __commonJS({
 var require_transport = __commonJS({
   "node_modules/.deno/pino@8.19.0/node_modules/pino/lib/transport.js"(exports2, module14) {
     "use strict";
-    var { createRequire } = __require2("module");
+    var { createRequire } = __require2("node:module");
     var getCallers = require_caller();
-    var { join: join10, isAbsolute: isAbsolute8, sep } = __require2("path");
+    var { join: join10, isAbsolute: isAbsolute8, sep } = __require2("node:path");
     var sleep = require_atomic_sleep();
     var onExit = require_on_exit_leak_free();
     var ThreadStream = require_thread_stream();
@@ -56489,7 +56489,7 @@ var require_tools = __commonJS({
       nestedKeyStrSym,
       msgPrefixSym
     } = require_symbols();
-    var { isMainThread } = __require2("worker_threads");
+    var { isMainThread } = __require2("node:worker_threads");
     var transport = require_transport();
     function noop() {
     }
@@ -57001,7 +57001,7 @@ var require_meta = __commonJS({
 var require_proto = __commonJS({
   "node_modules/.deno/pino@8.19.0/node_modules/pino/lib/proto.js"(exports2, module14) {
     "use strict";
-    var { EventEmitter } = __require2("events");
+    var { EventEmitter } = __require2("node:events");
     var {
       lsCacheSym,
       levelValSym,
@@ -57948,7 +57948,7 @@ var require_multistream = __commonJS({
 var require_pino = __commonJS({
   "node_modules/.deno/pino@8.19.0/node_modules/pino/pino.js"(exports2, module14) {
     "use strict";
-    var os = __require2("os");
+    var os = __require2("node:os");
     var stdSerializers = require_pino_std_serializers();
     var caller = require_caller();
     var redaction = require_redaction();
@@ -58151,7 +58151,7 @@ var require_pino = __commonJS({
 var require_stream = __commonJS({
   "node_modules/.deno/ws@8.5.0/node_modules/ws/lib/stream.js"(exports2, module14) {
     "use strict";
-    var { Duplex } = __require2("stream");
+    var { Duplex } = __require2("node:stream");
     function emitClose(stream) {
       stream.emit("close");
     }
@@ -58383,7 +58383,7 @@ var require_limiter = __commonJS({
 var require_permessage_deflate = __commonJS({
   "node_modules/.deno/ws@8.5.0/node_modules/ws/lib/permessage-deflate.js"(exports2, module14) {
     "use strict";
-    var zlib = __require2("zlib");
+    var zlib = __require2("node:zlib");
     var bufferUtil = require_buffer_util();
     var Limiter = require_limiter();
     var { kStatusCode } = require_constants2();
@@ -58948,7 +58948,7 @@ var require_validation = __commonJS({
 var require_receiver = __commonJS({
   "node_modules/.deno/ws@8.5.0/node_modules/ws/lib/receiver.js"(exports2, module14) {
     "use strict";
-    var { Writable } = __require2("stream");
+    var { Writable } = __require2("node:stream");
     var PerMessageDeflate = require_permessage_deflate();
     var {
       BINARY_TYPES,
@@ -59462,9 +59462,9 @@ var require_receiver = __commonJS({
 var require_sender = __commonJS({
   "node_modules/.deno/ws@8.5.0/node_modules/ws/lib/sender.js"(exports2, module14) {
     "use strict";
-    var net = __require2("net");
-    var tls = __require2("tls");
-    var { randomFillSync } = __require2("crypto");
+    var net = __require2("node:net");
+    var tls = __require2("node:tls");
+    var { randomFillSync } = __require2("node:crypto");
     var PerMessageDeflate = require_permessage_deflate();
     var { EMPTY_BUFFER } = require_constants2();
     var { isValidStatusCode } = require_validation();
@@ -60232,14 +60232,14 @@ var require_extension = __commonJS({
 var require_websocket = __commonJS({
   "node_modules/.deno/ws@8.5.0/node_modules/ws/lib/websocket.js"(exports2, module14) {
     "use strict";
-    var EventEmitter = __require2("events");
-    var https = __require2("https");
-    var http = __require2("http");
-    var net = __require2("net");
-    var tls = __require2("tls");
-    var { randomBytes: randomBytes3, createHash } = __require2("crypto");
-    var { Readable: Readable4 } = __require2("stream");
-    var { URL: URL2 } = __require2("url");
+    var EventEmitter = __require2("node:events");
+    var https = __require2("node:https");
+    var http = __require2("node:http");
+    var net = __require2("node:net");
+    var tls = __require2("node:tls");
+    var { randomBytes: randomBytes3, createHash } = __require2("node:crypto");
+    var { Readable: Readable4 } = __require2("node:stream");
+    var { URL: URL2 } = __require2("node:url");
     var PerMessageDeflate = require_permessage_deflate();
     var Receiver2 = require_receiver();
     var Sender2 = require_sender();
@@ -61097,12 +61097,12 @@ var require_subprotocol = __commonJS({
 var require_websocket_server = __commonJS({
   "node_modules/.deno/ws@8.5.0/node_modules/ws/lib/websocket-server.js"(exports2, module14) {
     "use strict";
-    var EventEmitter = __require2("events");
-    var http = __require2("http");
-    var https = __require2("https");
-    var net = __require2("net");
-    var tls = __require2("tls");
-    var { createHash } = __require2("crypto");
+    var EventEmitter = __require2("node:events");
+    var http = __require2("node:http");
+    var https = __require2("node:https");
+    var net = __require2("node:net");
+    var tls = __require2("node:tls");
+    var { createHash } = __require2("node:crypto");
     var extension = require_extension();
     var PerMessageDeflate = require_permessage_deflate();
     var subprotocol = require_subprotocol();
@@ -72864,6 +72864,14 @@ function authMiddleware(strategies, mode = "required") {
 }
 var MEGABYTE = 1048576;
 var SECOND = 1e3;
+function parseBooleanParam(value) {
+  if (value === void 0) return false;
+  const normalized = value.toLowerCase();
+  if (normalized === "" || normalized === "true" || normalized === "yes" || normalized === "on" || normalized === "1") {
+    return true;
+  }
+  return false;
+}
 var CID_REGEX = /^z[1-9A-HJ-NP-Za-km-z]{8,72}$/;
 var KV_KEY_REGEX = /^(?!_private)[^\x00]{1,256}$/;
 var NAME_REGEX = /^(?![_-])((?!([_-])\2)[a-z\d_-]){1,80}(?<![_-])$/;
@@ -73233,7 +73241,7 @@ function registerRoutes(app2) {
         if (parsed?.code !== multicodes.SHELTER_CONTRACT_DATA) {
           throw new HTTPException(400);
         }
-        const stream = await esm_default("backend/db/streamEntriesAfter", contractID, Number(since), limit == null ? void 0 : Number(limit), { keyOps: keyOps2 === "true" });
+        const stream = await esm_default("backend/db/streamEntriesAfter", contractID, Number(since), limit == null ? void 0 : Number(limit), { keyOps: parseBooleanParam(keyOps2) });
         c.req.raw.signal.addEventListener("abort", () => stream.destroy());
         const streamHeaders = stream.headers || {};
         const webStream = Readable3.toWeb(stream);

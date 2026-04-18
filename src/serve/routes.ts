@@ -29,6 +29,17 @@ import { authMiddleware, type AuthCredentials } from './auth.ts'
 const MEGABYTE = 1048576 // TODO: add settings for these
 const SECOND = 1000
 
+// Joi-compatible boolean coercion for query parameters
+// Matches Joi.boolean().truthy('1', 'on', 'yes').falsy('0', 'off', 'no')
+function parseBooleanParam (value: string | undefined): boolean {
+  if (value === undefined) return false
+  const normalized = value.toLowerCase()
+  if (normalized === '' || normalized === 'true' || normalized === 'yes' || normalized === 'on' || normalized === '1') {
+    return true
+  }
+  return false
+}
+
 // Regexes validated as safe with <https://devina.io/redos-checker>
 const CID_REGEX = /^z[1-9A-HJ-NP-Za-km-z]{8,72}$/
 // deno-lint-ignore no-control-regex
@@ -494,7 +505,7 @@ export function registerRoutes (app: Hono): void {
           throw new HTTPException(400)
         }
 
-        const stream = await sbp('backend/db/streamEntriesAfter', contractID, Number(since), limit == null ? undefined : Number(limit), { keyOps: keyOps === 'true' }) as Readable
+        const stream = await sbp('backend/db/streamEntriesAfter', contractID, Number(since), limit == null ? undefined : Number(limit), { keyOps: parseBooleanParam(keyOps) }) as Readable
         // "On an HTTP server, make sure to manually close your streams if a request is aborted."
         // From: http://knexjs.org/#Interfaces-Streams
         //       https://github.com/tgriesser/knex/wiki/Manually-Closing-Streams
