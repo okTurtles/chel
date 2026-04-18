@@ -1091,7 +1091,7 @@ app.post('/name', async function (c) {
           const result = register(name, payload.r, payload.s, payload.sig, payload.Eh)
 
           if (result) {
-            return c.json(result)
+            return c.text(result)
           }
         }
       } catch (e) {
@@ -1131,7 +1131,7 @@ app.post('/name', async function (c) {
         const salt = await getContractSalt(contractID, r, s, sig, hc)
 
         if (salt) {
-          return c.json(salt)
+          return c.text(salt)
         }
       } catch (e) {
         ;(e as { ip: string }).ip = getClientIP(c)
