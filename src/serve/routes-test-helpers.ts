@@ -103,48 +103,78 @@ export function buildShelterAuthHeader (contractID: string, SAK: ReturnType<type
   return `shelter ${data}.${sign(SAK, data)}`
 }
 
-export async function startTestServer (): Promise<string> {
-  process.env.NODE_ENV = 'development'
-  process.env.CI = 'true'
+let cachedServerAddress: Promise<string> | undefined
+let serverStartRefCount: number = 0
+export function startTestServer (): Promise<string> {
+  serverStartRefCount++
+  if (cachedServerAddress !== undefined) {
+    return cachedServerAddress
+  }
 
-  nconf.defaults({
-    server: {
-      host: '127.0.0.1',
-      port: TEST_PORT,
-      appDir: '.',
-      fileUploadMaxBytes: 31457280,
-      signup: {
-        disabled: false,
-        limit: { disabled: false, minute: 100, hour: 1000, day: 10000 }
+  const internal = async () => {
+    process.env.NODE_ENV = 'development'
+    process.env.CI = 'true'
+
+    nconf.defaults({
+      server: {
+        host: '127.0.0.1',
+        port: TEST_PORT,
+        appDir: '.',
+        fileUploadMaxBytes: 31457280,
+        signup: {
+          disabled: false,
+          limit: { disabled: false, minute: 100, hour: 1000, day: 10000 }
+        },
+        logLevel: 'error',
+        messages: [{ type: 'info', text: 'test message' }],
+        maxEventsBatchSize: 500,
+        archiveMode: false
       },
-      logLevel: 'error',
-      messages: [{ type: 'info', text: 'test message' }],
-      maxEventsBatchSize: 500,
-      archiveMode: false
-    },
-    database: {
-      lruNumItems: 100,
-      backend: 'mem',
-      backendOptions: {}
-    }
+      database: {
+        lruNumItems: 100,
+        backend: 'mem',
+        backendOptions: {}
+      }
+    })
+
+    const serverAddress = await new Promise<string>((resolve, reject) => {
+      const unregister = sbp('okTurtles.events/once', SERVER_RUNNING, function (hapi: { info: { uri: string } }) {
+        resolve(hapi.info.uri)
+      })
+      import('./index.ts').then(({ default: start }) => {
+        return start()
+      }).catch((e) => {
+        unregister()
+        reject(e)
+      })
+    })
+
+    return serverAddress
+  }
+
+  cachedServerAddress = internal().catch(e => {
+    cachedServerAddress = undefined
+    serverStartRefCount = 0
+    throw e
   })
 
-  const serverAddress = await new Promise<string>((resolve, reject) => {
-    const unregister = sbp('okTurtles.events/once', SERVER_RUNNING, function (hapi: { info: { uri: string } }) {
-      resolve(hapi.info.uri)
-    })
-    import('./index.ts').then(({ default: start }) => {
-      return start()
-    }).catch((e) => {
-      unregister()
-      reject(e)
-    })
-  })
-
-  return serverAddress
+  return cachedServerAddress
 }
 
 export async function stopTestServer (): Promise<void> {
+  if (cachedServerAddress === undefined) {
+    throw new Error('Server has not yet started')
+  }
+  try {
+    await cachedServerAddress
+  } catch {
+    // If the server was starting and it encountered an error, this function
+    // technically succeeded (server is not runnign).
+    return
+  }
+  if (--serverStartRefCount > 0) {
+    return
+  }
   await new Promise<void>((resolve) => {
     sbp('okTurtles.events/once', SERVER_EXITING, () => {
       sbp('okTurtles.eventQueue/queueEvent', SERVER_EXITING, () => {
@@ -153,4 +183,5 @@ export async function stopTestServer (): Promise<void> {
     })
     sbp('okTurtles.events/emit', SERVER_EXITING)
   })
+  cachedServerAddress = undefined
 }

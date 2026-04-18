@@ -35,6 +35,7 @@ import { addChannelToSubscription, deleteChannelFromSubscription, postEvent, pus
 import nconf from 'npm:nconf'
 
 const ARCHIVE_MODE = nconf.get('server:archiveMode')
+let pushHeartbeatIntervalID: ReturnType<typeof setInterval>
 
 if (CREDITS_WORKER_TASK_TIME_INTERVAL && OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL > CREDITS_WORKER_TASK_TIME_INTERVAL) {
   process.stderr.write('The size calculation worker must run more frequently than the credits worker for accurate billing')
@@ -589,7 +590,6 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
 })()
 
 // Recurring task to send messages to push clients (for periodic notifications)
-let pushHeartbeatIntervalID: ReturnType<typeof setInterval>
 ;(() => {
   const map = new WeakMap()
 
