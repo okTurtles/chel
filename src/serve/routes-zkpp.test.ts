@@ -62,6 +62,7 @@ Deno.test({
         if (res2.status !== 200) throw new Error(`Step 2 failed: ${res2.status}`)
         const token = await res2.text()
         if (!token) throw new Error('Expected registration token')
+        if (/[^\da-zA-Z_-]/.test(token)) throw new Error('Unexpected registration token characters')
       })
 
       await t.step('POST /zkpp/register with invalid name returns 400', async () => {
@@ -146,6 +147,7 @@ Deno.test({
         })
         if (res2.status !== 200) throw new Error(`Reg step 2 failed: ${res2.status}`)
         const encryptedToken = await res2.text()
+        if (/[^\dA-Za-z_-]/.test(encryptedToken)) throw new Error('Invalid characters in encrypted token')
         const token = decryptRegistrationRedemptionToken(step1.p, keyPair.secretKey, encryptedToken)
 
         const contractCID = createCID(`${name}-contract`, multicodes.SHELTER_CONTRACT_DATA)
@@ -175,6 +177,7 @@ Deno.test({
         )
         if (saltRes.status !== 200) throw new Error(`contract_hash failed: ${saltRes.status}`)
         const encryptedSalt = await saltRes.text()
+        if (/[^\dA-Za-z_-]/.test(encryptedSalt)) throw new Error('Invalid characters in encrypted salt')
         if (!encryptedSalt) throw new Error('Expected encrypted salt response')
 
         const saltBuf = Buffer.from(encryptedSalt, 'base64url')
@@ -230,6 +233,7 @@ Deno.test({
         if (res2.status !== 200) throw new Error(`Step 2 failed: ${res2.status}`)
         const token = await res2.text()
         if (!token) throw new Error('Expected registration token')
+        if (/[^\da-zA-Z_-]/.test(token)) throw new Error('Unexpected characters in registration token')
       })
 
       await t.step('POST /zkpp/{contractID}/updatePasswordHash with form-urlencoded body returns 400 for missing params', async () => {
@@ -271,6 +275,7 @@ Deno.test({
         })
         if (res2.status !== 200) throw new Error(`Reg step 2 failed: ${res2.status}`)
         const encryptedToken = (await res2.text())
+        if (/[^\da-zA-Z_-]/.test(encryptedToken)) throw new Error('Unexpected characters in encrypted token')
         const token = decryptRegistrationRedemptionToken(step1.p, keyPair.secretKey, encryptedToken)
 
         const contractCID = createCID(`${name}-contract`, multicodes.SHELTER_CONTRACT_DATA)
@@ -299,6 +304,7 @@ Deno.test({
         if (saltRes.status !== 200) throw new Error(`contract_hash failed: ${saltRes.status}`)
         const encryptedSalt = await saltRes.text()
         if (!encryptedSalt) throw new Error('Expected encrypted salt response')
+        if (/[^\da-zA-Z_-]/.test(encryptedSalt)) throw new Error('Unexpected characters in encrypted salt')
 
         const saltBuf = Buffer.from(encryptedSalt, 'base64url')
         const nonce = saltBuf.subarray(0, nacl.secretbox.nonceLength)
