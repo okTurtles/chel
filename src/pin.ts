@@ -6,8 +6,9 @@ import process from 'node:process'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { exit } from './utils.ts'
 
-const RESERVED_FILE_CHARS = /[/\\:*?"<>|]/
-const RESERVED_FILE_CHARS_REPLACE = /[/\\:*?"<>|]/g
+const VALID_VERSION = /^[a-zA-Z0-9_+-][a-zA-Z0-9._+-]*[a-zA-Z0-9_+-]?$/
+// deno-lint-ignore no-control-regex
+const RESERVED_FILE_CHARS_REPLACE = /[\x00/\\:*?"<>|]/g
 
 type Params = { overwrite: boolean, 'dir'?: string, 'manifest-version'?: string, manifest: string }
 
@@ -41,7 +42,7 @@ export async function pin (args: ArgumentsCamelCase<Params>): Promise<void> {
 
     const { contractName, fullContractName, contractFiles, manifestVersion } = await parseManifest(fullManifestPath)
 
-    if (RESERVED_FILE_CHARS.test(manifestVersion)) {
+    if (!manifestVersion || !VALID_VERSION.test(manifestVersion)) {
       exit(`Invalid manifest version: ${manifestVersion}`)
     }
 
