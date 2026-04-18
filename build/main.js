@@ -69150,8 +69150,8 @@ var module9 = {
     return migrate(argv);
   }
 };
-var RESERVED_FILE_CHARS = /[/\\:*?"<>|]/;
-var RESERVED_FILE_CHARS_REPLACE = /[/\\:*?"<>|]/g;
+var VALID_VERSION = /^[a-zA-Z0-9_+-][a-zA-Z0-9._+-]*[a-zA-Z0-9_+-]?$/;
+var RESERVED_FILE_CHARS_REPLACE = /[\x00/\\:*?"<>|]/g;
 var projectRoot;
 var cheloniaConfig;
 function sanitizeContractName(contractName) {
@@ -69174,7 +69174,7 @@ async function pin(args) {
       exit(`Manifest file not found: ${manifestPath}`);
     }
     const { contractName, fullContractName, contractFiles, manifestVersion } = await parseManifest(fullManifestPath);
-    if (RESERVED_FILE_CHARS.test(manifestVersion) || manifestVersion.startsWith(".") || manifestVersion.endsWith(".")) {
+    if (!manifestVersion || !VALID_VERSION.test(manifestVersion)) {
       exit(`Invalid manifest version: ${manifestVersion}`);
     }
     console.log(blue(`Contract name: ${fullContractName}`));
