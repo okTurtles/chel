@@ -58,12 +58,12 @@ chel pin 2.0.0 dist/contracts/2.0.0/group.2.0.0.manifest.json
 **Configuration (`chelonia.json`):**
 ```json
 {
-  "contracts": {
+  "gi.contracts/chatroom": {
     "chatroom": {
       "version": "2.0.6",
       "path": "contracts/gi.contracts_chatroom/2.0.6/chatroom.2.0.6.manifest.json"
     },
-    "group": {
+    "gi.contracts/group": {
       "version": "2.0.0",
       "path": "contracts/gi.contracts_group/2.0.0/group.2.0.0.manifest.json"
     }
@@ -277,6 +277,73 @@ chel migrate --from sqlite --to redis --to-config redis.toml
 # and the configuration in redis.toml for redis
 chel migrate --from sqlite --from-config sqlite.toml --to redis --to-config redis.toml
 ```
+
+## Configuration Files
+
+The project uses two separate configuration files for different purposes:
+
+### `chel.toml` — Runtime CLI Configuration
+
+`chel.toml` configures the `chel` command itself at runtime. It is read by `nconf` with priority: CLI arguments > environment variables > `chel.toml` > defaults. It controls things like server host/port, database backend selection, and other operational settings.
+
+```toml
+# Example chel.toml
+[server]
+host = "0.0.0.0"
+port = 8000
+dashboardPort = 8888
+
+[database]
+backend = "sqlite"
+```
+
+### `chelonia.json` — App Properties
+
+`chelonia.json` is an **app-level properties file** that describes which
+contracts make up the application and their pinned versions. It is **not**
+runtime configuration for `chel`. Instead, it is:
+
+- **Created and updated** by `chel pin` when pinning contracts to specific
+  versions.
+- **Read by the server** (`chel serve`) at startup to provide version
+  information and other app-specific settings to clients.
+
+The file contains a `contracts` object keyed by the full contract name
+(e.g. `gi.contracts/chatroom`), where each entry has:
+
+| Field | Description |
+|-------|-------------|
+| `version` | The pinned version string for this contract |
+| `path` | Relative path to the manifest file in the `contracts/` directory |
+
+It may also contain an `appVersion` field for the overall application version.
+
+**Example:**
+```json
+{
+  "appVersion": "2.0.0",
+  "contracts": {
+    "gi.contracts/chatroom": {
+      "version": "2.0.6",
+      "path": "contracts/gi.contracts_chatroom/2.0.6/chatroom.2.0.6.manifest.json"
+    },
+    "gi.contracts/group": {
+      "version": "2.0.0",
+      "path": "contracts/gi.contracts_group/2.0.0/group.2.0.0.manifest.json"
+    }
+  }
+}
+```
+
+**Summary of differences:**
+
+| | `chel.toml` | `chelonia.json` |
+|---|---|---|
+| **Purpose** | Runtime configuration of the `chel` CLI | App properties (e.g., contract versions) |
+| **Managed by** | Manually by the developer / system administrator | Automatically by `chel pin` |
+| **Read by** | `chel` commands (via `nconf`) | The server (at startup), values exposed to clients |
+| **Format** | TOML | JSON |
+| **Example content** | Database configuration | Contract versions |
 
 ## History
 
