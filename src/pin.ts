@@ -84,7 +84,7 @@ export async function pin (args: ArgumentsCamelCase<Params>): Promise<void> {
     await copyContractFiles(contractFiles, manifestPath, contractName, manifestVersion, args)
     await updateCheloniaConfig(fullContractName, contractName, manifestVersion, manifestPath)
 
-    console.log(colors.green(`✅ Successfully pinned ${contractName} to version ${manifestVersion}`))
+    console.log(colors.green(`✅ Successfully pinned ${fullContractName} to version ${manifestVersion}`))
     console.log(colors.gray(`Location: contracts/${contractName}/${manifestVersion}/`))
   } catch (error) {
     exit(error)
