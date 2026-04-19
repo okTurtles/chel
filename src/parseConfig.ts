@@ -1,7 +1,7 @@
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
 import { parse, stringify } from 'npm:smol-toml'
-import parseArgs from './parseArgs.ts'
+import parseArgs, { handlerState } from './parseArgs.ts'
 
 const parseConfig = () => {
   nconf
@@ -44,4 +44,4 @@ const parseConfig = () => {
 }
 
 export default parseConfig
-export { postHandler } from './parseArgs.ts'
+export { handlerState }

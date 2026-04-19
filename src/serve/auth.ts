@@ -1,52 +1,69 @@
 import { verifyShelterAuthorizationHeader } from 'npm:@chelonia/lib/utils'
-import Boom from 'npm:@hapi/boom'
-import type * as Hapi from 'npm:@hapi/hapi'
+import { HTTPException } from 'npm:hono/http-exception'
+import type { Context, MiddlewareHandler } from 'npm:hono'
 
-const plugin: Hapi.NamedPlugin<void> = {
-  name: 'chel-auth',
-  register: function (server: Hapi.Server) {
-    server.auth.scheme('chel-bearer', () => {
-      return {
-        authenticate: function (request, h) {
-          const { authorization } = request.headers
-          if (!authorization) {
-            return h.unauthenticated(Boom.unauthorized(null, 'bearer'))
-          }
-          const thisScheme = 'bearer '
-          if (authorization.slice(0, thisScheme.length) !== thisScheme) {
-            return h.unauthenticated(Boom.unauthorized(null, 'bearer'))
-          }
-          const token = authorization.slice(thisScheme.length)
-          return h.authenticated({ credentials: { token } })
-        }
-      }
-    })
+export type AuthCredentials = {
+  token?: string
+  billableContractID?: string
+}
 
-    server.auth.scheme ('chel-shelter', () => {
-      return {
-        authenticate: function (request, h) {
-          const { authorization } = request.headers
-          if (!authorization) {
-            return h.unauthenticated(Boom.unauthorized(null, 'shelter'))
-          }
-          const thisScheme = 'shelter '
-          if (authorization.slice(0, thisScheme.length) !== thisScheme) {
-            return h.unauthenticated(Boom.unauthorized(null, 'shelter'))
-          }
-          try {
-            const billableContractID = verifyShelterAuthorizationHeader(authorization)
-            return h.authenticated({ credentials: { billableContractID } })
-          } catch (e) {
-            console.warn(e, 'Shelter authorization failed')
-            return h.unauthenticated(Boom.unauthorized('Authentication failed', 'shelter'))
-          }
-        }
-      }
-    })
-
-    server.auth.strategy('chel-bearer', 'chel-bearer')
-    server.auth.strategy('chel-shelter', 'chel-shelter')
+declare module 'npm:hono' {
+  interface ContextVariableMap {
+    credentials: AuthCredentials
+    authStrategy: string
+    validatedBody: unknown
   }
 }
 
-export default plugin
+function extractBearer (c: Context): AuthCredentials | null {
+  const authorization = c.req.header('authorization')
+  if (!authorization) return null
+  const prefix = 'bearer '
+  if (authorization.slice(0, prefix.length).toLowerCase() !== prefix) return null
+  return { token: authorization.slice(prefix.length) }
+}
+
+function extractShelter (c: Context): AuthCredentials | null {
+  const authorization = c.req.header('authorization')
+  if (!authorization) return null
+  const prefix = 'shelter '
+  if (authorization.slice(0, prefix.length).toLowerCase() !== prefix) return null
+  try {
+    const billableContractID = verifyShelterAuthorizationHeader(authorization)
+    return { billableContractID }
+  } catch (e) {
+    console.warn(e, 'Shelter authorization failed')
+    return null
+  }
+}
+
+const extractors: Record<string, (c: Context) => AuthCredentials | null> = {
+  'chel-bearer': extractBearer,
+  'chel-shelter': extractShelter
+}
+
+export function authMiddleware (
+  strategies: string | string[],
+  mode: 'required' | 'optional' = 'required'
+): MiddlewareHandler {
+  const strategyList = Array.isArray(strategies) ? strategies : [strategies]
+
+  return async (c, next) => {
+    for (const strategy of strategyList) {
+      const extractor = extractors[strategy]
+      if (!extractor) throw new Error(`Unknown auth strategy: ${strategy}`)
+      const credentials = extractor(c)
+      if (credentials) {
+        c.set('credentials', credentials)
+        c.set('authStrategy', strategy)
+        return next()
+      }
+    }
+    if (mode === 'optional') {
+      c.set('credentials', {} as AuthCredentials)
+      c.set('authStrategy', '')
+      return next()
+    }
+    throw new HTTPException(401, { message: 'Unauthorized' })
+  }
+}

@@ -2,8 +2,11 @@
 
 import * as esbuild from 'npm:esbuild@0.25.6'
 import * as colors from 'jsr:@std/fmt/colors'
+import { builtinModules } from 'node:module'
 
 const { default: { version } } = await import('../package.json', { with: { type: 'json' } })
+
+const nodeBuiltins = new Set(builtinModules.filter((m: string) => !m.startsWith('_')))
 
 const options: esbuild.BuildOptions = {
   entryPoints: [
@@ -27,6 +30,17 @@ const options: esbuild.BuildOptions = {
       name: 'npm',
       setup (build) {
         build.onResolve({ filter: /^npm:/, namespace: 'file' }, ({ path, ...args }) => build.resolve(path.slice(4), args))
+      }
+    },
+    {
+      name: 'node-builtins',
+      setup (build) {
+        build.onResolve({ filter: /^[a-zA-Z]/, namespace: 'file' }, ({ path }) => {
+          if (nodeBuiltins.has(path)) {
+            return { path: `node:${path}`, external: true }
+          }
+          return null
+        })
       }
     },
     {

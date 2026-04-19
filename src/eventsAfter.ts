@@ -50,7 +50,7 @@ async function getMessagesSince (contractID: string, sinceHeight: number, limit:
 async function getRemoteMessagesSince (src: string, contractID: string, sinceHeight: number, limit: number): Promise<string[]> {
   const response = await fetch(`${src}/eventsAfter/${contractID}/${sinceHeight}`)
   if (!response.ok) {
-    // The response body may contain some useful error info if we got a Boom error response.
+    // The response body may contain some useful error info.
     const bodyText = await response.text().catch(() => '') || ''
     throw new Error(`failed network request to ${src}: ${response.status} - ${response.statusText} - '${bodyText}'`)
   }
