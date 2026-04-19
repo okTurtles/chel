@@ -3092,7 +3092,6 @@ import { Buffer as Buffer15 } from "node:buffer";
 import { isIP } from "node:net";
 import path6 from "node:path";
 import process9 from "node:process";
-import { join as join72 } from "node:path";
 import process10 from "node:process";
 import process11 from "node:process";
 import process13 from "node:process";
@@ -9730,7 +9729,7 @@ var require_require_directory = __commonJS({
   "node_modules/.deno/require-directory@2.1.1/node_modules/require-directory/index.js"(exports2, module14) {
     "use strict";
     var fs = __require2("fs");
-    var join92 = __require2("path").join;
+    var join82 = __require2("path").join;
     var resolve82 = __require2("path").resolve;
     var dirname72 = __require2("path").dirname;
     var defaultOptions4 = {
@@ -9767,7 +9766,7 @@ var require_require_directory = __commonJS({
       }
       path8 = !path8 ? dirname72(m3.filename) : resolve82(dirname72(m3.filename), path8);
       fs.readdirSync(path8).forEach(function(filename) {
-        var joined = join92(path8, filename), files, key, obj;
+        var joined = join82(path8, filename), files, key, obj;
         if (fs.statSync(joined).isDirectory() && options2.recurse) {
           files = requireDirectory(m3, joined, options2);
           if (Object.keys(files).length) {
@@ -87652,7 +87651,7 @@ var require_thread_stream = __commonJS({
     var { version: version3 } = require_package6();
     var { EventEmitter } = __require2("events");
     var { Worker: Worker2 } = __require2("worker_threads");
-    var { join: join92 } = __require2("path");
+    var { join: join82 } = __require2("path");
     var { pathToFileURL } = __require2("url");
     var { wait } = require_wait2();
     var {
@@ -87688,7 +87687,7 @@ var require_thread_stream = __commonJS({
     function createWorker2(stream, opts) {
       const { filename, workerData } = opts;
       const bundlerOverrides = "__bundlerPathsOverrides" in globalThis ? globalThis.__bundlerPathsOverrides : {};
-      const toExecute = bundlerOverrides["thread-stream-worker"] || join92(__dirname, "lib", "worker.js");
+      const toExecute = bundlerOverrides["thread-stream-worker"] || join82(__dirname, "lib", "worker.js");
       const worker = new Worker2(toExecute, {
         ...opts.workerOpts,
         trackUnmanagedFds: false,
@@ -88072,7 +88071,7 @@ var require_transport = __commonJS({
     "use strict";
     var { createRequire } = __require2("module");
     var getCallers = require_caller();
-    var { join: join92, isAbsolute: isAbsolute8, sep } = __require2("path");
+    var { join: join82, isAbsolute: isAbsolute8, sep } = __require2("path");
     var sleep = require_atomic_sleep();
     var onExit = require_on_exit_leak_free();
     var ThreadStream = require_thread_stream();
@@ -88131,7 +88130,7 @@ var require_transport = __commonJS({
         throw new Error("only one of target or targets can be specified");
       }
       if (targets) {
-        target = bundlerOverrides["pino-worker"] || join92(__dirname, "worker.js");
+        target = bundlerOverrides["pino-worker"] || join82(__dirname, "worker.js");
         options2.targets = targets.map((dest) => {
           return {
             ...dest,
@@ -88139,7 +88138,7 @@ var require_transport = __commonJS({
           };
         });
       } else if (pipeline) {
-        target = bundlerOverrides["pino-pipeline-worker"] || join92(__dirname, "worker-pipeline.js");
+        target = bundlerOverrides["pino-pipeline-worker"] || join82(__dirname, "worker-pipeline.js");
         options2.targets = pipeline.map((dest) => {
           return {
             ...dest,
@@ -88160,7 +88159,7 @@ var require_transport = __commonJS({
           return origin;
         }
         if (origin === "pino/file") {
-          return join92(__dirname, "..", "file.js");
+          return join82(__dirname, "..", "file.js");
         }
         let fixTarget2;
         for (const filePath of callers) {
@@ -89098,7 +89097,7 @@ var require_safe_stable_stringify = __commonJS({
               return circularValue;
             }
             let res = "";
-            let join92 = ",";
+            let join82 = ",";
             const originalIndentation = indentation;
             if (Array.isArray(value)) {
               if (value.length === 0) {
@@ -89112,7 +89111,7 @@ var require_safe_stable_stringify = __commonJS({
                 indentation += spacer;
                 res += `
 ${indentation}`;
-                join92 = `,
+                join82 = `,
 ${indentation}`;
               }
               const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
@@ -89120,13 +89119,13 @@ ${indentation}`;
               for (; i2 < maximumValuesToStringify - 1; i2++) {
                 const tmp2 = stringifyFnReplacer(String(i2), value, stack, replacer, spacer, indentation);
                 res += tmp2 !== void 0 ? tmp2 : "null";
-                res += join92;
+                res += join82;
               }
               const tmp = stringifyFnReplacer(String(i2), value, stack, replacer, spacer, indentation);
               res += tmp !== void 0 ? tmp : "null";
               if (value.length - 1 > maximumBreadth) {
                 const removedKeys = value.length - maximumBreadth - 1;
-                res += `${join92}"... ${getItemCount(removedKeys)} not stringified"`;
+                res += `${join82}"... ${getItemCount(removedKeys)} not stringified"`;
               }
               if (spacer !== "") {
                 res += `
@@ -89147,7 +89146,7 @@ ${originalIndentation}`;
             let separator = "";
             if (spacer !== "") {
               indentation += spacer;
-              join92 = `,
+              join82 = `,
 ${indentation}`;
               whitespace = " ";
             }
@@ -89161,13 +89160,13 @@ ${indentation}`;
               const tmp = stringifyFnReplacer(key2, value, stack, replacer, spacer, indentation);
               if (tmp !== void 0) {
                 res += `${separator}${strEscape(key2)}:${whitespace}${tmp}`;
-                separator = join92;
+                separator = join82;
               }
             }
             if (keyLength > maximumBreadth) {
               const removedKeys = keyLength - maximumBreadth;
               res += `${separator}"...":${whitespace}"${getItemCount(removedKeys)} not stringified"`;
-              separator = join92;
+              separator = join82;
             }
             if (spacer !== "" && separator.length > 1) {
               res = `
@@ -89208,7 +89207,7 @@ ${originalIndentation}`;
             }
             const originalIndentation = indentation;
             let res = "";
-            let join92 = ",";
+            let join82 = ",";
             if (Array.isArray(value)) {
               if (value.length === 0) {
                 return "[]";
@@ -89221,7 +89220,7 @@ ${originalIndentation}`;
                 indentation += spacer;
                 res += `
 ${indentation}`;
-                join92 = `,
+                join82 = `,
 ${indentation}`;
               }
               const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
@@ -89229,13 +89228,13 @@ ${indentation}`;
               for (; i2 < maximumValuesToStringify - 1; i2++) {
                 const tmp2 = stringifyArrayReplacer(String(i2), value[i2], stack, replacer, spacer, indentation);
                 res += tmp2 !== void 0 ? tmp2 : "null";
-                res += join92;
+                res += join82;
               }
               const tmp = stringifyArrayReplacer(String(i2), value[i2], stack, replacer, spacer, indentation);
               res += tmp !== void 0 ? tmp : "null";
               if (value.length - 1 > maximumBreadth) {
                 const removedKeys = value.length - maximumBreadth - 1;
-                res += `${join92}"... ${getItemCount(removedKeys)} not stringified"`;
+                res += `${join82}"... ${getItemCount(removedKeys)} not stringified"`;
               }
               if (spacer !== "") {
                 res += `
@@ -89248,7 +89247,7 @@ ${originalIndentation}`;
             let whitespace = "";
             if (spacer !== "") {
               indentation += spacer;
-              join92 = `,
+              join82 = `,
 ${indentation}`;
               whitespace = " ";
             }
@@ -89257,7 +89256,7 @@ ${indentation}`;
               const tmp = stringifyArrayReplacer(key2, value[key2], stack, replacer, spacer, indentation);
               if (tmp !== void 0) {
                 res += `${separator}${strEscape(key2)}:${whitespace}${tmp}`;
-                separator = join92;
+                separator = join82;
               }
             }
             if (spacer !== "" && separator.length > 1) {
@@ -89315,20 +89314,20 @@ ${originalIndentation}`;
               indentation += spacer;
               let res2 = `
 ${indentation}`;
-              const join10 = `,
+              const join92 = `,
 ${indentation}`;
               const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
               let i2 = 0;
               for (; i2 < maximumValuesToStringify - 1; i2++) {
                 const tmp2 = stringifyIndent(String(i2), value[i2], stack, spacer, indentation);
                 res2 += tmp2 !== void 0 ? tmp2 : "null";
-                res2 += join10;
+                res2 += join92;
               }
               const tmp = stringifyIndent(String(i2), value[i2], stack, spacer, indentation);
               res2 += tmp !== void 0 ? tmp : "null";
               if (value.length - 1 > maximumBreadth) {
                 const removedKeys = value.length - maximumBreadth - 1;
-                res2 += `${join10}"... ${getItemCount(removedKeys)} not stringified"`;
+                res2 += `${join92}"... ${getItemCount(removedKeys)} not stringified"`;
               }
               res2 += `
 ${originalIndentation}`;
@@ -89344,16 +89343,16 @@ ${originalIndentation}`;
               return '"[Object]"';
             }
             indentation += spacer;
-            const join92 = `,
+            const join82 = `,
 ${indentation}`;
             let res = "";
             let separator = "";
             let maximumPropertiesToStringify = Math.min(keyLength, maximumBreadth);
             if (isTypedArrayWithEntries(value)) {
-              res += stringifyTypedArray(value, join92, maximumBreadth);
+              res += stringifyTypedArray(value, join82, maximumBreadth);
               keys = keys.slice(value.length);
               maximumPropertiesToStringify -= value.length;
-              separator = join92;
+              separator = join82;
             }
             if (deterministic) {
               keys = sort(keys, comparator);
@@ -89364,13 +89363,13 @@ ${indentation}`;
               const tmp = stringifyIndent(key2, value[key2], stack, spacer, indentation);
               if (tmp !== void 0) {
                 res += `${separator}${strEscape(key2)}: ${tmp}`;
-                separator = join92;
+                separator = join82;
               }
             }
             if (keyLength > maximumBreadth) {
               const removedKeys = keyLength - maximumBreadth;
               res += `${separator}"...": "${getItemCount(removedKeys)} not stringified"`;
-              separator = join92;
+              separator = join82;
             }
             if (separator !== "") {
               res = `
@@ -94122,6 +94121,7 @@ var init_pubsub2 = __esm({
     log.error = (error2, ...args) => logger_default.error(error2, bold.red(tag2, ...args));
     defaultServerHandlers = {
       close() {
+        clearInterval(this.pingIntervalID);
         log("Server closed");
       },
       /**
@@ -107713,6 +107713,18 @@ var init_routes = __esm({
       reservoirRefreshInterval: 24 * 60 * 60 * SECOND,
       reservoirRefreshAmount: SIGNUP_LIMIT_DAY
     });
+    esm_default("sbp/selectors/register", {
+      "backend/server/stopRateLimiters": async function() {
+        await Promise.allSettled([
+          limiterPerMinute.disconnect(),
+          limiterPerHour.disconnect(),
+          limiterPerDay.disconnect()
+        ]);
+        clearInterval(limiterPerMinute.interval);
+        clearInterval(limiterPerHour.interval);
+        clearInterval(limiterPerDay.interval);
+      }
+    });
     cidLookupTable = {
       [multicodes.SHELTER_CONTRACT_MANIFEST]: "application/vnd.shelter.contractmanifest+json",
       [multicodes.SHELTER_CONTRACT_TEXT]: "application/vnd.shelter.contracttext",
@@ -108562,6 +108574,7 @@ var CONTRACTS_VERSION;
 var GI_VERSION;
 var hapi;
 var appendToOrphanedNamesIndex;
+var pushHeartbeatIntervalID;
 var init_server = __esm({
   "src/serve/server.ts"() {
     "use strict";
@@ -108590,8 +108603,8 @@ var init_server = __esm({
       process10.stderr.write("The size calculation worker must run more frequently than the credits worker for accurate billing");
       process10.exit(1);
     }
-    ownerSizeTotalWorker = ARCHIVE_MODE2 || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker_default(join72(import.meta.dirname || ".", "serve", "ownerSizeTotalWorker.js"));
-    creditsWorker = ARCHIVE_MODE2 || !CREDITS_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker_default(join72(import.meta.dirname || ".", "serve", "creditsWorker.js"));
+    ownerSizeTotalWorker = ARCHIVE_MODE2 || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker_default("./serve/ownerSizeTotalWorker.js");
+    creditsWorker = ARCHIVE_MODE2 || !CREDITS_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker_default("./serve/creditsWorker.js");
     ({ CONTRACTS_VERSION, GI_VERSION } = process10.env);
     hapi = new Hapi2.Server({
       // debug: false, // <- Hapi v16 was outputing too many unnecessary debug statements
@@ -108727,8 +108740,16 @@ var init_server = __esm({
         const sizeKey = `_private_contractFilesTotalSize_${resourceID}`;
         return updateSize(resourceID, sizeKey, size, true);
       },
-      "backend/server/stop": function() {
-        return hapi.stop();
+      "backend/server/stop": async function() {
+        clearInterval(pushHeartbeatIntervalID);
+        if (esm_default("sbp/selectors/fn", "backend/server/stopRateLimiters")) {
+          await esm_default("backend/server/stopRateLimiters");
+        }
+        await hapi.stop();
+        await Promise.all([
+          ownerSizeTotalWorker?.terminate(),
+          creditsWorker?.terminate()
+        ]);
       },
       async "backend/deleteFile"(cid, ultimateOwnerID, skipIfDeleted) {
         const owner = await esm_default("chelonia.db/get", `_private_owner_${cid}`);
@@ -109013,7 +109034,7 @@ var init_server = __esm({
     })();
     (() => {
       const map = /* @__PURE__ */ new WeakMap();
-      setInterval(() => {
+      pushHeartbeatIntervalID = setInterval(() => {
         const now = Date.now();
         const pubsub = esm_default("okTurtles.data/get", PUBSUB_INSTANCE);
         const notification = JSON.stringify({ type: "recurring" });
@@ -109034,7 +109055,8 @@ var init_server = __esm({
 });
 var serve_exports = {};
 __export(serve_exports, {
-  default: () => serve_default
+  default: () => serve_default,
+  removeSignalHandlers: () => removeSignalHandlers
 });
 function logSBP(_domain, selector, data) {
   if (!dontLog[selector]) {
@@ -109045,10 +109067,17 @@ function logSBP(_domain, selector, data) {
     }
   }
 }
+function removeSignalHandlers() {
+  for (const [signal, handler] of signalHandlers) {
+    process11.removeListener(signal, handler);
+  }
+  signalHandlers.length = 0;
+}
 var import_npm_chalk4;
 var dontLog;
 var serve_default;
 var exit2;
+var signalHandlers;
 var handleSignal;
 var init_serve = __esm({
   "src/serve/index.ts"() {
@@ -109082,6 +109111,8 @@ var init_serve = __esm({
           return new Promise((resolve82) => {
             pubsub.on("close", async function() {
               try {
+                removeSignalHandlers();
+                await esm_default("chelonia.persistentActions/unload");
                 await esm_default("backend/server/stop");
                 console.info("Hapi server down");
               } catch (err) {
@@ -109113,11 +109144,14 @@ var init_serve = __esm({
       });
       esm_default("okTurtles.events/emit", SERVER_EXITING);
     };
+    signalHandlers = [];
     handleSignal = (signal, code2) => {
-      process11.on(signal, () => {
+      const handler = () => {
         console.error(`Exiting upon receiving ${signal} (${code2})`);
         exit2(128 + code2);
-      });
+      };
+      signalHandlers.push([signal, handler]);
+      process11.on(signal, handler);
     };
     [
       ["SIGHUP", 1],
