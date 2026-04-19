@@ -10,9 +10,9 @@ import * as Hapi from 'npm:@hapi/hapi'
 import Inert from 'npm:@hapi/inert'
 import sbp from 'npm:@sbp/sbp'
 import chalk from 'npm:chalk'
+import type { ImportMeta } from '../types/build.d.ts'
 import createWorker from './createWorker.ts'
 // import type { SubMessage, UnsubMessage } from './pubsub.ts' // TODO: Use for type checking
-import { join } from 'node:path'
 import process from 'node:process'
 import authPlugin from './auth.ts'
 import { CREDITS_WORKER_TASK_TIME_INTERVAL, OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL } from './constants.ts'
@@ -46,6 +46,7 @@ const cheloniaAppManifest = await (async () => {
 })()
 
 const ARCHIVE_MODE = nconf.get('server:archiveMode')
+let pushHeartbeatIntervalID: ReturnType<typeof setInterval>
 
 if (CREDITS_WORKER_TASK_TIME_INTERVAL && OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL > CREDITS_WORKER_TASK_TIME_INTERVAL) {
   process.stderr.write('The size calculation worker must run more frequently than the credits worker for accurate billing')
@@ -55,10 +56,10 @@ if (CREDITS_WORKER_TASK_TIME_INTERVAL && OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTER
 // Initialize workers for size calculation and credits processing
 const ownerSizeTotalWorker = ARCHIVE_MODE || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL
   ? undefined
-  : createWorker(join(import.meta.dirname || '.', import.meta.workerDir || '.', 'ownerSizeTotalWorker.js'))
+  : createWorker((import.meta as ImportMeta).ownerSizeTotalWorker || './ownerSizeTotalWorker.ts')
 const creditsWorker = ARCHIVE_MODE || !CREDITS_WORKER_TASK_TIME_INTERVAL
   ? undefined
-  : createWorker(join(import.meta.dirname || '.', import.meta.workerDir || '.', 'creditsWorker.js'))
+  : createWorker((import.meta as ImportMeta).creditsWorker || './creditsWorker.ts')
 
 // Dynamic runtime import to bypass bundling issues with npm: specifier
 const hapi = new Hapi.Server({
@@ -255,8 +256,16 @@ sbp('sbp/selectors/register', {
     const sizeKey = `_private_contractFilesTotalSize_${resourceID}`
     return updateSize(resourceID, sizeKey, size, true)
   },
-  'backend/server/stop': function () {
-    return hapi.stop()
+  'backend/server/stop': async function () {
+    clearInterval(pushHeartbeatIntervalID)
+    if (sbp('sbp/selectors/fn', 'backend/server/stopRateLimiters')) {
+      await sbp('backend/server/stopRateLimiters')
+    }
+    await hapi.stop()
+    await Promise.all([
+      ownerSizeTotalWorker?.terminate(),
+      creditsWorker?.terminate()
+    ])
   },
   async 'backend/deleteFile' (cid: string, ultimateOwnerID: string | null | undefined, skipIfDeleted: boolean | null | undefined): Promise<void> {
     const owner = await sbp('chelonia.db/get', `_private_owner_${cid}`)
@@ -596,7 +605,7 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
 ;(() => {
   const map = new WeakMap()
 
-  setInterval(() => {
+  pushHeartbeatIntervalID = setInterval(() => {
     const now = Date.now()
     const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE) as WSS | undefined
     // Notification text

@@ -14,7 +14,8 @@ const options: esbuild.BuildOptions = {
   bundle: true,
   define: {
     'import.meta.VERSION': JSON.stringify(version),
-    'import.meta.workerDir': '"serve"'
+    'import.meta.ownerSizeTotalWorker': '"./serve/ownerSizeTotalWorker.js"',
+    'import.meta.creditsWorker': '"./serve/creditsWorker.js"',
   },
   format: 'esm',
   platform: 'node',

@@ -191,7 +191,7 @@ export interface WSS extends Omit<WebSocketServer, 'clients' | 'options'> {
   customServerEventHandlers: Partial<ServerHandlers>;
   customSocketEventHandlers: Partial<SocketHandlers>;
   customMessageHandlers: Partial<MessageHandlers>;
-  pingIntervalID?: ReturnType<typeof setTimeout>
+  pingIntervalID?: ReturnType<typeof setInterval>
   subscribersByChannelID: Record<string, Set<WS | PushSubscriptionInfo>>
   pushSubscriptions: Record<string, PushSubscriptionInfo>;
   options: ServerOptions
@@ -274,6 +274,7 @@ export function createServer (httpServer: import('node:http').Server, options: S
 // The `this` binding refers to the server object.
 const defaultServerHandlers: ServerHandlers = {
   close () {
+    clearInterval(this.pingIntervalID)
     log('Server closed')
   },
   /**
