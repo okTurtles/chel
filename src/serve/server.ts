@@ -13,6 +13,7 @@ import chalk from 'npm:chalk'
 import type { ImportMeta } from '../types/build.d.ts'
 import createWorker from './createWorker.ts'
 // import type { SubMessage, UnsubMessage } from './pubsub.ts' // TODO: Use for type checking
+import { join } from 'node:path'
 import process from 'node:process'
 import authPlugin from './auth.ts'
 import { CREDITS_WORKER_TASK_TIME_INTERVAL, OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL } from './constants.ts'
@@ -31,8 +32,20 @@ import {
   type WSS
 } from './pubsub.ts'
 import { addChannelToSubscription, deleteChannelFromSubscription, postEvent, pushServerActionhandlers, subscriptionInfoWrapper } from './push.ts'
+import { pathToFileURL } from 'node:url'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
+
+const cheloniaAppManifest = await (async () => {
+  try {
+    const appDir = nconf.get('server:appDir') || process.cwd()
+    return (await import(pathToFileURL(join(appDir, 'chelonia.json')).toString(), {
+      with: { type: 'json' }
+    })).default
+  } catch {
+    console.warn('`chelonia.json` unparsable or not found. Version information will be unavailable.')
+  }
+})()
 
 const ARCHIVE_MODE = nconf.get('server:archiveMode')
 let pushHeartbeatIntervalID: ReturnType<typeof setInterval>
@@ -49,8 +62,6 @@ const ownerSizeTotalWorker = ARCHIVE_MODE || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_
 const creditsWorker = ARCHIVE_MODE || !CREDITS_WORKER_TASK_TIME_INTERVAL
   ? undefined
   : createWorker((import.meta as ImportMeta).creditsWorker || './creditsWorker.ts')
-
-const { CONTRACTS_VERSION, GI_VERSION } = process.env
 
 // Dynamic runtime import to bypass bundling issues with npm: specifier
 const hapi = new Hapi.Server({
@@ -435,8 +446,11 @@ sbp('okTurtles.data/set', PUBSUB_INSTANCE, createServer(hapi.listener, {
   serverHandlers: {
     connection (socket) {
       const versionInfo = {
-        GI_VERSION: GI_VERSION || null,
-        CONTRACTS_VERSION: CONTRACTS_VERSION || null
+        appVersion: cheloniaAppManifest?.appVersion || null,
+        contractsVersion: cheloniaAppManifest?.contracts ? Object.fromEntries(
+          Object.entries(cheloniaAppManifest?.contracts)
+            .map(([k, v]) => [k, (v as { version: string }).version])
+        ) : null
       }
       socket.send(createNotification(NOTIFICATION_TYPE.VERSION_INFO, versionInfo))
     }

@@ -6,13 +6,17 @@ import process from 'node:process'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { exit } from './utils.ts'
 
+const VALID_VERSION = /^[a-zA-Z0-9_+-][a-zA-Z0-9._+-]*[a-zA-Z0-9_+-]?$/
+// deno-lint-ignore no-control-regex
+const RESERVED_FILE_CHARS_REPLACE = /[\x00/\\:*?"<>|]/g
+
 type Params = { overwrite: boolean, 'dir'?: string, 'manifest-version'?: string, manifest: string }
 
 let projectRoot: string
 let cheloniaConfig: { contracts: Record<string, { version: string, path: string }> }
 
 function sanitizeContractName (contractName: string): string {
-  return contractName.replace(/[/\\:*?"<>|]/g, '_').replace(/\.\./g, '__')
+  return contractName.replace(RESERVED_FILE_CHARS_REPLACE, '_').replace(/\.\./g, '__')
 }
 
 export async function pin (args: ArgumentsCamelCase<Params>): Promise<void> {
@@ -36,8 +40,13 @@ export async function pin (args: ArgumentsCamelCase<Params>): Promise<void> {
       exit(`Manifest file not found: ${manifestPath}`)
     }
 
-    const { contractName, contractFiles, manifestVersion } = await parseManifest(fullManifestPath)
-    console.log(colors.blue(`Contract name: ${contractName}`))
+    const { contractName, fullContractName, contractFiles, manifestVersion } = await parseManifest(fullManifestPath)
+
+    if (!manifestVersion || !VALID_VERSION.test(manifestVersion)) {
+      exit(`Invalid manifest version: ${manifestVersion}`)
+    }
+
+    console.log(colors.blue(`Contract name: ${fullContractName}`))
     console.log(colors.blue(`Manifest version: ${manifestVersion}`))
 
     if (version) {
@@ -50,33 +59,33 @@ export async function pin (args: ArgumentsCamelCase<Params>): Promise<void> {
       console.log(colors.green(`✅ Version validation passed: ${version}`))
     }
 
-    const currentPinnedVersion = cheloniaConfig.contracts[contractName]?.version
+    const currentPinnedVersion = cheloniaConfig.contracts[fullContractName]?.version
     if (currentPinnedVersion === manifestVersion) {
-      console.log(colors.yellow(`✨ Contract ${contractName} is already pinned to version ${manifestVersion} - no action needed`))
+      console.log(colors.yellow(`✨ Contract ${fullContractName} is already pinned to version ${manifestVersion} - no action needed`))
       return
     }
 
     if (currentPinnedVersion) {
-      console.log(colors.cyan(`📌 Updating ${contractName} from version ${currentPinnedVersion} to ${manifestVersion}`))
+      console.log(colors.cyan(`📌 Updating ${fullContractName} from version ${currentPinnedVersion} to ${manifestVersion}`))
     } else {
-      console.log(colors.cyan(`📌 Pinning ${contractName} to version ${manifestVersion} (first time)`))
+      console.log(colors.cyan(`📌 Pinning ${fullContractName} to version ${manifestVersion} (first time)`))
     }
 
     const contractVersionDir = join(projectRoot, 'contracts', contractName, manifestVersion)
 
     if (existsSync(contractVersionDir)) {
       if (!args.overwrite) {
-        exit(`Version ${manifestVersion} already exists for contract ${contractName}. Use --overwrite to replace it.`)
+        exit(`Version ${manifestVersion} already exists for contract ${fullContractName}. Use --overwrite to replace it.`)
       }
-      console.log(colors.yellow(`Version ${manifestVersion} already exists for ${contractName} - checking files...`))
+      console.log(colors.yellow(`Version ${manifestVersion} already exists for ${fullContractName} - checking files...`))
     } else {
       await createVersionDirectory(contractName, manifestVersion)
     }
 
     await copyContractFiles(contractFiles, manifestPath, contractName, manifestVersion, args)
-    await updateCheloniaConfig(contractName, manifestVersion, manifestPath)
+    await updateCheloniaConfig(fullContractName, contractName, manifestVersion, manifestPath)
 
-    console.log(colors.green(`✅ Successfully pinned ${contractName} to version ${version}`))
+    console.log(colors.green(`✅ Successfully pinned ${fullContractName} to version ${manifestVersion}`))
     console.log(colors.gray(`Location: contracts/${contractName}/${manifestVersion}/`))
   } catch (error) {
     exit(error)
@@ -103,6 +112,7 @@ async function parseManifest (manifestPath: string) {
   return {
     contractName,
     manifestVersion,
+    fullContractName,
     contractFiles: {
       main: mainFile,
       slim: slimFile
@@ -195,11 +205,11 @@ async function loadCheloniaConfig () {
   }
 }
 
-async function updateCheloniaConfig (contractName: string, version: string, manifestPath: string) {
+async function updateCheloniaConfig (fullContractName: string, contractName: string, version: string, manifestPath: string) {
   const manifestFileName = basename(manifestPath)
   const pinnedManifestPath = `contracts/${contractName}/${version}/${manifestFileName}`
 
-  cheloniaConfig.contracts[contractName] = {
+  cheloniaConfig.contracts[fullContractName] = {
     version,
     path: pinnedManifestPath
   }

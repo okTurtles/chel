@@ -3092,7 +3092,9 @@ import { Buffer as Buffer15 } from "node:buffer";
 import { isIP } from "node:net";
 import path6 from "node:path";
 import process9 from "node:process";
+import { join as join72 } from "node:path";
 import process10 from "node:process";
+import { pathToFileURL } from "node:url";
 import process11 from "node:process";
 import process13 from "node:process";
 
@@ -9729,7 +9731,7 @@ var require_require_directory = __commonJS({
   "node_modules/.deno/require-directory@2.1.1/node_modules/require-directory/index.js"(exports2, module14) {
     "use strict";
     var fs = __require2("fs");
-    var join82 = __require2("path").join;
+    var join92 = __require2("path").join;
     var resolve82 = __require2("path").resolve;
     var dirname72 = __require2("path").dirname;
     var defaultOptions4 = {
@@ -9766,7 +9768,7 @@ var require_require_directory = __commonJS({
       }
       path8 = !path8 ? dirname72(m3.filename) : resolve82(dirname72(m3.filename), path8);
       fs.readdirSync(path8).forEach(function(filename) {
-        var joined = join82(path8, filename), files, key, obj;
+        var joined = join92(path8, filename), files, key, obj;
         if (fs.statSync(joined).isDirectory() && options2.recurse) {
           files = requireDirectory(m3, joined, options2);
           if (Object.keys(files).length) {
@@ -87651,8 +87653,8 @@ var require_thread_stream = __commonJS({
     var { version: version3 } = require_package6();
     var { EventEmitter } = __require2("events");
     var { Worker: Worker2 } = __require2("worker_threads");
-    var { join: join82 } = __require2("path");
-    var { pathToFileURL } = __require2("url");
+    var { join: join92 } = __require2("path");
+    var { pathToFileURL: pathToFileURL2 } = __require2("url");
     var { wait } = require_wait2();
     var {
       WRITE_INDEX,
@@ -87687,12 +87689,12 @@ var require_thread_stream = __commonJS({
     function createWorker2(stream, opts) {
       const { filename, workerData } = opts;
       const bundlerOverrides = "__bundlerPathsOverrides" in globalThis ? globalThis.__bundlerPathsOverrides : {};
-      const toExecute = bundlerOverrides["thread-stream-worker"] || join82(__dirname, "lib", "worker.js");
+      const toExecute = bundlerOverrides["thread-stream-worker"] || join92(__dirname, "lib", "worker.js");
       const worker = new Worker2(toExecute, {
         ...opts.workerOpts,
         trackUnmanagedFds: false,
         workerData: {
-          filename: filename.indexOf("file://") === 0 ? filename : pathToFileURL(filename).href,
+          filename: filename.indexOf("file://") === 0 ? filename : pathToFileURL2(filename).href,
           dataBuf: stream[kImpl].dataBuf,
           stateBuf: stream[kImpl].stateBuf,
           workerData: {
@@ -88071,7 +88073,7 @@ var require_transport = __commonJS({
     "use strict";
     var { createRequire } = __require2("module");
     var getCallers = require_caller();
-    var { join: join82, isAbsolute: isAbsolute8, sep } = __require2("path");
+    var { join: join92, isAbsolute: isAbsolute8, sep } = __require2("path");
     var sleep = require_atomic_sleep();
     var onExit = require_on_exit_leak_free();
     var ThreadStream = require_thread_stream();
@@ -88130,7 +88132,7 @@ var require_transport = __commonJS({
         throw new Error("only one of target or targets can be specified");
       }
       if (targets) {
-        target = bundlerOverrides["pino-worker"] || join82(__dirname, "worker.js");
+        target = bundlerOverrides["pino-worker"] || join92(__dirname, "worker.js");
         options2.targets = targets.map((dest) => {
           return {
             ...dest,
@@ -88138,7 +88140,7 @@ var require_transport = __commonJS({
           };
         });
       } else if (pipeline) {
-        target = bundlerOverrides["pino-pipeline-worker"] || join82(__dirname, "worker-pipeline.js");
+        target = bundlerOverrides["pino-pipeline-worker"] || join92(__dirname, "worker-pipeline.js");
         options2.targets = pipeline.map((dest) => {
           return {
             ...dest,
@@ -88159,7 +88161,7 @@ var require_transport = __commonJS({
           return origin;
         }
         if (origin === "pino/file") {
-          return join82(__dirname, "..", "file.js");
+          return join92(__dirname, "..", "file.js");
         }
         let fixTarget2;
         for (const filePath of callers) {
@@ -89097,7 +89099,7 @@ var require_safe_stable_stringify = __commonJS({
               return circularValue;
             }
             let res = "";
-            let join82 = ",";
+            let join92 = ",";
             const originalIndentation = indentation;
             if (Array.isArray(value)) {
               if (value.length === 0) {
@@ -89111,7 +89113,7 @@ var require_safe_stable_stringify = __commonJS({
                 indentation += spacer;
                 res += `
 ${indentation}`;
-                join82 = `,
+                join92 = `,
 ${indentation}`;
               }
               const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
@@ -89119,13 +89121,13 @@ ${indentation}`;
               for (; i2 < maximumValuesToStringify - 1; i2++) {
                 const tmp2 = stringifyFnReplacer(String(i2), value, stack, replacer, spacer, indentation);
                 res += tmp2 !== void 0 ? tmp2 : "null";
-                res += join82;
+                res += join92;
               }
               const tmp = stringifyFnReplacer(String(i2), value, stack, replacer, spacer, indentation);
               res += tmp !== void 0 ? tmp : "null";
               if (value.length - 1 > maximumBreadth) {
                 const removedKeys = value.length - maximumBreadth - 1;
-                res += `${join82}"... ${getItemCount(removedKeys)} not stringified"`;
+                res += `${join92}"... ${getItemCount(removedKeys)} not stringified"`;
               }
               if (spacer !== "") {
                 res += `
@@ -89146,7 +89148,7 @@ ${originalIndentation}`;
             let separator = "";
             if (spacer !== "") {
               indentation += spacer;
-              join82 = `,
+              join92 = `,
 ${indentation}`;
               whitespace = " ";
             }
@@ -89160,13 +89162,13 @@ ${indentation}`;
               const tmp = stringifyFnReplacer(key2, value, stack, replacer, spacer, indentation);
               if (tmp !== void 0) {
                 res += `${separator}${strEscape(key2)}:${whitespace}${tmp}`;
-                separator = join82;
+                separator = join92;
               }
             }
             if (keyLength > maximumBreadth) {
               const removedKeys = keyLength - maximumBreadth;
               res += `${separator}"...":${whitespace}"${getItemCount(removedKeys)} not stringified"`;
-              separator = join82;
+              separator = join92;
             }
             if (spacer !== "" && separator.length > 1) {
               res = `
@@ -89207,7 +89209,7 @@ ${originalIndentation}`;
             }
             const originalIndentation = indentation;
             let res = "";
-            let join82 = ",";
+            let join92 = ",";
             if (Array.isArray(value)) {
               if (value.length === 0) {
                 return "[]";
@@ -89220,7 +89222,7 @@ ${originalIndentation}`;
                 indentation += spacer;
                 res += `
 ${indentation}`;
-                join82 = `,
+                join92 = `,
 ${indentation}`;
               }
               const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
@@ -89228,13 +89230,13 @@ ${indentation}`;
               for (; i2 < maximumValuesToStringify - 1; i2++) {
                 const tmp2 = stringifyArrayReplacer(String(i2), value[i2], stack, replacer, spacer, indentation);
                 res += tmp2 !== void 0 ? tmp2 : "null";
-                res += join82;
+                res += join92;
               }
               const tmp = stringifyArrayReplacer(String(i2), value[i2], stack, replacer, spacer, indentation);
               res += tmp !== void 0 ? tmp : "null";
               if (value.length - 1 > maximumBreadth) {
                 const removedKeys = value.length - maximumBreadth - 1;
-                res += `${join82}"... ${getItemCount(removedKeys)} not stringified"`;
+                res += `${join92}"... ${getItemCount(removedKeys)} not stringified"`;
               }
               if (spacer !== "") {
                 res += `
@@ -89247,7 +89249,7 @@ ${originalIndentation}`;
             let whitespace = "";
             if (spacer !== "") {
               indentation += spacer;
-              join82 = `,
+              join92 = `,
 ${indentation}`;
               whitespace = " ";
             }
@@ -89256,7 +89258,7 @@ ${indentation}`;
               const tmp = stringifyArrayReplacer(key2, value[key2], stack, replacer, spacer, indentation);
               if (tmp !== void 0) {
                 res += `${separator}${strEscape(key2)}:${whitespace}${tmp}`;
-                separator = join82;
+                separator = join92;
               }
             }
             if (spacer !== "" && separator.length > 1) {
@@ -89314,20 +89316,20 @@ ${originalIndentation}`;
               indentation += spacer;
               let res2 = `
 ${indentation}`;
-              const join92 = `,
+              const join10 = `,
 ${indentation}`;
               const maximumValuesToStringify = Math.min(value.length, maximumBreadth);
               let i2 = 0;
               for (; i2 < maximumValuesToStringify - 1; i2++) {
                 const tmp2 = stringifyIndent(String(i2), value[i2], stack, spacer, indentation);
                 res2 += tmp2 !== void 0 ? tmp2 : "null";
-                res2 += join92;
+                res2 += join10;
               }
               const tmp = stringifyIndent(String(i2), value[i2], stack, spacer, indentation);
               res2 += tmp !== void 0 ? tmp : "null";
               if (value.length - 1 > maximumBreadth) {
                 const removedKeys = value.length - maximumBreadth - 1;
-                res2 += `${join92}"... ${getItemCount(removedKeys)} not stringified"`;
+                res2 += `${join10}"... ${getItemCount(removedKeys)} not stringified"`;
               }
               res2 += `
 ${originalIndentation}`;
@@ -89343,16 +89345,16 @@ ${originalIndentation}`;
               return '"[Object]"';
             }
             indentation += spacer;
-            const join82 = `,
+            const join92 = `,
 ${indentation}`;
             let res = "";
             let separator = "";
             let maximumPropertiesToStringify = Math.min(keyLength, maximumBreadth);
             if (isTypedArrayWithEntries(value)) {
-              res += stringifyTypedArray(value, join82, maximumBreadth);
+              res += stringifyTypedArray(value, join92, maximumBreadth);
               keys = keys.slice(value.length);
               maximumPropertiesToStringify -= value.length;
-              separator = join82;
+              separator = join92;
             }
             if (deterministic) {
               keys = sort(keys, comparator);
@@ -89363,13 +89365,13 @@ ${indentation}`;
               const tmp = stringifyIndent(key2, value[key2], stack, spacer, indentation);
               if (tmp !== void 0) {
                 res += `${separator}${strEscape(key2)}: ${tmp}`;
-                separator = join82;
+                separator = join92;
               }
             }
             if (keyLength > maximumBreadth) {
               const removedKeys = keyLength - maximumBreadth;
               res += `${separator}"...": "${getItemCount(removedKeys)} not stringified"`;
-              separator = join82;
+              separator = join92;
             }
             if (separator !== "") {
               res = `
@@ -108567,16 +108569,15 @@ var Hapi2;
 var import_inert2;
 var import_npm_chalk3;
 var import_npm_nconf6;
+var cheloniaAppManifest;
 var ARCHIVE_MODE2;
+var pushHeartbeatIntervalID;
 var ownerSizeTotalWorker;
 var creditsWorker;
-var CONTRACTS_VERSION;
-var GI_VERSION;
 var hapi;
 var appendToOrphanedNamesIndex;
-var pushHeartbeatIntervalID;
 var init_server = __esm({
-  "src/serve/server.ts"() {
+  async "src/serve/server.ts"() {
     "use strict";
     init_SPMessage();
     init_chelonia();
@@ -108598,6 +108599,16 @@ var init_server = __esm({
     init_pubsub2();
     init_push();
     import_npm_nconf6 = __toESM(require_nconf());
+    cheloniaAppManifest = await (async () => {
+      try {
+        const appDir2 = import_npm_nconf6.default.get("server:appDir") || process10.cwd();
+        return (await import(pathToFileURL(join72(appDir2, "chelonia.json")).toString(), {
+          with: { type: "json" }
+        })).default;
+      } catch {
+        console.warn("`chelonia.json` unparsable or not found. Version information will be unavailable.");
+      }
+    })();
     ARCHIVE_MODE2 = import_npm_nconf6.default.get("server:archiveMode");
     if (CREDITS_WORKER_TASK_TIME_INTERVAL && OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL > CREDITS_WORKER_TASK_TIME_INTERVAL) {
       process10.stderr.write("The size calculation worker must run more frequently than the credits worker for accurate billing");
@@ -108605,7 +108616,6 @@ var init_server = __esm({
     }
     ownerSizeTotalWorker = ARCHIVE_MODE2 || !OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker_default("./serve/ownerSizeTotalWorker.js");
     creditsWorker = ARCHIVE_MODE2 || !CREDITS_WORKER_TASK_TIME_INTERVAL ? void 0 : createWorker_default("./serve/creditsWorker.js");
-    ({ CONTRACTS_VERSION, GI_VERSION } = process10.env);
     hapi = new Hapi2.Server({
       // debug: false, // <- Hapi v16 was outputing too many unnecessary debug statements
       //               // v17 doesn't seem to do this anymore so I've re-enabled the logging
@@ -108895,8 +108905,10 @@ var init_server = __esm({
       serverHandlers: {
         connection(socket) {
           const versionInfo = {
-            GI_VERSION: GI_VERSION || null,
-            CONTRACTS_VERSION: CONTRACTS_VERSION || null
+            appVersion: cheloniaAppManifest?.appVersion || null,
+            contractsVersion: cheloniaAppManifest?.contracts ? Object.fromEntries(
+              Object.entries(cheloniaAppManifest?.contracts).map(([k, v2]) => [k, v2.version])
+            ) : null
           };
           socket.send(createNotification(NOTIFICATION_TYPE.VERSION_INFO, versionInfo));
         }
@@ -109103,7 +109115,7 @@ var init_serve = __esm({
         console.info(import_npm_chalk4.default.bold("backend startup sequence complete."));
         resolve82();
       });
-      Promise.resolve().then(() => (init_server(), server_exports)).catch(reject);
+      init_server().then(() => server_exports).catch(reject);
     });
     esm_default("okTurtles.events/once", SERVER_EXITING, () => {
       esm_default("okTurtles.data/apply", PUBSUB_INSTANCE, function(pubsub) {
@@ -110641,10 +110653,12 @@ var module9 = {
     return migrate(argv);
   }
 };
+var VALID_VERSION = /^[a-zA-Z0-9_+-][a-zA-Z0-9._+-]*[a-zA-Z0-9_+-]?$/;
+var RESERVED_FILE_CHARS_REPLACE = /[\x00/\\:*?"<>|]/g;
 var projectRoot;
 var cheloniaConfig;
 function sanitizeContractName(contractName) {
-  return contractName.replace(/[/\\:*?"<>|]/g, "_").replace(/\.\./g, "__");
+  return contractName.replace(RESERVED_FILE_CHARS_REPLACE, "_").replace(/\.\./g, "__");
 }
 async function pin(args) {
   const version3 = args["manifest-version"];
@@ -110662,8 +110676,11 @@ async function pin(args) {
     if (!existsSync(fullManifestPath)) {
       exit(`Manifest file not found: ${manifestPath}`);
     }
-    const { contractName, contractFiles, manifestVersion } = await parseManifest(fullManifestPath);
-    console.log(blue(`Contract name: ${contractName}`));
+    const { contractName, fullContractName, contractFiles, manifestVersion } = await parseManifest(fullManifestPath);
+    if (!manifestVersion || !VALID_VERSION.test(manifestVersion)) {
+      exit(`Invalid manifest version: ${manifestVersion}`);
+    }
+    console.log(blue(`Contract name: ${fullContractName}`));
     console.log(blue(`Manifest version: ${manifestVersion}`));
     if (version3) {
       if (version3 !== manifestVersion) {
@@ -110673,28 +110690,28 @@ async function pin(args) {
       }
       console.log(green(`\u2705 Version validation passed: ${version3}`));
     }
-    const currentPinnedVersion = cheloniaConfig.contracts[contractName]?.version;
+    const currentPinnedVersion = cheloniaConfig.contracts[fullContractName]?.version;
     if (currentPinnedVersion === manifestVersion) {
-      console.log(yellow(`\u2728 Contract ${contractName} is already pinned to version ${manifestVersion} - no action needed`));
+      console.log(yellow(`\u2728 Contract ${fullContractName} is already pinned to version ${manifestVersion} - no action needed`));
       return;
     }
     if (currentPinnedVersion) {
-      console.log(cyan(`\u{1F4CC} Updating ${contractName} from version ${currentPinnedVersion} to ${manifestVersion}`));
+      console.log(cyan(`\u{1F4CC} Updating ${fullContractName} from version ${currentPinnedVersion} to ${manifestVersion}`));
     } else {
-      console.log(cyan(`\u{1F4CC} Pinning ${contractName} to version ${manifestVersion} (first time)`));
+      console.log(cyan(`\u{1F4CC} Pinning ${fullContractName} to version ${manifestVersion} (first time)`));
     }
     const contractVersionDir = join62(projectRoot, "contracts", contractName, manifestVersion);
     if (existsSync(contractVersionDir)) {
       if (!args.overwrite) {
-        exit(`Version ${manifestVersion} already exists for contract ${contractName}. Use --overwrite to replace it.`);
+        exit(`Version ${manifestVersion} already exists for contract ${fullContractName}. Use --overwrite to replace it.`);
       }
-      console.log(yellow(`Version ${manifestVersion} already exists for ${contractName} - checking files...`));
+      console.log(yellow(`Version ${manifestVersion} already exists for ${fullContractName} - checking files...`));
     } else {
       await createVersionDirectory(contractName, manifestVersion);
     }
     await copyContractFiles(contractFiles, manifestPath, contractName, manifestVersion, args);
-    await updateCheloniaConfig(contractName, manifestVersion, manifestPath);
-    console.log(green(`\u2705 Successfully pinned ${contractName} to version ${version3}`));
+    await updateCheloniaConfig(fullContractName, contractName, manifestVersion, manifestPath);
+    console.log(green(`\u2705 Successfully pinned ${fullContractName} to version ${manifestVersion}`));
     console.log(gray(`Location: contracts/${contractName}/${manifestVersion}/`));
   } catch (error2) {
     exit(error2);
@@ -110716,6 +110733,7 @@ async function parseManifest(manifestPath) {
   return {
     contractName,
     manifestVersion,
+    fullContractName,
     contractFiles: {
       main: mainFile,
       slim: slimFile
@@ -110780,10 +110798,10 @@ async function loadCheloniaConfig() {
     cheloniaConfig.contracts = {};
   }
 }
-async function updateCheloniaConfig(contractName, version3, manifestPath) {
+async function updateCheloniaConfig(fullContractName, contractName, version3, manifestPath) {
   const manifestFileName = basename42(manifestPath);
   const pinnedManifestPath = `contracts/${contractName}/${version3}/${manifestFileName}`;
-  cheloniaConfig.contracts[contractName] = {
+  cheloniaConfig.contracts[fullContractName] = {
     version: version3,
     path: pinnedManifestPath
   };
