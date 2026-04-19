@@ -14,7 +14,7 @@ import { Buffer as Buffer8 } from "node:buffer";
 import { Buffer as Buffer9 } from "node:buffer";
 import { randomBytes as randomBytes2, timingSafeEqual } from "node:crypto";
 import { mkdir, readdir, readFile, rm, unlink, writeFile } from "node:fs/promises";
-import { basename as basename9, dirname as dirname9, join as join22, normalize as normalize8, resolve as resolve9 } from "node:path";
+import { basename as basename9, dirname as dirname9, join as join9, normalize as normalize8, resolve as resolve9 } from "node:path";
 import { Buffer as Buffer10 } from "node:buffer";
 
 // deno:https://jsr.io/@db/sqlite/0.13.0/deno.json
@@ -484,7 +484,7 @@ function normalize3(path) {
 }
 
 // deno:https://jsr.io/@std/path/1.1.3/posix/join.ts
-function join4(path, ...paths) {
+function join3(path, ...paths) {
   if (path === void 0) return ".";
   if (path instanceof URL) {
     path = fromFileUrl4(path);
@@ -579,7 +579,7 @@ function normalize4(path) {
 }
 
 // deno:https://jsr.io/@std/path/1.1.3/windows/join.ts
-function join5(path, ...paths) {
+function join4(path, ...paths) {
   if (path instanceof URL) {
     path = fromFileUrl5(path);
   }
@@ -619,8 +619,8 @@ function join5(path, ...paths) {
 }
 
 // deno:https://jsr.io/@std/path/1.1.3/join.ts
-function join6(path, ...paths) {
-  return isWindows2 ? join5(path, ...paths) : join4(path, ...paths);
+function join5(path, ...paths) {
+  return isWindows2 ? join4(path, ...paths) : join3(path, ...paths);
 }
 
 // deno:https://jsr.io/@std/path/1.1.3/normalize.ts
@@ -967,7 +967,7 @@ function baseUrlToFilename(url2) {
     default:
       throw new TypeError(`Don't know how to create cache name for protocol: ${protocol}`);
   }
-  return join6(...out);
+  return join5(...out);
 }
 function stringToURL(url2) {
   return url2.startsWith("file://") || url2.startsWith("http://") || url2.startsWith("https://") ? new URL(url2) : toFileUrl5(resolve5(url2));
@@ -978,7 +978,7 @@ async function hash(value) {
 async function urlToFilename(url2) {
   const cacheFilename = baseUrlToFilename(url2);
   const hashedFilename = await hash(url2.pathname + url2.search);
-  return join6(cacheFilename, hashedFilename);
+  return join5(cacheFilename, hashedFilename);
 }
 async function isFile(filePath) {
   try {
@@ -1012,7 +1012,7 @@ function cacheDir() {
   if (Deno.build.os === "darwin") {
     const home = homeDir();
     if (home) {
-      return join6(home, "Library/Caches");
+      return join5(home, "Library/Caches");
     }
   } else if (Deno.build.os === "windows") {
     return Deno.env.get("LOCALAPPDATA");
@@ -1023,7 +1023,7 @@ function cacheDir() {
     } else {
       const home = homeDir();
       if (home) {
-        return join6(home, ".cache");
+        return join5(home, ".cache");
       }
     }
   }
@@ -1032,15 +1032,15 @@ function denoCacheDir() {
   const dd = Deno.env.get("DENO_DIR");
   let root;
   if (dd) {
-    root = normalize5(isAbsolute5(dd) ? dd : join6(Deno.cwd(), dd));
+    root = normalize5(isAbsolute5(dd) ? dd : join5(Deno.cwd(), dd));
   } else {
     const cd = cacheDir();
     if (cd) {
-      root = join6(cd, "deno");
+      root = join5(cd, "deno");
     } else {
       const hd = homeDir();
       if (hd) {
-        root = join6(hd, ".deno");
+        root = join5(hd, ".deno");
       }
     }
   }
@@ -1157,15 +1157,15 @@ async function ensureCacheLocation(location = "deno") {
     if (dir === void 0) {
       throw new Error("Could not get the deno cache directory, try using another CacheLocation in the plug options.");
     }
-    location = join6(dir, "plug");
+    location = join5(dir, "plug");
   } else if (location === "cache") {
     const dir = cacheDir();
     if (dir === void 0) {
       throw new Error("Could not get the cache directory, try using another CacheLocation in the plug options.");
     }
-    location = join6(dir, "plug");
+    location = join5(dir, "plug");
   } else if (location === "cwd") {
-    location = join6(Deno.cwd(), "plug");
+    location = join5(Deno.cwd(), "plug");
   } else if (location === "tmp") {
     location = await Deno.makeTempDir({
       prefix: "plug"
@@ -1187,7 +1187,7 @@ async function download(options2) {
   const setting = (typeof options2 === "object" && "cache" in options2 ? options2.cache : void 0) ?? "use";
   const url2 = createDownloadURL(options2);
   const directory = await ensureCacheLocation(location);
-  const cacheBasePath = join6(directory, await urlToFilename(url2));
+  const cacheBasePath = join5(directory, await urlToFilename(url2));
   const cacheFilePath = `${cacheBasePath}${extname5(url2.pathname)}`;
   const cacheMetaPath = `${cacheBasePath}.metadata.json`;
   const cached2 = setting === "use" ? await isFile(cacheFilePath) : setting === "only" || setting !== "reloadAll";
@@ -3077,7 +3077,7 @@ var wrapTransaction = (fn, db2, { begin, commit, rollback, savepoint, release, r
 // build/main.js-tmp
 import { Buffer as Buffer11 } from "node:buffer";
 import { mkdir as mkdir2 } from "node:fs/promises";
-import { basename as basename22, dirname as dirname22, join as join32, resolve as resolve22 } from "node:path";
+import { basename as basename22, dirname as dirname22, join as join22, resolve as resolve22 } from "node:path";
 import process2 from "node:process";
 import { Readable } from "node:stream";
 import path5 from "node:path";
@@ -3092,6 +3092,7 @@ import { Buffer as Buffer15 } from "node:buffer";
 import { isIP } from "node:net";
 import path6 from "node:path";
 import process9 from "node:process";
+import { join as join72 } from "node:path";
 import process10 from "node:process";
 import { pathToFileURL } from "node:url";
 import process11 from "node:process";
@@ -3423,7 +3424,7 @@ function normalize6(path) {
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/posix/join.ts
-function join7(path, ...paths) {
+function join6(path, ...paths) {
   if (path === void 0) return ".";
   if (path instanceof URL) {
     path = fromFileUrl7(path);
@@ -3518,7 +3519,7 @@ function normalize7(path) {
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/windows/join.ts
-function join8(path, ...paths) {
+function join7(path, ...paths) {
   if (path instanceof URL) {
     path = fromFileUrl8(path);
   }
@@ -3558,8 +3559,8 @@ function join8(path, ...paths) {
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/join.ts
-function join9(path, ...paths) {
-  return isWindows2 ? join8(path, ...paths) : join7(path, ...paths);
+function join8(path, ...paths) {
+  return isWindows2 ? join7(path, ...paths) : join6(path, ...paths);
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/posix/parse.ts
@@ -4022,7 +4023,7 @@ function resolve8(...pathSegments) {
 
 // build/main.js-tmp
 import { Buffer as Buffer12 } from "node:buffer";
-import { join as join42 } from "node:path";
+import { join as join32 } from "node:path";
 
 // deno:https://jsr.io/@std/encoding/1.0.10/_common64.ts
 var padding = "=".charCodeAt(0);
@@ -4111,7 +4112,7 @@ import { readFile as readFile2 } from "node:fs/promises";
 import process3 from "node:process";
 import { existsSync } from "node:fs";
 import { copyFile, mkdir as mkdir3, readFile as readFile3, writeFile as writeFile2 } from "node:fs/promises";
-import { basename as basename42, dirname as dirname42, join as join72 } from "node:path";
+import { basename as basename42, dirname as dirname42, join as join62 } from "node:path";
 import process4 from "node:process";
 import process12 from "node:process";
 import { notStrictEqual, strictEqual } from "node:assert";
@@ -32424,9 +32425,9 @@ var init_database_fs = __esm({
       // Maps a given key to a real path on the filesystem.
       mapKey(key) {
         if (basename9(normalize8(key)) !== key) throw new TypeError("Invalid key");
-        if (!this.depth) return join22(this.dataFolder, key);
+        if (!this.depth) return join9(this.dataFolder, key);
         const keyChunks = splitAndGroup(key, this.keyChunkLength, this.depth);
-        return join22(this.dataFolder, ...keyChunks, key);
+        return join9(this.dataFolder, ...keyChunks, key);
       }
       async init() {
         await mkdir(this.dataFolder, { mode: 488, recursive: true });
@@ -32436,7 +32437,7 @@ var init_database_fs = __esm({
       }
       async clear() {
         const names = await readdir(this.dataFolder);
-        const paths = names.map((name) => join22(this.dataFolder, name));
+        const paths = names.map((name) => join9(this.dataFolder, name));
         await Promise.all(
           paths.map((p) => rm(p, { recursive: true }))
         );
@@ -58077,7 +58078,7 @@ var init_database_sqlite = __esm({
         if (this.db) {
           throw new Error(`The ${filename} SQLite database is already open.`);
         }
-        this.db = new Database(join32(dataFolder, filename));
+        this.db = new Database(join22(dataFolder, filename));
         this.run("CREATE TABLE IF NOT EXISTS Data(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)");
         console.info(`Connected to the ${filename} SQLite database.`);
         this.readStatement = this.db.prepare("SELECT CAST(value AS BLOB) value FROM Data WHERE key = ?");
@@ -108600,7 +108601,8 @@ var init_server = __esm({
     import_npm_nconf6 = __toESM(require_nconf());
     cheloniaAppManifest = await (async () => {
       try {
-        return (await import(pathToFileURL(join(process10.cwd(), "chelonia.json")).toString(), {
+        const appDir2 = import_npm_nconf6.default.get("server:appDir") || process10.cwd();
+        return (await import(pathToFileURL(join72(appDir2, "chelonia.json")).toString(), {
           with: { type: "json" }
         })).default;
       } catch {
@@ -110054,7 +110056,7 @@ var findManifestFiles = async (path8) => {
     const entries = Deno.readDir(path9);
     const manifests = /* @__PURE__ */ new Set();
     for await (const entry of entries) {
-      const realPath2 = await Deno.realPath(join42(path9, entry.name));
+      const realPath2 = await Deno.realPath(join32(path9, entry.name));
       const info = await Deno.lstat(realPath2);
       if (info.isDirectory) {
         const subitems = await internal(realPath2);
@@ -110062,7 +110064,7 @@ var findManifestFiles = async (path8) => {
           manifests.add(item);
         }
       } else if (entry.name.toLowerCase().endsWith(".manifest.json")) {
-        manifests.add(join42(path9, entry.name));
+        manifests.add(join32(path9, entry.name));
       }
     }
     return manifests;
@@ -110178,9 +110180,9 @@ async function deploy(args) {
     const json = JSON.parse(manifestText);
     const body = ContractBodySchema.parse(JSON.parse(json.body));
     const dirname72 = dirname8(manifestPath);
-    toUpload.push(CONTRACT_TEXT_PREFIX + join9(dirname72, body.contract.file));
+    toUpload.push(CONTRACT_TEXT_PREFIX + join8(dirname72, body.contract.file));
     if (body.contractSlim) {
-      toUpload.push(CONTRACT_TEXT_PREFIX + join9(dirname72, body.contractSlim.file));
+      toUpload.push(CONTRACT_TEXT_PREFIX + join8(dirname72, body.contractSlim.file));
     }
     toUpload.push(CONTRACT_MANIFEST_PREFIX + manifestPath);
   }
@@ -110399,7 +110401,7 @@ async function manifest(args) {
   const name = args.name || contractFileName;
   const version3 = args.contractVersion || "x";
   const slim = args.slim;
-  const outFile = args.out || join9(contractDir, `${contractFileName}.${version3}.manifest.json`);
+  const outFile = args.out || join8(contractDir, `${contractFileName}.${version3}.manifest.json`);
   if (!keyFile) exit("Missing signing key file");
   const signingKeyDescriptorRaw = await readJsonFile(keyFile);
   if (!isSigningKeyDescriptor(signingKeyDescriptorRaw)) {
@@ -110670,7 +110672,7 @@ async function pin(args) {
     console.log(cyan(`\u{1F4CC} Requesting pin to version: ${version3}`));
     console.log(gray(`Manifest: ${manifestPath}`));
     await loadCheloniaConfig();
-    const fullManifestPath = join72(projectRoot, manifestPath);
+    const fullManifestPath = join62(projectRoot, manifestPath);
     if (!existsSync(fullManifestPath)) {
       exit(`Manifest file not found: ${manifestPath}`);
     }
@@ -110698,7 +110700,7 @@ async function pin(args) {
     } else {
       console.log(cyan(`\u{1F4CC} Pinning ${fullContractName} to version ${manifestVersion} (first time)`));
     }
-    const contractVersionDir = join72(projectRoot, "contracts", contractName, manifestVersion);
+    const contractVersionDir = join62(projectRoot, "contracts", contractName, manifestVersion);
     if (existsSync(contractVersionDir)) {
       if (!args.overwrite) {
         exit(`Version ${manifestVersion} already exists for contract ${fullContractName}. Use --overwrite to replace it.`);
@@ -110739,20 +110741,20 @@ async function parseManifest(manifestPath) {
   };
 }
 async function createVersionDirectory(contractName, version3) {
-  const versionDir = join72(projectRoot, "contracts", contractName, version3);
+  const versionDir = join62(projectRoot, "contracts", contractName, version3);
   console.log(blue(`\u{1F4C1} Creating directory: contracts/${contractName}/${version3}/`));
   await mkdir3(versionDir, { recursive: true });
 }
 async function copyContractFiles(contractFiles, manifestPath, contractName, version3, args) {
-  const sourceDir = dirname42(join72(projectRoot, manifestPath));
-  const targetDir = join72(projectRoot, "contracts", contractName, version3);
+  const sourceDir = dirname42(join62(projectRoot, manifestPath));
+  const targetDir = join62(projectRoot, "contracts", contractName, version3);
   console.log(gray(`\u{1F4CB} Copying files from manifest: ${contractFiles.main}${contractFiles.slim ? `, ${contractFiles.slim}` : ""}, manifest`));
-  const mainSource = join72(sourceDir, contractFiles.main);
-  const mainTarget = join72(targetDir, contractFiles.main);
+  const mainSource = join62(sourceDir, contractFiles.main);
+  const mainTarget = join62(targetDir, contractFiles.main);
   await copyFileIfNeeded(mainSource, mainTarget, contractFiles.main, args);
   if (contractFiles.slim) {
-    const slimSource = join72(sourceDir, contractFiles.slim);
-    const slimTarget = join72(targetDir, contractFiles.slim);
+    const slimSource = join62(sourceDir, contractFiles.slim);
+    const slimTarget = join62(targetDir, contractFiles.slim);
     try {
       await copyFileIfNeeded(slimSource, slimTarget, contractFiles.slim, args);
     } catch (error2) {
@@ -110760,8 +110762,8 @@ async function copyContractFiles(contractFiles, manifestPath, contractName, vers
       console.error(yellow(`\u26A0\uFE0F  Could not copy slim file: ${errorMessage}`));
     }
   }
-  const manifestSource = join72(projectRoot, manifestPath);
-  const manifestTarget = join72(targetDir, basename42(manifestPath));
+  const manifestSource = join62(projectRoot, manifestPath);
+  const manifestTarget = join62(targetDir, basename42(manifestPath));
   await copyFileIfNeeded(manifestSource, manifestTarget, basename42(manifestPath), args);
 }
 async function copyFileIfNeeded(sourcePath, targetPath, fileName, args) {
@@ -110779,7 +110781,7 @@ async function copyFileIfNeeded(sourcePath, targetPath, fileName, args) {
   await copyFile(sourcePath, targetPath);
 }
 async function loadCheloniaConfig() {
-  const configPath = join72(projectRoot, "chelonia.json");
+  const configPath = join62(projectRoot, "chelonia.json");
   cheloniaConfig = { contracts: {} };
   if (existsSync(configPath)) {
     try {
@@ -110803,7 +110805,7 @@ async function updateCheloniaConfig(fullContractName, contractName, version3, ma
     version: version3,
     path: pinnedManifestPath
   };
-  const configPath = join72(projectRoot, "chelonia.json");
+  const configPath = join62(projectRoot, "chelonia.json");
   const configContent = JSON.stringify(cheloniaConfig, null, 2) + "\n";
   await writeFile2(configPath, configContent, "utf8");
   console.log(green("\u2705 Saved chelonia.json"));
@@ -111031,12 +111033,12 @@ var verifySignature2 = async (args, internal = false) => {
   if (!body.contract?.file) {
     exit("Invalid manifest: no contract file", internal);
   }
-  const computedHash = await hash22({ ...args, filename: join9(parsedFilepath.dir, body.contract.file) }, multicodes.SHELTER_CONTRACT_TEXT, true);
+  const computedHash = await hash22({ ...args, filename: join8(parsedFilepath.dir, body.contract.file) }, multicodes.SHELTER_CONTRACT_TEXT, true);
   if (computedHash !== body.contract.hash) {
     exit(`Invalid contract file hash. Expected ${body.contract.hash} but got ${computedHash}`, internal);
   }
   if (body.contractSlim) {
-    const computedHash2 = await hash22({ ...args, filename: join9(parsedFilepath.dir, body.contractSlim.file) }, multicodes.SHELTER_CONTRACT_TEXT, true);
+    const computedHash2 = await hash22({ ...args, filename: join8(parsedFilepath.dir, body.contractSlim.file) }, multicodes.SHELTER_CONTRACT_TEXT, true);
     if (computedHash2 !== body.contractSlim.hash) {
       exit(`Invalid slim contract file hash. Expected ${body.contractSlim.hash} but got ${computedHash2}`, internal);
     }

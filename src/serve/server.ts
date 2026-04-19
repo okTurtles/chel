@@ -13,6 +13,7 @@ import chalk from 'npm:chalk'
 import type { ImportMeta } from '../types/build.d.ts'
 import createWorker from './createWorker.ts'
 // import type { SubMessage, UnsubMessage } from './pubsub.ts' // TODO: Use for type checking
+import { join } from 'node:path'
 import process from 'node:process'
 import authPlugin from './auth.ts'
 import { CREDITS_WORKER_TASK_TIME_INTERVAL, OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL } from './constants.ts'
@@ -37,7 +38,8 @@ import nconf from 'npm:nconf'
 
 const cheloniaAppManifest = await (async () => {
   try {
-    return (await import(pathToFileURL(join(process.cwd(), 'chelonia.json')).toString(), {
+    const appDir = nconf.get('server:appDir') || process.cwd()
+    return (await import(pathToFileURL(join(appDir, 'chelonia.json')).toString(), {
       with: { type: 'json' }
     })).default
   } catch {
