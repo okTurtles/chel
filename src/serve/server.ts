@@ -15,7 +15,7 @@ import type { ImportMeta } from '../types/build.d.ts'
 import createWorker from './createWorker.ts'
 import { join } from 'node:path'
 import process from 'node:process'
-import { registerRoutes } from './routes.ts'
+import { getClientIP, registerRoutes } from './routes.ts'
 import { CREDITS_WORKER_TASK_TIME_INTERVAL, OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL } from './constants.ts'
 import { KEYOP_SEGMENT_LENGTH, appendToIndexFactory, closeDB, initDB, lookupUltimateOwner, removeFromIndexFactory, updateSize } from './database.ts'
 import { BackendErrorBadData, BackendErrorGone, BackendErrorNotFound } from './errors.ts'
@@ -428,7 +428,7 @@ export async function startServer (): Promise<{ uri: string }> {
   if (process.env.NODE_ENV === 'development' && !process.env.CI) {
     currentApp.use('*', async (c, next) => {
       await next()
-      const ip = c.req.header('x-real-ip') || c.req.header('x-forwarded-for')?.split(',')[0].trim() || 'unknown'
+      const ip = getClientIP(c) || 'unknown'
       console.debug(chalk`{grey ${ip}: ${c.req.method} ${c.req.path} --> ${c.res.status}}`)
     })
   }

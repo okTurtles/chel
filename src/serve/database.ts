@@ -12,6 +12,7 @@ import { initVapid } from './vapid.ts'
 import { initZkpp } from './zkppSalt.ts'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
+import type { ImportMeta } from '../types/build.d.ts'
 import type DatabaseBackend from './DatabaseBackend.ts'
 import { KEYOP_SEGMENT_LENGTH, appendToNamesIndex, namespaceKey } from './db-utils.ts'
 
@@ -277,6 +278,9 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
       })
     }
     initedDB = true
+    if ((import.meta as ImportMeta).initDbOnce) {
+      sbp('sbp/selectors/lock', ['chelonia.db/get', 'chelonia.db/set', 'chelonia.db/delete', 'chelonia.db/iterKeys'])
+    }
   }
   if (skipDbPreloading || initedDB === 'preloaded') return
   /*
@@ -349,7 +353,9 @@ export async function closeDB (): Promise<void> {
     }
     currentCache?.clear()
     currentCache = null
-    initedDB = false
+    if ((import.meta as ImportMeta).initDbOnce) {
+      initedDB = false
+    }
   } finally {
     isClosing = false
   }

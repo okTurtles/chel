@@ -29,17 +29,6 @@ import { authMiddleware, type AuthCredentials } from './auth.ts'
 const MEGABYTE = 1048576 // TODO: add settings for these
 const SECOND = 1000
 
-// Joi-compatible boolean coercion for query parameters
-// Matches Joi.boolean().truthy('1', 'on', 'yes').falsy('0', 'off', 'no')
-function parseBooleanParam (value: string | undefined): boolean {
-  if (value === undefined) return false
-  const normalized = value.toLowerCase()
-  if (normalized === '' || normalized === 'true' || normalized === 'yes' || normalized === 'on' || normalized === '1') {
-    return true
-  }
-  return false
-}
-
 // Regexes validated as safe with <https://devina.io/redos-checker>
 const CID_REGEX = /^z[1-9A-HJ-NP-Za-km-z]{8,72}$/
 // deno-lint-ignore no-control-regex
@@ -79,7 +68,7 @@ const MIME_TYPES: Record<string, string> = {
 const cidSchema = z.string().regex(CID_REGEX, 'Invalid CID')
 const nameSchema = z.string().regex(NAME_REGEX, 'Invalid name')
 const kvKeySchema = z.string().regex(KV_KEY_REGEX, 'Invalid key')
-const nonNegativeIntegerSchema = z.string().regex(NON_NEGATIVE_INTEGER_REGEX, 'Invalid positive integer')
+const nonNegativeIntegerSchema = z.string().regex(NON_NEGATIVE_INTEGER_REGEX, 'Invalid non-negative integer')
 
 // Custom validator for endpoints that accept both JSON and form-urlencoded bodies
 function zValidatorFormOrJson<T extends z.ZodTypeAny> (
@@ -101,7 +90,8 @@ function zValidatorFormOrJson<T extends z.ZodTypeAny> (
       } else {
         throw new HTTPException(415, { message: 'Content-Type header expected with form or JSON data' })
       }
-    } catch {
+    } catch (e) {
+      if (e instanceof HTTPException) throw e
       throw new HTTPException(400, { message: 'Invalid request body' })
     }
 
@@ -240,7 +230,7 @@ const errorMapper = (e: Error): HTTPException => {
   }
 }
 
-function getClientIP (c: Context): string {
+export function getClientIP (c: Context): string {
   const headerIP = c.req.header('x-real-ip')
   if (headerIP) return headerIP
   try {
@@ -474,10 +464,13 @@ export function registerRoutes (app: Hono): void {
       since: nonNegativeIntegerSchema,
       limit: nonNegativeIntegerSchema.optional()
     }).strict()),
+    zValidator('query', z.object({
+      keyOps: z.stringbool().optional()
+    }).strict()),
     async function (c) {
       const { contractID, since, limit } = c.req.valid('param')
 
-      const keyOps = c.req.query('keyOps')
+      const keyOps = c.req.valid('query').keyOps
       const ip = getClientIP(c)
       try {
         const parsed = maybeParseCID(contractID)
@@ -485,7 +478,7 @@ export function registerRoutes (app: Hono): void {
           throw new HTTPException(400)
         }
 
-        const stream = await sbp('backend/db/streamEntriesAfter', contractID, Number(since), limit == null ? undefined : Number(limit), { keyOps: parseBooleanParam(keyOps) }) as Readable
+        const stream = await sbp('backend/db/streamEntriesAfter', contractID, Number(since), limit == null ? undefined : Number(limit), { keyOps }) as Readable
         stream.on('error', (err) => logger.error('eventsAfter stream error', err))
         // "On an HTTP server, make sure to manually close your streams if a request is aborted."
         // From: http://knexjs.org/#Interfaces-Streams

@@ -15878,9 +15878,64 @@ function _refine(Class2, fn, _params) {
   });
   return schema;
 }
+function _stringbool(Classes, _params) {
+  const params = normalizeParams(_params);
+  let truthyArray = params.truthy ?? ["true", "1", "yes", "on", "y", "enabled"];
+  let falsyArray = params.falsy ?? ["false", "0", "no", "off", "n", "disabled"];
+  if (params.case !== "sensitive") {
+    truthyArray = truthyArray.map((v2) => typeof v2 === "string" ? v2.toLowerCase() : v2);
+    falsyArray = falsyArray.map((v2) => typeof v2 === "string" ? v2.toLowerCase() : v2);
+  }
+  const truthySet = new Set(truthyArray);
+  const falsySet = new Set(falsyArray);
+  const _Pipe = Classes.Pipe ?? $ZodPipe;
+  const _Boolean = Classes.Boolean ?? $ZodBoolean;
+  const _String = Classes.String ?? $ZodString;
+  const _Transform = Classes.Transform ?? $ZodTransform;
+  const tx = new _Transform({
+    type: "transform",
+    transform: (input, payload) => {
+      let data = input;
+      if (params.case !== "sensitive")
+        data = data.toLowerCase();
+      if (truthySet.has(data)) {
+        return true;
+      } else if (falsySet.has(data)) {
+        return false;
+      } else {
+        payload.issues.push({
+          code: "invalid_value",
+          expected: "stringbool",
+          values: [...truthySet, ...falsySet],
+          input: payload.value,
+          inst: tx
+        });
+        return {};
+      }
+    },
+    error: params.error
+  });
+  const innerPipe = new _Pipe({
+    type: "pipe",
+    in: new _String({ type: "string", error: params.error }),
+    out: tx,
+    error: params.error
+  });
+  const outerPipe = new _Pipe({
+    type: "pipe",
+    in: innerPipe,
+    out: new _Boolean({
+      type: "boolean",
+      error: params.error
+    }),
+    error: params.error
+  });
+  return outerPipe;
+}
 var init_api = __esm({
   "node_modules/.deno/zod@4.0.5/node_modules/zod/v4/core/api.js"() {
     init_checks();
+    init_schemas();
     init_util();
   }
 });
@@ -16228,6 +16283,7 @@ var ZodCatch;
 var ZodPipe;
 var ZodReadonly;
 var ZodCustom;
+var stringbool;
 var init_schemas2 = __esm({
   "node_modules/.deno/zod@4.0.5/node_modules/zod/v4/classic/schemas.js"() {
     init_core2();
@@ -16631,6 +16687,12 @@ var init_schemas2 = __esm({
       $ZodCustom.init(inst, def);
       ZodType.init(inst, def);
     });
+    stringbool = (...args) => _stringbool({
+      Pipe: ZodPipe,
+      Boolean: ZodBoolean,
+      String: ZodString,
+      Transform: ZodTransform
+    }, ...args);
   }
 });
 var ZodFirstPartyTypeKind;
@@ -68495,6 +68557,9 @@ var initDB = async ({ skipDbPreloading } = {}) => {
       });
     }
     initedDB = true;
+    if (true) {
+      esm_default("sbp/selectors/lock", ["chelonia.db/get", "chelonia.db/set", "chelonia.db/delete", "chelonia.db/iterKeys"]);
+    }
   }
   if (skipDbPreloading || initedDB === "preloaded") return;
   await Promise.all([initVapid(), initZkpp()]);
@@ -68514,7 +68579,9 @@ async function closeDB() {
     }
     currentCache?.clear();
     currentCache = null;
-    initedDB = false;
+    if (true) {
+      initedDB = false;
+    }
   } finally {
     isClosing = false;
   }
@@ -72882,14 +72949,6 @@ function authMiddleware(strategies, mode = "required") {
 }
 var MEGABYTE = 1048576;
 var SECOND = 1e3;
-function parseBooleanParam(value) {
-  if (value === void 0) return false;
-  const normalized = value.toLowerCase();
-  if (normalized === "" || normalized === "true" || normalized === "yes" || normalized === "on" || normalized === "1") {
-    return true;
-  }
-  return false;
-}
 var CID_REGEX = /^z[1-9A-HJ-NP-Za-km-z]{8,72}$/;
 var KV_KEY_REGEX = /^(?!_private)[^\x00]{1,256}$/;
 var NAME_REGEX = /^(?![_-])((?!([_-])\2)[a-z\d_-]){1,80}(?<![_-])$/;
@@ -72918,7 +72977,7 @@ var MIME_TYPES = {
 var cidSchema = string2().regex(CID_REGEX, "Invalid CID");
 var nameSchema = string2().regex(NAME_REGEX, "Invalid name");
 var kvKeySchema = string2().regex(KV_KEY_REGEX, "Invalid key");
-var nonNegativeIntegerSchema = string2().regex(NON_NEGATIVE_INTEGER_REGEX, "Invalid positive integer");
+var nonNegativeIntegerSchema = string2().regex(NON_NEGATIVE_INTEGER_REGEX, "Invalid non-negative integer");
 function zValidatorFormOrJson(schema) {
   return async (c, next) => {
     const contentType = (c.req.header("content-type") || "").trim().toLowerCase();
@@ -72934,7 +72993,8 @@ function zValidatorFormOrJson(schema) {
       } else {
         throw new HTTPException(415, { message: "Content-Type header expected with form or JSON data" });
       }
-    } catch {
+    } catch (e2) {
+      if (e2 instanceof HTTPException) throw e2;
       throw new HTTPException(400, { message: "Invalid request body" });
     }
     const result = schema.safeParse(data);
@@ -73118,7 +73178,7 @@ function registerRoutes(app2) {
       "shelter-salt-update-token": string2().optional(),
       "shelter-salt-registration-token": string2().optional(),
       "shelter-deletion-token-digest": string2().optional()
-    }).strict()),
+    })),
     bodyLimit({ maxSize: MEGABYTE }),
     authMiddleware("chel-shelter", "optional"),
     async function(c) {
@@ -73128,6 +73188,10 @@ function registerRoutes(app2) {
         const payload = await c.req.text();
         if (!payload) throw new HTTPException(400, { message: "Invalid request payload input" });
         const validatedHeaders = c.req.valid("header");
+        const contentType = c.req.header("content-type");
+        if (contentType && !contentType.toLowerCase().startsWith("application/json")) {
+          throw new HTTPException(415, { message: "Expected JSON body" });
+        }
         const deserializedHEAD = SPMessage.deserializeHEAD(payload);
         try {
           const parsed = maybeParseCID(deserializedHEAD.head.manifest);
@@ -73227,16 +73291,19 @@ function registerRoutes(app2) {
       since: nonNegativeIntegerSchema,
       limit: nonNegativeIntegerSchema.optional()
     }).strict()),
+    zValidator("query", object({
+      keyOps: stringbool().optional()
+    }).strict()),
     async function(c) {
       const { contractID, since, limit } = c.req.valid("param");
-      const keyOps2 = c.req.query("keyOps");
+      const keyOps2 = c.req.valid("query").keyOps;
       const ip = getClientIP(c);
       try {
         const parsed = maybeParseCID(contractID);
         if (parsed?.code !== multicodes.SHELTER_CONTRACT_DATA) {
           throw new HTTPException(400);
         }
-        const stream = await esm_default("backend/db/streamEntriesAfter", contractID, Number(since), limit == null ? void 0 : Number(limit), { keyOps: parseBooleanParam(keyOps2) });
+        const stream = await esm_default("backend/db/streamEntriesAfter", contractID, Number(since), limit == null ? void 0 : Number(limit), { keyOps: keyOps2 });
         stream.on("error", (err) => logger_default.error("eventsAfter stream error", err));
         c.req.raw.signal.addEventListener("abort", () => stream.destroy());
         const streamHeaders = stream.headers || {};
@@ -74682,7 +74749,7 @@ async function startServer() {
   if (process9.env.NODE_ENV === "development" && !process9.env.CI) {
     currentApp.use("*", async (c, next) => {
       await next();
-      const ip = c.req.header("x-real-ip") || c.req.header("x-forwarded-for")?.split(",")[0].trim() || "unknown";
+      const ip = getClientIP(c) || "unknown";
       console.debug(import_npm_chalk3.default`{grey ${ip}: ${c.req.method} ${c.req.path} --> ${c.res.status}}`);
     });
   }
