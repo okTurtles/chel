@@ -158,8 +158,8 @@ function installBaseSelectorsOnce () {
 
       // Add headers to stream (TypeScript workaround)
       ;(stream as { headers?: Record<string, string> }).headers = {
-        'shelter-headinfo-head': latestHEADinfo.HEAD,
-        'shelter-headinfo-height': latestHEADinfo.height
+        'shelter-headinfo-head': String(latestHEADinfo.HEAD),
+        'shelter-headinfo-height': String(latestHEADinfo.height)
       }
       return stream
     },

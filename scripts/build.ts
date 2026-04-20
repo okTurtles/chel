@@ -35,7 +35,7 @@ const options: esbuild.BuildOptions = {
     {
       name: 'node-builtins',
       setup (build) {
-        build.onResolve({ filter: /^[a-zA-Z]/, namespace: 'file' }, ({ path }) => {
+        build.onResolve({ filter: /^[0-9a-zA-Z_/]+$/, namespace: 'file' }, ({ path }) => {
           if (nodeBuiltins.has(path)) {
             return { path: `node:${path}`, external: true }
           }

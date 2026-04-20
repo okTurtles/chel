@@ -68400,8 +68400,8 @@ function installBaseSelectorsOnce() {
         yield "]";
       }(), { encoding: "utf-8", objectMode: false });
       stream.headers = {
-        "shelter-headinfo-head": latestHEADinfo.HEAD,
-        "shelter-headinfo-height": latestHEADinfo.height
+        "shelter-headinfo-head": String(latestHEADinfo.HEAD),
+        "shelter-headinfo-height": String(latestHEADinfo.height)
       };
       return stream;
     },
@@ -69040,108 +69040,107 @@ async function migrate(args) {
     console.error("Error setting up database");
     exit(e2);
     throw e2;
-  } finally {
-    closeDB();
   }
   let backendTo;
   try {
-    let toConfigOpts;
-    if (args.toConfig) {
-      const toConfig = parse8(await readFile2(args.toConfig, { encoding: "utf-8", flag: "r" }));
-      const toBackend = toConfig?.database?.backend;
-      if (toBackend !== to) {
-        console.warn(`--to-config has backend ${toBackend} but --to is ${to}`);
+    try {
+      let toConfigOpts;
+      if (args.toConfig) {
+        const toConfig = parse8(await readFile2(args.toConfig, { encoding: "utf-8", flag: "r" }));
+        const toBackend = toConfig?.database?.backend;
+        if (toBackend !== to) {
+          console.warn(`--to-config has backend ${toBackend} but --to is ${to}`);
+        }
+        toConfigOpts = toConfig?.database?.backendOptions?.[to] || {};
+      } else {
+        toConfigOpts = import_npm_nconf3.default.get(`database:backendOptions:${to}`) || {};
       }
-      toConfigOpts = toConfig?.database?.backendOptions?.[to] || {};
-    } else {
-      toConfigOpts = import_npm_nconf3.default.get(`database:backendOptions:${to}`) || {};
+      const Ctor = (await globImport_serve_database_ts(`./serve/database-${to}.ts`)).default;
+      backendTo = new Ctor(toConfigOpts);
+      await backendTo.init();
+    } catch (error2) {
+      exit(error2);
+      throw error2;
     }
-    const Ctor = (await globImport_serve_database_ts(`./serve/database-${to}.ts`)).default;
-    backendTo = new Ctor(toConfigOpts);
-    await backendTo.init();
-  } catch (error2) {
-    exit(error2);
-    throw error2;
-  }
-  const numKeys2 = await esm_default("chelonia.db/keyCount");
-  let numMigratedKeys = 0;
-  let numVisitedKeys = 0;
-  const reportStatus = () => {
-    console.log(`${green("Migrated:")} ${numMigratedKeys} entries`);
-  };
-  const checkAndExit = (() => {
-    let interruptCount = 0;
-    let shouldExit = 0;
-    const handleSignal = (signal, code2) => {
-      process3.on(signal, () => {
-        shouldExit = 128 + code2;
-        if (++interruptCount < 3) {
-          console.error(`Received signal ${signal} (${code2}). Finishing current operation.`);
-        } else {
-          console.error(`Received signal ${signal} (${code2}). Force quitting.`);
+    const numKeys2 = await esm_default("chelonia.db/keyCount");
+    let numMigratedKeys = 0;
+    let numVisitedKeys = 0;
+    const reportStatus = () => {
+      console.log(`${green("Migrated:")} ${numMigratedKeys} entries`);
+    };
+    const checkAndExit = (() => {
+      let interruptCount = 0;
+      let shouldExit = 0;
+      const handleSignal = (signal, code2) => {
+        process3.on(signal, () => {
+          shouldExit = 128 + code2;
+          if (++interruptCount < 3) {
+            console.error(`Received signal ${signal} (${code2}). Finishing current operation.`);
+          } else {
+            console.error(`Received signal ${signal} (${code2}). Force quitting.`);
+            reportStatus();
+            exit(shouldExit);
+          }
+        });
+      };
+      const checkAndExit2 = async () => {
+        if (shouldExit) {
+          await backendTo.close();
           reportStatus();
           exit(shouldExit);
         }
-      });
-    };
-    const checkAndExit2 = async () => {
-      if (shouldExit) {
-        await backendTo.close();
-        reportStatus();
-        exit(shouldExit);
+      };
+      [
+        ["SIGHUP", 1],
+        ["SIGINT", 2],
+        ["SIGQUIT", 3],
+        ["SIGTERM", 15],
+        ["SIGUSR1", 10],
+        ["SIGUSR2", 11]
+      ].forEach(([signal, code2]) => handleSignal(signal, code2));
+      return checkAndExit2;
+    })();
+    let lastReportedPercentage = 0;
+    for await (const key of esm_default("chelonia.db/iterKeys")) {
+      numVisitedKeys++;
+      if (!isValidKey(key)) {
+        console.debug("Skipping invalid key", key);
+        continue;
       }
-    };
-    [
-      ["SIGHUP", 1],
-      ["SIGINT", 2],
-      ["SIGQUIT", 3],
-      ["SIGTERM", 15],
-      ["SIGUSR1", 10],
-      ["SIGUSR2", 11]
-    ].forEach(([signal, code2]) => handleSignal(signal, code2));
-    return checkAndExit2;
-  })();
-  let lastReportedPercentage = 0;
-  for await (const key of esm_default("chelonia.db/iterKeys")) {
-    numVisitedKeys++;
-    if (!isValidKey(key)) {
-      console.debug("Skipping invalid key", key);
-      continue;
+      let value;
+      try {
+        value = await esm_default("chelonia.db/get", `any:${key}`);
+      } catch (e2) {
+        reportStatus();
+        console.error(`Error reading from source database key '${key}'`, e2);
+        exit(1);
+        throw e2;
+      }
+      await checkAndExit();
+      if (value === void 0) {
+        console.debug("Skipping empty key", key);
+        continue;
+      }
+      try {
+        await backendTo.writeData(key, value);
+      } catch (e2) {
+        reportStatus();
+        console.error(`Error writing to target database key '${key}'`, e2);
+        exit(1);
+        throw e2;
+      }
+      await checkAndExit();
+      ++numMigratedKeys;
+      const percentage = Math.floor(numVisitedKeys / numKeys2 * 100);
+      if (percentage - lastReportedPercentage >= 10) {
+        lastReportedPercentage = percentage;
+        console.log(`Migrating... ${percentage}% done`);
+      }
     }
-    let value;
-    try {
-      value = await esm_default("chelonia.db/get", `any:${key}`);
-    } catch (e2) {
-      reportStatus();
-      console.error(`Error reading from source database key '${key}'`, e2);
-      await backendTo.close();
-      exit(1);
-      throw e2;
-    }
-    await checkAndExit();
-    if (value === void 0) {
-      console.debug("Skipping empty key", key);
-      continue;
-    }
-    try {
-      await backendTo.writeData(key, value);
-    } catch (e2) {
-      reportStatus();
-      console.error(`Error writing to target database key '${key}'`, e2);
-      await backendTo.close();
-      exit(1);
-      throw e2;
-    }
-    await checkAndExit();
-    ++numMigratedKeys;
-    const percentage = Math.floor(numVisitedKeys / numKeys2 * 100);
-    if (percentage - lastReportedPercentage >= 10) {
-      lastReportedPercentage = percentage;
-      console.log(`Migrating... ${percentage}% done`);
-    }
+    reportStatus();
+  } finally {
+    await Promise.all([backendTo.close(), closeDB()]);
   }
-  reportStatus();
-  await backendTo.close();
 }
 var module9 = {
   builder: (yargs) => {
