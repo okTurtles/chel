@@ -79723,7 +79723,6 @@ var parseArgs = () => {
     (c) => handlerWrapper(c)
   );
   const yargsInstance = yargs_default(hideBin(process13.argv)).version("3.2.1").strict().command(commandModules).demandCommand().help();
-  yargsInstance.parse();
   return yargsInstance;
 };
 var parseArgs_default = parseArgs;

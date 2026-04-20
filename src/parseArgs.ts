@@ -35,9 +35,6 @@ const parseArgs = () => {
     .demandCommand()
     .help()
 
-  // Explicitly parse to trigger command handlers
-  yargsInstance.parse()
-
   return yargsInstance
 }
 
