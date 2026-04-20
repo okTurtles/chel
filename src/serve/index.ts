@@ -123,7 +123,6 @@ export async function startServer (options: StartServerOptions = {}): Promise<{ 
   sbp('okTurtles.events/once', SERVER_EXITING, async () => {
     try {
       removeSignalHandlers()
-      await sbp('chelonia.persistentActions/unload')
       await stopServer()
       console.info('Server down')
     } catch (err) {

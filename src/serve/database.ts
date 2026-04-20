@@ -353,7 +353,7 @@ export async function closeDB (): Promise<void> {
     }
     currentCache?.clear()
     currentCache = null
-    if ((import.meta as ImportMeta).initDbOnce) {
+    if (!(import.meta as ImportMeta).initDbOnce) {
       initedDB = false
     }
   } finally {

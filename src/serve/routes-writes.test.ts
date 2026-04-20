@@ -359,7 +359,7 @@ Deno.test({
       await t.step('POST /event with invalid payload returns 400', async () => {
         const res = await fetch(`${baseURL}/event`, {
           method: 'POST',
-          headers: { 'content-type': 'text/plain' },
+          headers: { 'content-type': 'application/json' },
           body: ''
         })
         await res.body?.cancel()

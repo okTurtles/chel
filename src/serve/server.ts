@@ -686,6 +686,9 @@ export async function stopServer (): Promise<void> {
     currentOwnerSizeTotalWorker = undefined
     currentCreditsWorker = undefined
 
+    // Unload persistent actions
+    await sbp('chelonia.persistentActions/unload')
+
     // Close database
     await closeDB()
 

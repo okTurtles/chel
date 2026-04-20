@@ -343,13 +343,13 @@ export function registerRoutes (app: Hono): void {
       // X-Real-IP HEADER! OTHERWISE THIS IS EASILY SPOOFED!
       const ip = getClientIP(c)
       try {
-        const payload = await c.req.text()
-        if (!payload) throw new HTTPException(400, { message: 'Invalid request payload input' })
-        const validatedHeaders = c.req.valid('header')
         const contentType = c.req.header('content-type')
         if (contentType && !contentType.toLowerCase().startsWith('application/json')) {
           throw new HTTPException(415, { message: 'Expected JSON body' })
         }
+        const payload = await c.req.text()
+        const validatedHeaders = c.req.valid('header')
+        if (!payload) throw new HTTPException(400, { message: 'Invalid request payload input' })
         const deserializedHEAD = SPMessage.deserializeHEAD(payload)
         try {
           const parsed = maybeParseCID(deserializedHEAD.head.manifest)
@@ -489,7 +489,7 @@ export function registerRoutes (app: Hono): void {
         const streamHeaders = (stream as { headers?: Record<string, string> }).headers || {}
         const webStream = Readable.toWeb(stream) as ReadableStream
         return new Response(webStream, {
-          headers: { 'content-type': 'application/octet-stream', ...streamHeaders }
+          headers: { 'content-type': 'application/json', ...streamHeaders }
         })
       } catch (err) {
         if (err instanceof HTTPException) throw err
@@ -676,7 +676,7 @@ app.post('/name', async function (c) {
             throw new HTTPException(422, { message: 'Error parsing manifest' })
           }
         })()
-        if (typeof manifest !== 'object') throw new HTTPException(422, { message: 'manifest format is invalid' })
+        if (!manifest || typeof manifest !== 'object') throw new HTTPException(422, { message: 'manifest format is invalid' })
         if (manifest.version !== '1.0.0') throw new HTTPException(422, { message: 'unsupported manifest version' })
         if (manifest.cipher !== 'aes256gcm') throw new HTTPException(422, { message: 'unsupported cipher' })
         if (!Array.isArray(manifest.chunks) || !manifest.chunks.length) throw new HTTPException(422, { message: 'missing chunks' })

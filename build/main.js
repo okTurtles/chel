@@ -68579,7 +68579,7 @@ async function closeDB() {
     }
     currentCache?.clear();
     currentCache = null;
-    if (true) {
+    if (false) {
       initedDB = false;
     }
   } finally {
@@ -73185,13 +73185,13 @@ function registerRoutes(app) {
       if (ARCHIVE_MODE) throw new HTTPException(501, { message: "Server in archive mode" });
       const ip = getClientIP(c);
       try {
-        const payload = await c.req.text();
-        if (!payload) throw new HTTPException(400, { message: "Invalid request payload input" });
-        const validatedHeaders = c.req.valid("header");
         const contentType = c.req.header("content-type");
         if (contentType && !contentType.toLowerCase().startsWith("application/json")) {
           throw new HTTPException(415, { message: "Expected JSON body" });
         }
+        const payload = await c.req.text();
+        const validatedHeaders = c.req.valid("header");
+        if (!payload) throw new HTTPException(400, { message: "Invalid request payload input" });
         const deserializedHEAD = SPMessage.deserializeHEAD(payload);
         try {
           const parsed = maybeParseCID(deserializedHEAD.head.manifest);
@@ -73309,7 +73309,7 @@ function registerRoutes(app) {
         const streamHeaders = stream.headers || {};
         const webStream = Readable3.toWeb(stream);
         return new Response(webStream, {
-          headers: { "content-type": "application/octet-stream", ...streamHeaders }
+          headers: { "content-type": "application/json", ...streamHeaders }
         });
       } catch (err) {
         if (err instanceof HTTPException) throw err;
@@ -73452,7 +73452,7 @@ function registerRoutes(app) {
             throw new HTTPException(422, { message: "Error parsing manifest" });
           }
         })();
-        if (typeof manifest2 !== "object") throw new HTTPException(422, { message: "manifest format is invalid" });
+        if (!manifest2 || typeof manifest2 !== "object") throw new HTTPException(422, { message: "manifest format is invalid" });
         if (manifest2.version !== "1.0.0") throw new HTTPException(422, { message: "unsupported manifest version" });
         if (manifest2.cipher !== "aes256gcm") throw new HTTPException(422, { message: "unsupported cipher" });
         if (!Array.isArray(manifest2.chunks) || !manifest2.chunks.length) throw new HTTPException(422, { message: "missing chunks" });
@@ -74950,6 +74950,7 @@ async function stopServer() {
     ]);
     currentOwnerSizeTotalWorker = void 0;
     currentCreditsWorker = void 0;
+    await esm_default("chelonia.persistentActions/unload");
     await closeDB();
     currentApp = null;
     currentManifest = void 0;
@@ -75035,7 +75036,6 @@ async function startServer2(options2 = {}) {
   esm_default("okTurtles.events/once", SERVER_EXITING, async () => {
     try {
       removeSignalHandlers();
-      await esm_default("chelonia.persistentActions/unload");
       await stopServer2();
       console.info("Server down");
     } catch (err) {
