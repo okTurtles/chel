@@ -1064,9 +1064,9 @@ app.post('/name', async function (c) {
   })
 
   const zkppRegisterBodySchema = z.union([
-  z.object({ b: z.string() }).strict(),
-  z.object({ r: z.string(), s: z.string(), sig: z.string(), Eh: z.string() }).strict()
-])
+    z.object({ b: z.string() }).strict(),
+    z.object({ r: z.string(), s: z.string(), sig: z.string(), Eh: z.string() }).strict()
+  ])
   app.post('/zkpp/register/:name',
     zValidator('param', z.object({ name: nameSchema }).strict()),
     zValidatorFormOrJson(zkppRegisterBodySchema),
