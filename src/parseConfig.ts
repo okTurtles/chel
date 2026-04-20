@@ -33,6 +33,7 @@ const parseConfig = () => {
         'logLevel': 'debug',
         'messages': [],
         'maxEventsBatchSize': 500,
+        'maxEventSize': 512 * 1024,
         'archiveMode': false
       },
       'database': {

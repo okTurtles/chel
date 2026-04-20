@@ -229,7 +229,7 @@ route.POST('/event', {
     options: {
       allowUnknown: true
     },
-    payload: Joi.string().required()
+    payload: Joi.string().min(1).max(nconf.get('server:maxEventSize')).required()
   }
 }, async function (request) {
   if (ARCHIVE_MODE) return Boom.notImplemented('Server in archive mode')
