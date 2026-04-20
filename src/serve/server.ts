@@ -696,13 +696,3 @@ export async function stopServer (): Promise<void> {
     isStopping = false
   }
 }
-
-// Legacy: export the Hono app for backwards compatibility (deprecated)
-export const app = new Proxy({} as Hono, {
-  get (_target, prop) {
-    if (currentApp) {
-      return Reflect.get(currentApp, prop)
-    }
-    return undefined
-  }
-})

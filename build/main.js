@@ -70918,14 +70918,14 @@ var Hono = class _Hono {
    * app.route("/api", app2) // GET /api/user
    * ```
    */
-  route(path8, app2) {
+  route(path8, app) {
     const subApp = this.basePath(path8);
-    app2.routes.map((r) => {
+    app.routes.map((r) => {
       let handler;
-      if (app2.errorHandler === errorHandler) {
+      if (app.errorHandler === errorHandler) {
         handler = r.handler;
       } else {
-        handler = async (c, next) => (await compose([], app2.errorHandler)(c, () => r.handler(c, next))).res;
+        handler = async (c, next) => (await compose([], app.errorHandler)(c, () => r.handler(c, next))).res;
         handler[COMPOSED_HANDLER] = r.handler;
       }
       subApp.#addRoute(r.method, r.path, handler);
@@ -73135,7 +73135,7 @@ function serveAsset(c, subpath, assetsDir) {
     return c.body(file, 200, headers);
   }).catch(() => notFoundNoCache(c));
 }
-function registerRoutes(app2) {
+function registerRoutes(app) {
   for (const limiter of currentLimiters) {
     limiter.disconnect();
     clearInterval(limiter.interval);
@@ -73171,7 +73171,7 @@ function registerRoutes(app2) {
   installRateLimiterSelectorsOnce();
   const isCheloniaDashboard = process7.env.IS_CHELONIA_DASHBOARD_DEV;
   const staticServeConfig = getStaticServeConfig();
-  app2.post(
+  app.post(
     "/event",
     zValidator("header", object({
       "shelter-namespace-registration": nameSchema.optional(),
@@ -73284,7 +73284,7 @@ function registerRoutes(app2) {
       }
     }
   );
-  app2.get(
+  app.get(
     "/eventsAfter/:contractID/:since/:limit?",
     zValidator("param", object({
       contractID: cidSchema,
@@ -73319,7 +73319,7 @@ function registerRoutes(app2) {
       }
     }
   );
-  app2.get(
+  app.get(
     "/ownResources",
     authMiddleware("chel-shelter", "required"),
     async function(c) {
@@ -73336,7 +73336,7 @@ function registerRoutes(app2) {
       info: import_npm_chalk.default.green,
       debug: import_npm_chalk.default.blue
     };
-    app2.post("/log", async function(c) {
+    app.post("/log", async function(c) {
       if (ARCHIVE_MODE) throw new HTTPException(501, { message: "Server in archive mode" });
       const body = await c.req.json();
       if (!body.level || !body.value) throw new HTTPException(400, { message: "level and value are required" });
@@ -73346,7 +73346,7 @@ function registerRoutes(app2) {
       return c.body(null, 200);
     });
   }
-  app2.get(
+  app.get(
     "/name/:name",
     zValidator("param", object({ name: nameSchema }).strict()),
     async function(c) {
@@ -73360,7 +73360,7 @@ function registerRoutes(app2) {
       }
     }
   );
-  app2.get(
+  app.get(
     "/latestHEADinfo/:contractID",
     zValidator("param", object({ contractID: cidSchema }).strict()),
     async function(c) {
@@ -73384,12 +73384,12 @@ function registerRoutes(app2) {
       }
     }
   );
-  app2.get("/time", function(c) {
+  app.get("/time", function(c) {
     return c.text((/* @__PURE__ */ new Date()).toISOString(), 200, {
       "Cache-Control": "no-store"
     });
   });
-  app2.post("/streams-test", async function(c) {
+  app.post("/streams-test", async function(c) {
     const raw2 = await c.req.arrayBuffer();
     const buf2 = Buffer14.from(raw2);
     if (buf2.byteLength === 2 && buf2.toString() === "ok") {
@@ -73399,7 +73399,7 @@ function registerRoutes(app2) {
     }
   });
   if (process7.env.NODE_ENV === "development") {
-    app2.post("/dev-file", bodyLimit({ maxSize: 6 * MEGABYTE }), async function(c) {
+    app.post("/dev-file", bodyLimit({ maxSize: 6 * MEGABYTE }), async function(c) {
       if (ARCHIVE_MODE) throw new HTTPException(501, { message: "Server in archive mode" });
       try {
         console.log("FILE UPLOAD!");
@@ -73424,7 +73424,7 @@ function registerRoutes(app2) {
       }
     });
   }
-  app2.post(
+  app.post(
     "/file",
     authMiddleware("chel-shelter", "required"),
     bodyLimit({ maxSize: FILE_UPLOAD_MAX_BYTES }),
@@ -73510,7 +73510,7 @@ function registerRoutes(app2) {
       }
     }
   );
-  app2.get(
+  app.get(
     "/file/:hash",
     zValidator("param", object({ hash: cidSchema }).strict()),
     async function(c) {
@@ -73540,7 +73540,7 @@ function registerRoutes(app2) {
       });
     }
   );
-  app2.post(
+  app.post(
     "/deleteFile/:hash",
     authMiddleware(["chel-shelter", "chel-bearer"], "required"),
     zValidator("param", object({ hash: cidSchema }).strict()),
@@ -73587,7 +73587,7 @@ function registerRoutes(app2) {
       }
     }
   );
-  app2.post(
+  app.post(
     "/deleteContract/:hash",
     authMiddleware(["chel-shelter", "chel-bearer"], "required"),
     zValidator("param", object({ hash: cidSchema }).strict()),
@@ -73635,7 +73635,7 @@ function registerRoutes(app2) {
       }
     }
   );
-  app2.post(
+  app.post(
     "/kv/:contractID/:key",
     zValidator("param", object({ contractID: cidSchema, key: kvKeySchema }).strict()),
     authMiddleware("chel-shelter", "required"),
@@ -73701,7 +73701,7 @@ function registerRoutes(app2) {
       });
     }
   );
-  app2.get(
+  app.get(
     "/kv/:contractID/:key",
     authMiddleware("chel-shelter", "required"),
     zValidator("param", object({ contractID: cidSchema, key: kvKeySchema }).strict()),
@@ -73729,22 +73729,22 @@ function registerRoutes(app2) {
       });
     }
   );
-  app2.get("/serverMessages", function(c) {
+  app.get("/serverMessages", function(c) {
     const messages = import_npm_nconf4.default.get("server:messages");
     if (!messages) return c.json([]);
     return c.json(messages, 200, { "Cache-Control": "no-store" });
   });
-  app2.get("/assets/:subpath{.+}", function(c) {
+  app.get("/assets/:subpath{.+}", function(c) {
     const subpath = c.req.param("subpath");
     return serveAsset(c, subpath, staticServeConfig.distAssets);
   });
   if (isCheloniaDashboard) {
-    app2.get("/dashboard/assets/:subpath{.+}", function(c) {
+    app.get("/dashboard/assets/:subpath{.+}", function(c) {
       const subpath = c.req.param("subpath");
       return serveAsset(c, subpath, staticServeConfig.distAssets);
     });
   }
-  app2.get(isCheloniaDashboard ? "/dashboard/*" : "/app/*", async function(c) {
+  app.get(isCheloniaDashboard ? "/dashboard/*" : "/app/*", async function(c) {
     try {
       const file = await Deno.readFile(staticServeConfig.distIndexHtml);
       return c.body(file, 200, { "Content-Type": "text/html" });
@@ -73752,14 +73752,14 @@ function registerRoutes(app2) {
       return notFoundNoCache(c);
     }
   });
-  app2.get("/", function(c) {
+  app.get("/", function(c) {
     return c.redirect(staticServeConfig.redirect);
   });
   const zkppRegisterBodySchema = union([
     object({ b: string2() }).strict(),
     object({ r: string2(), s: string2(), sig: string2(), Eh: string2() }).strict()
   ]);
-  app2.post(
+  app.post(
     "/zkpp/register/:name",
     zValidator("param", object({ name: nameSchema }).strict()),
     zValidatorFormOrJson(zkppRegisterBodySchema),
@@ -73791,7 +73791,7 @@ function registerRoutes(app2) {
       throw new HTTPException(500, { message: "internal error" });
     }
   );
-  app2.get(
+  app.get(
     "/zkpp/:contractID/auth_hash",
     zValidator("param", object({ contractID: cidSchema }).strict()),
     zValidator("query", object({ b: string2().min(1, "b is required") })),
@@ -73809,7 +73809,7 @@ function registerRoutes(app2) {
       throw new HTTPException(500, { message: "internal error" });
     }
   );
-  app2.get(
+  app.get(
     "/zkpp/:contractID/contract_hash",
     zValidator("param", object({ contractID: cidSchema }).strict()),
     zValidator("query", object({
@@ -73841,7 +73841,7 @@ function registerRoutes(app2) {
     hc: string2().min(1, "hc is required"),
     Ea: string2().min(1, "Ea is required")
   }).strict();
-  app2.post(
+  app.post(
     "/zkpp/:contractID/updatePasswordHash",
     zValidator("param", object({ contractID: cidSchema }).strict()),
     zValidatorFormOrJson(zkppUpdatePasswordBodySchema),
@@ -74957,14 +74957,6 @@ async function stopServer() {
     isStopping = false;
   }
 }
-var app = new Proxy({}, {
-  get(_target, prop) {
-    if (currentApp) {
-      return Reflect.get(currentApp, prop);
-    }
-    return void 0;
-  }
-});
 console.info("NODE_ENV =", process10.env.NODE_ENV);
 var dontLog = {
   "backend/server/broadcastEntry": true,
@@ -75341,13 +75333,13 @@ async function startDashboard() {
   const port = import_npm_nconf6.default.get("server:dashboardPort");
   const host = import_npm_nconf6.default.get("server:host") || "0.0.0.0";
   const dashboardRoot = getDashboardPath();
-  const app2 = new Hono2();
+  const app = new Hono2();
   const staticMiddleware = serveStatic2({ root: dashboardRoot, rewriteRequestPath: (p) => p });
   const indexMiddleware = serveStatic2({ path: path6.join(dashboardRoot, "index.html") });
-  app2.get("/assets/*", staticMiddleware);
-  app2.get("/dashboard", indexMiddleware);
-  app2.get("/dashboard/", indexMiddleware);
-  app2.get("/*", async (c) => {
+  app.get("/assets/*", staticMiddleware);
+  app.get("/dashboard", indexMiddleware);
+  app.get("/dashboard/", indexMiddleware);
+  app.get("/*", async (c) => {
     const staticResponse = await staticMiddleware(c, async () => {
     });
     if (staticResponse) {
@@ -75358,7 +75350,7 @@ async function startDashboard() {
     return indexResponse || c.text("Not Found", 404);
   });
   await new Promise((resolve82) => {
-    Deno.serve({ port, hostname: host, onListen: () => resolve82() }, app2.fetch);
+    Deno.serve({ port, hostname: host, onListen: () => resolve82() }, app.fetch);
   });
 }
 async function watch(args) {
