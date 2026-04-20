@@ -657,6 +657,8 @@ export async function stopServer (): Promise<void> {
     // Close pubsub server (clears its ping interval)
     const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE) as { close: () => void; clients: Set<{ terminate: () => void }> } | undefined
     if (pubsub) {
+      // Since `ws` v8.0, `WebSocketServer.close()` no longer closes remaining connections.
+      // See https://github.com/websockets/ws/commit/df7de574a07115e2321fdb5fc9b2d0fea55d27e8
       pubsub.clients.forEach((client) => client.terminate())
       pubsub.close()
       sbp('okTurtles.data/delete', PUBSUB_INSTANCE)

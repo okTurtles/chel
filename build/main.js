@@ -4178,143 +4178,6 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
   mod
 ));
-function sbp(selector, ...data) {
-  const domain = domainFromSelector(selector);
-  const starSelector = `${domain}/*`;
-  const selExists = !!selectors[selector];
-  let sel = selector;
-  if (!selExists) {
-    if (selectors[starSelector]) {
-      sel = starSelector;
-    } else {
-      throw new Error(`SBP: selector not registered: ${selector}`);
-    }
-  }
-  for (const filters of [selectorFilters[selector], domainFilters[domain], globalFilters]) {
-    if (filters) {
-      for (const filter of filters) {
-        if (filter(domain, selector, data) === false)
-          return;
-      }
-    }
-  }
-  if (!selExists) {
-    data.unshift(selector);
-  }
-  return selectors[sel].apply(domains[domain].state, data);
-}
-function domainFromSelector(selector) {
-  const domainLookup = DOMAIN_REGEX.exec(selector);
-  if (domainLookup === null) {
-    throw new Error(`SBP: selector missing domain: ${selector}`);
-  }
-  return domainLookup[0];
-}
-var selectors;
-var domains;
-var globalFilters;
-var domainFilters;
-var selectorFilters;
-var unsafeSelectors;
-var DOMAIN_REGEX;
-var SBP_BASE_SELECTORS;
-var esm_default;
-var init_esm = __esm({
-  "node_modules/.deno/@sbp+sbp@2.4.1/node_modules/@sbp/sbp/dist/esm/index.js"() {
-    selectors = /* @__PURE__ */ Object.create(null);
-    domains = /* @__PURE__ */ Object.create(null);
-    globalFilters = [];
-    domainFilters = /* @__PURE__ */ Object.create(null);
-    selectorFilters = /* @__PURE__ */ Object.create(null);
-    unsafeSelectors = /* @__PURE__ */ Object.create(null);
-    DOMAIN_REGEX = /^[^/]+/;
-    SBP_BASE_SELECTORS = {
-      "sbp/selectors/register": (sels) => {
-        const registered = [];
-        for (const selector in sels) {
-          const domainName = domainFromSelector(selector);
-          const domain = domainName in domains ? domains[domainName] : domains[domainName] = { state: /* @__PURE__ */ Object.create(null), locked: false };
-          if (domain.locked) {
-            (console.warn || console.log)(`[SBP WARN]: not registering selector on locked domain: '${selector}'`);
-          } else if (selectors[selector]) {
-            (console.warn || console.log)(`[SBP WARN]: not registering already registered selector: '${selector}'`);
-          } else if (typeof sels[selector] === "function") {
-            if (unsafeSelectors[selector]) {
-              (console.warn || console.log)(`[SBP WARN]: registering unsafe selector: '${selector}' (remember to lock after overwriting)`);
-            }
-            const fn = selectors[selector] = sels[selector];
-            registered.push(selector);
-            if (selector === `${domainName}/_init`) {
-              fn.call(domain.state);
-            }
-          }
-        }
-        return registered;
-      },
-      "sbp/selectors/unregister": (sels) => {
-        var _a2;
-        for (const selector of sels) {
-          if (!unsafeSelectors[selector]) {
-            throw new Error(`SBP: can't unregister locked selector: ${selector}`);
-          }
-          if ((_a2 = domains[domainFromSelector(selector)]) === null || _a2 === void 0 ? void 0 : _a2.locked) {
-            throw new Error(`SBP: can't unregister selector on a locked domain: '${selector}'`);
-          }
-          delete selectors[selector];
-        }
-      },
-      "sbp/selectors/overwrite": (sels) => {
-        sbp("sbp/selectors/unregister", Object.keys(sels));
-        return sbp("sbp/selectors/register", sels);
-      },
-      "sbp/selectors/unsafe": (sels) => {
-        for (const selector of sels) {
-          if (selectors[selector]) {
-            throw new Error("unsafe must be called before registering selector");
-          }
-          unsafeSelectors[selector] = true;
-        }
-      },
-      "sbp/selectors/lock": (sels) => {
-        for (const selector of sels) {
-          delete unsafeSelectors[selector];
-        }
-      },
-      "sbp/selectors/fn": (sel) => {
-        return selectors[sel];
-      },
-      "sbp/filters/global/add": (filter) => {
-        globalFilters.push(filter);
-      },
-      "sbp/filters/domain/add": (domain, filter) => {
-        if (!domainFilters[domain])
-          domainFilters[domain] = [];
-        domainFilters[domain].push(filter);
-      },
-      "sbp/filters/selector/add": (selector, filter) => {
-        if (!selectorFilters[selector])
-          selectorFilters[selector] = [];
-        selectorFilters[selector].push(filter);
-      },
-      "sbp/domains/lock": (domainNames) => {
-        if (!domainNames) {
-          for (const name in domains) {
-            domains[name].locked = true;
-          }
-        } else {
-          for (const name of domainNames) {
-            if (!domains[name]) {
-              throw new Error(`SBP: cannot lock non-existent domain: ${name}`);
-            }
-            domains[name].locked = true;
-          }
-        }
-      }
-    };
-    SBP_BASE_SELECTORS["sbp/selectors/register"](SBP_BASE_SELECTORS);
-    esm_default = sbp;
-  }
-});
 var require_async = __commonJS({
   "node_modules/.deno/async@3.2.6/node_modules/async/dist/async.js"(exports2, module14) {
     (function(global2, factory) {
@@ -19127,6 +18990,143 @@ var init_functions = __esm({
       id[8] = 128 | id[8] & 63;
       return [id.slice(0, 4), id.slice(4, 6), id.slice(6, 8), id.slice(8, 10), id.slice(10, 16)].map((p) => p.toString("hex")).join("-");
     };
+  }
+});
+function sbp(selector, ...data) {
+  const domain = domainFromSelector(selector);
+  const starSelector = `${domain}/*`;
+  const selExists = !!selectors[selector];
+  let sel = selector;
+  if (!selExists) {
+    if (selectors[starSelector]) {
+      sel = starSelector;
+    } else {
+      throw new Error(`SBP: selector not registered: ${selector}`);
+    }
+  }
+  for (const filters of [selectorFilters[selector], domainFilters[domain], globalFilters]) {
+    if (filters) {
+      for (const filter of filters) {
+        if (filter(domain, selector, data) === false)
+          return;
+      }
+    }
+  }
+  if (!selExists) {
+    data.unshift(selector);
+  }
+  return selectors[sel].apply(domains[domain].state, data);
+}
+function domainFromSelector(selector) {
+  const domainLookup = DOMAIN_REGEX.exec(selector);
+  if (domainLookup === null) {
+    throw new Error(`SBP: selector missing domain: ${selector}`);
+  }
+  return domainLookup[0];
+}
+var selectors;
+var domains;
+var globalFilters;
+var domainFilters;
+var selectorFilters;
+var unsafeSelectors;
+var DOMAIN_REGEX;
+var SBP_BASE_SELECTORS;
+var esm_default;
+var init_esm = __esm({
+  "node_modules/.deno/@sbp+sbp@2.4.1/node_modules/@sbp/sbp/dist/esm/index.js"() {
+    selectors = /* @__PURE__ */ Object.create(null);
+    domains = /* @__PURE__ */ Object.create(null);
+    globalFilters = [];
+    domainFilters = /* @__PURE__ */ Object.create(null);
+    selectorFilters = /* @__PURE__ */ Object.create(null);
+    unsafeSelectors = /* @__PURE__ */ Object.create(null);
+    DOMAIN_REGEX = /^[^/]+/;
+    SBP_BASE_SELECTORS = {
+      "sbp/selectors/register": (sels) => {
+        const registered = [];
+        for (const selector in sels) {
+          const domainName = domainFromSelector(selector);
+          const domain = domainName in domains ? domains[domainName] : domains[domainName] = { state: /* @__PURE__ */ Object.create(null), locked: false };
+          if (domain.locked) {
+            (console.warn || console.log)(`[SBP WARN]: not registering selector on locked domain: '${selector}'`);
+          } else if (selectors[selector]) {
+            (console.warn || console.log)(`[SBP WARN]: not registering already registered selector: '${selector}'`);
+          } else if (typeof sels[selector] === "function") {
+            if (unsafeSelectors[selector]) {
+              (console.warn || console.log)(`[SBP WARN]: registering unsafe selector: '${selector}' (remember to lock after overwriting)`);
+            }
+            const fn = selectors[selector] = sels[selector];
+            registered.push(selector);
+            if (selector === `${domainName}/_init`) {
+              fn.call(domain.state);
+            }
+          }
+        }
+        return registered;
+      },
+      "sbp/selectors/unregister": (sels) => {
+        var _a2;
+        for (const selector of sels) {
+          if (!unsafeSelectors[selector]) {
+            throw new Error(`SBP: can't unregister locked selector: ${selector}`);
+          }
+          if ((_a2 = domains[domainFromSelector(selector)]) === null || _a2 === void 0 ? void 0 : _a2.locked) {
+            throw new Error(`SBP: can't unregister selector on a locked domain: '${selector}'`);
+          }
+          delete selectors[selector];
+        }
+      },
+      "sbp/selectors/overwrite": (sels) => {
+        sbp("sbp/selectors/unregister", Object.keys(sels));
+        return sbp("sbp/selectors/register", sels);
+      },
+      "sbp/selectors/unsafe": (sels) => {
+        for (const selector of sels) {
+          if (selectors[selector]) {
+            throw new Error("unsafe must be called before registering selector");
+          }
+          unsafeSelectors[selector] = true;
+        }
+      },
+      "sbp/selectors/lock": (sels) => {
+        for (const selector of sels) {
+          delete unsafeSelectors[selector];
+        }
+      },
+      "sbp/selectors/fn": (sel) => {
+        return selectors[sel];
+      },
+      "sbp/filters/global/add": (filter) => {
+        globalFilters.push(filter);
+      },
+      "sbp/filters/domain/add": (domain, filter) => {
+        if (!domainFilters[domain])
+          domainFilters[domain] = [];
+        domainFilters[domain].push(filter);
+      },
+      "sbp/filters/selector/add": (selector, filter) => {
+        if (!selectorFilters[selector])
+          selectorFilters[selector] = [];
+        selectorFilters[selector].push(filter);
+      },
+      "sbp/domains/lock": (domainNames) => {
+        if (!domainNames) {
+          for (const name in domains) {
+            domains[name].locked = true;
+          }
+        } else {
+          for (const name of domainNames) {
+            if (!domains[name]) {
+              throw new Error(`SBP: cannot lock non-existent domain: ${name}`);
+            }
+            domains[name].locked = true;
+          }
+        }
+      }
+    };
+    SBP_BASE_SELECTORS["sbp/selectors/register"](SBP_BASE_SELECTORS);
+    esm_default = sbp;
   }
 });
 var isEventQueueSbpEvent;
@@ -61443,7 +61443,6 @@ var require_websocket_server = __commonJS({
     }
   }
 });
-init_esm();
 var import_npm_nconf7 = __toESM(require_nconf());
 function getLineColFromPtr(string3, ptr) {
   let lines = string3.slice(0, ptr).split(/\r\n|\n|\r/g);
@@ -68574,40 +68573,48 @@ var findManifestFiles = async (path8) => {
 };
 async function upload(args, internal = false) {
   const { url: url2, files } = args;
+  let dbOpen = false;
   if (!url2) {
     await initDB({ skipDbPreloading: true });
+    dbOpen = true;
   }
-  const uploaded = [];
-  const uploaderFn = url2 ? uploadEntryToURL : uploadEntryToDB;
-  for (const filepath_ of files) {
-    let type = multicodes.RAW;
-    let filepath = filepath_;
-    if (internal) {
-      if (filepath_[1] !== "|") throw new Error("Invalid path format");
-      switch (filepath_[0]) {
-        case "r":
-          break;
-        case "m":
-          type = multicodes.SHELTER_CONTRACT_MANIFEST;
-          break;
-        case "t":
-          type = multicodes.SHELTER_CONTRACT_TEXT;
-          break;
-        default:
-          throw new Error("Unknown file type: " + filepath_[0]);
+  try {
+    const uploaded = [];
+    const uploaderFn = url2 ? uploadEntryToURL : uploadEntryToDB;
+    for (const filepath_ of files) {
+      let type = multicodes.RAW;
+      let filepath = filepath_;
+      if (internal) {
+        if (filepath_[1] !== "|") throw new Error("Invalid path format");
+        switch (filepath_[0]) {
+          case "r":
+            break;
+          case "m":
+            type = multicodes.SHELTER_CONTRACT_MANIFEST;
+            break;
+          case "t":
+            type = multicodes.SHELTER_CONTRACT_TEXT;
+            break;
+          default:
+            throw new Error("Unknown file type: " + filepath_[0]);
+        }
+        filepath = filepath_.slice(2);
       }
-      filepath = filepath_.slice(2);
+      const entry = await createEntryFromFile(filepath, type);
+      const destination = await uploaderFn(entry, url2);
+      if (!internal) {
+        console.log(green("uploaded:"), destination);
+      } else {
+        console.log(green(`${relative7(".", filepath)}:`), destination);
+      }
+      uploaded.push([filepath, destination]);
     }
-    const entry = await createEntryFromFile(filepath, type);
-    const destination = await uploaderFn(entry, url2);
-    if (!internal) {
-      console.log(green("uploaded:"), destination);
-    } else {
-      console.log(green(`${relative7(".", filepath)}:`), destination);
+    return uploaded;
+  } finally {
+    if (dbOpen) {
+      await closeDB();
     }
-    uploaded.push([filepath, destination]);
   }
-  return uploaded;
 }
 async function uploadEntryToURL([cid, buffer], url2) {
   const form = new FormData();
@@ -68709,17 +68716,23 @@ var module3 = {
 };
 init_esm();
 async function eventsAfter2({ limit, url: url2, contractID, height }) {
+  let dbOpen = false;
   try {
     let messages;
     if (url2) {
       messages = await getRemoteMessagesSince(url2, contractID, height, limit);
     } else {
       await initDB({ skipDbPreloading: true });
+      dbOpen = true;
       messages = await getMessagesSince(contractID, height, limit);
     }
     console.log(JSON.stringify(messages, null, 2));
   } catch (error2) {
     exit(error2);
+  } finally {
+    if (dbOpen) {
+      await closeDB();
+    }
   }
 }
 async function getMessagesSince(contractID, sinceHeight, limit) {
@@ -68787,8 +68800,10 @@ var module4 = {
 };
 init_esm();
 async function get({ key, url: url2 }) {
+  let dbOpen = false;
   if (!url2) {
     await initDB({ skipDbPreloading: true });
+    dbOpen = true;
   }
   try {
     const data = url2 ? await readRemoteData(url2, key) : await esm_default("chelonia.db/get", key);
@@ -68800,6 +68815,10 @@ async function get({ key, url: url2 }) {
     }
   } catch (error2) {
     exit(error2);
+  } finally {
+    if (dbOpen) {
+      await closeDB();
+    }
   }
 }
 var module5 = {
@@ -69021,6 +69040,8 @@ async function migrate(args) {
     console.error("Error setting up database");
     exit(e2);
     throw e2;
+  } finally {
+    closeDB();
   }
   let backendTo;
   try {
@@ -69450,8 +69471,6 @@ init_esm();
 var import_npm_chalk4 = __toESM(require_source());
 var SERVER_EXITING = "server-exiting";
 var SERVER_RUNNING = "server-running";
-var SERVER_INSTANCE = "@instance/server";
-var PUBSUB_INSTANCE = "@instance/pubsub";
 init_SPMessage();
 init_functions();
 init_esm();
@@ -73127,9 +73146,9 @@ function registerRoutes(app2) {
   const staticServeConfig = getStaticServeConfig();
   app2.post(
     "/event",
+    zValidator("header", eventHeaderSchema),
     bodyLimit({ maxSize: MEGABYTE }),
     authMiddleware("chel-shelter", "optional"),
-    zValidator("header", eventHeaderSchema),
     async function(c) {
       if (ARCHIVE_MODE) throw new HTTPException(501, { message: "Server in archive mode" });
       const ip = getClientIP(c);
@@ -73355,8 +73374,8 @@ function registerRoutes(app2) {
   }
   app2.post(
     "/file",
-    bodyLimit({ maxSize: FILE_UPLOAD_MAX_BYTES }),
     authMiddleware("chel-shelter", "required"),
+    bodyLimit({ maxSize: FILE_UPLOAD_MAX_BYTES }),
     async function(c) {
       if (ARCHIVE_MODE) throw new HTTPException(501, { message: "Server in archive mode" });
       try {
@@ -73562,9 +73581,9 @@ function registerRoutes(app2) {
   );
   app2.post(
     "/kv/:contractID/:key",
-    bodyLimit({ maxSize: 6 * MEGABYTE }),
-    authMiddleware("chel-shelter", "required"),
     zValidator("param", kvParamSchema),
+    authMiddleware("chel-shelter", "required"),
+    bodyLimit({ maxSize: 6 * MEGABYTE }),
     async function(c) {
       if (ARCHIVE_MODE) throw new HTTPException(501, { message: "Server in archive mode" });
       const { contractID, key } = c.req.valid("param");
@@ -73774,6 +73793,8 @@ function registerRoutes(app2) {
 }
 var CREDITS_WORKER_TASK_TIME_INTERVAL = 3e5;
 var OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL = 3e4;
+var SERVER_INSTANCE = "@instance/server";
+var PUBSUB_INSTANCE = "@instance/pubsub";
 init_esm4();
 init_functions();
 init_esm();
@@ -74947,27 +74968,15 @@ async function startServer2(options2 = {}) {
     installGlobalExceptionHandlers();
     installSignalHandlers();
   }
-  esm_default("okTurtles.events/once", SERVER_EXITING, () => {
-    esm_default("okTurtles.data/apply", PUBSUB_INSTANCE, function(pubsub) {
-      esm_default("okTurtles.eventQueue/queueEvent", SERVER_EXITING, () => {
-        return new Promise((resolve82) => {
-          pubsub.on("close", async function() {
-            try {
-              removeSignalHandlers();
-              await esm_default("chelonia.persistentActions/unload");
-              await stopServer2();
-              console.info("Server down");
-            } catch (err) {
-              console.error(err, "Error during shutdown");
-            } finally {
-              resolve82();
-            }
-          });
-          pubsub.close();
-          pubsub.clients.forEach((client) => client.terminate());
-        });
-      });
-    });
+  esm_default("okTurtles.events/once", SERVER_EXITING, async () => {
+    try {
+      removeSignalHandlers();
+      await esm_default("chelonia.persistentActions/unload");
+      await stopServer2();
+      console.info("Server down");
+    } catch (err) {
+      console.error(err, "Error during shutdown");
+    }
   });
   return await new Promise((resolve82, reject) => {
     esm_default("okTurtles.events/on", SERVER_RUNNING, function onRunning(info) {
@@ -79691,11 +79700,7 @@ var parseConfig = () => {
 };
 var parseConfig_default = parseConfig;
 parseConfig_default();
-try {
-  await handlerState.postHandler();
-} finally {
-  esm_default("okTurtles.events/emit", SERVER_EXITING);
-}
+await handlerState.postHandler();
 /*! Bundled license information:
 
 scrypt-async/scrypt-async.js:

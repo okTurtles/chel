@@ -3,12 +3,13 @@
 import * as base64 from 'jsr:@std/encoding/base64'
 import sbp from 'npm:@sbp/sbp'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
-import { initDB } from './serve/database.ts'
+import { closeDB, initDB } from './serve/database.ts'
 import { exit } from './utils.ts'
 
 type Params = { limit: number, url: string | undefined, contractID: string, height: number }
 
 export async function eventsAfter ({ limit, url, contractID, height }: ArgumentsCamelCase<Params>): Promise<void> {
+  let dbOpen = false
   try {
     let messages
 
@@ -16,11 +17,16 @@ export async function eventsAfter ({ limit, url, contractID, height }: Arguments
       messages = await getRemoteMessagesSince(url, contractID, height, limit)
     } else {
       await initDB({ skipDbPreloading: true })
+      dbOpen = true
       messages = await getMessagesSince(contractID, height, limit)
     }
     console.log(JSON.stringify(messages, null, 2))
   } catch (error) {
     exit(error)
+  } finally {
+    if (dbOpen) {
+      await closeDB()
+    }
   }
 }
 

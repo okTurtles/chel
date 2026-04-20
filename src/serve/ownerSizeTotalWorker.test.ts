@@ -2,7 +2,7 @@ import { createCID } from 'npm:@chelonia/lib/functions'
 import sbp from 'npm:@sbp/sbp'
 // import { assert } from 'jsr:@std/assert' // TODO: Use for additional test assertions
 import createWorker from './createWorker.ts'
-import { appendToIndexFactory, initDB, updateSize as updateSize_ } from './database.ts'
+import { appendToIndexFactory, closeDB, initDB, updateSize as updateSize_ } from './database.ts'
 
 let worker = createWorker(new URL('./ownerSizeTotalWorker.ts', import.meta.url).toString())
 
@@ -263,6 +263,7 @@ Deno.test({
       })
     } finally {
       // Teardown
+      await closeDB()
       await worker.terminate()
     }
   }

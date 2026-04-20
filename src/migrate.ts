@@ -7,7 +7,7 @@ import process from 'node:process'
 import sbp from 'npm:@sbp/sbp'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import type DatabaseBackend from './serve/DatabaseBackend.ts'
-import { initDB } from './serve/database.ts'
+import { closeDB, initDB } from './serve/database.ts'
 import { exit, isValidKey } from './utils.ts'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
@@ -35,6 +35,8 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
     console.error('Error setting up database')
     exit(e)
     throw e
+  } finally {
+    closeDB()
   }
 
   let backendTo: DatabaseBackend

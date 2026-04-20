@@ -4,51 +4,59 @@ import { Buffer } from 'node:buffer'
 import { multicodes } from 'npm:@chelonia/lib/functions'
 import sbp from 'npm:@sbp/sbp'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
-import { initDB } from './serve/database.ts'
+import { closeDB, initDB } from './serve/database.ts'
 import { createEntryFromFile, type Entry } from './utils.ts'
 
 type Params = { url?: string, files: string[] }
 
 export async function upload (args: ArgumentsCamelCase<Params>, internal = false): Promise<[string, string][]> {
   const { url, files } = args
+  let dbOpen = false
   if (!url) {
     await initDB({ skipDbPreloading: true })
+    dbOpen = true
   }
-  const uploaded: Array<[string, string]> = []
-  const uploaderFn = url
-    ? uploadEntryToURL
-    : uploadEntryToDB
-  for (const filepath_ of files) {
-    let type = multicodes.RAW
-    let filepath = filepath_
-    if (internal) {
+  try {
+    const uploaded: Array<[string, string]> = []
+    const uploaderFn = url
+      ? uploadEntryToURL
+      : uploadEntryToDB
+    for (const filepath_ of files) {
+      let type = multicodes.RAW
+      let filepath = filepath_
+      if (internal) {
       // The `{type}|` prefix is used to determine which kind of CID is needed
-      if (filepath_[1] !== '|') throw new Error('Invalid path format')
-      switch (filepath_[0]) {
-        case 'r':
-        // raw file type
-          break
-        case 'm':
-          type = multicodes.SHELTER_CONTRACT_MANIFEST
-          break
-        case 't':
-          type = multicodes.SHELTER_CONTRACT_TEXT
-          break
-        default:
-          throw new Error('Unknown file type: ' + filepath_[0])
+        if (filepath_[1] !== '|') throw new Error('Invalid path format')
+        switch (filepath_[0]) {
+          case 'r':
+            // raw file type
+            break
+          case 'm':
+            type = multicodes.SHELTER_CONTRACT_MANIFEST
+            break
+          case 't':
+            type = multicodes.SHELTER_CONTRACT_TEXT
+            break
+          default:
+            throw new Error('Unknown file type: ' + filepath_[0])
+        }
+        filepath = filepath_.slice(2)
       }
-      filepath = filepath_.slice(2)
+      const entry = await createEntryFromFile(filepath, type)
+      const destination = await uploaderFn(entry, url!)
+      if (!internal) {
+        console.log(colors.green('uploaded:'), destination)
+      } else {
+        console.log(colors.green(`${path.relative('.', filepath)}:`), destination)
+      }
+      uploaded.push([filepath, destination])
     }
-    const entry = await createEntryFromFile(filepath, type)
-    const destination = await uploaderFn(entry, url!)
-    if (!internal) {
-      console.log(colors.green('uploaded:'), destination)
-    } else {
-      console.log(colors.green(`${path.relative('.', filepath)}:`), destination)
+    return uploaded
+  } finally {
+    if (dbOpen) {
+      await closeDB()
     }
-    uploaded.push([filepath, destination])
   }
-  return uploaded
 }
 
 async function uploadEntryToURL ([cid, buffer]: Entry, url: string): Promise<string> {

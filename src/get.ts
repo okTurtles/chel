@@ -10,14 +10,16 @@ chel get https://url.com mygreatlongkey > file.png
 import { writeAll } from 'jsr:@std/io/'
 import sbp from 'npm:@sbp/sbp'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
-import { initDB } from './serve/database.ts'
+import { closeDB, initDB } from './serve/database.ts'
 import { exit, readRemoteData } from './utils.ts'
 
 type Params = { url?: string, key: string }
 
 export async function get ({ key, url }: ArgumentsCamelCase<Params>): Promise<void> {
+  let dbOpen = false
   if (!url) {
     await initDB({ skipDbPreloading: true })
+    dbOpen = true
   }
 
   try {
@@ -35,6 +37,10 @@ export async function get ({ key, url }: ArgumentsCamelCase<Params>): Promise<vo
     }
   } catch (error) {
     exit(error)
+  } finally {
+    if (dbOpen) {
+      await closeDB()
+    }
   }
 }
 

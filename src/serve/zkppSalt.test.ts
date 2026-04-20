@@ -1,7 +1,7 @@
 import { Buffer } from 'node:buffer'
 import { AUTHSALT, CONTRACTSALT, CS, SALT_LENGTH_IN_OCTETS, SU } from 'npm:@chelonia/lib/zkppConstants'
 import tweetnacl from 'npm:tweetnacl'
-import { initDB } from './database.ts'
+import { closeDB, initDB } from './database.ts'
 
 const nacl = tweetnacl
 
@@ -144,5 +144,7 @@ Deno.test({
       const updateRes = await updateContractSalt(contract, r, challenge.s, challenge.sig, Buffer.from(hc).toString('base64url'), encryptedArgs)
       if (!updateRes) throw new Error('updateContractSalt should be successful')
     })
+
+    await closeDB()
   }
 })

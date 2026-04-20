@@ -9,18 +9,10 @@
 // Third-party modules:
 // https://deno.land/x
 
-import sbp from 'npm:@sbp/sbp'
 import parseConfig, { handlerState } from './parseConfig.ts'
-import { SERVER_EXITING } from './serve/events.ts'
 
 parseConfig()
 
-try {
-  // `postHandler` is set by `parseArgs` (called by `parseConfig`)
-  // Run the selected subcommand
-  await handlerState.postHandler()
-} finally {
-  // Indicate that we're done, which is useful for cleaning up, closing DB
-  // connections, etc.
-  sbp('okTurtles.events/emit', SERVER_EXITING)
-}
+// `postHandler` is set by `parseArgs` (called by `parseConfig`)
+// Run the selected subcommand
+await handlerState.postHandler()

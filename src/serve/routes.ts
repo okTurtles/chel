@@ -372,9 +372,9 @@ export function registerRoutes (app: Hono): void {
   //       —BUT HTTP2 might be better than websockets and so we keep this around.
   //       See related TODO in pubsub.js and the reddit discussion link.
   app.post('/event',
+    zValidator('header', eventHeaderSchema),
     bodyLimit({ maxSize: MEGABYTE }),
     authMiddleware('chel-shelter', 'optional'),
-    zValidator('header', eventHeaderSchema),
     async function (c) {
       if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
       // IMPORTANT: IT IS A REQUIREMENT THAT ANY PROXY SERVERS (E.G. nginx) IN FRONT OF US SET THE
@@ -667,8 +667,8 @@ app.post('/name', async function (c) {
   // File upload route.
   // If accepted, the file will be stored in Chelonia DB.
   app.post('/file',
-    bodyLimit({ maxSize: FILE_UPLOAD_MAX_BYTES }),
     authMiddleware('chel-shelter', 'required'),
+    bodyLimit({ maxSize: FILE_UPLOAD_MAX_BYTES }),
     async function (c) {
       if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
       try {
@@ -929,9 +929,9 @@ app.post('/name', async function (c) {
     })
 
   app.post('/kv/:contractID/:key',
-    bodyLimit({ maxSize: 6 * MEGABYTE }),
-    authMiddleware('chel-shelter', 'required'),
     zValidator('param', kvParamSchema),
+    authMiddleware('chel-shelter', 'required'),
+    bodyLimit({ maxSize: 6 * MEGABYTE }),
     async function (c) {
       if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
       const { contractID, key } = c.req.valid('param')

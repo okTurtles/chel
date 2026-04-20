@@ -5,7 +5,6 @@ import 'npm:@sbp/okturtles.events'
 import sbp from 'npm:@sbp/sbp'
 import chalk from 'npm:chalk'
 import { SERVER_EXITING, SERVER_RUNNING } from './events.ts'
-import { PUBSUB_INSTANCE } from './instance-keys.ts'
 import { startServer as startServerImpl, stopServer as stopServerImpl } from './server.ts'
 import { initializeLogger } from './logger.ts'
 
@@ -121,29 +120,15 @@ export async function startServer (options: StartServerOptions = {}): Promise<{ 
 
   // Register a SERVER_EXITING handler for this startServer call
   // This handler self-removes when it fires
-  sbp('okTurtles.events/once', SERVER_EXITING, () => {
-    sbp('okTurtles.data/apply', PUBSUB_INSTANCE, function (pubsub: { on: (event: string, callback: () => void) => void; close: () => void; clients: { forEach: (callback: (client: { terminate: () => void }) => void) => void } }) {
-      sbp('okTurtles.eventQueue/queueEvent', SERVER_EXITING, () => {
-        return new Promise<void>((resolve) => {
-          pubsub.on('close', async function () {
-            try {
-              removeSignalHandlers()
-              await sbp('chelonia.persistentActions/unload')
-              await stopServer()
-              console.info('Server down')
-            } catch (err) {
-              console.error(err, 'Error during shutdown')
-            } finally {
-              resolve()
-            }
-          })
-          pubsub.close()
-          // Since `ws` v8.0, `WebSocketServer.close()` no longer closes remaining connections.
-          // See https://github.com/websockets/ws/commit/df7de574a07115e2321fdb5fc9b2d0fea55d27e8
-          pubsub.clients.forEach((client: { terminate: () => void }) => client.terminate())
-        })
-      })
-    })
+  sbp('okTurtles.events/once', SERVER_EXITING, async () => {
+    try {
+      removeSignalHandlers()
+      await sbp('chelonia.persistentActions/unload')
+      await stopServer()
+      console.info('Server down')
+    } catch (err) {
+      console.error(err, 'Error during shutdown')
+    }
   })
 
   // Start the server and wait for it to be running
