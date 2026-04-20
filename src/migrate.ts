@@ -152,7 +152,7 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
     }
     reportStatus()
   } finally {
-    await Promise.all([backendTo!.close(), closeDB()])
+    await Promise.all([backendTo?.close(), closeDB()])
   }
 }
 

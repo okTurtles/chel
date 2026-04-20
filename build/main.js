@@ -69139,7 +69139,7 @@ async function migrate(args) {
     }
     reportStatus();
   } finally {
-    await Promise.all([backendTo.close(), closeDB()]);
+    await Promise.all([backendTo?.close(), closeDB()]);
   }
 }
 var module9 = {
@@ -72893,7 +72893,7 @@ function parseBooleanParam(value) {
 var CID_REGEX = /^z[1-9A-HJ-NP-Za-km-z]{8,72}$/;
 var KV_KEY_REGEX = /^(?!_private)[^\x00]{1,256}$/;
 var NAME_REGEX = /^(?![_-])((?!([_-])\2)[a-z\d_-]){1,80}(?<![_-])$/;
-var POSITIVE_INTEGER_REGEX = /^\d{1,16}$/;
+var NON_NEGATIVE_INTEGER_REGEX = /^\d{1,16}$/;
 var MIME_TYPES = {
   ".js": "application/javascript",
   ".mjs": "application/javascript",
@@ -72918,53 +72918,21 @@ var MIME_TYPES = {
 var cidSchema = string2().regex(CID_REGEX, "Invalid CID");
 var nameSchema = string2().regex(NAME_REGEX, "Invalid name");
 var kvKeySchema = string2().regex(KV_KEY_REGEX, "Invalid key");
-var positiveIntegerSchema = string2().regex(POSITIVE_INTEGER_REGEX, "Invalid positive integer");
-var cidParamSchema = object({ contractID: cidSchema });
-var cidHashParamSchema = object({ hash: cidSchema });
-var nameParamSchema = object({ name: nameSchema });
-var kvParamSchema = object({ contractID: cidSchema, key: kvKeySchema });
-var eventsAfterParamSchema = object({
-  contractID: cidSchema,
-  since: positiveIntegerSchema,
-  limit: positiveIntegerSchema.optional()
-});
-var zkppContractParamSchema = object({ contractID: cidSchema });
-var zkppAuthHashQuerySchema = object({ b: string2().min(1, "b is required") });
-var zkppContractHashQuerySchema = object({
-  r: string2().min(1, "r is required"),
-  s: string2().min(1, "s is required"),
-  sig: string2().min(1, "sig is required"),
-  hc: string2().min(1, "hc is required")
-});
-var eventHeaderSchema = object({
-  "shelter-namespace-registration": nameSchema.optional(),
-  "shelter-salt-update-token": string2().optional(),
-  "shelter-salt-registration-token": string2().optional(),
-  "shelter-deletion-token-digest": string2().optional()
-});
-var zkppRegisterBodySchema = union([
-  object({ b: string2() }),
-  object({ r: string2(), s: string2(), sig: string2(), Eh: string2() })
-]);
-var zkppUpdatePasswordBodySchema = object({
-  r: string2().min(1, "r is required"),
-  s: string2().min(1, "s is required"),
-  sig: string2().min(1, "sig is required"),
-  hc: string2().min(1, "hc is required"),
-  Ea: string2().min(1, "Ea is required")
-});
+var nonNegativeIntegerSchema = string2().regex(NON_NEGATIVE_INTEGER_REGEX, "Invalid positive integer");
 function zValidatorFormOrJson(schema) {
   return async (c, next) => {
-    const contentType = c.req.header("content-type") || "";
+    const contentType = (c.req.header("content-type") || "").trim().toLowerCase();
     let data;
     try {
-      if (contentType.includes("application/x-www-form-urlencoded")) {
+      if (contentType.startsWith("application/x-www-form-urlencoded")) {
         const form = await c.req.parseBody();
         data = Object.fromEntries(
           Object.entries(form).filter(([, v2]) => typeof v2 === "string")
         );
-      } else {
+      } else if (contentType.startsWith("application/json")) {
         data = await c.req.json();
+      } else {
+        throw new HTTPException(415, { message: "Content-Type header expected with form or JSON data" });
       }
     } catch {
       throw new HTTPException(400, { message: "Invalid request body" });
@@ -73145,7 +73113,12 @@ function registerRoutes(app2) {
   const staticServeConfig = getStaticServeConfig();
   app2.post(
     "/event",
-    zValidator("header", eventHeaderSchema),
+    zValidator("header", object({
+      "shelter-namespace-registration": nameSchema.optional(),
+      "shelter-salt-update-token": string2().optional(),
+      "shelter-salt-registration-token": string2().optional(),
+      "shelter-deletion-token-digest": string2().optional()
+    }).strict()),
     bodyLimit({ maxSize: MEGABYTE }),
     authMiddleware("chel-shelter", "optional"),
     async function(c) {
@@ -73249,7 +73222,11 @@ function registerRoutes(app2) {
   );
   app2.get(
     "/eventsAfter/:contractID/:since/:limit?",
-    zValidator("param", eventsAfterParamSchema),
+    zValidator("param", object({
+      contractID: cidSchema,
+      since: nonNegativeIntegerSchema,
+      limit: nonNegativeIntegerSchema.optional()
+    }).strict()),
     async function(c) {
       const { contractID, since, limit } = c.req.valid("param");
       const keyOps2 = c.req.query("keyOps");
@@ -73260,6 +73237,7 @@ function registerRoutes(app2) {
           throw new HTTPException(400);
         }
         const stream = await esm_default("backend/db/streamEntriesAfter", contractID, Number(since), limit == null ? void 0 : Number(limit), { keyOps: parseBooleanParam(keyOps2) });
+        stream.on("error", (err) => logger_default.error("eventsAfter stream error", err));
         c.req.raw.signal.addEventListener("abort", () => stream.destroy());
         const streamHeaders = stream.headers || {};
         const webStream = Readable3.toWeb(stream);
@@ -73301,36 +73279,44 @@ function registerRoutes(app2) {
       return c.body(null, 200);
     });
   }
-  app2.get("/name/:name", zValidator("param", nameParamSchema), async function(c) {
-    const { name } = c.req.valid("param");
-    try {
-      const lookupResult = await esm_default("backend/db/lookupName", name);
-      return lookupResult ? c.text(lookupResult) : notFoundNoCache(c);
-    } catch (err) {
-      logger_default.error(err, `GET /name/${name}`, err.message);
-      throw err;
-    }
-  });
-  app2.get("/latestHEADinfo/:contractID", zValidator("param", cidParamSchema), async function(c) {
-    const { contractID } = c.req.valid("param");
-    try {
-      const parsed = maybeParseCID(contractID);
-      if (parsed?.code !== multicodes.SHELTER_CONTRACT_DATA) throw new HTTPException(400);
-      const HEADinfo = await esm_default("chelonia/db/latestHEADinfo", contractID);
-      if (HEADinfo === "") {
-        throw new HTTPException(410);
+  app2.get(
+    "/name/:name",
+    zValidator("param", object({ name: nameSchema }).strict()),
+    async function(c) {
+      const { name } = c.req.valid("param");
+      try {
+        const lookupResult = await esm_default("backend/db/lookupName", name);
+        return lookupResult ? c.text(lookupResult) : notFoundNoCache(c);
+      } catch (err) {
+        logger_default.error(err, `GET /name/${name}`, err.message);
+        throw err;
       }
-      if (!HEADinfo) {
-        console.warn(`[backend] latestHEADinfo not found for ${contractID}`);
-        return notFoundNoCache(c);
-      }
-      return c.json(HEADinfo, 200, { "Cache-Control": "no-store" });
-    } catch (err) {
-      if (err instanceof HTTPException) throw err;
-      logger_default.error(err, `GET /latestHEADinfo/${contractID}`, err.message);
-      throw err;
     }
-  });
+  );
+  app2.get(
+    "/latestHEADinfo/:contractID",
+    zValidator("param", object({ contractID: cidSchema }).strict()),
+    async function(c) {
+      const { contractID } = c.req.valid("param");
+      try {
+        const parsed = maybeParseCID(contractID);
+        if (parsed?.code !== multicodes.SHELTER_CONTRACT_DATA) throw new HTTPException(400);
+        const HEADinfo = await esm_default("chelonia/db/latestHEADinfo", contractID);
+        if (HEADinfo === "") {
+          throw new HTTPException(410);
+        }
+        if (!HEADinfo) {
+          console.warn(`[backend] latestHEADinfo not found for ${contractID}`);
+          return notFoundNoCache(c);
+        }
+        return c.json(HEADinfo, 200, { "Cache-Control": "no-store" });
+      } catch (err) {
+        if (err instanceof HTTPException) throw err;
+        logger_default.error(err, `GET /latestHEADinfo/${contractID}`, err.message);
+        throw err;
+      }
+    }
+  );
   app2.get("/time", function(c) {
     return c.text((/* @__PURE__ */ new Date()).toISOString(), 200, {
       "Cache-Control": "no-store"
@@ -73457,36 +73443,40 @@ function registerRoutes(app2) {
       }
     }
   );
-  app2.get("/file/:hash", zValidator("param", cidHashParamSchema), async function(c) {
-    const { hash: hash3 } = c.req.valid("param");
-    const parsed = maybeParseCID(hash3);
-    if (!parsed) {
-      throw new HTTPException(400);
+  app2.get(
+    "/file/:hash",
+    zValidator("param", object({ hash: cidSchema }).strict()),
+    async function(c) {
+      const { hash: hash3 } = c.req.valid("param");
+      const parsed = maybeParseCID(hash3);
+      if (!parsed) {
+        throw new HTTPException(400);
+      }
+      const blobOrString = await esm_default("chelonia.db/get", `any:${hash3}`);
+      if (blobOrString?.length === 0) {
+        throw new HTTPException(410);
+      } else if (!blobOrString) {
+        return notFoundNoCache(c);
+      }
+      const type = cidLookupTable[parsed.code] || "application/octet-stream";
+      return c.body(blobOrString, 200, {
+        "ETag": `"${hash3}"`,
+        "Cache-Control": "public,max-age=31536000,immutable",
+        // CSP to disable everything -- this only affects direct navigation to the
+        // `/file` URL.
+        // The CSP below prevents any sort of resource loading or script execution
+        // on direct navigation. The `nosniff` header instructs the browser to
+        // honour the provided content-type.
+        "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'; form-action 'none'; upgrade-insecure-requests; sandbox",
+        "X-Content-Type-Options": "nosniff",
+        "Content-Type": type
+      });
     }
-    const blobOrString = await esm_default("chelonia.db/get", `any:${hash3}`);
-    if (blobOrString?.length === 0) {
-      throw new HTTPException(410);
-    } else if (!blobOrString) {
-      return notFoundNoCache(c);
-    }
-    const type = cidLookupTable[parsed.code] || "application/octet-stream";
-    return c.body(blobOrString, 200, {
-      "ETag": `"${hash3}"`,
-      "Cache-Control": "public,max-age=31536000,immutable",
-      // CSP to disable everything -- this only affects direct navigation to the
-      // `/file` URL.
-      // The CSP below prevents any sort of resource loading or script execution
-      // on direct navigation. The `nosniff` header instructs the browser to
-      // honour the provided content-type.
-      "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'; form-action 'none'; upgrade-insecure-requests; sandbox",
-      "X-Content-Type-Options": "nosniff",
-      "Content-Type": type
-    });
-  });
+  );
   app2.post(
     "/deleteFile/:hash",
     authMiddleware(["chel-shelter", "chel-bearer"], "required"),
-    zValidator("param", cidHashParamSchema),
+    zValidator("param", object({ hash: cidSchema }).strict()),
     async function(c) {
       if (ARCHIVE_MODE) throw new HTTPException(501, { message: "Server in archive mode" });
       const { hash: hash3 } = c.req.valid("param");
@@ -73533,7 +73523,7 @@ function registerRoutes(app2) {
   app2.post(
     "/deleteContract/:hash",
     authMiddleware(["chel-shelter", "chel-bearer"], "required"),
-    zValidator("param", cidHashParamSchema),
+    zValidator("param", object({ hash: cidSchema }).strict()),
     async function(c) {
       if (ARCHIVE_MODE) throw new HTTPException(501, { message: "Server in archive mode" });
       const { hash: hash3 } = c.req.valid("param");
@@ -73580,7 +73570,7 @@ function registerRoutes(app2) {
   );
   app2.post(
     "/kv/:contractID/:key",
-    zValidator("param", kvParamSchema),
+    zValidator("param", object({ contractID: cidSchema, key: kvKeySchema }).strict()),
     authMiddleware("chel-shelter", "required"),
     bodyLimit({ maxSize: 6 * MEGABYTE }),
     async function(c) {
@@ -73647,7 +73637,7 @@ function registerRoutes(app2) {
   app2.get(
     "/kv/:contractID/:key",
     authMiddleware("chel-shelter", "required"),
-    zValidator("param", kvParamSchema),
+    zValidator("param", object({ contractID: cidSchema, key: kvKeySchema }).strict()),
     async function(c) {
       const { contractID, key } = c.req.valid("param");
       const parsed = maybeParseCID(contractID);
@@ -73698,9 +73688,13 @@ function registerRoutes(app2) {
   app2.get("/", function(c) {
     return c.redirect(staticServeConfig.redirect);
   });
+  const zkppRegisterBodySchema = union([
+    object({ b: string2() }).strict(),
+    object({ r: string2(), s: string2(), sig: string2(), Eh: string2() }).strict()
+  ]);
   app2.post(
     "/zkpp/register/:name",
-    zValidator("param", nameParamSchema),
+    zValidator("param", object({ name: nameSchema }).strict()),
     zValidatorFormOrJson(zkppRegisterBodySchema),
     async function(c) {
       const { name } = c.req.valid("param");
@@ -73732,8 +73726,8 @@ function registerRoutes(app2) {
   );
   app2.get(
     "/zkpp/:contractID/auth_hash",
-    zValidator("param", zkppContractParamSchema),
-    zValidator("query", zkppAuthHashQuerySchema),
+    zValidator("param", object({ contractID: cidSchema }).strict()),
+    zValidator("query", object({ b: string2().min(1, "b is required") })),
     async function(c) {
       const { contractID } = c.req.valid("param");
       const { b } = c.req.valid("query");
@@ -73750,8 +73744,13 @@ function registerRoutes(app2) {
   );
   app2.get(
     "/zkpp/:contractID/contract_hash",
-    zValidator("param", zkppContractParamSchema),
-    zValidator("query", zkppContractHashQuerySchema),
+    zValidator("param", object({ contractID: cidSchema }).strict()),
+    zValidator("query", object({
+      r: string2().min(1, "r is required"),
+      s: string2().min(1, "s is required"),
+      sig: string2().min(1, "sig is required"),
+      hc: string2().min(1, "hc is required")
+    }).strict()),
     async function(c) {
       const { contractID } = c.req.valid("param");
       const { r, s, sig, hc } = c.req.valid("query");
@@ -73768,9 +73767,16 @@ function registerRoutes(app2) {
       throw new HTTPException(500, { message: "internal error" });
     }
   );
+  const zkppUpdatePasswordBodySchema = object({
+    r: string2().min(1, "r is required"),
+    s: string2().min(1, "s is required"),
+    sig: string2().min(1, "sig is required"),
+    hc: string2().min(1, "hc is required"),
+    Ea: string2().min(1, "Ea is required")
+  }).strict();
   app2.post(
     "/zkpp/:contractID/updatePasswordHash",
-    zValidator("param", zkppContractParamSchema),
+    zValidator("param", object({ contractID: cidSchema }).strict()),
     zValidatorFormOrJson(zkppUpdatePasswordBodySchema),
     async function(c) {
       const { contractID } = c.req.valid("param");

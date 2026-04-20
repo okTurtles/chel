@@ -50,7 +50,7 @@ const KV_KEY_REGEX = /^(?!_private)[^\x00]{1,256}$/
 //   - No two consecutive - or _
 //   - Allowed characters: lowercase letters, numbers, underscore and dashes
 const NAME_REGEX = /^(?![_-])((?!([_-])\2)[a-z\d_-]){1,80}(?<![_-])$/
-const POSITIVE_INTEGER_REGEX = /^\d{1,16}$/
+const NON_NEGATIVE_INTEGER_REGEX = /^\d{1,16}$/
 
 // MIME types for asset serving
 const MIME_TYPES: Record<string, string> = {
@@ -79,60 +79,27 @@ const MIME_TYPES: Record<string, string> = {
 const cidSchema = z.string().regex(CID_REGEX, 'Invalid CID')
 const nameSchema = z.string().regex(NAME_REGEX, 'Invalid name')
 const kvKeySchema = z.string().regex(KV_KEY_REGEX, 'Invalid key')
-const positiveIntegerSchema = z.string().regex(POSITIVE_INTEGER_REGEX, 'Invalid positive integer')
-
-const cidParamSchema = z.object({ contractID: cidSchema })
-const cidHashParamSchema = z.object({ hash: cidSchema })
-const nameParamSchema = z.object({ name: nameSchema })
-const kvParamSchema = z.object({ contractID: cidSchema, key: kvKeySchema })
-const eventsAfterParamSchema = z.object({
-  contractID: cidSchema,
-  since: positiveIntegerSchema,
-  limit: positiveIntegerSchema.optional()
-})
-const zkppContractParamSchema = z.object({ contractID: cidSchema })
-const zkppAuthHashQuerySchema = z.object({ b: z.string().min(1, 'b is required') })
-const zkppContractHashQuerySchema = z.object({
-  r: z.string().min(1, 'r is required'),
-  s: z.string().min(1, 's is required'),
-  sig: z.string().min(1, 'sig is required'),
-  hc: z.string().min(1, 'hc is required')
-})
-const eventHeaderSchema = z.object({
-  'shelter-namespace-registration': nameSchema.optional(),
-  'shelter-salt-update-token': z.string().optional(),
-  'shelter-salt-registration-token': z.string().optional(),
-  'shelter-deletion-token-digest': z.string().optional()
-})
-const zkppRegisterBodySchema = z.union([
-  z.object({ b: z.string() }),
-  z.object({ r: z.string(), s: z.string(), sig: z.string(), Eh: z.string() })
-])
-const zkppUpdatePasswordBodySchema = z.object({
-  r: z.string().min(1, 'r is required'),
-  s: z.string().min(1, 's is required'),
-  sig: z.string().min(1, 'sig is required'),
-  hc: z.string().min(1, 'hc is required'),
-  Ea: z.string().min(1, 'Ea is required')
-})
+const nonNegativeIntegerSchema = z.string().regex(NON_NEGATIVE_INTEGER_REGEX, 'Invalid positive integer')
 
 // Custom validator for endpoints that accept both JSON and form-urlencoded bodies
 function zValidatorFormOrJson<T extends z.ZodTypeAny> (
   schema: T
 ): MiddlewareHandler {
   return async (c, next) => {
-    const contentType = c.req.header('content-type') || ''
+    const contentType = (c.req.header('content-type') || '').trim().toLowerCase()
     let data: unknown
 
     try {
-      if (contentType.includes('application/x-www-form-urlencoded')) {
+      if (contentType.startsWith('application/x-www-form-urlencoded')) {
         const form = await c.req.parseBody()
         data = Object.fromEntries(
           Object.entries(form as Record<string, string | File>)
             .filter(([, v]) => typeof v === 'string')
         )
-      } else {
+      } else if (contentType.startsWith('application/json')) {
         data = await c.req.json()
+      } else {
+        throw new HTTPException(415, { message: 'Content-Type header expected with form or JSON data' })
       }
     } catch {
       throw new HTTPException(400, { message: 'Invalid request body' })
@@ -372,7 +339,12 @@ export function registerRoutes (app: Hono): void {
   //       —BUT HTTP2 might be better than websockets and so we keep this around.
   //       See related TODO in pubsub.js and the reddit discussion link.
   app.post('/event',
-    zValidator('header', eventHeaderSchema),
+    zValidator('header', z.object({
+      'shelter-namespace-registration': nameSchema.optional(),
+      'shelter-salt-update-token': z.string().optional(),
+      'shelter-salt-registration-token': z.string().optional(),
+      'shelter-deletion-token-digest': z.string().optional()
+    }).strict()),
     bodyLimit({ maxSize: MEGABYTE }),
     authMiddleware('chel-shelter', 'optional'),
     async function (c) {
@@ -493,7 +465,11 @@ export function registerRoutes (app: Hono): void {
     })
 
   app.get('/eventsAfter/:contractID/:since/:limit?',
-    zValidator('param', eventsAfterParamSchema),
+    zValidator('param', z.object({
+      contractID: cidSchema,
+      since: nonNegativeIntegerSchema,
+      limit: nonNegativeIntegerSchema.optional()
+    }).strict()),
     async function (c) {
       const { contractID, since, limit } = c.req.valid('param')
 
@@ -506,6 +482,7 @@ export function registerRoutes (app: Hono): void {
         }
 
         const stream = await sbp('backend/db/streamEntriesAfter', contractID, Number(since), limit == null ? undefined : Number(limit), { keyOps: parseBooleanParam(keyOps) }) as Readable
+        stream.on('error', (err) => logger.error('eventsAfter stream error', err))
         // "On an HTTP server, make sure to manually close your streams if a request is aborted."
         // From: http://knexjs.org/#Interfaces-Streams
         //       https://github.com/tgriesser/knex/wiki/Manually-Closing-Streams
@@ -575,40 +552,46 @@ app.post('/name', async function (c) {
 })
 */
 
-  app.get('/name/:name', zValidator('param', nameParamSchema), async function (c) {
-    const { name } = c.req.valid('param')
-    try {
-      const lookupResult = await sbp('backend/db/lookupName', name)
-      return lookupResult
-        ? c.text(lookupResult)
-        : notFoundNoCache(c)
-    } catch (err) {
-      logger.error(err, `GET /name/${name}`, (err as Error).message)
-      throw err
-    }
-  })
-
-  app.get('/latestHEADinfo/:contractID', zValidator('param', cidParamSchema), async function (c) {
-    const { contractID } = c.req.valid('param')
-    try {
-      const parsed = maybeParseCID(contractID)
-      if (parsed?.code !== multicodes.SHELTER_CONTRACT_DATA) throw new HTTPException(400)
-
-      const HEADinfo = await sbp('chelonia/db/latestHEADinfo', contractID)
-      if (HEADinfo === '') {
-        throw new HTTPException(410)
+  app.get('/name/:name',
+    zValidator('param', z.object({ name: nameSchema }).strict()),
+    async function (c) {
+      const { name } = c.req.valid('param')
+      try {
+        const lookupResult = await sbp('backend/db/lookupName', name)
+        return lookupResult
+          ? c.text(lookupResult)
+          : notFoundNoCache(c)
+      } catch (err) {
+        logger.error(err, `GET /name/${name}`, (err as Error).message)
+        throw err
       }
-      if (!HEADinfo) {
-        console.warn(`[backend] latestHEADinfo not found for ${contractID}`)
-        return notFoundNoCache(c)
-      }
-      return c.json(HEADinfo, 200, { 'Cache-Control': 'no-store' })
-    } catch (err) {
-      if (err instanceof HTTPException) throw err
-      logger.error(err, `GET /latestHEADinfo/${contractID}`, (err as Error).message)
-      throw err
     }
-  })
+  )
+
+  app.get('/latestHEADinfo/:contractID',
+    zValidator('param', z.object({ contractID: cidSchema }).strict()),
+    async function (c) {
+      const { contractID } = c.req.valid('param')
+      try {
+        const parsed = maybeParseCID(contractID)
+        if (parsed?.code !== multicodes.SHELTER_CONTRACT_DATA) throw new HTTPException(400)
+
+        const HEADinfo = await sbp('chelonia/db/latestHEADinfo', contractID)
+        if (HEADinfo === '') {
+          throw new HTTPException(410)
+        }
+        if (!HEADinfo) {
+          console.warn(`[backend] latestHEADinfo not found for ${contractID}`)
+          return notFoundNoCache(c)
+        }
+        return c.json(HEADinfo, 200, { 'Cache-Control': 'no-store' })
+      } catch (err) {
+        if (err instanceof HTTPException) throw err
+        logger.error(err, `GET /latestHEADinfo/${contractID}`, (err as Error).message)
+        throw err
+      }
+    }
+  )
 
   app.get('/time', function (c) {
     return c.text(new Date().toISOString(), 200, {
@@ -784,40 +767,43 @@ app.post('/name', async function (c) {
 
   // Serve data from Chelonia DB.
   // Note that a `Last-Modified` header isn't included in the response.
-  app.get('/file/:hash', zValidator('param', cidHashParamSchema), async function (c) {
-    const { hash } = c.req.valid('param')
+  app.get('/file/:hash',
+    zValidator('param', z.object({ hash: cidSchema }).strict()),
+    async function (c) {
+      const { hash } = c.req.valid('param')
 
-    const parsed = maybeParseCID(hash)
-    if (!parsed) {
-      throw new HTTPException(400)
+      const parsed = maybeParseCID(hash)
+      if (!parsed) {
+        throw new HTTPException(400)
+      }
+
+      const blobOrString = await sbp('chelonia.db/get', `any:${hash}`)
+      if (blobOrString?.length === 0) {
+        throw new HTTPException(410)
+      } else if (!blobOrString) {
+        return notFoundNoCache(c)
+      }
+
+      const type = cidLookupTable[parsed.code] || 'application/octet-stream'
+
+      return c.body(blobOrString, 200, {
+        'ETag': `"${hash}"`,
+        'Cache-Control': 'public,max-age=31536000,immutable',
+        // CSP to disable everything -- this only affects direct navigation to the
+        // `/file` URL.
+        // The CSP below prevents any sort of resource loading or script execution
+        // on direct navigation. The `nosniff` header instructs the browser to
+        // honour the provided content-type.
+        'Content-Security-Policy': 'default-src \'none\'; frame-ancestors \'none\'; form-action \'none\'; upgrade-insecure-requests; sandbox',
+        'X-Content-Type-Options': 'nosniff',
+        'Content-Type': type
+      })
     }
-
-    const blobOrString = await sbp('chelonia.db/get', `any:${hash}`)
-    if (blobOrString?.length === 0) {
-      throw new HTTPException(410)
-    } else if (!blobOrString) {
-      return notFoundNoCache(c)
-    }
-
-    const type = cidLookupTable[parsed.code] || 'application/octet-stream'
-
-    return c.body(blobOrString, 200, {
-      'ETag': `"${hash}"`,
-      'Cache-Control': 'public,max-age=31536000,immutable',
-      // CSP to disable everything -- this only affects direct navigation to the
-      // `/file` URL.
-      // The CSP below prevents any sort of resource loading or script execution
-      // on direct navigation. The `nosniff` header instructs the browser to
-      // honour the provided content-type.
-      'Content-Security-Policy': 'default-src \'none\'; frame-ancestors \'none\'; form-action \'none\'; upgrade-insecure-requests; sandbox',
-      'X-Content-Type-Options': 'nosniff',
-      'Content-Type': type
-    })
-  })
+  )
 
   app.post('/deleteFile/:hash',
     authMiddleware(['chel-shelter', 'chel-bearer'], 'required'),
-    zValidator('param', cidHashParamSchema),
+    zValidator('param', z.object({ hash: cidSchema }).strict()),
     async function (c) {
       if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
       const { hash } = c.req.valid('param')
@@ -872,7 +858,7 @@ app.post('/name', async function (c) {
 
   app.post('/deleteContract/:hash',
     authMiddleware(['chel-shelter', 'chel-bearer'], 'required'),
-    zValidator('param', cidHashParamSchema),
+    zValidator('param', z.object({ hash: cidSchema }).strict()),
     async function (c) {
       if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
       const { hash } = c.req.valid('param')
@@ -929,7 +915,7 @@ app.post('/name', async function (c) {
     })
 
   app.post('/kv/:contractID/:key',
-    zValidator('param', kvParamSchema),
+    zValidator('param', z.object({ contractID: cidSchema, key: kvKeySchema }).strict()),
     authMiddleware('chel-shelter', 'required'),
     bodyLimit({ maxSize: 6 * MEGABYTE }),
     async function (c) {
@@ -1013,7 +999,7 @@ app.post('/name', async function (c) {
 
   app.get('/kv/:contractID/:key',
     authMiddleware('chel-shelter', 'required'),
-    zValidator('param', kvParamSchema),
+    zValidator('param', z.object({ contractID: cidSchema, key: kvKeySchema }).strict()),
     async function (c) {
       const { contractID, key } = c.req.valid('param')
 
@@ -1077,8 +1063,12 @@ app.post('/name', async function (c) {
     return c.redirect(staticServeConfig.redirect)
   })
 
+  const zkppRegisterBodySchema = z.union([
+  z.object({ b: z.string() }).strict(),
+  z.object({ r: z.string(), s: z.string(), sig: z.string(), Eh: z.string() }).strict()
+])
   app.post('/zkpp/register/:name',
-    zValidator('param', nameParamSchema),
+    zValidator('param', z.object({ name: nameSchema }).strict()),
     zValidatorFormOrJson(zkppRegisterBodySchema),
     async function (c) {
       const { name } = c.req.valid('param')
@@ -1112,11 +1102,12 @@ app.post('/name', async function (c) {
       }
 
       throw new HTTPException(500, { message: 'internal error' })
-    })
+    }
+  )
 
   app.get('/zkpp/:contractID/auth_hash',
-    zValidator('param', zkppContractParamSchema),
-    zValidator('query', zkppAuthHashQuerySchema),
+    zValidator('param', z.object({ contractID: cidSchema }).strict()),
+    zValidator('query', z.object({ b: z.string().min(1, 'b is required') })),
     async function (c) {
       const { contractID } = c.req.valid('param')
       const { b } = c.req.valid('query')
@@ -1130,11 +1121,17 @@ app.post('/name', async function (c) {
       }
 
       throw new HTTPException(500, { message: 'internal error' })
-    })
+    }
+  )
 
   app.get('/zkpp/:contractID/contract_hash',
-    zValidator('param', zkppContractParamSchema),
-    zValidator('query', zkppContractHashQuerySchema),
+    zValidator('param', z.object({ contractID: cidSchema }).strict()),
+    zValidator('query', z.object({
+      r: z.string().min(1, 'r is required'),
+      s: z.string().min(1, 's is required'),
+      sig: z.string().min(1, 'sig is required'),
+      hc: z.string().min(1, 'hc is required')
+    }).strict()),
     async function (c) {
       const { contractID } = c.req.valid('param')
       const { r, s, sig, hc } = c.req.valid('query')
@@ -1150,10 +1147,18 @@ app.post('/name', async function (c) {
       }
 
       throw new HTTPException(500, { message: 'internal error' })
-    })
+    }
+  )
 
+  const zkppUpdatePasswordBodySchema = z.object({
+    r: z.string().min(1, 'r is required'),
+    s: z.string().min(1, 's is required'),
+    sig: z.string().min(1, 'sig is required'),
+    hc: z.string().min(1, 'hc is required'),
+    Ea: z.string().min(1, 'Ea is required')
+  }).strict()
   app.post('/zkpp/:contractID/updatePasswordHash',
-    zValidator('param', zkppContractParamSchema),
+    zValidator('param', z.object({ contractID: cidSchema }).strict()),
     zValidatorFormOrJson(zkppUpdatePasswordBodySchema),
     async function (c) {
       const { contractID } = c.req.valid('param')
@@ -1172,5 +1177,6 @@ app.post('/name', async function (c) {
       }
 
       throw new HTTPException(500, { message: 'internal error' })
-    })
+    }
+  )
 }
