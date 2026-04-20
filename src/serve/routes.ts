@@ -344,7 +344,7 @@ export function registerRoutes (app: Hono): void {
       'shelter-salt-update-token': z.string().optional(),
       'shelter-salt-registration-token': z.string().optional(),
       'shelter-deletion-token-digest': z.string().optional()
-    }).strict()),
+    })),
     bodyLimit({ maxSize: MEGABYTE }),
     authMiddleware('chel-shelter', 'optional'),
     async function (c) {
@@ -356,6 +356,10 @@ export function registerRoutes (app: Hono): void {
         const payload = await c.req.text()
         if (!payload) throw new HTTPException(400, { message: 'Invalid request payload input' })
         const validatedHeaders = c.req.valid('header')
+        const contentType = c.req.header('content-type')
+        if (contentType && !contentType.toLowerCase().startsWith('application/json')) {
+          throw new HTTPException(415, { message: 'Expected JSON body' })
+        }
         const deserializedHEAD = SPMessage.deserializeHEAD(payload)
         try {
           const parsed = maybeParseCID(deserializedHEAD.head.manifest)

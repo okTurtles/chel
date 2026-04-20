@@ -366,14 +366,14 @@ Deno.test({
         if (res.status !== 400) throw new Error(`Expected 400 but got ${res.status}`)
       })
 
-      await t.step('POST /event with non-JSON payload returns 500', async () => {
+      await t.step('POST /event with non-JSON payload returns 415', async () => {
         const res = await fetch(`${baseURL}/event`, {
           method: 'POST',
           headers: { 'content-type': 'text/plain' },
           body: 'not-json-at-all'
         })
         await res.body?.cancel()
-        if (res.status !== 500) throw new Error(`Expected 500 but got ${res.status}`)
+        if (res.status !== 415) throw new Error(`Expected 415 but got ${res.status}`)
       })
 
       await t.step('POST /file without auth returns 401', async () => {
