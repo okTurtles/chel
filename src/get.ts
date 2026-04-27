@@ -35,8 +35,6 @@ export async function get ({ key, url }: ArgumentsCamelCase<Params>): Promise<vo
       // In this case there is no trailing newline.
       await writeAll(Deno.stdout, data)
     }
-  } catch (error) {
-    exit(error)
   } finally {
     if (dbOpen) {
       await closeDB()

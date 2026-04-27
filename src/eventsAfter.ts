@@ -21,8 +21,6 @@ export async function eventsAfter ({ limit, url, contractID, height }: Arguments
       messages = await getMessagesSince(contractID, height, limit)
     }
     console.log(JSON.stringify(messages, null, 2))
-  } catch (error) {
-    exit(error)
   } finally {
     if (dbOpen) {
       await closeDB()

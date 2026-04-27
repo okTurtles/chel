@@ -3071,7 +3071,7 @@ var wrapTransaction = (fn, db2, { begin, commit, rollback, savepoint, release, r
 import { Buffer as Buffer11 } from "node:buffer";
 import { mkdir as mkdir2 } from "node:fs/promises";
 import { basename as basename22, dirname as dirname22, join as join22, resolve as resolve22 } from "node:path";
-import process13 from "node:process";
+import process12 from "node:process";
 
 // deno:https://jsr.io/@std/path/1.1.1/_common/assert_path.ts
 function assertPath3(path) {
@@ -4098,7 +4098,6 @@ import { existsSync } from "node:fs";
 import { copyFile, mkdir as mkdir3, readFile as readFile3, writeFile as writeFile2 } from "node:fs/promises";
 import { basename as basename42, dirname as dirname42, join as join62 } from "node:path";
 import process4 from "node:process";
-import process12 from "node:process";
 import process10 from "node:process";
 import { createServer as createServerHTTP } from "node:http";
 import { Http2ServerRequest as Http2ServerRequest2, constants as h2constants } from "node:http2";
@@ -69206,8 +69205,6 @@ async function eventsAfter2({ limit, url: url2, contractID, height }) {
       messages = await getMessagesSince(contractID, height, limit);
     }
     console.log(JSON.stringify(messages, null, 2));
-  } catch (error2) {
-    exit(error2);
   } finally {
     if (dbOpen) {
       await closeDB();
@@ -69292,8 +69289,6 @@ async function get({ key, url: url2 }) {
     } else {
       await writeAll(Deno.stdout, data);
     }
-  } catch (error2) {
-    exit(error2);
   } finally {
     if (dbOpen) {
       await closeDB();
@@ -69517,30 +69512,24 @@ async function migrate(args) {
     await initDB({ skipDbPreloading: true });
   } catch (e2) {
     console.error("Error setting up database");
-    exit(e2);
     throw e2;
   }
   let backendTo;
   try {
-    try {
-      let toConfigOpts;
-      if (args.toConfig) {
-        const toConfig = parse8(await readFile2(args.toConfig, { encoding: "utf-8", flag: "r" }));
-        const toBackend = toConfig?.database?.backend;
-        if (toBackend !== to) {
-          console.warn(`--to-config has backend ${toBackend} but --to is ${to}`);
-        }
-        toConfigOpts = toConfig?.database?.backendOptions?.[to] || {};
-      } else {
-        toConfigOpts = import_npm_nconf3.default.get(`database:backendOptions:${to}`) || {};
+    let toConfigOpts;
+    if (args.toConfig) {
+      const toConfig = parse8(await readFile2(args.toConfig, { encoding: "utf-8", flag: "r" }));
+      const toBackend = toConfig?.database?.backend;
+      if (toBackend !== to) {
+        console.warn(`--to-config has backend ${toBackend} but --to is ${to}`);
       }
-      const Ctor = (await globImport_serve_database_ts(`./serve/database-${to}.ts`)).default;
-      backendTo = new Ctor(toConfigOpts);
-      await backendTo.init();
-    } catch (error2) {
-      exit(error2);
-      throw error2;
+      toConfigOpts = toConfig?.database?.backendOptions?.[to] || {};
+    } else {
+      toConfigOpts = import_npm_nconf3.default.get(`database:backendOptions:${to}`) || {};
     }
+    const Ctor = (await globImport_serve_database_ts(`./serve/database-${to}.ts`)).default;
+    backendTo = new Ctor(toConfigOpts);
+    await backendTo.init();
     const numKeys2 = await esm_default("chelonia.db/keyCount");
     let numMigratedKeys = 0;
     let numVisitedKeys = 0;
@@ -69659,58 +69648,54 @@ async function pin(args) {
   const version3 = args["manifest-version"];
   const manifestPath = args.manifest;
   projectRoot = args["dir"] || process4.cwd();
-  try {
-    if (!manifestPath) {
-      await loadCheloniaConfig();
-      return;
-    }
-    console.log(cyan(`\u{1F4CC} Requesting pin to version: ${version3}`));
-    console.log(gray(`Manifest: ${manifestPath}`));
+  if (!manifestPath) {
     await loadCheloniaConfig();
-    const fullManifestPath = join62(projectRoot, manifestPath);
-    if (!existsSync(fullManifestPath)) {
-      exit(`Manifest file not found: ${manifestPath}`);
-    }
-    const { contractName, fullContractName, contractFiles, manifestVersion } = await parseManifest(fullManifestPath);
-    if (!manifestVersion || !VALID_VERSION.test(manifestVersion)) {
-      exit(`Invalid manifest version: ${manifestVersion}`);
-    }
-    console.log(blue(`Contract name: ${fullContractName}`));
-    console.log(blue(`Manifest version: ${manifestVersion}`));
-    if (version3) {
-      if (version3 !== manifestVersion) {
-        console.error(red(`\u274C Version mismatch: CLI version (${version3}) does not match manifest version (${manifestVersion})`));
-        console.error(yellow(`\u{1F4A1} To pin this contract, use: chel pin ${manifestVersion} ${manifestPath}`));
-        exit("Version mismatch between CLI and manifest");
-      }
-      console.log(green(`\u2705 Version validation passed: ${version3}`));
-    }
-    const currentPinnedVersion = cheloniaConfig.contracts[fullContractName]?.version;
-    if (currentPinnedVersion === manifestVersion) {
-      console.log(yellow(`\u2728 Contract ${fullContractName} is already pinned to version ${manifestVersion} - no action needed`));
-      return;
-    }
-    if (currentPinnedVersion) {
-      console.log(cyan(`\u{1F4CC} Updating ${fullContractName} from version ${currentPinnedVersion} to ${manifestVersion}`));
-    } else {
-      console.log(cyan(`\u{1F4CC} Pinning ${fullContractName} to version ${manifestVersion} (first time)`));
-    }
-    const contractVersionDir = join62(projectRoot, "contracts", contractName, manifestVersion);
-    if (existsSync(contractVersionDir)) {
-      if (!args.overwrite) {
-        exit(`Version ${manifestVersion} already exists for contract ${fullContractName}. Use --overwrite to replace it.`);
-      }
-      console.log(yellow(`Version ${manifestVersion} already exists for ${fullContractName} - checking files...`));
-    } else {
-      await createVersionDirectory(contractName, manifestVersion);
-    }
-    await copyContractFiles(contractFiles, manifestPath, contractName, manifestVersion, args);
-    await updateCheloniaConfig(fullContractName, contractName, manifestVersion, manifestPath);
-    console.log(green(`\u2705 Successfully pinned ${fullContractName} to version ${manifestVersion}`));
-    console.log(gray(`Location: contracts/${contractName}/${manifestVersion}/`));
-  } catch (error2) {
-    exit(error2);
+    return;
   }
+  console.log(cyan(`\u{1F4CC} Requesting pin to version: ${version3}`));
+  console.log(gray(`Manifest: ${manifestPath}`));
+  await loadCheloniaConfig();
+  const fullManifestPath = join62(projectRoot, manifestPath);
+  if (!existsSync(fullManifestPath)) {
+    exit(`Manifest file not found: ${manifestPath}`);
+  }
+  const { contractName, fullContractName, contractFiles, manifestVersion } = await parseManifest(fullManifestPath);
+  if (!manifestVersion || !VALID_VERSION.test(manifestVersion)) {
+    exit(`Invalid manifest version: ${manifestVersion}`);
+  }
+  console.log(blue(`Contract name: ${fullContractName}`));
+  console.log(blue(`Manifest version: ${manifestVersion}`));
+  if (version3) {
+    if (version3 !== manifestVersion) {
+      console.error(red(`\u274C Version mismatch: CLI version (${version3}) does not match manifest version (${manifestVersion})`));
+      console.error(yellow(`\u{1F4A1} To pin this contract, use: chel pin ${manifestVersion} ${manifestPath}`));
+      exit("Version mismatch between CLI and manifest");
+    }
+    console.log(green(`\u2705 Version validation passed: ${version3}`));
+  }
+  const currentPinnedVersion = cheloniaConfig.contracts[fullContractName]?.version;
+  if (currentPinnedVersion === manifestVersion) {
+    console.log(yellow(`\u2728 Contract ${fullContractName} is already pinned to version ${manifestVersion} - no action needed`));
+    return;
+  }
+  if (currentPinnedVersion) {
+    console.log(cyan(`\u{1F4CC} Updating ${fullContractName} from version ${currentPinnedVersion} to ${manifestVersion}`));
+  } else {
+    console.log(cyan(`\u{1F4CC} Pinning ${fullContractName} to version ${manifestVersion} (first time)`));
+  }
+  const contractVersionDir = join62(projectRoot, "contracts", contractName, manifestVersion);
+  if (existsSync(contractVersionDir)) {
+    if (!args.overwrite) {
+      exit(`Version ${manifestVersion} already exists for contract ${fullContractName}. Use --overwrite to replace it.`);
+    }
+    console.log(yellow(`Version ${manifestVersion} already exists for ${fullContractName} - checking files...`));
+  } else {
+    await createVersionDirectory(contractName, manifestVersion);
+  }
+  await copyContractFiles(contractFiles, manifestPath, contractName, manifestVersion, args);
+  await updateCheloniaConfig(fullContractName, contractName, manifestVersion, manifestPath);
+  console.log(green(`\u2705 Successfully pinned ${fullContractName} to version ${manifestVersion}`));
+  console.log(gray(`Location: contracts/${contractName}/${manifestVersion}/`));
 }
 async function parseManifest(manifestPath) {
   const manifestContent = await readFile3(manifestPath, "utf8");
@@ -76105,7 +76090,7 @@ async function serve(args) {
     }
   } catch (error2) {
     console.error(red("\u274C Failed to start server:"), error2);
-    process12.exit(1);
+    throw error2;
   } finally {
     await closeDB();
   }
@@ -80394,7 +80379,7 @@ var parseArgs = () => {
   const commandModules = Object.values(commands_exports).map(
     (c) => handlerWrapper(c)
   );
-  const yargsInstance = yargs_default(hideBin(process13.argv)).version("3.2.1").strict().command(commandModules).demandCommand().help();
+  const yargsInstance = yargs_default(hideBin(process12.argv)).version("3.2.1").strict().command(commandModules).demandCommand().help();
   return yargsInstance;
 };
 var parseArgs_default = parseArgs;
@@ -80435,7 +80420,11 @@ var parseConfig = () => {
 };
 var parseConfig_default = parseConfig;
 parseConfig_default();
-await handlerState.postHandler();
+try {
+  await handlerState.postHandler();
+} catch (e2) {
+  exit(e2);
+}
 /*! Bundled license information:
 
 scrypt-async/scrypt-async.js:

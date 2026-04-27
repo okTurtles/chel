@@ -33,32 +33,26 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
     await initDB({ skipDbPreloading: true })
   } catch (e) {
     console.error('Error setting up database')
-    exit(e)
     throw e
   }
 
   let backendTo: DatabaseBackend | undefined
   try {
-    try {
-      let toConfigOpts: unknown
-      if (args.toConfig) {
-        const toConfig = parse(await readFile(args.toConfig, { encoding: 'utf-8', flag: 'r' }))
-        const toBackend = (toConfig?.database as TomlTable)?.backend as string
-        if (toBackend !== to) {
-          console.warn(`--to-config has backend ${toBackend} but --to is ${to}`)
-        }
-        toConfigOpts = ((toConfig?.database as TomlTable)?.backendOptions as TomlTable)?.[to] || {}
-      } else {
-        toConfigOpts = nconf.get(`database:backendOptions:${to}`) || {}
+    let toConfigOpts: unknown
+    if (args.toConfig) {
+      const toConfig = parse(await readFile(args.toConfig, { encoding: 'utf-8', flag: 'r' }))
+      const toBackend = (toConfig?.database as TomlTable)?.backend as string
+      if (toBackend !== to) {
+        console.warn(`--to-config has backend ${toBackend} but --to is ${to}`)
       }
-
-      const Ctor = (await import(`./serve/database-${to}.ts`)).default
-      backendTo = new Ctor(toConfigOpts)
-      await backendTo!.init()
-    } catch (error) {
-      exit(error)
-      throw error
+      toConfigOpts = ((toConfig?.database as TomlTable)?.backendOptions as TomlTable)?.[to] || {}
+    } else {
+      toConfigOpts = nconf.get(`database:backendOptions:${to}`) || {}
     }
+
+    const Ctor = (await import(`./serve/database-${to}.ts`)).default
+    backendTo = new Ctor(toConfigOpts)
+    await backendTo!.init()
 
     const numKeys = await sbp('chelonia.db/keyCount')
     let numMigratedKeys = 0

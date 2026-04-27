@@ -124,7 +124,7 @@ export async function serve (args: ArgumentsCamelCase<Params>) {
     }
   } catch (error) {
     console.error(colors.red('❌ Failed to start server:'), error)
-    process.exit(1)
+    throw error
   } finally {
     // Safe to close because the server has opened the DB, increasing the
     // reference count.
