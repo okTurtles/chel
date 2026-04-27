@@ -68881,9 +68881,6 @@ var getCurrentClosePromise = () => closePromise ?? Promise.resolve();
 var initDB = async ({ skipDbPreloading } = {}) => {
   await getCurrentClosePromise();
   const thisInitPromise = initPromise ?? (async () => {
-    if (isClosing) {
-      throw new Error("Cannot init DB while closing is in progress");
-    }
     installBaseSelectorsOnce();
     if (!dbRefs) {
       const backend = import_npm_nconf2.default.get("database:backend");
@@ -68951,7 +68948,9 @@ var initDB = async ({ skipDbPreloading } = {}) => {
               return currentBackend.keyCount();
             }
           });
-          esm_default("sbp/selectors/lock", ["chelonia.db/get", "chelonia.db/set", "chelonia.db/delete", "chelonia.db/iterKeys"]);
+          if (true) {
+            esm_default("sbp/selectors/lock", ["chelonia.db/get", "chelonia.db/set", "chelonia.db/delete", "chelonia.db/iterKeys"]);
+          }
           setSelectors = true;
         }
       }
@@ -69593,7 +69592,6 @@ async function migrate(args) {
       } catch (e2) {
         reportStatus();
         console.error(`Error reading from source database key '${key}'`, e2);
-        exit(1);
         throw e2;
       }
       await checkAndExit();
@@ -69606,7 +69604,6 @@ async function migrate(args) {
       } catch (e2) {
         reportStatus();
         console.error(`Error writing to target database key '${key}'`, e2);
-        exit(1);
         throw e2;
       }
       await checkAndExit();
@@ -73770,6 +73767,8 @@ var errorMapper = (e2) => {
       return new HTTPException(410);
     case "BackendErrorBadData":
       return new HTTPException(422, { message: e2.message });
+    case "BackendErrorConflict":
+      return new HTTPException(409);
     default:
       console.error(e2, "Unexpected backend error");
       return new HTTPException(500, { message: e2.message ?? "internal error" });
@@ -73789,8 +73788,9 @@ function notFoundNoCache(c) {
   return c.body(null, 404, { "Cache-Control": "no-store" });
 }
 function safePathWithin(base2, subpath) {
-  const resolved = path5.resolve(base2, subpath);
-  if (!resolved.startsWith(base2 + path5.sep) && resolved !== base2) return null;
+  const normalizedBase = path5.resolve(base2);
+  const resolved = path5.resolve(normalizedBase, subpath);
+  if (!resolved.startsWith(base2 + path5.sep) && resolved !== normalizedBase) return null;
   return resolved;
 }
 function serveAsset(c, subpath, assetsDir) {
@@ -75689,8 +75689,8 @@ function installSignalHandlers() {
 }
 var exit2 = (code2) => {
   esm_default("okTurtles.events/once", SERVER_EXITING, () => {
-    esm_default("okTurtles.eventQueue/queueEvent", SERVER_EXITING, () => {
-      process10.send?.({});
+    esm_default("okTurtles.eventQueue/queueEvent", SERVER_EXITING, async () => {
+      await stopServer();
       process10.nextTick(() => process10.exit(code2));
     });
   });
@@ -76016,6 +76016,7 @@ async function startDashboard() {
       resolve82(uri);
     }).once("error", reject);
   });
+  return server;
 }
 async function deployManifests(args) {
   const dir = args["manifests-dir"];
@@ -76077,17 +76078,11 @@ async function watch(args) {
     }
   })();
 }
-async function startDashboardServer() {
-  await startDashboard();
-}
-async function startApplicationServer() {
-  await startServer2();
-}
 async function serve(args) {
   await initDB();
   try {
     try {
-      await startDashboardServer();
+      await startDashboard();
     } catch (error2) {
       console.error(red("\u274C Failed to start dashboard server:"), error2);
       throw error2;
@@ -76103,7 +76098,7 @@ async function serve(args) {
       throw error2;
     }
     try {
-      await startApplicationServer();
+      await startServer2();
     } catch (error2) {
       console.error(red("\u274C Failed to start application server:"), error2);
       throw error2;

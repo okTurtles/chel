@@ -124,7 +124,6 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
       } catch (e) {
         reportStatus()
         console.error(`Error reading from source database key '${key}'`, e)
-        exit(1)
         throw e
       }
       await checkAndExit()
@@ -138,7 +137,6 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
       } catch (e) {
         reportStatus()
         console.error(`Error writing to target database key '${key}'`, e)
-        exit(1)
         throw e
       }
       await checkAndExit()

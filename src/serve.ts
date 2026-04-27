@@ -84,22 +84,14 @@ async function watch (args: ArgumentsCamelCase<Params>): Promise<void> {
   })()
 }
 
-// Dashboard server function
-async function startDashboardServer (): Promise<void> {
-  await startDashboard()
-}
-
-// Application server function
-async function startApplicationServer (): Promise<void> {
-  await startServer()
-}
-
 export async function serve (args: ArgumentsCamelCase<Params>) {
+  // `deployManifests` / `watch` will open the database and then close it.
+  // By callig `initDB` here, we ensure that the DB isn't closed.
   await initDB()
   try {
     // Start dashboard server on port 7000 first
     try {
-      await startDashboardServer()
+      await startDashboard()
     } catch (error) {
       console.error(colors.red('❌ Failed to start dashboard server:'), error)
       throw error
@@ -125,7 +117,7 @@ export async function serve (args: ArgumentsCamelCase<Params>) {
 
     // Start application server on port 8000 second
     try {
-      await startApplicationServer()
+      await startServer()
     } catch (error) {
       console.error(colors.red('❌ Failed to start application server:'), error)
       throw error
@@ -134,6 +126,8 @@ export async function serve (args: ArgumentsCamelCase<Params>) {
     console.error(colors.red('❌ Failed to start server:'), error)
     process.exit(1)
   } finally {
+    // Safe to close because the server has opened the DB, increasing the
+    // reference count.
     await closeDB()
   }
 }

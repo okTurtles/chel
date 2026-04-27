@@ -205,10 +205,6 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
 
   // Queue this init operation
   const thisInitPromise = initPromise ?? (async () => {
-    if (isClosing) {
-      throw new Error('Cannot init DB while closing is in progress')
-    }
-
     installBaseSelectorsOnce()
 
     if (!dbRefs) {
@@ -281,7 +277,9 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
               return currentBackend!.keyCount()
             }
           })
-          sbp('sbp/selectors/lock', ['chelonia.db/get', 'chelonia.db/set', 'chelonia.db/delete', 'chelonia.db/iterKeys'])
+          if ((import.meta as ImportMeta).lockDbSelectors) {
+            sbp('sbp/selectors/lock', ['chelonia.db/get', 'chelonia.db/set', 'chelonia.db/delete', 'chelonia.db/iterKeys'])
+          }
           setSelectors = true
         }
       }

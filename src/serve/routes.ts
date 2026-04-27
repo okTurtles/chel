@@ -225,6 +225,8 @@ const errorMapper = (e: Error): HTTPException => {
       return new HTTPException(410)
     case 'BackendErrorBadData':
       return new HTTPException(422, { message: e.message })
+    case 'BackendErrorConflict':
+      return new HTTPException(409)
     default:
       console.error(e, 'Unexpected backend error')
       return new HTTPException(500, { message: e.message ?? 'internal error' })
@@ -249,8 +251,9 @@ function notFoundNoCache (c: Context): Response {
 }
 
 function safePathWithin (base: string, subpath: string): string | null {
-  const resolved = path.resolve(base, subpath)
-  if (!resolved.startsWith(base + path.sep) && resolved !== base) return null
+  const normalizedBase = path.resolve(base)
+  const resolved = path.resolve(normalizedBase, subpath)
+  if (!resolved.startsWith(base + path.sep) && resolved !== normalizedBase) return null
   return resolved
 }
 

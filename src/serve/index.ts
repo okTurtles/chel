@@ -5,7 +5,7 @@ import 'npm:@sbp/okturtles.events'
 import sbp from 'npm:@sbp/sbp'
 import chalk from 'npm:chalk'
 import { SERVER_EXITING, SERVER_RUNNING } from './events.ts'
-import { startServer as startServerImpl, stopServer as stopServerImpl } from './server.ts'
+import { startServer as startServerImpl, stopServer } from './server.ts'
 import { initializeLogger } from './logger.ts'
 
 console.info('NODE_ENV =', process.env.NODE_ENV)
@@ -94,8 +94,8 @@ const exit = (code: number) => {
   // must be synchronous.
   sbp('okTurtles.events/once', SERVER_EXITING, () => {
     // In case there are asynchronous events, wait for them to finish
-    sbp('okTurtles.eventQueue/queueEvent', SERVER_EXITING, () => {
-      process.send?.({}) // tell grunt we've successfully shutdown the server
+    sbp('okTurtles.eventQueue/queueEvent', SERVER_EXITING, async () => {
+      await stopServer()
       process.nextTick(() => process.exit(code)) // triple-check we quit :P
     })
   })
@@ -127,10 +127,6 @@ export async function startServer (options: StartServerOptions = {}): Promise<{ 
     })
     startServerImpl().catch(reject)
   })
-}
-
-export async function stopServer (): Promise<void> {
-  await stopServerImpl()
 }
 
 // Backwards compatibility: default export is startServer

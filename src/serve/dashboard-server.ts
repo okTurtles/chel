@@ -2,7 +2,7 @@ import path from 'node:path'
 import process from 'node:process'
 import { Hono } from 'npm:hono'
 import { serveStatic } from 'npm:hono/deno'
-import { createAdaptorServer } from 'npm:@hono/node-server'
+import { createAdaptorServer, type ServerType } from 'npm:@hono/node-server'
 import { etag } from 'npm:hono/etag'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
@@ -15,7 +15,7 @@ const getDashboardPath = () => {
   return dashboardPath
 }
 
-export async function startDashboard (): Promise<void> {
+export async function startDashboard (): Promise<ServerType> {
   const port = nconf.get('server:dashboardPort')
   const host = nconf.get('server:host') || '0.0.0.0'
   const dashboardRoot = getDashboardPath()
@@ -53,6 +53,8 @@ export async function startDashboard (): Promise<void> {
       resolve(uri)
     }).once('error', reject)
   })
+
+  return server
 }
 
 export default startDashboard

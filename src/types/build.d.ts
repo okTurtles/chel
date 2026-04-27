@@ -1,7 +1,8 @@
 interface ImportMeta {
   VERSION: string,
   ownerSizeTotalWorker?: string,
-  creditsWorker?: string
+  creditsWorker?: string,
+  lockDbSelectors?: boolean
 }
 
 declare const logger: {
