@@ -76127,8 +76127,6 @@ async function serve(args) {
       console.error(red("\u274C Failed to start application server:"), error2);
       throw error2;
     }
-    await new Promise(() => {
-    });
   } catch (error2) {
     console.error(red("\u274C Failed to start server:"), error2);
     process12.exit(1);

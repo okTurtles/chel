@@ -130,8 +130,6 @@ export async function serve (args: ArgumentsCamelCase<Params>) {
       console.error(colors.red('❌ Failed to start application server:'), error)
       throw error
     }
-
-    await new Promise(() => {})
   } catch (error) {
     console.error(colors.red('❌ Failed to start server:'), error)
     process.exit(1)

@@ -264,7 +264,7 @@ Build process injects:
 - `import.meta.VERSION` - Package version from package.json
 - `import.meta.ownerSizeTotalWorker` - 'Owner size total' worker path
 - `import.meta.creditsWorker` - 'Credits' worker path
-- `import.meta.initDbOnce` - Allow the DB to only be set up once
+- `import.meta.lockDbSelectors` - Lock DB selectors upon init
 
 ### 6. No Network After Key Loading
 
