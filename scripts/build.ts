@@ -20,7 +20,7 @@ const options: esbuild.BuildOptions = {
     'import.meta.ownerSizeTotalWorker': '"./serve/ownerSizeTotalWorker.js"',
     'import.meta.creditsWorker': '"./serve/creditsWorker.js"',
     // Lock DB after init, preventing overwriting
-    'import.meta.initDbOnce': 'true'
+    'import.meta.lockDbSelectors': 'true'
   },
   format: 'esm',
   platform: 'node',

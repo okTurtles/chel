@@ -187,10 +187,15 @@ function installBaseSelectorsOnce () {
 
 export default installBaseSelectorsOnce
 
-let initedDB: false | true | 'preloaded' = false
+let dbRefs: number = 0
+let setSelectors = false
+let preloaded = false
 export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean } = {}) => {
+  if (isClosing) {
+    throw new Error('Cannot init DB while closing is in progress')
+  }
   installBaseSelectorsOnce()
-  if (!initedDB) {
+  if (!dbRefs) {
     // If persistence must be enabled:
     // - load and initialize the selected storage backend
     // - then overwrite 'chelonia.db/get' and '-set' to use it with an LRU cache
@@ -207,82 +212,84 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
       currentBackend = instance
 
       // https://github.com/isaacs/node-lru-cache#usage
-      currentCache = new LRU<string, Buffer | string>({
+      const cache = new LRU<string, Buffer | string>({
         max: nconf.get('database:lruNumItems') ?? 10000
       })
+      currentCache = cache
 
       const prefixes = Object.keys(prefixHandlers)
-      sbp('sbp/selectors/overwrite', {
-        'chelonia.db/get': async function (prefixableKey: string, { bypassCache }: { bypassCache?: boolean } = {}): Promise<Buffer | string | void> {
-          const cache = currentCache!
-          if (!bypassCache) {
-            const lookupValue = cache.get(prefixableKey)
-            if (lookupValue !== undefined) {
-              return lookupValue
+      if (!setSelectors && (import.meta as ImportMeta).lockDbSelectors) {
+        sbp('sbp/selectors/overwrite', {
+          'chelonia.db/get': async function (prefixableKey: string, { bypassCache }: { bypassCache?: boolean } = {}): Promise<Buffer | string | void> {
+            if (!bypassCache) {
+              const lookupValue = cache.get(prefixableKey)
+              if (lookupValue !== undefined) {
+                return lookupValue
+              }
             }
-          }
-          const [prefix, key] = parsePrefixableKey(prefixableKey)
-          let value = await currentBackend!.readData(key)
-          if (value === undefined) {
-            return
-          }
-          value = prefixHandlers[prefix](value) as string | Buffer
-          cache.set(prefixableKey, value)
-          return value
-        },
-        'chelonia.db/set': async function (key: string, value: Buffer | string): Promise<void> {
-          if (ARCHIVE_MODE) throw new Error('Unable to write in archive mode')
-          checkKey(key)
-          if (key.startsWith('_private_immutable')) {
-            const existingValue = await currentBackend!.readData(key)
-            if (existingValue !== undefined) {
-              throw new Error('Cannot set already set immutable key')
+            const [prefix, key] = parsePrefixableKey(prefixableKey)
+            let value = await currentBackend!.readData(key)
+            if (value === undefined) {
+              return
             }
+            value = prefixHandlers[prefix](value) as string | Buffer
+            cache.set(prefixableKey, value)
+            return value
+          },
+          'chelonia.db/set': async function (key: string, value: Buffer | string): Promise<void> {
+            if (ARCHIVE_MODE) throw new Error('Unable to write in archive mode')
+            checkKey(key)
+            if (key.startsWith('_private_immutable')) {
+              const existingValue = await currentBackend!.readData(key)
+              if (existingValue !== undefined) {
+                throw new Error('Cannot set already set immutable key')
+              }
+            }
+            await currentBackend!.writeData(key, value)
+            // `get` uses `prefixableKey` as key, which now that the value is updated
+            // is stale. We delete all prefixed key variants from the cache to
+            // avoid serving stale data. Note that because of prefixes, `cache.set`
+            // can't be (easily) used to set the key, as transformations could happen
+            // on the unprefixed version.
+            // Note: 2025-03-24: We benchmarked `.forEach`, `for of` and `for`.
+            // Which one was faster depended on the browser, with no clear overall
+            // winner, but `.forEach` was faster on Chrome, which uses the same
+            // engine as Node.JS (V8).
+            prefixes.forEach(prefix => {
+              cache.delete(prefix + key)
+            })
+          },
+          'chelonia.db/delete': async function (key: string): Promise<void> {
+            if (ARCHIVE_MODE) throw new Error('Unable to write in archive mode')
+            checkKey(key)
+            if (key.startsWith('_private_immutable')) {
+              throw new Error('Cannot delete immutable key')
+            }
+            await currentBackend!.deleteData(key)
+            // `get` uses `prefixableKey` as key, which now that the value is updated
+            // is stale. We delete all prefixed key variants from the cache to
+            // avoid serving stale data.
+            prefixes.forEach(prefix => {
+              cache.delete(prefix + key)
+            })
+          },
+          'chelonia.db/iterKeys': () => {
+            return currentBackend!.iterKeys()
+          },
+          'chelonia.db/keyCount': () => {
+            return currentBackend!.keyCount()
           }
-          await currentBackend!.writeData(key, value)
-          // `get` uses `prefixableKey` as key, which now that the value is updated
-          // is stale. We delete all prefixed key variants from the cache to
-          // avoid serving stale data. Note that because of prefixes, `cache.set`
-          // can't be (easily) used to set the key, as transformations could happen
-          // on the unprefixed version.
-          // Note: 2025-03-24: We benchmarked `.forEach`, `for of` and `for`.
-          // Which one was faster depended on the browser, with no clear overall
-          // winner, but `.forEach` was faster on Chrome, which uses the same
-          // engine as Node.JS (V8).
-          const cache = currentCache!
-          prefixes.forEach(prefix => {
-            cache.delete(prefix + key)
-          })
-        },
-        'chelonia.db/delete': async function (key: string): Promise<void> {
-          if (ARCHIVE_MODE) throw new Error('Unable to write in archive mode')
-          checkKey(key)
-          if (key.startsWith('_private_immutable')) {
-            throw new Error('Cannot delete immutable key')
-          }
-          await currentBackend!.deleteData(key)
-          // `get` uses `prefixableKey` as key, which now that the value is updated
-          // is stale. We delete all prefixed key variants from the cache to
-          // avoid serving stale data.
-          const cache = currentCache!
-          prefixes.forEach(prefix => {
-            cache.delete(prefix + key)
-          })
-        },
-        'chelonia.db/iterKeys': () => {
-          return currentBackend!.iterKeys()
-        },
-        'chelonia.db/keyCount': () => {
-          return currentBackend!.keyCount()
-        }
-      })
+        })
+        sbp('sbp/selectors/lock', ['chelonia.db/get', 'chelonia.db/set', 'chelonia.db/delete', 'chelonia.db/iterKeys'])
+        setSelectors = true
+      }
     }
-    initedDB = true
-    if ((import.meta as ImportMeta).initDbOnce) {
-      sbp('sbp/selectors/lock', ['chelonia.db/get', 'chelonia.db/set', 'chelonia.db/delete', 'chelonia.db/iterKeys'])
-    }
+  } else if ((import.meta as ImportMeta).lockDbSelectors && setSelectors && currentBackend) {
+    // Re-open DB
+    currentBackend!.init()
   }
-  if (skipDbPreloading || initedDB === 'preloaded') return
+  dbRefs++
+  if (skipDbPreloading || preloaded) return
   /*
   // Preloading logic preserved for historical reasons. Preloading should no
   // longer be necessary, since `chel deploy` can be used for accomplishing
@@ -336,10 +343,14 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
   }
   */
   await Promise.all([initVapid(), initZkpp()])
-  initedDB = 'preloaded'
+  preloaded = true
 }
 
 export async function closeDB (): Promise<void> {
+  if (dbRefs > 1) {
+    dbRefs--
+    return
+  }
   if (isClosing) return
   isClosing = true
   try {
@@ -349,12 +360,13 @@ export async function closeDB (): Promise<void> {
       } catch (e) {
         console.error(e, 'Error closing DB')
       }
-      currentBackend = null
     }
     currentCache?.clear()
-    currentCache = null
-    if (!(import.meta as ImportMeta).initDbOnce) {
-      initedDB = false
+    dbRefs = 0
+    if (!(import.meta as ImportMeta).lockDbSelectors) {
+      preloaded = false
+      currentCache = null
+      currentBackend = null
     }
   } finally {
     isClosing = false

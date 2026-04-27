@@ -531,23 +531,23 @@ export function registerRoutes (app: Hono): void {
     })
   }
 
-/*
-// The following endpoint is disabled because name registrations are handled
-// through the `shelter-namespace-registration` header when registering a
-// new contract
-app.post('/name', async function (c) {
-  try {
-    const { name, value } = await c.req.json()
-    if (!name || !value) throw new HTTPException(400)
-    if (value.startsWith('_private')) throw new HTTPException(422)
-    return c.json(await sbp('backend/db/registerName', name, value))
-  } catch (err) {
-    if (err instanceof HTTPException) throw err
-    logger.error(err, 'POST /name', (err as Error).message)
-    throw err
-  }
-})
-*/
+  /*
+  // The following endpoint is disabled because name registrations are handled
+  // through the `shelter-namespace-registration` header when registering a
+  // new contract
+  app.post('/name', async function (c) {
+    try {
+      const { name, value } = await c.req.json()
+      if (!name || !value) throw new HTTPException(400)
+      if (value.startsWith('_private')) throw new HTTPException(422)
+      return c.json(await sbp('backend/db/registerName', name, value))
+    } catch (err) {
+      if (err instanceof HTTPException) throw err
+      logger.error(err, 'POST /name', (err as Error).message)
+      throw err
+    }
+  })
+  */
 
   app.get('/name/:name',
     zValidator('param', z.object({ name: nameSchema }).strict()),

@@ -25,6 +25,7 @@
     "npm:@apeleghq/rfc8188@*": "1.0.8",
     "npm:@apeleghq/rfc8188@1.0.7": "1.0.7",
     "npm:@chelonia/crypto@*": "1.0.1",
+    "npm:@chelonia/lib@*": "1.4.3_@sbp+sbp@2.4.1",
     "npm:@chelonia/lib@1.2.7": "1.2.7_@sbp+sbp@2.4.1",
     "npm:@chelonia/lib@1.4.3": "1.4.3_@sbp+sbp@2.4.1",
     "npm:@chelonia/serdes@1.0.0": "1.0.0",

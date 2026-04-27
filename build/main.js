@@ -68871,10 +68871,16 @@ function installBaseSelectorsOnce() {
     }
   });
 }
-var initedDB = false;
+var dbRefs = 0;
+var setSelectors = false;
+var preloaded = false;
 var initDB = async ({ skipDbPreloading } = {}) => {
+  console.error("@@@@initDB", dbRefs);
+  if (isClosing) {
+    throw new Error("Cannot init DB while closing is in progress");
+  }
   installBaseSelectorsOnce();
-  if (!initedDB) {
+  if (!dbRefs) {
     const backend = import_npm_nconf2.default.get("database:backend");
     const persistence = backend || (production ? "fs" : void 0);
     const options2 = import_npm_nconf2.default.get("database:backendOptions");
@@ -68884,73 +68890,79 @@ var initDB = async ({ skipDbPreloading } = {}) => {
       const instance = new Ctor(options2[persistence]);
       await instance.init();
       currentBackend = instance;
-      currentCache = new import_npm_lru_cache.default({
+      const cache2 = new import_npm_lru_cache.default({
         max: import_npm_nconf2.default.get("database:lruNumItems") ?? 1e4
       });
+      currentCache = cache2;
       const prefixes = Object.keys(prefixHandlers);
-      esm_default("sbp/selectors/overwrite", {
-        "chelonia.db/get": async function(prefixableKey, { bypassCache } = {}) {
-          const cache2 = currentCache;
-          if (!bypassCache) {
-            const lookupValue = cache2.get(prefixableKey);
-            if (lookupValue !== void 0) {
-              return lookupValue;
+      if (!setSelectors && true) {
+        esm_default("sbp/selectors/overwrite", {
+          "chelonia.db/get": async function(prefixableKey, { bypassCache } = {}) {
+            if (!bypassCache) {
+              const lookupValue = cache2.get(prefixableKey);
+              if (lookupValue !== void 0) {
+                return lookupValue;
+              }
             }
-          }
-          const [prefix, key] = parsePrefixableKey(prefixableKey);
-          let value = await currentBackend.readData(key);
-          if (value === void 0) {
-            return;
-          }
-          value = prefixHandlers[prefix](value);
-          cache2.set(prefixableKey, value);
-          return value;
-        },
-        "chelonia.db/set": async function(key, value) {
-          if (ARCHIVE_MODE) throw new Error("Unable to write in archive mode");
-          checkKey(key);
-          if (key.startsWith("_private_immutable")) {
-            const existingValue = await currentBackend.readData(key);
-            if (existingValue !== void 0) {
-              throw new Error("Cannot set already set immutable key");
+            const [prefix, key] = parsePrefixableKey(prefixableKey);
+            let value = await currentBackend.readData(key);
+            if (value === void 0) {
+              return;
             }
+            value = prefixHandlers[prefix](value);
+            cache2.set(prefixableKey, value);
+            return value;
+          },
+          "chelonia.db/set": async function(key, value) {
+            if (ARCHIVE_MODE) throw new Error("Unable to write in archive mode");
+            checkKey(key);
+            if (key.startsWith("_private_immutable")) {
+              const existingValue = await currentBackend.readData(key);
+              if (existingValue !== void 0) {
+                throw new Error("Cannot set already set immutable key");
+              }
+            }
+            await currentBackend.writeData(key, value);
+            prefixes.forEach((prefix) => {
+              cache2.delete(prefix + key);
+            });
+          },
+          "chelonia.db/delete": async function(key) {
+            if (ARCHIVE_MODE) throw new Error("Unable to write in archive mode");
+            checkKey(key);
+            if (key.startsWith("_private_immutable")) {
+              throw new Error("Cannot delete immutable key");
+            }
+            await currentBackend.deleteData(key);
+            prefixes.forEach((prefix) => {
+              cache2.delete(prefix + key);
+            });
+          },
+          "chelonia.db/iterKeys": () => {
+            return currentBackend.iterKeys();
+          },
+          "chelonia.db/keyCount": () => {
+            return currentBackend.keyCount();
           }
-          await currentBackend.writeData(key, value);
-          const cache2 = currentCache;
-          prefixes.forEach((prefix) => {
-            cache2.delete(prefix + key);
-          });
-        },
-        "chelonia.db/delete": async function(key) {
-          if (ARCHIVE_MODE) throw new Error("Unable to write in archive mode");
-          checkKey(key);
-          if (key.startsWith("_private_immutable")) {
-            throw new Error("Cannot delete immutable key");
-          }
-          await currentBackend.deleteData(key);
-          const cache2 = currentCache;
-          prefixes.forEach((prefix) => {
-            cache2.delete(prefix + key);
-          });
-        },
-        "chelonia.db/iterKeys": () => {
-          return currentBackend.iterKeys();
-        },
-        "chelonia.db/keyCount": () => {
-          return currentBackend.keyCount();
-        }
-      });
+        });
+        esm_default("sbp/selectors/lock", ["chelonia.db/get", "chelonia.db/set", "chelonia.db/delete", "chelonia.db/iterKeys"]);
+        setSelectors = true;
+      }
     }
-    initedDB = true;
-    if (true) {
-      esm_default("sbp/selectors/lock", ["chelonia.db/get", "chelonia.db/set", "chelonia.db/delete", "chelonia.db/iterKeys"]);
-    }
+  } else if (setSelectors && currentBackend) {
+    currentBackend.init();
   }
-  if (skipDbPreloading || initedDB === "preloaded") return;
+  dbRefs++;
+  if (skipDbPreloading || preloaded) return;
   await Promise.all([initVapid(), initZkpp()]);
-  initedDB = "preloaded";
+  preloaded = true;
 };
 async function closeDB() {
+  console.error("@@@@closeDB", dbRefs);
+  if (dbRefs > 1) {
+    dbRefs--;
+    return;
+  }
   if (isClosing) return;
   isClosing = true;
   try {
@@ -68960,12 +68972,13 @@ async function closeDB() {
       } catch (e2) {
         console.error(e2, "Error closing DB");
       }
-      currentBackend = null;
     }
     currentCache?.clear();
-    currentCache = null;
+    dbRefs = 0;
     if (false) {
-      initedDB = false;
+      preloaded = false;
+      currentCache = null;
+      currentBackend = null;
     }
   } finally {
     isClosing = false;
@@ -75982,6 +75995,9 @@ async function serve(args) {
     try {
       await startApplicationServer();
     } catch (error2) {
+      if (error2 instanceof Error) {
+        console.error("@@@@@", error2.name, error2.message, error2.stack);
+      }
       console.error(red("\u274C Failed to start application server:"), error2);
       throw error2;
     }

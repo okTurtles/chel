@@ -100,6 +100,9 @@ export async function serve (args: ArgumentsCamelCase<Params>) {
     try {
       await startApplicationServer()
     } catch (error) {
+      if (error instanceof Error) {
+        console.error('@@@@@', error.name, error.message, error.stack)
+      }
       console.error(colors.red('❌ Failed to start application server:'), error)
       throw error
     }
