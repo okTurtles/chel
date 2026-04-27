@@ -1,5 +1,4 @@
 import * as colors from 'jsr:@std/fmt/colors'
-import process from 'node:process'
 import sbp from 'npm:@sbp/sbp'
 import { debounce } from 'npm:turtledash'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'

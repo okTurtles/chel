@@ -4,7 +4,6 @@ import * as base64 from 'jsr:@std/encoding/base64'
 import sbp from 'npm:@sbp/sbp'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { closeDB, initDB } from './serve/database.ts'
-import { exit } from './utils.ts'
 
 type Params = { limit: number, url: string | undefined, contractID: string, height: number }
 
