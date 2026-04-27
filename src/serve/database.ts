@@ -190,187 +190,155 @@ export default installBaseSelectorsOnce
 let dbRefs: number = 0
 let setSelectors = false
 let preloaded = false
+
+// Operation queues to serialize access
+let initPromise: Promise<void> | null = null
+let closePromise: Promise<void> | null = null
+
+// Helper to get current operation promise
+const getCurrentInitPromise = (): Promise<void> => initPromise ?? Promise.resolve()
+const getCurrentClosePromise = (): Promise<void> => closePromise ?? Promise.resolve()
+
 export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean } = {}) => {
-  if (isClosing) {
-    throw new Error('Cannot init DB while closing is in progress')
-  }
-  installBaseSelectorsOnce()
-  if (!dbRefs) {
-    // If persistence must be enabled:
-    // - load and initialize the selected storage backend
-    // - then overwrite 'chelonia.db/get' and '-set' to use it with an LRU cache
-    const backend = nconf.get('database:backend')
-    // Defaults to `fs` in production.
-    const persistence = backend || (production ? 'fs' : undefined)
-    const options = nconf.get('database:backendOptions')
-    const ARCHIVE_MODE = nconf.get('server:archiveMode')
+  // Await any ongoing close operation first
+  await getCurrentClosePromise()
 
-    if (persistence && persistence !== 'mem') {
-      const Ctor = (await import(`./database-${persistence}.ts`)).default
-      const instance = new Ctor(options[persistence]) as DatabaseBackend
-      await instance.init()
-      currentBackend = instance
+  // Queue this init operation
+  const thisInitPromise = initPromise ?? (async () => {
+    if (isClosing) {
+      throw new Error('Cannot init DB while closing is in progress')
+    }
 
-      // https://github.com/isaacs/node-lru-cache#usage
-      const cache = new LRU<string, Buffer | string>({
-        max: nconf.get('database:lruNumItems') ?? 10000
-      })
-      currentCache = cache
+    installBaseSelectorsOnce()
 
-      const prefixes = Object.keys(prefixHandlers)
-      if (!setSelectors && (import.meta as ImportMeta).lockDbSelectors) {
-        sbp('sbp/selectors/overwrite', {
-          'chelonia.db/get': async function (prefixableKey: string, { bypassCache }: { bypassCache?: boolean } = {}): Promise<Buffer | string | void> {
-            if (!bypassCache) {
-              const lookupValue = cache.get(prefixableKey)
-              if (lookupValue !== undefined) {
-                return lookupValue
-              }
-            }
-            const [prefix, key] = parsePrefixableKey(prefixableKey)
-            let value = await currentBackend!.readData(key)
-            if (value === undefined) {
-              return
-            }
-            value = prefixHandlers[prefix](value) as string | Buffer
-            cache.set(prefixableKey, value)
-            return value
-          },
-          'chelonia.db/set': async function (key: string, value: Buffer | string): Promise<void> {
-            if (ARCHIVE_MODE) throw new Error('Unable to write in archive mode')
-            checkKey(key)
-            if (key.startsWith('_private_immutable')) {
-              const existingValue = await currentBackend!.readData(key)
-              if (existingValue !== undefined) {
-                throw new Error('Cannot set already set immutable key')
-              }
-            }
-            await currentBackend!.writeData(key, value)
-            // `get` uses `prefixableKey` as key, which now that the value is updated
-            // is stale. We delete all prefixed key variants from the cache to
-            // avoid serving stale data. Note that because of prefixes, `cache.set`
-            // can't be (easily) used to set the key, as transformations could happen
-            // on the unprefixed version.
-            // Note: 2025-03-24: We benchmarked `.forEach`, `for of` and `for`.
-            // Which one was faster depended on the browser, with no clear overall
-            // winner, but `.forEach` was faster on Chrome, which uses the same
-            // engine as Node.JS (V8).
-            prefixes.forEach(prefix => {
-              cache.delete(prefix + key)
-            })
-          },
-          'chelonia.db/delete': async function (key: string): Promise<void> {
-            if (ARCHIVE_MODE) throw new Error('Unable to write in archive mode')
-            checkKey(key)
-            if (key.startsWith('_private_immutable')) {
-              throw new Error('Cannot delete immutable key')
-            }
-            await currentBackend!.deleteData(key)
-            // `get` uses `prefixableKey` as key, which now that the value is updated
-            // is stale. We delete all prefixed key variants from the cache to
-            // avoid serving stale data.
-            prefixes.forEach(prefix => {
-              cache.delete(prefix + key)
-            })
-          },
-          'chelonia.db/iterKeys': () => {
-            return currentBackend!.iterKeys()
-          },
-          'chelonia.db/keyCount': () => {
-            return currentBackend!.keyCount()
-          }
+    if (!dbRefs) {
+      // First-time initialization
+      const backend = nconf.get('database:backend')
+      const persistence = backend || (production ? 'fs' : undefined)
+      const options = nconf.get('database:backendOptions')
+      const ARCHIVE_MODE = nconf.get('server:archiveMode')
+
+      if (persistence && persistence !== 'mem') {
+        const Ctor = (await import(`./database-${persistence}.ts`)).default
+        const instance = new Ctor(options[persistence]) as DatabaseBackend
+        await instance.init()
+        currentBackend = instance
+
+        const cache = new LRU<string, Buffer | string>({
+          max: nconf.get('database:lruNumItems') ?? 10000
         })
-        sbp('sbp/selectors/lock', ['chelonia.db/get', 'chelonia.db/set', 'chelonia.db/delete', 'chelonia.db/iterKeys'])
-        setSelectors = true
+        currentCache = cache
+
+        if (!setSelectors && (import.meta as ImportMeta).lockDbSelectors) {
+          sbp('sbp/selectors/overwrite', {
+            'chelonia.db/get': async function (prefixableKey: string, { bypassCache }: { bypassCache?: boolean } = {}): Promise<Buffer | string | void> {
+              if (!bypassCache) {
+                const lookupValue = cache.get(prefixableKey)
+                if (lookupValue !== undefined) {
+                  return lookupValue
+                }
+              }
+              const [prefix, key] = parsePrefixableKey(prefixableKey)
+              let value = await currentBackend!.readData(key)
+              if (value === undefined) {
+                return
+              }
+              value = prefixHandlers[prefix](value) as string | Buffer
+              cache.set(prefixableKey, value)
+              return value
+            },
+            'chelonia.db/set': async function (key: string, value: Buffer | string): Promise<void> {
+              if (ARCHIVE_MODE) throw new Error('Unable to write in archive mode')
+              checkKey(key)
+              if (key.startsWith('_private_immutable')) {
+                const existingValue = await currentBackend!.readData(key)
+                if (existingValue !== undefined) {
+                  throw new Error('Cannot set already set immutable key')
+                }
+              }
+              await currentBackend!.writeData(key, value)
+              const prefixes = Object.keys(prefixHandlers)
+              prefixes.forEach(prefix => {
+                cache.delete(prefix + key)
+              })
+            },
+            'chelonia.db/delete': async function (key: string): Promise<void> {
+              if (ARCHIVE_MODE) throw new Error('Unable to write in archive mode')
+              checkKey(key)
+              if (key.startsWith('_private_immutable')) {
+                throw new Error('Cannot delete immutable key')
+              }
+              await currentBackend!.deleteData(key)
+              const prefixes = Object.keys(prefixHandlers)
+              prefixes.forEach(prefix => {
+                cache.delete(prefix + key)
+              })
+            },
+            'chelonia.db/iterKeys': () => {
+              return currentBackend!.iterKeys()
+            },
+            'chelonia.db/keyCount': () => {
+              return currentBackend!.keyCount()
+            }
+          })
+          sbp('sbp/selectors/lock', ['chelonia.db/get', 'chelonia.db/set', 'chelonia.db/delete', 'chelonia.db/iterKeys'])
+          setSelectors = true
+        }
       }
     }
-  } else if ((import.meta as ImportMeta).lockDbSelectors && setSelectors && currentBackend) {
-    // Re-open DB
-    currentBackend!.init()
-  }
-  dbRefs++
-  if (skipDbPreloading || preloaded) return
-  /*
-  // Preloading logic preserved for historical reasons. Preloading should no
-  // longer be necessary, since `chel deploy` can be used for accomplishing
-  // the same in a more reliable way and without requiring the `fs` backend.
-  //
-  // TODO: Update this to only run when persistence is disabled when `chel deploy` can target SQLite.
-  if (persistence !== 'fs' || options.fs.dirname !== dbRootPath) {
-    // Remember to keep these values up-to-date.
-    const HASH_LENGTH = 56
 
-    // Preload contract source files and contract manifests into Chelonia DB.
-    // Note: the data folder may contain other files if the `fs` persistence mode
-    // has been used before. We won't load them here; that's the job of `chel migrate`.
-    // Note: our target files are currently deployed with unprefixed hashes as file names.
-    // We can take advantage of this to recognize them more easily.
-    // TODO: Update this code when `chel deploy` no longer generates unprefixed keys.
-    const keys = (await readdir(dataFolder))
-      // Skip some irrelevant files.
-      .filter(k => {
-        if (k.length !== HASH_LENGTH) return false
-        const parsed = maybeParseCID(k)
-        return parsed && ([
-          multicodes.SHELTER_CONTRACT_MANIFEST,
-          multicodes.SHELTER_CONTRACT_TEXT].includes(parsed.code)
-        )
-      })
-    const numKeys = keys.length
-    let numVisitedKeys = 0
-    let numNewKeys = 0
-    const savedProgress = { value: 0, numKeys: 0 }
+    dbRefs++
 
-    console.info('[chelonia.db] Preloading...')
-    for (const key of keys) {
-      // Skip keys which are already in the DB.
-      if (!persistence || !await sbp('chelonia.db/get', key)) {
-        // Load only contract source files and contract manifests.
-        const value = await readFile(path.join(dataFolder, key), 'utf8')
-        await sbp('chelonia.db/set', key, value)
-        numNewKeys++
-      }
-      numVisitedKeys++
-      const progress = numVisitedKeys === numKeys ? 100 : Math.floor(100 * numVisitedKeys / numKeys)
-      // Display progress lines between at least 10% increments, and no more than every 10 visited keys.
-      if (progress === 100 || (progress - savedProgress.value >= 10 && numVisitedKeys - savedProgress.numKeys >= 10)) {
-        console.info(`[chelonia.db] Preloading... ${progress}% done`)
-        savedProgress.numKeys = numVisitedKeys
-        savedProgress.value = progress
-      }
-    }
-    numNewKeys && console.info(`[chelonia.db] Preloaded ${numNewKeys} new entries`)
-  }
-  */
-  await Promise.all([initVapid(), initZkpp()])
-  preloaded = true
+    if (skipDbPreloading || preloaded) return
+
+    await Promise.all([initVapid(), initZkpp()])
+    preloaded = true
+  })()
+
+  initPromise = thisInitPromise
+  await thisInitPromise.finally(() => {
+    initPromise = null
+  })
 }
 
 export async function closeDB (): Promise<void> {
+  // Await any ongoing init operation first
+  await getCurrentInitPromise()
+
   if (dbRefs > 1) {
     dbRefs--
     return
   }
-  if (isClosing) return
-  isClosing = true
-  try {
-    if (currentBackend) {
-      try {
-        await currentBackend.close()
-      } catch (e) {
-        console.error(e, 'Error closing DB')
+
+  // Queue this close operation
+  const thisClosePromise = closePromise ?? (async () => {
+    if (isClosing) return
+
+    isClosing = true
+    try {
+      if (currentBackend) {
+        try {
+          await currentBackend.close()
+        } catch (e) {
+          console.error(e, 'Error closing DB')
+        }
       }
-    }
-    currentCache?.clear()
-    dbRefs = 0
-    if (!(import.meta as ImportMeta).lockDbSelectors) {
-      preloaded = false
-      currentCache = null
+      currentCache?.clear()
+      dbRefs = 0
       currentBackend = null
+      if (!(import.meta as ImportMeta).lockDbSelectors) {
+        preloaded = false
+        currentCache = null
+      }
+    } finally {
+      isClosing = false
     }
-  } finally {
-    isClosing = false
-  }
+  })()
+
+  closePromise = thisClosePromise
+  await thisClosePromise.finally(() => {
+    closePromise = null
+  })
 }
 
 export * from './db-utils.ts'

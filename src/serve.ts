@@ -7,6 +7,7 @@ import { deploy } from './deploy.ts'
 import { findManifestFiles } from './utils.ts'
 import { startServer } from './serve/index.ts'
 import { startDashboard } from './serve/dashboard-server.ts'
+import { closeDB, initDB } from '~/serve/database.ts'
 
 type Params = { port: number, 'dashboard-port': number, directory: string, dev: boolean, 'manifests-dir': string }
 
@@ -78,6 +79,7 @@ async function startApplicationServer (): Promise<void> {
 }
 
 export async function serve (args: ArgumentsCamelCase<Params>) {
+  await initDB()
   try {
     // Start dashboard server on port 7000 first
     try {
@@ -100,9 +102,6 @@ export async function serve (args: ArgumentsCamelCase<Params>) {
     try {
       await startApplicationServer()
     } catch (error) {
-      if (error instanceof Error) {
-        console.error('@@@@@', error.name, error.message, error.stack)
-      }
       console.error(colors.red('❌ Failed to start application server:'), error)
       throw error
     }
@@ -111,6 +110,8 @@ export async function serve (args: ArgumentsCamelCase<Params>) {
   } catch (error) {
     console.error(colors.red('❌ Failed to start server:'), error)
     process.exit(1)
+  } finally {
+    await closeDB()
   }
 }
 
