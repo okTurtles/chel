@@ -1,0 +1,6 @@
+# Until we implement <https://github.com/okTurtles/chel/issues/125>, the files
+# in this directory must _not_ be version-controlled, as they're placeholders
+# used by the post install script. However, running `npm install` on this
+# project will result in overwriting the file if the post install script runs
+# To avoid this, all files under this directory are ignored.
+*
