@@ -2,6 +2,8 @@ import path from 'node:path'
 import process from 'node:process'
 import { Hono } from 'npm:hono'
 import { serveStatic } from 'npm:hono/deno'
+import { createAdaptorServer } from 'npm:@hono/node-server'
+import { etag } from 'npm:hono/etag'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
 
@@ -24,10 +26,10 @@ export async function startDashboard (): Promise<void> {
   const staticMiddleware = serveStatic({ root: dashboardRoot, rewriteRequestPath: (p) => p })
   const indexMiddleware = serveStatic({ path: path.join(dashboardRoot, 'index.html') })
 
-  app.get('/assets/*', staticMiddleware)
+  app.get('/assets/*', etag(), staticMiddleware)
 
-  app.get('/dashboard', indexMiddleware)
-  app.get('/dashboard/', indexMiddleware)
+  app.get('/dashboard', etag(), indexMiddleware)
+  app.get('/dashboard/', etag(), indexMiddleware)
 
   // SPA fallback: try static file first, then serve index.html for SPA routing
   app.get('/*', async (c) => {
@@ -41,8 +43,15 @@ export async function startDashboard (): Promise<void> {
     return indexResponse || c.text('Not Found', 404)
   })
 
-  await new Promise<void>((resolve) => {
-    Deno.serve({ port, hostname: host, onListen: () => resolve() }, app.fetch)
+  // Start listening
+  const server = createAdaptorServer({ fetch: app.fetch })
+  await new Promise<string>((resolve, reject) => {
+    server.listen(port, host, () => {
+      const addr = server.address() as { address: string; port: number }
+      const uri = `http://${addr.address}:${addr.port}`
+      console.info('Dashboard server running at:', uri)
+      resolve(uri)
+    }).once('error', reject)
   })
 }
 

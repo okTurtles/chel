@@ -18,6 +18,7 @@ import { Readable } from 'node:stream'
 import { zValidator } from 'npm:@hono/zod-validator'
 import type { Context, Hono, MiddlewareHandler } from 'npm:hono'
 import { bodyLimit } from 'npm:hono/body-limit'
+import { etag } from 'npm:hono/etag'
 import { appendToIndexFactory, lookupUltimateOwner } from './database.ts'
 import logger from './logger.ts'
 import { getChallenge, getContractSalt, redeemSaltRegistrationToken, redeemSaltUpdateToken, register, registrationKey, updateContractSalt } from './zkppSalt.ts'
@@ -264,7 +265,6 @@ function serveAsset (c: Context, subpath: string, assetsDir: string): Promise<Re
       const headers: Record<string, string> = {}
 
       if (basename.includes('-cached')) {
-        headers['ETag'] = `"${basename}"`
         headers['Cache-Control'] = 'public,max-age=31536000,immutable'
       }
 
@@ -1034,21 +1034,21 @@ export function registerRoutes (app: Hono): void {
 
   // SPA routes
 
-  app.get('/assets/:subpath{.+}', function (c) {
+  app.get('/assets/:subpath{.+}', etag(), function (c) {
     const subpath = c.req.param('subpath')
     return serveAsset(c, subpath, staticServeConfig.distAssets)
   })
 
   // Dashboard-specific assets route (when IS_CHELONIA_DASHBOARD_DEV is set)
   if (isCheloniaDashboard) {
-    app.get('/dashboard/assets/:subpath{.+}', function (c) {
+    app.get('/dashboard/assets/:subpath{.+}', etag(), function (c) {
       const subpath = c.req.param('subpath')
       return serveAsset(c, subpath, staticServeConfig.distAssets)
     })
   }
 
   // SPA catch-all route
-  app.get(isCheloniaDashboard ? '/dashboard/*' : '/app/*', async function (c) {
+  app.get(isCheloniaDashboard ? '/dashboard/*' : '/app/*', etag(), async function (c) {
     try {
       const file = await Deno.readFile(staticServeConfig.distIndexHtml)
       return c.body(file, 200, { 'Content-Type': 'text/html' })

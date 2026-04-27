@@ -12771,29 +12771,29 @@ var require_nconf = __commonJS({
   "node_modules/.deno/nconf@0.13.0/node_modules/nconf/lib/nconf.js"(exports2, module14) {
     var common4 = require_common();
     var Provider = require_provider().Provider;
-    var nconf8 = module14.exports = new Provider();
-    nconf8.version = require_package().version;
-    nconf8.__defineGetter__("Argv", function() {
+    var nconf9 = module14.exports = new Provider();
+    nconf9.version = require_package().version;
+    nconf9.__defineGetter__("Argv", function() {
       return require_argv().Argv;
     });
-    nconf8.__defineGetter__("Env", function() {
+    nconf9.__defineGetter__("Env", function() {
       return require_env().Env;
     });
-    nconf8.__defineGetter__("File", function() {
+    nconf9.__defineGetter__("File", function() {
       return require_file().File;
     });
-    nconf8.__defineGetter__("Literal", function() {
+    nconf9.__defineGetter__("Literal", function() {
       return require_literal().Literal;
     });
-    nconf8.__defineGetter__("Memory", function() {
+    nconf9.__defineGetter__("Memory", function() {
       return require_memory().Memory;
     });
-    nconf8.key = common4.key;
-    nconf8.path = common4.path;
-    nconf8.loadFiles = common4.loadFiles;
-    nconf8.loadFilesSync = common4.loadFilesSync;
-    nconf8.formats = require_formats();
-    nconf8.Provider = Provider;
+    nconf9.key = common4.key;
+    nconf9.path = common4.path;
+    nconf9.loadFiles = common4.loadFiles;
+    nconf9.loadFilesSync = common4.loadFilesSync;
+    nconf9.formats = require_formats();
+    nconf9.Provider = Provider;
   }
 });
 // @__NO_SIDE_EFFECTS__
@@ -61591,7 +61591,7 @@ var require_websocket_server = __commonJS({
     }
   }
 });
-var import_npm_nconf7 = __toESM(require_nconf());
+var import_npm_nconf8 = __toESM(require_nconf());
 function getLineColFromPtr(string3, ptr) {
   let lines = string3.slice(0, ptr).split(/\r\n|\n|\r/g);
   return [lines.length, lines.pop().length + 1];
@@ -69650,6 +69650,7 @@ var module9 = {
     return migrate(argv);
   }
 };
+var import_npm_nconf4 = __toESM(require_nconf());
 var VALID_VERSION = /^[a-zA-Z0-9_+-][a-zA-Z0-9._+-]*[a-zA-Z0-9_+-]?$/;
 var RESERVED_FILE_CHARS_REPLACE = /[\x00/\\:*?"<>|]/g;
 var projectRoot;
@@ -69778,7 +69779,7 @@ async function copyFileIfNeeded(sourcePath, targetPath, fileName, args) {
   await copyFile(sourcePath, targetPath);
 }
 async function loadCheloniaConfig() {
-  const configPath = join62(projectRoot, "chelonia.json");
+  const configPath = import_npm_nconf4.default.get("appManifest") || join62(projectRoot, "chelonia.json");
   cheloniaConfig = { contracts: {} };
   if (existsSync(configPath)) {
     try {
@@ -69802,7 +69803,7 @@ async function updateCheloniaConfig(fullContractName, contractName, version3, ma
     version: version3,
     path: pinnedManifestPath
   };
-  const configPath = join62(projectRoot, "chelonia.json");
+  const configPath = import_npm_nconf4.default.get("appManifest") || join62(projectRoot, "chelonia.json");
   const configContent = JSON.stringify(cheloniaConfig, null, 2) + "\n";
   await writeFile2(configPath, configContent, "utf8");
   console.log(green("\u2705 Saved chelonia.json"));
@@ -69818,7 +69819,11 @@ var module10 = {
       describe: "Output directory",
       requiresArg: false,
       string: true
-    }).alias("d", "dir").positional("manifest", {
+    }).alias("d", "dir").option("app-manifest", {
+      default: "",
+      describe: "Location of chelonia.json",
+      string: true
+    }).alias("i", "app-manifest").alias("appManifest", "app-manifest").positional("manifest", {
       describe: "Manifest file path",
       demandOption: true,
       type: "string"
@@ -73430,6 +73435,101 @@ var bodyLimit = (options2) => {
     }
   };
 };
+var mergeBuffers = (buffer1, buffer2) => {
+  if (!buffer1) {
+    return buffer2;
+  }
+  const merged = new Uint8Array(
+    new ArrayBuffer(buffer1.byteLength + buffer2.byteLength)
+  );
+  merged.set(new Uint8Array(buffer1), 0);
+  merged.set(buffer2, buffer1.byteLength);
+  return merged;
+};
+var generateDigest = async (stream, generator) => {
+  if (!stream) {
+    return null;
+  }
+  let result = void 0;
+  const reader = stream.getReader();
+  for (; ; ) {
+    const { value, done } = await reader.read();
+    if (done) {
+      break;
+    }
+    result = await generator(mergeBuffers(result, value));
+  }
+  if (!result) {
+    return null;
+  }
+  return Array.prototype.map.call(new Uint8Array(result), (x3) => x3.toString(16).padStart(2, "0")).join("");
+};
+var RETAINED_304_HEADERS = [
+  "cache-control",
+  "content-location",
+  "date",
+  "etag",
+  "expires",
+  "vary"
+];
+var stripWeak = (tag3) => tag3.replace(/^W\//, "");
+function etagMatches(etag2, ifNoneMatch) {
+  return ifNoneMatch != null && ifNoneMatch.split(/,\s*/).some((t) => stripWeak(t) === stripWeak(etag2));
+}
+function initializeGenerator(generator) {
+  if (!generator) {
+    if (crypto && crypto.subtle) {
+      generator = (body) => crypto.subtle.digest(
+        {
+          name: "SHA-1"
+        },
+        body
+      );
+    }
+  }
+  return generator;
+}
+var etag = (options2) => {
+  const retainedHeaders = options2?.retainedHeaders ?? RETAINED_304_HEADERS;
+  const weak = options2?.weak ?? false;
+  const generator = initializeGenerator(options2?.generateDigest);
+  return async function etag2(c, next) {
+    const ifNoneMatch = c.req.header("If-None-Match") ?? null;
+    await next();
+    const res = c.res;
+    let etag3 = res.headers.get("ETag");
+    if (!etag3) {
+      if (!generator) {
+        return;
+      }
+      const hash3 = await generateDigest(
+        // This type casing avoids the type error for `deno publish`
+        res.clone().body,
+        generator
+      );
+      if (hash3 === null) {
+        return;
+      }
+      etag3 = weak ? `W/"${hash3}"` : `"${hash3}"`;
+    }
+    if (etagMatches(etag3, ifNoneMatch)) {
+      c.res = new Response(null, {
+        status: 304,
+        statusText: "Not Modified",
+        headers: {
+          ETag: etag3
+        }
+      });
+      c.res.headers.forEach((_, key) => {
+        if (retainedHeaders.indexOf(key.toLowerCase()) === -1) {
+          c.res.headers.delete(key);
+        }
+      });
+    } else {
+      c.res.headers.set("ETag", etag3);
+    }
+  };
+};
 var import_npm_pino = __toESM(require_pino());
 var prettyPrint = process6.env.NODE_ENV === "development" || process6.env.CI || process6.env.CYPRESS_RECORD_KEY || process6.env.PRETTY;
 function logMethod(args, method) {
@@ -73477,7 +73577,7 @@ function initializeLogger() {
   console.error = logger.error.bind(logger);
 }
 var logger_default = logger;
-var import_npm_nconf4 = __toESM(require_nconf());
+var import_npm_nconf5 = __toESM(require_nconf());
 init_zod();
 function extractBearer(c) {
   const authorization = c.req.header("authorization");
@@ -73654,7 +73754,7 @@ function installRateLimiterSelectorsOnce() {
 }
 function getStaticServeConfig() {
   const isCheloniaDashboard = process7.env.IS_CHELONIA_DASHBOARD_DEV;
-  const appDir = import_npm_nconf4.default.get("server:appDir") || ".";
+  const appDir = import_npm_nconf5.default.get("server:appDir") || ".";
   const dashboardDir = import.meta.dirname || "./build/dist-dashboard";
   return {
     distAssets: path5.resolve(path5.join(isCheloniaDashboard ? dashboardDir : appDir, "assets")),
@@ -73700,7 +73800,6 @@ function serveAsset(c, subpath, assetsDir) {
   return Deno.readFile(filePath).then((file) => {
     const headers = {};
     if (basename72.includes("-cached")) {
-      headers["ETag"] = `"${basename72}"`;
       headers["Cache-Control"] = "public,max-age=31536000,immutable";
     }
     if (subpath.includes("js/sw-")) {
@@ -73717,12 +73816,12 @@ function registerRoutes(app) {
     limiter.disconnect();
     clearInterval(limiter.interval);
   }
-  const FILE_UPLOAD_MAX_BYTES = import_npm_nconf4.default.get("server:fileUploadMaxBytes") || 30 * MEGABYTE;
-  const SIGNUP_LIMIT_MIN = import_npm_nconf4.default.get("server:signup:limit:minute") || 2;
-  const SIGNUP_LIMIT_HOUR = import_npm_nconf4.default.get("server:signup:limit:hour") || 10;
-  const SIGNUP_LIMIT_DAY = import_npm_nconf4.default.get("server:signup:limit:day") || 50;
-  const SIGNUP_LIMIT_DISABLED = process7.env.NODE_ENV !== "production" || import_npm_nconf4.default.get("server:signup:limit:disabled");
-  const ARCHIVE_MODE = import_npm_nconf4.default.get("server:archiveMode");
+  const FILE_UPLOAD_MAX_BYTES = import_npm_nconf5.default.get("server:fileUploadMaxBytes") || 30 * MEGABYTE;
+  const SIGNUP_LIMIT_MIN = import_npm_nconf5.default.get("server:signup:limit:minute") || 2;
+  const SIGNUP_LIMIT_HOUR = import_npm_nconf5.default.get("server:signup:limit:hour") || 10;
+  const SIGNUP_LIMIT_DAY = import_npm_nconf5.default.get("server:signup:limit:day") || 50;
+  const SIGNUP_LIMIT_DISABLED = process7.env.NODE_ENV !== "production" || import_npm_nconf5.default.get("server:signup:limit:disabled");
+  const ARCHIVE_MODE = import_npm_nconf5.default.get("server:archiveMode");
   const limiterPerMinute = new import_npm_bottleneck.default.Group({
     strategy: import_npm_bottleneck.default.strategy.LEAK,
     highWater: 0,
@@ -73783,7 +73882,7 @@ function registerRoutes(app) {
             if (name !== "gi.contracts/identity") {
               throw new HTTPException(401, { message: "This contract type requires ownership information" });
             }
-            if (import_npm_nconf4.default.get("server:signup:disabled")) {
+            if (import_npm_nconf5.default.get("server:signup:disabled")) {
               throw new HTTPException(403, { message: "Registration disabled" });
             }
             if (!SIGNUP_LIMIT_DISABLED) {
@@ -74308,21 +74407,21 @@ function registerRoutes(app) {
     }
   );
   app.get("/serverMessages", function(c) {
-    const messages = import_npm_nconf4.default.get("server:messages");
+    const messages = import_npm_nconf5.default.get("server:messages");
     if (!messages) return c.json([]);
     return c.json(messages, 200, { "Cache-Control": "no-store" });
   });
-  app.get("/assets/:subpath{.+}", function(c) {
+  app.get("/assets/:subpath{.+}", etag(), function(c) {
     const subpath = c.req.param("subpath");
     return serveAsset(c, subpath, staticServeConfig.distAssets);
   });
   if (isCheloniaDashboard) {
-    app.get("/dashboard/assets/:subpath{.+}", function(c) {
+    app.get("/dashboard/assets/:subpath{.+}", etag(), function(c) {
       const subpath = c.req.param("subpath");
       return serveAsset(c, subpath, staticServeConfig.distAssets);
     });
   }
-  app.get(isCheloniaDashboard ? "/dashboard/*" : "/app/*", async function(c) {
+  app.get(isCheloniaDashboard ? "/dashboard/*" : "/app/*", etag(), async function(c) {
     try {
       const file = await Deno.readFile(staticServeConfig.distIndexHtml);
       return c.body(file, 200, { "Content-Type": "text/html" });
@@ -75052,7 +75151,7 @@ var publicMethods2 = {
     socket.send(createErrorResponse({ ...request }), () => socket.terminate());
   }
 };
-var import_npm_nconf5 = __toESM(require_nconf());
+var import_npm_nconf6 = __toESM(require_nconf());
 var currentApp = null;
 var currentHttpServer = null;
 var currentOwnerSizeTotalWorker = void 0;
@@ -75301,16 +75400,16 @@ function installServerSelectorsOnce() {
   });
 }
 async function startServer() {
-  const appDir = import_npm_nconf5.default.get("server:appDir") || process9.cwd();
-  const ARCHIVE_MODE = import_npm_nconf5.default.get("server:archiveMode");
-  const host = import_npm_nconf5.default.get("server:host") || "0.0.0.0";
-  const port = import_npm_nconf5.default.get("server:port") ?? 8e3;
+  const appManifest = import_npm_nconf6.default.get("appManifest") || join72(import_npm_nconf6.default.get("server:appDir") || process9.cwd(), "chelonia.json");
+  const ARCHIVE_MODE = import_npm_nconf6.default.get("server:archiveMode");
+  const host = import_npm_nconf6.default.get("server:host") || "0.0.0.0";
+  const port = import_npm_nconf6.default.get("server:port") ?? 8e3;
   if (CREDITS_WORKER_TASK_TIME_INTERVAL && OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL > CREDITS_WORKER_TASK_TIME_INTERVAL) {
     console.error("The size calculation worker must run more frequently than the credits worker for accurate billing");
     throw new Error("The size calculation worker must run more frequently than the credits worker for accurate billing");
   }
   try {
-    currentManifest = (await import(pathToFileURL(join72(appDir, "chelonia.json")).toString(), {
+    currentManifest = (await import(pathToFileURL(appManifest).toString(), {
       with: { type: "json" }
     })).default;
   } catch {
@@ -75901,22 +76000,22 @@ var upgradeWebSocket = defineWebSocketHelper(async (c, events, options2) => {
   socket.onerror = (evt) => events.onError?.(evt, wsContext);
   return response;
 });
-var import_npm_nconf6 = __toESM(require_nconf());
+var import_npm_nconf7 = __toESM(require_nconf());
 var getDashboardPath = () => {
   const baseDir = import.meta.dirname || path6.join(process11.cwd(), "build");
   const dashboardPath = path6.resolve(baseDir, "dist-dashboard");
   return dashboardPath;
 };
 async function startDashboard() {
-  const port = import_npm_nconf6.default.get("server:dashboardPort");
-  const host = import_npm_nconf6.default.get("server:host") || "0.0.0.0";
+  const port = import_npm_nconf7.default.get("server:dashboardPort");
+  const host = import_npm_nconf7.default.get("server:host") || "0.0.0.0";
   const dashboardRoot = getDashboardPath();
   const app = new Hono2();
   const staticMiddleware = serveStatic2({ root: dashboardRoot, rewriteRequestPath: (p) => p });
   const indexMiddleware = serveStatic2({ path: path6.join(dashboardRoot, "index.html") });
-  app.get("/assets/*", staticMiddleware);
-  app.get("/dashboard", indexMiddleware);
-  app.get("/dashboard/", indexMiddleware);
+  app.get("/assets/*", etag(), staticMiddleware);
+  app.get("/dashboard", etag(), indexMiddleware);
+  app.get("/dashboard/", etag(), indexMiddleware);
   app.get("/*", async (c) => {
     const staticResponse = await staticMiddleware(c, async () => {
     });
@@ -75927,28 +76026,40 @@ async function startDashboard() {
     });
     return indexResponse || c.text("Not Found", 404);
   });
-  await new Promise((resolve82) => {
-    Deno.serve({ port, hostname: host, onListen: () => resolve82() }, app.fetch);
+  const server = createAdaptorServer({ fetch: app.fetch });
+  await new Promise((resolve82, reject) => {
+    server.listen(port, host, () => {
+      const addr = server.address();
+      const uri = `http://${addr.address}:${addr.port}`;
+      console.info("Dashboard server running at:", uri);
+      resolve82(uri);
+    }).once("error", reject);
   });
 }
-async function watch(args) {
+async function deployManifests(args) {
   const dir = args["manifests-dir"];
+  if (!dir) return null;
   const manifests = await findManifestFiles(dir);
   await deploy({
     ...args,
     manifests: Array.from(manifests)
   });
+  return dir;
+}
+async function watch(args) {
+  const dir = await deployManifests(args);
+  if (dir === null) return;
   const manifestSet = /* @__PURE__ */ new Set();
   const watcher = Deno.watchFs(dir, { recursive: true });
   const queueName = "internal:manifests-watch";
   const debouncedRedeploy = debounce(() => {
     if (manifestSet.size === 0) return;
     esm_default("okTurtles.eventQueue/queueEvent", queueName, () => {
-      const manifests2 = Array.from(manifestSet);
+      const manifests = Array.from(manifestSet);
       manifestSet.clear();
       deploy({
         ...args,
-        manifests: manifests2
+        manifests
       }).catch((e2) => {
         console.warn(e2, "Error deploying contracts");
       });
@@ -75962,8 +76073,8 @@ async function watch(args) {
           continue;
         }
         if (event.kind !== "create" && event.kind !== "modify") continue;
-        const manifests2 = event.paths.filter((path8) => path8.toLowerCase().endsWith(".manifest.json"));
-        for (const manifestPath of manifests2) {
+        const manifests = event.paths.filter((path8) => path8.toLowerCase().endsWith(".manifest.json"));
+        for (const manifestPath of manifests) {
           try {
             await esm_default("okTurtles.eventQueue/queueEvent", queueName, async () => {
               const realPath = await Deno.realPath(manifestPath);
@@ -76000,13 +76111,15 @@ async function serve(args) {
       console.error(red("\u274C Failed to start dashboard server:"), error2);
       throw error2;
     }
-    if (args.dev) {
-      try {
+    try {
+      if (args.dev) {
         await watch(args);
-      } catch (error2) {
-        console.error(red("\u274C Failed to preload contracts:"), error2);
-        throw error2;
+      } else {
+        await deployManifests(args);
       }
+    } catch (error2) {
+      console.error(red("\u274C Failed to preload contracts:"), error2);
+      throw error2;
     }
     try {
       await startApplicationServer();
@@ -76045,7 +76158,11 @@ var module11 = {
       describe: "Directory for contracts",
       requiresArg: true,
       string: true
-    }).alias("m", "manifests-dir").positional("directory", {
+    }).alias("m", "manifests-dir").option("app-manifest", {
+      default: "",
+      describe: "Location of chelonia.json",
+      string: true
+    }).alias("i", "app-manifest").alias("appManifest", "app-manifest").positional("directory", {
       default: ".",
       describe: "Directory",
       type: "string"
@@ -80308,7 +80425,7 @@ var parseArgs = () => {
 };
 var parseArgs_default = parseArgs;
 var parseConfig = () => {
-  import_npm_nconf7.default.env({
+  import_npm_nconf8.default.env({
     separator: "__",
     parseValues: true
   }).argv(parseArgs_default()).file({ file: "chel.toml", format: { parse: parse8, stringify } }).defaults({

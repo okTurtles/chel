@@ -5,6 +5,8 @@ import { basename, dirname, join } from 'node:path'
 import process from 'node:process'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { exit } from './utils.ts'
+// @deno-types="npm:@types/nconf"
+import nconf from 'npm:nconf'
 
 const VALID_VERSION = /^[a-zA-Z0-9_+-][a-zA-Z0-9._+-]*[a-zA-Z0-9_+-]?$/
 // deno-lint-ignore no-control-regex
@@ -185,7 +187,7 @@ async function copyFileIfNeeded (
 }
 
 async function loadCheloniaConfig () {
-  const configPath = join(projectRoot, 'chelonia.json')
+  const configPath = nconf.get('appManifest') || join(projectRoot, 'chelonia.json')
   cheloniaConfig = { contracts: {} }
 
   if (existsSync(configPath)) {
@@ -214,7 +216,7 @@ async function updateCheloniaConfig (fullContractName: string, contractName: str
     path: pinnedManifestPath
   }
 
-  const configPath = join(projectRoot, 'chelonia.json')
+  const configPath = nconf.get('appManifest') || join(projectRoot, 'chelonia.json')
   const configContent = JSON.stringify(cheloniaConfig, null, 2) + '\n'
 
   await writeFile(configPath, configContent, 'utf8')
@@ -237,6 +239,13 @@ export const module = {
         string: true
       })
       .alias('d', 'dir')
+      .option('app-manifest', {
+        default: '',
+        describe: 'Location of chelonia.json',
+        string: true
+      })
+      .alias('i', 'app-manifest')
+      .alias('appManifest', 'app-manifest')
       .positional('manifest', {
         describe: 'Manifest file path',
         demandOption: true,

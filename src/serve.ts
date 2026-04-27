@@ -9,15 +9,31 @@ import { startServer } from './serve/index.ts'
 import { startDashboard } from './serve/dashboard-server.ts'
 import { closeDB, initDB } from '~/serve/database.ts'
 
-type Params = { port: number, 'dashboard-port': number, directory: string, dev: boolean, 'manifests-dir': string }
+type Params = {
+  port: number,
+  'dashboard-port': number,
+  directory: string,
+  dev: boolean,
+  'manifests-dir': string,
+  'app-manifest': string
+}
 
-async function watch (args: ArgumentsCamelCase<Params>): Promise<void> {
+async function deployManifests (args: ArgumentsCamelCase<Params>): Promise<string | null> {
   const dir = args['manifests-dir']
+  if (!dir) return null
+
   const manifests = await findManifestFiles(dir)
   await deploy({
     ...args,
     manifests: Array.from(manifests)
   })
+
+  return dir
+}
+
+async function watch (args: ArgumentsCamelCase<Params>): Promise<void> {
+  const dir = await deployManifests(args)
+  if (dir === null) return
 
   const manifestSet = new Set<string>()
   const watcher = Deno.watchFs(dir, { recursive: true })
@@ -89,13 +105,22 @@ export async function serve (args: ArgumentsCamelCase<Params>) {
       throw error
     }
 
-    if (args.dev) {
-      try {
+    // If we're running in 'development' mode, then we preload contracts from
+    // the `manifests-dir` directory _and_ watch for changes to automatically
+    // re-deploy.
+    // If we're running in 'production' mode, then we also preload contracts
+    // from the `manifests-dir` directory, but we do _not_ watch for changes.
+    // This means that, in production mode, deploying changes requires a manual
+    // invocation of `chel deploy` or restarting the server.
+    try {
+      if (args.dev) {
         await watch(args)
-      } catch (error) {
-        console.error(colors.red('❌ Failed to preload contracts:'), error)
-        throw error
+      } else {
+        await deployManifests(args)
       }
+    } catch (error) {
+      console.error(colors.red('❌ Failed to preload contracts:'), error)
+      throw error
     }
 
     // Start application server on port 8000 second
@@ -150,6 +175,13 @@ export const module = {
         string: true
       })
       .alias('m', 'manifests-dir')
+      .option('app-manifest', {
+        default: '',
+        describe: 'Location of chelonia.json',
+        string: true
+      })
+      .alias('i', 'app-manifest')
+      .alias('appManifest', 'app-manifest')
       .positional('directory', {
         default: '.',
         describe: 'Directory',

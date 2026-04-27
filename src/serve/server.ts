@@ -384,7 +384,7 @@ function installServerSelectorsOnce (): void {
 
 export async function startServer (): Promise<{ uri: string }> {
   // Read configuration from nconf
-  const appDir = nconf.get('server:appDir') || process.cwd()
+  const appManifest = nconf.get('appManifest') || join(nconf.get('server:appDir') || process.cwd(), 'chelonia.json')
   const ARCHIVE_MODE = nconf.get('server:archiveMode')
   const host = nconf.get('server:host') || '0.0.0.0'
   const port = nconf.get('server:port') ?? 8000
@@ -397,7 +397,7 @@ export async function startServer (): Promise<{ uri: string }> {
 
   // Load chelonia.json manifest
   try {
-    currentManifest = (await import(pathToFileURL(join(appDir, 'chelonia.json')).toString(), {
+    currentManifest = (await import(pathToFileURL(appManifest).toString(), {
       with: { type: 'json' }
     })).default
   } catch {
