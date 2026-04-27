@@ -131,3 +131,4 @@ export async function startServer (options: StartServerOptions = {}): Promise<{ 
 
 // Backwards compatibility: default export is startServer
 export default startServer
+export { stopServer }
