@@ -118,18 +118,6 @@ export async function startServer (options: StartServerOptions = {}): Promise<{ 
     installSignalHandlers()
   }
 
-  // Register a SERVER_EXITING handler for this startServer call
-  // This handler self-removes when it fires
-  sbp('okTurtles.events/once', SERVER_EXITING, async () => {
-    try {
-      removeSignalHandlers()
-      await stopServer()
-      console.info('Server down')
-    } catch (err) {
-      console.error(err, 'Error during shutdown')
-    }
-  })
-
   // Start the server and wait for it to be running
   return await new Promise((resolve, reject) => {
     sbp('okTurtles.events/on', SERVER_RUNNING, function onRunning (info: { info: { uri: string } }) {

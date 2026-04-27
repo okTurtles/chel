@@ -68899,7 +68899,7 @@ var initDB = async ({ skipDbPreloading } = {}) => {
           max: import_npm_nconf2.default.get("database:lruNumItems") ?? 1e4
         });
         currentCache = cache2;
-        if (!setSelectors && true) {
+        if (!setSelectors || false) {
           esm_default("sbp/selectors/overwrite", {
             "chelonia.db/get": async function(prefixableKey, { bypassCache } = {}) {
               if (!bypassCache) {
@@ -75687,13 +75687,6 @@ function installSignalHandlers() {
     ["SIGUSR2", 11]
   ].forEach(([signal, code2]) => handleSignal(signal, code2));
 }
-function removeSignalHandlers() {
-  for (const [signal, handler] of signalHandlers) {
-    process10.removeListener(signal, handler);
-  }
-  signalHandlers.length = 0;
-  signalHandlersInstalled = false;
-}
 var exit2 = (code2) => {
   esm_default("okTurtles.events/once", SERVER_EXITING, () => {
     esm_default("okTurtles.eventQueue/queueEvent", SERVER_EXITING, () => {
@@ -75710,15 +75703,6 @@ async function startServer2(options2 = {}) {
     installGlobalExceptionHandlers();
     installSignalHandlers();
   }
-  esm_default("okTurtles.events/once", SERVER_EXITING, async () => {
-    try {
-      removeSignalHandlers();
-      await stopServer2();
-      console.info("Server down");
-    } catch (err) {
-      console.error(err, "Error during shutdown");
-    }
-  });
   return await new Promise((resolve82, reject) => {
     esm_default("okTurtles.events/on", SERVER_RUNNING, function onRunning(info) {
       esm_default("okTurtles.events/off", SERVER_RUNNING, onRunning);
@@ -75727,9 +75711,6 @@ async function startServer2(options2 = {}) {
     });
     startServer().catch(reject);
   });
-}
-async function stopServer2() {
-  await stopServer();
 }
 var COMPRESSIBLE_CONTENT_TYPE_REGEX = /^\s*(?:text\/(?!event-stream(?:[;\s]|$))[^;\s]+|application\/(?:javascript|json|xml|xml-dtd|ecmascript|dart|postscript|rtf|tar|toml|vnd\.dart|vnd\.ms-fontobject|vnd\.ms-opentype|wasm|x-httpd-php|x-javascript|x-ns-proxy-autoconfig|x-sh|x-tar|x-virtualbox-hdd|x-virtualbox-ova|x-virtualbox-ovf|x-virtualbox-vbox|x-virtualbox-vdi|x-virtualbox-vhd|x-virtualbox-vmdk|x-www-form-urlencoded)|font\/(?:otf|ttf)|image\/(?:bmp|vnd\.adobe\.photoshop|vnd\.microsoft\.icon|vnd\.ms-dds|x-icon|x-ms-bmp)|message\/rfc822|model\/gltf-binary|x-shader\/x-fragment|x-shader\/x-vertex|[^;\s]+?\+(?:json|text|xml|yaml))(?:[;\s]|$)/i;
 var getMimeType = (filename, mimes = baseMimes) => {

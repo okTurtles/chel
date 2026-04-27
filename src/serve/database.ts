@@ -229,7 +229,7 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
         })
         currentCache = cache
 
-        if (!setSelectors && (import.meta as ImportMeta).lockDbSelectors) {
+        if (!setSelectors || !(import.meta as ImportMeta).lockDbSelectors) {
           sbp('sbp/selectors/overwrite', {
             'chelonia.db/get': async function (prefixableKey: string, { bypassCache }: { bypassCache?: boolean } = {}): Promise<Buffer | string | void> {
               if (!bypassCache) {
