@@ -1,10 +1,9 @@
 #!/usr/bin/env -S deno run --allow-net --allow-read=. --allow-write=. --allow-sys --allow-env
 
 // Deno APIs:
-// https://doc.deno.land/deno/stable
-// https://doc.deno.land/deno~land/std/
+// https://docs.deno.com/api/deno/
+// https://docs.deno.com/runtime/reference/std/
 // Deno examples:
-// https://doc.deno.land/deno~land/std@0.141.0/examples
 // https://examples.deno.land/
 // Third-party modules:
 // https://deno.land/x

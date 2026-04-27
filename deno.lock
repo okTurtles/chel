@@ -25,9 +25,8 @@
     "npm:@apeleghq/rfc8188@*": "1.0.8",
     "npm:@apeleghq/rfc8188@1.0.7": "1.0.7",
     "npm:@chelonia/crypto@*": "1.0.1",
-    "npm:@chelonia/lib@*": "1.2.9_@sbp+sbp@2.4.1",
     "npm:@chelonia/lib@1.2.7": "1.2.7_@sbp+sbp@2.4.1",
-    "npm:@chelonia/lib@1.2.9": "1.2.9_@sbp+sbp@2.4.1",
+    "npm:@chelonia/lib@1.4.3": "1.4.3_@sbp+sbp@2.4.1",
     "npm:@chelonia/serdes@1.0.0": "1.0.0",
     "npm:@eslint/js@9.31.0": "9.31.0",
     "npm:@hono/node-server@*": "1.19.14_hono@4.12.12",
@@ -207,7 +206,7 @@
         "@apeleghq/multipart-parser",
         "@apeleghq/rfc8188@1.0.8",
         "@chelonia/crypto",
-        "@chelonia/serdes",
+        "@chelonia/serdes@1.0.0",
         "@sbp/okturtles.data@0.1.6_@sbp+sbp@2.4.1",
         "@sbp/okturtles.eventqueue@1.2.1_@sbp+sbp@2.4.1",
         "@sbp/okturtles.events@1.0.1_@sbp+sbp@2.4.1",
@@ -217,13 +216,13 @@
         "tweetnacl"
       ]
     },
-    "@chelonia/lib@1.2.9_@sbp+sbp@2.4.1": {
-      "integrity": "sha512-vyr/4V0Jcr97S3873xJL0+pXE4kxIqwsSin84hdNaIpSoJ8hIjizHpznV2loe/eQmtq7uReTkezJcyhzjQ5JfA==",
+    "@chelonia/lib@1.4.3_@sbp+sbp@2.4.1": {
+      "integrity": "sha512-qfK+8t5XHoNdpVVfw7o4XdWd9Uar56yHKInhbbEwvyNAnjkLQ9OXi1H0l+YxVVC+02C/NoBKuqgG72tCCnwpog==",
       "dependencies": [
         "@apeleghq/multipart-parser",
         "@apeleghq/rfc8188@1.0.8",
         "@chelonia/crypto",
-        "@chelonia/serdes",
+        "@chelonia/serdes@1.0.1",
         "@sbp/okturtles.data@0.1.7_@sbp+sbp@2.4.1",
         "@sbp/okturtles.eventqueue@1.2.1_@sbp+sbp@2.4.1",
         "@sbp/okturtles.events@1.0.1_@sbp+sbp@2.4.1",
@@ -241,6 +240,9 @@
     },
     "@chelonia/serdes@1.0.0": {
       "integrity": "sha512-MkkwhuZ8pGPOpYiTse/u2sxUK1pVm97QtC8yPbwaYqhSc5W0SMI4VaKe+h/ERagNCwxXH7hntLFSpevEvQpJ/A=="
+    },
+    "@chelonia/serdes@1.0.1": {
+      "integrity": "sha512-YPZ/HWe6ThCoF3asIM4cBkDECzfL/VXDMCJZkuDacKmlPX+w1HqzDvilc6eY/+7PTI24HLOXlXi7n5026bCwJQ=="
     },
     "@dimforge/rapier3d-compat@0.12.0": {
       "integrity": "sha512-uekIGetywIgopfD97oDL5PfeezkFpNhwlzlaEYNOA0N6ghdsOvh/HYjSMek5Q2O1PYvRSDFcqFVJl4r4ZBwOow=="
@@ -2804,7 +2806,7 @@
       "jsr:@std/path@1.1.1",
       "jsr:@std/streams@1.0.10",
       "npm:@apeleghq/rfc8188@1.0.7",
-      "npm:@chelonia/lib@1.2.9",
+      "npm:@chelonia/lib@1.4.3",
       "npm:@chelonia/serdes@1.0.0",
       "npm:@eslint/js@9.31.0",
       "npm:@hono/node-server@1.19.14",

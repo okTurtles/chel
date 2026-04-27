@@ -18989,7 +18989,7 @@ var strToBuf;
 var strToB64;
 var getSubscriptionId;
 var init_functions = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.9/node_modules/@chelonia/lib/dist/esm/functions.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.4.3/node_modules/@chelonia/lib/dist/esm/functions.mjs"() {
     init_base58();
     init_blake2b();
     init_blake2bstream();
@@ -19310,15 +19310,6 @@ var init_esm3 = __esm({
     });
   }
 });
-function pick2(o2, props) {
-  const x3 = /* @__PURE__ */ Object.create(null);
-  for (const k of props) {
-    if (has(o2, k)) {
-      x3[k] = o2[k];
-    }
-  }
-  return x3;
-}
 function omit2(o2, props) {
   const x3 = /* @__PURE__ */ Object.create(null);
   for (const k in o2) {
@@ -19369,6 +19360,9 @@ function randomIntFromRange(min, max) {
 }
 function uniq(array2) {
   return Array.from(new Set(array2));
+}
+function union2(...arrays) {
+  return uniq(Array.prototype.concat.apply([], arrays));
 }
 function intersection2(a1, ...arrays) {
   return uniq(a1).filter((v1) => arrays.every((v2) => v2.indexOf(v1) >= 0));
@@ -22544,7 +22538,7 @@ var ChelErrorFetchServerTimeFailed;
 var ChelErrorUnexpectedHttpResponseCode;
 var ChelErrorResourceGone;
 var init_errors3 = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.9/node_modules/@chelonia/lib/dist/esm/errors.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.4.3/node_modules/@chelonia/lib/dist/esm/errors.mjs"() {
     ChelErrorGenerator = (name, base2 = Error) => class extends base2 {
       constructor(...params) {
         super(...params);
@@ -22583,11 +22577,12 @@ var serdesTagSymbol;
 var serdesSerializeSymbol;
 var serdesDeserializeSymbol;
 var rawResult;
+var portDestructor;
 var serializer;
 var deserializerTable;
 var deserializer;
 var init_esm7 = __esm({
-  "node_modules/.deno/@chelonia+serdes@1.0.0/node_modules/@chelonia/serdes/dist/esm/index.js"() {
+  "node_modules/.deno/@chelonia+serdes@1.0.1/node_modules/@chelonia/serdes/dist/esm/index.js"() {
     serdesTagSymbol = Symbol("tag");
     serdesSerializeSymbol = Symbol("serialize");
     serdesDeserializeSymbol = Symbol("deserialize");
@@ -22595,87 +22590,138 @@ var init_esm7 = __esm({
       rawResultSet.add(obj);
       return obj;
     };
-    serializer = (data) => {
+    portDestructor = (() => {
+      if (typeof FinalizationRegistry !== "function") {
+        return () => {
+        };
+      }
+      const registry2 = new FinalizationRegistry((heldValue) => {
+        heldValue.close();
+      });
+      return (fn, port) => {
+        registry2.register(fn, port);
+      };
+    })();
+    serializer = (data, noFn) => {
       const rawResultSet = /* @__PURE__ */ new WeakSet();
       const verbatim = [];
       const transferables = /* @__PURE__ */ new Set();
       const revokables = /* @__PURE__ */ new Set();
-      const result = JSON.parse(JSON.stringify(data, (_key, value) => {
-        if (value && typeof value === "object" && rawResultSet.has(value))
-          return value;
-        if (value === void 0)
-          return rawResult(rawResultSet, ["_", "_"]);
-        if (!value)
-          return value;
-        if (Array.isArray(value) && value[0] === "_")
-          return rawResult(rawResultSet, ["_", "_", ...value]);
-        if (value instanceof Map) {
-          return rawResult(rawResultSet, ["_", "Map", Array.from(value.entries())]);
-        }
-        if (value instanceof Set) {
-          return rawResult(rawResultSet, ["_", "Set", Array.from(value.values())]);
-        }
-        if (value instanceof Blob || value instanceof File) {
-          const pos = verbatim.length;
-          verbatim[verbatim.length] = value;
-          return rawResult(rawResultSet, ["_", "_ref", pos]);
-        }
-        if (value instanceof Error) {
-          const pos = verbatim.length;
-          verbatim[verbatim.length] = value;
-          if (value.cause) {
-            value.cause = serializer(value.cause).data;
+      try {
+        const result = JSON.parse(JSON.stringify(data, (_key, value) => {
+          if (value && typeof value === "object" && rawResultSet.has(value))
+            return value;
+          if (value === void 0)
+            return rawResult(rawResultSet, ["_", "_"]);
+          if (!value)
+            return value;
+          if (Array.isArray(value) && value[0] === "_")
+            return rawResult(rawResultSet, ["_", "_", ...value]);
+          if (value instanceof Map) {
+            return rawResult(rawResultSet, ["_", "Map", Array.from(value.entries())]);
           }
-          return rawResult(rawResultSet, ["_", "_err", rawResult(rawResultSet, ["_", "_ref", pos]), value.name]);
-        }
-        if (value instanceof MessagePort || value instanceof ReadableStream || value instanceof WritableStream || value instanceof ArrayBuffer) {
-          const pos = verbatim.length;
-          verbatim[verbatim.length] = value;
-          transferables.add(value);
-          return rawResult(rawResultSet, ["_", "_ref", pos]);
-        }
-        if (ArrayBuffer.isView(value)) {
-          const pos = verbatim.length;
-          verbatim[verbatim.length] = value;
-          transferables.add(value.buffer);
-          return rawResult(rawResultSet, ["_", "_ref", pos]);
-        }
-        if (typeof value === "function") {
-          const mc = new MessageChannel();
-          mc.port1.onmessage = async (ev) => {
-            try {
-              try {
-                const result2 = await value(...deserializer(ev.data[1]));
-                const { data: data2, transferables: transferables2 } = serializer(result2);
-                ev.data[0].postMessage([true, data2], transferables2);
-              } catch (e2) {
-                const { data: data2, transferables: transferables2 } = serializer(e2);
-                ev.data[0].postMessage([false, data2], transferables2);
+          if (value instanceof Set) {
+            return rawResult(rawResultSet, ["_", "Set", Array.from(value.values())]);
+          }
+          if (value instanceof Blob || value instanceof File) {
+            const pos = verbatim.length;
+            verbatim[verbatim.length] = value;
+            return rawResult(rawResultSet, ["_", "_ref", pos]);
+          }
+          if (value instanceof Error) {
+            const obj = (() => {
+              if (value.cause) {
+                const causeCopy = value.cause;
+                let serialized;
+                try {
+                  serialized = serializer(value.cause, true);
+                  value.cause = serialized.data;
+                  const copy2 = structuredClone(value);
+                  serialized.transferables.forEach((t) => transferables.add(t));
+                  serialized.revokables.forEach((r) => revokables.add(r));
+                  return copy2;
+                } catch (e2) {
+                  console.error("Error serializing error cause", e2);
+                  serialized?.revokables.forEach((r) => r.close());
+                  const fallback = new Error(value.message);
+                  return fallback;
+                } finally {
+                  value.cause = causeCopy;
+                }
+              } else {
+                return value;
               }
-            } catch (e2) {
-              console.error("Async error on onmessage handler", e2);
+            })();
+            const pos = verbatim.length;
+            verbatim[verbatim.length] = obj;
+            return rawResult(rawResultSet, ["_", "_err", rawResult(rawResultSet, ["_", "_ref", pos]), value.name]);
+          }
+          if (value instanceof MessagePort || value instanceof ReadableStream || value instanceof WritableStream || value instanceof ArrayBuffer) {
+            const pos = verbatim.length;
+            verbatim[verbatim.length] = value;
+            transferables.add(value);
+            return rawResult(rawResultSet, ["_", "_ref", pos]);
+          }
+          if (ArrayBuffer.isView(value)) {
+            const pos = verbatim.length;
+            verbatim[verbatim.length] = value;
+            if (!(typeof SharedArrayBuffer === "function" && value.buffer instanceof SharedArrayBuffer)) {
+              transferables.add(value.buffer);
             }
-          };
-          transferables.add(mc.port2);
-          revokables.add(mc.port1);
-          return rawResult(rawResultSet, ["_", "_fn", mc.port2]);
-        }
-        const proto3 = Object.getPrototypeOf(value);
-        if (proto3?.constructor?.[serdesTagSymbol] && proto3.constructor[serdesSerializeSymbol]) {
-          return rawResult(rawResultSet, ["_", "_custom", proto3.constructor[serdesTagSymbol], proto3.constructor[serdesSerializeSymbol](value)]);
-        }
-        return value;
-      }), (_key, value) => {
-        if (Array.isArray(value) && value[0] === "_" && value[1] === "_ref") {
-          return verbatim[value[2]];
-        }
-        return value;
-      });
-      return {
-        data: result,
-        transferables: Array.from(transferables),
-        revokables: Array.from(revokables)
-      };
+            return rawResult(rawResultSet, ["_", "_ref", pos]);
+          }
+          if (typeof value === "function" && !noFn) {
+            const mc = new MessageChannel();
+            mc.port1.onmessage = async (ev) => {
+              try {
+                try {
+                  const result2 = await value(...deserializer(ev.data[1]));
+                  const { data: data2, transferables: transferables2, revokables: revokables2 } = serializer(result2);
+                  try {
+                    ev.data[0].postMessage([true, data2], transferables2);
+                  } catch (e2) {
+                    revokables2.forEach((port) => port.close());
+                    throw e2;
+                  }
+                } catch (e2) {
+                  try {
+                    const { data: data2, transferables: transferables2 } = serializer(e2, true);
+                    ev.data[0].postMessage([false, data2], transferables2);
+                  } catch (e3) {
+                    console.error("Error on onmessage handler trying to transmit error", e3);
+                    ev.data[0].postMessage([false]);
+                  }
+                }
+              } catch (e2) {
+                console.error("Async error on onmessage handler", e2);
+              } finally {
+                ev.data[0].close();
+              }
+            };
+            transferables.add(mc.port2);
+            revokables.add(mc.port1);
+            return rawResult(rawResultSet, ["_", "_fn", mc.port2]);
+          }
+          const proto3 = Object.getPrototypeOf(value);
+          if (proto3?.constructor?.[serdesTagSymbol] && proto3.constructor[serdesSerializeSymbol]) {
+            return rawResult(rawResultSet, ["_", "_custom", proto3.constructor[serdesTagSymbol], proto3.constructor[serdesSerializeSymbol](value)]);
+          }
+          return value;
+        }), (_key, value) => {
+          if (Array.isArray(value) && value[0] === "_" && value[1] === "_ref") {
+            return verbatim[value[2]];
+          }
+          return value;
+        });
+        return {
+          data: result,
+          transferables: Array.from(transferables),
+          revokables: Array.from(revokables)
+        };
+      } catch (e2) {
+        revokables.forEach((port) => port.close());
+        throw e2;
+      }
     };
     deserializerTable = /* @__PURE__ */ Object.create(null);
     deserializer = (data) => {
@@ -22726,20 +22772,45 @@ var init_esm7 = __esm({
             // end back into functions using that port.
             case "_fn": {
               const mp = value[2];
-              return (...args) => {
+              const fn = (...args) => {
                 return new Promise((resolve82, reject) => {
                   const mc = new MessageChannel();
-                  const { data: data2, transferables } = serializer(args);
-                  mc.port1.onmessage = (ev) => {
-                    if (ev.data[0]) {
-                      resolve82(deserializer(ev.data[1]));
-                    } else {
-                      reject(deserializer(ev.data[1]));
+                  const { data: data2, transferables, revokables } = serializer(args);
+                  const rcvPort = mc.port1;
+                  const sendingPort = mc.port2;
+                  rcvPort.onmessage = (ev) => {
+                    try {
+                      if (ev.data[0]) {
+                        resolve82(deserializer(ev.data[1]));
+                      } else {
+                        reject(ev.data.length > 1 ? deserializer(ev.data[1]) : new Error("Message error"));
+                      }
+                    } catch (e2) {
+                      reject(e2);
+                    } finally {
+                      rcvPort.close();
+                      revokables.forEach((port) => port.close());
                     }
                   };
-                  mp.postMessage([mc.port2, data2], [mc.port2, ...transferables]);
+                  rcvPort.onmessageerror = () => {
+                    try {
+                      reject(new Error("Message error"));
+                    } finally {
+                      rcvPort.close();
+                      revokables.forEach((port) => port.close());
+                    }
+                  };
+                  try {
+                    mp.postMessage([sendingPort, data2], [sendingPort, ...transferables]);
+                  } catch (e2) {
+                    rcvPort.close();
+                    revokables.forEach((port) => port.close());
+                    reject(e2);
+                  }
                 });
               };
+              portDestructor(fn, mp);
+              return fn;
             }
           }
         }
@@ -22766,7 +22837,7 @@ var signedDataKeyId;
 var isRawSignedData;
 var rawSignedIncomingData;
 var init_signedData = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.9/node_modules/@chelonia/lib/dist/esm/signedData.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.4.3/node_modules/@chelonia/lib/dist/esm/signedData.mjs"() {
     init_esm6();
     init_esm();
     init_esm4();
@@ -23039,7 +23110,7 @@ var isRawEncryptedData;
 var unwrapMaybeEncryptedData;
 var maybeEncryptedIncomingData;
 var init_encryptedData = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.9/node_modules/@chelonia/lib/dist/esm/encryptedData.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.4.3/node_modules/@chelonia/lib/dist/esm/encryptedData.mjs"() {
     init_esm6();
     init_esm();
     init_esm4();
@@ -23304,7 +23375,7 @@ var decryptedAndVerifiedDeserializedMessage;
 var SPMessage;
 var keyOps;
 var init_SPMessage = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.9/node_modules/@chelonia/lib/dist/esm/SPMessage.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.4.3/node_modules/@chelonia/lib/dist/esm/SPMessage.mjs"() {
     init_esm6();
     init_esm7();
     init_esm4();
@@ -23376,8 +23447,14 @@ var init_SPMessage = __esm({
         });
       }
       if (op === SPMessage.OP_KEY_REQUEST) {
-        return maybeEncryptedIncomingData(contractID, state, message, height, additionalKeys, headJSON, (msg) => {
-          msg.replyWith = signedIncomingData(msg.contractID, void 0, msg.replyWith, msg.height, headJSON);
+        return maybeEncryptedIncomingData(contractID, state, message, height, additionalKeys, headJSON, (msg, id) => {
+          if (!id && has(msg, "innerData")) {
+            msg.innerData = maybeEncryptedIncomingData(contractID, state, msg.innerData, height, additionalKeys, headJSON, (innerMsg) => {
+              innerMsg.replyWith = signedIncomingData(innerMsg.contractID, void 0, innerMsg.replyWith, innerMsg.height, headJSON);
+            });
+          } else {
+            msg.replyWith = signedIncomingData(msg.contractID, void 0, msg.replyWith, msg.height, headJSON);
+          }
         });
       }
       if (op === SPMessage.OP_ACTION_UNENCRYPTED && isRawSignedData(message)) {
@@ -23392,7 +23469,14 @@ var init_SPMessage = __esm({
         });
       }
       if (op === SPMessage.OP_KEY_REQUEST_SEEN) {
-        return maybeEncryptedIncomingData(contractID, state, parsedMessage, height, additionalKeys, headJSON, void 0);
+        return maybeEncryptedIncomingData(contractID, state, parsedMessage, height, additionalKeys, headJSON, (data, id) => {
+          if (!id && has(data, "innerData")) {
+            const dataV2 = data;
+            if (dataV2.innerData) {
+              dataV2.innerData = maybeEncryptedIncomingData(contractID, state, dataV2.innerData, height, additionalKeys, headJSON);
+            }
+          }
+        });
       }
       if (op === SPMessage.OP_ATOMIC) {
         return message.map(([opT, opV]) => [
@@ -23709,7 +23793,7 @@ var prefixHandlers;
 var dbPrimitiveSelectors;
 var db_default;
 var init_db = __esm({
-  "node_modules/.deno/@chelonia+lib@1.2.9/node_modules/@chelonia/lib/dist/esm/db.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.4.3/node_modules/@chelonia/lib/dist/esm/db.mjs"() {
     init_esm3();
     init_esm2();
     init_esm();
@@ -23813,7 +23897,9 @@ var init_db = __esm({
           return;
         return JSON.parse(entryMetaJson);
       },
-      "chelonia/db/setEntryMeta": async (contractID, height, entryMeta) => {
+      async "chelonia/db/setEntryMeta"(contractID, height, entryMeta) {
+        if (!this.config.saveMessageMetadata)
+          return;
         const entryMetaJson = JSON.stringify(entryMeta);
         await esm_default("chelonia.db/set", `_private_hidx=${contractID}#${height}`, entryMetaJson);
       },
@@ -63867,9 +63953,9 @@ function eventsAfter(contractID, { sinceHeight, limit, sinceHash, stream = true 
                     const height = SPMessage.deserializeHEAD(currentEvent).head.height;
                     if (height !== sinceHeight || sinceHash && sinceHash !== hash3) {
                       if (height === sinceHeight && sinceHash && sinceHash !== hash3) {
-                        throw new ChelErrorForkedChain(`Forked chain: hash(${hash3}) !== since(${sinceHash})`);
+                        throw new ChelErrorForkedChain(`Forked chain ${contractID}: hash(${hash3}) !== since(${sinceHash})`);
                       } else {
-                        throw new Error(`Unexpected data: hash(${hash3}) !== since(${sinceHash || ""}) or height(${height}) !== since(${sinceHeight})`);
+                        throw new Error(`Unexpected data in ${contractID}: hash(${hash3}) !== since(${sinceHash || ""}) or height(${height}) !== since(${sinceHeight})`);
                       }
                     }
                   }
@@ -64000,10 +64086,11 @@ var collectEventStream = async (s) => {
   return r;
 };
 var logEvtError = (msg, ...args) => {
+  const extra = `(contractID ${msg.contractID()}, hash ${msg.hash()})`;
   if (msg._direction === "outgoing") {
-    console.warn(...args);
+    console.warn(...args, extra);
   } else {
-    console.error(...args);
+    console.error(...args, extra);
   }
 };
 var handleFetchResult = (type) => {
@@ -64016,6 +64103,49 @@ var handleFetchResult = (type) => {
       throw new ChelErrorUnexpectedHttpResponseCode(msg, { cause: r.status });
     }
     return r[type]();
+  };
+};
+var deleteKeyHelper = (state, height, keyIds) => {
+  const namesToCheck = new Set(keyIds.map((id) => state._vm.authorizedKeys[id]?.name).filter((name) => name != null));
+  const allIdsForNames = Object.values(state._vm.authorizedKeys).filter(({ name }) => namesToCheck.has(name)).reduce((acc, { id, name }) => {
+    if (!acc[name]) {
+      acc[name] = [id];
+    } else {
+      acc[name].push(id);
+    }
+    return acc;
+  }, /* @__PURE__ */ Object.create(null));
+  for (const keyId2 of keyIds) {
+    const key = state._vm.authorizedKeys[keyId2];
+    if (!key) {
+      console.error("[deleteKeyHelper] Key not found in authorizedKeys:", keyId2);
+      continue;
+    }
+    const name = key.name;
+    for (const id of allIdsForNames[name]) {
+      if (has(state._volatile.pendingKeyRevocations, id)) {
+        delete state._volatile.pendingKeyRevocations[id];
+      }
+    }
+    state._vm.authorizedKeys[keyId2]._notAfterHeight = height;
+  }
+};
+var extendKeyField = (a, b) => {
+  if (a === "*" || b === "*")
+    return "*";
+  return union2(a || [], b);
+};
+var updateKey = (key, updatedKey) => {
+  return {
+    ...key,
+    ...updatedKey.purpose ? { purpose: union2(key.purpose, updatedKey.purpose) } : {},
+    ...updatedKey.permissions ? {
+      permissions: extendKeyField(key.permissions, updatedKey.permissions)
+    } : {},
+    ...updatedKey.allowedActions ? {
+      allowedActions: extendKeyField(key.allowedActions, updatedKey.allowedActions)
+    } : {},
+    ...updatedKey.meta ? { meta: updatedKey.meta } : {}
   };
 };
 var supportsRequestStreams = typeof window !== "object" || (() => {
@@ -64350,14 +64480,14 @@ var files_default = esm_default("sbp/selectors/register", {
     }));
   }
 });
+init_esm6();
 init_esm();
-init_functions();
 init_esm4();
 init_SPMessage();
-init_esm6();
 init_db();
 init_encryptedData();
 init_errors3();
+init_functions();
 init_signedData();
 var missingDecryptionKeyIdsMap = /* @__PURE__ */ new WeakMap();
 var getMsgMeta = function(message, contractID, state, index) {
@@ -64678,7 +64808,8 @@ var internals_default = esm_default("sbp/selectors/register", {
     this.manifestToContract[manifestHash] = {
       slim: contractInfo === body.contractSlim,
       info: contractInfo,
-      contract: this.defContract
+      contract: this.defContract,
+      name: contractName
     };
   },
   // Warning: avoid using this unless you know what you're doing. Prefer using /remove.
@@ -64801,7 +64932,7 @@ var internals_default = esm_default("sbp/selectors/register", {
             ...billableContractID && {
               Authorization: buildShelterAuthorizationHeader.call(this, billableContractID)
             },
-            "Content-Type": "text/plain"
+            "Content-Type": "application/json"
           },
           signal: this.abortController.signal
         });
@@ -64879,6 +65010,34 @@ var internals_default = esm_default("sbp/selectors/register", {
     if (!Array.isArray(targetState._volatile?.pendingKeyRequests))
       return;
     this.config.reactiveSet(targetState._volatile, "pendingKeyRequests", targetState._volatile.pendingKeyRequests.filter((pkr) => pkr?.name !== signingKey.name));
+  },
+  "chelonia/private/operationHook": function(contractID, message, state) {
+    if (this.config.skipActionProcessing)
+      return;
+    const manifestHash = message.manifest();
+    const contractName = this.manifestToContract[manifestHash]?.name;
+    if (!contractName)
+      return;
+    const callHook = (op, atomic) => {
+      const hook = `${manifestHash}/${contractName}/_postOpHook/${op}`;
+      if (esm_default("sbp/selectors/fn", hook)) {
+        try {
+          esm_default(hook, { contractID, message, state, atomic });
+        } catch (e2) {
+          console.error(`[${hook}] hook error for message ${message.hash()} on contract ${contractID}:`, e2);
+        }
+      }
+    };
+    if (message.opType() === SPMessage.OP_ATOMIC) {
+      const opsSet = /* @__PURE__ */ new Set();
+      for (const [op] of message.opValue()) {
+        if (opsSet.has(op))
+          continue;
+        opsSet.add(op);
+        callHook(op, true);
+      }
+    }
+    callHook(message.opType());
   },
   "chelonia/private/in/processMessage": async function(message, state, internalSideEffectStack, contractName) {
     const [opT, opV] = message.op();
@@ -65012,14 +65171,29 @@ var internals_default = esm_default("sbp/selectors/register", {
           if (key.id && key.meta?.private?.content) {
             if (!has(state._vm, "sharedKeyIds"))
               state._vm.sharedKeyIds = [];
-            if (!state._vm.sharedKeyIds.some((sK) => sK.id === key.id)) {
+            const sharedKeyId = state._vm.sharedKeyIds.find((sK) => sK.id === key.id);
+            if (!sharedKeyId) {
               state._vm.sharedKeyIds.push({
                 id: key.id,
+                // Contract ID this key is for
                 contractID: v2.contractID,
+                // Contract ID used for encrypting the key
+                foreignContractIDs: v2.foreignContractID ? [[v2.foreignContractID, height]] : [],
                 height,
                 keyRequestHash: v2.keyRequestHash,
                 keyRequestHeight: v2.keyRequestHeight
               });
+            } else if (v2.foreignContractID) {
+              if (!sharedKeyId.foreignContractIDs) {
+                sharedKeyId.foreignContractIDs = [[v2.foreignContractID, height]];
+              } else {
+                const tuple = sharedKeyId.foreignContractIDs.find(([id]) => id === v2.foreignContractID);
+                if (tuple) {
+                  tuple[2] = height;
+                } else {
+                  sharedKeyId.foreignContractIDs.push([v2.foreignContractID, height]);
+                }
+              }
             }
           }
         }
@@ -65151,24 +65325,42 @@ var internals_default = esm_default("sbp/selectors/register", {
       },
       [SPMessage.OP_KEY_REQUEST](wv) {
         const data = config2.unwrapMaybeEncryptedData(wv);
-        const v2 = data?.data || {
+        let skipInviteAccounting = false;
+        let encryptedRequest = false;
+        const v2 = (() => {
+          if (!data)
+            return;
+          if (!data.encryptionKeyId && has(data.data, "innerData")) {
+            skipInviteAccounting = !!data.data.skipInviteAccounting;
+            const innerData = config2.unwrapMaybeEncryptedData(data.data.innerData);
+            encryptedRequest = !!innerData?.encryptionKeyId;
+            return innerData?.data;
+          } else {
+            encryptedRequest = !!data.encryptionKeyId;
+            return data.data;
+          }
+        })() || {
           contractID: "(private)",
           replyWith: { context: void 0 },
-          request: "*"
+          request: "(private)"
         };
         const originatingContractID = v2.contractID;
-        if (state._vm?.invites?.[signingKeyId]?.quantity != null) {
-          if (state._vm.invites[signingKeyId].quantity > 0) {
-            if (--state._vm.invites[signingKeyId].quantity <= 0) {
-              state._vm.invites[signingKeyId].status = INVITE_STATUS.USED;
-            }
-          } else {
-            logEvtError(message, "Ignoring OP_KEY_REQUEST because it exceeds allowed quantity: " + originatingContractID);
+        if (state._vm?.invites?.[signingKeyId] && !skipInviteAccounting) {
+          if (state._vm.invites[signingKeyId].status !== INVITE_STATUS.VALID) {
+            logEvtError(message, "[processMessage] Ignoring OP_KEY_REQUEST because it is not valid: " + originatingContractID);
             return;
           }
-        }
-        if (state._vm?.invites?.[signingKeyId]?.expires != null) {
-          if (state._vm.invites[signingKeyId].expires < Date.now()) {
+          if (state._vm?.invites?.[signingKeyId]?.quantity != null) {
+            if (state._vm.invites[signingKeyId].quantity > 0) {
+              if (--state._vm.invites[signingKeyId].quantity <= 0) {
+                state._vm.invites[signingKeyId].status = INVITE_STATUS.USED;
+              }
+            } else {
+              logEvtError(message, "Ignoring OP_KEY_REQUEST because it exceeds allowed quantity: " + originatingContractID);
+              return;
+            }
+          }
+          if (state._vm.invites[signingKeyId].expires != null && state._vm.invites[signingKeyId].expires < Date.now()) {
             logEvtError(message, "Ignoring OP_KEY_REQUEST because it expired at " + state._vm.invites[signingKeyId].expires + ": " + originatingContractID);
             return;
           }
@@ -65181,12 +65373,8 @@ var internals_default = esm_default("sbp/selectors/register", {
           return;
         }
         const context = v2.replyWith.context;
-        if (data && (!Array.isArray(context) || context[0] !== originatingContractID)) {
-          logEvtError(message, "Ignoring OP_KEY_REQUEST because it is signed by the wrong contract");
-          return;
-        }
-        if (v2.request !== "*") {
-          logEvtError(message, "Ignoring OP_KEY_REQUEST because it has an unsupported request attribute", v2.request);
+        if (Array.isArray(context) && context[0] !== originatingContractID) {
+          logEvtError(message, "Ignoring OP_KEY_REQUEST because it is signed by the wrong contract", originatingContractID + " !== " + context[0]);
           return;
         }
         if (!state._vm.pendingKeyshares)
@@ -65194,12 +65382,15 @@ var internals_default = esm_default("sbp/selectors/register", {
         state._vm.pendingKeyshares[message.hash()] = context ? [
           // Full-encryption (i.e., KRS encryption) requires that this request
           // was encrypted and that the invite is marked as private
-          !!data?.encryptionKeyId,
+          encryptedRequest,
           message.height(),
           signingKeyId,
-          context
-        ] : [!!data?.encryptionKeyId, message.height(), signingKeyId];
-        if (data) {
+          context,
+          v2.request,
+          message.manifest(),
+          skipInviteAccounting
+        ] : [encryptedRequest, message.height(), signingKeyId];
+        if (context) {
           internalSideEffectStack?.push(() => {
             self2.setPostSyncOp(contractID, "respondToAllKeyRequests-" + message.contractID(), [
               "chelonia/private/respondToAllKeyRequests",
@@ -65220,7 +65411,7 @@ var internals_default = esm_default("sbp/selectors/register", {
           const hash4 = v2.keyRequestHash;
           const pending = state._vm.pendingKeyshares[hash4];
           delete state._vm.pendingKeyshares[hash4];
-          if (pending.length !== 4)
+          if (pending.length !== 4 && pending.length !== 7)
             return;
           const keyId2 = pending[2];
           const originatingContractID = pending[3][0];
@@ -65229,13 +65420,18 @@ var internals_default = esm_default("sbp/selectors/register", {
           }
           if (!has(state._vm, "keyshares"))
             state._vm.keyshares = /* @__PURE__ */ Object.create(null);
-          const success = v2.success;
+          let inner = v2;
+          if (data.encryptionKeyId == null && has(v2, "innerData")) {
+            const innerResult = config2.unwrapMaybeEncryptedData(v2.innerData);
+            inner = innerResult?.data;
+          }
+          const success = inner?.success;
           state._vm.keyshares[hash4] = {
             contractID: originatingContractID,
             height,
             success,
             ...success && {
-              hash: v2.keyShareHash
+              hash: inner?.keyShareHash
             }
           };
         }
@@ -65284,12 +65480,9 @@ var internals_default = esm_default("sbp/selectors/register", {
           }
           return true;
         });
+        deleteKeyHelper(state, height, keyIds);
         keyIds.forEach((keyId2) => {
           const key = state._vm.authorizedKeys[keyId2];
-          state._vm.authorizedKeys[keyId2]._notAfterHeight = height;
-          if (has(state._volatile.pendingKeyRevocations, keyId2)) {
-            delete state._volatile.pendingKeyRevocations[keyId2];
-          }
           if (key.foreignKey) {
             const fkUrl = new URL(key.foreignKey);
             const foreignContract = fkUrl.pathname;
@@ -65341,19 +65534,54 @@ var internals_default = esm_default("sbp/selectors/register", {
         }
         const [updatedKeys, updatedMap] = validateKeyUpdatePermissions.call(self2, contractID, signingKey, state, v2);
         const keysToDelete = Object.values(updatedMap);
-        for (const keyId2 of keysToDelete) {
-          if (has(state._volatile.pendingKeyRevocations, keyId2)) {
-            delete state._volatile.pendingKeyRevocations[keyId2];
-          }
-          state._vm.authorizedKeys[keyId2]._notAfterHeight = height;
-        }
+        deleteKeyHelper(state, height, keysToDelete);
+        let canMirrorOperationsUpToRingLevel = NaN;
+        let hasOutOfSyncKeys = false;
         for (const key of updatedKeys) {
           if (!has(state._vm.authorizedKeys, key.id)) {
             key._notBeforeHeight = height;
             state._vm.authorizedKeys[key.id] = cloneDeep(key);
+          } else if (state._vm.authorizedKeys[key.id]._notAfterHeight == null) {
+            state._vm.authorizedKeys[key.id] = updateKey(state._vm.authorizedKeys[key.id], key);
+          } else {
+            throw new Error("Unable to update a deleted key");
+          }
+          if (key.foreignKey != null) {
+            if (!(key.ringLevel >= canMirrorOperationsUpToRingLevel)) {
+              const signingKey2 = findSuitableSecretKeyId(state, [SPMessage.OP_KEY_DEL], ["sig"], key.ringLevel);
+              if (signingKey2) {
+                canMirrorOperationsUpToRingLevel = key.ringLevel;
+              }
+            }
+            const fkUrl = new URL(key.foreignKey);
+            const foreignContractID = fkUrl.pathname;
+            const foreignKeyName = fkUrl.searchParams.get("keyName");
+            if (!foreignKeyName)
+              throw new Error("Missing foreign key name");
+            const foreignState = esm_default("chelonia/contract/state", foreignContractID);
+            if (foreignState) {
+              const fKeyId = findKeyIdByName(foreignState, foreignKeyName);
+              if (!fKeyId) {
+                self2.config.reactiveSet(state._volatile.pendingKeyRevocations, key.id, "del");
+                hasOutOfSyncKeys = true;
+              } else if (fKeyId !== key.id) {
+                self2.config.reactiveSet(state._volatile.pendingKeyRevocations, key.id, true);
+                hasOutOfSyncKeys = true;
+              }
+            }
           }
         }
         keyAdditionProcessor.call(self2, message, hash3, updatedKeys, state, contractID, signingKey, internalSideEffectStack);
+        if (Number.isFinite(canMirrorOperationsUpToRingLevel) && hasOutOfSyncKeys) {
+          internalSideEffectStack?.push(() => {
+            esm_default("chelonia/private/queueEvent", contractID, [
+              "chelonia/private/deleteOrRotateRevokedKeys",
+              contractID
+            ]).catch((e2) => {
+              console.error(`Error at deleteOrRotateRevokedKeys for contractID ${contractID} at OP_KEY_UPDATE with ${hash3}`, e2);
+            });
+          });
+        }
         if (Array.isArray(state._volatile?.watch)) {
           const updatedKeysMap = /* @__PURE__ */ Object.create(null);
           updatedKeys.forEach((key) => {
@@ -65394,7 +65622,7 @@ var internals_default = esm_default("sbp/selectors/register", {
         }
       } : state;
       if (!validateKeyPermissions(message, config2, stateForValidation, signingKeyId, opT, opV)) {
-        throw new Error("No matching signing key was defined");
+        throw new Error(`No matching signing key was defined: ${signingKeyId} of ${hash3} (${contractID})`);
       }
       signingKey = stateForValidation._vm.authorizedKeys[signingKeyId];
     }
@@ -65403,6 +65631,7 @@ var internals_default = esm_default("sbp/selectors/register", {
     }
     if (processOp) {
       await opFns[opT](opV);
+      esm_default("chelonia/private/operationHook", contractID, message, state);
       config2.postOp?.(message, state);
       config2[`postOp_${opT}`]?.(message, state);
     }
@@ -65514,9 +65743,9 @@ var internals_default = esm_default("sbp/selectors/register", {
     }
     Object.entries(pendingWatch).forEach(([contractID, keys]) => {
       if (!Array.isArray(keys) || // Check that the keys exist and haven't been revoked
-      !keys.reduce((acc, [, id]) => {
-        return acc || has(externalContractState._vm.authorizedKeys, id);
-      }, false)) {
+      !keys.some(([, id]) => {
+        return has(externalContractState._vm.authorizedKeys, id);
+      })) {
         console.info("[chelonia/private/watchForeignKeys]: Skipping as none of the keys to watch exist", {
           externalContractID,
           contractID
@@ -65537,9 +65766,9 @@ var internals_default = esm_default("sbp/selectors/register", {
     const externalContractState = rootState[externalContractID];
     const pendingWatch = externalContractState?._vm?.pendingWatch?.[contractID]?.splice(0);
     if (!Array.isArray(pendingWatch) || // Check that the keys exist and haven't been revoked
-    !pendingWatch.reduce((acc, [, id]) => {
-      return acc || has(externalContractState._vm.authorizedKeys, id) && findKeyIdByName(externalContractState, externalContractState._vm.authorizedKeys[id].name) != null;
-    }, false)) {
+    !pendingWatch.some(([, id]) => {
+      return has(externalContractState._vm.authorizedKeys, id) && findKeyIdByName(externalContractState, externalContractState._vm.authorizedKeys[id].name) != null;
+    })) {
       console.info("[chelonia/private/syncContractAndWatchKeys]: Skipping as none of the keys to watch exist", {
         externalContractID,
         contractID
@@ -65616,10 +65845,18 @@ var internals_default = esm_default("sbp/selectors/register", {
     const pendingKeyRevocations = contractState?._volatile?.pendingKeyRevocations;
     if (!pendingKeyRevocations || Object.keys(pendingKeyRevocations).length === 0)
       return;
+    const activeForeignKeyIds = Object.fromEntries(Object.values(contractState._vm.authorizedKeys).filter(({ foreignKey, _notAfterHeight }) => foreignKey != null && _notAfterHeight == null).map(({ foreignKey, id }) => [foreignKey, id]));
     const keysToUpdate = Object.entries(pendingKeyRevocations).filter(([, v2]) => v2 === true).map(([id]) => id);
+    const affectedKeyIds = /* @__PURE__ */ new Set();
     const [, keyUpdateSigningKeyId, keyUpdateArgs] = keysToUpdate.reduce((acc, keyId2) => {
-      const key = contractState._vm?.authorizedKeys?.[keyId2];
-      if (!key || !key.foreignKey)
+      const pkrKey = contractState._vm?.authorizedKeys?.[keyId2];
+      if (!pkrKey || !pkrKey.foreignKey)
+        return acc;
+      const activeKeyId = activeForeignKeyIds[pkrKey.foreignKey];
+      if (!activeKeyId)
+        return acc;
+      const key = contractState._vm.authorizedKeys[activeKeyId];
+      if (affectedKeyIds.has(key.id))
         return acc;
       const foreignKey = String(key.foreignKey);
       const fkUrl = new URL(foreignKey);
@@ -65636,13 +65873,17 @@ var internals_default = esm_default("sbp/selectors/register", {
           this.config.reactiveSet(pendingKeyRevocations, keyId2, "del");
         }
         return acc;
+      } else if (fKeyId === key.id) {
+        this.config.reactiveDel(pendingKeyRevocations, keyId2);
+        return acc;
       }
       const [currentRingLevel, currentSigningKeyId, currentKeyArgs] = acc;
-      const ringLevel = Math.min(currentRingLevel, key.ringLevel ?? Number.POSITIVE_INFINITY);
+      const ringLevel = Math.min(currentRingLevel, key.ringLevel ?? Number.MAX_SAFE_INTEGER);
       if (ringLevel >= currentRingLevel) {
+        affectedKeyIds.add(key.id);
         currentKeyArgs.push({
           name: key.name,
-          oldKeyId: keyId2,
+          oldKeyId: key.id,
           id: fKeyId,
           data: foreignState._vm.authorizedKeys[fKeyId].data
         });
@@ -65650,9 +65891,10 @@ var internals_default = esm_default("sbp/selectors/register", {
       } else if (Number.isFinite(ringLevel)) {
         const signingKeyId = findSuitableSecretKeyId(contractState, [SPMessage.OP_KEY_UPDATE], ["sig"], ringLevel);
         if (signingKeyId) {
+          affectedKeyIds.add(key.id);
           currentKeyArgs.push({
             name: key.name,
-            oldKeyId: keyId2,
+            oldKeyId: key.id,
             id: fKeyId,
             data: foreignState._vm.authorizedKeys[fKeyId].data
           });
@@ -65677,15 +65919,23 @@ var internals_default = esm_default("sbp/selectors/register", {
       });
     }
     const keysToDelete = Object.entries(pendingKeyRevocations).filter(([, v2]) => v2 === "del").map(([id]) => id);
-    const [, keyDelSigningKeyId, keyIdsToDelete] = keysToDelete.reduce((acc, keyId2) => {
+    const [, keyDelSigningKeyId, keyIdsToDelete] = keysToDelete.reduce((acc, pkrKeyId) => {
+      const pkrKey = contractState._vm?.authorizedKeys?.[pkrKeyId];
+      if (!pkrKey || !pkrKey.foreignKey)
+        return acc;
+      const keyId2 = activeForeignKeyIds[pkrKey.foreignKey];
+      if (!keyId2 || affectedKeyIds.has(keyId2))
+        return acc;
       const [currentRingLevel, currentSigningKeyId, currentKeyIds] = acc;
-      const ringLevel = Math.min(currentRingLevel, contractState._vm?.authorizedKeys?.[keyId2]?.ringLevel ?? Number.POSITIVE_INFINITY);
+      const ringLevel = Math.min(currentRingLevel, contractState._vm?.authorizedKeys?.[keyId2]?.ringLevel ?? Number.MAX_SAFE_INTEGER);
       if (ringLevel >= currentRingLevel) {
+        affectedKeyIds.add(keyId2);
         currentKeyIds.push(keyId2);
         return [currentRingLevel, currentSigningKeyId, currentKeyIds];
       } else if (Number.isFinite(ringLevel)) {
         const signingKeyId = findSuitableSecretKeyId(contractState, [SPMessage.OP_KEY_DEL], ["sig"], ringLevel);
         if (signingKeyId) {
+          affectedKeyIds.add(keyId2);
           currentKeyIds.push(keyId2);
           return [ringLevel, signingKeyId, currentKeyIds];
         }
@@ -65700,13 +65950,13 @@ var internals_default = esm_default("sbp/selectors/register", {
         data: keyIdsToDelete,
         signingKeyId: keyDelSigningKeyId
       }).catch((e2) => {
-        console.error(`[chelonia/private/deleteRevokedKeys] Error sending OP_KEY_DEL for ${contractID}`, e2.message);
+        console.error(`[chelonia/private/deleteOrRotateRevokedKeys] Error sending OP_KEY_DEL for ${contractID}`, e2.message);
       });
     }
   },
   "chelonia/private/respondToAllKeyRequests": function(contractID) {
     const state = esm_default(this.config.stateSelector);
-    const contractState = state[contractID] ?? {};
+    const contractState = state[contractID] ?? { _vm: {} };
     const pending = contractState?._vm?.pendingKeyshares;
     if (!pending)
       return;
@@ -65716,7 +65966,7 @@ var internals_default = esm_default("sbp/selectors/register", {
       return;
     }
     Object.entries(pending).map(([hash3, entry]) => {
-      if (!Array.isArray(entry) || entry.length !== 4) {
+      if (!Array.isArray(entry) || entry.length !== 4 && entry.length !== 7) {
         return void 0;
       }
       const [, , , [originatingContractID]] = entry;
@@ -65735,12 +65985,11 @@ var internals_default = esm_default("sbp/selectors/register", {
     const contractState = state[contractID];
     const entry = contractState?._vm?.pendingKeyshares?.[hash3];
     const instance = this._instance;
-    if (!Array.isArray(entry) || entry.length !== 4) {
+    if (!Array.isArray(entry) || entry.length !== 4 && entry.length !== 7 || has(entry, "processing")) {
       return;
     }
-    const [keyShareEncryption, height, , [originatingContractID, rv, originatingContractHeight, headJSON]] = entry;
-    entry.pop();
-    const krsEncryption = !!contractState._vm.authorizedKeys?.[signingKeyId]?._private;
+    const [keyShareEncryption, height, inviteId, [originatingContractID, rv, originatingContractHeight, headJSON], request, manifestHash, requestedSkipInviteAccounting] = entry;
+    const krsEncryption = keyShareEncryption;
     await esm_default("chelonia/private/in/syncContract", originatingContractID);
     if (instance !== this._instance)
       return;
@@ -65752,28 +66001,106 @@ var internals_default = esm_default("sbp/selectors/register", {
     const responseKey = encryptedIncomingData(contractID, contractState, v2.responseKey, height, this.transientSecretKeys, headJSON).valueOf();
     const deserializedResponseKey = deserializeKey(responseKey);
     const responseKeyId = keyId(deserializedResponseKey);
-    Promise.resolve().then(() => {
+    Promise.resolve().then(async () => {
       if (instance !== this._instance)
         return;
+      if (has(entry, "processing"))
+        return;
+      if (!contractState?._vm?.pendingKeyshares?.[hash3]) {
+        return;
+      }
+      Object.defineProperty(entry, "processing", { configurable: true, value: true });
       if (!has(originatingState._vm.authorizedKeys, responseKeyId) || originatingState._vm.authorizedKeys[responseKeyId]._notAfterHeight != null) {
         throw new Error(`Unable to respond to key request for ${originatingContractID}. Key ${responseKeyId} is not valid.`);
       }
       esm_default("chelonia/storeSecretKeys", new Secret([{ key: deserializedResponseKey }]));
-      const keys = pick2(state.secretKeys, Object.entries(contractState._vm.authorizedKeys).filter(([, key]) => !!key.meta?.private?.shareable).map(([kId]) => kId));
-      if (!keys || Object.keys(keys).length === 0) {
-        console.info("respondToAllKeyRequests: no keys to share", {
+      let keyIds;
+      let skipInviteAccounting;
+      if (request == null || request === "*") {
+        if (contractState._vm?.invites?.[inviteId]?.expires != null) {
+          if (contractState._vm.invites[inviteId].expires < Date.now()) {
+            console.error("[respondToKeyRequest] Ignoring OP_KEY_REQUEST because it expired at " + contractState._vm.invites[inviteId].expires + ": " + originatingContractID);
+            return;
+          }
+        }
+        keyIds = Object.entries(contractState._vm.authorizedKeys).filter(([, key]) => !!key.meta?.private?.shareable).map(([kId]) => kId);
+      } else if (manifestHash) {
+        const contractName2 = this.manifestToContract[manifestHash]?.name;
+        if (!contractName2)
+          return;
+        const method = `${manifestHash}/${contractName2}/_responseOptionsForKeyRequest`;
+        if (esm_default("sbp/selectors/fn", method)) {
+          try {
+            const result = await esm_default(method, {
+              contractID,
+              request,
+              state: contractState,
+              keyShareEncryption,
+              height,
+              inviteId,
+              originatingContractID,
+              originatingContractHeight
+            });
+            if (result) {
+              keyIds = result.keyIds;
+              skipInviteAccounting = result.skipInviteAccounting;
+            }
+          } catch (e2) {
+            console.warn("[respondToKeyRequest] Cannot respond: hook errored", {
+              contractID,
+              originatingContractID,
+              inviteId,
+              request,
+              e: e2
+            });
+            return;
+          }
+        } else {
+          console.warn("[respondToKeyRequest] Cannot respond: hook not defined", {
+            contractID,
+            originatingContractID,
+            inviteId,
+            request
+          });
+          return;
+        }
+      }
+      if (!Array.isArray(keyIds)) {
+        console.info("[respondToKeyRequest] no keys to share", {
           contractID,
-          originatingContractID
+          originatingContractID,
+          inviteId,
+          request
         });
         return;
+      } else if (keyIds.length === 0) {
+        console.info("[respondToKeyRequest] explicitly empty keyshare response", {
+          contractID,
+          originatingContractID,
+          inviteId,
+          request
+        });
+        return [null, skipInviteAccounting];
+      }
+      for (let i2 = 0; i2 < keyIds.length; i2++) {
+        if (!state.secretKeys[keyIds[i2]]) {
+          console.info("[respondToKeyRequest] missing key id", {
+            contractID,
+            originatingContractID,
+            inviteId,
+            request,
+            keyId: keyIds[i2]
+          });
+          return;
+        }
       }
       const keySharePayload = {
         contractID,
-        keys: Object.entries(keys).map(([keyId2, key]) => ({
+        keys: keyIds.map((keyId2) => ({
           id: keyId2,
           meta: {
             private: {
-              content: encryptedOutgoingData(originatingContractID, encryptionKeyId, key),
+              content: encryptedOutgoingData(originatingContractID, encryptionKeyId, state.secretKeys[keyId2]),
               shareable: true
             }
           }
@@ -65781,63 +66108,68 @@ var internals_default = esm_default("sbp/selectors/register", {
         keyRequestHash: hash3,
         keyRequestHeight: height
       };
-      if (!contractState?._vm?.pendingKeyshares?.[hash3]) {
+      return [keySharePayload, skipInviteAccounting];
+    }).then(async (value) => {
+      if (instance !== this._instance || !value)
         return;
+      const [keySharePayload, skipInviteAccounting] = value;
+      if (!!requestedSkipInviteAccounting !== !!skipInviteAccounting) {
+        console.error(`Error at respondToKeyRequest: mismatched result for skipInviteAccounting (${!!requestedSkipInviteAccounting} !== ${!!skipInviteAccounting}) for ${contractID}`);
+        throw new Error("Mismatched skipInviteAccounting");
       }
-      return keySharePayload;
-    }).then((keySharePayload) => {
-      if (instance !== this._instance || !keySharePayload)
-        return;
-      return esm_default("chelonia/out/keyShare", {
+      const msg = keySharePayload && await esm_default("chelonia/out/keyShare", {
         contractID: originatingContractID,
         contractName: originatingContractName,
         data: keyShareEncryption ? encryptedOutgoingData(originatingContractID, findSuitablePublicKeyIds(originatingState, [SPMessage.OP_KEY_SHARE], ["enc"])?.[0] || "", keySharePayload) : keySharePayload,
         signingKeyId: responseKeyId
-      }).then((msg) => {
-        if (instance !== this._instance)
-          return;
-        const payload = { keyRequestHash: hash3, keyShareHash: msg.hash(), success: true };
-        const connectionKeyPayload = {
-          contractID: originatingContractID,
-          keys: [
-            {
-              id: responseKeyId,
-              meta: {
-                private: {
-                  content: encryptedOutgoingData(contractID, findSuitablePublicKeyIds(contractState, [SPMessage.OP_KEY_REQUEST_SEEN], ["enc"])?.[0] || "", responseKey),
-                  shareable: true
-                }
+      });
+      if (instance !== this._instance)
+        return;
+      const innerPayload = { keyShareHash: msg?.hash(), success: true };
+      const connectionKeyPayload = {
+        contractID: originatingContractID,
+        keys: [
+          {
+            id: responseKeyId,
+            meta: {
+              private: {
+                content: encryptedOutgoingData(contractID, findSuitablePublicKeyIds(contractState, [SPMessage.OP_KEY_REQUEST_SEEN], ["enc"])?.[0] || "", responseKey),
+                shareable: true
               }
             }
-          ]
-        };
-        esm_default("chelonia/out/atomic", {
-          contractID,
-          contractName,
-          signingKeyId,
-          data: [
-            [
-              "chelonia/out/keyRequestResponse",
-              {
-                data: krsEncryption ? encryptedOutgoingData(contractID, findSuitablePublicKeyIds(contractState, [SPMessage.OP_KEY_REQUEST_SEEN], ["enc"])?.[0] || "", payload) : payload
+          }
+        ]
+      };
+      esm_default("chelonia/out/atomic", {
+        contractID,
+        contractName,
+        signingKeyId,
+        data: [
+          [
+            "chelonia/out/keyRequestResponse",
+            {
+              data: {
+                keyRequestHash: hash3,
+                skipInviteAccounting,
+                innerData: krsEncryption ? encryptedOutgoingData(contractID, findSuitablePublicKeyIds(contractState, [SPMessage.OP_KEY_REQUEST_SEEN], ["enc"])?.[0] || "", innerPayload) : innerPayload
               }
-            ],
-            [
-              // Upon successful key share, we want to share deserializedResponseKey
-              // with ourselves
-              "chelonia/out/keyShare",
-              {
-                data: keyShareEncryption ? encryptedOutgoingData(contractID, findSuitablePublicKeyIds(contractState, [SPMessage.OP_KEY_SHARE], ["enc"])?.[0] || "", connectionKeyPayload) : connectionKeyPayload
-              }
-            ]
+            }
+          ],
+          [
+            // Upon successful key share, we want to share deserializedResponseKey
+            // with ourselves
+            "chelonia/out/keyShare",
+            {
+              data: keyShareEncryption ? encryptedOutgoingData(contractID, findSuitablePublicKeyIds(contractState, [SPMessage.OP_KEY_SHARE], ["enc"])?.[0] || "", connectionKeyPayload) : connectionKeyPayload
+            }
           ]
-        }).catch((e2) => {
-          console.error("Error at respondToKeyRequest while sending keyRequestResponse", e2);
-        });
+        ]
+      }).catch((e2) => {
+        console.error("Error at respondToKeyRequest while sending keyRequestResponse", e2);
       });
     }).catch((e2) => {
       console.error("Error at respondToKeyRequest", e2);
-      const payload = { keyRequestHash: hash3, success: false };
+      const innerPayload = { success: false };
       if (!contractState?._vm?.pendingKeyshares?.[hash3]) {
         return;
       }
@@ -65845,7 +66177,11 @@ var internals_default = esm_default("sbp/selectors/register", {
         contractID,
         contractName,
         signingKeyId,
-        data: krsEncryption ? encryptedOutgoingData(contractID, findSuitablePublicKeyIds(contractState, [SPMessage.OP_KEY_REQUEST_SEEN], ["enc"])?.[0] || "", payload) : payload
+        data: {
+          keyRequestHash: hash3,
+          skipInviteAccounting: requestedSkipInviteAccounting,
+          innerData: krsEncryption ? encryptedOutgoingData(contractID, findSuitablePublicKeyIds(contractState, [SPMessage.OP_KEY_REQUEST_SEEN], ["enc"])?.[0] || "", innerPayload) : innerPayload
+        }
       }).catch((e3) => {
         console.error("Error at respondToKeyRequest while sending keyRequestResponse in error handler", e3);
       });
@@ -66270,6 +66606,10 @@ var chelonia_default = esm_default("sbp/selectors/register", {
       // Similarly, future events will not be reingested and will throw
       // with ChelErrorDBBadPreviousHEAD
       strictOrdering: false,
+      // Chelonia will store some information (e.g., date it was received) about
+      // messages. This is primarily useful in the server, and not so useful for
+      // clients, especially for lightweight clients that don't store messages.
+      saveMessageMetadata: false,
       connectionOptions: {
         maxRetries: Infinity,
         // See https://github.com/okTurtles/group-income/issues/1183
@@ -66321,16 +66661,16 @@ var chelonia_default = esm_default("sbp/selectors/register", {
     const secretKeyGetter = (o2, p) => {
       if (has(o2, p))
         return o2[p];
-      const rootState = esm_default(this.config.stateSelector);
-      if (rootState?.secretKeys && has(rootState.secretKeys, p)) {
-        const key = deserializeKey(rootState.secretKeys[p]);
+      const rootState2 = esm_default(this.config.stateSelector);
+      if (rootState2?.secretKeys && has(rootState2.secretKeys, p)) {
+        const key = deserializeKey(rootState2.secretKeys[p]);
         o2[p] = key;
         return key;
       }
     };
     const secretKeyList = (o2) => {
-      const rootState = esm_default(this.config.stateSelector);
-      const stateKeys = Object.keys(rootState?.secretKeys || {});
+      const rootState2 = esm_default(this.config.stateSelector);
+      const stateKeys = Object.keys(rootState2?.secretKeys || {});
       return Array.from(/* @__PURE__ */ new Set([...Object.keys(o2), ...stateKeys]));
     };
     this.transientSecretKeys = new Proxy(/* @__PURE__ */ Object.create(null), {
@@ -66340,6 +66680,8 @@ var chelonia_default = esm_default("sbp/selectors/register", {
     this.ephemeralReferenceCount = /* @__PURE__ */ Object.create(null);
     this.subscriptionSet = /* @__PURE__ */ new Set();
     this.pending = [];
+    const rootState = esm_default(this.config.stateSelector);
+    rootState.secretKeys = rootState.secretKeys || /* @__PURE__ */ Object.create(null);
   },
   "chelonia/config": function() {
     return {
@@ -66402,6 +66744,7 @@ var chelonia_default = esm_default("sbp/selectors/register", {
     this.abortController = new AbortController();
     reactiveClearObject(rootState, this.config.reactiveDel);
     this.config.reactiveSet(rootState, "contracts", /* @__PURE__ */ Object.create(null));
+    this.config.reactiveSet(rootState, "secretKeys", /* @__PURE__ */ Object.create(null));
     clearObject(this.ephemeralReferenceCount);
     this.pending.splice(0);
     clearObject(this.currentSyncs);
@@ -66580,9 +66923,25 @@ var chelonia_default = esm_default("sbp/selectors/register", {
     const keyId2 = findSuitableSecretKeyId(contractIDOrState, permissions, purposes, ringLevel, allowedActions);
     return keyId2;
   },
-  "chelonia/contract/setPendingKeyRevocation": function(contractID, names) {
-    const rootState = esm_default(this.config.stateSelector);
-    const state = rootState[contractID];
+  // setPendingKeyRevocation is meant to be called by contracts (or applications)
+  // to mark a set of keys as pending revocation / rotation (that is, adding the
+  // key to `_volatile.pendingKeyRevocations`).
+  // Keys that are marked as pending revocation can then be collected by key
+  // rotation logic (currently, 'gi.actions/out/rotateKeys') to rotate them or
+  // delete them.
+  // Calling this selector in itself doesn't revoke or rotate the key. It will
+  // just set a flag on that key for later handling. The flag is automatically
+  // cleared when the key is updated or deleted.
+  "chelonia/contract/setPendingKeyRevocation": function(contractIDOrState, names, keyIds) {
+    let state;
+    let contractID;
+    if (typeof contractIDOrState === "string") {
+      const rootState = esm_default(this.config.stateSelector);
+      contractID = contractIDOrState;
+      state = rootState[contractIDOrState];
+    } else {
+      state = contractIDOrState;
+    }
     if (!state._volatile)
       this.config.reactiveSet(state, "_volatile", /* @__PURE__ */ Object.create(null));
     if (!state._volatile.pendingKeyRevocations) {
@@ -66591,10 +66950,12 @@ var chelonia_default = esm_default("sbp/selectors/register", {
     for (const name of names) {
       const keyId2 = findKeyIdByName(state, name);
       if (keyId2) {
+        if (keyIds && !keyIds.includes(keyId2))
+          continue;
         this.config.reactiveSet(state._volatile.pendingKeyRevocations, keyId2, true);
       } else {
         console.warn("[setPendingKeyRevocation] Unable to find keyId for name", {
-          contractID,
+          contractID: contractID ?? "(unknown)",
           name
         });
       }
@@ -67004,6 +67365,17 @@ var chelonia_default = esm_default("sbp/selectors/register", {
       confirmRemovalCallback: boundCheckCanBeGarbageCollected
     }) : void 0;
   },
+  // Higher level function to automatically retain / release a contract
+  "chelonia/contract/withRetained": async function(contractIDs, callback) {
+    await esm_default("chelonia/contract/retain", contractIDs, { ephemeral: true });
+    try {
+      return await callback();
+    } finally {
+      await esm_default("chelonia/contract/release", contractIDs, { ephemeral: true }).catch((e2) => {
+        console.error("[withRetained] Error releasing contract:", e2);
+      });
+    }
+  },
   "chelonia/contract/disconnect": async function(contractID, contractIDToDisconnect) {
     const state = esm_default(this.config.stateSelector);
     const contractState = state[contractID];
@@ -67403,7 +67775,7 @@ var chelonia_default = esm_default("sbp/selectors/register", {
     return msg;
   },
   "chelonia/out/keyRequest": async function(params) {
-    const { originatingContractID, originatingContractName, contractID, contractName, hooks, publishOptions, innerSigningKeyId, encryptionKeyId, innerEncryptionKeyId, encryptKeyRequestMetadata, reference } = params;
+    const { originatingContractID, originatingContractName, contractID, contractName, hooks, publishOptions, innerSigningKeyId, encryptionKeyId, innerEncryptionKeyId, encryptKeyRequestMetadata, reference, request, keyRequestResponseId, skipInviteAccounting } = params;
     const manifestHash = this.config.contracts.manifests[contractName];
     const originatingManifestHash = this.config.contracts.manifests[originatingContractName];
     const contract = this.manifestToContract[manifestHash]?.contract;
@@ -67411,56 +67783,68 @@ var chelonia_default = esm_default("sbp/selectors/register", {
     if (!contract) {
       throw new Error("Contract name not found");
     }
-    const rootState = esm_default(this.config.stateSelector);
-    try {
-      await esm_default("chelonia/contract/retain", contractID, { ephemeral: true });
+    return await esm_default("chelonia/contract/withRetained", contractID, async () => {
+      const rootState = esm_default(this.config.stateSelector);
       const state = contract.state(contractID);
       const originatingState = originatingContract.state(originatingContractID);
-      const havePendingKeyRequest = Object.values(originatingState._vm.authorizedKeys).findIndex((k) => {
-        return k._notAfterHeight == null && k.meta?.keyRequest?.contractID === contractID && state?._volatile?.pendingKeyRequests?.some((pkr) => pkr.name === k.name);
-      }) !== -1;
+      const havePendingKeyRequest = Object.values(originatingState._vm.authorizedKeys).some((k) => {
+        return k._notAfterHeight == null && k.meta?.keyRequest?.contractID === contractID && state?._volatile?.pendingKeyRequests?.some((pkr) => pkr.name === k.name && pkr.reference === reference);
+      });
       if (havePendingKeyRequest) {
         return;
       }
-      const keyRequestReplyKey = keygen(EDWARDS25519SHA512BATCH);
-      const keyRequestReplyKeyId = keyId(keyRequestReplyKey);
-      const keyRequestReplyKeyP = serializeKey(keyRequestReplyKey, false);
-      const keyRequestReplyKeyS = serializeKey(keyRequestReplyKey, true);
-      const signingKeyId = findSuitableSecretKeyId(originatingState, [SPMessage.OP_KEY_ADD], ["sig"]);
-      if (!signingKeyId) {
-        throw new ChelErrorUnexpected(`Unable to send key request. Originating contract is missing a key with OP_KEY_ADD permission. contractID=${contractID} originatingContractID=${originatingContractID}`);
-      }
-      const keyAddOp = () => esm_default("chelonia/out/keyAdd", {
-        contractID: originatingContractID,
-        contractName: originatingContractName,
-        data: [
-          {
-            id: keyRequestReplyKeyId,
-            name: "#krrk-" + keyRequestReplyKeyId,
-            purpose: ["sig"],
-            ringLevel: Number.MAX_SAFE_INTEGER,
-            permissions: params.permissions === "*" ? "*" : Array.isArray(params.permissions) ? [...params.permissions, SPMessage.OP_KEY_SHARE] : [SPMessage.OP_KEY_SHARE],
-            allowedActions: params.allowedActions,
-            meta: {
-              private: {
-                content: encryptedOutgoingData(originatingContractID, encryptionKeyId, keyRequestReplyKeyS),
-                shareable: false
-              },
-              keyRequest: {
-                ...reference && {
-                  reference: encryptKeyRequestMetadata ? encryptedOutgoingData(originatingContractID, encryptionKeyId, reference) : reference
+      let keyRequestReplyKeyS;
+      let keyAddOp;
+      if (keyRequestResponseId) {
+        if (!originatingState._vm.authorizedKeys[keyRequestResponseId] || originatingState._vm.authorizedKeys[keyRequestResponseId]._notAfterHeight != null) {
+          throw new Error(`Contract ID ${originatingContractID} is missing key or it has expired: ${keyRequestResponseId}`);
+        }
+        if (!rootState.secretKeys[keyRequestResponseId]) {
+          throw new Error("Missing secret key ID " + keyRequestResponseId);
+        }
+        keyRequestReplyKeyS = rootState.secretKeys[keyRequestResponseId];
+        keyAddOp = () => Promise.resolve();
+      } else {
+        const keyRequestReplyKey = keygen(EDWARDS25519SHA512BATCH);
+        const keyRequestReplyKeyId = keyId(keyRequestReplyKey);
+        const keyRequestReplyKeyP = serializeKey(keyRequestReplyKey, false);
+        keyRequestReplyKeyS = serializeKey(keyRequestReplyKey, true);
+        const signingKeyId = findSuitableSecretKeyId(originatingState, [SPMessage.OP_KEY_ADD], ["sig"]);
+        if (!signingKeyId) {
+          throw new ChelErrorUnexpected(`Unable to send key request. Originating contract is missing a key with OP_KEY_ADD permission. contractID=${contractID} originatingContractID=${originatingContractID}`);
+        }
+        keyAddOp = () => esm_default("chelonia/out/keyAdd", {
+          contractID: originatingContractID,
+          contractName: originatingContractName,
+          data: [
+            {
+              id: keyRequestReplyKeyId,
+              name: "#krrk-" + keyRequestReplyKeyId,
+              purpose: ["sig"],
+              ringLevel: Number.MAX_SAFE_INTEGER,
+              permissions: params.permissions === "*" ? "*" : Array.isArray(params.permissions) ? [...params.permissions, SPMessage.OP_KEY_SHARE] : [SPMessage.OP_KEY_SHARE],
+              allowedActions: params.allowedActions,
+              meta: {
+                private: {
+                  content: encryptedOutgoingData(originatingContractID, encryptionKeyId, keyRequestReplyKeyS),
+                  shareable: false
                 },
-                contractID: encryptKeyRequestMetadata ? encryptedOutgoingData(originatingContractID, encryptionKeyId, contractID) : contractID
-              }
-            },
-            data: keyRequestReplyKeyP
-          }
-        ],
-        signingKeyId
-      }).catch((e2) => {
-        console.error(`[chelonia] Error sending OP_KEY_ADD for ${originatingContractID} during key request to ${contractID}`, e2);
-        throw e2;
-      });
+                keyRequest: {
+                  ...reference && {
+                    reference: encryptKeyRequestMetadata ? encryptedOutgoingData(originatingContractID, encryptionKeyId, reference) : reference
+                  },
+                  contractID: encryptKeyRequestMetadata ? encryptedOutgoingData(originatingContractID, encryptionKeyId, contractID) : contractID
+                }
+              },
+              data: keyRequestReplyKeyP
+            }
+          ],
+          signingKeyId
+        }).catch((e2) => {
+          console.error(`[chelonia] Error sending OP_KEY_ADD for ${originatingContractID} during key request to ${contractID}`, e2);
+          throw e2;
+        });
+      }
       const payload = {
         contractID: originatingContractID,
         height: rootState.contracts[originatingContractID].height,
@@ -67468,13 +67852,16 @@ var chelonia_default = esm_default("sbp/selectors/register", {
           encryptionKeyId,
           responseKey: encryptedOutgoingData(contractID, innerEncryptionKeyId, keyRequestReplyKeyS)
         }, this.transientSecretKeys),
-        request: "*"
+        request: request ?? "*"
       };
       let msg = SPMessage.createV1_0({
         contractID,
         op: [
           SPMessage.OP_KEY_REQUEST,
-          signedOutgoingData(contractID, params.signingKeyId, encryptKeyRequestMetadata ? encryptedOutgoingData(contractID, innerEncryptionKeyId, payload) : payload, this.transientSecretKeys)
+          signedOutgoingData(contractID, params.signingKeyId, {
+            ...skipInviteAccounting && { skipInviteAccounting: true },
+            innerData: encryptKeyRequestMetadata ? encryptedOutgoingData(contractID, innerEncryptionKeyId, payload) : payload
+          }, this.transientSecretKeys)
         ],
         manifest: manifestHash
       });
@@ -67486,9 +67873,7 @@ var chelonia_default = esm_default("sbp/selectors/register", {
         }
       });
       return msg;
-    } finally {
-      await esm_default("chelonia/contract/release", contractID, { ephemeral: true });
-    }
+    });
   },
   "chelonia/out/keyRequestResponse": async function(params) {
     const { atomic, contractID, contractName, data, hooks, publishOptions } = params;
@@ -69746,7 +70131,9 @@ var SERVER = {
   // ignored
   strictProcessing: true,
   // The server expects events to be received in order (no past or future events)
-  strictOrdering: true
+  strictOrdering: true,
+  // _private_hidx= entries with per-message metadata
+  saveMessageMetadata: true
 };
 init_esm();
 var import_npm_chalk3 = __toESM(require_source());
@@ -72510,24 +72897,186 @@ var createAdaptorServer = (options2) => {
   const server = createServer2(options2.serverOptions || {}, requestListener);
   return server;
 };
-init_esm7();
+var serdesTagSymbol2 = Symbol("tag");
+var serdesSerializeSymbol2 = Symbol("serialize");
+var serdesDeserializeSymbol2 = Symbol("deserialize");
+var rawResult2 = (rawResultSet, obj) => {
+  rawResultSet.add(obj);
+  return obj;
+};
+var serializer2 = (data) => {
+  const rawResultSet = /* @__PURE__ */ new WeakSet();
+  const verbatim = [];
+  const transferables = /* @__PURE__ */ new Set();
+  const revokables = /* @__PURE__ */ new Set();
+  const result = JSON.parse(JSON.stringify(data, (_key, value) => {
+    if (value && typeof value === "object" && rawResultSet.has(value))
+      return value;
+    if (value === void 0)
+      return rawResult2(rawResultSet, ["_", "_"]);
+    if (!value)
+      return value;
+    if (Array.isArray(value) && value[0] === "_")
+      return rawResult2(rawResultSet, ["_", "_", ...value]);
+    if (value instanceof Map) {
+      return rawResult2(rawResultSet, ["_", "Map", Array.from(value.entries())]);
+    }
+    if (value instanceof Set) {
+      return rawResult2(rawResultSet, ["_", "Set", Array.from(value.values())]);
+    }
+    if (value instanceof Blob || value instanceof File) {
+      const pos = verbatim.length;
+      verbatim[verbatim.length] = value;
+      return rawResult2(rawResultSet, ["_", "_ref", pos]);
+    }
+    if (value instanceof Error) {
+      const pos = verbatim.length;
+      verbatim[verbatim.length] = value;
+      if (value.cause) {
+        value.cause = serializer2(value.cause).data;
+      }
+      return rawResult2(rawResultSet, ["_", "_err", rawResult2(rawResultSet, ["_", "_ref", pos]), value.name]);
+    }
+    if (value instanceof MessagePort || value instanceof ReadableStream || value instanceof WritableStream || value instanceof ArrayBuffer) {
+      const pos = verbatim.length;
+      verbatim[verbatim.length] = value;
+      transferables.add(value);
+      return rawResult2(rawResultSet, ["_", "_ref", pos]);
+    }
+    if (ArrayBuffer.isView(value)) {
+      const pos = verbatim.length;
+      verbatim[verbatim.length] = value;
+      transferables.add(value.buffer);
+      return rawResult2(rawResultSet, ["_", "_ref", pos]);
+    }
+    if (typeof value === "function") {
+      const mc = new MessageChannel();
+      mc.port1.onmessage = async (ev) => {
+        try {
+          try {
+            const result2 = await value(...deserializer2(ev.data[1]));
+            const { data: data2, transferables: transferables2 } = serializer2(result2);
+            ev.data[0].postMessage([true, data2], transferables2);
+          } catch (e2) {
+            const { data: data2, transferables: transferables2 } = serializer2(e2);
+            ev.data[0].postMessage([false, data2], transferables2);
+          }
+        } catch (e2) {
+          console.error("Async error on onmessage handler", e2);
+        }
+      };
+      transferables.add(mc.port2);
+      revokables.add(mc.port1);
+      return rawResult2(rawResultSet, ["_", "_fn", mc.port2]);
+    }
+    const proto3 = Object.getPrototypeOf(value);
+    if (proto3?.constructor?.[serdesTagSymbol2] && proto3.constructor[serdesSerializeSymbol2]) {
+      return rawResult2(rawResultSet, ["_", "_custom", proto3.constructor[serdesTagSymbol2], proto3.constructor[serdesSerializeSymbol2](value)]);
+    }
+    return value;
+  }), (_key, value) => {
+    if (Array.isArray(value) && value[0] === "_" && value[1] === "_ref") {
+      return verbatim[value[2]];
+    }
+    return value;
+  });
+  return {
+    data: result,
+    transferables: Array.from(transferables),
+    revokables: Array.from(revokables)
+  };
+};
+var deserializerTable2 = /* @__PURE__ */ Object.create(null);
+var deserializer2 = (data) => {
+  const rawResultSet = /* @__PURE__ */ new WeakSet();
+  const verbatim = [];
+  return JSON.parse(JSON.stringify(data, (_key, value) => {
+    if (value && typeof value === "object" && !rawResultSet.has(value) && !Array.isArray(value) && Object.getPrototypeOf(value) !== Object.prototype) {
+      const pos = verbatim.length;
+      verbatim[verbatim.length] = value;
+      return rawResult2(rawResultSet, ["_", "_ref", pos]);
+    }
+    return value;
+  }), (_key, value) => {
+    if (Array.isArray(value) && value[0] === "_") {
+      switch (value[1]) {
+        case "_":
+          if (value.length >= 3) {
+            return value.slice(2);
+          } else {
+            return;
+          }
+        // Map input (reconstruct Map)
+        case "Map":
+          return new Map(value[2]);
+        // Set input (reconstruct Set)
+        case "Set":
+          return new Set(value[2]);
+        // Custom object type (reconstruct if possible, otherwise throw an error)
+        case "_custom":
+          if (deserializerTable2[value[2]]) {
+            return deserializerTable2[value[2]](value[3]);
+          } else {
+            throw new Error("Invalid or unknown tag: " + value[2]);
+          }
+        // These are literal values, return them
+        case "_ref":
+          return verbatim[value[2]];
+        case "_err": {
+          if (value[2].name !== value[3]) {
+            value[2].name = value[3];
+          }
+          if (value[2].cause) {
+            value[2].cause = deserializer2(value[2].cause);
+          }
+          return value[2];
+        }
+        // These were functions converted to a MessagePort. Convert them on this
+        // end back into functions using that port.
+        case "_fn": {
+          const mp = value[2];
+          return (...args) => {
+            return new Promise((resolve82, reject) => {
+              const mc = new MessageChannel();
+              const { data: data2, transferables } = serializer2(args);
+              mc.port1.onmessage = (ev) => {
+                if (ev.data[0]) {
+                  resolve82(deserializer2(ev.data[1]));
+                } else {
+                  reject(deserializer2(ev.data[1]));
+                }
+              };
+              mp.postMessage([mc.port2, data2], [mc.port2, ...transferables]);
+            });
+          };
+        }
+      }
+    }
+    return value;
+  });
+};
+deserializer2.register = (ctor) => {
+  if (typeof ctor === "function" && typeof ctor[serdesTagSymbol2] === "string" && typeof ctor[serdesDeserializeSymbol2] === "function") {
+    deserializerTable2[ctor[serdesTagSymbol2]] = ctor[serdesDeserializeSymbol2].bind(ctor);
+  }
+};
 init_esm();
 Object.defineProperties(Buffer13, {
-  [serdesDeserializeSymbol]: {
+  [serdesDeserializeSymbol2]: {
     value(buf2) {
       return Buffer13.from(buf2);
     }
   },
-  [serdesSerializeSymbol]: {
+  [serdesSerializeSymbol2]: {
     value(buf2) {
       return new Uint8Array(buf2.buffer, buf2.byteOffset, buf2.byteLength);
     }
   },
-  [serdesTagSymbol]: {
+  [serdesTagSymbol2]: {
     value: "node:buffer"
   }
 });
-deserializer.register(Buffer13);
+deserializer2.register(Buffer13);
 var createWorker = (path8) => {
   let worker;
   let ready;
@@ -72550,11 +73099,11 @@ var createWorker = (path8) => {
           resolve82();
         } else if (msg && typeof msg === "object" && msg.type === "sbp" && Array.isArray(msg.data) && String(msg.data[0]).startsWith("chelonia.db/")) {
           const port = msg.port;
-          Promise.try(() => esm_default(...deserializer(msg.data))).then((r) => {
-            const { data, transferables } = serializer(r);
+          Promise.try(() => esm_default(...deserializer2(msg.data))).then((r) => {
+            const { data, transferables } = serializer2(r);
             port.postMessage([true, data], transferables);
           }).catch((e2) => {
-            const { data, transferables } = serializer(e2);
+            const { data, transferables } = serializer2(e2);
             port.postMessage([false, data], transferables);
           }).finally(() => {
             port.close();
@@ -73406,16 +73955,17 @@ function registerRoutes(app) {
         const formData = await c.req.parseBody({ all: true });
         const hash3 = formData["hash"];
         const data = formData["data"];
-        if (!hash3) throw new HTTPException(400, { message: "missing hash" });
-        if (!data) throw new HTTPException(400, { message: "missing data" });
+        if (!hash3 || typeof hash3 !== "string") throw new HTTPException(400, { message: "missing hash" });
+        if (!data || Array.isArray(data)) throw new HTTPException(400, { message: "missing data" });
         const parsed = maybeParseCID(hash3);
         if (!parsed) throw new HTTPException(400, { message: "invalid hash" });
-        const ourHash = createCID(data, parsed.code);
+        const dataStringOrBytes = typeof data === "string" ? data : Buffer14.from(await data.bytes()).toString();
+        const ourHash = createCID(dataStringOrBytes, parsed.code);
         if (ourHash !== hash3) {
           console.error(`hash(${hash3}) != ourHash(${ourHash})`);
           throw new HTTPException(400, { message: "bad hash!" });
         }
-        await esm_default("chelonia.db/set", hash3, data);
+        await esm_default("chelonia.db/set", hash3, dataStringOrBytes);
         return c.text("/file/" + hash3);
       } catch (err) {
         if (err instanceof HTTPException) throw err;

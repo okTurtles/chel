@@ -531,7 +531,7 @@ export function registerRoutes (app: Hono): void {
     })
   }
 
-  /*
+/*
 // The following endpoint is disabled because name registrations are handled
 // through the `shelter-namespace-registration` header when registering a
 // new contract
@@ -621,20 +621,21 @@ app.post('/name', async function (c) {
       try {
         console.log('FILE UPLOAD!')
         const formData = await c.req.parseBody({ all: true })
-        const hash = formData['hash'] as string
-        const data = formData['data'] as string
-        if (!hash) throw new HTTPException(400, { message: 'missing hash' })
-        if (!data) throw new HTTPException(400, { message: 'missing data' })
+        const hash = formData['hash']
+        const data = formData['data']
+        if (!hash || typeof hash !== 'string') throw new HTTPException(400, { message: 'missing hash' })
+        if (!data || Array.isArray(data)) throw new HTTPException(400, { message: 'missing data' })
 
         const parsed = maybeParseCID(hash)
         if (!parsed) throw new HTTPException(400, { message: 'invalid hash' })
 
-        const ourHash = createCID(data, parsed.code)
+        const dataStringOrBytes = typeof data === 'string' ? data : Buffer.from(await data.bytes()).toString()
+        const ourHash = createCID(dataStringOrBytes, parsed.code)
         if (ourHash !== hash) {
           console.error(`hash(${hash}) != ourHash(${ourHash})`)
           throw new HTTPException(400, { message: 'bad hash!' })
         }
-        await sbp('chelonia.db/set', hash, data)
+        await sbp('chelonia.db/set', hash, dataStringOrBytes)
         return c.text('/file/' + hash)
       } catch (err) {
         if (err instanceof HTTPException) throw err

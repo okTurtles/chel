@@ -45,7 +45,7 @@
     "npm:vuelidate": "npm:vuelidate@0.7.6",
     "npm:vuex": "npm:vuex@3.6.0",
     "npm:multiformats/": "npm:multiformats@11.0.2/",
-    "npm:@chelonia/lib/": "npm:@chelonia/lib@1.2.9/",
+    "npm:@chelonia/lib/": "npm:@chelonia/lib@1.4.3/",
     "npm:lru-cache": "npm:lru-cache@7.14.0",
     "npm:pino": "npm:pino@8.19.0",
     "npm:tweetnacl": "npm:tweetnacl@1.0.3",

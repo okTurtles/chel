@@ -19,6 +19,7 @@ const options: esbuild.BuildOptions = {
     'import.meta.VERSION': JSON.stringify(version),
     'import.meta.ownerSizeTotalWorker': '"./serve/ownerSizeTotalWorker.js"',
     'import.meta.creditsWorker': '"./serve/creditsWorker.js"',
+    // Lock DB after init, preventing overwriting
     'import.meta.initDbOnce': 'true'
   },
   format: 'esm',
