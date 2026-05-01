@@ -13,7 +13,7 @@ import { exit, isValidKey } from './utils.ts'
 import nconf from 'npm:nconf'
 import { parse, type TomlTable } from 'npm:smol-toml'
 
-type Params = { from: string, fromConfig?: string, to: string, toConfig?: string }
+type Params = { from: string; fromConfig?: string; to: string; toConfig?: string }
 
 export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> {
   const { to } = args
@@ -25,7 +25,8 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
     if (fromBackend !== backend) {
       console.warn(`--from-config has backend ${fromBackend} but --from is ${backend}`)
     }
-    const fromConfigOpts = ((fromConfig?.database as TomlTable)?.backendOptions as TomlTable)?.[backend] || {}
+    const fromConfigOpts =
+      ((fromConfig?.database as TomlTable)?.backendOptions as TomlTable)?.[backend] || {}
     nconf.set(`database:backendOptions:${backend}`, fromConfigOpts)
   }
 
@@ -68,8 +69,8 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
 
       const handleSignal = (signal: string, code: number) => {
         process.on(signal, () => {
-        // Exit codes follow the 128 + signal code convention.
-        // See <https://tldp.org/LDP/abs/html/exitcodes.html>
+          // Exit codes follow the 128 + signal code convention.
+          // See <https://tldp.org/LDP/abs/html/exitcodes.html>
           shouldExit = 128 + code
 
           if (++interruptCount < 3) {
@@ -90,15 +91,17 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
         }
       }
 
-    // Codes from <signal.h>
-    ;([
-        ['SIGHUP', 1],
-        ['SIGINT', 2],
-        ['SIGQUIT', 3],
-        ['SIGTERM', 15],
-        ['SIGUSR1', 10],
-        ['SIGUSR2', 11]
-      ] as [string, number][]).forEach(([signal, code]) => handleSignal(signal, code))
+      // Codes from <signal.h>
+      ;(
+        [
+          ['SIGHUP', 1],
+          ['SIGINT', 2],
+          ['SIGQUIT', 3],
+          ['SIGTERM', 15],
+          ['SIGUSR1', 10],
+          ['SIGUSR2', 11]
+        ] as [string, number][]
+      ).forEach(([signal, code]) => handleSignal(signal, code))
 
       return checkAndExit
     })()
@@ -150,41 +153,44 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
 
 export const module = {
   builder: (yargs) => {
-    return yargs
-      .option('from', {
-        describe: 'Source backend',
-        demandOption: true,
-        requiresArg: true,
-        string: true
-      })
-      .alias('database:backend', 'from')
-      .option('from-config', {
-        describe: 'Source backend configuration',
-        requiresArg: true,
-        string: true
-      })
-      .option('to', {
-        describe: 'Destination backend',
-        demandOption: true,
-        requiresArg: true,
-        string: true
-      })
-      .option('to-config', {
-        describe: 'Destination backend configuration',
-        requiresArg: true,
-        string: true
-      })
-      // strict(false) to support non-enumerated flags, which can be used for
-      // configuring backend settings. However, `from-config` should be preferred.
-      .strict(false)
-      .strictCommands(true)
+    return (
+      yargs
+        .option('from', {
+          describe: 'Source backend',
+          demandOption: true,
+          requiresArg: true,
+          string: true
+        })
+        .alias('database:backend', 'from')
+        .option('from-config', {
+          describe: 'Source backend configuration',
+          requiresArg: true,
+          string: true
+        })
+        .option('to', {
+          describe: 'Destination backend',
+          demandOption: true,
+          requiresArg: true,
+          string: true
+        })
+        .option('to-config', {
+          describe: 'Destination backend configuration',
+          requiresArg: true,
+          string: true
+        })
+        // strict(false) to support non-enumerated flags, which can be used for
+        // configuring backend settings. However, `from-config` should be preferred.
+        .strict(false)
+        .strictCommands(true)
+    )
   },
   command: 'migrate',
-  describe: 'Reads all key-value pairs from a given database and creates or updates another database accordingly.\n\n' +
-  '- The output database will be created if necessary.\n' +
-  '- The source database won\'t be modified nor deleted.\n' +
-  '- Invalid key-value pairs entries will be skipped.\n' +
-  '- Requires read and write access to the source.\n',
+  describe:
+    'Reads all key-value pairs from a given database and creates or updates another database accordingly.\n\n' +
+    '- The output database will be created if necessary.\n' +
+    '- The source database won\'t be modified nor deleted.\n' +
+    '- Invalid key-value pairs entries will be skipped.\n' +
+    '- Requires read and write access to the source.\n',
   postHandler: (argv) => {
     return migrate(argv)
   }

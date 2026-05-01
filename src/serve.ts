@@ -9,11 +9,11 @@ import { startDashboard } from './serve/dashboard-server.ts'
 import { closeDB, initDB } from '~/serve/database.ts'
 
 type Params = {
-  port: number,
-  'dashboard-port': number,
-  directory: string,
-  dev: boolean,
-  'manifests-dir': string,
+  port: number
+  'dashboard-port': number
+  directory: string
+  dev: boolean
+  'manifests-dir': string
   'app-manifest': string
 }
 
@@ -59,7 +59,9 @@ async function watch (args: ArgumentsCamelCase<Params>): Promise<void> {
           continue
         }
         if (event.kind !== 'create' && event.kind !== 'modify') continue
-        const manifests = event.paths.filter((path) => path.toLowerCase().endsWith('.manifest.json'))
+        const manifests = event.paths.filter((path) =>
+          path.toLowerCase().endsWith('.manifest.json')
+        )
         for (const manifestPath of manifests) {
           try {
             await sbp('okTurtles.eventQueue/queueEvent', queueName, async () => {

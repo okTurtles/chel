@@ -1,12 +1,16 @@
 import * as colors from 'jsr:@std/fmt/colors'
 import * as path from 'jsr:@std/path/'
-import { verifySignature as cryptoVerifySignature, deserializeKey, keyId } from 'npm:@chelonia/crypto'
+import {
+  verifySignature as cryptoVerifySignature,
+  deserializeKey,
+  keyId
+} from 'npm:@chelonia/crypto'
 import { multicodes } from 'npm:@chelonia/lib/functions'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { hash } from './hash.ts'
 import { exit, readJsonFile, revokeNet } from './utils.ts'
 
-type Params = { key?: string, manifestFile: string }
+type Params = { key?: string; manifestFile: string }
 
 interface ExternalKeyDescriptor {
   pubkey: string
@@ -24,7 +28,11 @@ interface Manifest {
 }
 
 function isExternalKeyDescriptor (obj: unknown): obj is ExternalKeyDescriptor {
-  return obj !== null && typeof obj === 'object' && typeof (obj as Record<string, unknown>).pubkey === 'string'
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    typeof (obj as Record<string, unknown>).pubkey === 'string'
+  )
 }
 
 function isManifest (obj: unknown): obj is Manifest {
@@ -39,7 +47,10 @@ function isManifest (obj: unknown): obj is Manifest {
   )
 }
 
-export const verifySignature = async (args: ArgumentsCamelCase<Params>, internal = false): Promise<void> => {
+export const verifySignature = async (
+  args: ArgumentsCamelCase<Params>,
+  internal = false
+): Promise<void> => {
   await revokeNet()
   const { key: keyFile, manifestFile } = args
   const [externalKeyDescriptorRaw, manifestRaw] = await Promise.all([
@@ -83,7 +94,10 @@ export const verifySignature = async (args: ArgumentsCamelCase<Params>, internal
   if (externalKeyDescriptor) {
     const id = keyId(externalKeyDescriptor.pubkey)
     if (manifest.signature.keyId !== id) {
-      exit(`Invalid manifest signature: key ID doesn't match the provided key file. Expected ${id} but got ${manifest.signature.keyId}.`, internal)
+      exit(
+        `Invalid manifest signature: key ID doesn't match the provided key file. Expected ${id} but got ${manifest.signature.keyId}.`,
+        internal
+      )
     }
   }
 
@@ -91,7 +105,10 @@ export const verifySignature = async (args: ArgumentsCamelCase<Params>, internal
   // even if it is missing in body.signingKeys
   const serializedPubKey = signingKey || externalKeyDescriptor?.pubkey
   if (!serializedPubKey) {
-    exit('The manifest appears to be signed but verification can\'t proceed because the key used is unknown.', internal)
+    exit(
+      'The manifest appears to be signed but verification can\'t proceed because the key used is unknown.',
+      internal
+    )
   }
 
   const pubKey = deserializeKey(serializedPubKey)
@@ -109,15 +126,29 @@ export const verifySignature = async (args: ArgumentsCamelCase<Params>, internal
   if (!body.contract?.file) {
     exit('Invalid manifest: no contract file', internal)
   }
-  const computedHash = await hash({ ...args, filename: path.join(parsedFilepath.dir, body.contract.file) }, multicodes.SHELTER_CONTRACT_TEXT, true)
+  const computedHash = await hash(
+    { ...args, filename: path.join(parsedFilepath.dir, body.contract.file) },
+    multicodes.SHELTER_CONTRACT_TEXT,
+    true
+  )
   if (computedHash !== body.contract.hash) {
-    exit(`Invalid contract file hash. Expected ${body.contract.hash} but got ${computedHash}`, internal)
+    exit(
+      `Invalid contract file hash. Expected ${body.contract.hash} but got ${computedHash}`,
+      internal
+    )
   }
 
   if (body.contractSlim) {
-    const computedHash = await hash({ ...args, filename: path.join(parsedFilepath.dir, body.contractSlim.file) }, multicodes.SHELTER_CONTRACT_TEXT, true)
+    const computedHash = await hash(
+      { ...args, filename: path.join(parsedFilepath.dir, body.contractSlim.file) },
+      multicodes.SHELTER_CONTRACT_TEXT,
+      true
+    )
     if (computedHash !== body.contractSlim.hash) {
-      exit(`Invalid slim contract file hash. Expected ${body.contractSlim.hash} but got ${computedHash}`, internal)
+      exit(
+        `Invalid slim contract file hash. Expected ${body.contractSlim.hash} but got ${computedHash}`,
+        internal
+      )
     }
   }
 
@@ -130,7 +161,7 @@ export const module = {
       .option('key', {
         describe: 'Public key',
         requiresArg: true,
-        string: true,
+        string: true
       })
       .alias('k', 'key')
       .positional('manifestFile', {

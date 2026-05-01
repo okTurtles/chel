@@ -7,9 +7,12 @@ import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { closeDB, initDB } from './serve/database.ts'
 import { createEntryFromFile, type Entry } from './utils.ts'
 
-type Params = { url?: string, files: string[] }
+type Params = { url?: string; files: string[] }
 
-export async function upload (args: ArgumentsCamelCase<Params>, internal = false): Promise<[string, string][]> {
+export async function upload (
+  args: ArgumentsCamelCase<Params>,
+  internal = false
+): Promise<[string, string][]> {
   const { url, files } = args
   let dbOpen = false
   if (!url) {
@@ -18,14 +21,12 @@ export async function upload (args: ArgumentsCamelCase<Params>, internal = false
   }
   try {
     const uploaded: Array<[string, string]> = []
-    const uploaderFn = url
-      ? uploadEntryToURL
-      : uploadEntryToDB
+    const uploaderFn = url ? uploadEntryToURL : uploadEntryToDB
     for (const filepath_ of files) {
       let type = multicodes.RAW
       let filepath = filepath_
       if (internal) {
-      // The `{type}|` prefix is used to determine which kind of CID is needed
+        // The `{type}|` prefix is used to determine which kind of CID is needed
         if (filepath_[1] !== '|') throw new Error('Invalid path format')
         switch (filepath_[0]) {
           case 'r':
@@ -65,7 +66,7 @@ async function uploadEntryToURL ([cid, buffer]: Entry, url: string): Promise<str
   form.append('data', new Blob([buffer]))
   return await fetch(`${url}/dev-file`, { method: 'POST', body: form })
     .then(handleFetchResult('text'))
-    .then(r => {
+    .then((r) => {
       if (r !== `/file/${cid}`) {
         throw new Error(`server returned bad URL: ${r}`)
       }
@@ -79,7 +80,7 @@ function uploadEntryToDB ([cid, buffer]: Entry): Promise<string> {
 
 type ResponseTypeFn = 'arrayBuffer' | 'blob' | 'clone' | 'formData' | 'json' | 'text'
 
-export function handleFetchResult (type: ResponseTypeFn): ((r: Response) => unknown) {
+export function handleFetchResult (type: ResponseTypeFn): (r: Response) => unknown {
   return async function (r: Response) {
     if (!r.ok) throw new Error(`${r.status}: ${r.statusText}`)
     return await r[type]()

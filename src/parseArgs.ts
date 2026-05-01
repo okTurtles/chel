@@ -11,7 +11,9 @@ const handlerState: { postHandler: () => void | Promise<void> } = {
 }
 
 const parseArgs = () => {
-  const handlerWrapper = <T, U>(commandModule: commands.CommandModule<T, U>): YCommandModule<T, U> => {
+  const handlerWrapper = <T, U>(
+    commandModule: commands.CommandModule<T, U>
+  ): YCommandModule<T, U> => {
     return {
       ...commandModule,
       handler: (argv: ArgumentsCamelCase<U>) => {
@@ -24,8 +26,8 @@ const parseArgs = () => {
   }
 
   // Typecasting seems to be required
-  const commandModules = Object.values(commands).map(
-    (c) => handlerWrapper(c as commands.CommandModule<object, object>)
+  const commandModules = Object.values(commands).map((c) =>
+    handlerWrapper(c as commands.CommandModule<object, object>)
   )
 
   const yargsInstance = yargs(hideBin(process.argv))

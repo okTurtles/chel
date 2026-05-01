@@ -13,7 +13,7 @@ import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { closeDB, initDB } from './serve/database.ts'
 import { exit, readRemoteData } from './utils.ts'
 
-type Params = { url?: string, key: string }
+type Params = { url?: string; key: string }
 
 export async function get ({ key, url }: ArgumentsCamelCase<Params>): Promise<void> {
   let dbOpen = false
@@ -23,9 +23,7 @@ export async function get ({ key, url }: ArgumentsCamelCase<Params>): Promise<vo
   }
 
   try {
-    const data = url
-      ? await readRemoteData(url, key)
-      : await sbp('chelonia.db/get', key)
+    const data = url ? await readRemoteData(url, key) : await sbp('chelonia.db/get', key)
 
     if (data === undefined) exit(`no entry found for ${key as string}`)
 
@@ -56,9 +54,10 @@ export const module = {
       })
   },
   command: 'get <key>',
-  describe: 'Retrieves the entry associated with a given <hash> key, from a given database or server.\n\n' +
-  '- The output can be piped to a file, like this:' +
-  '  chel get https://url.com mygreatlongkey > file.png',
+  describe:
+    'Retrieves the entry associated with a given <hash> key, from a given database or server.\n\n' +
+    '- The output can be piped to a file, like this:' +
+    '  chel get https://url.com mygreatlongkey > file.png',
   postHandler: (argv) => {
     return get(argv)
   }
