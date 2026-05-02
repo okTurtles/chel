@@ -696,14 +696,14 @@ export function registerRoutes (app: Hono): void {
         // Now that the manifest format looks right, validate the chunks
         let ourSize = 0
         const chunks: [string, Uint8Array][] = await Promise.all(manifest.chunks.map(async (chunk: [number, string], i: number) => {
-        // Validate the chunk information
+          // Validate the chunk information
           if (
             !Array.isArray(chunk) ||
-          chunk.length !== 2 ||
-          typeof chunk[0] !== 'number' ||
-          typeof chunk[1] !== 'string' ||
-          !Number.isSafeInteger(chunk[0]) ||
-          chunk[0] <= 0
+            chunk.length !== 2 ||
+            typeof chunk[0] !== 'number' ||
+            typeof chunk[1] !== 'string' ||
+            !Number.isSafeInteger(chunk[0]) ||
+            chunk[0] <= 0
           ) {
             throw new HTTPException(422, { message: 'bad chunk description' })
           }
