@@ -69013,7 +69013,11 @@ function isValidKey(key) {
   return !/[\x00-\x1f\x7f\t\\/]/.test(key);
 }
 async function readRemoteData(src2, key) {
-  const buffer = await fetch(`${src2}/file/${key}`).then(async (r) => r.ok ? await r.arrayBuffer() : await Promise.reject(new Error(`failed network request to ${src2}: ${r.status} - ${r.statusText}`)));
+  const buffer = await fetch(`${src2}/file/${key}`).then(
+    async (r) => r.ok ? await r.arrayBuffer() : await Promise.reject(
+      new Error(`failed network request to ${src2}: ${r.status} - ${r.statusText}`)
+    )
+  );
   return new Uint8Array(buffer);
 }
 async function revokeNet() {
@@ -69193,7 +69197,12 @@ var module3 = {
   }
 };
 init_esm();
-async function eventsAfter2({ limit, url: url2, contractID, height }) {
+async function eventsAfter2({
+  limit,
+  url: url2,
+  contractID,
+  height
+}) {
   let dbOpen = false;
   try {
     let messages;
@@ -69234,13 +69243,17 @@ async function getRemoteMessagesSince(src2, contractID, sinceHeight, limit) {
   const response = await fetch(`${src2}/eventsAfter/${contractID}/${sinceHeight}`);
   if (!response.ok) {
     const bodyText = await response.text().catch(() => "") || "";
-    throw new Error(`failed network request to ${src2}: ${response.status} - ${response.statusText} - '${bodyText}'`);
+    throw new Error(
+      `failed network request to ${src2}: ${response.status} - ${response.statusText} - '${bodyText}'`
+    );
   }
   const b64messages = await response.json();
   if (b64messages.length > limit) {
     b64messages.length = limit;
   }
-  return b64messages.map((b64str) => JSON.parse(new TextDecoder().decode(decodeBase64(b64str))));
+  return b64messages.map(
+    (b64str) => JSON.parse(new TextDecoder().decode(decodeBase64(b64str)))
+  );
 }
 var module4 = {
   builder: (yargs) => {
@@ -69400,21 +69413,27 @@ async function manifest(args) {
   }
   const signingKeyDescriptor = signingKeyDescriptorRaw;
   const signingKey = deserializeKey(signingKeyDescriptor.privkey);
-  const publicKeys = Array.from(new Set(
-    [serializeKey(signingKey, false)].concat(...await Promise.all(args.key?.map(
-      async (kf) => {
-        if (typeof kf !== "string" && typeof kf !== "number") {
-          exit(`Invalid key file reference: ${String(kf)}`);
-        }
-        const descriptor = await readJsonFile(String(kf));
-        const key = deserializeKey(descriptor.pubkey);
-        if (key.type !== EDWARDS25519SHA512BATCH) {
-          exit(`Invalid key type ${key.type}; only ${EDWARDS25519SHA512BATCH} keys are supported.`);
-        }
-        return serializeKey(key, false);
-      }
-    ) || []))
-  ));
+  const publicKeys = Array.from(
+    new Set(
+      [serializeKey(signingKey, false)].concat(
+        ...await Promise.all(
+          args.key?.map(async (kf) => {
+            if (typeof kf !== "string" && typeof kf !== "number") {
+              exit(`Invalid key file reference: ${String(kf)}`);
+            }
+            const descriptor = await readJsonFile(String(kf));
+            const key = deserializeKey(descriptor.pubkey);
+            if (key.type !== EDWARDS25519SHA512BATCH) {
+              exit(
+                `Invalid key type ${key.type}; only ${EDWARDS25519SHA512BATCH} keys are supported.`
+              );
+            }
+            return serializeKey(key, false);
+          }) || []
+        )
+      )
+    )
+  );
   const body = {
     name,
     version: version3,
@@ -69667,34 +69686,58 @@ async function pin(args) {
   console.log(blue(`Manifest version: ${manifestVersion}`));
   if (version3) {
     if (version3 !== manifestVersion) {
-      console.error(red(`\u274C Version mismatch: CLI version (${version3}) does not match manifest version (${manifestVersion})`));
-      console.error(yellow(`\u{1F4A1} To pin this contract, use: chel pin ${manifestVersion} ${manifestPath}`));
+      console.error(
+        red(
+          `\u274C Version mismatch: CLI version (${version3}) does not match manifest version (${manifestVersion})`
+        )
+      );
+      console.error(
+        yellow(`\u{1F4A1} To pin this contract, use: chel pin ${manifestVersion} ${manifestPath}`)
+      );
       exit("Version mismatch between CLI and manifest");
     }
     console.log(green(`\u2705 Version validation passed: ${version3}`));
   }
   const currentPinnedVersion = cheloniaConfig.contracts[fullContractName]?.version;
   if (currentPinnedVersion === manifestVersion) {
-    console.log(yellow(`\u2728 Contract ${fullContractName} is already pinned to version ${manifestVersion} - no action needed`));
+    console.log(
+      yellow(
+        `\u2728 Contract ${fullContractName} is already pinned to version ${manifestVersion} - no action needed`
+      )
+    );
     return;
   }
   if (currentPinnedVersion) {
-    console.log(cyan(`\u{1F4CC} Updating ${fullContractName} from version ${currentPinnedVersion} to ${manifestVersion}`));
+    console.log(
+      cyan(
+        `\u{1F4CC} Updating ${fullContractName} from version ${currentPinnedVersion} to ${manifestVersion}`
+      )
+    );
   } else {
-    console.log(cyan(`\u{1F4CC} Pinning ${fullContractName} to version ${manifestVersion} (first time)`));
+    console.log(
+      cyan(`\u{1F4CC} Pinning ${fullContractName} to version ${manifestVersion} (first time)`)
+    );
   }
   const contractVersionDir = join62(projectRoot, "contracts", contractName, manifestVersion);
   if (existsSync(contractVersionDir)) {
     if (!args.overwrite) {
-      exit(`Version ${manifestVersion} already exists for contract ${fullContractName}. Use --overwrite to replace it.`);
+      exit(
+        `Version ${manifestVersion} already exists for contract ${fullContractName}. Use --overwrite to replace it.`
+      );
     }
-    console.log(yellow(`Version ${manifestVersion} already exists for ${fullContractName} - checking files...`));
+    console.log(
+      yellow(
+        `Version ${manifestVersion} already exists for ${fullContractName} - checking files...`
+      )
+    );
   } else {
     await createVersionDirectory(contractName, manifestVersion);
   }
   await copyContractFiles(contractFiles, manifestPath, contractName, manifestVersion, args);
   await updateCheloniaConfig(fullContractName, contractName, manifestVersion, manifestPath);
-  console.log(green(`\u2705 Successfully pinned ${fullContractName} to version ${manifestVersion}`));
+  console.log(
+    green(`\u2705 Successfully pinned ${fullContractName} to version ${manifestVersion}`)
+  );
   console.log(gray(`Location: contracts/${contractName}/${manifestVersion}/`));
 }
 async function parseManifest(manifestPath) {
@@ -69728,7 +69771,11 @@ async function createVersionDirectory(contractName, version3) {
 async function copyContractFiles(contractFiles, manifestPath, contractName, version3, args) {
   const sourceDir = dirname42(join62(projectRoot, manifestPath));
   const targetDir = join62(projectRoot, "contracts", contractName, version3);
-  console.log(gray(`\u{1F4CB} Copying files from manifest: ${contractFiles.main}${contractFiles.slim ? `, ${contractFiles.slim}` : ""}, manifest`));
+  console.log(
+    gray(
+      `\u{1F4CB} Copying files from manifest: ${contractFiles.main}${contractFiles.slim ? `, ${contractFiles.slim}` : ""}, manifest`
+    )
+  );
   const mainSource = join62(sourceDir, contractFiles.main);
   const mainTarget = join62(targetDir, contractFiles.main);
   await copyFileIfNeeded(mainSource, mainTarget, contractFiles.main, args);
@@ -69754,7 +69801,9 @@ async function copyFileIfNeeded(sourcePath, targetPath, fileName, args) {
     return;
   }
   if (targetExists && !args.overwrite) {
-    console.log(yellow(`\u23ED\uFE0F  Skipping: ${fileName} (already exists, use --overwrite to replace)`));
+    console.log(
+      yellow(`\u23ED\uFE0F  Skipping: ${fileName} (already exists, use --overwrite to replace)`)
+    );
     return;
   }
   console.log(blue(`\u{1F4C4} Copying: ${fileName} (overwriting)`));
@@ -76040,7 +76089,9 @@ async function watch(args) {
           continue;
         }
         if (event.kind !== "create" && event.kind !== "modify") continue;
-        const manifests = event.paths.filter((path8) => path8.toLowerCase().endsWith(".manifest.json"));
+        const manifests = event.paths.filter(
+          (path8) => path8.toLowerCase().endsWith(".manifest.json")
+        );
         for (const manifestPath of manifests) {
           try {
             await esm_default("okTurtles.eventQueue/queueEvent", queueName, async () => {
@@ -76182,12 +76233,18 @@ var verifySignature2 = async (args, internal = false) => {
   if (externalKeyDescriptor) {
     const id = keyId(externalKeyDescriptor.pubkey);
     if (manifest2.signature.keyId !== id) {
-      exit(`Invalid manifest signature: key ID doesn't match the provided key file. Expected ${id} but got ${manifest2.signature.keyId}.`, internal);
+      exit(
+        `Invalid manifest signature: key ID doesn't match the provided key file. Expected ${id} but got ${manifest2.signature.keyId}.`,
+        internal
+      );
     }
   }
   const serializedPubKey = signingKey || externalKeyDescriptor?.pubkey;
   if (!serializedPubKey) {
-    exit("The manifest appears to be signed but verification can't proceed because the key used is unknown.", internal);
+    exit(
+      "The manifest appears to be signed but verification can't proceed because the key used is unknown.",
+      internal
+    );
   }
   const pubKey = deserializeKey(serializedPubKey);
   try {
@@ -76202,14 +76259,28 @@ var verifySignature2 = async (args, internal = false) => {
   if (!body.contract?.file) {
     exit("Invalid manifest: no contract file", internal);
   }
-  const computedHash = await hash22({ ...args, filename: join8(parsedFilepath.dir, body.contract.file) }, multicodes.SHELTER_CONTRACT_TEXT, true);
+  const computedHash = await hash22(
+    { ...args, filename: join8(parsedFilepath.dir, body.contract.file) },
+    multicodes.SHELTER_CONTRACT_TEXT,
+    true
+  );
   if (computedHash !== body.contract.hash) {
-    exit(`Invalid contract file hash. Expected ${body.contract.hash} but got ${computedHash}`, internal);
+    exit(
+      `Invalid contract file hash. Expected ${body.contract.hash} but got ${computedHash}`,
+      internal
+    );
   }
   if (body.contractSlim) {
-    const computedHash2 = await hash22({ ...args, filename: join8(parsedFilepath.dir, body.contractSlim.file) }, multicodes.SHELTER_CONTRACT_TEXT, true);
+    const computedHash2 = await hash22(
+      { ...args, filename: join8(parsedFilepath.dir, body.contractSlim.file) },
+      multicodes.SHELTER_CONTRACT_TEXT,
+      true
+    );
     if (computedHash2 !== body.contractSlim.hash) {
-      exit(`Invalid slim contract file hash. Expected ${body.contractSlim.hash} but got ${computedHash2}`, internal);
+      exit(
+        `Invalid slim contract file hash. Expected ${body.contractSlim.hash} but got ${computedHash2}`,
+        internal
+      );
     }
   }
   if (!internal) console.log(green("ok"), "all checks passed");
@@ -80388,33 +80459,33 @@ var parseConfig = () => {
     separator: "__",
     parseValues: true
   }).argv(parseArgs_default()).file({ file: "chel.toml", format: { parse: parse8, stringify } }).defaults({
-    "server": {
-      "appDir": ".",
-      "host": "0.0.0.0",
-      "port": 8e3,
-      "dashboardPort": 8888,
-      "fileUploadMaxBytes": 31457280,
-      "signup": {
-        "disabled": false,
-        "limit": {
-          "disabled": false,
-          "minute": 2,
-          "hour": 10,
-          "day": 50
+    server: {
+      appDir: ".",
+      host: "0.0.0.0",
+      port: 8e3,
+      dashboardPort: 8888,
+      fileUploadMaxBytes: 31457280,
+      signup: {
+        disabled: false,
+        limit: {
+          disabled: false,
+          minute: 2,
+          hour: 10,
+          day: 50
         },
-        "vapid": {
-          "email": void 0
+        vapid: {
+          email: void 0
         }
       },
-      "logLevel": "debug",
-      "messages": [],
-      "maxEventsBatchSize": 500,
-      "archiveMode": false
+      logLevel: "debug",
+      messages: [],
+      maxEventsBatchSize: 500,
+      archiveMode: false
     },
-    "database": {
-      "lruNumItems": 1e4,
-      "backend": "mem",
-      "backendOptions": {}
+    database: {
+      lruNumItems: 1e4,
+      backend: "mem",
+      backendOptions: {}
     }
   });
 };
