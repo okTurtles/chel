@@ -73824,7 +73824,7 @@ function notFoundNoCache(c) {
 function safePathWithin(base2, subpath) {
   const normalizedBase = path5.resolve(base2);
   const resolved = path5.resolve(normalizedBase, subpath);
-  if (!resolved.startsWith(base2 + path5.sep) && resolved !== normalizedBase) return null;
+  if (!resolved.startsWith(normalizedBase + path5.sep) && resolved !== normalizedBase) return null;
   return resolved;
 }
 function serveAsset(c, subpath, assetsDir) {

@@ -253,7 +253,7 @@ function notFoundNoCache (c: Context): Response {
 function safePathWithin (base: string, subpath: string): string | null {
   const normalizedBase = path.resolve(base)
   const resolved = path.resolve(normalizedBase, subpath)
-  if (!resolved.startsWith(base + path.sep) && resolved !== normalizedBase) return null
+  if (!resolved.startsWith(normalizedBase + path.sep) && resolved !== normalizedBase) return null
   return resolved
 }
 
