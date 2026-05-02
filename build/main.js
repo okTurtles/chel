@@ -69342,7 +69342,7 @@ var module6 = {
     });
   },
   command: "hash <filename>",
-  describe: "Computes and logs the content identifier (CID) for the given file.\n' + 'File contents will be interpreted as raw binary data, unless the file extension is '.json'.",
+  describe: "Computes and logs the content identifier (CID) for the given file.\nFile contents will be interpreted as raw binary data, unless the file extension is '.json'.",
   postHandler: (argv) => {
     return void hash22(argv);
   }
@@ -73647,7 +73647,7 @@ function authMiddleware(strategies, mode = "required") {
         return next();
       }
     }
-    if (mode === "optional") {
+    if (mode === "optional" && !c.req.header("authorization")) {
       c.set("credentials", {});
       c.set("authStrategy", "");
       return next();

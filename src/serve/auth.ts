@@ -59,7 +59,7 @@ export function authMiddleware (
         return next()
       }
     }
-    if (mode === 'optional') {
+    if (mode === 'optional' && !c.req.header('authorization')) {
       c.set('credentials', {} as AuthCredentials)
       c.set('authStrategy', '')
       return next()

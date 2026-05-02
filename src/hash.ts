@@ -31,7 +31,8 @@ export const module = {
   },
   command: 'hash <filename>',
   describe:
-    'Computes and logs the content identifier (CID) for the given file.\n\' + \'File contents will be interpreted as raw binary data, unless the file extension is \'.json\'.',
+    'Computes and logs the content identifier (CID) for the given file.\n' +
+    'File contents will be interpreted as raw binary data, unless the file extension is \'.json\'.',
   postHandler: (argv) => {
     return void hash(argv)
   }

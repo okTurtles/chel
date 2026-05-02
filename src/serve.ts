@@ -87,7 +87,7 @@ async function watch (args: ArgumentsCamelCase<Params>): Promise<void> {
 
 export async function serve (args: ArgumentsCamelCase<Params>) {
   // `deployManifests` / `watch` will open the database and then close it.
-  // By callig `initDB` here, we ensure that the DB isn't closed.
+  // By calling `initDB` here, we ensure that the DB isn't closed.
   await initDB()
   try {
     // Start dashboard server on port 7000 first
