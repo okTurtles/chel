@@ -5,327 +5,347 @@ import 'npm:@chelonia/lib/chelonia'
 import 'npm:@chelonia/lib/db'
 import { checkKey, parsePrefixableKey, prefixHandlers } from 'npm:@chelonia/lib/db'
 import { strToB64 } from 'npm:@chelonia/lib/functions'
-import Boom from 'npm:@hapi/boom'
 import sbp from 'npm:@sbp/sbp'
 import LRU from 'npm:lru-cache'
-import { SERVER_EXITING } from './events.ts'
+import { BackendErrorConflict, BackendErrorGone, BackendErrorNotFound } from './errors.ts'
 import { initVapid } from './vapid.ts'
 import { initZkpp } from './zkppSalt.ts'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
+import type { ImportMeta } from '../types/build.d.ts'
 import type DatabaseBackend from './DatabaseBackend.ts'
 import { KEYOP_SEGMENT_LENGTH, appendToNamesIndex, namespaceKey } from './db-utils.ts'
 
 const production = process.env.NODE_ENV === 'production'
 
-// Streams stored contract log entries since the given entry hash (inclusive!).
-export default sbp('sbp/selectors/register', {
-  'backend/db/streamEntriesAfter': async function (contractID: string, height: number, requestedLimit?: number, options: { keyOps?: boolean } = {}): Promise<Readable> {
-    const batchMaxSize = nconf.get('server:maxEventsBatchSize') ?? 500
-    const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, batchMaxSize)
-    const latestHEADinfo = await sbp('chelonia/db/latestHEADinfo', contractID)
-    if (latestHEADinfo === '') {
-      throw Boom.resourceGone(`contractID ${contractID} has been deleted!`)
-    }
-    if (!latestHEADinfo) {
-      throw Boom.notFound(`contractID ${contractID} doesn't exist!`)
-    }
-    // Number of entries pushed.
-    let counter = 0
-    let currentHeight = height
-    let currentHash, serverMeta
-    let prefix = ''
-    // `nextKeyOp` is used to advance `currentHeight` when fetching keyOps, and
-    // more complex behaviour than simple 'increment by 1' is needed.
-    // It returns three possible values: `true`, indicating `currentHeight` has
-    // been set to the next `currentHeight`; `false`, indicating the end of
-    // the stream; and `null`, indicating the result is indeterminate and
-    // `nextKeyOp` should be called again (this is because key ops are indexed
-    // based on their height in segments of 10k height entries).
-    // `nextKeyOp` will do the following: if `currentHeight` points to a key op,
-    // it will leave `currentHeight` unchanged; otherwise, if `currentHeight`
-    // does _not_ point to a key op, `currentHeight` will be set to the smallest
-    // height larger than the current `currentHeight` value which is a key op.
-    const nextKeyOp = (() => {
-      let index: string[] | undefined
+// Module-scope state for the active backend instance and LRU cache.
+// The overwritten `chelonia.db/*` selectors close over these so that
+// a second `initDB()` call (after `closeDB()`) rebinds them to a fresh
+// backend + cache without needing to re-overwrite the selectors.
+let currentBackend: DatabaseBackend | null = null
+let currentCache: LRU<string, Buffer | string> | null = null
+let isClosing = false
 
-      return async () => {
-        if (!index) {
-          index = (await sbp('chelonia.db/get', `_private_keyop_idx_${contractID}_${currentHeight - currentHeight % KEYOP_SEGMENT_LENGTH}`))?.split('\x00')
-        }
-        const value = index?.find((h, i) => {
-          if (Number(h) >= currentHeight) {
-            // Remove values that no longer are relevant from the index
-            index = index!.slice(i + 1)
-            return true
-          } else {
-            return false
+let baseSelectorsInstalled = false
+function installBaseSelectorsOnce () {
+  if (baseSelectorsInstalled) return
+  baseSelectorsInstalled = true
+  sbp('sbp/selectors/register', {
+    'backend/db/streamEntriesAfter': async function (contractID: string, height: number, requestedLimit?: number, options: { keyOps?: boolean } = {}): Promise<Readable> {
+      const batchMaxSize = nconf.get('server:maxEventsBatchSize') ?? 500
+      const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, batchMaxSize)
+      const latestHEADinfo = await sbp('chelonia/db/latestHEADinfo', contractID)
+      if (latestHEADinfo === '') {
+        throw new BackendErrorGone(`contractID ${contractID} has been deleted!`)
+      }
+      if (!latestHEADinfo) {
+        throw new BackendErrorNotFound(`contractID ${contractID} doesn't exist!`)
+      }
+      // Number of entries pushed.
+      let counter = 0
+      let currentHeight = height
+      let currentHash, serverMeta
+      let prefix = ''
+      // `nextKeyOp` is used to advance `currentHeight` when fetching keyOps, and
+      // more complex behaviour than simple 'increment by 1' is needed.
+      // It returns three possible values: `true`, indicating `currentHeight` has
+      // been set to the next `currentHeight`; `false`, indicating the end of
+      // the stream; and `null`, indicating the result is indeterminate and
+      // `nextKeyOp` should be called again (this is because key ops are indexed
+      // based on their height in segments of 10k height entries).
+      // `nextKeyOp` will do the following: if `currentHeight` points to a key op,
+      // it will leave `currentHeight` unchanged; otherwise, if `currentHeight`
+      // does _not_ point to a key op, `currentHeight` will be set to the smallest
+      // height larger than the current `currentHeight` value which is a key op.
+      const nextKeyOp = (() => {
+        let index: string[] | undefined
+
+        return async () => {
+          if (!index) {
+            index = (await sbp('chelonia.db/get', `_private_keyop_idx_${contractID}_${currentHeight - currentHeight % KEYOP_SEGMENT_LENGTH}`))?.split('\x00')
           }
-        })
-        if (value != null) {
-          const newHeight = Number(value)
-          currentHeight = newHeight
-        } else {
-          // We've exhausted the current index; we'll return `null` and advance
-          // height by KEYOP_SEGMENT_LENGTH so that we can read the next index
-          // upon the next invocation (or, if we've reached the end of the
-          // contract, we return `false`).
-          currentHeight = currentHeight - currentHeight % KEYOP_SEGMENT_LENGTH + KEYOP_SEGMENT_LENGTH
-          index = undefined
-          if (currentHeight > latestHEADinfo.height) {
-            return false
+          const value = index?.find((h, i) => {
+            if (Number(h) >= currentHeight) {
+              // Remove values that no longer are relevant from the index
+              index = index!.slice(i + 1)
+              return true
+            } else {
+              return false
+            }
+          })
+          if (value != null) {
+            const newHeight = Number(value)
+            currentHeight = newHeight
           } else {
-            return null
+            // We've exhausted the current index; we'll return `null` and advance
+            // height by KEYOP_SEGMENT_LENGTH so that we can read the next index
+            // upon the next invocation (or, if we've reached the end of the
+            // contract, we return `false`).
+            currentHeight = currentHeight - currentHeight % KEYOP_SEGMENT_LENGTH + KEYOP_SEGMENT_LENGTH
+            index = undefined
+            if (currentHeight > latestHEADinfo.height) {
+              return false
+            } else {
+              return null
+            }
           }
+          return true
         }
+      })()
+      // `fetchMeta` fetches metadata information for entries based on height.
+      // Crucially, it fetches the entry hash (i.e., height -> hash lookup), which
+      // is needed for returning the correct data.
+      // The return value isn't currently used but is left as it may be useful in
+      // the future if this code is refactored. `false` indicates that no metadata
+      // could be found (indicating the end of a contract --or some kind of data
+      // corruption) and that the stream has ended. `true` indicates that the
+      // function executed successfully and the stream continues.
+      // Currently, the return value is not used because we're relying on the
+      // truthiness of `serverMeta` as a subtitute.
+      const fetchMeta = async () => {
+        if (currentHeight > latestHEADinfo.height) {
+          return false
+        }
+        const meta = await sbp('chelonia/db/getEntryMeta', contractID, currentHeight)
+        if (!meta) {
+          return false
+        }
+
+        const { hash: newCurrentHash, ...newServerMeta } = meta
+        currentHash = newCurrentHash
+        serverMeta = newServerMeta
+
         return true
       }
-    })()
-    // `fetchMeta` fetches metadata information for entries based on height.
-    // Crucially, it fetches the entry hash (i.e., height -> hash lookup), which
-    // is needed for returning the correct data.
-    // The return value isn't currently used but is left as it may be useful in
-    // the future if this code is refactored. `false` indicates that no metadata
-    // could be found (indicating the end of a contract --or some kind of data
-    // corruption) and that the stream has ended. `true` indicates that the
-    // function executed successfully and the stream continues.
-    // Currently, the return value is not used because we're relying on the
-    // truthiness of `serverMeta` as a subtitute.
-    const fetchMeta = async () => {
-      if (currentHeight > latestHEADinfo.height) {
-        return false
-      }
-      const meta = await sbp('chelonia/db/getEntryMeta', contractID, currentHeight)
-      if (!meta) {
-        return false
-      }
-
-      const { hash: newCurrentHash, ...newServerMeta } = meta
-      currentHash = newCurrentHash
-      serverMeta = newServerMeta
-
-      return true
-    }
-    // NOTE: if this ever stops working you can also try Readable.from():
-    // https://nodejs.org/api/stream.html#stream_stream_readable_from_iterable_options
-    const stream = Readable.from((async function * () {
-      yield '['
-      await fetchMeta()
-      while (serverMeta && counter < limit) {
-        try {
-          const entry = await sbp('chelonia/db/getEntry', currentHash)
-          // If the entry doesn't exist, we may have reached the end
-          if (!entry) break
-          const currentPrefix = prefix
-          prefix = ','
-          counter++
-          yield `${currentPrefix}"${strToB64(
-            JSON.stringify({ serverMeta, message: entry.serialize() })
-          )}"`
-          // Note for future improvement: implement a generator function for
-          // advancing height, which would make this logic more general by
-          // having just something like `await height.next()` instead of this
-          // avancement here and separate logic for each special case (like the
-          // `if` below for key ops).
-          currentHeight++
-          currentHash = undefined
-          serverMeta = undefined
-          // queries with 'keyOps' always return the requested height, whether
-          // or not a keyOp.
-          if (options.keyOps) {
-            // Advance `currentHeight` until the next key op
-            // `nextKeyOp` relies on the height advancing after an ideration and
-            while ((await nextKeyOp()) === null);
-          }
-          await fetchMeta()
-        } catch (e) {
-          console.error(e, '[backend] streamEntriesAfter: read()')
-          break
-        }
-      }
-      yield ']'
-    })(), { encoding: 'utf-8', objectMode: false })
-
-    // Add headers to stream (TypeScript workaround)
-    ;(stream as { headers?: Record<string, string> }).headers = {
-      'shelter-headinfo-head': latestHEADinfo.HEAD,
-      'shelter-headinfo-height': latestHEADinfo.height
-    }
-    return stream
-  },
-  // =======================
-  // wrapper methods to add / lookup names
-  // =======================
-  'backend/db/registerName': async function (name: string, value: string): Promise<{ name: string, value: string }> {
-    const exists = await sbp('backend/db/lookupName', name)
-    if (exists) {
-      throw Boom.conflict('exists')
-    }
-    await sbp('chelonia.db/set', namespaceKey(name), value)
-    await sbp('chelonia.db/set', `_private_cid2name_${value}`, name)
-    await appendToNamesIndex(name)
-
-    return { name, value }
-  },
-  'backend/db/lookupName': async function (name: string): Promise<string | undefined> {
-    const value = await sbp('chelonia.db/get', namespaceKey(name))
-    return value
-  }
-})
-
-let initedDB: false | true | 'preloaded' = false
-export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean } = {}) => {
-  if (!initedDB) {
-    // If persistence must be enabled:
-    // - load and initialize the selected storage backend
-    // - then overwrite 'chelonia.db/get' and '-set' to use it with an LRU cache
-    const backend = nconf.get('database:backend')
-    // Defaults to `fs` in production.
-    const persistence = backend || (production ? 'fs' : undefined)
-    const options = nconf.get('database:backendOptions')
-    const ARCHIVE_MODE = nconf.get('server:archiveMode')
-
-    if (persistence && persistence !== 'mem') {
-      const Ctor = (await import(`./database-${persistence}.ts`)).default
-      // Destructuring is safe because these methods have been bound using rebindMethods().
-      const { init, readData, writeData, deleteData, iterKeys, keyCount, close } = new Ctor(options[persistence]) as DatabaseBackend
-      await init()
-      sbp('okTurtles.events/once', SERVER_EXITING, () => {
-        sbp('okTurtles.eventQueue/queueEvent', SERVER_EXITING, async () => {
+      // NOTE: if this ever stops working you can also try Readable.from():
+      // https://nodejs.org/api/stream.html#stream_stream_readable_from_iterable_options
+      const stream = Readable.from((async function * () {
+        yield '['
+        await fetchMeta()
+        while (serverMeta && counter < limit) {
           try {
-            await close()
+            const entry = await sbp('chelonia/db/getEntry', currentHash)
+            // If the entry doesn't exist, we may have reached the end
+            if (!entry) break
+            const currentPrefix = prefix
+            prefix = ','
+            counter++
+            yield `${currentPrefix}"${strToB64(
+              JSON.stringify({ serverMeta, message: entry.serialize() })
+            )}"`
+            // Note for future improvement: implement a generator function for
+            // advancing height, which would make this logic more general by
+            // having just something like `await height.next()` instead of this
+            // avancement here and separate logic for each special case (like the
+            // `if` below for key ops).
+            currentHeight++
+            currentHash = undefined
+            serverMeta = undefined
+            // queries with 'keyOps' always return the requested height, whether
+            // or not a keyOp.
+            if (options.keyOps) {
+              // Advance `currentHeight` until the next key op
+              // `nextKeyOp` relies on the height advancing after an ideration and
+              while ((await nextKeyOp()) === null);
+            }
+            await fetchMeta()
           } catch (e) {
-            console.error(e, `Error closing DB ${persistence}`)
+            console.error(e, '[backend] streamEntriesAfter: read()')
+            break
           }
-        })
-      })
-
-      // https://github.com/isaacs/node-lru-cache#usage
-      const cache = new LRU<string, Buffer | string>({
-        max: nconf.get('database:lruNumItems') ?? 10000
-      })
-
-      const prefixes = Object.keys(prefixHandlers)
-      sbp('sbp/selectors/overwrite', {
-        'chelonia.db/get': async function (prefixableKey: string, { bypassCache }: { bypassCache?: boolean } = {}): Promise<Buffer | string | void> {
-          if (!bypassCache) {
-            const lookupValue = cache.get(prefixableKey)
-            if (lookupValue !== undefined) {
-              return lookupValue
-            }
-          }
-          const [prefix, key] = parsePrefixableKey(prefixableKey)
-          let value = await readData(key)
-          if (value === undefined) {
-            return
-          }
-          value = prefixHandlers[prefix](value) as string | Buffer
-          cache.set(prefixableKey, value)
-          return value
-        },
-        'chelonia.db/set': async function (key: string, value: Buffer | string): Promise<void> {
-          if (ARCHIVE_MODE) throw new Error('Unable to write in archive mode')
-          checkKey(key)
-          if (key.startsWith('_private_immutable')) {
-            const existingValue = await readData(key)
-            if (existingValue !== undefined) {
-              throw new Error('Cannot set already set immutable key')
-            }
-          }
-          await writeData(key, value)
-          // `get` uses `prefixableKey` as key, which now that the value is updated
-          // is stale. We delete all prefixed key variants from the cache to
-          // avoid serving stale data. Note that because of prefixes, `cache.set`
-          // can't be (easily) used to set the key, as transformations could happen
-          // on the unprefixed version.
-          // Note: 2025-03-24: We benchmarked `.forEach`, `for of` and `for`.
-          // Which one was faster depended on the browser, with no clear overall
-          // winner, but `.forEach` was faster on Chrome, which uses the same
-          // engine as Node.JS (V8).
-          prefixes.forEach(prefix => {
-            cache.delete(prefix + key)
-          })
-        },
-        'chelonia.db/delete': async function (key: string): Promise<void> {
-          if (ARCHIVE_MODE) throw new Error('Unable to write in archive mode')
-          checkKey(key)
-          if (key.startsWith('_private_immutable')) {
-            throw new Error('Cannot delete immutable key')
-          }
-          await deleteData(key)
-          // `get` uses `prefixableKey` as key, which now that the value is updated
-          // is stale. We delete all prefixed key variants from the cache to
-          // avoid serving stale data.
-          prefixes.forEach(prefix => {
-            cache.delete(prefix + key)
-          })
-        },
-        'chelonia.db/iterKeys': () => {
-          return iterKeys()
-        },
-        'chelonia.db/keyCount': () => {
-          return keyCount()
         }
-      })
-      sbp('sbp/selectors/lock', ['chelonia.db/get', 'chelonia.db/set', 'chelonia.db/delete', 'chelonia.db/iterKeys'])
-    }
-    initedDB = true
-  }
-  if (skipDbPreloading || initedDB === 'preloaded') return
-  /*
-  // Preloading logic preserved for historical reasons. Preloading should no
-  // longer be necessary, since `chel deploy` can be used for accomplishing
-  // the same in a more reliable way and without requiring the `fs` backend.
-  //
-  // TODO: Update this to only run when persistence is disabled when `chel deploy` can target SQLite.
-  if (persistence !== 'fs' || options.fs.dirname !== dbRootPath) {
-    // Remember to keep these values up-to-date.
-    const HASH_LENGTH = 56
+        yield ']'
+      })(), { encoding: 'utf-8', objectMode: false })
 
-    // Preload contract source files and contract manifests into Chelonia DB.
-    // Note: the data folder may contain other files if the `fs` persistence mode
-    // has been used before. We won't load them here; that's the job of `chel migrate`.
-    // Note: our target files are currently deployed with unprefixed hashes as file names.
-    // We can take advantage of this to recognize them more easily.
-    // TODO: Update this code when `chel deploy` no longer generates unprefixed keys.
-    const keys = (await readdir(dataFolder))
-      // Skip some irrelevant files.
-      .filter(k => {
-        if (k.length !== HASH_LENGTH) return false
-        const parsed = maybeParseCID(k)
-        return parsed && ([
-          multicodes.SHELTER_CONTRACT_MANIFEST,
-          multicodes.SHELTER_CONTRACT_TEXT].includes(parsed.code)
-        )
-      })
-    const numKeys = keys.length
-    let numVisitedKeys = 0
-    let numNewKeys = 0
-    const savedProgress = { value: 0, numKeys: 0 }
-
-    console.info('[chelonia.db] Preloading...')
-    for (const key of keys) {
-      // Skip keys which are already in the DB.
-      if (!persistence || !await sbp('chelonia.db/get', key)) {
-        // Load only contract source files and contract manifests.
-        const value = await readFile(path.join(dataFolder, key), 'utf8')
-        await sbp('chelonia.db/set', key, value)
-        numNewKeys++
+      // Add headers to stream (TypeScript workaround)
+      ;(stream as { headers?: Record<string, string> }).headers = {
+        'shelter-headinfo-head': String(latestHEADinfo.HEAD),
+        'shelter-headinfo-height': String(latestHEADinfo.height)
       }
-      numVisitedKeys++
-      const progress = numVisitedKeys === numKeys ? 100 : Math.floor(100 * numVisitedKeys / numKeys)
-      // Display progress lines between at least 10% increments, and no more than every 10 visited keys.
-      if (progress === 100 || (progress - savedProgress.value >= 10 && numVisitedKeys - savedProgress.numKeys >= 10)) {
-        console.info(`[chelonia.db] Preloading... ${progress}% done`)
-        savedProgress.numKeys = numVisitedKeys
-        savedProgress.value = progress
+      return stream
+    },
+    // =======================
+    // wrapper methods to add / lookup names
+    // =======================
+    'backend/db/registerName': async function (name: string, value: string): Promise<{ name: string, value: string }> {
+      const exists = await sbp('backend/db/lookupName', name)
+      if (exists) {
+        throw new BackendErrorConflict('exists')
+      }
+      await sbp('chelonia.db/set', namespaceKey(name), value)
+      await sbp('chelonia.db/set', `_private_cid2name_${value}`, name)
+      await appendToNamesIndex(name)
+
+      return { name, value }
+    },
+    'backend/db/lookupName': async function (name: string): Promise<string | undefined> {
+      const value = await sbp('chelonia.db/get', namespaceKey(name))
+      return value
+    }
+  })
+}
+
+export default installBaseSelectorsOnce
+
+let dbRefs: number = 0
+let setSelectors = false
+let preloaded = false
+
+// Operation queues to serialize access
+let initPromise: Promise<void> | null = null
+let closePromise: Promise<void> | null = null
+
+// Helper to get current operation promise
+const getCurrentInitPromise = (): Promise<void> => initPromise ?? Promise.resolve()
+const getCurrentClosePromise = (): Promise<void> => closePromise ?? Promise.resolve()
+
+export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean } = {}) => {
+  // Await any ongoing close operation first
+  await getCurrentClosePromise()
+
+  // Increment per-caller refcount immediately so concurrent callers each
+  // contribute a reference, independent of the shared init promise below.
+  const isFirstRef = dbRefs === 0
+  dbRefs++
+
+  // Queue this init operation
+  const thisInitPromise = initPromise ?? (async () => {
+    installBaseSelectorsOnce()
+
+    if (isFirstRef) {
+      // First-time initialization
+      const backend = nconf.get('database:backend')
+      const persistence = backend || (production ? 'fs' : undefined)
+      const options = nconf.get('database:backendOptions')
+      const ARCHIVE_MODE = nconf.get('server:archiveMode')
+
+      if (persistence && persistence !== 'mem') {
+        const Ctor = (await import(`./database-${persistence}.ts`)).default
+        const instance = new Ctor(options[persistence]) as DatabaseBackend
+        await instance.init()
+        currentBackend = instance
+
+        const cache = new LRU<string, Buffer | string>({
+          max: nconf.get('database:lruNumItems') ?? 10000
+        })
+        currentCache = cache
+
+        if (!setSelectors || !(import.meta as ImportMeta).lockDbSelectors) {
+          sbp('sbp/selectors/overwrite', {
+            'chelonia.db/get': async function (prefixableKey: string, { bypassCache }: { bypassCache?: boolean } = {}): Promise<Buffer | string | void> {
+              if (!bypassCache) {
+                const lookupValue = cache.get(prefixableKey)
+                if (lookupValue !== undefined) {
+                  return lookupValue
+                }
+              }
+              const [prefix, key] = parsePrefixableKey(prefixableKey)
+              let value = await currentBackend!.readData(key)
+              if (value === undefined) {
+                return
+              }
+              value = prefixHandlers[prefix](value) as string | Buffer
+              cache.set(prefixableKey, value)
+              return value
+            },
+            'chelonia.db/set': async function (key: string, value: Buffer | string): Promise<void> {
+              if (ARCHIVE_MODE) throw new Error('Unable to write in archive mode')
+              checkKey(key)
+              if (key.startsWith('_private_immutable')) {
+                const existingValue = await currentBackend!.readData(key)
+                if (existingValue !== undefined) {
+                  throw new Error('Cannot set already set immutable key')
+                }
+              }
+              await currentBackend!.writeData(key, value)
+              const prefixes = Object.keys(prefixHandlers)
+              prefixes.forEach(prefix => {
+                cache.delete(prefix + key)
+              })
+            },
+            'chelonia.db/delete': async function (key: string): Promise<void> {
+              if (ARCHIVE_MODE) throw new Error('Unable to write in archive mode')
+              checkKey(key)
+              if (key.startsWith('_private_immutable')) {
+                throw new Error('Cannot delete immutable key')
+              }
+              await currentBackend!.deleteData(key)
+              const prefixes = Object.keys(prefixHandlers)
+              prefixes.forEach(prefix => {
+                cache.delete(prefix + key)
+              })
+            },
+            'chelonia.db/iterKeys': () => {
+              return currentBackend!.iterKeys()
+            },
+            'chelonia.db/keyCount': () => {
+              return currentBackend!.keyCount()
+            }
+          })
+          if ((import.meta as ImportMeta).lockDbSelectors) {
+            sbp('sbp/selectors/lock', ['chelonia.db/get', 'chelonia.db/set', 'chelonia.db/delete', 'chelonia.db/iterKeys'])
+          }
+          setSelectors = true
+        }
       }
     }
-    numNewKeys && console.info(`[chelonia.db] Preloaded ${numNewKeys} new entries`)
+
+    if (skipDbPreloading || preloaded) return
+
+    await Promise.all([initVapid(), initZkpp()])
+    preloaded = true
+  })()
+
+  initPromise = thisInitPromise
+  try {
+    await thisInitPromise
+  } catch (e) {
+    // Roll back our reference if shared initialization failed
+    dbRefs--
+    throw e
+  } finally {
+    initPromise = null
   }
-  */
-  await Promise.all([initVapid(), initZkpp()])
-  initedDB = 'preloaded'
+}
+
+export async function closeDB (): Promise<void> {
+  // Await any ongoing init operation first
+  await getCurrentInitPromise()
+
+  if (dbRefs > 1) {
+    dbRefs--
+    return
+  }
+
+  // Queue this close operation
+  const thisClosePromise = closePromise ?? (async () => {
+    if (isClosing) return
+
+    isClosing = true
+    try {
+      if (currentBackend) {
+        try {
+          await currentBackend.close()
+        } catch (e) {
+          console.error(e, 'Error closing DB')
+        }
+      }
+      currentCache?.clear()
+      dbRefs = 0
+      currentBackend = null
+      if (!(import.meta as ImportMeta).lockDbSelectors) {
+        preloaded = false
+        currentCache = null
+      }
+    } finally {
+      isClosing = false
+    }
+  })()
+
+  closePromise = thisClosePromise
+  await thisClosePromise.finally(() => {
+    closePromise = null
+  })
 }
 
 export * from './db-utils.ts'

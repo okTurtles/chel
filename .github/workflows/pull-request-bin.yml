@@ -1,0 +1,40 @@
+name: Reject protected-dir changes
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  reject-protected:
+    runs-on: ubuntu-slim
+    env:
+      PROTECTED_DIR: bin/
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+      - name: Fail if protected dir changed (unless [bin-update] present)
+        run: |
+          BASE_REF="${{ github.event.pull_request.base.ref }}"
+          # fetch base for diff/log
+          git fetch origin "$BASE_REF" --depth=1
+
+          # if any commit message includes [bin-update], skip the check
+          if git log --pretty=%B "origin/${BASE_REF}"..HEAD | grep -q '\[bin-update\]'; then
+            echo "Bypass: a commit message contains [bin-update]."
+            exit 0
+          fi
+
+          # list changed files between PR branch and base
+          changes=$(git diff --name-only "origin/${BASE_REF}"..HEAD || true)
+
+          # fail if any changed file is under the protected directory
+          if echo "$changes" | grep -E "^${PROTECTED_DIR}"; then
+            echo "ERROR: Changes detected under ${PROTECTED_DIR}. Rejecting PR."
+            exit 1
+          fi
+
+          echo "No changes detected under ${PROTECTED_DIR}."

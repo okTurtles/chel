@@ -295,14 +295,14 @@ Deno.test({
         if (res.status !== 401) throw new Error(`Expected 401 but got ${res.status}`)
       })
 
-      await t.step('POST /deleteContract with _private prefix returns 404', async () => {
+      await t.step('POST /deleteContract with _private prefix returns 400 (invalid CID)', async () => {
         const auth = buildShelterAuthHeader(owner.contractID, owner.SAK)
         const res = await fetch(`${baseURL}/deleteContract/_private_something`, {
           method: 'POST',
           headers: { authorization: auth }
         })
         await res.body?.cancel()
-        if (res.status !== 404) throw new Error(`Expected 404 but got ${res.status}`)
+        if (res.status !== 400) throw new Error(`Expected 400 but got ${res.status}`)
       })
 
       await t.step('POST /deleteContract with nonexistent contract returns 404', async () => {
@@ -359,21 +359,21 @@ Deno.test({
       await t.step('POST /event with invalid payload returns 400', async () => {
         const res = await fetch(`${baseURL}/event`, {
           method: 'POST',
-          headers: { 'content-type': 'text/plain' },
+          headers: { 'content-type': 'application/json' },
           body: ''
         })
         await res.body?.cancel()
         if (res.status !== 400) throw new Error(`Expected 400 but got ${res.status}`)
       })
 
-      await t.step('POST /event with non-JSON payload returns 500', async () => {
+      await t.step('POST /event with non-JSON payload returns 415', async () => {
         const res = await fetch(`${baseURL}/event`, {
           method: 'POST',
           headers: { 'content-type': 'text/plain' },
           body: 'not-json-at-all'
         })
         await res.body?.cancel()
-        if (res.status !== 500) throw new Error(`Expected 500 but got ${res.status}`)
+        if (res.status !== 415) throw new Error(`Expected 415 but got ${res.status}`)
       })
 
       await t.step('POST /file without auth returns 401', async () => {
