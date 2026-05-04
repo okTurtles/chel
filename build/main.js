@@ -74018,7 +74018,7 @@ function registerRoutes(app) {
         c.req.raw.signal.addEventListener("abort", () => stream.destroy());
         const streamHeaders = stream.headers || {};
         const webStream = Readable3.toWeb(stream);
-        return new Response(webStream, {
+        return c.body(webStream, {
           headers: { "content-type": "application/json", ...streamHeaders }
         });
       } catch (err) {
@@ -74373,12 +74373,9 @@ function registerRoutes(app) {
         if (expectedEtag === "*") {
         } else {
           if (!expectedEtag.split(",").map((v2) => v2.trim()).includes(`"${cid}"`)) {
-            return new Response(existing || "", {
-              status: 412,
-              headers: {
-                "ETag": `"${cid}"`,
-                "x-cid": `"${cid}"`
-              }
+            return c.body(existing || "", 412, {
+              "ETag": `"${cid}"`,
+              "x-cid": `"${cid}"`
             });
           }
         }
@@ -74386,12 +74383,9 @@ function registerRoutes(app) {
           const serializedData = JSON.parse(payloadBuffer.toString());
           const { contracts } = esm_default("chelonia/rootState");
           if (contracts[contractID].height !== Number(serializedData.height)) {
-            return new Response(existing || "", {
-              status: 409,
-              headers: {
-                "ETag": `"${cid}"`,
-                "x-cid": `"${cid}"`
-              }
+            return c.body(existing || "", 409, {
+              "ETag": `"${cid}"`,
+              "x-cid": `"${cid}"`
             });
           }
           esm_default("chelonia/parseEncryptedOrUnencryptedDetachedMessage", {
@@ -74400,7 +74394,7 @@ function registerRoutes(app) {
             meta: key
           });
         } catch (parseErr) {
-          if (parseErr instanceof Response) throw parseErr;
+          console.error(parseErr, "/kv/:contractID/:key", contractID, key);
           throw new HTTPException(422);
         }
         const existingSize = existing ? Buffer14.from(existing).byteLength : 0;
@@ -74431,12 +74425,10 @@ function registerRoutes(app) {
         return notFoundNoCache(c);
       }
       const cid = createCID(result, multicodes.RAW);
-      return new Response(result, {
-        headers: {
-          "ETag": `"${cid}"`,
-          "x-cid": `"${cid}"`,
-          "Cache-Control": "no-store"
-        }
+      return c.body(result, 200, {
+        "ETag": `"${cid}"`,
+        "x-cid": `"${cid}"`,
+        "Cache-Control": "no-store"
       });
     }
   );
@@ -75460,6 +75452,9 @@ async function startServer() {
     c.header("X-Frame-Options", "DENY");
   });
   currentApp.onError((err, c) => {
+    if (!(err instanceof HTTPException)) {
+      console.error(err, "Unhandled error in route handler");
+    }
     const response = err instanceof HTTPException ? err.getResponse() : c.text("Internal Server Error", 500);
     response.headers.set("X-Frame-Options", "DENY");
     return response;

@@ -491,7 +491,7 @@ export function registerRoutes (app: Hono): void {
         // Convert the Node Readable stream to a web ReadableStream for the Response
         const streamHeaders = (stream as { headers?: Record<string, string> }).headers || {}
         const webStream = Readable.toWeb(stream) as ReadableStream
-        return new Response(webStream, {
+        return c.body(webStream, {
           headers: { 'content-type': 'application/json', ...streamHeaders }
         })
       } catch (err) {
@@ -953,12 +953,9 @@ export function registerRoutes (app: Hono): void {
           // pass through
         } else {
           if (!expectedEtag.split(',').map((v: string) => v.trim()).includes(`"${cid}"`)) {
-            return new Response(existing || '', {
-              status: 412,
-              headers: {
-                'ETag': `"${cid}"`,
-                'x-cid': `"${cid}"`
-              }
+            return c.body(existing || '', 412, {
+              'ETag': `"${cid}"`,
+              'x-cid': `"${cid}"`
             })
           }
         }
@@ -968,12 +965,9 @@ export function registerRoutes (app: Hono): void {
           const { contracts } = sbp('chelonia/rootState')
           // Check that the height is the latest value
           if (contracts[contractID].height !== Number(serializedData.height)) {
-            return new Response(existing || '', {
-              status: 409,
-              headers: {
-                'ETag': `"${cid}"`,
-                'x-cid': `"${cid}"`
-              }
+            return c.body(existing || '', 409, {
+              'ETag': `"${cid}"`,
+              'x-cid': `"${cid}"`
             })
           }
           // Check that the signature is valid
@@ -983,7 +977,7 @@ export function registerRoutes (app: Hono): void {
             meta: key
           })
         } catch (parseErr) {
-          if (parseErr instanceof Response) throw parseErr
+          console.error(parseErr, '/kv/:contractID/:key', contractID, key)
           throw new HTTPException(422)
         }
 
@@ -1020,12 +1014,10 @@ export function registerRoutes (app: Hono): void {
       }
 
       const cid = createCID(result, multicodes.RAW)
-      return new Response(result, {
-        headers: {
-          'ETag': `"${cid}"`,
-          'x-cid': `"${cid}"`,
-          'Cache-Control': 'no-store'
-        }
+      return c.body(result, 200, {
+        'ETag': `"${cid}"`,
+        'x-cid': `"${cid}"`,
+        'Cache-Control': 'no-store'
       })
     })
 

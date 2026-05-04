@@ -425,6 +425,10 @@ export async function startServer (): Promise<{ uri: string }> {
     c.header('X-Frame-Options', 'DENY')
   })
   currentApp.onError((err, c) => {
+    if (!(err instanceof HTTPException)) {
+      console.error(err, 'Unhandled error in route handler')
+    }
+
     const response = err instanceof HTTPException
       ? err.getResponse()
       : c.text('Internal Server Error', 500)
