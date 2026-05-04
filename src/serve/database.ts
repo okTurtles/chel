@@ -203,11 +203,16 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
   // Await any ongoing close operation first
   await getCurrentClosePromise()
 
+  // Increment per-caller refcount immediately so concurrent callers each
+  // contribute a reference, independent of the shared init promise below.
+  const isFirstRef = dbRefs === 0
+  dbRefs++
+
   // Queue this init operation
   const thisInitPromise = initPromise ?? (async () => {
     installBaseSelectorsOnce()
 
-    if (!dbRefs) {
+    if (isFirstRef) {
       // First-time initialization
       const backend = nconf.get('database:backend')
       const persistence = backend || (production ? 'fs' : undefined)
@@ -285,8 +290,6 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
       }
     }
 
-    dbRefs++
-
     if (skipDbPreloading || preloaded) return
 
     await Promise.all([initVapid(), initZkpp()])
@@ -294,9 +297,15 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
   })()
 
   initPromise = thisInitPromise
-  await thisInitPromise.finally(() => {
+  try {
+    await thisInitPromise
+  } catch (e) {
+    // Roll back our reference if shared initialization failed
+    dbRefs--
+    throw e
+  } finally {
     initPromise = null
-  })
+  }
 }
 
 export async function closeDB (): Promise<void> {

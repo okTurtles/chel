@@ -68879,9 +68879,11 @@ var getCurrentInitPromise = () => initPromise ?? Promise.resolve();
 var getCurrentClosePromise = () => closePromise ?? Promise.resolve();
 var initDB = async ({ skipDbPreloading } = {}) => {
   await getCurrentClosePromise();
+  const isFirstRef = dbRefs === 0;
+  dbRefs++;
   const thisInitPromise = initPromise ?? (async () => {
     installBaseSelectorsOnce();
-    if (!dbRefs) {
+    if (isFirstRef) {
       const backend = import_npm_nconf2.default.get("database:backend");
       const persistence = backend || (production ? "fs" : void 0);
       const options2 = import_npm_nconf2.default.get("database:backendOptions");
@@ -68954,15 +68956,19 @@ var initDB = async ({ skipDbPreloading } = {}) => {
         }
       }
     }
-    dbRefs++;
     if (skipDbPreloading || preloaded) return;
     await Promise.all([initVapid(), initZkpp()]);
     preloaded = true;
   })();
   initPromise = thisInitPromise;
-  await thisInitPromise.finally(() => {
+  try {
+    await thisInitPromise;
+  } catch (e2) {
+    dbRefs--;
+    throw e2;
+  } finally {
     initPromise = null;
-  });
+  }
 };
 async function closeDB() {
   await getCurrentInitPromise();
