@@ -1051,7 +1051,9 @@ export function registerRoutes (app: Hono): void {
   }
 
   // SPA catch-all route
-  app.get(isCheloniaDashboard ? '/dashboard/*' : '/app/*', etag(), async function (c) {
+  const spaPrefix = isCheloniaDashboard ? '/dashboard' : '/app'
+  app.get(spaPrefix, (c) => c.redirect(`${spaPrefix}/`))
+  app.get(`${spaPrefix}/*`, etag(), async function (c) {
     try {
       const file = await Deno.readFile(staticServeConfig.distIndexHtml)
       return c.body(file, 200, { 'Content-Type': 'text/html' })

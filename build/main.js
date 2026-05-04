@@ -74455,7 +74455,9 @@ function registerRoutes(app) {
       return serveAsset(c, subpath, staticServeConfig.distAssets);
     });
   }
-  app.get(isCheloniaDashboard ? "/dashboard/*" : "/app/*", etag(), async function(c) {
+  const spaPrefix = isCheloniaDashboard ? "/dashboard" : "/app";
+  app.get(spaPrefix, (c) => c.redirect(`${spaPrefix}/`));
+  app.get(`${spaPrefix}/*`, etag(), async function(c) {
     try {
       const file = await Deno.readFile(staticServeConfig.distIndexHtml);
       return c.body(file, 200, { "Content-Type": "text/html" });
@@ -75456,6 +75458,11 @@ async function startServer() {
   currentApp.use("*", async (c, next) => {
     await next();
     c.header("X-Frame-Options", "DENY");
+  });
+  currentApp.onError((err, c) => {
+    const response = err instanceof HTTPException ? err.getResponse() : c.text("Internal Server Error", 500);
+    response.headers.set("X-Frame-Options", "DENY");
+    return response;
   });
   if (process9.env.NODE_ENV === "development" && !process9.env.CI) {
     currentApp.use("*", async (c, next) => {

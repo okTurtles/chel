@@ -33,6 +33,7 @@ import {
 } from './pubsub.ts'
 import { addChannelToSubscription, deleteChannelFromSubscription, postEvent, pushServerActionhandlers, subscriptionInfoWrapper } from './push.ts'
 import { pathToFileURL } from 'node:url'
+import { HTTPException } from 'npm:hono/http-exception'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
 
@@ -422,6 +423,13 @@ export async function startServer (): Promise<{ uri: string }> {
   currentApp.use('*', async (c, next) => {
     await next()
     c.header('X-Frame-Options', 'DENY')
+  })
+  currentApp.onError((err, c) => {
+    const response = err instanceof HTTPException
+      ? err.getResponse()
+      : c.text('Internal Server Error', 500)
+    response.headers.set('X-Frame-Options', 'DENY')
+    return response
   })
 
   // Dev logging middleware
