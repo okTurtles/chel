@@ -70,8 +70,13 @@ export function isValidKey (key: string): boolean {
 }
 
 export async function readRemoteData (src: string, key: string): Promise<Uint8Array> {
-  const buffer = await fetch(`${src}/file/${key}`)
-    .then(async r => r.ok ? await r.arrayBuffer() : await Promise.reject(new Error(`failed network request to ${src}: ${r.status} - ${r.statusText}`)))
+  const buffer = await fetch(`${src}/file/${key}`).then(async (r) =>
+    r.ok
+      ? await r.arrayBuffer()
+      : await Promise.reject(
+        new Error(`failed network request to ${src}: ${r.status} - ${r.statusText}`)
+      )
+  )
   return new Uint8Array(buffer)
 }
 
@@ -91,10 +96,7 @@ export interface ShellOptions {
   cwd?: string
 }
 
-export async function shell (
-  command: string,
-  options: ShellOptions = {}
-): Promise<string> {
+export async function shell (command: string, options: ShellOptions = {}): Promise<string> {
   const { printOutput = false, shell = '/bin/sh', cwd } = options
   const cmd = new Deno.Command(shell, {
     args: ['-c', command],
@@ -112,9 +114,7 @@ export async function shell (
   }
 
   if (code !== 0) {
-    throw new Error(
-      `Command failed with exit code ${code}: ${decoder.decode(stderr)}`
-    )
+    throw new Error(`Command failed with exit code ${code}: ${decoder.decode(stderr)}`)
   }
 
   return decoder.decode(stdout).trim()

@@ -48,10 +48,22 @@ if (Object.keys(logger.levels.values).includes(logLevel)) {
   logger.warn(`Unknown log level: ${logLevel}`)
 }
 
-console.debug = logger.debug.bind(logger)
-console.info = logger.info.bind(logger)
-console.log = logger.info.bind(logger)
-console.warn = logger.warn.bind(logger)
-console.error = logger.error.bind(logger)
+let loggerInitialized = false
+
+/**
+ * Initialize the pino logger by replacing console.* methods.
+ * This should be called explicitly when pino logging is desired
+ * (e.g., in the serve command), not automatically on import.
+ */
+export function initializeLogger (): void {
+  if (loggerInitialized) return
+  loggerInitialized = true
+
+  console.debug = logger.debug.bind(logger)
+  console.info = logger.info.bind(logger)
+  console.log = logger.info.bind(logger)
+  console.warn = logger.warn.bind(logger)
+  console.error = logger.error.bind(logger)
+}
 
 export default logger

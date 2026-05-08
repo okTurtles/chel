@@ -5,7 +5,13 @@
 
 import * as colors from 'jsr:@std/fmt/colors'
 import * as path from 'jsr:@std/path/'
-import { EDWARDS25519SHA512BATCH, deserializeKey, keyId, serializeKey, sign } from 'npm:@chelonia/crypto'
+import {
+  EDWARDS25519SHA512BATCH,
+  deserializeKey,
+  keyId,
+  serializeKey,
+  sign
+} from 'npm:@chelonia/crypto'
 import { multicodes } from 'npm:@chelonia/lib/functions'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { hash } from './hash.ts'
@@ -14,20 +20,24 @@ import { exit, readJsonFile, revokeNet } from './utils.ts'
 // import { writeAllSync } from "https://deno.land/std@0.141.0/streams/mod.ts"
 
 type Params = {
-  key?: string[];
-  out?: string;
-  slim?: string;
-  name?: string;
-  contractVersion?: string;
-  signingKey: string;
-  contractBundle: string;
+  key?: string[]
+  out?: string
+  slim?: string
+  name?: string
+  contractVersion?: string
+  signingKey: string
+  contractBundle: string
 }
 interface SigningKeyDescriptor {
   privkey: string
 }
 
 function isSigningKeyDescriptor (obj: unknown): obj is SigningKeyDescriptor {
-  return obj !== null && typeof obj === 'object' && typeof (obj as Record<string, unknown>).privkey === 'string'
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    typeof (obj as Record<string, unknown>).privkey === 'string'
+  )
 }
 
 export async function manifest (args: ArgumentsCamelCase<Params>): Promise<void> {
@@ -43,7 +53,8 @@ export async function manifest (args: ArgumentsCamelCase<Params>): Promise<void>
   const name = args.name || contractFileName
   const version = args.contractVersion || 'x'
   const slim = args.slim
-  const outFile: string = args.out || path.join(contractDir, `${contractFileName}.${version}.manifest.json`)
+  const outFile: string =
+    args.out || path.join(contractDir, `${contractFileName}.${version}.manifest.json`)
   if (!keyFile) exit('Missing signing key file')
 
   const signingKeyDescriptorRaw = await readJsonFile(keyFile)
@@ -54,23 +65,28 @@ export async function manifest (args: ArgumentsCamelCase<Params>): Promise<void>
   const signingKey = deserializeKey(signingKeyDescriptor.privkey)
 
   // Add all additional public keys in addition to the signing key
-  const publicKeys = Array.from(new Set(
-    [serializeKey(signingKey, false)]
-      .concat(...await Promise.all(args.key?.map(
-        async (kf: unknown) => {
-          if (typeof kf !== 'string' && typeof kf !== 'number') {
-            exit(`Invalid key file reference: ${String(kf)}`)
-          }
-          const descriptor = await readJsonFile(String(kf))
-          // @ts-expect-error: descriptor is unknown, ignoring type error
-          const key = deserializeKey(descriptor.pubkey)
-          if (key.type !== EDWARDS25519SHA512BATCH) {
-            exit(`Invalid key type ${key.type}; only ${EDWARDS25519SHA512BATCH} keys are supported.`)
-          }
-          return serializeKey(key, false)
-        }
-      ) || []))
-  ))
+  const publicKeys = Array.from(
+    new Set(
+      [serializeKey(signingKey, false)].concat(
+        ...(await Promise.all(
+          args.key?.map(async (kf: unknown) => {
+            if (typeof kf !== 'string' && typeof kf !== 'number') {
+              exit(`Invalid key file reference: ${String(kf)}`)
+            }
+            const descriptor = await readJsonFile(String(kf))
+            // @ts-expect-error: descriptor is unknown, ignoring type error
+            const key = deserializeKey(descriptor.pubkey)
+            if (key.type !== EDWARDS25519SHA512BATCH) {
+              exit(
+                `Invalid key type ${key.type}; only ${EDWARDS25519SHA512BATCH} keys are supported.`
+              )
+            }
+            return serializeKey(key, false)
+          }) || []
+        ))
+      )
+    )
+  )
 
   const body: { [key: string]: unknown } = {
     name,
@@ -110,10 +126,10 @@ export const module = {
   builder: (yargs) => {
     return yargs
       .option('key', {
-        coerce: (v: string | string[]) => Array.isArray(v) ? v : [v],
+        coerce: (v: string | string[]) => (Array.isArray(v) ? v : [v]),
         describe: 'Additional public key',
         requiresArg: true,
-        string: true,
+        string: true
       })
       .alias('k', 'key')
       .option('out', {
@@ -150,8 +166,10 @@ export const module = {
         type: 'string'
       })
   },
-  command: 'manifest [-k|--key <pubkey1>] [-k|--key <pubkey2> ...] [--out <manifest.json>] [-s|--slim <contract-slim.js>] [-V|--contract-version <version>] <signingKey> <contractBundle>',
-  describe: 'Produce a signed manifest from a contract.\n' + 'If unspecified, <version> is set to \'x\'.',
+  command:
+    'manifest [-k|--key <pubkey1>] [-k|--key <pubkey2> ...] [--out <manifest.json>] [-s|--slim <contract-slim.js>] [-V|--contract-version <version>] <signingKey> <contractBundle>',
+  describe:
+    'Produce a signed manifest from a contract.\n' + 'If unspecified, <version> is set to \'x\'.',
   postHandler: (argv) => {
     return manifest(argv)
   }

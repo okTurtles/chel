@@ -1,4 +1,5 @@
 import sbp from 'npm:@sbp/sbp'
+import 'npm:@sbp/okturtles.data'
 import Vue from 'npm:vue'
 import router from './controller/router.ts'
 import store from './model/state.ts'

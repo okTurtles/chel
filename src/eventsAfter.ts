@@ -3,12 +3,17 @@
 import * as base64 from 'jsr:@std/encoding/base64'
 import sbp from 'npm:@sbp/sbp'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
-import { initDB } from './serve/database.ts'
-import { exit } from './utils.ts'
+import { closeDB, initDB } from './serve/database.ts'
 
-type Params = { limit: number, url: string | undefined, contractID: string, height: number }
+type Params = { limit: number; url: string | undefined; contractID: string; height: number }
 
-export async function eventsAfter ({ limit, url, contractID, height }: ArgumentsCamelCase<Params>): Promise<void> {
+export async function eventsAfter ({
+  limit,
+  url,
+  contractID,
+  height
+}: ArgumentsCamelCase<Params>): Promise<void> {
+  let dbOpen = false
   try {
     let messages
 
@@ -16,15 +21,22 @@ export async function eventsAfter ({ limit, url, contractID, height }: Arguments
       messages = await getRemoteMessagesSince(url, contractID, height, limit)
     } else {
       await initDB({ skipDbPreloading: true })
+      dbOpen = true
       messages = await getMessagesSince(contractID, height, limit)
     }
     console.log(JSON.stringify(messages, null, 2))
-  } catch (error) {
-    exit(error)
+  } finally {
+    if (dbOpen) {
+      await closeDB()
+    }
   }
 }
 
-async function getMessagesSince (contractID: string, sinceHeight: number, limit: number): Promise<string[]> {
+async function getMessagesSince (
+  contractID: string,
+  sinceHeight: number,
+  limit: number
+): Promise<string[]> {
   const readable = await sbp('backend/db/streamEntriesAfter', contractID, sinceHeight, limit)
 
   return new Promise((resolve, reject) => {
@@ -47,18 +59,27 @@ async function getMessagesSince (contractID: string, sinceHeight: number, limit:
   })
 }
 
-async function getRemoteMessagesSince (src: string, contractID: string, sinceHeight: number, limit: number): Promise<string[]> {
+async function getRemoteMessagesSince (
+  src: string,
+  contractID: string,
+  sinceHeight: number,
+  limit: number
+): Promise<string[]> {
   const response = await fetch(`${src}/eventsAfter/${contractID}/${sinceHeight}`)
   if (!response.ok) {
-    // The response body may contain some useful error info if we got a Boom error response.
-    const bodyText = await response.text().catch(() => '') || ''
-    throw new Error(`failed network request to ${src}: ${response.status} - ${response.statusText} - '${bodyText}'`)
+    // The response body may contain some useful error info.
+    const bodyText = (await response.text().catch(() => '')) || ''
+    throw new Error(
+      `failed network request to ${src}: ${response.status} - ${response.statusText} - '${bodyText}'`
+    )
   }
   const b64messages: string[] = await response.json()
   if (b64messages.length > limit) {
     b64messages.length = limit
   }
-  return b64messages.map(b64str => JSON.parse(new TextDecoder().decode(base64.decodeBase64(b64str))))
+  return b64messages.map((b64str) =>
+    JSON.parse(new TextDecoder().decode(base64.decodeBase64(b64str)))
+  )
 }
 
 export const module = {
@@ -92,10 +113,11 @@ export const module = {
       })
   },
   command: 'eventsAfter <contractID> <height>',
-  describe: 'Displays a JSON array of the first LIMIT events that happened in a given contract, since a given entry identified by its hash.\n\n' +
-  '- Older events are displayed first.\n' +
-  '- The output is parseable with tools such as \'jq\'.\n' +
-  '- If --url is given, then its /eventsAfter REST endpoint will be called.\n',
+  describe:
+    'Displays a JSON array of the first LIMIT events that happened in a given contract, since a given entry identified by its hash.\n\n' +
+    '- Older events are displayed first.\n' +
+    '- The output is parseable with tools such as \'jq\'.\n' +
+    '- If --url is given, then its /eventsAfter REST endpoint will be called.\n',
   postHandler: (argv) => {
     return eventsAfter(argv)
   }

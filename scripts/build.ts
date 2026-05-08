@@ -2,8 +2,11 @@
 
 import * as esbuild from 'npm:esbuild@0.25.6'
 import * as colors from 'jsr:@std/fmt/colors'
+import { builtinModules } from 'node:module'
 
 const { default: { version } } = await import('../package.json', { with: { type: 'json' } })
+
+const nodeBuiltins = new Set(builtinModules.filter((m: string) => !m.startsWith('_')))
 
 const options: esbuild.BuildOptions = {
   entryPoints: [
@@ -16,6 +19,8 @@ const options: esbuild.BuildOptions = {
     'import.meta.VERSION': JSON.stringify(version),
     'import.meta.ownerSizeTotalWorker': '"./serve/ownerSizeTotalWorker.js"',
     'import.meta.creditsWorker': '"./serve/creditsWorker.js"',
+    // Lock DB after init, preventing overwriting
+    'import.meta.lockDbSelectors': 'true'
   },
   format: 'esm',
   platform: 'node',
@@ -27,6 +32,17 @@ const options: esbuild.BuildOptions = {
       name: 'npm',
       setup (build) {
         build.onResolve({ filter: /^npm:/, namespace: 'file' }, ({ path, ...args }) => build.resolve(path.slice(4), args))
+      }
+    },
+    {
+      name: 'node-builtins',
+      setup (build) {
+        build.onResolve({ filter: /^[0-9a-zA-Z_/]+$/, namespace: 'file' }, ({ path }) => {
+          if (nodeBuiltins.has(path)) {
+            return { path: `node:${path}`, external: true }
+          }
+          return null
+        })
       }
     },
     {

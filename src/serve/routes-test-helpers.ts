@@ -10,7 +10,7 @@ import { blake32Hash, createCID, multicodes } from 'npm:@chelonia/lib/functions'
 import { EDWARDS25519SHA512BATCH, keygen, keyId, serializeKey, sign } from 'npm:@chelonia/crypto'
 import { AUTHSALT, CONTRACTSALT, CS, SALT_LENGTH_IN_OCTETS } from 'npm:@chelonia/lib/zkppConstants'
 import tweetnacl from 'npm:tweetnacl'
-import { SERVER_EXITING, SERVER_RUNNING } from './events.ts'
+import { startServer, stopServer } from './index.ts'
 
 export { blake32Hash, createCID, multicodes } from 'npm:@chelonia/lib/functions'
 export { EDWARDS25519SHA512BATCH, keygen, keyId, serializeKey, sign } from 'npm:@chelonia/crypto'
@@ -137,19 +137,9 @@ export function startTestServer (): Promise<string> {
       }
     })
 
-    const serverAddress = await new Promise<string>((resolve, reject) => {
-      const unregister = sbp('okTurtles.events/once', SERVER_RUNNING, function (hapi: { info: { uri: string } }) {
-        resolve(hapi.info.uri)
-      })
-      import('./index.ts').then(({ default: start }) => {
-        return start()
-      }).catch((e) => {
-        unregister()
-        reject(e)
-      })
-    })
+    const serverAddress = await startServer({ installSignalHandlers: false })
 
-    return serverAddress
+    return serverAddress.uri
   }
 
   cachedServerAddress = internal().catch(e => {
@@ -175,13 +165,6 @@ export async function stopTestServer (): Promise<void> {
   if (--serverStartRefCount > 0) {
     return
   }
-  await new Promise<void>((resolve) => {
-    sbp('okTurtles.events/once', SERVER_EXITING, () => {
-      sbp('okTurtles.eventQueue/queueEvent', SERVER_EXITING, () => {
-        resolve()
-      })
-    })
-    sbp('okTurtles.events/emit', SERVER_EXITING)
-  })
+  await stopServer()
   cachedServerAddress = undefined
 }

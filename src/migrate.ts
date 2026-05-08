@@ -7,13 +7,13 @@ import process from 'node:process'
 import sbp from 'npm:@sbp/sbp'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import type DatabaseBackend from './serve/DatabaseBackend.ts'
-import { initDB } from './serve/database.ts'
+import { closeDB, initDB } from './serve/database.ts'
 import { exit, isValidKey } from './utils.ts'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
 import { parse, type TomlTable } from 'npm:smol-toml'
 
-type Params = { from: string, fromConfig?: string, to: string, toConfig?: string }
+type Params = { from: string; fromConfig?: string; to: string; toConfig?: string }
 
 export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> {
   const { to } = args
@@ -25,7 +25,8 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
     if (fromBackend !== backend) {
       console.warn(`--from-config has backend ${fromBackend} but --from is ${backend}`)
     }
-    const fromConfigOpts = ((fromConfig?.database as TomlTable)?.backendOptions as TomlTable)?.[backend] || {}
+    const fromConfigOpts =
+      ((fromConfig?.database as TomlTable)?.backendOptions as TomlTable)?.[backend] || {}
     nconf.set(`database:backendOptions:${backend}`, fromConfigOpts)
   }
 
@@ -33,11 +34,10 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
     await initDB({ skipDbPreloading: true })
   } catch (e) {
     console.error('Error setting up database')
-    exit(e)
     throw e
   }
 
-  let backendTo: DatabaseBackend
+  let backendTo: DatabaseBackend | undefined
   try {
     let toConfigOpts: unknown
     if (args.toConfig) {
@@ -53,145 +53,144 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
 
     const Ctor = (await import(`./serve/database-${to}.ts`)).default
     backendTo = new Ctor(toConfigOpts)
-    await backendTo.init()
-  } catch (error) {
-    exit(error)
-    throw error
-  }
+    await backendTo!.init()
 
-  const numKeys = await sbp('chelonia.db/keyCount')
-  let numMigratedKeys = 0
-  let numVisitedKeys = 0
+    const numKeys = await sbp('chelonia.db/keyCount')
+    let numMigratedKeys = 0
+    let numVisitedKeys = 0
 
-  const reportStatus = () => {
-    console.log(`${colors.green('Migrated:')} ${numMigratedKeys} entries`)
-  }
+    const reportStatus = () => {
+      console.log(`${colors.green('Migrated:')} ${numMigratedKeys} entries`)
+    }
 
-  const checkAndExit = (() => {
-    let interruptCount = 0
-    let shouldExit = 0
+    const checkAndExit = (() => {
+      let interruptCount = 0
+      let shouldExit = 0
 
-    const handleSignal = (signal: string, code: number) => {
-      process.on(signal, () => {
-        // Exit codes follow the 128 + signal code convention.
-        // See <https://tldp.org/LDP/abs/html/exitcodes.html>
-        shouldExit = 128 + code
+      const handleSignal = (signal: string, code: number) => {
+        process.on(signal, () => {
+          // Exit codes follow the 128 + signal code convention.
+          // See <https://tldp.org/LDP/abs/html/exitcodes.html>
+          shouldExit = 128 + code
 
-        if (++interruptCount < 3) {
-          console.error(`Received signal ${signal} (${code}). Finishing current operation.`)
-        } else {
-          console.error(`Received signal ${signal} (${code}). Force quitting.`)
+          if (++interruptCount < 3) {
+            console.error(`Received signal ${signal} (${code}). Finishing current operation.`)
+          } else {
+            console.error(`Received signal ${signal} (${code}). Force quitting.`)
+            reportStatus()
+            exit(shouldExit)
+          }
+        })
+      }
+
+      const checkAndExit = async () => {
+        if (shouldExit) {
+          await backendTo!.close()
           reportStatus()
           exit(shouldExit)
         }
-      })
-    }
+      }
 
-    const checkAndExit = async () => {
-      if (shouldExit) {
-        await backendTo.close()
+      // Codes from <signal.h>
+      ;(
+        [
+          ['SIGHUP', 1],
+          ['SIGINT', 2],
+          ['SIGQUIT', 3],
+          ['SIGTERM', 15],
+          ['SIGUSR1', 10],
+          ['SIGUSR2', 11]
+        ] as [string, number][]
+      ).forEach(([signal, code]) => handleSignal(signal, code))
+
+      return checkAndExit
+    })()
+
+    let lastReportedPercentage = 0
+    for await (const key of sbp('chelonia.db/iterKeys')) {
+      numVisitedKeys++
+      if (!isValidKey(key)) {
+        console.debug('Skipping invalid key', key)
+        continue
+      }
+      // `any:` prefix needed to get the raw value, else the default is getting
+      // a string, which will be encoded as UTF-8. This can cause data loss.
+      let value: Buffer | string | undefined
+      try {
+        value = await sbp('chelonia.db/get', `any:${key}`)
+      } catch (e) {
         reportStatus()
-        exit(shouldExit)
+        console.error(`Error reading from source database key '${key}'`, e)
+        throw e
+      }
+      await checkAndExit()
+      // Make `deno check` happy.
+      if (value === undefined) {
+        console.debug('Skipping empty key', key)
+        continue
+      }
+      try {
+        await backendTo!.writeData(key, value)
+      } catch (e) {
+        reportStatus()
+        console.error(`Error writing to target database key '${key}'`, e)
+        throw e
+      }
+      await checkAndExit()
+      ++numMigratedKeys
+      // Prints a message roughly every 10% of progress.
+      const percentage = Math.floor((numVisitedKeys / numKeys) * 100)
+      if (percentage - lastReportedPercentage >= 10) {
+        lastReportedPercentage = percentage
+        console.log(`Migrating... ${percentage}% done`)
       }
     }
-
-    // Codes from <signal.h>
-    ;([
-      ['SIGHUP', 1],
-      ['SIGINT', 2],
-      ['SIGQUIT', 3],
-      ['SIGTERM', 15],
-      ['SIGUSR1', 10],
-      ['SIGUSR2', 11]
-    ] as [string, number][]).forEach(([signal, code]) => handleSignal(signal, code))
-
-    return checkAndExit
-  })()
-
-  let lastReportedPercentage = 0
-  for await (const key of sbp('chelonia.db/iterKeys')) {
-    numVisitedKeys++
-    if (!isValidKey(key)) {
-      console.debug('Skipping invalid key', key)
-      continue
-    }
-    // `any:` prefix needed to get the raw value, else the default is getting
-    // a string, which will be encoded as UTF-8. This can cause data loss.
-    let value: Buffer | string | undefined
-    try {
-      value = await sbp('chelonia.db/get', `any:${key}`)
-    } catch (e) {
-      reportStatus()
-      console.error(`Error reading from source database key '${key}'`, e)
-      await backendTo.close()
-      exit(1)
-      throw e
-    }
-    await checkAndExit()
-    // Make `deno check` happy.
-    if (value === undefined) {
-      console.debug('Skipping empty key', key)
-      continue
-    }
-    try {
-      await backendTo.writeData(key, value)
-    } catch (e) {
-      reportStatus()
-      console.error(`Error writing to target database key '${key}'`, e)
-      await backendTo.close()
-      exit(1)
-      throw e
-    }
-    await checkAndExit()
-    ++numMigratedKeys
-    // Prints a message roughly every 10% of progress.
-    const percentage = Math.floor((numVisitedKeys / numKeys) * 100)
-    if (percentage - lastReportedPercentage >= 10) {
-      lastReportedPercentage = percentage
-      console.log(`Migrating... ${percentage}% done`)
-    }
+    reportStatus()
+  } finally {
+    await Promise.all([backendTo?.close(), closeDB()])
   }
-  reportStatus()
-  await backendTo.close()
 }
 
 export const module = {
   builder: (yargs) => {
-    return yargs
-      .option('from', {
-        describe: 'Source backend',
-        demandOption: true,
-        requiresArg: true,
-        string: true
-      })
-      .alias('database:backend', 'from')
-      .option('from-config', {
-        describe: 'Source backend configuration',
-        requiresArg: true,
-        string: true
-      })
-      .option('to', {
-        describe: 'Destination backend',
-        demandOption: true,
-        requiresArg: true,
-        string: true
-      })
-      .option('to-config', {
-        describe: 'Destination backend configuration',
-        requiresArg: true,
-        string: true
-      })
-      // strict(false) to support non-enumerated flags, which can be used for
-      // configuring backend settings. However, `from-config` should be preferred.
-      .strict(false)
-      .strictCommands(true)
+    return (
+      yargs
+        .option('from', {
+          describe: 'Source backend',
+          demandOption: true,
+          requiresArg: true,
+          string: true
+        })
+        .alias('database:backend', 'from')
+        .option('from-config', {
+          describe: 'Source backend configuration',
+          requiresArg: true,
+          string: true
+        })
+        .option('to', {
+          describe: 'Destination backend',
+          demandOption: true,
+          requiresArg: true,
+          string: true
+        })
+        .option('to-config', {
+          describe: 'Destination backend configuration',
+          requiresArg: true,
+          string: true
+        })
+        // strict(false) to support non-enumerated flags, which can be used for
+        // configuring backend settings. However, `from-config` should be preferred.
+        .strict(false)
+        .strictCommands(true)
+    )
   },
   command: 'migrate',
-  describe: 'Reads all key-value pairs from a given database and creates or updates another database accordingly.\n\n' +
-  '- The output database will be created if necessary.\n' +
-  '- The source database won\'t be modified nor deleted.\n' +
-  '- Invalid key-value pairs entries will be skipped.\n' +
-  '- Requires read and write access to the source.\n',
+  describe:
+    'Reads all key-value pairs from a given database and creates or updates another database accordingly.\n\n' +
+    '- The output database will be created if necessary.\n' +
+    '- The source database won\'t be modified nor deleted.\n' +
+    '- Invalid key-value pairs entries will be skipped.\n' +
+    '- Requires read and write access to the source.\n',
   postHandler: (argv) => {
     return migrate(argv)
   }

@@ -9,7 +9,11 @@ import { createEntryFromFile } from './utils.ts'
 
 type Params = { filename: string }
 
-export async function hash ({ filename }: ArgumentsCamelCase<Params>, multicode: number = multicodes.RAW, internal = false): Promise<string> {
+export async function hash (
+  { filename }: ArgumentsCamelCase<Params>,
+  multicode: number = multicodes.RAW,
+  internal = false
+): Promise<string> {
   const [cid] = await createEntryFromFile(filename, multicode)
   if (!internal) {
     console.log(`CID(${filename}):`, cid)
@@ -19,15 +23,16 @@ export async function hash ({ filename }: ArgumentsCamelCase<Params>, multicode:
 
 export const module = {
   builder: (yargs) => {
-    return yargs
-      .positional('filename', {
-        describe: 'File name',
-        demandOption: true,
-        type: 'string'
-      })
+    return yargs.positional('filename', {
+      describe: 'File name',
+      demandOption: true,
+      type: 'string'
+    })
   },
   command: 'hash <filename>',
-  describe: 'Computes and logs the content identifier (CID) for the given file.\n\' + \'File contents will be interpreted as raw binary data, unless the file extension is \'.json\'.',
+  describe:
+    'Computes and logs the content identifier (CID) for the given file.\n' +
+    'File contents will be interpreted as raw binary data, unless the file extension is \'.json\'.',
   postHandler: (argv) => {
     return void hash(argv)
   }

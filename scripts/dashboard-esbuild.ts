@@ -80,7 +80,8 @@ async function build () {
     '@pages': './src/serve/dashboard/views/pages',
     '@forms': './src/serve/dashboard/views/components/forms',
     '@validators': './src/serve/dashboard/views/utils/validators',
-    '@assets': './src/serve/dashboard/assets'
+    '@assets': './src/serve/dashboard/assets',
+    'vue': 'vue/dist/vue.js'
   }
 
   try {

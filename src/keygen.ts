@@ -1,9 +1,14 @@
 import * as colors from 'jsr:@std/fmt/colors'
-import { EDWARDS25519SHA512BATCH, keygen as cryptoKeygen, keyId, serializeKey } from 'npm:@chelonia/crypto'
+import {
+  EDWARDS25519SHA512BATCH,
+  keygen as cryptoKeygen,
+  keyId,
+  serializeKey
+} from 'npm:@chelonia/crypto'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { revokeNet } from './utils.ts'
 
-type Params = {out?: string, pubout?: string }
+type Params = { out?: string; pubout?: string }
 
 export const keygen = async (args: ArgumentsCamelCase<Params>): Promise<void> => {
   await revokeNet()

@@ -12,10 +12,10 @@ const CONTRACT_MANIFEST_PREFIX = 'm|'
 
 const ContractBodySchema = z.object({
   contract: z.object({ file: z.string() }),
-  contractSlim: z.object({ file: z.string() }).optional(),
+  contractSlim: z.object({ file: z.string() }).optional()
 })
 
-type Params = { manifests: string[], url?: string }
+type Params = { manifests: string[]; url?: string }
 
 export async function deploy (args: ArgumentsCamelCase<Params>): Promise<void> {
   const { manifests } = args
@@ -64,7 +64,8 @@ export const module = {
         string: true
       })
       .positional('manifests', {
-        describe: 'Manifest files to deploy (if a directory is passed in, all manifests in that directory, and sub-directories, will be added)',
+        describe:
+          'Manifest files to deploy (if a directory is passed in, all manifests in that directory, and sub-directories, will be added)',
         demandOption: true,
         array: true,
         type: 'string'
