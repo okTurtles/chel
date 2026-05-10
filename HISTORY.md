@@ -1,5 +1,11 @@
 # HISTORY
 
+### Unreleased
+
+- `chel eventsAfter` now accepts `--keys <file>` to decrypt encrypted events
+  using a JSON map of secret keys (e.g. dumped from a `libcheloniajs` app's
+  `rootState.secretKeys`).
+
 ### v3.1.0
 
 - `chel serve` now serves apps (thx @akhileshthite and @corrideat)

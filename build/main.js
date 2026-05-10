@@ -69203,12 +69203,169 @@ var module3 = {
   }
 };
 init_esm();
+init_SPMessage();
+init_encryptedData();
+async function loadSecretKeys(file, { internal = false } = {}) {
+  let parsed;
+  try {
+    parsed = await readJsonFile(file);
+  } catch (e2) {
+    return exit(`failed to read --keys file '${file}': ${e2.message}`, internal);
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    return exit(
+      `--keys file '${file}' must contain a JSON object of { keyId: serializedSecretKey }`,
+      internal
+    );
+  }
+  for (const [k, v2] of Object.entries(parsed)) {
+    if (typeof v2 !== "string") {
+      return exit(`--keys file '${file}' entry '${k}' is not a string (got ${typeof v2})`, internal);
+    }
+  }
+  return parsed;
+}
+var snapshotAuthorizedKeys = (type, height, rawKeys) => {
+  const authorizedKeys = /* @__PURE__ */ Object.create(null);
+  for (const wrapped of rawKeys) {
+    const data = unwrapMaybeEncryptedData(wrapped);
+    if (!data) continue;
+    const k = data.data;
+    const id = typeof k?.id === "string" ? k.id : void 0;
+    if (!id) continue;
+    const copy2 = { ...k };
+    if (copy2._notBeforeHeight == null) copy2._notBeforeHeight = height;
+    delete copy2._notAfterHeight;
+    authorizedKeys[id] = copy2;
+  }
+  return { _vm: { type, authorizedKeys } };
+};
+var applyKeyOpToState = (state, op, height, body) => {
+  if (op === SPMessage.OP_KEY_ADD) {
+    for (const wrapped of body) {
+      const data = unwrapMaybeEncryptedData(wrapped);
+      if (!data) continue;
+      const k = data.data;
+      const id = typeof k?.id === "string" ? k.id : void 0;
+      if (!id) continue;
+      const copy2 = { ...k };
+      if (copy2._notBeforeHeight == null) copy2._notBeforeHeight = height;
+      delete copy2._notAfterHeight;
+      state._vm.authorizedKeys[id] = copy2;
+    }
+  } else if (op === SPMessage.OP_KEY_DEL) {
+    for (const wrapped of body) {
+      const data = unwrapMaybeEncryptedData(wrapped);
+      if (!data) continue;
+      const id = typeof data.data === "string" ? data.data : void 0;
+      if (!id) continue;
+      const existing = state._vm.authorizedKeys[id];
+      if (existing) existing._notAfterHeight = height;
+    }
+  } else if (op === SPMessage.OP_KEY_UPDATE) {
+    for (const wrapped of body) {
+      const data = unwrapMaybeEncryptedData(wrapped);
+      if (!data) continue;
+      const u2 = data.data;
+      const oldKeyId = typeof u2?.oldKeyId === "string" ? u2.oldKeyId : void 0;
+      const newId = typeof u2?.id === "string" ? u2.id : oldKeyId;
+      if (!newId) continue;
+      const base2 = oldKeyId && state._vm.authorizedKeys[oldKeyId] || {};
+      state._vm.authorizedKeys[newId] = { ...base2, ...u2, _notBeforeHeight: height };
+      delete state._vm.authorizedKeys[newId]._notAfterHeight;
+    }
+  }
+};
+function decryptOne(rawEnvelope, ctx) {
+  let serialized;
+  if (rawEnvelope && typeof rawEnvelope === "object" && "message" in rawEnvelope && typeof rawEnvelope.message === "string") {
+    serialized = rawEnvelope.message;
+  } else {
+    serialized = JSON.stringify(rawEnvelope);
+  }
+  let head, hash3, contractID, op;
+  try {
+    const headInfo = SPMessage.deserializeHEAD(serialized);
+    head = headInfo.head;
+    hash3 = headInfo.hash;
+    contractID = headInfo.contractID;
+    op = head.op;
+  } catch (e2) {
+    return { height: -1, hash: "", contractID: "", op: "", raw: rawEnvelope, error: e2.message };
+  }
+  let state = ctx.states.get(contractID);
+  if (!state && op !== SPMessage.OP_CONTRACT) {
+    return {
+      height: head.height,
+      hash: hash3,
+      contractID,
+      op,
+      raw: rawEnvelope,
+      error: `no prior contract state for ${contractID} (need OP_CONTRACT first)`
+    };
+  }
+  let message;
+  try {
+    message = SPMessage.deserialize(serialized, ctx.additionalKeys, state);
+  } catch (e2) {
+    return {
+      height: head.height,
+      hash: hash3,
+      contractID,
+      op,
+      raw: rawEnvelope,
+      error: e2.message
+    };
+  }
+  try {
+    if (op === SPMessage.OP_CONTRACT) {
+      const body = message.message();
+      state = snapshotAuthorizedKeys(body.type, head.height, body.keys ?? []);
+      ctx.states.set(contractID, state);
+    } else if (state && (op === SPMessage.OP_KEY_ADD || op === SPMessage.OP_KEY_DEL || op === SPMessage.OP_KEY_UPDATE)) {
+      applyKeyOpToState(state, op, head.height, message.message());
+    }
+  } catch (e2) {
+    console.warn(`[chel] warning: failed to update state after ${op} ${hash3}: ${e2.message}`);
+  }
+  let decryptedValue;
+  let innerSigningKeyId;
+  try {
+    decryptedValue = message.decryptedValue();
+    innerSigningKeyId = message.innerSigningKeyId();
+  } catch {
+  }
+  return {
+    height: head.height,
+    hash: hash3,
+    contractID,
+    op,
+    signingKeyId: message.signingKeyId(),
+    innerSigningKeyId,
+    decryptedValue,
+    raw: rawEnvelope
+  };
+}
+function decryptEnvelopes(envelopes, additionalKeys) {
+  const ctx = { additionalKeys, states: /* @__PURE__ */ new Map() };
+  const out = [];
+  for (const envelope of envelopes) {
+    const result = decryptOne(envelope, ctx);
+    if (result.error) {
+      console.warn(`[chel] warning: ${result.op || "?"} ${result.hash || "?"}: ${result.error}`);
+    }
+    out.push(result);
+  }
+  return out;
+}
 async function eventsAfter2({
   limit,
   url: url2,
   contractID,
-  height
+  height,
+  keys
 }) {
+  const additionalKeys = keys ? await loadSecretKeys(keys) : void 0;
   let dbOpen = false;
   try {
     let messages;
@@ -69219,7 +69376,12 @@ async function eventsAfter2({
       dbOpen = true;
       messages = await getMessagesSince(contractID, height, limit);
     }
-    console.log(JSON.stringify(messages, null, 2));
+    if (additionalKeys) {
+      const decrypted = decryptEnvelopes(messages, additionalKeys);
+      console.log(JSON.stringify(decrypted, null, 2));
+    } else {
+      console.log(JSON.stringify(messages, null, 2));
+    }
   } finally {
     if (dbOpen) {
       await closeDB();
@@ -69277,6 +69439,10 @@ var module4 = {
     }).option("url", {
       describe: "URL of a remote server",
       string: true
+    }).option("keys", {
+      describe: "Path to a JSON file containing { keyId: serializedSecretKey } used to decrypt events",
+      string: true,
+      requiresArg: true
     }).positional("contractID", {
       describe: "Contract ID",
       demandOption: true,

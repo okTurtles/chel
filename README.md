@@ -16,7 +16,7 @@ chel deploy <url-or-dir-or-sqlitedb> <contract-manifest.json> [<manifest2.json> 
 chel upload <url-or-dir-or-sqlitedb> <file1> [<file2> [<file3> ...]]
 chel serve [options] <directory>
 chel latestState <url> <contractID>
-chel eventsAfter [--limit N] <url> <contractID> <hash>
+chel eventsAfter [--limit N] [--url <url>] [--keys <file>] <contractID> <height>
 chel eventsBefore [--limit N] <url> <contractID> <hash>
 chel hash <file>
 chel migrate --from <backend> --to <backend> [--from-config <from-config.toml>] [--to-config <to-config.toml>]
@@ -235,9 +235,76 @@ Useful command:
 cp -r path/to/contracts/* test/assets/ && ls ./test/assets/*-slim.js | sed -En 's/.*\/(.*)-slim.js/\1/p' | xargs -I {} ./src/main.ts manifest --out=test/assets/{}.manifest.json --slim test/assets/{}-slim.js key.json test/assets/{}.js && ls ./test/assets/*.manifest.json | xargs ./src/main.ts deploy http://127.0.0.1:8888
 ```
 
-### `chel migrate`
+### `chel eventsAfter`
 
-Performs a non-destructive migration from one backend (`--from`) to another
+Displays a JSON array of events that happened in a given contract since a given
+height. Older events come first. The output is parseable with tools like `jq`.
+
+```
+chel eventsAfter [--limit N] [--url <url>] [--keys <keys.json>] <contractID> <height>
+```
+
+If `--url` is supplied, the remote server's `/eventsAfter` endpoint is queried.
+Otherwise, the local database (configured via `chel.toml`) is read directly.
+
+#### Decrypting events with `--keys`
+
+By default, encrypted events (`OP_ACTION_ENCRYPTED` and friends) are returned
+as opaque envelopes — useful for forensics, but unreadable. Pass `--keys` with
+a JSON file of secret keys to decrypt them in place.
+
+The file is a flat object mapping each `keyId` to its serialized secret key:
+
+```json
+{
+  "z9brR...sigKeyId": "<serializedSecretKey>",
+  "z9brR...encKeyId": "<serializedSecretKey>"
+}
+```
+
+This is exactly the shape Chelonia stores at `rootState.secretKeys` in any app
+built with [`libcheloniajs`](https://github.com/okTurtles/libcheloniajs). The
+easiest way to generate this file is from a running app:
+
+**In a browser DevTools console (with the app open):**
+
+```js
+copy(JSON.stringify(await sbp('chelonia/rootState').secretKeys, null, 2))
+// then paste into keys.json
+```
+
+**Example:**
+
+```bash
+chel eventsAfter --keys ./keys.json <contractID> 0 --limit 10
+```
+
+When `--keys` is supplied each event is emitted as:
+
+```jsonc
+{
+  "height": 1,
+  "hash": "z9brR...",
+  "contractID": "z9brR...",
+  "op": "ae",
+  "signingKeyId": "z9brR...",
+  "innerSigningKeyId": "z9brR...",
+  "decryptedValue": { /* the inner contract action payload */ },
+  "raw": {
+    "serverMeta": {
+      "date": "2025-06-09T20:35:43.305Z",
+        "isKeyOp": true
+      },
+      "message": "{...}"
+  }
+}
+```
+
+Decryption is best-effort: events whose required key is missing or whose
+signature fails to verify are emitted with the original envelope under `raw`
+plus a per-event `error`, and a one-line warning is printed to `stderr`.
+
+### `chel migrate`
 one (`--to`). For example, this can be used to migrate from the `fs` backend to
 the `sqlite` backend.
 
