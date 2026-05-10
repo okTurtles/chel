@@ -115,9 +115,45 @@ function buildFixture () {
     manifest: 'z9999fakemanifest'
   })
 
-  const envelopes = [contractMsg, actionMsg].map((m) => JSON.parse(m.serialize()))
+  // OP_ATOMIC bundling two encrypted actions
+  const atomicPlaintextA = { action: 'AtomicA', data: { x: 1 }, meta: {} }
+  const atomicPlaintextB = { action: 'AtomicB', data: { y: 2 }, meta: {} }
+  const atomicMsg = SPMessage.createV1_0({
+    contractID,
+    height: 2,
+    previousHEAD: actionMsg.hash(),
+    op: [
+      SPMessage.OP_ATOMIC,
+      // deno-lint-ignore no-explicit-any
+      signedOutgoingData(initialState as any, sigKeyId, [
+        [
+          SPMessage.OP_ACTION_ENCRYPTED,
+          // deno-lint-ignore no-explicit-any
+          encryptedOutgoingData(initialState as any, encKeyId, atomicPlaintextA) as any
+        ],
+        [
+          SPMessage.OP_ACTION_ENCRYPTED,
+          // deno-lint-ignore no-explicit-any
+          encryptedOutgoingData(initialState as any, encKeyId, atomicPlaintextB) as any
+        ]
+        // deno-lint-ignore no-explicit-any
+      ] as any, additionalKeys) as any
+    ],
+    manifest: 'z9999fakemanifest'
+  })
 
-  return { envelopes, additionalKeys, sigKeyId, encKeyId, contractID, plaintext }
+  const envelopes = [contractMsg, actionMsg, atomicMsg].map((m) => JSON.parse(m.serialize()))
+
+  return {
+    envelopes,
+    additionalKeys,
+    sigKeyId,
+    encKeyId,
+    contractID,
+    plaintext,
+    atomicPlaintextA,
+    atomicPlaintextB
+  }
 }
 
 Deno.test({
@@ -127,7 +163,7 @@ Deno.test({
 
     await t.step('decrypts an OP_ACTION_ENCRYPTED with the right keys', () => {
       const out = decryptEnvelopes(f.envelopes, f.additionalKeys)
-      assertEquals(out.length, 2)
+      assertEquals(out.length, 3)
 
       const contract = out[0]
       assertEquals(contract.op, SPMessage.OP_CONTRACT)
@@ -153,7 +189,7 @@ Deno.test({
         message: JSON.stringify(env)
       }))
       const out = decryptEnvelopes(wrapped, f.additionalKeys)
-      assertEquals(out.length, 2)
+      assertEquals(out.length, 3)
       assertEquals(out[1].error, undefined)
       assertEquals(out[1].decryptedValue, f.plaintext)
       // The full original wrapper must be preserved on `raw` so consumers
@@ -162,13 +198,26 @@ Deno.test({
       assertEquals(out[0].raw, wrapped[0])
     })
 
+    await t.step('decrypts each sub-op of OP_ATOMIC', () => {
+      const out = decryptEnvelopes(f.envelopes, f.additionalKeys)
+      const atomic = out[2]
+      assertEquals(atomic.op, SPMessage.OP_ATOMIC)
+      assertEquals(atomic.error, undefined)
+      assertExists(atomic.ops)
+      assertEquals(atomic.ops!.length, 2)
+      assertEquals(atomic.ops![0].op, SPMessage.OP_ACTION_ENCRYPTED)
+      assertEquals(atomic.ops![0].decryptedValue, f.atomicPlaintextA)
+      assertEquals(atomic.ops![1].op, SPMessage.OP_ACTION_ENCRYPTED)
+      assertEquals(atomic.ops![1].decryptedValue, f.atomicPlaintextB)
+    })
+
     await t.step('emits raw + error when decryption keys are absent', () => {
       const out = decryptEnvelopes(f.envelopes, {})
       // The OP_CONTRACT case still carries authorizedKeys inside itself, so
       // its signature can be verified without `additionalKeys`. The encrypted
       // action however cannot be decrypted, so we expect `decryptedValue` to
       // be undefined for it.
-      assertEquals(out.length, 2)
+      assertEquals(out.length, 3)
       assertEquals(out[1].op, SPMessage.OP_ACTION_ENCRYPTED)
       assertEquals(out[1].decryptedValue, undefined)
     })

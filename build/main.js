@@ -69205,6 +69205,7 @@ var module3 = {
 init_esm();
 init_SPMessage();
 init_encryptedData();
+init_signedData();
 async function loadSecretKeys(file, { internal = false } = {}) {
   let parsed;
   try {
@@ -69276,6 +69277,30 @@ var applyKeyOpToState = (state, op, height, body) => {
     }
   }
 };
+var unwrapOpValue = (rawValue) => {
+  try {
+    const data = unwrapMaybeEncryptedData(rawValue);
+    if (!data || data.data == null) return {};
+    const inner = data.data;
+    if (isSignedData(inner)) {
+      const signed = inner;
+      return { decryptedValue: signed.valueOf(), innerSigningKeyId: signed.signingKeyId };
+    }
+    return { decryptedValue: inner };
+  } catch {
+    return {};
+  }
+};
+var maybeApplyKeyOp = (state, op, height, body) => {
+  if (!state) return;
+  if (op === SPMessage.OP_KEY_ADD || op === SPMessage.OP_KEY_DEL || op === SPMessage.OP_KEY_UPDATE) {
+    try {
+      applyKeyOpToState(state, op, height, body);
+    } catch (e2) {
+      console.warn(`[chel] warning: failed to apply ${op}: ${e2.message}`);
+    }
+  }
+};
 function decryptOne(rawEnvelope, ctx) {
   let serialized;
   if (rawEnvelope && typeof rawEnvelope === "object" && "message" in rawEnvelope && typeof rawEnvelope.message === "string") {
@@ -69322,20 +69347,34 @@ function decryptOne(rawEnvelope, ctx) {
       const body = message.message();
       state = snapshotAuthorizedKeys(body.type, head.height, body.keys ?? []);
       ctx.states.set(contractID, state);
-    } else if (state && (op === SPMessage.OP_KEY_ADD || op === SPMessage.OP_KEY_DEL || op === SPMessage.OP_KEY_UPDATE)) {
-      applyKeyOpToState(state, op, head.height, message.message());
+    } else if (op === SPMessage.OP_ATOMIC) {
+      const subOps = message.message();
+      for (const [subOp, subBody] of subOps) {
+        maybeApplyKeyOp(state, subOp, head.height, subBody);
+      }
+    } else {
+      maybeApplyKeyOp(state, op, head.height, message.message());
     }
   } catch (e2) {
     console.warn(`[chel] warning: failed to update state after ${op} ${hash3}: ${e2.message}`);
   }
   let decryptedValue;
   let innerSigningKeyId;
+  let ops;
   try {
-    decryptedValue = message.decryptedValue();
-    innerSigningKeyId = message.innerSigningKeyId();
+    if (op === SPMessage.OP_ATOMIC) {
+      const subOps = message.message();
+      ops = subOps.map(([subOp, subBody]) => ({
+        op: subOp,
+        ...unwrapOpValue(subBody)
+      }));
+    } else {
+      decryptedValue = message.decryptedValue();
+      innerSigningKeyId = message.innerSigningKeyId();
+    }
   } catch {
   }
-  return {
+  const result = {
     height: head.height,
     hash: hash3,
     contractID,
@@ -69345,6 +69384,8 @@ function decryptOne(rawEnvelope, ctx) {
     decryptedValue,
     raw: rawEnvelope
   };
+  if (ops) result.ops = ops;
+  return result;
 }
 function decryptEnvelopes(envelopes, additionalKeys) {
   const ctx = { additionalKeys, states: /* @__PURE__ */ new Map() };

@@ -4,6 +4,7 @@ import * as base64 from 'jsr:@std/encoding/base64'
 import sbp from 'npm:@sbp/sbp'
 import { SPMessage } from 'npm:@chelonia/lib/SPMessage'
 import { unwrapMaybeEncryptedData } from 'npm:@chelonia/lib/encryptedData'
+import { isSignedData } from 'npm:@chelonia/lib/signedData'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { closeDB, initDB } from './serve/database.ts'
 import { exit, readJsonFile } from './utils.ts'
@@ -131,6 +132,14 @@ const applyKeyOpToState = (
 // Decryption is purely additive: every original field of the input envelope
 // (including the local-DB `serverMeta` wrapper, when present) is preserved
 // on `raw`, and the decrypted/derived fields are appended alongside.
+export type DecryptedOp = {
+  op: string
+  decryptedValue?: unknown
+  innerSigningKeyId?: string
+  // For OP_ATOMIC, each sub-op is unwrapped recursively.
+  ops?: DecryptedOp[]
+}
+
 export type DecryptedEvent = {
   height: number
   hash: string
@@ -139,8 +148,52 @@ export type DecryptedEvent = {
   signingKeyId?: string
   innerSigningKeyId?: string
   decryptedValue?: unknown
+  // Present only for OP_ATOMIC envelopes — one entry per nested operation.
+  ops?: DecryptedOp[]
   raw: unknown
   error?: string
+}
+
+// Recursively unwrap a single op body to extract the plaintext value and any
+// inner signing key id. Mirrors `SPMessage.decryptedValue()` but operates on
+// an arbitrary op body so we can reuse it for OP_ATOMIC sub-ops.
+const unwrapOpValue = (
+  rawValue: unknown
+): { decryptedValue?: unknown; innerSigningKeyId?: string } => {
+  try {
+    const data = unwrapMaybeEncryptedData(rawValue as never)
+    if (!data || data.data == null) return {}
+    const inner = data.data as unknown
+    if (isSignedData(inner)) {
+      const signed = inner as { valueOf: () => unknown; signingKeyId: string }
+      return { decryptedValue: signed.valueOf(), innerSigningKeyId: signed.signingKeyId }
+    }
+    return { decryptedValue: inner }
+  } catch {
+    return {}
+  }
+}
+
+// Apply key-op state updates for a single op (key id, etc.). Used both for
+// top-level key ops and for key ops nested inside OP_ATOMIC.
+const maybeApplyKeyOp = (
+  state: ChelStateLite | undefined,
+  op: string,
+  height: number,
+  body: unknown
+): void => {
+  if (!state) return
+  if (
+    op === SPMessage.OP_KEY_ADD ||
+    op === SPMessage.OP_KEY_DEL ||
+    op === SPMessage.OP_KEY_UPDATE
+  ) {
+    try {
+      applyKeyOpToState(state, op, height, body)
+    } catch (e) {
+      console.warn(`[chel] warning: failed to apply ${op}: ${(e as Error).message}`)
+    }
+  }
 }
 
 // Best-effort decryption of a single envelope.
@@ -207,8 +260,15 @@ export function decryptOne (rawEnvelope: unknown, ctx: DecryptCtx): DecryptedEve
       const body = message.message() as { type: string; keys: ReadonlyArray<unknown> }
       state = snapshotAuthorizedKeys(body.type, head.height, body.keys ?? [])
       ctx.states.set(contractID, state)
-    } else if (state && (op === SPMessage.OP_KEY_ADD || op === SPMessage.OP_KEY_DEL || op === SPMessage.OP_KEY_UPDATE)) {
-      applyKeyOpToState(state, op, head.height, message.message())
+    } else if (op === SPMessage.OP_ATOMIC) {
+      // Apply key-op state updates for any nested key ops so that subsequent
+      // messages can still be verified/decrypted.
+      const subOps = message.message() as ReadonlyArray<[string, unknown]>
+      for (const [subOp, subBody] of subOps) {
+        maybeApplyKeyOp(state, subOp, head.height, subBody)
+      }
+    } else {
+      maybeApplyKeyOp(state, op, head.height, message.message())
     }
   } catch (e) {
     // State update failures should not fail the whole decode; we still
@@ -218,14 +278,26 @@ export function decryptOne (rawEnvelope: unknown, ctx: DecryptCtx): DecryptedEve
 
   let decryptedValue: unknown
   let innerSigningKeyId: string | undefined
+  let ops: DecryptedOp[] | undefined
   try {
-    decryptedValue = message.decryptedValue()
-    innerSigningKeyId = message.innerSigningKeyId()
+    if (op === SPMessage.OP_ATOMIC) {
+      // For OP_ATOMIC the top-level decryptedValue isn't meaningful; instead
+      // expose each sub-op individually. `SPMessage.deserialize` has already
+      // recursed into each entry, so we just unwrap the values here.
+      const subOps = message.message() as ReadonlyArray<[string, unknown]>
+      ops = subOps.map(([subOp, subBody]) => ({
+        op: subOp,
+        ...unwrapOpValue(subBody)
+      }))
+    } else {
+      decryptedValue = message.decryptedValue()
+      innerSigningKeyId = message.innerSigningKeyId()
+    }
   } catch {
     // decryptedValue is best-effort; leave undefined on failure
   }
 
-  return {
+  const result: DecryptedEvent = {
     height: head.height,
     hash,
     contractID,
@@ -235,6 +307,8 @@ export function decryptOne (rawEnvelope: unknown, ctx: DecryptCtx): DecryptedEve
     decryptedValue,
     raw: rawEnvelope
   }
+  if (ops) result.ops = ops
+  return result
 }
 
 // Decrypts a sequence of envelopes in order, accumulating per-contract state.
