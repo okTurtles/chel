@@ -211,15 +211,16 @@ Deno.test({
       assertEquals(atomic.ops![1].decryptedValue, f.atomicPlaintextB)
     })
 
-    await t.step('emits raw + error when decryption keys are absent', () => {
+    await t.step('emits raw when decryption keys are absent', () => {
       const out = decryptEnvelopes(f.envelopes, {})
       // The OP_CONTRACT case still carries authorizedKeys inside itself, so
       // its signature can be verified without `additionalKeys`. The encrypted
       // action however cannot be decrypted, so we expect `decryptedValue` to
-      // be undefined for it.
+      // be undefined for it, while preserving the original envelope on `raw`.
       assertEquals(out.length, 3)
       assertEquals(out[1].op, SPMessage.OP_ACTION_ENCRYPTED)
       assertEquals(out[1].decryptedValue, undefined)
+      assertEquals(out[1].raw, f.envelopes[1])
     })
   }
 })

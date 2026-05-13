@@ -293,18 +293,23 @@ When `--keys` is supplied each event is emitted as:
   "raw": {
     "serverMeta": {
       "date": "2025-06-09T20:35:43.305Z",
-        "isKeyOp": true
-      },
-      "message": "{...}"
+      "isKeyOp": true
+    },
+    "message": "{...}"
   }
 }
 ```
 
-Decryption is best-effort: events whose required key is missing or whose
-signature fails to verify are emitted with the original envelope under `raw`
-plus a per-event `error`, and a one-line warning is printed to `stderr`.
+Decryption is best-effort: if the required key is missing or a signature
+cannot be verified, the event is still emitted with the original envelope
+under `raw`, and `decryptedValue` may be absent or `undefined`. Some failure
+cases may also include a per-event `error` and/or print a one-line warning to
+`stderr`, but that is not guaranteed for every decryption failure.
 
 ### `chel migrate`
+
+Performs a non-destructive migration from one backend (`--from`) to another
+
 one (`--to`). For example, this can be used to migrate from the `fs` backend to
 the `sqlite` backend.
 
