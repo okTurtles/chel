@@ -17,7 +17,7 @@ chel upload <url-or-dir-or-sqlitedb> <file1> [<file2> [<file3> ...]]
 chel serve [options] <directory>
 chel latestState <url> <contractID>
 chel eventsAfter [--limit N] [--url <url>] [--keys <file>] <contractID> <height>
-chel eventsBefore [--limit N] <url> <contractID> <hash>
+chel eventsBefore [--limit N] <url> <contractID> <height>
 chel hash <file>
 chel migrate --from <backend> --to <backend> [--from-config <from-config.toml>] [--to-config <to-config.toml>]
 ```
@@ -309,7 +309,6 @@ cases may also include a per-event `error` and/or print a one-line warning to
 ### `chel migrate`
 
 Performs a non-destructive migration from one backend (`--from`) to another
-
 one (`--to`). For example, this can be used to migrate from the `fs` backend to
 the `sqlite` backend.
 
