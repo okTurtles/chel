@@ -161,8 +161,8 @@ Deno.test({
   async fn (t) {
     const f = buildFixture()
 
-    await t.step('decrypts an OP_ACTION_ENCRYPTED with the right keys', () => {
-      const out = decryptEnvelopes(f.envelopes, f.additionalKeys)
+    await t.step('decrypts an OP_ACTION_ENCRYPTED with the right keys', async () => {
+      const out = await decryptEnvelopes(f.envelopes, f.additionalKeys)
       assertEquals(out.length, 3)
 
       const contract = out[0]
@@ -178,7 +178,7 @@ Deno.test({
       assertEquals(action.decryptedValue, f.plaintext)
     })
 
-    await t.step('decrypts the local-DB wrapper shape', () => {
+    await t.step('decrypts the local-DB wrapper shape', async () => {
       // `backend/db/streamEntriesAfter` returns each entry as
       // { serverMeta, message: "<serialized envelope>" }; make sure
       // decryptEnvelopes handles that without triggering
@@ -188,7 +188,7 @@ Deno.test({
         serverMeta: { foo: 'bar', i },
         message: JSON.stringify(env)
       }))
-      const out = decryptEnvelopes(wrapped, f.additionalKeys)
+      const out = await decryptEnvelopes(wrapped, f.additionalKeys)
       assertEquals(out.length, 3)
       assertEquals(out[1].error, undefined)
       assertEquals(out[1].decryptedValue, f.plaintext)
@@ -198,8 +198,8 @@ Deno.test({
       assertEquals(out[0].raw, wrapped[0])
     })
 
-    await t.step('decrypts each sub-op of OP_ATOMIC', () => {
-      const out = decryptEnvelopes(f.envelopes, f.additionalKeys)
+    await t.step('decrypts each sub-op of OP_ATOMIC', async () => {
+      const out = await decryptEnvelopes(f.envelopes, f.additionalKeys)
       const atomic = out[2]
       assertEquals(atomic.op, SPMessage.OP_ATOMIC)
       assertEquals(atomic.error, undefined)
@@ -211,8 +211,8 @@ Deno.test({
       assertEquals(atomic.ops![1].decryptedValue, f.atomicPlaintextB)
     })
 
-    await t.step('emits raw when decryption keys are absent', () => {
-      const out = decryptEnvelopes(f.envelopes, {})
+    await t.step('emits raw when decryption keys are absent', async () => {
+      const out = await decryptEnvelopes(f.envelopes, {})
       // The OP_CONTRACT case still carries authorizedKeys inside itself, so
       // its signature can be verified without `additionalKeys`. The encrypted
       // action however cannot be decrypted, so we expect `decryptedValue` to

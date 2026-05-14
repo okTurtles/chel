@@ -3,6 +3,9 @@
 import * as base64 from 'jsr:@std/encoding/base64'
 import sbp from 'npm:@sbp/sbp'
 import { SPMessage } from 'npm:@chelonia/lib/SPMessage'
+import 'npm:@chelonia/lib/chelonia'
+import { Secret } from 'npm:@chelonia/lib/Secret'
+import { SERVER } from 'npm:@chelonia/lib/presets'
 import { unwrapMaybeEncryptedData } from 'npm:@chelonia/lib/encryptedData'
 import { isSignedData } from 'npm:@chelonia/lib/signedData'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
@@ -41,92 +44,17 @@ export async function loadSecretKeys (
   return parsed as Record<string, string>
 }
 
-// Minimal `_vm` shape we maintain across messages of the same contract so
-// that `SPMessage.deserialize` can validate signatures and decrypt the
-// `OP_ACTION_ENCRYPTED` / `OP_KEY_*` ops that come after `OP_CONTRACT`.
-type ChelStateLite = {
-  _vm: {
-    type: string
-    // `ChelContractKey`-shaped, but we widen to `unknown` to avoid
-    // depending on internal types that have varied across @chelonia/lib
-    // versions. The library only inspects `id`, `purpose`, `_notBeforeHeight`,
-    // `_notAfterHeight`, `permissions`, and `data`, all of which we copy
-    // through verbatim from the deserialized message.
-    authorizedKeys: Record<string, Record<string, unknown>>
-  }
-}
-
 export type DecryptCtx = {
+  // Per-contract state accumulator. The values are produced by
+  // `chelonia/in/processMessage`, which owns all the rules for OP_CONTRACT,
+  // OP_KEY_*, etc.; we just thread the state from one message to the next.
+  states: Map<string, unknown>
+  // Caller-supplied secret keys. `chelonia/in/processMessage` reaches them
+  // through the transient key store (populated by `storeSecretKeys`), but
+  // the *second* local `SPMessage.deserialize` we run for value extraction
+  // doesn't share that store — it takes its key map as a constructor
+  // argument, so we thread the same map through here.
   additionalKeys: Record<string, string>
-  states: Map<string, ChelStateLite>
-}
-
-// Snapshot the authorizedKeys map after deserializing an OP_CONTRACT.
-// Mirrors SPMessage.ts:602-621 / internals.ts `keysToMap` (without
-// permission/ringLevel checks): take each key in the message body, unwrap
-// any `EncryptedData<SPKey>` wrapper, and key by `id`.
-const snapshotAuthorizedKeys = (
-  type: string,
-  height: number,
-  rawKeys: ReadonlyArray<unknown>
-): ChelStateLite => {
-  const authorizedKeys: ChelStateLite['_vm']['authorizedKeys'] = Object.create(null)
-  for (const wrapped of rawKeys) {
-    const data = unwrapMaybeEncryptedData(wrapped as never)
-    if (!data) continue
-    const k = data.data as Record<string, unknown>
-    const id = typeof k?.id === 'string' ? k.id : undefined
-    if (!id) continue
-    const copy = { ...k }
-    if (copy._notBeforeHeight == null) copy._notBeforeHeight = height
-    delete copy._notAfterHeight
-    authorizedKeys[id] = copy
-  }
-  return { _vm: { type, authorizedKeys } }
-}
-
-// Apply post-deserialize state mutations for key-management ops so that
-// subsequent messages of the same contract can be decrypted/verified.
-const applyKeyOpToState = (
-  state: ChelStateLite,
-  op: string,
-  height: number,
-  body: unknown
-): void => {
-  if (op === SPMessage.OP_KEY_ADD) {
-    for (const wrapped of body as ReadonlyArray<unknown>) {
-      const data = unwrapMaybeEncryptedData(wrapped as never)
-      if (!data) continue
-      const k = data.data as Record<string, unknown>
-      const id = typeof k?.id === 'string' ? k.id : undefined
-      if (!id) continue
-      const copy = { ...k }
-      if (copy._notBeforeHeight == null) copy._notBeforeHeight = height
-      delete copy._notAfterHeight
-      state._vm.authorizedKeys[id] = copy
-    }
-  } else if (op === SPMessage.OP_KEY_DEL) {
-    for (const wrapped of body as ReadonlyArray<unknown>) {
-      const data = unwrapMaybeEncryptedData(wrapped as never)
-      if (!data) continue
-      const id = typeof data.data === 'string' ? data.data : undefined
-      if (!id) continue
-      const existing = state._vm.authorizedKeys[id]
-      if (existing) existing._notAfterHeight = height
-    }
-  } else if (op === SPMessage.OP_KEY_UPDATE) {
-    for (const wrapped of body as ReadonlyArray<unknown>) {
-      const data = unwrapMaybeEncryptedData(wrapped as never)
-      if (!data) continue
-      const u = data.data as Record<string, unknown>
-      const oldKeyId = typeof u?.oldKeyId === 'string' ? u.oldKeyId : undefined
-      const newId = typeof u?.id === 'string' ? u.id : oldKeyId
-      if (!newId) continue
-      const base = (oldKeyId && state._vm.authorizedKeys[oldKeyId]) || {}
-      state._vm.authorizedKeys[newId] = { ...base, ...u, _notBeforeHeight: height }
-      delete (state._vm.authorizedKeys[newId] as Record<string, unknown>)._notAfterHeight
-    }
-  }
 }
 
 // Decryption is purely additive: every original field of the input envelope
@@ -136,8 +64,6 @@ export type DecryptedOp = {
   op: string
   decryptedValue?: unknown
   innerSigningKeyId?: string
-  // For OP_ATOMIC, each sub-op is unwrapped recursively.
-  ops?: DecryptedOp[]
 }
 
 export type DecryptedEvent = {
@@ -154,9 +80,11 @@ export type DecryptedEvent = {
   error?: string
 }
 
-// Recursively unwrap a single op body to extract the plaintext value and any
-// inner signing key id. Mirrors `SPMessage.decryptedValue()` but operates on
-// an arbitrary op body so we can reuse it for OP_ATOMIC sub-ops.
+// Unwrap a single op body to extract the plaintext value and any inner
+// signing key id. Mirrors `SPMessage.decryptedValue()` but operates on an
+// arbitrary op body so we can reuse it for OP_ATOMIC sub-ops (which are
+// only flattened one level — nested OP_ATOMICs are forbidden by the library
+// in `internals.ts`, so single-level expansion is sufficient).
 const unwrapOpValue = (
   rawValue: unknown
 ): { decryptedValue?: unknown; innerSigningKeyId?: string } => {
@@ -174,32 +102,41 @@ const unwrapOpValue = (
   }
 }
 
-// Apply key-op state updates for a single op (key id, etc.). Used both for
-// top-level key ops and for key ops nested inside OP_ATOMIC.
-const maybeApplyKeyOp = (
-  state: ChelStateLite | undefined,
-  op: string,
-  height: number,
-  body: unknown
-): void => {
-  if (!state) return
-  if (
-    op === SPMessage.OP_KEY_ADD ||
-    op === SPMessage.OP_KEY_DEL ||
-    op === SPMessage.OP_KEY_UPDATE
-  ) {
-    try {
-      applyKeyOpToState(state, op, height, body)
-    } catch (e) {
-      console.warn(`[chel] warning: failed to apply ${op}: ${(e as Error).message}`)
-    }
+let cheloniaConfigurePromise: Promise<unknown> | null = null
+// Configure Chelonia once for read-only event decoding. Of the options on
+// the SERVER preset, only `skipActionProcessing` (avoid manifest fetches /
+// running contract code) and `strictProcessing` (propagate OP_ATOMIC sub-op
+// failures inside the library) actually affect this code path; the rest
+// are pulled in for parity with the server.
+function configureChelonia (): Promise<unknown> {
+  if (!cheloniaConfigurePromise) {
+    cheloniaConfigurePromise = sbp('chelonia/configure', {
+      ...SERVER,
+      // We *do* want decryption to happen here; SERVER sets this to true.
+      skipDecryptionAttempts: false
+    })
   }
+  return cheloniaConfigurePromise!
+}
+
+function storeSecretKeys (additionalKeys: Record<string, string>): string[] {
+  const ids = Object.keys(additionalKeys)
+  if (ids.length) {
+    sbp(
+      'chelonia/storeSecretKeys',
+      new Secret(ids.map((id) => ({ key: additionalKeys[id], transient: true })))
+    )
+  }
+  return ids
 }
 
 // Best-effort decryption of a single envelope.
 // `rawEnvelope` is the parsed JSON envelope object as produced by
 // `getMessagesSince` / `getRemoteMessagesSince`.
-export function decryptOne (rawEnvelope: unknown, ctx: DecryptCtx): DecryptedEvent {
+export async function decryptOne (
+  rawEnvelope: unknown,
+  ctx: DecryptCtx
+): Promise<DecryptedEvent> {
   // The local DB stream (`backend/db/streamEntriesAfter`) wraps each entry as
   // `{ serverMeta, message: "<serialized envelope>" }`, while the remote
   // `/eventsAfter` endpoint returns bare envelope objects. Normalize here so
@@ -225,11 +162,11 @@ export function decryptOne (rawEnvelope: unknown, ctx: DecryptCtx): DecryptedEve
     return { height: -1, hash: '', contractID: '', op: '', raw: rawEnvelope, error: (e as Error).message }
   }
 
-  let state = ctx.states.get(contractID)
+  const priorState = ctx.states.get(contractID)
   // Non-OP_CONTRACT messages need the prior contract state to be decrypted.
   // If it is missing (e.g. user passed a partial chain), fall through with
   // `raw` so the user still sees the envelope.
-  if (!state && op !== SPMessage.OP_CONTRACT) {
+  if (!priorState && op !== SPMessage.OP_CONTRACT) {
     return {
       height: head.height,
       hash,
@@ -240,9 +177,21 @@ export function decryptOne (rawEnvelope: unknown, ctx: DecryptCtx): DecryptedEve
     }
   }
 
-  let message
+  // Hand the raw serialized envelope to `chelonia/in/processMessage`, which:
+  //   * deserializes the SPMessage against a *clone* of the prior state, so
+  //     the signedIncomingData / encryptedIncomingData closures inside are
+  //     bound to the mutating copy — critical for OP_ATOMIC sub-ops that
+  //     depend on mutations made by earlier sub-ops (e.g. OP_KEY_ADD
+  //     followed by OP_ACTION_ENCRYPTED signed by the new key, see the long
+  //     comment in `@chelonia/lib/internals.ts` near the OP_ATOMIC handler),
+  //   * applies all OP_CONTRACT / OP_KEY_* / OP_ATOMIC state transitions,
+  //   * returns the new contract state so we can thread it through.
+  // Pass an empty state for OP_CONTRACT; SPMessage.deserialize derives
+  // _vm.authorizedKeys from the message body itself in that case.
+  const stateForProcessing = priorState ?? Object.create(null)
+  let nextState: unknown
   try {
-    message = SPMessage.deserialize(serialized, ctx.additionalKeys, state as never)
+    nextState = await sbp('chelonia/in/processMessage', serialized, stateForProcessing)
   } catch (e) {
     return {
       height: head.height,
@@ -253,27 +202,43 @@ export function decryptOne (rawEnvelope: unknown, ctx: DecryptCtx): DecryptedEve
       error: (e as Error).message
     }
   }
-
-  // After successful deserialization, update accumulator state.
-  try {
-    if (op === SPMessage.OP_CONTRACT) {
-      const body = message.message() as { type: string; keys: ReadonlyArray<unknown> }
-      state = snapshotAuthorizedKeys(body.type, head.height, body.keys ?? [])
-      ctx.states.set(contractID, state)
-    } else if (op === SPMessage.OP_ATOMIC) {
-      // Apply key-op state updates for any nested key ops so that subsequent
-      // messages can still be verified/decrypted.
-      const subOps = message.message() as ReadonlyArray<[string, unknown]>
-      for (const [subOp, subBody] of subOps) {
-        maybeApplyKeyOp(state, subOp, head.height, subBody)
-      }
-    } else {
-      maybeApplyKeyOp(state, op, head.height, message.message())
+  // `chelonia/in/processMessage` swallows processing rejections in its own
+  // `.catch` and returns the *original* `state` reference on failure. Detect
+  // that here so we surface an explicit error instead of silently treating
+  // the message as a no-op.
+  if (nextState === stateForProcessing) {
+    return {
+      height: head.height,
+      hash,
+      contractID,
+      op,
+      raw: rawEnvelope,
+      error: 'chelonia/in/processMessage rejected the event (see preceding warning)'
     }
+  }
+  ctx.states.set(contractID, nextState)
+
+  // Deserialize locally for value extraction, bound to the *post-processing*
+  // state so the closures see all intermediate OP_ATOMIC mutations. The
+  // additional keys must be passed explicitly here: SPMessage.deserialize
+  // wires them into the signed/encrypted closures it builds, independently
+  // of chelonia's transient key store.
+  let message: SPMessage
+  try {
+    message = SPMessage.deserialize(
+      serialized,
+      ctx.additionalKeys as never,
+      nextState as never
+    )
   } catch (e) {
-    // State update failures should not fail the whole decode; we still
-    // return the decoded message.
-    console.warn(`[chel] warning: failed to update state after ${op} ${hash}: ${(e as Error).message}`)
+    return {
+      height: head.height,
+      hash,
+      contractID,
+      op,
+      raw: rawEnvelope,
+      error: (e as Error).message
+    }
   }
 
   let decryptedValue: unknown
@@ -312,20 +277,31 @@ export function decryptOne (rawEnvelope: unknown, ctx: DecryptCtx): DecryptedEve
 }
 
 // Decrypts a sequence of envelopes in order, accumulating per-contract state.
-export function decryptEnvelopes (
+// Any secret keys registered for this call are cleared from the transient
+// key store on return so successive `decryptEnvelopes` invocations don't
+// inherit each other's keys (also keeps the test suite hermetic).
+export async function decryptEnvelopes (
   envelopes: ReadonlyArray<unknown>,
   additionalKeys: Record<string, string>
-): DecryptedEvent[] {
-  const ctx: DecryptCtx = { additionalKeys, states: new Map() }
-  const out: DecryptedEvent[] = []
-  for (const envelope of envelopes) {
-    const result = decryptOne(envelope, ctx)
-    if (result.error) {
-      console.warn(`[chel] warning: ${result.op || '?'} ${result.hash || '?'}: ${result.error}`)
+): Promise<DecryptedEvent[]> {
+  await configureChelonia()
+  const addedIds = storeSecretKeys(additionalKeys)
+  try {
+    const ctx: DecryptCtx = { states: new Map(), additionalKeys }
+    const out: DecryptedEvent[] = []
+    for (const envelope of envelopes) {
+      const result = await decryptOne(envelope, ctx)
+      if (result.error) {
+        console.warn(`[chel] warning: ${result.op || '?'} ${result.hash || '?'}: ${result.error}`)
+      }
+      out.push(result)
     }
-    out.push(result)
+    return out
+  } finally {
+    if (addedIds.length) {
+      sbp('chelonia/clearTransientSecretKeys', addedIds)
+    }
   }
-  return out
 }
 
 export async function eventsAfter ({
@@ -348,7 +324,7 @@ export async function eventsAfter ({
       messages = await getMessagesSince(contractID, height, limit)
     }
     if (additionalKeys) {
-      const decrypted = decryptEnvelopes(messages, additionalKeys)
+      const decrypted = await decryptEnvelopes(messages, additionalKeys)
       console.log(JSON.stringify(decrypted, null, 2))
     } else {
       console.log(JSON.stringify(messages, null, 2))

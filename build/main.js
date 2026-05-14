@@ -69204,6 +69204,27 @@ var module3 = {
 };
 init_esm();
 init_SPMessage();
+var SERVER = {
+  // We don't check the subscriptionSet in the server because we accpt new
+  // contract registrations, and are also not subcribed to contracts the same
+  // way clients are
+  acceptAllMessages: true,
+  // The server also doesn't process actions
+  skipActionProcessing: true,
+  // The previous setting implies this one, which we set to be on the safe side
+  skipSideEffects: true,
+  // Changes the behaviour of unwrapMaybeEncryptedData so that it never decrypts.
+  // Mostly useful for the server, to avoid filling up the logs and for faster
+  // execution.
+  skipDecryptionAttempts: true,
+  // If an error occurs during processing, the message is rejected rather than
+  // ignored
+  strictProcessing: true,
+  // The server expects events to be received in order (no past or future events)
+  strictOrdering: true,
+  // _private_hidx= entries with per-message metadata
+  saveMessageMetadata: true
+};
 init_encryptedData();
 init_signedData();
 async function loadSecretKeys(file, { internal = false } = {}) {
@@ -69226,57 +69247,6 @@ async function loadSecretKeys(file, { internal = false } = {}) {
   }
   return parsed;
 }
-var snapshotAuthorizedKeys = (type, height, rawKeys) => {
-  const authorizedKeys = /* @__PURE__ */ Object.create(null);
-  for (const wrapped of rawKeys) {
-    const data = unwrapMaybeEncryptedData(wrapped);
-    if (!data) continue;
-    const k = data.data;
-    const id = typeof k?.id === "string" ? k.id : void 0;
-    if (!id) continue;
-    const copy2 = { ...k };
-    if (copy2._notBeforeHeight == null) copy2._notBeforeHeight = height;
-    delete copy2._notAfterHeight;
-    authorizedKeys[id] = copy2;
-  }
-  return { _vm: { type, authorizedKeys } };
-};
-var applyKeyOpToState = (state, op, height, body) => {
-  if (op === SPMessage.OP_KEY_ADD) {
-    for (const wrapped of body) {
-      const data = unwrapMaybeEncryptedData(wrapped);
-      if (!data) continue;
-      const k = data.data;
-      const id = typeof k?.id === "string" ? k.id : void 0;
-      if (!id) continue;
-      const copy2 = { ...k };
-      if (copy2._notBeforeHeight == null) copy2._notBeforeHeight = height;
-      delete copy2._notAfterHeight;
-      state._vm.authorizedKeys[id] = copy2;
-    }
-  } else if (op === SPMessage.OP_KEY_DEL) {
-    for (const wrapped of body) {
-      const data = unwrapMaybeEncryptedData(wrapped);
-      if (!data) continue;
-      const id = typeof data.data === "string" ? data.data : void 0;
-      if (!id) continue;
-      const existing = state._vm.authorizedKeys[id];
-      if (existing) existing._notAfterHeight = height;
-    }
-  } else if (op === SPMessage.OP_KEY_UPDATE) {
-    for (const wrapped of body) {
-      const data = unwrapMaybeEncryptedData(wrapped);
-      if (!data) continue;
-      const u2 = data.data;
-      const oldKeyId = typeof u2?.oldKeyId === "string" ? u2.oldKeyId : void 0;
-      const newId = typeof u2?.id === "string" ? u2.id : oldKeyId;
-      if (!newId) continue;
-      const base2 = oldKeyId && state._vm.authorizedKeys[oldKeyId] || {};
-      state._vm.authorizedKeys[newId] = { ...base2, ...u2, _notBeforeHeight: height };
-      delete state._vm.authorizedKeys[newId]._notAfterHeight;
-    }
-  }
-};
 var unwrapOpValue = (rawValue) => {
   try {
     const data = unwrapMaybeEncryptedData(rawValue);
@@ -69291,17 +69261,28 @@ var unwrapOpValue = (rawValue) => {
     return {};
   }
 };
-var maybeApplyKeyOp = (state, op, height, body) => {
-  if (!state) return;
-  if (op === SPMessage.OP_KEY_ADD || op === SPMessage.OP_KEY_DEL || op === SPMessage.OP_KEY_UPDATE) {
-    try {
-      applyKeyOpToState(state, op, height, body);
-    } catch (e2) {
-      console.warn(`[chel] warning: failed to apply ${op}: ${e2.message}`);
-    }
+var cheloniaConfigurePromise = null;
+function configureChelonia() {
+  if (!cheloniaConfigurePromise) {
+    cheloniaConfigurePromise = esm_default("chelonia/configure", {
+      ...SERVER,
+      // We *do* want decryption to happen here; SERVER sets this to true.
+      skipDecryptionAttempts: false
+    });
   }
-};
-function decryptOne(rawEnvelope, ctx) {
+  return cheloniaConfigurePromise;
+}
+function storeSecretKeys(additionalKeys) {
+  const ids = Object.keys(additionalKeys);
+  if (ids.length) {
+    esm_default(
+      "chelonia/storeSecretKeys",
+      new Secret(ids.map((id) => ({ key: additionalKeys[id], transient: true })))
+    );
+  }
+  return ids;
+}
+async function decryptOne(rawEnvelope, ctx) {
   let serialized;
   if (rawEnvelope && typeof rawEnvelope === "object" && "message" in rawEnvelope && typeof rawEnvelope.message === "string") {
     serialized = rawEnvelope.message;
@@ -69318,8 +69299,8 @@ function decryptOne(rawEnvelope, ctx) {
   } catch (e2) {
     return { height: -1, hash: "", contractID: "", op: "", raw: rawEnvelope, error: e2.message };
   }
-  let state = ctx.states.get(contractID);
-  if (!state && op !== SPMessage.OP_CONTRACT) {
+  const priorState = ctx.states.get(contractID);
+  if (!priorState && op !== SPMessage.OP_CONTRACT) {
     return {
       height: head.height,
       hash: hash3,
@@ -69329,9 +69310,10 @@ function decryptOne(rawEnvelope, ctx) {
       error: `no prior contract state for ${contractID} (need OP_CONTRACT first)`
     };
   }
-  let message;
+  const stateForProcessing = priorState ?? /* @__PURE__ */ Object.create(null);
+  let nextState;
   try {
-    message = SPMessage.deserialize(serialized, ctx.additionalKeys, state);
+    nextState = await esm_default("chelonia/in/processMessage", serialized, stateForProcessing);
   } catch (e2) {
     return {
       height: head.height,
@@ -69342,21 +69324,33 @@ function decryptOne(rawEnvelope, ctx) {
       error: e2.message
     };
   }
+  if (nextState === stateForProcessing) {
+    return {
+      height: head.height,
+      hash: hash3,
+      contractID,
+      op,
+      raw: rawEnvelope,
+      error: "chelonia/in/processMessage rejected the event (see preceding warning)"
+    };
+  }
+  ctx.states.set(contractID, nextState);
+  let message;
   try {
-    if (op === SPMessage.OP_CONTRACT) {
-      const body = message.message();
-      state = snapshotAuthorizedKeys(body.type, head.height, body.keys ?? []);
-      ctx.states.set(contractID, state);
-    } else if (op === SPMessage.OP_ATOMIC) {
-      const subOps = message.message();
-      for (const [subOp, subBody] of subOps) {
-        maybeApplyKeyOp(state, subOp, head.height, subBody);
-      }
-    } else {
-      maybeApplyKeyOp(state, op, head.height, message.message());
-    }
+    message = SPMessage.deserialize(
+      serialized,
+      ctx.additionalKeys,
+      nextState
+    );
   } catch (e2) {
-    console.warn(`[chel] warning: failed to update state after ${op} ${hash3}: ${e2.message}`);
+    return {
+      height: head.height,
+      hash: hash3,
+      contractID,
+      op,
+      raw: rawEnvelope,
+      error: e2.message
+    };
   }
   let decryptedValue;
   let innerSigningKeyId;
@@ -69387,17 +69381,25 @@ function decryptOne(rawEnvelope, ctx) {
   if (ops) result.ops = ops;
   return result;
 }
-function decryptEnvelopes(envelopes, additionalKeys) {
-  const ctx = { additionalKeys, states: /* @__PURE__ */ new Map() };
-  const out = [];
-  for (const envelope of envelopes) {
-    const result = decryptOne(envelope, ctx);
-    if (result.error) {
-      console.warn(`[chel] warning: ${result.op || "?"} ${result.hash || "?"}: ${result.error}`);
+async function decryptEnvelopes(envelopes, additionalKeys) {
+  await configureChelonia();
+  const addedIds = storeSecretKeys(additionalKeys);
+  try {
+    const ctx = { states: /* @__PURE__ */ new Map(), additionalKeys };
+    const out = [];
+    for (const envelope of envelopes) {
+      const result = await decryptOne(envelope, ctx);
+      if (result.error) {
+        console.warn(`[chel] warning: ${result.op || "?"} ${result.hash || "?"}: ${result.error}`);
+      }
+      out.push(result);
     }
-    out.push(result);
+    return out;
+  } finally {
+    if (addedIds.length) {
+      esm_default("chelonia/clearTransientSecretKeys", addedIds);
+    }
   }
-  return out;
 }
 async function eventsAfter2({
   limit,
@@ -69418,7 +69420,7 @@ async function eventsAfter2({
       messages = await getMessagesSince(contractID, height, limit);
     }
     if (additionalKeys) {
-      const decrypted = decryptEnvelopes(messages, additionalKeys);
+      const decrypted = await decryptEnvelopes(messages, additionalKeys);
       console.log(JSON.stringify(decrypted, null, 2));
     } else {
       console.log(JSON.stringify(messages, null, 2));
@@ -70391,27 +70393,6 @@ var persistent_actions_default = esm_default("sbp/selectors/register", {
     }
   }
 });
-var SERVER = {
-  // We don't check the subscriptionSet in the server because we accpt new
-  // contract registrations, and are also not subcribed to contracts the same
-  // way clients are
-  acceptAllMessages: true,
-  // The server also doesn't process actions
-  skipActionProcessing: true,
-  // The previous setting implies this one, which we set to be on the safe side
-  skipSideEffects: true,
-  // Changes the behaviour of unwrapMaybeEncryptedData so that it never decrypts.
-  // Mostly useful for the server, to avoid filling up the logs and for faster
-  // execution.
-  skipDecryptionAttempts: true,
-  // If an error occurs during processing, the message is rejected rather than
-  // ignored
-  strictProcessing: true,
-  // The server expects events to be received in order (no past or future events)
-  strictOrdering: true,
-  // _private_hidx= entries with per-message metadata
-  saveMessageMetadata: true
-};
 init_esm();
 var import_npm_chalk3 = __toESM(require_source());
 var compose = (middleware, onError, onNotFound) => {
