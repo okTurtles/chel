@@ -20,7 +20,7 @@ type Params = {
   keys: string | undefined
 }
 
-export async function loadSecretKeys(
+export async function loadSecretKeys (
   file: string,
   { internal = false }: { internal?: boolean } = {}
 ): Promise<Record<string, string>> {
@@ -108,7 +108,7 @@ let cheloniaConfigurePromise: Promise<unknown> | null = null
 // running contract code) and `strictProcessing` (propagate OP_ATOMIC sub-op
 // failures inside the library) actually affect this code path; the rest
 // are pulled in for parity with the server.
-function configureChelonia(): Promise<unknown> {
+function configureChelonia (): Promise<unknown> {
   if (!cheloniaConfigurePromise) {
     cheloniaConfigurePromise = sbp('chelonia/configure', {
       ...SERVER,
@@ -119,7 +119,7 @@ function configureChelonia(): Promise<unknown> {
   return cheloniaConfigurePromise!
 }
 
-function storeSecretKeys(additionalKeys: Record<string, string>): string[] {
+function storeSecretKeys (additionalKeys: Record<string, string>): string[] {
   const ids = Object.keys(additionalKeys)
   if (ids.length) {
     sbp(
@@ -133,7 +133,7 @@ function storeSecretKeys(additionalKeys: Record<string, string>): string[] {
 // Best-effort decryption of a single envelope.
 // `rawEnvelope` is the parsed JSON envelope object as produced by
 // `getMessagesSince` / `getRemoteMessagesSince`.
-export async function decryptOne(
+export async function decryptOne (
   rawEnvelope: unknown,
   ctx: DecryptCtx
 ): Promise<DecryptedEvent> {
@@ -280,7 +280,7 @@ export async function decryptOne(
 // Any secret keys registered for this call are cleared from the transient
 // key store on return so successive `decryptEnvelopes` invocations don't
 // inherit each other's keys (also keeps the test suite hermetic).
-export async function decryptEnvelopes(
+export async function decryptEnvelopes (
   envelopes: ReadonlyArray<unknown>,
   additionalKeys: Record<string, string>
 ): Promise<DecryptedEvent[]> {
@@ -304,7 +304,7 @@ export async function decryptEnvelopes(
   }
 }
 
-export async function eventsAfter({
+export async function eventsAfter ({
   limit,
   url,
   contractID,
@@ -336,7 +336,7 @@ export async function eventsAfter({
   }
 }
 
-async function getMessagesSince(
+async function getMessagesSince (
   contractID: string,
   sinceHeight: number,
   limit: number
@@ -363,7 +363,7 @@ async function getMessagesSince(
   })
 }
 
-async function getRemoteMessagesSince(
+async function getRemoteMessagesSince (
   src: string,
   contractID: string,
   sinceHeight: number,
@@ -394,7 +394,7 @@ export const module = {
         default: 50,
         number: true,
         requiresArg: true,
-        coerce(v: number) {
+        coerce (v: number) {
           if (!Number.isSafeInteger(v) || v < 0) {
             throw new Error('--limit must be a valid non-negative integer')
           }
