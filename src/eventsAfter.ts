@@ -10,7 +10,7 @@ import { unwrapMaybeEncryptedData } from 'npm:@chelonia/lib/encryptedData'
 import { isSignedData } from 'npm:@chelonia/lib/signedData'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { closeDB, initDB } from './serve/database.ts'
-import { exit, readJsonFile } from './utils.ts'
+import { exit, readJsonFile, revokeNet } from './utils.ts'
 
 type Params = {
   limit: number
@@ -97,7 +97,10 @@ const unwrapOpValue = (
       return { decryptedValue: signed.valueOf(), innerSigningKeyId: signed.signingKeyId }
     }
     return { decryptedValue: inner }
-  } catch {
+  } catch (e) {
+    if (rawValue != null) {
+      console.warn(`[chel] warning: unwrapOpValue failed: ${(e as Error).message}`)
+    }
     return {}
   }
 }
@@ -311,11 +314,9 @@ export async function eventsAfter ({
   height,
   keys
 }: ArgumentsCamelCase<Params>): Promise<void> {
-  // Load and validate the optional --keys file up-front so we fail fast.
-  const additionalKeys = keys ? await loadSecretKeys(keys) : undefined
+  let messages
   let dbOpen = false
   try {
-    let messages
     if (url) {
       messages = await getRemoteMessagesSince(url, contractID, height, limit)
     } else {
@@ -323,7 +324,10 @@ export async function eventsAfter ({
       dbOpen = true
       messages = await getMessagesSince(contractID, height, limit)
     }
-    if (additionalKeys) {
+    // We don't need network access beyond this point
+    revokeNet()
+    if (keys) {
+      const additionalKeys = await loadSecretKeys(keys)
       const decrypted = await decryptEnvelopes(messages, additionalKeys)
       console.log(JSON.stringify(decrypted, null, 2))
     } else {
@@ -345,11 +349,8 @@ async function getMessagesSince (
 
   return new Promise<unknown[]>((resolve, reject) => {
     const data: string[] = []
-    readable.on('readable', () => {
-      let chunk
-      while (null !== (chunk = readable.read())) {
-        data.push(chunk)
-      }
+    readable.on('data', (chunk: string) => {
+      data.push(chunk)
     })
 
     readable.on('error', reject)

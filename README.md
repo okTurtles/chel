@@ -17,7 +17,6 @@ chel upload <url-or-dir-or-sqlitedb> <file1> [<file2> [<file3> ...]]
 chel serve [options] <directory>
 chel latestState <url> <contractID>
 chel eventsAfter [--limit N] [--url <url>] [--keys <file>] <contractID> <height>
-chel eventsBefore [--limit N] <url> <contractID> <height>
 chel hash <file>
 chel migrate --from <backend> --to <backend> [--from-config <from-config.toml>] [--to-config <to-config.toml>]
 ```
@@ -252,6 +251,12 @@ Otherwise, the local database (configured via `chel.toml`) is read directly.
 By default, encrypted events (`OP_ACTION_ENCRYPTED` and friends) are returned
 as opaque envelopes — useful for forensics, but unreadable. Pass `--keys` with
 a JSON file of secret keys to decrypt them in place.
+
+**Warning:** this file contains secret key material and grants decryption
+capability for any events encrypted to those keys. Do **not** commit it to
+version control, include it in logs, or share it casually. Store it with
+restrictive file permissions, use it only for local debugging, and delete or
+otherwise protect it when you are done.
 
 The file is a flat object mapping each `keyId` to its serialized secret key:
 

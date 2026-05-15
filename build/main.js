@@ -69257,7 +69257,10 @@ var unwrapOpValue = (rawValue) => {
       return { decryptedValue: signed.valueOf(), innerSigningKeyId: signed.signingKeyId };
     }
     return { decryptedValue: inner };
-  } catch {
+  } catch (e2) {
+    if (rawValue != null) {
+      console.warn(`[chel] warning: unwrapOpValue failed: ${e2.message}`);
+    }
     return {};
   }
 };
@@ -69408,10 +69411,9 @@ async function eventsAfter2({
   height,
   keys
 }) {
-  const additionalKeys = keys ? await loadSecretKeys(keys) : void 0;
+  let messages;
   let dbOpen = false;
   try {
-    let messages;
     if (url2) {
       messages = await getRemoteMessagesSince(url2, contractID, height, limit);
     } else {
@@ -69419,7 +69421,9 @@ async function eventsAfter2({
       dbOpen = true;
       messages = await getMessagesSince(contractID, height, limit);
     }
-    if (additionalKeys) {
+    revokeNet();
+    if (keys) {
+      const additionalKeys = await loadSecretKeys(keys);
       const decrypted = await decryptEnvelopes(messages, additionalKeys);
       console.log(JSON.stringify(decrypted, null, 2));
     } else {
@@ -69435,11 +69439,8 @@ async function getMessagesSince(contractID, sinceHeight, limit) {
   const readable = await esm_default("backend/db/streamEntriesAfter", contractID, sinceHeight, limit);
   return new Promise((resolve82, reject) => {
     const data = [];
-    readable.on("readable", () => {
-      let chunk;
-      while (null !== (chunk = readable.read())) {
-        data.push(chunk);
-      }
+    readable.on("data", (chunk) => {
+      data.push(chunk);
     });
     readable.on("error", reject);
     readable.on("end", () => {
