@@ -69421,7 +69421,7 @@ async function eventsAfter2({
       dbOpen = true;
       messages = await getMessagesSince(contractID, height, limit);
     }
-    revokeNet();
+    await revokeNet();
     if (keys) {
       const additionalKeys = await loadSecretKeys(keys);
       const decrypted = await decryptEnvelopes(messages, additionalKeys);

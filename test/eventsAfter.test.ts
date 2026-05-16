@@ -3,9 +3,10 @@
 // The fixture chain is built at runtime using `@chelonia/lib` primitives so
 // it stays consistent with the installed library version (no committed
 // snapshot to keep in sync). It contains a minimal contract with one
-// `OP_CONTRACT` followed by one `OP_ACTION_ENCRYPTED`, signed and encrypted
-// with synthetic keys whose serialized secret halves are then fed to
-// `decryptEnvelopes` through a `--keys`-style map.
+// `OP_CONTRACT`, one standalone `OP_ACTION_ENCRYPTED`, and one `OP_ATOMIC`
+// containing two encrypted sub-ops, all signed/encrypted with synthetic keys
+// whose serialized secret halves are then fed to `decryptEnvelopes`
+// through a `--keys`-style map.
 
 import { assertEquals, assertExists, assertStringIncludes } from 'jsr:@std/assert'
 import { keygen, keyId, serializeKey, EDWARDS25519SHA512BATCH, CURVE25519XSALSA20POLY1305 } from 'npm:@chelonia/crypto'
@@ -17,7 +18,7 @@ import { decryptEnvelopes, loadSecretKeys } from '../src/eventsAfter.ts'
 
 // Build a tiny encrypted contract chain in memory and return both the
 // envelope objects (as `decryptEnvelopes` expects) and the secretKeys map.
-function buildFixture () {
+function buildFixture() {
   const sigKey = keygen(EDWARDS25519SHA512BATCH)
   const encKey = keygen(CURVE25519XSALSA20POLY1305)
   const sigKeyId = keyId(sigKey)
@@ -158,7 +159,7 @@ function buildFixture () {
 
 Deno.test({
   name: 'eventsAfter decryption',
-  async fn (t) {
+  async fn(t) {
     const f = buildFixture()
 
     await t.step('decrypts an OP_ACTION_ENCRYPTED with the right keys', async () => {
@@ -227,7 +228,7 @@ Deno.test({
 
 Deno.test({
   name: 'loadSecretKeys validation',
-  async fn (t) {
+  async fn(t) {
     const tmp = await Deno.makeTempDir({ dir: './test' })
     try {
       await t.step('parses a valid keys file', async () => {

@@ -252,6 +252,12 @@ By default, encrypted events (`OP_ACTION_ENCRYPTED` and friends) are returned
 as opaque envelopes — useful for forensics, but unreadable. Pass `--keys` with
 a JSON file of secret keys to decrypt them in place.
 
+**Current limitation:** decryption only works when the returned event list
+starts with the contract's `OP_CONTRACT` event (for example, by querying from
+height `0`). If you query from a later height, `decryptOne` has no prior
+contract/key state, so encrypted events are returned as raw envelopes with
+`no prior contract state` rather than being decrypted.
+
 **Warning:** this file contains secret key material and grants decryption
 capability for any events encrypted to those keys. Do **not** commit it to
 version control, include it in logs, or share it casually. Store it with
