@@ -1,10 +1,31 @@
 # HISTORY
 
-### Unreleased
+### v3.3.0
 
 - `chel eventsAfter` now accepts `--keys <file>` to decrypt encrypted events
   using a JSON map of secret keys (e.g. dumped from a `libcheloniajs` app's
   `rootState.secretKeys`).
+- `chelonia.json` now reports `appVersion` and `contractsVersion`, see `Configuration Files`
+  in README.md for details
+- Hapi integration replaced by Hono
+
+### v3.2.1
+
+- Exit when finished by @corrideat in https://github.com/okTurtles/chel/pull/107
+- Fix data corruption by @corrideat in https://github.com/okTurtles/chel/pull/109
+- Change config format and update docs by @corrideat in https://github.com/okTurtles/chel/pull/110
+- Add DB schema validation by @corrideat in https://github.com/okTurtles/chel/pull/111
+- Fix tests on macOS by @corrideat in https://github.com/okTurtles/chel/pull/115
+- Bump the npm_and_yarn group across 1 directory with 2 updates by @dependabot[bot] in https://github.com/okTurtles/chel/pull/119
+- Fix manifest version by @corrideat in https://github.com/okTurtles/chel/pull/126
+
+### v3.2.0
+
+- Adds `chel pin` command by @corrideat and @akhileshthite in https://github.com/okTurtles/chel/pull/91
+- `chel serve` now has `--dir` and `--dev` options
+- Reduces size of the `chel` binary and fixed an sqlite issue by using `serdes` between the workers and main process
+- Fixed a bug related to searching index on the server
+- Fixed bug preventing `sqlite` from being used by `chel serve`
 
 ### v3.1.0
 
