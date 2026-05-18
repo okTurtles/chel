@@ -69227,6 +69227,7 @@ var SERVER = {
 };
 init_encryptedData();
 init_signedData();
+init_esm6();
 async function loadSecretKeys(file, { internal = false } = {}) {
   let parsed;
   try {
@@ -69243,6 +69244,10 @@ async function loadSecretKeys(file, { internal = false } = {}) {
   for (const [k, v2] of Object.entries(parsed)) {
     if (typeof v2 !== "string") {
       return exit(`--keys file '${file}' entry '${k}' is not a string (got ${typeof v2})`, internal);
+    }
+    const actualId = keyId(deserializeKey(v2));
+    if (actualId !== k) {
+      throw new Error(`--keys entry '${k}' contains key material for '${actualId}'`);
     }
   }
   return parsed;
@@ -70089,115 +70094,7 @@ var module10 = {
 init_esm();
 init_esm4();
 init_esm3();
-init_esm();
-var isEventQueueSbpEvent2 = (e2) => {
-  return Object.prototype.hasOwnProperty.call(e2, "sbpInvocation");
-};
-var esm_default5 = esm_default("sbp/selectors/register", {
-  "okTurtles.eventQueue/_init": function() {
-    this.eventQueues = /* @__PURE__ */ Object.create(null);
-  },
-  "okTurtles.eventQueue/isWaiting": function(name) {
-    var _a2;
-    return !!((_a2 = this.eventQueues[name]) === null || _a2 === void 0 ? void 0 : _a2.length);
-  },
-  "okTurtles.eventQueue/queuedInvocations": function(name) {
-    var _a2, _b;
-    if (name == null) {
-      return Object.fromEntries(Object.entries(this.eventQueues).map(([name2, events]) => [name2, events.map((event) => {
-        if (isEventQueueSbpEvent2(event)) {
-          return event.sbpInvocation;
-        } else {
-          return event.fn;
-        }
-      })]));
-    }
-    return (_b = (_a2 = this.eventQueues[name]) === null || _a2 === void 0 ? void 0 : _a2.map((event) => {
-      if (isEventQueueSbpEvent2(event)) {
-        return event.sbpInvocation;
-      } else {
-        return event.fn;
-      }
-    })) !== null && _b !== void 0 ? _b : [];
-  },
-  "okTurtles.eventQueue/queueEvent": async function(name, invocation) {
-    if (!Object.prototype.hasOwnProperty.call(this.eventQueues, name)) {
-      this.eventQueues[name] = [];
-    }
-    const events = this.eventQueues[name];
-    let accept;
-    const promise = new Promise((resolve82) => {
-      accept = resolve82;
-    });
-    const thisEvent = typeof invocation === "function" ? {
-      fn: invocation,
-      promise
-    } : {
-      sbpInvocation: invocation,
-      promise
-    };
-    events.push(thisEvent);
-    while (events.length > 0) {
-      const event = events[0];
-      if (event === thisEvent) {
-        try {
-          if (typeof invocation === "function") {
-            return await invocation();
-          } else {
-            return await esm_default(...invocation);
-          }
-        } finally {
-          accept();
-          events.shift();
-        }
-      } else {
-        await event.promise;
-      }
-    }
-  }
-});
-init_esm();
-init_esm3();
-var listenKey2 = (evt) => `events/${evt}/listeners`;
-var esm_default6 = esm_default("sbp/selectors/register", {
-  "okTurtles.events/_init": function() {
-    this.errorHandler = (event, e2) => {
-      console.error(`[okTurtles.events] Error at handler for ${event}`, e2);
-    };
-  },
-  "okTurtles.events/on": function(event, handler) {
-    esm_default("okTurtles.data/add", listenKey2(event), handler);
-    return () => esm_default("okTurtles.events/off", event, handler);
-  },
-  "okTurtles.events/once": function(event, handler) {
-    const cbWithOff = (...args) => {
-      handler(...args);
-      esm_default("okTurtles.events/off", event, cbWithOff);
-    };
-    return esm_default("okTurtles.events/on", event, cbWithOff);
-  },
-  "okTurtles.events/emit": function(event, ...data) {
-    var _a2;
-    for (const listener of esm_default("okTurtles.data/get", listenKey2(event)) || []) {
-      try {
-        listener(...data);
-      } catch (e2) {
-        (_a2 = this.errorHandler) === null || _a2 === void 0 ? void 0 : _a2.call(this, event, e2);
-      }
-    }
-  },
-  // almost identical to Vue.prototype.$off, except we require `event` argument
-  "okTurtles.events/off": function(event, handler) {
-    if (handler) {
-      esm_default("okTurtles.data/remove", listenKey2(event), handler);
-    } else {
-      esm_default("okTurtles.data/delete", listenKey2(event));
-    }
-  },
-  "okTurtles.events/setErrorHandler": function(errorHandler2) {
-    this.errorHandler = errorHandler2;
-  }
-});
+init_esm2();
 init_esm();
 var import_npm_chalk4 = __toESM(require_source());
 var SERVER_EXITING = "server-exiting";
@@ -73156,186 +73053,24 @@ var createAdaptorServer = (options2) => {
   const server = createServer2(options2.serverOptions || {}, requestListener);
   return server;
 };
-var serdesTagSymbol2 = Symbol("tag");
-var serdesSerializeSymbol2 = Symbol("serialize");
-var serdesDeserializeSymbol2 = Symbol("deserialize");
-var rawResult2 = (rawResultSet, obj) => {
-  rawResultSet.add(obj);
-  return obj;
-};
-var serializer2 = (data) => {
-  const rawResultSet = /* @__PURE__ */ new WeakSet();
-  const verbatim = [];
-  const transferables = /* @__PURE__ */ new Set();
-  const revokables = /* @__PURE__ */ new Set();
-  const result = JSON.parse(JSON.stringify(data, (_key, value) => {
-    if (value && typeof value === "object" && rawResultSet.has(value))
-      return value;
-    if (value === void 0)
-      return rawResult2(rawResultSet, ["_", "_"]);
-    if (!value)
-      return value;
-    if (Array.isArray(value) && value[0] === "_")
-      return rawResult2(rawResultSet, ["_", "_", ...value]);
-    if (value instanceof Map) {
-      return rawResult2(rawResultSet, ["_", "Map", Array.from(value.entries())]);
-    }
-    if (value instanceof Set) {
-      return rawResult2(rawResultSet, ["_", "Set", Array.from(value.values())]);
-    }
-    if (value instanceof Blob || value instanceof File) {
-      const pos = verbatim.length;
-      verbatim[verbatim.length] = value;
-      return rawResult2(rawResultSet, ["_", "_ref", pos]);
-    }
-    if (value instanceof Error) {
-      const pos = verbatim.length;
-      verbatim[verbatim.length] = value;
-      if (value.cause) {
-        value.cause = serializer2(value.cause).data;
-      }
-      return rawResult2(rawResultSet, ["_", "_err", rawResult2(rawResultSet, ["_", "_ref", pos]), value.name]);
-    }
-    if (value instanceof MessagePort || value instanceof ReadableStream || value instanceof WritableStream || value instanceof ArrayBuffer) {
-      const pos = verbatim.length;
-      verbatim[verbatim.length] = value;
-      transferables.add(value);
-      return rawResult2(rawResultSet, ["_", "_ref", pos]);
-    }
-    if (ArrayBuffer.isView(value)) {
-      const pos = verbatim.length;
-      verbatim[verbatim.length] = value;
-      transferables.add(value.buffer);
-      return rawResult2(rawResultSet, ["_", "_ref", pos]);
-    }
-    if (typeof value === "function") {
-      const mc = new MessageChannel();
-      mc.port1.onmessage = async (ev) => {
-        try {
-          try {
-            const result2 = await value(...deserializer2(ev.data[1]));
-            const { data: data2, transferables: transferables2 } = serializer2(result2);
-            ev.data[0].postMessage([true, data2], transferables2);
-          } catch (e2) {
-            const { data: data2, transferables: transferables2 } = serializer2(e2);
-            ev.data[0].postMessage([false, data2], transferables2);
-          }
-        } catch (e2) {
-          console.error("Async error on onmessage handler", e2);
-        }
-      };
-      transferables.add(mc.port2);
-      revokables.add(mc.port1);
-      return rawResult2(rawResultSet, ["_", "_fn", mc.port2]);
-    }
-    const proto3 = Object.getPrototypeOf(value);
-    if (proto3?.constructor?.[serdesTagSymbol2] && proto3.constructor[serdesSerializeSymbol2]) {
-      return rawResult2(rawResultSet, ["_", "_custom", proto3.constructor[serdesTagSymbol2], proto3.constructor[serdesSerializeSymbol2](value)]);
-    }
-    return value;
-  }), (_key, value) => {
-    if (Array.isArray(value) && value[0] === "_" && value[1] === "_ref") {
-      return verbatim[value[2]];
-    }
-    return value;
-  });
-  return {
-    data: result,
-    transferables: Array.from(transferables),
-    revokables: Array.from(revokables)
-  };
-};
-var deserializerTable2 = /* @__PURE__ */ Object.create(null);
-var deserializer2 = (data) => {
-  const rawResultSet = /* @__PURE__ */ new WeakSet();
-  const verbatim = [];
-  return JSON.parse(JSON.stringify(data, (_key, value) => {
-    if (value && typeof value === "object" && !rawResultSet.has(value) && !Array.isArray(value) && Object.getPrototypeOf(value) !== Object.prototype) {
-      const pos = verbatim.length;
-      verbatim[verbatim.length] = value;
-      return rawResult2(rawResultSet, ["_", "_ref", pos]);
-    }
-    return value;
-  }), (_key, value) => {
-    if (Array.isArray(value) && value[0] === "_") {
-      switch (value[1]) {
-        case "_":
-          if (value.length >= 3) {
-            return value.slice(2);
-          } else {
-            return;
-          }
-        // Map input (reconstruct Map)
-        case "Map":
-          return new Map(value[2]);
-        // Set input (reconstruct Set)
-        case "Set":
-          return new Set(value[2]);
-        // Custom object type (reconstruct if possible, otherwise throw an error)
-        case "_custom":
-          if (deserializerTable2[value[2]]) {
-            return deserializerTable2[value[2]](value[3]);
-          } else {
-            throw new Error("Invalid or unknown tag: " + value[2]);
-          }
-        // These are literal values, return them
-        case "_ref":
-          return verbatim[value[2]];
-        case "_err": {
-          if (value[2].name !== value[3]) {
-            value[2].name = value[3];
-          }
-          if (value[2].cause) {
-            value[2].cause = deserializer2(value[2].cause);
-          }
-          return value[2];
-        }
-        // These were functions converted to a MessagePort. Convert them on this
-        // end back into functions using that port.
-        case "_fn": {
-          const mp = value[2];
-          return (...args) => {
-            return new Promise((resolve82, reject) => {
-              const mc = new MessageChannel();
-              const { data: data2, transferables } = serializer2(args);
-              mc.port1.onmessage = (ev) => {
-                if (ev.data[0]) {
-                  resolve82(deserializer2(ev.data[1]));
-                } else {
-                  reject(deserializer2(ev.data[1]));
-                }
-              };
-              mp.postMessage([mc.port2, data2], [mc.port2, ...transferables]);
-            });
-          };
-        }
-      }
-    }
-    return value;
-  });
-};
-deserializer2.register = (ctor) => {
-  if (typeof ctor === "function" && typeof ctor[serdesTagSymbol2] === "string" && typeof ctor[serdesDeserializeSymbol2] === "function") {
-    deserializerTable2[ctor[serdesTagSymbol2]] = ctor[serdesDeserializeSymbol2].bind(ctor);
-  }
-};
+init_esm7();
 init_esm();
 Object.defineProperties(Buffer13, {
-  [serdesDeserializeSymbol2]: {
+  [serdesDeserializeSymbol]: {
     value(buf2) {
       return Buffer13.from(buf2);
     }
   },
-  [serdesSerializeSymbol2]: {
+  [serdesSerializeSymbol]: {
     value(buf2) {
       return new Uint8Array(buf2.buffer, buf2.byteOffset, buf2.byteLength);
     }
   },
-  [serdesTagSymbol2]: {
+  [serdesTagSymbol]: {
     value: "node:buffer"
   }
 });
-deserializer2.register(Buffer13);
+deserializer.register(Buffer13);
 var createWorker = (path8) => {
   let worker;
   let ready;
@@ -73358,11 +73093,11 @@ var createWorker = (path8) => {
           resolve82();
         } else if (msg && typeof msg === "object" && msg.type === "sbp" && Array.isArray(msg.data) && String(msg.data[0]).startsWith("chelonia.db/")) {
           const port = msg.port;
-          Promise.try(() => esm_default(...deserializer2(msg.data))).then((r) => {
-            const { data, transferables } = serializer2(r);
+          Promise.try(() => esm_default(...deserializer(msg.data))).then((r) => {
+            const { data, transferables } = serializer(r);
             port.postMessage([true, data], transferables);
           }).catch((e2) => {
-            const { data, transferables } = serializer2(e2);
+            const { data, transferables } = serializer(e2);
             port.postMessage([false, data], transferables);
           }).finally(() => {
             port.close();
@@ -77973,7 +77708,7 @@ var REQUIRE_ERROR = "require is not supported by ESM";
 var REQUIRE_DIRECTORY_ERROR = "loading a directory of commands is not supported yet for ESM";
 var mainFilename = fileURLToPath(import.meta.url).split("node_modules")[0];
 var __dirname2 = fileURLToPath(import.meta.url);
-var esm_default7 = {
+var esm_default5 = {
   assert: {
     notStrictEqual,
     strictEqual
@@ -80626,7 +80361,7 @@ var rebase = (base2, dir) => shim3.path.relative(base2, dir);
 function isYargsInstance(y) {
   return !!y && typeof y._parseArgs === "function";
 }
-var Yargs2 = YargsWithShim(esm_default7);
+var Yargs2 = YargsWithShim(esm_default5);
 var yargs_default = Yargs2;
 var handlerState = {
   postHandler: () => {
