@@ -16,8 +16,7 @@ chel deploy <url-or-dir-or-sqlitedb> <contract-manifest.json> [<manifest2.json> 
 chel upload <url-or-dir-or-sqlitedb> <file1> [<file2> [<file3> ...]]
 chel serve [options] <directory>
 chel latestState <url> <contractID>
-chel eventsAfter [--limit N] <url> <contractID> <hash>
-chel eventsBefore [--limit N] <url> <contractID> <hash>
+chel eventsAfter [--limit N] [--url <url>] [--keys <file>] <contractID> <height>
 chel hash <file>
 chel migrate --from <backend> --to <backend> [--from-config <from-config.toml>] [--to-config <to-config.toml>]
 ```
@@ -234,6 +233,89 @@ Useful command:
 ```
 cp -r path/to/contracts/* test/assets/ && ls ./test/assets/*-slim.js | sed -En 's/.*\/(.*)-slim.js/\1/p' | xargs -I {} ./src/main.ts manifest --out=test/assets/{}.manifest.json --slim test/assets/{}-slim.js key.json test/assets/{}.js && ls ./test/assets/*.manifest.json | xargs ./src/main.ts deploy http://127.0.0.1:8888
 ```
+
+### `chel eventsAfter`
+
+Displays a JSON array of events that happened in a given contract since a given
+height. Older events come first. The output is parseable with tools like `jq`.
+
+```
+chel eventsAfter [--limit N] [--url <url>] [--keys <keys.json>] <contractID> <height>
+```
+
+If `--url` is supplied, the remote server's `/eventsAfter` endpoint is queried.
+Otherwise, the local database (configured via `chel.toml`) is read directly.
+
+#### Decrypting events with `--keys`
+
+By default, encrypted events (`OP_ACTION_ENCRYPTED` and friends) are returned
+as opaque envelopes — useful for forensics, but unreadable. Pass `--keys` with
+a JSON file of secret keys to decrypt them in place.
+
+**Current limitation:** decryption only works when the returned event list
+starts with the contract's `OP_CONTRACT` event (for example, by querying from
+height `0`). If you query from a later height, `decryptOne` has no prior
+contract/key state, so encrypted events are returned as raw envelopes with
+`no prior contract state` rather than being decrypted.
+
+**Warning:** this file contains secret key material and grants decryption
+capability for any events encrypted to those keys. Do **not** commit it to
+version control, include it in logs, or share it casually. Store it with
+restrictive file permissions, use it only for local debugging, and delete or
+otherwise protect it when you are done.
+
+The file is a flat object mapping each `keyId` to its serialized secret key:
+
+```json
+{
+  "z9brR...sigKeyId": "<serializedSecretKey>",
+  "z9brR...encKeyId": "<serializedSecretKey>"
+}
+```
+
+This is exactly the shape Chelonia stores at `rootState.secretKeys` in any app
+built with [`libcheloniajs`](https://github.com/okTurtles/libcheloniajs). The
+easiest way to generate this file is from a running app:
+
+**In a browser DevTools console (with the app open):**
+
+```js
+copy(JSON.stringify(await sbp('chelonia/rootState').secretKeys, null, 2))
+// then paste into keys.json
+```
+
+**Example:**
+
+```bash
+chel eventsAfter --keys ./keys.json <contractID> 0 --limit 10
+```
+
+When `--keys` is supplied each event is emitted as:
+
+```jsonc
+{
+  "height": 1,
+  "hash": "z9brR...",
+  "contractID": "z9brR...",
+  "op": "ae",
+  "signingKeyId": "z9brR...",
+  "innerSigningKeyId": "z9brR...",
+  "decryptedValue": { /* the inner contract action payload */ },
+  "raw": {
+    "serverMeta": {
+      "date": "2025-06-09T20:35:43.305Z",
+      "isKeyOp": true
+    },
+    "message": "{...}"
+  }
+}
+```
+
+Decryption is best-effort: if the required key is missing or a signature
+cannot be verified, the event is still emitted with the original envelope
+under `raw`, and `decryptedValue` may be absent or `undefined`. Some failure
+cases may also include a per-event `error` and/or print a one-line warning to
+`stderr`, but that is not guaranteed for every decryption failure.
 
 ### `chel migrate`
 
