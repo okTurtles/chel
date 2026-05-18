@@ -9,10 +9,10 @@
 // through a `--keys`-style map.
 
 import { assertEquals, assertExists, assertStringIncludes } from 'jsr:@std/assert'
-import { keygen, keyId, serializeKey, EDWARDS25519SHA512BATCH, CURVE25519XSALSA20POLY1305 } from 'npm:@chelonia/crypto'
+import { CURVE25519XSALSA20POLY1305, EDWARDS25519SHA512BATCH, keygen, keyId, serializeKey } from 'npm:@chelonia/crypto'
 import { SPMessage } from 'npm:@chelonia/lib/SPMessage'
-import { signedOutgoingData } from 'npm:@chelonia/lib/signedData'
 import { encryptedOutgoingData } from 'npm:@chelonia/lib/encryptedData'
+import { signedOutgoingData } from 'npm:@chelonia/lib/signedData'
 
 import { decryptEnvelopes, loadSecretKeys } from '../src/eventsAfter.ts'
 
@@ -233,9 +233,15 @@ Deno.test({
     try {
       await t.step('parses a valid keys file', async () => {
         const path = `${tmp}/ok.json`
-        await Deno.writeTextFile(path, JSON.stringify({ a: 'serialized-a', b: 'serialized-b' }))
+        const keyA = keygen(CURVE25519XSALSA20POLY1305)
+        const keyB = keygen(EDWARDS25519SHA512BATCH)
+        const src = {
+          [keyId(keyA)]: serializeKey(keyA, true),
+          [keyId(keyB)]: serializeKey(keyB, true)
+        }
+        await Deno.writeTextFile(path, JSON.stringify(src))
         const result = await loadSecretKeys(path, { internal: true })
-        assertEquals(result, { a: 'serialized-a', b: 'serialized-b' })
+        assertEquals(result, src)
       })
 
       await t.step('rejects non-object JSON', async () => {
