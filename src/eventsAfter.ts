@@ -11,6 +11,7 @@ import { isSignedData } from 'npm:@chelonia/lib/signedData'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { closeDB, initDB } from './serve/database.ts'
 import { exit, readJsonFile, revokeNet } from './utils.ts'
+import { deserializeKey, keyId } from 'npm:@chelonia/crypto'
 
 type Params = {
   limit: number
@@ -39,6 +40,10 @@ export async function loadSecretKeys (
   for (const [k, v] of Object.entries(parsed)) {
     if (typeof v !== 'string') {
       return exit(`--keys file '${file}' entry '${k}' is not a string (got ${typeof v})`, internal)
+    }
+    const actualId = keyId(deserializeKey(v))
+    if (actualId !== k) {
+      throw new Error(`--keys entry '${k}' contains key material for '${actualId}'`)
     }
   }
   return parsed as Record<string, string>
