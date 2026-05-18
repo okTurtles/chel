@@ -1,5 +1,9 @@
 # HISTORY
 
+### v3.3.1
+
+- Fix binary distribution of 3.3.0.
+
 ### v3.3.0
 
 - `chel eventsAfter` now accepts `--keys <file>` to decrypt encrypted events
