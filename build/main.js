@@ -18988,7 +18988,7 @@ var strToBuf;
 var strToB64;
 var getSubscriptionId;
 var init_functions = __esm({
-  "node_modules/.deno/@chelonia+lib@1.4.3/node_modules/@chelonia/lib/dist/esm/functions.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.4.4/node_modules/@chelonia/lib/dist/esm/functions.mjs"() {
     init_base58();
     init_blake2b();
     init_blake2bstream();
@@ -22536,8 +22536,9 @@ var ChelErrorSignatureKeyNotFound;
 var ChelErrorFetchServerTimeFailed;
 var ChelErrorUnexpectedHttpResponseCode;
 var ChelErrorResourceGone;
+var ChelErrorJournalCorrupt;
 var init_errors3 = __esm({
-  "node_modules/.deno/@chelonia+lib@1.4.3/node_modules/@chelonia/lib/dist/esm/errors.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.4.4/node_modules/@chelonia/lib/dist/esm/errors.mjs"() {
     ChelErrorGenerator = (name, base2 = Error) => class extends base2 {
       constructor(...params) {
         super(...params);
@@ -22570,6 +22571,7 @@ var init_errors3 = __esm({
     ChelErrorFetchServerTimeFailed = ChelErrorGenerator("ChelErrorFetchServerTimeFailed");
     ChelErrorUnexpectedHttpResponseCode = ChelErrorGenerator("ChelErrorUnexpectedHttpResponseCode");
     ChelErrorResourceGone = ChelErrorGenerator("ChelErrorResourceGone", ChelErrorUnexpectedHttpResponseCode);
+    ChelErrorJournalCorrupt = ChelErrorGenerator("ChelErrorJournalCorrupt");
   }
 });
 var serdesTagSymbol;
@@ -22836,7 +22838,7 @@ var signedDataKeyId;
 var isRawSignedData;
 var rawSignedIncomingData;
 var init_signedData = __esm({
-  "node_modules/.deno/@chelonia+lib@1.4.3/node_modules/@chelonia/lib/dist/esm/signedData.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.4.4/node_modules/@chelonia/lib/dist/esm/signedData.mjs"() {
     init_esm6();
     init_esm();
     init_esm4();
@@ -23109,7 +23111,7 @@ var isRawEncryptedData;
 var unwrapMaybeEncryptedData;
 var maybeEncryptedIncomingData;
 var init_encryptedData = __esm({
-  "node_modules/.deno/@chelonia+lib@1.4.3/node_modules/@chelonia/lib/dist/esm/encryptedData.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.4.4/node_modules/@chelonia/lib/dist/esm/encryptedData.mjs"() {
     init_esm6();
     init_esm();
     init_esm4();
@@ -23374,7 +23376,7 @@ var decryptedAndVerifiedDeserializedMessage;
 var SPMessage;
 var keyOps;
 var init_SPMessage = __esm({
-  "node_modules/.deno/@chelonia+lib@1.4.3/node_modules/@chelonia/lib/dist/esm/SPMessage.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.4.4/node_modules/@chelonia/lib/dist/esm/SPMessage.mjs"() {
     init_esm6();
     init_esm7();
     init_esm4();
@@ -23792,7 +23794,7 @@ var prefixHandlers;
 var dbPrimitiveSelectors;
 var db_default;
 var init_db = __esm({
-  "node_modules/.deno/@chelonia+lib@1.4.3/node_modules/@chelonia/lib/dist/esm/db.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.4.4/node_modules/@chelonia/lib/dist/esm/db.mjs"() {
     init_esm3();
     init_esm2();
     init_esm();
@@ -63141,6 +63143,558 @@ var chelonia_utils_default = esm_default("sbp/selectors/register", {
     });
   }
 });
+init_functions();
+init_esm();
+init_esm4();
+init_errors3();
+function escapePointerSegment(segment) {
+  return segment.replace(/~/g, "~0").replace(/\//g, "~1");
+}
+function unescapePointerSegment(segment) {
+  return segment.replace(/~1/g, "/").replace(/~0/g, "~");
+}
+function segmentsToPointer(segments) {
+  if (segments.length === 0)
+    return "";
+  return "/" + segments.map(escapePointerSegment).join("/");
+}
+function pointerToSegments(pointer) {
+  if (pointer === "")
+    return [];
+  if (pointer[0] !== "/") {
+    throw new Error(`Invalid JSON Pointer: ${pointer}`);
+  }
+  return pointer.slice(1).split("/").map(unescapePointerSegment);
+}
+function parseDottedPath(path8) {
+  if (path8 === "")
+    return [];
+  return path8.split(".");
+}
+function isPlainObject2(v2) {
+  if (v2 === null || typeof v2 !== "object")
+    return false;
+  if (Array.isArray(v2))
+    return false;
+  const proto3 = Object.getPrototypeOf(v2);
+  return proto3 === Object.prototype || proto3 === null;
+}
+function cloneValue(v2) {
+  if (v2 === null || typeof v2 !== "object")
+    return v2;
+  if (Array.isArray(v2))
+    return v2.map(cloneValue);
+  if (isPlainObject2(v2)) {
+    const out = Object.create(Object.getPrototypeOf(v2));
+    for (const k of Object.keys(v2)) {
+      Object.defineProperty(out, k, {
+        value: cloneValue(v2[k]),
+        writable: true,
+        enumerable: true,
+        configurable: true
+      });
+    }
+    return out;
+  }
+  return v2;
+}
+function defaultDiff(before, after) {
+  const patches = [];
+  diffInto(before, after, [], patches);
+  return patches;
+}
+function diffInto(before, after, segments, out) {
+  if (before === after)
+    return;
+  const path8 = segmentsToPointer(segments);
+  if (before === void 0) {
+    out.push({ op: "add", path: path8, value: cloneValue(after) });
+    return;
+  }
+  if (after === void 0) {
+    if (segments.length === 0) {
+      out.push({ op: "replace", path: path8, value: null });
+    } else {
+      out.push({ op: "remove", path: path8 });
+    }
+    return;
+  }
+  const bIsArr = Array.isArray(before);
+  const aIsArr = Array.isArray(after);
+  const bIsObj = isPlainObject2(before);
+  const aIsObj = isPlainObject2(after);
+  if (bIsArr !== aIsArr || bIsObj !== aIsObj || !bIsArr && !bIsObj) {
+    if (!shallowEqualPrimitives(before, after)) {
+      out.push({ op: "replace", path: path8, value: cloneValue(after) });
+    }
+    return;
+  }
+  if (bIsArr && aIsArr) {
+    const bArr = before;
+    const aArr = after;
+    const minLen = Math.min(bArr.length, aArr.length);
+    for (let i2 = 0; i2 < minLen; i2++) {
+      diffInto(bArr[i2], aArr[i2], [...segments, String(i2)], out);
+    }
+    if (aArr.length > bArr.length) {
+      for (let i2 = bArr.length; i2 < aArr.length; i2++) {
+        out.push({
+          op: "add",
+          path: segmentsToPointer([...segments, String(i2)]),
+          value: cloneValue(aArr[i2])
+        });
+      }
+    } else if (bArr.length > aArr.length) {
+      for (let i2 = bArr.length - 1; i2 >= aArr.length; i2--) {
+        out.push({
+          op: "remove",
+          path: segmentsToPointer([...segments, String(i2)])
+        });
+      }
+    }
+    return;
+  }
+  const bObj = before;
+  const aObj = after;
+  const bKeys = Object.keys(bObj);
+  const aKeys = Object.keys(aObj);
+  const aSet = new Set(aKeys);
+  for (const k of bKeys) {
+    if (!aSet.has(k)) {
+      out.push({ op: "remove", path: segmentsToPointer([...segments, k]) });
+    }
+  }
+  const bSet = new Set(bKeys);
+  for (const k of aKeys) {
+    if (!bSet.has(k)) {
+      out.push({
+        op: "add",
+        path: segmentsToPointer([...segments, k]),
+        value: cloneValue(aObj[k])
+      });
+    } else {
+      diffInto(bObj[k], aObj[k], [...segments, k], out);
+    }
+  }
+}
+function shallowEqualPrimitives(a, b) {
+  if (a === b)
+    return true;
+  if (typeof a === "number" && typeof b === "number" && Number.isNaN(a) && Number.isNaN(b))
+    return true;
+  return false;
+}
+function safeDefine(obj, last, value) {
+  Object.defineProperty(obj, last, {
+    value,
+    writable: true,
+    enumerable: true,
+    configurable: true
+  });
+}
+function defaultApplyPatch(state, patches) {
+  let current = cloneValue(state);
+  for (const p of patches) {
+    current = applyOne(current, p);
+  }
+  return current;
+}
+function applyOne(root, patch) {
+  const segments = pointerToSegments(patch.path);
+  if (patch.op !== "add" && patch.op !== "replace" && patch.op !== "remove") {
+    throw new Error(`Unsupported patch op '${patch.op}' at '${patch.path}'`);
+  }
+  if (patch.op === "add" || patch.op === "replace") {
+    if (!("value" in patch)) {
+      throw new Error(`Patch '${patch.op}' at '${patch.path}' is missing required 'value'`);
+    }
+  }
+  if (segments.length === 0) {
+    if (patch.op === "remove") {
+      throw new Error("Whole-root 'remove' is not supported (use replace with null)");
+    }
+    return cloneValue(patch.value);
+  }
+  if (root === void 0 || root === null || typeof root !== "object") {
+    throw new Error(`Cannot apply patch '${patch.op}' at '${patch.path}' to non-container root`);
+  }
+  let parent = root;
+  for (let i2 = 0; i2 < segments.length - 1; i2++) {
+    const seg = segments[i2];
+    if (Array.isArray(parent)) {
+      const idx = Number(seg);
+      if (!Number.isInteger(idx) || idx < 0 || idx >= parent.length) {
+        throw new Error(`Cannot apply patch '${patch.op}' at '${patch.path}': intermediate '${seg}' is not a container`);
+      }
+      const next = parent[idx];
+      if (next === void 0 || next === null || typeof next !== "object") {
+        throw new Error(`Cannot apply patch '${patch.op}' at '${patch.path}': intermediate '${seg}' is not a container`);
+      }
+      parent = next;
+    } else {
+      if (!has(parent, seg)) {
+        throw new Error(`Cannot apply patch '${patch.op}' at '${patch.path}': intermediate '${seg}' is not a container`);
+      }
+      const next = parent[seg];
+      if (next === void 0 || next === null || typeof next !== "object") {
+        throw new Error(`Cannot apply patch '${patch.op}' at '${patch.path}': intermediate '${seg}' is not a container`);
+      }
+      parent = next;
+    }
+  }
+  const last = segments[segments.length - 1];
+  if (Array.isArray(parent)) {
+    const isDash = last === "-";
+    const idx = isDash ? parent.length : Number(last);
+    if (!isDash && (!Number.isInteger(idx) || idx < 0)) {
+      throw new Error(`Invalid array index '${last}' in patch '${patch.path}'`);
+    }
+    if (patch.op === "add") {
+      if (!isDash && idx > parent.length) {
+        throw new Error(`Cannot 'add' at '${patch.path}': array index out of bounds`);
+      }
+      parent.splice(idx, 0, cloneValue(patch.value));
+    } else if (patch.op === "replace") {
+      if (isDash) {
+        throw new Error("'-' is not a valid array index for 'replace'");
+      }
+      if (idx >= parent.length) {
+        throw new Error(`Cannot 'replace' at '${patch.path}': array index out of bounds`);
+      }
+      parent[idx] = cloneValue(patch.value);
+    } else if (patch.op === "remove") {
+      if (isDash) {
+        throw new Error("'-' is not a valid array index for 'remove'");
+      }
+      if (idx >= parent.length) {
+        throw new Error(`Cannot 'remove' at '${patch.path}': array index out of bounds`);
+      }
+      parent.splice(idx, 1);
+    } else {
+      throw new Error(`Unsupported patch op: ${patch.op}`);
+    }
+  } else {
+    const obj = parent;
+    if (patch.op === "add") {
+      safeDefine(obj, last, cloneValue(patch.value));
+    } else if (patch.op === "replace") {
+      if (!has(obj, last)) {
+        throw new Error(`Cannot 'replace' at '${patch.path}': target key does not exist`);
+      }
+      safeDefine(obj, last, cloneValue(patch.value));
+    } else if (patch.op === "remove") {
+      if (!has(obj, last)) {
+        throw new Error(`Cannot 'remove' at '${patch.path}': target key does not exist`);
+      }
+      delete obj[last];
+    } else {
+      throw new Error(`Unsupported patch op: ${patch.op}`);
+    }
+  }
+  return root;
+}
+var REDACTION_ERROR_SENTINEL = "[REDACTION_ERROR]";
+function applyRedactions(state, redactions, contractName) {
+  const cloned = cloneValue(state);
+  if (!redactions || redactions.length === 0)
+    return cloned;
+  for (const r of redactions) {
+    const segments = parseDottedPath(r.path);
+    if (segments.length === 0)
+      continue;
+    walkAndRedact(cloned, segments, 0, r.redact, [], contractName);
+  }
+  return cloned;
+}
+function walkAndRedact(parent, segments, i2, redact, resolved, contractName) {
+  if (parent === null || typeof parent !== "object")
+    return;
+  const seg = segments[i2];
+  const isLast = i2 === segments.length - 1;
+  const keys = seg === "*" ? Array.isArray(parent) ? parent.map((_, idx) => String(idx)) : Object.keys(parent) : has(parent, seg) ? [seg] : [];
+  for (const k of keys) {
+    const fullPath = [...resolved, k];
+    if (isLast) {
+      const container = parent;
+      const original = container[k];
+      let replacement;
+      try {
+        replacement = redact(original, fullPath, contractName);
+      } catch (e2) {
+        console.warn(`[chelonia][journal] redactor threw for path '${fullPath.join(".")}':`, e2);
+        replacement = REDACTION_ERROR_SENTINEL;
+      }
+      if (Array.isArray(container)) {
+        const idx = Number(k);
+        if (Number.isInteger(idx) && idx >= 0 && idx < container.length) {
+          container[idx] = replacement;
+        }
+      } else {
+        Object.defineProperty(container, k, {
+          value: replacement,
+          writable: true,
+          enumerable: true,
+          configurable: true
+        });
+      }
+    } else {
+      walkAndRedact(parent[k], segments, i2 + 1, redact, fullPath, contractName);
+    }
+  }
+}
+var DEFAULT_SNAPSHOT_INTERVAL = 50;
+function resolveJournalConfig(cfg) {
+  const enabled2 = cfg?.enabled === true;
+  const snapshotInterval = typeof cfg?.snapshotInterval === "number" ? cfg.snapshotInterval : DEFAULT_SNAPSHOT_INTERVAL;
+  const contractIDs = cfg?.contractIDs && cfg.contractIDs.length > 0 ? new Set(cfg.contractIDs) : null;
+  const redactions = cfg?.redactions ?? [];
+  const diff = cfg?.diff ?? defaultDiff;
+  const applyPatch = cfg?.applyPatch ?? defaultApplyPatch;
+  return { enabled: enabled2, snapshotInterval, contractIDs, redactions, diff, applyPatch };
+}
+function indexOfLastSnapshot(entries) {
+  for (let i2 = entries.length - 1; i2 >= 0; i2--) {
+    if (entries[i2].kind === "snapshot")
+      return i2;
+  }
+  return -1;
+}
+function appendAndTrim(entries, entry, snapshotInterval, postSnapshotState) {
+  entries = entries.slice();
+  entries.push(entry);
+  if (postSnapshotState && postSnapshotState.state !== void 0 && entry.kind === "patch") {
+    const lastSnapIdx = indexOfLastSnapshot(entries);
+    const patchesSinceSnap = entries.length - 1 - lastSnapIdx;
+    if (patchesSinceSnap >= snapshotInterval) {
+      const snap = /* @__PURE__ */ Object.create(null);
+      snap.kind = "snapshot";
+      snap.hash = entry.hash;
+      snap.height = entry.height;
+      snap.opType = entry.opType;
+      snap.description = entry.description;
+      snap.state = postSnapshotState.state;
+      if (entry.kind === "patch" && entry.error !== void 0) {
+        snap.error = entry.error;
+      }
+      entries.push(snap);
+    }
+  }
+  if (entries.length > 2 * snapshotInterval) {
+    const lastSnapIdx = indexOfLastSnapshot(entries);
+    if (lastSnapIdx > 0) {
+      entries.splice(0, lastSnapIdx);
+    }
+  }
+  return entries;
+}
+function logJournalError(label, e2) {
+  console.warn(`[chelonia][journal] ${label}:`, e2);
+}
+function normalizeProcessingError(e2) {
+  if (e2 !== null && typeof e2 === "object") {
+    const obj = e2;
+    const rawName = obj.name;
+    const rawMessage = obj.message;
+    let name;
+    if (typeof rawName === "string") {
+      name = rawName;
+    } else if (rawName === void 0) {
+      name = e2 instanceof Error ? "Error" : e2.constructor?.name ?? "Object";
+    } else {
+      try {
+        name = String(rawName);
+      } catch {
+        name = "Error";
+      }
+    }
+    let message2;
+    if (typeof rawMessage === "string") {
+      message2 = rawMessage;
+    } else if (rawMessage === void 0) {
+      message2 = "";
+    } else {
+      try {
+        message2 = String(rawMessage);
+      } catch {
+        message2 = "";
+      }
+    }
+    return { name, message: message2 };
+  }
+  let message;
+  try {
+    message = String(e2);
+  } catch {
+    message = "";
+  }
+  return { name: typeof e2, message };
+}
+var journal_default = esm_default("sbp/selectors/register", {
+  // Internal: record a single event in the contract's journal. Called from
+  // `handleEvent.applyProcessResult`. MUST NOT throw — failures here are
+  // debug-only and must never break event processing.
+  "chelonia/private/journal/recordEvent": function(contractID, message, beforeState, afterState, processingErrored, processingError) {
+    try {
+      const cfg = resolveJournalConfig(this.config.journal);
+      if (!cfg.enabled)
+        return;
+      if (cfg.contractIDs && !cfg.contractIDs.has(contractID))
+        return;
+      const rootState = esm_default(this.config.stateSelector);
+      if (!rootState || !rootState.contracts || !rootState.contracts[contractID]) {
+        console.debug(`[chelonia][journal] skipping recordEvent for ${contractID}: no contracts bookkeeping entry`);
+        return;
+      }
+      const hash3 = message.hash();
+      const height = message.height();
+      const opType = String(message.opType());
+      let description;
+      try {
+        description = message.description();
+      } catch {
+      }
+      const contractMeta = rootState.contracts[contractID];
+      const contractName = contractMeta.type ?? "";
+      const existing = contractMeta._journal?.entries;
+      const lastEntry = existing && existing.length > 0 ? existing[existing.length - 1] : void 0;
+      if (lastEntry !== void 0 && lastEntry.hash === hash3 && height === lastEntry.height) {
+        return;
+      }
+      const isBackwards = lastEntry !== void 0 && height < lastEntry.height;
+      const isForwardGap = lastEntry !== void 0 && height > lastEntry.height + 1;
+      const isResync = isBackwards || isForwardGap;
+      const isFirstOrResync = !existing || existing.length === 0 || isResync;
+      const willEmitEmptyPatch = !isFirstOrResync && processingErrored;
+      let redactedBefore;
+      let redactedAfter;
+      if (!willEmitEmptyPatch && !isFirstOrResync) {
+        try {
+          redactedBefore = beforeState === void 0 ? void 0 : applyRedactions(beforeState, cfg.redactions, contractName);
+        } catch (e2) {
+          logJournalError("redaction (before) failed", e2);
+          redactedBefore = void 0;
+        }
+      }
+      try {
+        redactedAfter = afterState === void 0 ? null : applyRedactions(afterState, cfg.redactions, contractName);
+      } catch (e2) {
+        logJournalError("redaction (after) failed", e2);
+        redactedAfter = null;
+      }
+      let nextEntries;
+      if (isFirstOrResync) {
+        const snap = /* @__PURE__ */ Object.create(null);
+        snap.kind = "snapshot";
+        snap.hash = hash3;
+        snap.height = height;
+        snap.opType = opType;
+        snap.description = description;
+        snap.state = redactedAfter;
+        if (processingErrored && processingError != null) {
+          snap.error = normalizeProcessingError(processingError);
+        }
+        nextEntries = [snap];
+      } else {
+        let patch;
+        if (processingErrored) {
+          patch = [];
+        } else {
+          try {
+            patch = cfg.diff(redactedBefore, redactedAfter);
+          } catch (e2) {
+            logJournalError("diff failed", e2);
+            patch = [];
+          }
+        }
+        const entry = /* @__PURE__ */ Object.create(null);
+        entry.kind = "patch";
+        entry.hash = hash3;
+        entry.height = height;
+        entry.opType = opType;
+        entry.description = description;
+        entry.patch = patch;
+        if (processingErrored && processingError != null) {
+          entry.error = normalizeProcessingError(processingError);
+        }
+        nextEntries = appendAndTrim(existing, entry, cfg.snapshotInterval, { state: redactedAfter });
+      }
+      const wrapper3 = /* @__PURE__ */ Object.create(null);
+      wrapper3.entries = nextEntries;
+      this.config.reactiveSet(contractMeta, "_journal", wrapper3);
+    } catch (e2) {
+      logJournalError("recordEvent unexpected error", e2);
+    }
+  },
+  // Public: return a deep clone of the journal for a contract, or undefined
+  // if no journal exists.
+  "chelonia/journal/get": function(contractID) {
+    const rootState = esm_default(this.config.stateSelector);
+    const j = rootState?.contracts?.[contractID]?._journal;
+    if (!j)
+      return void 0;
+    return cloneValue(j);
+  },
+  // Public: rebuild the redacted contract state at the journal's HEAD by
+  // walking from the most recent snapshot and applying subsequent patches.
+  // Returns `undefined` if no journal exists (or the journal exists but is
+  // empty / has no snapshot to seed from). Throws `ChelErrorJournalCorrupt`
+  // if a recorded patch fails to apply: this is a debugging tool and a
+  // self-check, so a loud failure is preferable to silently returning
+  // `undefined` (which would be indistinguishable from "no journal"). The
+  // thrown error's `cause` is the underlying applier error and its
+  // `entryIndex` property points at the offending entry for inspection.
+  "chelonia/journal/reconstruct": function(contractID) {
+    const cfg = resolveJournalConfig(this.config.journal);
+    const rootState = esm_default(this.config.stateSelector);
+    const entries = rootState?.contracts?.[contractID]?._journal?.entries;
+    if (!entries || entries.length === 0)
+      return void 0;
+    const startIdx = indexOfLastSnapshot(entries);
+    if (startIdx < 0)
+      return void 0;
+    const snap = entries[startIdx];
+    let state = snap.state;
+    for (let i2 = startIdx + 1; i2 < entries.length; i2++) {
+      const e2 = entries[i2];
+      if (e2.kind !== "patch")
+        continue;
+      try {
+        state = cfg.applyPatch(state, e2.patch);
+      } catch (err) {
+        logJournalError(`reconstruct failed at entry ${i2}`, err);
+        const corruptErr = new ChelErrorJournalCorrupt(`journal reconstruct failed for contract ${contractID} at entry ${i2}: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
+        corruptErr.entryIndex = i2;
+        corruptErr.contractID = contractID;
+        throw corruptErr;
+      }
+    }
+    return state;
+  },
+  // Public: clear the journal for one contract, or all if `contractID` is
+  // omitted. Returns the number of journals cleared.
+  "chelonia/journal/clear": function(contractID) {
+    const rootState = esm_default(this.config.stateSelector);
+    if (!rootState?.contracts)
+      return 0;
+    if (contractID) {
+      const meta = rootState.contracts[contractID];
+      if (meta?._journal) {
+        this.config.reactiveDel(meta, "_journal");
+        return 1;
+      }
+      return 0;
+    }
+    let count = 0;
+    for (const id of Object.keys(rootState.contracts)) {
+      const meta = rootState.contracts[id];
+      if (meta?._journal) {
+        this.config.reactiveDel(meta, "_journal");
+        count++;
+      }
+    }
+    return count;
+  }
+});
 init_encryptedData();
 var m = /;\s*boundary=(?:"([0-9a-zA-Z'()+_,\-./:=? ]{0,69}[0-9a-zA-Z'()+_,\-./:=?])"|([0-9a-zA-Z'+_\-.]{0,69}[0-9a-zA-Z'+_\-.]))/;
 var M = (a) => new ReadableStream({ pull(r) {
@@ -66190,6 +66744,7 @@ var internals_default = esm_default("sbp/selectors/register", {
     const state = esm_default(this.config.stateSelector);
     const { preHandleEvent, postHandleEvent, handleEventError } = this.config.hooks;
     let processingErrored = false;
+    let processingError = null;
     let message;
     try {
       if (!this.config.acceptAllMessages && !this.pending.some((entry) => entry?.contractID === contractID) && !this.subscriptionSet.has(contractID)) {
@@ -66236,6 +66791,8 @@ var internals_default = esm_default("sbp/selectors/register", {
           throw e2;
         }
         processingErrored = e2?.name !== "ChelErrorWarning";
+        if (processingErrored)
+          processingError = e_;
         this.config.hooks.processError?.(e2, message, getMsgMeta.call(this, message, contractID, contractStateCopy));
         if (e2.name === "ChelErrorUnrecoverable" || e2.name === "ChelErrorForkedChain" || message.isFirstMessage()) {
           throw e2;
@@ -66263,6 +66820,7 @@ var internals_default = esm_default("sbp/selectors/register", {
           state: state2,
           contractState: contractStateCopy,
           processingErrored,
+          processingError,
           postHandleEvent
         });
       } catch (e_) {
@@ -66400,10 +66958,11 @@ var handleEvent = {
       }
     });
   },
-  async applyProcessResult({ message, state, contractState, processingErrored, postHandleEvent }) {
+  async applyProcessResult({ message, state, contractState, processingErrored, processingError, postHandleEvent }) {
     const contractID = message.contractID();
     const hash3 = message.hash();
     const height = message.height();
+    const beforeContractState = state[contractID];
     await esm_default("chelonia/db/addEntry", message);
     if (!processingErrored) {
       this.config.reactiveSet(state, contractID, contractState);
@@ -66453,6 +67012,7 @@ var handleEvent = {
         removed: []
       });
     }
+    esm_default("chelonia/private/journal/recordEvent", contractID, message, beforeContractState, processingErrored ? beforeContractState : contractState, processingErrored, processingError ?? null);
     if (!processingErrored) {
       esm_default("okTurtles.events/emit", hash3, contractID, message);
       esm_default("okTurtles.events/emit", EVENT_HANDLED, contractID, message);
@@ -66631,6 +67191,21 @@ var chelonia_default = esm_default("sbp/selectors/register", {
         pubsubError: null
         // (e:Error, socket: Socket)
       },
+      // Per-contract journal of state changes. See `src/journal.ts`.
+      // Opt-in by default: enabling it imposes per-event CPU (deep clones
+      // + diff) and persisted-state cost (up to ~2X entries plus full
+      // snapshots) on every active contract. Consumers turn it on via
+      // `chelonia/configure`. Function fields (`redactions[*].redact`,
+      // `diff`, `applyPatch`) are intentionally left unset here so they
+      // survive `merge()` (which deep-clones via JSON and would otherwise
+      // strip them); `chelonia/configure` reattaches them in a dedicated
+      // pass.
+      journal: {
+        enabled: false,
+        snapshotInterval: DEFAULT_SNAPSHOT_INTERVAL,
+        contractIDs: [],
+        redactions: []
+      },
       unwrapMaybeEncryptedData
     };
     this._instance = /* @__PURE__ */ Object.create(null);
@@ -66683,16 +67258,110 @@ var chelonia_default = esm_default("sbp/selectors/register", {
     rootState.secretKeys = rootState.secretKeys || /* @__PURE__ */ Object.create(null);
   },
   "chelonia/config": function() {
-    return {
+    const out = {
       ...cloneDeep(this.config),
       fetch: this.config.fetch,
       reactiveSet: this.config.reactiveSet,
       reactiveDel: this.config.reactiveDel
     };
+    if (this.config.journal) {
+      out.journal = {
+        ...out.journal,
+        // Deep-copy each redaction entry: `.slice()` alone shares the
+        // `{ path, redact }` objects with the live config, so a caller
+        // could mutate the live redaction path via the returned snapshot.
+        // The `redact` function is intentionally shared by reference
+        // (functions can't be cloned).
+        redactions: this.config.journal.redactions?.map((r) => ({
+          path: r.path,
+          redact: r.redact
+        })),
+        diff: this.config.journal.diff,
+        applyPatch: this.config.journal.applyPatch
+      };
+    }
+    return out;
   },
   "chelonia/configure": async function(config2) {
-    merge2(this.config, config2);
+    const hasJournalKey = config2 !== null && typeof config2 === "object" && Object.prototype.hasOwnProperty.call(config2, "journal");
+    const journalOverride = hasJournalKey ? config2.journal : void 0;
+    let configForMerge = config2;
+    if (hasJournalKey) {
+      configForMerge = { ...config2 };
+      delete configForMerge.journal;
+    }
+    merge2(this.config, configForMerge);
     Object.assign(this.config.hooks, config2.hooks || {});
+    if (journalOverride === null) {
+      this.config.journal = {
+        enabled: false,
+        snapshotInterval: DEFAULT_SNAPSHOT_INTERVAL,
+        contractIDs: [],
+        redactions: []
+      };
+      esm_default("chelonia/journal/clear");
+    } else if (journalOverride !== void 0) {
+      const rejectNull = (name) => {
+        if (has(journalOverride, name) && journalOverride[name] === null) {
+          throw new TypeError(`[chelonia][journal] config.journal.${name} cannot be null; omit the field to leave it alone, or pass \`journal: null\` to reset the whole block to disabled defaults`);
+        }
+      };
+      rejectNull("enabled");
+      rejectNull("snapshotInterval");
+      rejectNull("contractIDs");
+      rejectNull("redactions");
+      rejectNull("diff");
+      rejectNull("applyPatch");
+      if (!this.config.journal) {
+        this.config.journal = {
+          enabled: false,
+          snapshotInterval: DEFAULT_SNAPSHOT_INTERVAL,
+          contractIDs: [],
+          redactions: []
+        };
+      }
+      const target = this.config.journal;
+      if (journalOverride.enabled !== void 0) {
+        if (typeof journalOverride.enabled !== "boolean") {
+          throw new TypeError(`[chelonia][journal] config.journal.enabled must be a boolean; got ${typeof journalOverride.enabled}`);
+        }
+        target.enabled = journalOverride.enabled;
+      }
+      if (journalOverride.snapshotInterval !== void 0) {
+        const si = journalOverride.snapshotInterval;
+        target.snapshotInterval = Number.isInteger(si) && si > 0 ? si : DEFAULT_SNAPSHOT_INTERVAL;
+        if (target.snapshotInterval !== si) {
+          console.warn(`[chelonia][journal] invalid snapshotInterval ${String(si)}; falling back to ${DEFAULT_SNAPSHOT_INTERVAL}`);
+        }
+      }
+      if (journalOverride.contractIDs !== void 0) {
+        if (!Array.isArray(journalOverride.contractIDs)) {
+          throw new TypeError(`[chelonia][journal] config.journal.contractIDs must be an array; got ${typeof journalOverride.contractIDs}`);
+        }
+        target.contractIDs = journalOverride.contractIDs.slice();
+      }
+      if (journalOverride.redactions !== void 0) {
+        if (!Array.isArray(journalOverride.redactions)) {
+          throw new TypeError(`[chelonia][journal] config.journal.redactions must be an array; got ${typeof journalOverride.redactions}`);
+        }
+        target.redactions = journalOverride.redactions.map((r) => ({
+          path: r.path,
+          redact: r.redact
+        }));
+      }
+      if (journalOverride.diff !== void 0) {
+        if (typeof journalOverride.diff !== "function") {
+          throw new TypeError(`[chelonia][journal] config.journal.diff must be a function; got ${typeof journalOverride.diff}`);
+        }
+        target.diff = journalOverride.diff;
+      }
+      if (journalOverride.applyPatch !== void 0) {
+        if (typeof journalOverride.applyPatch !== "function") {
+          throw new TypeError(`[chelonia][journal] config.journal.applyPatch must be a function; got ${typeof journalOverride.applyPatch}`);
+        }
+        target.applyPatch = journalOverride.applyPatch;
+      }
+    }
     if (config2.contracts) {
       Object.assign(this.config.contracts.defaults, config2.contracts.defaults || {});
       const manifests = this.config.contracts.manifests;
@@ -67389,6 +68058,33 @@ var chelonia_default = esm_default("sbp/selectors/register", {
       data: keyIds,
       signingKeyId: findSuitableSecretKeyId(contractState, [SPMessage.OP_KEY_DEL], ["sig"])
     });
+  },
+  // Helper function to deserialize an `SPMessage` from a raw string. This
+  // function invokes `SPMessage.deserialize` with the correct internal
+  // state, serving as a useful primitive for applications that require low-level
+  // access to an `SPMessage`, whether for debugging or other purposes.
+  // This selector differs from `chelonia/in/processMessage` in that this one
+  // returns the SPMessage (or message head, depending on options), while
+  // `chelonia/in/processMessage` takes in a state parameter and applies the
+  // message to the state.
+  // If one starts with a raw string with a message, `spm`, the following are
+  // roughly equivalent:
+  //    const state1 = sbp('chelonia/in/processMessage', spm, state)
+  //    const state2 = sbp('chelonia/in/processMessage',
+  //      sbp('chelonia/in/deserializeMessage', spm, { state }),
+  //      state
+  //    )
+  // The main difference is that calling `processMessage` directly will use a
+  // cloned copy of the state in the deserialization step, while manually
+  // deserializing a message will not perform any cloning. However, since
+  // calling `SPMessage.deserialize` should not mutate the state argument,
+  // the observable behaviour should be the same.
+  "chelonia/in/deserializeMessage": function(rawMessage, options2 = {}) {
+    if (options2.headOnly) {
+      return SPMessage.deserializeHEAD(rawMessage);
+    } else {
+      return SPMessage.deserialize(rawMessage, this.transientSecretKeys, options2.state, this.config.unwrapMaybeEncryptedData);
+    }
   },
   "chelonia/in/processMessage": function(messageOrRawMessage, state) {
     const stateCopy = cloneDeep(state);
@@ -76236,7 +76932,7 @@ var module12 = {
   }
 };
 function version2() {
-  console.log("3.3.1");
+  console.log("3.3.2");
 }
 var module13 = {
   command: "version",
@@ -80382,7 +81078,7 @@ var parseArgs = () => {
   const commandModules = Object.values(commands_exports).map(
     (c) => handlerWrapper(c)
   );
-  const yargsInstance = yargs_default(hideBin(process12.argv)).version("3.3.1").strict().command(commandModules).demandCommand().help();
+  const yargsInstance = yargs_default(hideBin(process12.argv)).version("3.3.2").strict().command(commandModules).demandCommand().help();
   return yargsInstance;
 };
 var parseArgs_default = parseArgs;
