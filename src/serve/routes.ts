@@ -986,9 +986,14 @@ export function registerRoutes (app: Hono): void {
         await sbp('backend/server/updateSize', contractID, payloadBuffer.byteLength - existingSize)
         await appendToIndexFactory(`_private_kvIdx_${contractID}`)(key)
         // No await on broadcast for faster responses
-        sbp('backend/server/broadcastKV', contractID, key, payloadBuffer.toString()).catch((e: Error) => console.error(e, 'Error broadcasting KV update', contractID, key))
+        const payloadString = payloadBuffer.toString()
+        sbp('backend/server/broadcastKV', contractID, key, payloadString).catch((e: Error) => console.error(e, 'Error broadcasting KV update', contractID, key))
+        const newCID = createCID(payloadString, multicodes.RAW)
 
-        return c.body(null, 204)
+        return c.body(null, 204, {
+          'ETag': `"${newCID}"`,
+          'x-cid': `"${newCID}"`
+        })
       })
     })
 
