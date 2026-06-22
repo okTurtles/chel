@@ -1,5 +1,6 @@
 // deno-lint-ignore-file no-this-alias
 /* eslint-disable @typescript-eslint/no-this-alias */
+import { Buffer } from 'node:buffer'
 import { SPMessage } from 'npm:@chelonia/lib/SPMessage'
 import 'npm:@chelonia/lib/chelonia'
 import { multicodes, parseCID } from 'npm:@chelonia/lib/functions'
@@ -225,7 +226,10 @@ function installServerSelectorsOnce (): void {
       if (!rawManifest) { if (skipIfDeleted) return; throw new BackendErrorNotFound() }
 
       try {
-        const manifest = JSON.parse(rawManifest)
+        const manifestText = typeof rawManifest === 'string'
+          ? rawManifest
+          : Buffer.from(rawManifest).toString()
+        const manifest = JSON.parse(manifestText)
         if (!manifest || typeof manifest !== 'object') throw new BackendErrorBadData('manifest format is invalid')
         if (manifest.version !== '1.0.0') throw new BackendErrorBadData('unsupported manifest version')
         if (!Array.isArray(manifest.chunks) || !manifest.chunks.length) throw new BackendErrorBadData('missing chunks')

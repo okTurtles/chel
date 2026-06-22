@@ -672,10 +672,11 @@ export function registerRoutes (app: Hono): void {
         if (!manifestFile) throw new HTTPException(400, { message: 'missing manifest' })
         if (manifestFile.name !== 'manifest.json') throw new HTTPException(400, { message: 'wrong manifest filename' })
         const manifestPayload = new Uint8Array(await manifestFile.arrayBuffer())
+        const manifestText = Buffer.from(manifestPayload).toString()
 
         const manifest = (() => {
           try {
-            return JSON.parse(Buffer.from(manifestPayload).toString())
+            return JSON.parse(manifestText)
           } catch {
             throw new HTTPException(422, { message: 'Error parsing manifest' })
           }
@@ -745,8 +746,8 @@ export function registerRoutes (app: Hono): void {
           }
         }))
         // Now, store all chunks and the manifest
-        await Promise.all(chunks.map(([cid, data]) => sbp('chelonia.db/set', cid, data)))
-        await sbp('chelonia.db/set', manifestHash, manifestPayload)
+        await Promise.all(chunks.map(([cid, data]) => sbp('chelonia.db/set', cid, Buffer.from(data))))
+        await sbp('chelonia.db/set', manifestHash, manifestText)
         // Store attribution information
         await sbp('backend/server/saveOwner', credentials.billableContractID, manifestHash)
         // Store size information

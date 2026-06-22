@@ -4099,6 +4099,7 @@ import { copyFile, mkdir as mkdir3, readFile as readFile3, writeFile as writeFil
 import { basename as basename42, dirname as dirname42, join as join62 } from "node:path";
 import process4 from "node:process";
 import process10 from "node:process";
+import { Buffer as Buffer16 } from "node:buffer";
 import { createServer as createServerHTTP } from "node:http";
 import { Http2ServerRequest as Http2ServerRequest2, constants as h2constants } from "node:http2";
 import { Http2ServerRequest } from "node:http2";
@@ -74782,9 +74783,10 @@ function registerRoutes(app) {
         if (!manifestFile) throw new HTTPException(400, { message: "missing manifest" });
         if (manifestFile.name !== "manifest.json") throw new HTTPException(400, { message: "wrong manifest filename" });
         const manifestPayload = new Uint8Array(await manifestFile.arrayBuffer());
+        const manifestText = Buffer14.from(manifestPayload).toString();
         const manifest2 = (() => {
           try {
-            return JSON.parse(Buffer14.from(manifestPayload).toString());
+            return JSON.parse(manifestText);
           } catch {
             throw new HTTPException(422, { message: "Error parsing manifest" });
           }
@@ -74829,8 +74831,8 @@ function registerRoutes(app) {
             throw new Error(`Chunk ${cid} already exists`);
           }
         }));
-        await Promise.all(chunks.map(([cid, data]) => esm_default("chelonia.db/set", cid, data)));
-        await esm_default("chelonia.db/set", manifestHash, manifestPayload);
+        await Promise.all(chunks.map(([cid, data]) => esm_default("chelonia.db/set", cid, Buffer14.from(data))));
+        await esm_default("chelonia.db/set", manifestHash, manifestText);
         await esm_default("backend/server/saveOwner", credentials.billableContractID, manifestHash);
         const size = manifest2.size + manifestPayload.byteLength;
         await esm_default("backend/server/updateSize", manifestHash, size);
@@ -75933,7 +75935,8 @@ function installServerSelectorsOnce() {
         throw new BackendErrorNotFound();
       }
       try {
-        const manifest2 = JSON.parse(rawManifest);
+        const manifestText = typeof rawManifest === "string" ? rawManifest : Buffer16.from(rawManifest).toString();
+        const manifest2 = JSON.parse(manifestText);
         if (!manifest2 || typeof manifest2 !== "object") throw new BackendErrorBadData("manifest format is invalid");
         if (manifest2.version !== "1.0.0") throw new BackendErrorBadData("unsupported manifest version");
         if (!Array.isArray(manifest2.chunks) || !manifest2.chunks.length) throw new BackendErrorBadData("missing chunks");

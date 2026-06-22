@@ -210,6 +210,37 @@ Deno.test({
         if (getRes.status !== 410) throw new Error(`Expected 410 after deletion but got ${getRes.status}`)
       })
 
+      await t.step('POST /deleteFile deletes legacy byte manifest', async () => {
+        const chunkData = 'legacy-chunk-to-delete'
+        const chunkHash = createCID(chunkData, multicodes.SHELTER_FILE_CHUNK)
+        await sbp('chelonia.db/set', chunkHash, chunkData)
+
+        const manifestData = JSON.stringify({
+          version: '1.0.0',
+          cipher: 'aes256gcm',
+          size: chunkData.length,
+          chunks: [[chunkData.length, chunkHash]]
+        })
+        const manifestBytes = new TextEncoder().encode(manifestData)
+        const manifestHash = createCID(manifestBytes, multicodes.SHELTER_FILE_MANIFEST)
+        await sbp('chelonia.db/set', manifestHash, manifestBytes)
+        await sbp('chelonia.db/set', `_private_owner_${manifestHash}`, owner.contractID)
+        await sbp('chelonia.db/set', `_private_size_${manifestHash}`, String(chunkData.length + manifestBytes.byteLength))
+
+        const auth = buildShelterAuthHeader(owner.contractID, owner.SAK)
+        const res = await fetch(`${baseURL}/deleteFile/${manifestHash}`, {
+          method: 'POST',
+          headers: { authorization: auth }
+        })
+        await res.body?.cancel()
+        if (res.status < 200 || res.status > 204) throw new Error(`Expected 2xx but got ${res.status}`)
+        if (await sbp('chelonia.db/get', chunkHash)) throw new Error('Expected legacy file chunk to be deleted')
+
+        const getRes = await fetch(`${baseURL}/file/${manifestHash}`)
+        await getRes.body?.cancel()
+        if (getRes.status !== 410) throw new Error(`Expected 410 after deletion but got ${getRes.status}`)
+      })
+
       await t.step('POST /deleteFile with bearer token deletes file', async () => {
         const chunkData2 = 'chunk-to-delete-bearer'
         const chunkHash2 = createCID(chunkData2, multicodes.SHELTER_FILE_CHUNK)
@@ -468,6 +499,41 @@ Deno.test({
         const getRes = await fetch(`${baseURL}/file/${manifestHash}`)
         if (getRes.status !== 200) throw new Error(`GET file failed: ${getRes.status}`)
         await getRes.body?.cancel()
+      })
+
+      await t.step('POST /file uploaded file can be deleted', async () => {
+        const auth = buildShelterAuthHeader(owner.contractID, owner.SAK)
+        const chunkContent = new Uint8Array([68, 101, 108, 101, 116, 101])
+        const chunkHash = createCID(chunkContent, multicodes.SHELTER_FILE_CHUNK)
+        const manifest = JSON.stringify({
+          version: '1.0.0',
+          cipher: 'aes256gcm',
+          size: chunkContent.byteLength,
+          chunks: [[chunkContent.byteLength, chunkHash]]
+        })
+        const form = new FormData()
+        form.append('manifest', new Blob([manifest], { type: 'application/vnd.shelter.filemanifest' }), 'manifest.json')
+        form.append('0', new Blob([chunkContent], { type: 'application/octet-stream' }), '0')
+
+        const uploadRes = await fetch(`${baseURL}/file`, {
+          method: 'POST',
+          headers: { authorization: auth },
+          body: form
+        })
+        const manifestHash = await uploadRes.text()
+        if (uploadRes.status !== 200) throw new Error(`Expected 200 but got ${uploadRes.status}: ${manifestHash}`)
+
+        const deleteRes = await fetch(`${baseURL}/deleteFile/${manifestHash}`, {
+          method: 'POST',
+          headers: { authorization: auth }
+        })
+        await deleteRes.body?.cancel()
+        if (deleteRes.status < 200 || deleteRes.status > 204) throw new Error(`Expected 2xx but got ${deleteRes.status}`)
+        if (await sbp('chelonia.db/get', chunkHash)) throw new Error('Expected uploaded file chunk to be deleted')
+
+        const getRes = await fetch(`${baseURL}/file/${manifestHash}`)
+        await getRes.body?.cancel()
+        if (getRes.status !== 410) throw new Error(`Expected 410 after deletion but got ${getRes.status}`)
       })
 
       await t.step('POST /file rejects duplicate upload', async () => {
