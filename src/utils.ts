@@ -19,12 +19,33 @@ export async function createEntryFromFile (filepath: string, multicode: number):
 }
 
 export function exit (x: unknown, internal = false): never {
-  const msg = x instanceof Error ? x.message : String(x)
+  const msg = errorMessage(x)
 
   if (internal) throw new Error(msg)
 
   console.error('[chel]', colors.red('Error:'), msg)
   Deno.exit(1)
+}
+
+// Derives a non-empty message from any error value. AggregateError and other
+// errors with an empty `.message` (e.g. a failed `localhost` redis connection
+// that aggregates ECONNREFUSED from both ::1 and 127.0.0.1) are unwrapped so
+// the actual cause is surfaced instead of a blank string.
+function errorMessage (x: unknown): string {
+  if (x instanceof Error) {
+    if (x.message) return x.message
+    // AggregateError: join sub-errors' messages.
+    const agg = x as Error & { errors?: unknown[] }
+    if (Array.isArray(agg.errors) && agg.errors.length) {
+      const parts = agg.errors
+        .map((sub) => (sub instanceof Error ? sub.message : String(sub)))
+        .filter(Boolean)
+      if (parts.length) return parts.join('; ')
+    }
+    if (x.stack) return x.stack
+  }
+  const s = String(x)
+  return s === '' ? '(unknown error)' : s
 }
 
 export function getPathExtension (path: string): string {

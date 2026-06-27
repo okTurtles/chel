@@ -38368,11 +38368,11 @@ var require_token_manager = __commonJS({
         return this.currentToken;
       }
       notifyError(error2, isRetryable) {
-        const errorMessage = error2 instanceof Error ? error2.message : String(error2);
+        const errorMessage2 = error2 instanceof Error ? error2.message : String(error2);
         if (!this.listener) {
-          throw new Error(`TokenManager is not running but received an error: ${errorMessage}`);
+          throw new Error(`TokenManager is not running but received an error: ${errorMessage2}`);
         }
-        this.listener.onError(new IDPError(errorMessage, isRetryable));
+        this.listener.onError(new IDPError(errorMessage2, isRetryable));
       }
     };
     exports2.TokenManager = TokenManager;
@@ -40981,13 +40981,13 @@ var require_client = __commonJS({
         return cp.subscribe({
           onNext: (credentials) => {
             this.reAuthenticate(credentials).catch((error2) => {
-              const errorMessage = error2 instanceof Error ? error2.message : String(error2);
-              cp.onReAuthenticationError(new authx_1.CredentialsError(errorMessage));
+              const errorMessage2 = error2 instanceof Error ? error2.message : String(error2);
+              cp.onReAuthenticationError(new authx_1.CredentialsError(errorMessage2));
             });
           },
           onError: (e2) => {
-            const errorMessage = `Error from streaming credentials provider: ${e2.message}`;
-            cp.onReAuthenticationError(new authx_1.UnableToObtainNewCredentialsError(errorMessage));
+            const errorMessage2 = `Error from streaming credentials provider: ${e2.message}`;
+            cp.onReAuthenticationError(new authx_1.UnableToObtainNewCredentialsError(errorMessage2));
           }
         });
       }
@@ -50688,7 +50688,15 @@ var init_database_router = __esm({
           const [keyPrefix, { name, options: options2 }] = entry;
           const Ctor = (await globImport_database_ts(`./database-${name}.ts`)).default;
           const backend = new Ctor(options2);
-          await backend.init();
+          try {
+            await backend.init();
+          } catch (e2) {
+            if (e2 && typeof e2 === "object" && !("backendName" in e2)) {
+              ;
+              e2.backendName = name;
+            }
+            throw e2;
+          }
           this.backends[keyPrefix] = backend;
         }));
       }
@@ -69453,6 +69461,28 @@ var production = process2.env.NODE_ENV === "production";
 var currentBackend = null;
 var currentCache = null;
 var isClosing = false;
+function errorDetail(e2) {
+  if (e2 && typeof e2 === "object") {
+    const err = e2;
+    if (err.message) return err.message;
+    if (Array.isArray(err.errors) && err.errors.length) {
+      const details = err.errors.map(
+        (sub) => sub instanceof Error ? sub.message : typeof sub === "string" ? sub : String(sub)
+      ).filter(Boolean);
+      if (details.length) return details.join("; ");
+    }
+    if (err.code) return err.code;
+  }
+  return String(e2);
+}
+function wrapBackendInitError(backendName, e2) {
+  const subName = e2?.backendName;
+  const display = backendName === "router" && subName ? subName : backendName;
+  return new Error(
+    `chel is configured for the "${display}" database backend, but it failed to initialize: ${errorDetail(e2)}`,
+    { cause: e2 }
+  );
+}
 var baseSelectorsInstalled = false;
 function installBaseSelectorsOnce() {
   if (baseSelectorsInstalled) return;
@@ -69585,9 +69615,21 @@ var initDB = async ({ skipDbPreloading } = {}) => {
       const options2 = import_npm_nconf2.default.get("database:backendOptions");
       const ARCHIVE_MODE = import_npm_nconf2.default.get("server:archiveMode");
       if (persistence && persistence !== "mem") {
-        const Ctor = (await globImport_database_ts2(`./database-${persistence}.ts`)).default;
+        let Ctor;
+        try {
+          Ctor = (await globImport_database_ts2(`./database-${persistence}.ts`)).default;
+        } catch (e2) {
+          throw new Error(
+            `chel is configured for the "${persistence}" database backend, but the backend module failed to load: ${e2.message || String(e2)}`,
+            { cause: e2 }
+          );
+        }
         const instance = new Ctor(options2[persistence]);
-        await instance.init();
+        try {
+          await instance.init();
+        } catch (e2) {
+          throw wrapBackendInitError(persistence, e2);
+        }
         currentBackend = instance;
         const cache2 = new import_npm_lru_cache.default({
           max: import_npm_nconf2.default.get("database:lruNumItems") ?? 1e4
@@ -69706,10 +69748,23 @@ async function createEntryFromFile(filepath, multicode) {
   return [key, buffer];
 }
 function exit(x3, internal = false) {
-  const msg = x3 instanceof Error ? x3.message : String(x3);
+  const msg = errorMessage(x3);
   if (internal) throw new Error(msg);
   console.error("[chel]", red("Error:"), msg);
   Deno.exit(1);
+}
+function errorMessage(x3) {
+  if (x3 instanceof Error) {
+    if (x3.message) return x3.message;
+    const agg = x3;
+    if (Array.isArray(agg.errors) && agg.errors.length) {
+      const parts = agg.errors.map((sub) => sub instanceof Error ? sub.message : String(sub)).filter(Boolean);
+      if (parts.length) return parts.join("; ");
+    }
+    if (x3.stack) return x3.stack;
+  }
+  const s = String(x3);
+  return s === "" ? "(unknown error)" : s;
 }
 function isValidKey(key) {
   return !/[\x00-\x1f\x7f\t\\/]/.test(key);
@@ -70702,8 +70757,8 @@ async function copyContractFiles(contractFiles, manifestPath, contractName, vers
     try {
       await copyFileIfNeeded(slimSource, slimTarget, contractFiles.slim, args);
     } catch (error2) {
-      const errorMessage = error2 instanceof Error ? error2.message : String(error2);
-      console.error(yellow(`\u26A0\uFE0F  Could not copy slim file: ${errorMessage}`));
+      const errorMessage2 = error2 instanceof Error ? error2.message : String(error2);
+      console.error(yellow(`\u26A0\uFE0F  Could not copy slim file: ${errorMessage2}`));
     }
   }
   const manifestSource = join62(projectRoot, manifestPath);
@@ -74189,6 +74244,9 @@ var etag = (options2) => {
 };
 var import_npm_pino = __toESM(require_pino());
 var prettyPrint = process6.env.NODE_ENV === "development" || process6.env.CI || process6.env.CYPRESS_RECORD_KEY || process6.env.PRETTY;
+function getLogLevel() {
+  return process6.env.LOG_LEVEL || (prettyPrint ? "debug" : "info");
+}
 function logMethod(args, method) {
   const stringIdx = typeof args[0] === "string" ? 0 : 1;
   if (args.length > 1) {
@@ -74198,26 +74256,8 @@ function logMethod(args, method) {
   }
   method.apply(this, args);
 }
-var logger;
-if (prettyPrint) {
-  try {
-    logger = (0, import_npm_pino.default)({
-      hooks: { logMethod },
-      transport: {
-        target: "pino-pretty",
-        options: {
-          colorize: true
-        }
-      }
-    });
-  } catch (e2) {
-    console.warn("pino-pretty transport unavailable, using basic logging", e2);
-    logger = (0, import_npm_pino.default)({ hooks: { logMethod } });
-  }
-} else {
-  logger = (0, import_npm_pino.default)({ hooks: { logMethod } });
-}
-var logLevel = process6.env.LOG_LEVEL || (prettyPrint ? "debug" : "info");
+var logger = (0, import_npm_pino.default)({ hooks: { logMethod } });
+var logLevel = getLogLevel();
 if (Object.keys(logger.levels.values).includes(logLevel)) {
   logger.level = logLevel;
 } else {
@@ -76297,7 +76337,6 @@ async function stopServer() {
     isStopping = false;
   }
 }
-console.info("NODE_ENV =", process10.env.NODE_ENV);
 var dontLog = {
   "backend/server/broadcastEntry": true,
   "backend/server/broadcastDeletion": true,
@@ -76361,6 +76400,9 @@ var exit2 = (code2) => {
 async function startServer2(options2 = {}) {
   const { installSignalHandlers: shouldInstallSignalHandlers = true } = options2;
   initializeLogger();
+  console.info(import_npm_chalk4.default.bold(
+    `Running in ${process10.env.NODE_ENV === "production" ? "production" : "development"} mode.`
+  ));
   if (shouldInstallSignalHandlers) {
     installGlobalExceptionHandlers();
     installSignalHandlers();
