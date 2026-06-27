@@ -947,6 +947,9 @@ export function registerRoutes (app: Hono): void {
           throw new HTTPException(400, { message: 'if-match is required' })
         }
         // "Quote" string (to match ETag format)
+        // ETag/x-cid consistency: `existing` was decoded to a UTF-8 string by
+        // @chelonia/lib's '' prefix handler on read, so hashing it here matches
+        // the ETag a GET computes for the same stored value.
         const cid = existing ? createCID(existing, multicodes.RAW) : ''
 
         if (expectedEtag === '*') {
@@ -988,6 +991,9 @@ export function registerRoutes (app: Hono): void {
         // No await on broadcast for faster responses
         const payloadString = payloadBuffer.toString()
         sbp('backend/server/broadcastKV', contractID, key, payloadString).catch((e: Error) => console.error(e, 'Error broadcasting KV update', contractID, key))
+        // ETag/x-cid consistency: hash the UTF-8 string form (what @chelonia/lib's
+        // '' prefix handler returns on every read), NOT the raw payloadBuffer, so
+        // this ETag equals the one a later GET computes from the stored value.
         const newCID = createCID(payloadString, multicodes.RAW)
 
         return c.body(null, 204, {
@@ -1018,6 +1024,9 @@ export function registerRoutes (app: Hono): void {
         return notFoundNoCache(c)
       }
 
+      // ETag/x-cid consistency: `result` is the stored value decoded to a UTF-8
+      // string by @chelonia/lib's '' prefix handler; the POST/412/409 paths hash
+      // the same string form so all ETags for a value match and if-match round-trips.
       const cid = createCID(result, multicodes.RAW)
       return c.body(result, 200, {
         'ETag': `"${cid}"`,

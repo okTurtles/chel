@@ -110,6 +110,18 @@ Deno.test({
         })
         await res.body?.cancel()
         if (res.status !== 204) throw new Error(`Expected 204 but got ${res.status}`)
+        const postEtag = res.headers.get('etag')
+        const postCid = res.headers.get('x-cid')
+        if (!postEtag) throw new Error('Expected ETag header on 204')
+        if (!postCid) throw new Error('Expected x-cid header on 204')
+        if (postEtag !== postCid) throw new Error('Expected x-cid to match ETag on 204')
+        // Round-trip: a subsequent GET must compute the same CID the POST returned.
+        const getRes = await fetch(`${baseURL}/kv/${owner.contractID}/testkey`, {
+          headers: { authorization: buildShelterAuthHeader(owner.contractID, owner.SAK) }
+        })
+        const getCid = getRes.headers.get('x-cid')
+        await getRes.body?.cancel()
+        if (getCid !== postCid) throw new Error('POST x-cid must match subsequent GET x-cid')
       })
 
       await t.step('GET /kv without auth returns 401', async () => {
@@ -186,6 +198,27 @@ Deno.test({
         })
         await res.body?.cancel()
         if (res.status !== 204) throw new Error(`Expected 204 but got ${res.status}`)
+        // The POST response must carry the new ETag/x-cid for the stored value.
+        const updatedCid = res.headers.get('x-cid')
+        const updatedEtag = res.headers.get('etag')
+        if (!updatedCid) throw new Error('Expected x-cid header from update')
+        if (!updatedEtag) throw new Error('Expected ETag header from update')
+        if (updatedEtag !== updatedCid) throw new Error('Expected x-cid to match ETag on update')
+        // Feed the POST-returned ETag straight back into the next if-match to
+        // prove the write-then-write workflow round-trips without a GET.
+        const auth3 = buildShelterAuthHeader(owner.contractID, owner.SAK)
+        const payload2 = buildSignedKvPayload(owner.contractID, 'testkey', 0, { again: 1 }, owner.SAK)
+        const res2 = await fetch(`${baseURL}/kv/${owner.contractID}/testkey`, {
+          method: 'POST',
+          headers: {
+            authorization: auth3,
+            'content-type': 'application/octet-stream',
+            'if-match': updatedCid
+          },
+          body: payload2
+        })
+        await res2.body?.cancel()
+        if (res2.status !== 204) throw new Error(`Expected 204 using POST-returned ETag but got ${res2.status}`)
       })
 
       await t.step('POST /kv with wrong height returns 409', async () => {

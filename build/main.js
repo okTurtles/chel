@@ -19424,6 +19424,71 @@ var init_esm4 = __esm({
     has = Function.prototype.call.bind(Object.prototype.hasOwnProperty);
   }
 });
+var ChelErrorGenerator;
+var ChelErrorWarning;
+var ChelErrorAlreadyProcessed;
+var ChelErrorDBBadPreviousHEAD;
+var ChelErrorDBConnection;
+var ChelErrorUnexpected;
+var ChelErrorKeyAlreadyExists;
+var ChelErrorUnrecoverable;
+var ChelErrorForkedChain;
+var ChelErrorDecryptionError;
+var ChelErrorDecryptionKeyNotFound;
+var ChelErrorSignatureError;
+var ChelErrorSignatureKeyUnauthorized;
+var ChelErrorSignatureKeyNotFound;
+var ChelErrorFetchServerTimeFailed;
+var ChelErrorUnexpectedHttpResponseCode;
+var ChelErrorResourceGone;
+var ChelErrorJournalCorrupt;
+var ChelErrorKvSlotUnknown;
+var ChelErrorKvSlotInvalid;
+var ChelErrorKvUpdateInvalid;
+var ChelErrorKvValidation;
+var ChelErrorKvConflict;
+var init_errors3 = __esm({
+  "node_modules/.deno/@chelonia+lib@1.4.3/node_modules/@chelonia/lib/dist/esm/errors.mjs"() {
+    ChelErrorGenerator = (name, base2 = Error) => class extends base2 {
+      constructor(...params) {
+        super(...params);
+        this.name = name;
+        if (params[1]?.cause !== this.cause) {
+          Object.defineProperty(this, "cause", {
+            configurable: true,
+            writable: true,
+            value: params[1]?.cause
+          });
+        }
+        if (Error.captureStackTrace) {
+          Error.captureStackTrace(this, this.constructor);
+        }
+      }
+    };
+    ChelErrorWarning = ChelErrorGenerator("ChelErrorWarning");
+    ChelErrorAlreadyProcessed = ChelErrorGenerator("ChelErrorAlreadyProcessed");
+    ChelErrorDBBadPreviousHEAD = ChelErrorGenerator("ChelErrorDBBadPreviousHEAD");
+    ChelErrorDBConnection = ChelErrorGenerator("ChelErrorDBConnection");
+    ChelErrorUnexpected = ChelErrorGenerator("ChelErrorUnexpected");
+    ChelErrorKeyAlreadyExists = ChelErrorGenerator("ChelErrorKeyAlreadyExists");
+    ChelErrorUnrecoverable = ChelErrorGenerator("ChelErrorUnrecoverable");
+    ChelErrorForkedChain = ChelErrorGenerator("ChelErrorForkedChain");
+    ChelErrorDecryptionError = ChelErrorGenerator("ChelErrorDecryptionError");
+    ChelErrorDecryptionKeyNotFound = ChelErrorGenerator("ChelErrorDecryptionKeyNotFound", ChelErrorDecryptionError);
+    ChelErrorSignatureError = ChelErrorGenerator("ChelErrorSignatureError");
+    ChelErrorSignatureKeyUnauthorized = ChelErrorGenerator("ChelErrorSignatureKeyUnauthorized", ChelErrorSignatureError);
+    ChelErrorSignatureKeyNotFound = ChelErrorGenerator("ChelErrorSignatureKeyNotFound", ChelErrorSignatureError);
+    ChelErrorFetchServerTimeFailed = ChelErrorGenerator("ChelErrorFetchServerTimeFailed");
+    ChelErrorUnexpectedHttpResponseCode = ChelErrorGenerator("ChelErrorUnexpectedHttpResponseCode");
+    ChelErrorResourceGone = ChelErrorGenerator("ChelErrorResourceGone", ChelErrorUnexpectedHttpResponseCode);
+    ChelErrorJournalCorrupt = ChelErrorGenerator("ChelErrorJournalCorrupt");
+    ChelErrorKvSlotUnknown = ChelErrorGenerator("ChelErrorKvSlotUnknown");
+    ChelErrorKvSlotInvalid = ChelErrorGenerator("ChelErrorKvSlotInvalid");
+    ChelErrorKvUpdateInvalid = ChelErrorGenerator("ChelErrorKvUpdateInvalid");
+    ChelErrorKvValidation = ChelErrorGenerator("ChelErrorKvValidation");
+    ChelErrorKvConflict = ChelErrorGenerator("ChelErrorKvConflict");
+  }
+});
 var init_esm5 = __esm({
   "node_modules/.deno/@chelonia+multiformats@1.0.0/node_modules/@chelonia/multiformats/dist/esm/index.mjs"() {
     init_base();
@@ -22517,59 +22582,6 @@ var init_esm6 = __esm({
       }
       throw new Error("Unsupported algorithm");
     };
-  }
-});
-var ChelErrorGenerator;
-var ChelErrorWarning;
-var ChelErrorAlreadyProcessed;
-var ChelErrorDBBadPreviousHEAD;
-var ChelErrorDBConnection;
-var ChelErrorUnexpected;
-var ChelErrorKeyAlreadyExists;
-var ChelErrorUnrecoverable;
-var ChelErrorForkedChain;
-var ChelErrorDecryptionError;
-var ChelErrorDecryptionKeyNotFound;
-var ChelErrorSignatureError;
-var ChelErrorSignatureKeyUnauthorized;
-var ChelErrorSignatureKeyNotFound;
-var ChelErrorFetchServerTimeFailed;
-var ChelErrorUnexpectedHttpResponseCode;
-var ChelErrorResourceGone;
-var init_errors3 = __esm({
-  "node_modules/.deno/@chelonia+lib@1.4.3/node_modules/@chelonia/lib/dist/esm/errors.mjs"() {
-    ChelErrorGenerator = (name, base2 = Error) => class extends base2 {
-      constructor(...params) {
-        super(...params);
-        this.name = name;
-        if (params[1]?.cause !== this.cause) {
-          Object.defineProperty(this, "cause", {
-            configurable: true,
-            writable: true,
-            value: params[1]?.cause
-          });
-        }
-        if (Error.captureStackTrace) {
-          Error.captureStackTrace(this, this.constructor);
-        }
-      }
-    };
-    ChelErrorWarning = ChelErrorGenerator("ChelErrorWarning");
-    ChelErrorAlreadyProcessed = ChelErrorGenerator("ChelErrorAlreadyProcessed");
-    ChelErrorDBBadPreviousHEAD = ChelErrorGenerator("ChelErrorDBBadPreviousHEAD");
-    ChelErrorDBConnection = ChelErrorGenerator("ChelErrorDBConnection");
-    ChelErrorUnexpected = ChelErrorGenerator("ChelErrorUnexpected");
-    ChelErrorKeyAlreadyExists = ChelErrorGenerator("ChelErrorKeyAlreadyExists");
-    ChelErrorUnrecoverable = ChelErrorGenerator("ChelErrorUnrecoverable");
-    ChelErrorForkedChain = ChelErrorGenerator("ChelErrorForkedChain");
-    ChelErrorDecryptionError = ChelErrorGenerator("ChelErrorDecryptionError");
-    ChelErrorDecryptionKeyNotFound = ChelErrorGenerator("ChelErrorDecryptionKeyNotFound", ChelErrorDecryptionError);
-    ChelErrorSignatureError = ChelErrorGenerator("ChelErrorSignatureError");
-    ChelErrorSignatureKeyUnauthorized = ChelErrorGenerator("ChelErrorSignatureKeyUnauthorized", ChelErrorSignatureError);
-    ChelErrorSignatureKeyNotFound = ChelErrorGenerator("ChelErrorSignatureKeyNotFound", ChelErrorSignatureError);
-    ChelErrorFetchServerTimeFailed = ChelErrorGenerator("ChelErrorFetchServerTimeFailed");
-    ChelErrorUnexpectedHttpResponseCode = ChelErrorGenerator("ChelErrorUnexpectedHttpResponseCode");
-    ChelErrorResourceGone = ChelErrorGenerator("ChelErrorResourceGone", ChelErrorUnexpectedHttpResponseCode);
   }
 });
 var serdesTagSymbol;
@@ -62670,8 +62682,8 @@ function createMessage(type, data, meta) {
   });
   return message;
 }
-function createKvMessage(channelID, key, data) {
-  return JSON.stringify({ type: NOTIFICATION_TYPE.KV, channelID, key, data });
+function createKvMessage(channelID, key, data, cid) {
+  return JSON.stringify({ type: NOTIFICATION_TYPE.KV, channelID, key, data, cid });
 }
 function createPubMessage(channelID, data) {
   return JSON.stringify({ type: NOTIFICATION_TYPE.PUB, channelID, data });
@@ -63106,8 +63118,68 @@ for (const name of Object.keys(defaultClientEventHandlers)) {
     });
   }
 }
+init_errors3();
+var REINGEST_PER_CONTRACT_CAP = 20;
+var trackers = /* @__PURE__ */ new Map();
+var ensure = (contractID) => {
+  let s = trackers.get(contractID);
+  if (!s) {
+    s = /* @__PURE__ */ new Set();
+    trackers.set(contractID, s);
+  }
+  return s;
+};
+var noteFutureEvent = (contractID, hash3, height) => {
+  const s = ensure(contractID);
+  for (const entry of s) {
+    if (entry.hash === hash3)
+      return "duplicate";
+  }
+  if (s.size >= REINGEST_PER_CONTRACT_CAP) {
+    throw new ChelErrorUnrecoverable(`more than ${REINGEST_PER_CONTRACT_CAP} different bad previousHEAD errors for contract ${contractID}`);
+  }
+  s.add({ hash: hash3, height });
+  return "added";
+};
+var noteReingestSuccess = (contractID, hash3) => {
+  const s = trackers.get(contractID);
+  if (!s)
+    return false;
+  for (const entry of s) {
+    if (entry.hash === hash3) {
+      s.delete(entry);
+      if (s.size === 0)
+        trackers.delete(contractID);
+      return true;
+    }
+  }
+  return false;
+};
+var pruneStaleEntries = (contractID, processedHeight) => {
+  const s = trackers.get(contractID);
+  if (!s)
+    return 0;
+  let pruned = 0;
+  for (const entry of s) {
+    if (entry.height <= processedHeight) {
+      s.delete(entry);
+      pruned++;
+    }
+  }
+  if (s.size === 0)
+    trackers.delete(contractID);
+  return pruned;
+};
+var clearReingestTrackerForContract = (contractID) => {
+  trackers.delete(contractID);
+};
+var clearReingestTrackerAll = () => {
+  trackers.clear();
+};
 init_esm6();
 init_errors3();
+init_errors3();
+var ChelErrorKvMaxAttempts = ChelErrorGenerator("ChelErrorKvMaxAttempts");
 var CHELONIA_RESET = "chelonia-reset";
 var CONTRACT_IS_SYNCING = "contract-is-syncing";
 var CONTRACTS_MODIFIED = "contracts-modified";
@@ -63130,15 +63202,569 @@ var chelonia_utils_default = esm_default("sbp/selectors/register", {
   // `chelonia/kv/set`. However, the `chelonia/kv/set` primitive is needed if
   // the queueing logic needs to be more advanced, the key to use requires
   // custom logic or _if the `onconflict` callback also needs to be queued_.
-  "chelonia/kv/queuedSet": ({ contractID, key, data, onconflict, ifMatch, encryptionKeyName = "cek", signingKeyName = "csk" }) => {
+  "chelonia/kv/queuedSet": ({ contractID, key, data, onconflict, ifMatch, maxAttempts, signal, encryptionKeyName = "cek", signingKeyName = "csk" }) => {
     return esm_default("chelonia/queueInvocation", contractID, () => {
       return esm_default("chelonia/kv/set", contractID, key, data, {
         ifMatch,
         encryptionKeyId: esm_default("chelonia/contract/currentKeyIdByName", contractID, encryptionKeyName),
         signingKeyId: esm_default("chelonia/contract/currentKeyIdByName", contractID, signingKeyName),
-        onconflict
+        onconflict,
+        maxAttempts,
+        signal
       });
     });
+  }
+});
+init_functions();
+init_esm();
+init_esm4();
+init_errors3();
+function escapePointerSegment(segment) {
+  return segment.replace(/~/g, "~0").replace(/\//g, "~1");
+}
+function unescapePointerSegment(segment) {
+  return segment.replace(/~1/g, "/").replace(/~0/g, "~");
+}
+function segmentsToPointer(segments) {
+  if (segments.length === 0)
+    return "";
+  return "/" + segments.map(escapePointerSegment).join("/");
+}
+function pointerToSegments(pointer) {
+  if (pointer === "")
+    return [];
+  if (pointer[0] !== "/") {
+    throw new Error(`Invalid JSON Pointer: ${pointer}`);
+  }
+  return pointer.slice(1).split("/").map(unescapePointerSegment);
+}
+function parseDottedPath(path8) {
+  if (path8 === "")
+    return [];
+  return path8.split(".");
+}
+function isPlainObject2(v2) {
+  if (v2 === null || typeof v2 !== "object")
+    return false;
+  if (Array.isArray(v2))
+    return false;
+  const proto3 = Object.getPrototypeOf(v2);
+  return proto3 === Object.prototype || proto3 === null;
+}
+function cloneValue(v2) {
+  if (v2 === null || typeof v2 !== "object")
+    return v2;
+  if (Array.isArray(v2))
+    return v2.map(cloneValue);
+  if (isPlainObject2(v2)) {
+    const out = Object.create(Object.getPrototypeOf(v2));
+    for (const k of Object.keys(v2)) {
+      Object.defineProperty(out, k, {
+        value: cloneValue(v2[k]),
+        writable: true,
+        enumerable: true,
+        configurable: true
+      });
+    }
+    return out;
+  }
+  return v2;
+}
+function defaultDiff(before, after) {
+  const patches = [];
+  diffInto(before, after, [], patches);
+  return patches;
+}
+function diffInto(before, after, segments, out) {
+  if (before === after)
+    return;
+  const path8 = segmentsToPointer(segments);
+  if (before === void 0) {
+    out.push({ op: "add", path: path8, value: cloneValue(after) });
+    return;
+  }
+  if (after === void 0) {
+    if (segments.length === 0) {
+      out.push({ op: "replace", path: path8, value: null });
+    } else {
+      out.push({ op: "remove", path: path8 });
+    }
+    return;
+  }
+  const bIsArr = Array.isArray(before);
+  const aIsArr = Array.isArray(after);
+  const bIsObj = isPlainObject2(before);
+  const aIsObj = isPlainObject2(after);
+  if (bIsArr !== aIsArr || bIsObj !== aIsObj || !bIsArr && !bIsObj) {
+    if (!shallowEqualPrimitives(before, after)) {
+      out.push({ op: "replace", path: path8, value: cloneValue(after) });
+    }
+    return;
+  }
+  if (bIsArr && aIsArr) {
+    const bArr = before;
+    const aArr = after;
+    const minLen = Math.min(bArr.length, aArr.length);
+    for (let i2 = 0; i2 < minLen; i2++) {
+      diffInto(bArr[i2], aArr[i2], [...segments, String(i2)], out);
+    }
+    if (aArr.length > bArr.length) {
+      for (let i2 = bArr.length; i2 < aArr.length; i2++) {
+        out.push({
+          op: "add",
+          path: segmentsToPointer([...segments, String(i2)]),
+          value: cloneValue(aArr[i2])
+        });
+      }
+    } else if (bArr.length > aArr.length) {
+      for (let i2 = bArr.length - 1; i2 >= aArr.length; i2--) {
+        out.push({
+          op: "remove",
+          path: segmentsToPointer([...segments, String(i2)])
+        });
+      }
+    }
+    return;
+  }
+  const bObj = before;
+  const aObj = after;
+  const bKeys = Object.keys(bObj);
+  const aKeys = Object.keys(aObj);
+  const aSet = new Set(aKeys);
+  for (const k of bKeys) {
+    if (!aSet.has(k)) {
+      out.push({ op: "remove", path: segmentsToPointer([...segments, k]) });
+    }
+  }
+  const bSet = new Set(bKeys);
+  for (const k of aKeys) {
+    if (!bSet.has(k)) {
+      out.push({
+        op: "add",
+        path: segmentsToPointer([...segments, k]),
+        value: cloneValue(aObj[k])
+      });
+    } else {
+      diffInto(bObj[k], aObj[k], [...segments, k], out);
+    }
+  }
+}
+function shallowEqualPrimitives(a, b) {
+  if (a === b)
+    return true;
+  if (typeof a === "number" && typeof b === "number" && Number.isNaN(a) && Number.isNaN(b))
+    return true;
+  return false;
+}
+function safeDefine(obj, last, value) {
+  Object.defineProperty(obj, last, {
+    value,
+    writable: true,
+    enumerable: true,
+    configurable: true
+  });
+}
+function defaultApplyPatch(state, patches) {
+  let current = cloneValue(state);
+  for (const p of patches) {
+    current = applyOne(current, p);
+  }
+  return current;
+}
+function applyOne(root, patch) {
+  const segments = pointerToSegments(patch.path);
+  if (patch.op !== "add" && patch.op !== "replace" && patch.op !== "remove") {
+    throw new Error(`Unsupported patch op '${patch.op}' at '${patch.path}'`);
+  }
+  if (patch.op === "add" || patch.op === "replace") {
+    if (!("value" in patch)) {
+      throw new Error(`Patch '${patch.op}' at '${patch.path}' is missing required 'value'`);
+    }
+  }
+  if (segments.length === 0) {
+    if (patch.op === "remove") {
+      throw new Error("Whole-root 'remove' is not supported (use replace with null)");
+    }
+    return cloneValue(patch.value);
+  }
+  if (root === void 0 || root === null || typeof root !== "object") {
+    throw new Error(`Cannot apply patch '${patch.op}' at '${patch.path}' to non-container root`);
+  }
+  let parent = root;
+  for (let i2 = 0; i2 < segments.length - 1; i2++) {
+    const seg = segments[i2];
+    if (Array.isArray(parent)) {
+      const idx = Number(seg);
+      if (!Number.isInteger(idx) || idx < 0 || idx >= parent.length) {
+        throw new Error(`Cannot apply patch '${patch.op}' at '${patch.path}': intermediate '${seg}' is not a container`);
+      }
+      const next = parent[idx];
+      if (next === void 0 || next === null || typeof next !== "object") {
+        throw new Error(`Cannot apply patch '${patch.op}' at '${patch.path}': intermediate '${seg}' is not a container`);
+      }
+      parent = next;
+    } else {
+      if (!has(parent, seg)) {
+        throw new Error(`Cannot apply patch '${patch.op}' at '${patch.path}': intermediate '${seg}' is not a container`);
+      }
+      const next = parent[seg];
+      if (next === void 0 || next === null || typeof next !== "object") {
+        throw new Error(`Cannot apply patch '${patch.op}' at '${patch.path}': intermediate '${seg}' is not a container`);
+      }
+      parent = next;
+    }
+  }
+  const last = segments[segments.length - 1];
+  if (Array.isArray(parent)) {
+    const isDash = last === "-";
+    const idx = isDash ? parent.length : Number(last);
+    if (!isDash && (!Number.isInteger(idx) || idx < 0)) {
+      throw new Error(`Invalid array index '${last}' in patch '${patch.path}'`);
+    }
+    if (patch.op === "add") {
+      if (!isDash && idx > parent.length) {
+        throw new Error(`Cannot 'add' at '${patch.path}': array index out of bounds`);
+      }
+      parent.splice(idx, 0, cloneValue(patch.value));
+    } else if (patch.op === "replace") {
+      if (isDash) {
+        throw new Error("'-' is not a valid array index for 'replace'");
+      }
+      if (idx >= parent.length) {
+        throw new Error(`Cannot 'replace' at '${patch.path}': array index out of bounds`);
+      }
+      parent[idx] = cloneValue(patch.value);
+    } else if (patch.op === "remove") {
+      if (isDash) {
+        throw new Error("'-' is not a valid array index for 'remove'");
+      }
+      if (idx >= parent.length) {
+        throw new Error(`Cannot 'remove' at '${patch.path}': array index out of bounds`);
+      }
+      parent.splice(idx, 1);
+    } else {
+      throw new Error(`Unsupported patch op: ${patch.op}`);
+    }
+  } else {
+    const obj = parent;
+    if (patch.op === "add") {
+      safeDefine(obj, last, cloneValue(patch.value));
+    } else if (patch.op === "replace") {
+      if (!has(obj, last)) {
+        throw new Error(`Cannot 'replace' at '${patch.path}': target key does not exist`);
+      }
+      safeDefine(obj, last, cloneValue(patch.value));
+    } else if (patch.op === "remove") {
+      if (!has(obj, last)) {
+        throw new Error(`Cannot 'remove' at '${patch.path}': target key does not exist`);
+      }
+      delete obj[last];
+    } else {
+      throw new Error(`Unsupported patch op: ${patch.op}`);
+    }
+  }
+  return root;
+}
+var REDACTION_ERROR_SENTINEL = "[REDACTION_ERROR]";
+function applyRedactions(state, redactions, contractName) {
+  const cloned = cloneValue(state);
+  if (!redactions || redactions.length === 0)
+    return cloned;
+  for (const r of redactions) {
+    const segments = parseDottedPath(r.path);
+    if (segments.length === 0)
+      continue;
+    walkAndRedact(cloned, segments, 0, r.redact, [], contractName);
+  }
+  return cloned;
+}
+function walkAndRedact(parent, segments, i2, redact, resolved, contractName) {
+  if (parent === null || typeof parent !== "object")
+    return;
+  const seg = segments[i2];
+  const isLast = i2 === segments.length - 1;
+  const keys = seg === "*" ? Array.isArray(parent) ? parent.map((_, idx) => String(idx)) : Object.keys(parent) : has(parent, seg) ? [seg] : [];
+  for (const k of keys) {
+    const fullPath = [...resolved, k];
+    if (isLast) {
+      const container = parent;
+      const original = container[k];
+      let replacement;
+      try {
+        replacement = redact(original, fullPath, contractName);
+      } catch (e2) {
+        console.warn(`[chelonia][journal] redactor threw for path '${fullPath.join(".")}':`, e2);
+        replacement = REDACTION_ERROR_SENTINEL;
+      }
+      if (Array.isArray(container)) {
+        const idx = Number(k);
+        if (Number.isInteger(idx) && idx >= 0 && idx < container.length) {
+          container[idx] = replacement;
+        }
+      } else {
+        Object.defineProperty(container, k, {
+          value: replacement,
+          writable: true,
+          enumerable: true,
+          configurable: true
+        });
+      }
+    } else {
+      walkAndRedact(parent[k], segments, i2 + 1, redact, fullPath, contractName);
+    }
+  }
+}
+var DEFAULT_SNAPSHOT_INTERVAL = 50;
+function resolveJournalConfig(cfg) {
+  const enabled2 = cfg?.enabled === true;
+  const snapshotInterval = typeof cfg?.snapshotInterval === "number" ? cfg.snapshotInterval : DEFAULT_SNAPSHOT_INTERVAL;
+  const contractIDs = cfg?.contractIDs && cfg.contractIDs.length > 0 ? new Set(cfg.contractIDs) : null;
+  const redactions = cfg?.redactions ?? [];
+  const diff = cfg?.diff ?? defaultDiff;
+  const applyPatch = cfg?.applyPatch ?? defaultApplyPatch;
+  return { enabled: enabled2, snapshotInterval, contractIDs, redactions, diff, applyPatch };
+}
+function indexOfLastSnapshot(entries) {
+  for (let i2 = entries.length - 1; i2 >= 0; i2--) {
+    if (entries[i2].kind === "snapshot")
+      return i2;
+  }
+  return -1;
+}
+function appendAndTrim(entries, entry, snapshotInterval, postSnapshotState) {
+  entries = entries.slice();
+  entries.push(entry);
+  if (postSnapshotState && postSnapshotState.state !== void 0 && entry.kind === "patch") {
+    const lastSnapIdx = indexOfLastSnapshot(entries);
+    const patchesSinceSnap = entries.length - 1 - lastSnapIdx;
+    if (patchesSinceSnap >= snapshotInterval) {
+      const snap = /* @__PURE__ */ Object.create(null);
+      snap.kind = "snapshot";
+      snap.hash = entry.hash;
+      snap.height = entry.height;
+      snap.opType = entry.opType;
+      snap.description = entry.description;
+      snap.state = postSnapshotState.state;
+      if (entry.kind === "patch" && entry.error !== void 0) {
+        snap.error = entry.error;
+      }
+      entries.push(snap);
+    }
+  }
+  if (entries.length > 2 * snapshotInterval) {
+    const lastSnapIdx = indexOfLastSnapshot(entries);
+    if (lastSnapIdx > 0) {
+      entries.splice(0, lastSnapIdx);
+    }
+  }
+  return entries;
+}
+function logJournalError(label, e2) {
+  console.warn(`[chelonia][journal] ${label}:`, e2);
+}
+function normalizeProcessingError(e2) {
+  if (e2 !== null && typeof e2 === "object") {
+    const obj = e2;
+    const rawName = obj.name;
+    const rawMessage = obj.message;
+    let name;
+    if (typeof rawName === "string") {
+      name = rawName;
+    } else if (rawName === void 0) {
+      name = e2 instanceof Error ? "Error" : e2.constructor?.name ?? "Object";
+    } else {
+      try {
+        name = String(rawName);
+      } catch {
+        name = "Error";
+      }
+    }
+    let message2;
+    if (typeof rawMessage === "string") {
+      message2 = rawMessage;
+    } else if (rawMessage === void 0) {
+      message2 = "";
+    } else {
+      try {
+        message2 = String(rawMessage);
+      } catch {
+        message2 = "";
+      }
+    }
+    return { name, message: message2 };
+  }
+  let message;
+  try {
+    message = String(e2);
+  } catch {
+    message = "";
+  }
+  return { name: typeof e2, message };
+}
+var journal_default = esm_default("sbp/selectors/register", {
+  // Internal: record a single event in the contract's journal. Called from
+  // `handleEvent.applyProcessResult`. MUST NOT throw — failures here are
+  // debug-only and must never break event processing.
+  "chelonia/private/journal/recordEvent": function(contractID, message, beforeState, afterState, processingErrored, processingError) {
+    try {
+      const cfg = resolveJournalConfig(this.config.journal);
+      if (!cfg.enabled)
+        return;
+      if (cfg.contractIDs && !cfg.contractIDs.has(contractID))
+        return;
+      const rootState = esm_default(this.config.stateSelector);
+      if (!rootState || !rootState.contracts || !rootState.contracts[contractID]) {
+        console.debug(`[chelonia][journal] skipping recordEvent for ${contractID}: no contracts bookkeeping entry`);
+        return;
+      }
+      const hash3 = message.hash();
+      const height = message.height();
+      const opType = String(message.opType());
+      let description;
+      try {
+        description = message.description();
+      } catch {
+      }
+      const contractMeta = rootState.contracts[contractID];
+      const contractName = contractMeta.type ?? "";
+      const existing = contractMeta._journal?.entries;
+      const lastEntry = existing && existing.length > 0 ? existing[existing.length - 1] : void 0;
+      if (lastEntry !== void 0 && lastEntry.hash === hash3 && height === lastEntry.height) {
+        return;
+      }
+      const isBackwards = lastEntry !== void 0 && height < lastEntry.height;
+      const isForwardGap = lastEntry !== void 0 && height > lastEntry.height + 1;
+      const isResync = isBackwards || isForwardGap;
+      const isFirstOrResync = !existing || existing.length === 0 || isResync;
+      const willEmitEmptyPatch = !isFirstOrResync && processingErrored;
+      let redactedBefore;
+      let redactedAfter;
+      if (!willEmitEmptyPatch && !isFirstOrResync) {
+        try {
+          redactedBefore = beforeState === void 0 ? void 0 : applyRedactions(beforeState, cfg.redactions, contractName);
+        } catch (e2) {
+          logJournalError("redaction (before) failed", e2);
+          redactedBefore = void 0;
+        }
+      }
+      try {
+        redactedAfter = afterState === void 0 ? null : applyRedactions(afterState, cfg.redactions, contractName);
+      } catch (e2) {
+        logJournalError("redaction (after) failed", e2);
+        redactedAfter = null;
+      }
+      let nextEntries;
+      if (isFirstOrResync) {
+        const snap = /* @__PURE__ */ Object.create(null);
+        snap.kind = "snapshot";
+        snap.hash = hash3;
+        snap.height = height;
+        snap.opType = opType;
+        snap.description = description;
+        snap.state = redactedAfter;
+        if (processingErrored && processingError != null) {
+          snap.error = normalizeProcessingError(processingError);
+        }
+        nextEntries = [snap];
+      } else {
+        let patch;
+        if (processingErrored) {
+          patch = [];
+        } else {
+          try {
+            patch = cfg.diff(redactedBefore, redactedAfter);
+          } catch (e2) {
+            logJournalError("diff failed", e2);
+            patch = [];
+          }
+        }
+        const entry = /* @__PURE__ */ Object.create(null);
+        entry.kind = "patch";
+        entry.hash = hash3;
+        entry.height = height;
+        entry.opType = opType;
+        entry.description = description;
+        entry.patch = patch;
+        if (processingErrored && processingError != null) {
+          entry.error = normalizeProcessingError(processingError);
+        }
+        nextEntries = appendAndTrim(existing, entry, cfg.snapshotInterval, { state: redactedAfter });
+      }
+      const wrapper3 = /* @__PURE__ */ Object.create(null);
+      wrapper3.entries = nextEntries;
+      this.config.reactiveSet(contractMeta, "_journal", wrapper3);
+    } catch (e2) {
+      logJournalError("recordEvent unexpected error", e2);
+    }
+  },
+  // Public: return a deep clone of the journal for a contract, or undefined
+  // if no journal exists.
+  "chelonia/journal/get": function(contractID) {
+    const rootState = esm_default(this.config.stateSelector);
+    const j = rootState?.contracts?.[contractID]?._journal;
+    if (!j)
+      return void 0;
+    return cloneValue(j);
+  },
+  // Public: rebuild the redacted contract state at the journal's HEAD by
+  // walking from the most recent snapshot and applying subsequent patches.
+  // Returns `undefined` if no journal exists (or the journal exists but is
+  // empty / has no snapshot to seed from). Throws `ChelErrorJournalCorrupt`
+  // if a recorded patch fails to apply: this is a debugging tool and a
+  // self-check, so a loud failure is preferable to silently returning
+  // `undefined` (which would be indistinguishable from "no journal"). The
+  // thrown error's `cause` is the underlying applier error and its
+  // `entryIndex` property points at the offending entry for inspection.
+  "chelonia/journal/reconstruct": function(contractID) {
+    const cfg = resolveJournalConfig(this.config.journal);
+    const rootState = esm_default(this.config.stateSelector);
+    const entries = rootState?.contracts?.[contractID]?._journal?.entries;
+    if (!entries || entries.length === 0)
+      return void 0;
+    const startIdx = indexOfLastSnapshot(entries);
+    if (startIdx < 0)
+      return void 0;
+    const snap = entries[startIdx];
+    let state = snap.state;
+    for (let i2 = startIdx + 1; i2 < entries.length; i2++) {
+      const e2 = entries[i2];
+      if (e2.kind !== "patch")
+        continue;
+      try {
+        state = cfg.applyPatch(state, e2.patch);
+      } catch (err) {
+        logJournalError(`reconstruct failed at entry ${i2}`, err);
+        const corruptErr = new ChelErrorJournalCorrupt(`journal reconstruct failed for contract ${contractID} at entry ${i2}: ${err instanceof Error ? err.message : String(err)}`, { cause: err });
+        corruptErr.entryIndex = i2;
+        corruptErr.contractID = contractID;
+        throw corruptErr;
+      }
+    }
+    return state;
+  },
+  // Public: clear the journal for one contract, or all if `contractID` is
+  // omitted. Returns the number of journals cleared.
+  "chelonia/journal/clear": function(contractID) {
+    const rootState = esm_default(this.config.stateSelector);
+    if (!rootState?.contracts)
+      return 0;
+    if (contractID) {
+      const meta = rootState.contracts[contractID];
+      if (meta?._journal) {
+        this.config.reactiveDel(meta, "_journal");
+        return 1;
+      }
+      return 0;
+    }
+    let count = 0;
+    for (const id of Object.keys(rootState.contracts)) {
+      const meta = rootState.contracts[id];
+      if (meta?._journal) {
+        this.config.reactiveDel(meta, "_journal");
+        count++;
+      }
+    }
+    return count;
   }
 });
 init_encryptedData();
@@ -64814,6 +65440,8 @@ var internals_default = esm_default("sbp/selectors/register", {
   // Warning: avoid using this unless you know what you're doing. Prefer using /remove.
   "chelonia/private/removeImmediately": function(contractID, params) {
     const state = esm_default(this.config.stateSelector);
+    clearReingestTrackerForContract(contractID);
+    clearReprocessDebounceForContract(contractID);
     const contractName = state.contracts[contractID]?.type;
     if (!contractName) {
       console.error("[chelonia/private/removeImmediately] Missing contract name for contract", {
@@ -64847,6 +65475,13 @@ var internals_default = esm_default("sbp/selectors/register", {
       }
       this.config.reactiveDel(state, contractID);
     }
+    if (!params?.resync && esm_default("sbp/selectors/fn", "chelonia/kv/_cleanupContractRuntime")) {
+      try {
+        esm_default("chelonia/kv/_cleanupContractRuntime", contractID);
+      } catch (e2) {
+        console.error("[chelonia] KV cleanup on contract removal failed", e2);
+      }
+    }
     this.subscriptionSet.delete(contractID);
     esm_default("okTurtles.events/emit", CONTRACTS_MODIFIED, Array.from(this.subscriptionSet), {
       added: [],
@@ -64858,7 +65493,7 @@ var internals_default = esm_default("sbp/selectors/register", {
   // used by, e.g. 'chelonia/contract/wait'
   "chelonia/private/noop": function() {
   },
-  "chelonia/private/out/sync": function(contractIDs, params) {
+  "chelonia/private/in/sync": function(contractIDs, params) {
     const listOfIds = typeof contractIDs === "string" ? [contractIDs] : contractIDs;
     const forcedSync = !!params?.force;
     return Promise.all(listOfIds.map((contractID) => {
@@ -64950,7 +65585,7 @@ var internals_default = esm_default("sbp/selectors/register", {
             attempt += 1;
             await delay(randDelay);
             if (!entry.isFirstMessage() && entry.height() === lastAttemptedHeight) {
-              await esm_default("chelonia/private/out/sync", contractID, { force: true });
+              await esm_default("chelonia/private/in/sync", contractID, { force: true });
             }
           } else {
             const message = (await r.json())?.message;
@@ -65284,7 +65919,7 @@ var internals_default = esm_default("sbp/selectors/register", {
                 "chelonia/private/in/syncContract",
                 v2.contractID
               ]).then(() => {
-                esm_default("chelonia/private/out/sync", contractIdsToUpdate.filter((contractID2) => {
+                esm_default("chelonia/private/in/sync", contractIdsToUpdate.filter((contractID2) => {
                   return self2.subscriptionSet.has(contractID2);
                 }), { force: true, resync: true }).catch((e2) => {
                   console.error("[chelonia] Error resyncing contracts with foreign key references after key rotation", e2);
@@ -66190,6 +66825,7 @@ var internals_default = esm_default("sbp/selectors/register", {
     const state = esm_default(this.config.stateSelector);
     const { preHandleEvent, postHandleEvent, handleEventError } = this.config.hooks;
     let processingErrored = false;
+    let processingError = null;
     let message;
     try {
       if (!this.config.acceptAllMessages && !this.pending.some((entry) => entry?.contractID === contractID) && !this.subscriptionSet.has(contractID)) {
@@ -66236,6 +66872,8 @@ var internals_default = esm_default("sbp/selectors/register", {
           throw e2;
         }
         processingErrored = e2?.name !== "ChelErrorWarning";
+        if (processingErrored)
+          processingError = e_;
         this.config.hooks.processError?.(e2, message, getMsgMeta.call(this, message, contractID, contractStateCopy));
         if (e2.name === "ChelErrorUnrecoverable" || e2.name === "ChelErrorForkedChain" || message.isFirstMessage()) {
           throw e2;
@@ -66263,6 +66901,7 @@ var internals_default = esm_default("sbp/selectors/register", {
           state: state2,
           contractState: contractStateCopy,
           processingErrored,
+          processingError,
           postHandleEvent
         });
       } catch (e_) {
@@ -66285,10 +66924,32 @@ var internals_default = esm_default("sbp/selectors/register", {
     }
   }
 });
-var eventsToReingest = [];
-var reprocessDebounced = debounce((contractID) => esm_default("chelonia/private/out/sync", contractID, { force: true }).catch((e2) => {
-  console.error(`[chelonia] Error at reprocessDebounced for ${contractID}`, e2);
-}), 1e3);
+var reprocessDebounceMap = /* @__PURE__ */ new Map();
+var reprocessDebounced = (contractID) => {
+  let d = reprocessDebounceMap.get(contractID);
+  if (!d) {
+    d = debounce(() => {
+      reprocessDebounceMap.delete(contractID);
+      esm_default("chelonia/private/in/sync", contractID, { force: true }).catch((e2) => {
+        console.error(`[chelonia] Error at reprocessDebounced for ${contractID}`, e2);
+      });
+    }, 1e3);
+    reprocessDebounceMap.set(contractID, d);
+  }
+  d();
+};
+var clearReprocessDebounceForContract = (contractID) => {
+  const d = reprocessDebounceMap.get(contractID);
+  if (d) {
+    d.clear();
+    reprocessDebounceMap.delete(contractID);
+  }
+};
+var clearReprocessDebounceAll = () => {
+  for (const d of reprocessDebounceMap.values())
+    d.clear();
+  reprocessDebounceMap.clear();
+};
 var handleEvent = {
   checkMessageOrdering(message) {
     const contractID = message.contractID();
@@ -66309,12 +66970,9 @@ var handleEvent = {
       if (this.config.strictOrdering) {
         throw new ChelErrorDBBadPreviousHEAD(`Unexpected message ${hash3} with height ${height} in contract ${contractID}: height is too high. Current height: ${latestProcessedHeight}.`);
       }
-      if (eventsToReingest.length > 100) {
-        throw new ChelErrorUnrecoverable("more than 100 different bad previousHEAD errors");
-      }
-      if (!eventsToReingest.includes(hash3)) {
+      const note = noteFutureEvent(contractID, hash3, height);
+      if (note === "added") {
         console.warn(`[chelonia] WARN bad previousHEAD for ${message.description()}, will attempt to re-sync contract to reingest message`);
-        eventsToReingest.push(hash3);
         reprocessDebounced(contractID);
         return false;
       } else {
@@ -66322,11 +66980,10 @@ var handleEvent = {
         throw new ChelErrorDBBadPreviousHEAD(`Already attempted to reingest ${hash3}`);
       }
     }
-    const reprocessIdx = eventsToReingest.indexOf(hash3);
-    if (reprocessIdx !== -1) {
+    if (noteReingestSuccess(contractID, hash3)) {
       console.warn(`[chelonia] WARN: successfully reingested ${message.description()}`);
-      eventsToReingest.splice(reprocessIdx, 1);
     }
+    pruneStaleEntries(contractID, height);
   },
   async processMutation(message, state, internalSideEffectStack) {
     const contractID = message.contractID();
@@ -66400,10 +67057,11 @@ var handleEvent = {
       }
     });
   },
-  async applyProcessResult({ message, state, contractState, processingErrored, postHandleEvent }) {
+  async applyProcessResult({ message, state, contractState, processingErrored, processingError, postHandleEvent }) {
     const contractID = message.contractID();
     const hash3 = message.hash();
     const height = message.height();
+    const beforeContractState = state[contractID];
     await esm_default("chelonia/db/addEntry", message);
     if (!processingErrored) {
       this.config.reactiveSet(state, contractID, contractState);
@@ -66453,6 +67111,7 @@ var handleEvent = {
         removed: []
       });
     }
+    esm_default("chelonia/private/journal/recordEvent", contractID, message, beforeContractState, processingErrored ? beforeContractState : contractState, processingErrored, processingError ?? null);
     if (!processingErrored) {
       esm_default("okTurtles.events/emit", hash3, contractID, message);
       esm_default("okTurtles.events/emit", EVENT_HANDLED, contractID, message);
@@ -66631,6 +67290,21 @@ var chelonia_default = esm_default("sbp/selectors/register", {
         pubsubError: null
         // (e:Error, socket: Socket)
       },
+      // Per-contract journal of state changes. See `src/journal.ts`.
+      // Opt-in by default: enabling it imposes per-event CPU (deep clones
+      // + diff) and persisted-state cost (up to ~2X entries plus full
+      // snapshots) on every active contract. Consumers turn it on via
+      // `chelonia/configure`. Function fields (`redactions[*].redact`,
+      // `diff`, `applyPatch`) are intentionally left unset here so they
+      // survive `merge()` (which deep-clones via JSON and would otherwise
+      // strip them); `chelonia/configure` reattaches them in a dedicated
+      // pass.
+      journal: {
+        enabled: false,
+        snapshotInterval: DEFAULT_SNAPSHOT_INTERVAL,
+        contractIDs: [],
+        redactions: []
+      },
       unwrapMaybeEncryptedData
     };
     this._instance = /* @__PURE__ */ Object.create(null);
@@ -66678,21 +67352,125 @@ var chelonia_default = esm_default("sbp/selectors/register", {
     });
     this.ephemeralReferenceCount = /* @__PURE__ */ Object.create(null);
     this.subscriptionSet = /* @__PURE__ */ new Set();
+    this.kvSlots = /* @__PURE__ */ new Map();
+    this.kvSlotsByContractID = /* @__PURE__ */ new Map();
+    this.kvActiveFilters = /* @__PURE__ */ new Map();
+    this.kvFilterDirty = /* @__PURE__ */ new Set();
+    this.kvLocalEchoCIDs = /* @__PURE__ */ new Map();
+    this.kvPendingWrites = /* @__PURE__ */ new Map();
+    this.defContractKvByManifest = /* @__PURE__ */ new Map();
     this.pending = [];
     const rootState = esm_default(this.config.stateSelector);
     rootState.secretKeys = rootState.secretKeys || /* @__PURE__ */ Object.create(null);
+    if (!rootState._kv) {
+      this.config.reactiveSet(rootState, "_kv", /* @__PURE__ */ Object.create(null));
+    }
   },
   "chelonia/config": function() {
-    return {
+    const out = {
       ...cloneDeep(this.config),
       fetch: this.config.fetch,
       reactiveSet: this.config.reactiveSet,
       reactiveDel: this.config.reactiveDel
     };
+    if (this.config.journal) {
+      out.journal = {
+        ...out.journal,
+        // Deep-copy each redaction entry: `.slice()` alone shares the
+        // `{ path, redact }` objects with the live config, so a caller
+        // could mutate the live redaction path via the returned snapshot.
+        // The `redact` function is intentionally shared by reference
+        // (functions can't be cloned).
+        redactions: this.config.journal.redactions?.map((r) => ({
+          path: r.path,
+          redact: r.redact
+        })),
+        diff: this.config.journal.diff,
+        applyPatch: this.config.journal.applyPatch
+      };
+    }
+    return out;
   },
   "chelonia/configure": async function(config2) {
-    merge2(this.config, config2);
+    const hasJournalKey = config2 !== null && typeof config2 === "object" && Object.prototype.hasOwnProperty.call(config2, "journal");
+    const journalOverride = hasJournalKey ? config2.journal : void 0;
+    let configForMerge = config2;
+    if (hasJournalKey) {
+      configForMerge = { ...config2 };
+      delete configForMerge.journal;
+    }
+    merge2(this.config, configForMerge);
     Object.assign(this.config.hooks, config2.hooks || {});
+    if (journalOverride === null) {
+      this.config.journal = {
+        enabled: false,
+        snapshotInterval: DEFAULT_SNAPSHOT_INTERVAL,
+        contractIDs: [],
+        redactions: []
+      };
+      esm_default("chelonia/journal/clear");
+    } else if (journalOverride !== void 0) {
+      const rejectNull = (name) => {
+        if (has(journalOverride, name) && journalOverride[name] === null) {
+          throw new TypeError(`[chelonia][journal] config.journal.${name} cannot be null; omit the field to leave it alone, or pass \`journal: null\` to reset the whole block to disabled defaults`);
+        }
+      };
+      rejectNull("enabled");
+      rejectNull("snapshotInterval");
+      rejectNull("contractIDs");
+      rejectNull("redactions");
+      rejectNull("diff");
+      rejectNull("applyPatch");
+      if (!this.config.journal) {
+        this.config.journal = {
+          enabled: false,
+          snapshotInterval: DEFAULT_SNAPSHOT_INTERVAL,
+          contractIDs: [],
+          redactions: []
+        };
+      }
+      const target = this.config.journal;
+      if (journalOverride.enabled !== void 0) {
+        if (typeof journalOverride.enabled !== "boolean") {
+          throw new TypeError(`[chelonia][journal] config.journal.enabled must be a boolean; got ${typeof journalOverride.enabled}`);
+        }
+        target.enabled = journalOverride.enabled;
+      }
+      if (journalOverride.snapshotInterval !== void 0) {
+        const si = journalOverride.snapshotInterval;
+        target.snapshotInterval = Number.isInteger(si) && si > 0 ? si : DEFAULT_SNAPSHOT_INTERVAL;
+        if (target.snapshotInterval !== si) {
+          console.warn(`[chelonia][journal] invalid snapshotInterval ${String(si)}; falling back to ${DEFAULT_SNAPSHOT_INTERVAL}`);
+        }
+      }
+      if (journalOverride.contractIDs !== void 0) {
+        if (!Array.isArray(journalOverride.contractIDs)) {
+          throw new TypeError(`[chelonia][journal] config.journal.contractIDs must be an array; got ${typeof journalOverride.contractIDs}`);
+        }
+        target.contractIDs = journalOverride.contractIDs.slice();
+      }
+      if (journalOverride.redactions !== void 0) {
+        if (!Array.isArray(journalOverride.redactions)) {
+          throw new TypeError(`[chelonia][journal] config.journal.redactions must be an array; got ${typeof journalOverride.redactions}`);
+        }
+        target.redactions = journalOverride.redactions.map((r) => ({
+          path: r.path,
+          redact: r.redact
+        }));
+      }
+      if (journalOverride.diff !== void 0) {
+        if (typeof journalOverride.diff !== "function") {
+          throw new TypeError(`[chelonia][journal] config.journal.diff must be a function; got ${typeof journalOverride.diff}`);
+        }
+        target.diff = journalOverride.diff;
+      }
+      if (journalOverride.applyPatch !== void 0) {
+        if (typeof journalOverride.applyPatch !== "function") {
+          throw new TypeError(`[chelonia][journal] config.journal.applyPatch must be a function; got ${typeof journalOverride.applyPatch}`);
+        }
+        target.applyPatch = journalOverride.applyPatch;
+      }
+    }
     if (config2.contracts) {
       Object.assign(this.config.contracts.defaults, config2.contracts.defaults || {});
       const manifests = this.config.contracts.manifests;
@@ -66737,6 +67515,10 @@ var chelonia_default = esm_default("sbp/selectors/register", {
     await esm_default("chelonia/contract/waitPublish");
     await esm_default("chelonia/contract/wait");
     const result = await postCleanupFn?.();
+    if (esm_default("sbp/selectors/fn", "chelonia/kv/_waitInFlight")) {
+      await esm_default("chelonia/kv/_waitInFlight");
+      await esm_default("chelonia/contract/wait");
+    }
     const rootState = esm_default(this.config.stateSelector);
     this._instance = /* @__PURE__ */ Object.create(null);
     this.abortController.abort();
@@ -66744,6 +67526,12 @@ var chelonia_default = esm_default("sbp/selectors/register", {
     reactiveClearObject(rootState, this.config.reactiveDel);
     this.config.reactiveSet(rootState, "contracts", /* @__PURE__ */ Object.create(null));
     this.config.reactiveSet(rootState, "secretKeys", /* @__PURE__ */ Object.create(null));
+    this.config.reactiveSet(rootState, "_kv", /* @__PURE__ */ Object.create(null));
+    this.kvSlotsByContractID.clear();
+    this.kvActiveFilters.clear();
+    this.kvFilterDirty.clear();
+    this.kvLocalEchoCIDs.clear();
+    this.kvPendingWrites.clear();
     clearObject(this.ephemeralReferenceCount);
     this.pending.splice(0);
     clearObject(this.currentSyncs);
@@ -66751,6 +67539,8 @@ var chelonia_default = esm_default("sbp/selectors/register", {
     clearObject(this.sideEffectStacks);
     const removedContractIDs = Array.from(this.subscriptionSet);
     this.subscriptionSet.clear();
+    clearReingestTrackerAll();
+    clearReprocessDebounceAll();
     esm_default("chelonia/clearTransientSecretKeys");
     esm_default("okTurtles.events/emit", CHELONIA_RESET);
     esm_default("okTurtles.events/emit", CONTRACTS_MODIFIED, Array.from(this.subscriptionSet), {
@@ -66988,6 +67778,7 @@ var chelonia_default = esm_default("sbp/selectors/register", {
       esm_default("chelonia/private/stopClockSync");
     }
     esm_default("chelonia/private/startClockSync");
+    const legacyKvHandler = options2.messageHandlers?.[NOTIFICATION_TYPE.KV];
     this.pubsub = createClient(pubsubURL, {
       ...this.config.connectionOptions,
       handlers: {
@@ -66997,7 +67788,7 @@ var chelonia_default = esm_default("sbp/selectors/register", {
         "subscription-succeeded": function(event) {
           const { channelID } = event.detail;
           if (this.subscriptionSet.has(channelID)) {
-            esm_default("chelonia/private/out/sync", channelID, { force: true }).catch((err) => {
+            esm_default("chelonia/private/in/sync", channelID, { force: true }).catch((err) => {
               console.warn(`[chelonia] Syncing contract ${channelID} failed: ${err.message}`);
             });
           }
@@ -67030,32 +67821,6 @@ var chelonia_default = esm_default("sbp/selectors/register", {
                   });
                 }
               ];
-            case NOTIFICATION_TYPE.KV:
-              return [
-                k,
-                (msg) => {
-                  if (!msg.channelID || !msg.key) {
-                    console.info("[chelonia] Discarding kv event without channelID or key");
-                    return;
-                  }
-                  if (!this.subscriptionSet.has(msg.channelID)) {
-                    console.info(`[chelonia] Discarding kv event for ${msg.channelID} because it's not in the current subscriptionSet`);
-                    return;
-                  }
-                  esm_default("chelonia/queueInvocation", msg.channelID, () => {
-                    v2.call(this.pubsub, [
-                      msg.key,
-                      parseEncryptedOrUnencryptedMessage(this, {
-                        contractID: msg.channelID,
-                        meta: msg.key,
-                        serializedData: JSON.parse(Buffer6.from(msg.data).toString())
-                      })
-                    ]);
-                  }).catch((e2) => {
-                    console.error(`[chelonia] Error processing kv event for ${msg.channelID} and key ${msg.key}`, msg, e2);
-                  });
-                }
-              ];
             case NOTIFICATION_TYPE.DELETION:
               return [
                 k,
@@ -67065,6 +67830,40 @@ var chelonia_default = esm_default("sbp/selectors/register", {
               return [k, v2];
           }
         })),
+        [NOTIFICATION_TYPE.KV]: (msg) => {
+          if (!msg.channelID || !msg.key) {
+            console.info("[chelonia] Discarding kv event without channelID or key");
+            return;
+          }
+          if (!this.subscriptionSet.has(msg.channelID)) {
+            console.info(`[chelonia] Discarding kv event for ${msg.channelID} because it's not in the current subscriptionSet`);
+            return;
+          }
+          esm_default("chelonia/queueInvocation", msg.channelID, async () => {
+            const parsed = parseEncryptedOrUnencryptedMessage(this, {
+              contractID: msg.channelID,
+              meta: msg.key,
+              serializedData: JSON.parse(Buffer6.from(msg.data).toString())
+            });
+            if (legacyKvHandler) {
+              try {
+                ;
+                legacyKvHandler.call(this.pubsub, [msg.key, parsed]);
+              } catch (e2) {
+                console.error(`[chelonia] legacy kv pubsub callback threw for ${msg.channelID}::${msg.key}`, e2);
+              }
+            }
+            if (esm_default("sbp/selectors/fn", "chelonia/kv/_handleRemote")) {
+              try {
+                await esm_default("chelonia/kv/_handleRemote", msg.channelID, msg.key, parsed, msg.cid);
+              } catch (e2) {
+                console.error(`[chelonia] kv slot _handleRemote threw for ${msg.channelID}::${msg.key}`, e2);
+              }
+            }
+          }).catch((e2) => {
+            console.error(`[chelonia] Error processing kv event for ${msg.channelID} and key ${msg.key}`, msg, e2);
+          });
+        },
         [NOTIFICATION_TYPE.ENTRY](msg) {
           const { contractID } = SPMessage.deserializeHEAD(msg.data);
           esm_default("chelonia/private/in/enqueueHandleEvent", contractID, msg.data);
@@ -67074,6 +67873,24 @@ var chelonia_default = esm_default("sbp/selectors/register", {
     if (!this.contractsModifiedListener) {
       this.contractsModifiedListener = () => esm_default("chelonia/pubsub/update");
       esm_default("okTurtles.events/on", CONTRACTS_MODIFIED, this.contractsModifiedListener);
+    }
+    if (!this.kvReconnectListener) {
+      this.kvReconnectListener = (client) => {
+        if (client.isNew)
+          return;
+        esm_default("chelonia/kv/_onReconnect");
+      };
+      esm_default("okTurtles.events/on", PUBSUB_RECONNECTION_SUCCEEDED, this.kvReconnectListener);
+    }
+    if (!this.kvContractsModifiedListener) {
+      this.kvContractsModifiedListener = (_contracts, payload) => {
+        try {
+          esm_default("chelonia/kv/_onContractsModified", payload);
+        } catch (e2) {
+          console.error("[chelonia/kv] CONTRACTS_MODIFIED listener threw", e2);
+        }
+      };
+      esm_default("okTurtles.events/on", CONTRACTS_MODIFIED, this.kvContractsModifiedListener);
     }
     return this.pubsub;
   },
@@ -67096,6 +67913,7 @@ var chelonia_default = esm_default("sbp/selectors/register", {
     contract.state = (contractID) => esm_default(this.config.stateSelector)[contractID];
     contract.manifest = this.defContractManifest;
     contract.sbp = this.defContractSBP;
+    const prevKv = this.defContractKvByManifest.get(contract.manifest);
     this.defContractSelectors = [];
     this.defContract = contract;
     this.defContractSelectors.push(...esm_default("sbp/selectors/register", {
@@ -67163,6 +67981,15 @@ var chelonia_default = esm_default("sbp/selectors/register", {
       }));
     }
     esm_default("okTurtles.events/emit", CONTRACT_REGISTERED, contract);
+    if (prevKv || contract.kv) {
+      esm_default("chelonia/kv/_cleanupContractSlots", contract.manifest, prevKv, contract.kv ?? {});
+    }
+    if (contract.kv) {
+      esm_default("chelonia/kv/_registerContractSlots", contract.manifest, contract.kv);
+      this.defContractKvByManifest.set(contract.manifest, contract.kv);
+    } else if (prevKv) {
+      this.defContractKvByManifest.delete(contract.manifest);
+    }
   },
   "chelonia/queueInvocation": (contractID, sbpInvocation) => {
     return esm_default("chelonia/private/queueEvent", contractID, ["chelonia/private/noop"]).then(() => esm_default("chelonia/private/queueEvent", "public:" + contractID, sbpInvocation));
@@ -67221,7 +68048,7 @@ var chelonia_default = esm_default("sbp/selectors/register", {
         throw new Error("Missing reference count for contract");
       }
     });
-    return esm_default("chelonia/private/out/sync", listOfIds, { ...params, force: true });
+    return esm_default("chelonia/private/in/sync", listOfIds, { ...params, force: true });
   },
   "chelonia/contract/isSyncing": function(contractID, { firstSync = false } = {}) {
     const isSyncing = !!this.currentSyncs[contractID];
@@ -67295,7 +68122,7 @@ var chelonia_default = esm_default("sbp/selectors/register", {
         }
       });
     }
-    return await esm_default("chelonia/private/out/sync", listOfIds);
+    return await esm_default("chelonia/private/in/sync", listOfIds);
   },
   // the `try` parameter does not affect (ephemeral or persistent) reference
   // counts, but rather removes a contract if the reference count is zero
@@ -67389,6 +68216,33 @@ var chelonia_default = esm_default("sbp/selectors/register", {
       data: keyIds,
       signingKeyId: findSuitableSecretKeyId(contractState, [SPMessage.OP_KEY_DEL], ["sig"])
     });
+  },
+  // Helper function to deserialize an `SPMessage` from a raw string. This
+  // function invokes `SPMessage.deserialize` with the correct internal
+  // state, serving as a useful primitive for applications that require low-level
+  // access to an `SPMessage`, whether for debugging or other purposes.
+  // This selector differs from `chelonia/in/processMessage` in that this one
+  // returns the SPMessage (or message head, depending on options), while
+  // `chelonia/in/processMessage` takes in a state parameter and applies the
+  // message to the state.
+  // If one starts with a raw string with a message, `spm`, the following are
+  // roughly equivalent:
+  //    const state1 = sbp('chelonia/in/processMessage', spm, state)
+  //    const state2 = sbp('chelonia/in/processMessage',
+  //      sbp('chelonia/in/deserializeMessage', spm, { state }),
+  //      state
+  //    )
+  // The main difference is that calling `processMessage` directly will use a
+  // cloned copy of the state in the deserialization step, while manually
+  // deserializing a message will not perform any cloning. However, since
+  // calling `SPMessage.deserialize` should not mutate the state argument,
+  // the observable behaviour should be the same.
+  "chelonia/in/deserializeMessage": function(rawMessage, options2 = {}) {
+    if (options2.headOnly) {
+      return SPMessage.deserializeHEAD(rawMessage);
+    } else {
+      return SPMessage.deserialize(rawMessage, this.transientSecretKeys, options2.state, this.config.unwrapMaybeEncryptedData);
+    }
   },
   "chelonia/in/processMessage": function(messageOrRawMessage, state) {
     const stateCopy = cloneDeep(state);
@@ -67537,14 +68391,16 @@ var chelonia_default = esm_default("sbp/selectors/register", {
           contractID2,
           {
             contractState: rootState[contractID2],
-            cheloniaState: rootState.contracts[contractID2]
+            cheloniaState: rootState.contracts[contractID2],
+            kvState: rootState._kv?.[contractID2]
           }
         ];
       }));
     }
     return {
       contractState: rootState[contractID],
-      cheloniaState: rootState.contracts[contractID]
+      cheloniaState: rootState.contracts[contractID],
+      kvState: rootState._kv?.[contractID]
     };
   },
   // 'chelonia/out' - selectors that send data out to the server
@@ -67581,7 +68437,7 @@ var chelonia_default = esm_default("sbp/selectors/register", {
       prepublish: hooks.prepublishContract,
       postpublish: hooks.postpublishContract
     });
-    await esm_default("chelonia/private/out/sync", contractID);
+    await esm_default("chelonia/private/in/sync", contractID);
     const msg = await esm_default(actionEncryptionKeyId ? "chelonia/out/actionEncrypted" : "chelonia/out/actionUnencrypted", {
       action: contractName,
       contractID,
@@ -67960,13 +68816,16 @@ var chelonia_default = esm_default("sbp/selectors/register", {
   // this case, see if `chelonia/kv/queuedSet` covers your needs.
   // `data` is allowed to be falsy, in which case a fetch will occur first and
   // the `onconflict` handler will be called.
-  "chelonia/kv/set": async function(contractID, key, data, { ifMatch, innerSigningKeyId, encryptionKeyId, signingKeyId, maxAttempts, onconflict }) {
+  "chelonia/kv/set": async function(contractID, key, data, { ifMatch, innerSigningKeyId, encryptionKeyId, signingKeyId, maxAttempts, onconflict, signal: callerSignal }) {
     maxAttempts = maxAttempts ?? 3;
     const url2 = `${this.config.connectionURL}/kv/${encodeURIComponent(contractID)}/${encodeURIComponent(key)}`;
     const hasOnconflict = typeof onconflict === "function";
+    const fetchSignal = callerSignal ? AbortSignal.any([this.abortController.signal, callerSignal]) : this.abortController.signal;
     let response;
-    const resolveData = async () => {
-      let currentValue;
+    let lastEtag = null;
+    let currentValue;
+    const resolveData = async (invokeOnConflict = true) => {
+      currentValue = void 0;
       if (response.ok || response.status === 409 || response.status === 412) {
         const serializedDataText = await response.text();
         currentValue = serializedDataText ? parseEncryptedOrUnencryptedMessage(this, {
@@ -67977,6 +68836,32 @@ var chelonia_default = esm_default("sbp/selectors/register", {
       } else if (response.status !== 404 && response.status !== 410) {
         throw new ChelErrorUnexpectedHttpResponseCode("[kv/set] Invalid response code: " + response.status);
       }
+      let headerEtag = response.headers.get("x-cid") || response.headers.get("etag");
+      if (headerEtag)
+        lastEtag = headerEtag;
+      if (!headerEtag && !currentValue && (response.status === 409 || response.status === 412)) {
+        const getResp = await this.config.fetch(url2, {
+          headers: new Headers([
+            ["authorization", buildShelterAuthorizationHeader.call(this, contractID)]
+          ]),
+          signal: fetchSignal
+        });
+        if (getResp.ok) {
+          const getText2 = await getResp.text();
+          if (getText2) {
+            currentValue = parseEncryptedOrUnencryptedMessage(this, {
+              contractID,
+              serializedData: JSON.parse(getText2),
+              meta: key
+            });
+          }
+          headerEtag = getResp.headers.get("x-cid") || getResp.headers.get("etag");
+        }
+        if (headerEtag)
+          lastEtag = headerEtag;
+      }
+      if (!invokeOnConflict)
+        return false;
       const result = await onconflict({
         contractID,
         key,
@@ -67986,7 +68871,7 @@ var chelonia_default = esm_default("sbp/selectors/register", {
         // returned as undefined, which will then use the `''` fallback value
         // when writing. This allows 404 / 410 responses to work even if no
         // etag is explicitly given
-        etag: response.headers.get("x-cid") || response.headers.get("etag"),
+        etag: headerEtag,
         get currentData() {
           return currentValue?.data;
         },
@@ -68015,7 +68900,7 @@ var chelonia_default = esm_default("sbp/selectors/register", {
           ]),
           method: "POST",
           body: JSON.stringify(serializedData),
-          signal: this.abortController.signal
+          signal: fetchSignal
         });
       } else {
         if (!hasOnconflict) {
@@ -68025,7 +68910,7 @@ var chelonia_default = esm_default("sbp/selectors/register", {
           headers: new Headers([
             ["authorization", buildShelterAuthorizationHeader.call(this, contractID)]
           ]),
-          signal: this.abortController.signal
+          signal: fetchSignal
         });
         if (await resolveData()) {
           continue;
@@ -68036,23 +68921,37 @@ var chelonia_default = esm_default("sbp/selectors/register", {
       if (!response.ok) {
         if (response.status === 409 || response.status === 412) {
           if (--maxAttempts <= 0) {
-            throw new Error("kv/set conflict setting KV value");
+            await resolveData(false);
+            let currentData;
+            try {
+              currentData = currentValue?.data;
+            } catch {
+            }
+            throw new ChelErrorKvMaxAttempts("kv/set conflict setting KV value", {
+              cause: { currentData, etag: lastEtag ?? null }
+            });
+          }
+          if (callerSignal?.aborted) {
+            throw callerSignal.reason instanceof Error ? callerSignal.reason : new DOMException("Aborted", "AbortError");
+          }
+          if (!hasOnconflict) {
+            throw new Error(`kv/set failed with status ${response.status} and no onconflict handler was provided`);
           }
           await delay(randomIntFromRange(0, 1500));
-          if (hasOnconflict) {
-            if (await resolveData()) {
-              continue;
-            } else {
-              break;
-            }
+          if (await resolveData()) {
+            continue;
           } else {
-            throw new Error(`kv/set failed with status ${response.status} and no onconflict handler was provided`);
+            break;
           }
         }
         throw new ChelErrorUnexpectedHttpResponseCode("kv/set invalid response status: " + response.status);
       }
+      const successEtag = response.headers.get("x-cid") || response.headers.get("etag");
+      if (successEtag)
+        lastEtag = successEtag;
       break;
     }
+    return { etag: lastEtag };
   },
   "chelonia/kv/get": async function(contractID, key) {
     const response = await this.config.fetch(`${this.config.connectionURL}/kv/${encodeURIComponent(contractID)}/${encodeURIComponent(key)}`, {
@@ -68067,12 +68966,20 @@ var chelonia_default = esm_default("sbp/selectors/register", {
     if (!response.ok) {
       throw new Error("Invalid response status: " + response.status);
     }
+    const etag2 = response.headers.get("x-cid") || response.headers.get("etag");
     const data = await response.json();
-    return parseEncryptedOrUnencryptedMessage(this, {
+    const parsed = parseEncryptedOrUnencryptedMessage(this, {
       contractID,
       serializedData: data,
       meta: key
     });
+    Object.defineProperty(parsed, "etag", {
+      value: etag2,
+      enumerable: true,
+      writable: true,
+      configurable: true
+    });
+    return parsed;
   },
   // To set filters for a contract, call with `filter` set to an array of KV
   // keys to receive updates for over the WebSocket. An empty array means that
@@ -74331,8 +75238,13 @@ function registerRoutes(app) {
         await esm_default("chelonia.db/set", `_private_kv_${contractID}_${key}`, payloadBuffer);
         await esm_default("backend/server/updateSize", contractID, payloadBuffer.byteLength - existingSize);
         await appendToIndexFactory(`_private_kvIdx_${contractID}`)(key);
-        esm_default("backend/server/broadcastKV", contractID, key, payloadBuffer.toString()).catch((e2) => console.error(e2, "Error broadcasting KV update", contractID, key));
-        return c.body(null, 204);
+        const payloadString = payloadBuffer.toString();
+        esm_default("backend/server/broadcastKV", contractID, key, payloadString).catch((e2) => console.error(e2, "Error broadcasting KV update", contractID, key));
+        const newCID = createCID(payloadString, multicodes.RAW);
+        return c.body(null, 204, {
+          "ETag": `"${newCID}"`,
+          "x-cid": `"${newCID}"`
+        });
       });
     }
   );
