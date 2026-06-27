@@ -227,6 +227,13 @@ Deno.test({
         await sbp('chelonia.db/set', `_private_owner_${manifestHash}`, owner.contractID)
         await sbp('chelonia.db/set', `_private_size_${manifestHash}`, String(chunkData.length + manifestBytes.byteLength))
 
+        // Seed the owner's aggregate file size as a real upload would, so we can
+        // assert it is decremented by exactly the deleted file's size.
+        const sizeKey = `_private_contractFilesTotalSize_${owner.contractID}`
+        const expectedDelta = chunkData.length + manifestBytes.byteLength
+        const sizeBefore = parseInt(await sbp('chelonia.db/get', sizeKey) ?? '0', 10)
+        await sbp('chelonia.db/set', sizeKey, String(sizeBefore + expectedDelta))
+
         const auth = buildShelterAuthHeader(owner.contractID, owner.SAK)
         const res = await fetch(`${baseURL}/deleteFile/${manifestHash}`, {
           method: 'POST',
@@ -236,9 +243,41 @@ Deno.test({
         if (res.status < 200 || res.status > 204) throw new Error(`Expected 2xx but got ${res.status}`)
         if (await sbp('chelonia.db/get', chunkHash)) throw new Error('Expected legacy file chunk to be deleted')
 
+        const sizeAfter = parseInt(await sbp('chelonia.db/get', sizeKey) ?? '0', 10)
+        if ((sizeBefore + expectedDelta) - sizeAfter !== expectedDelta) {
+          throw new Error(`Expected aggregate size to drop by ${expectedDelta}, dropped by ${(sizeBefore + expectedDelta) - sizeAfter}`)
+        }
+        // Restore the pre-seeded state so later steps that delete hand-seeded
+        // files (whose sizes were never added to the aggregate) keep skipping
+        // the aggregate update instead of driving it negative.
+        await sbp('chelonia.db/delete', sizeKey)
+
         const getRes = await fetch(`${baseURL}/file/${manifestHash}`)
         await getRes.body?.cancel()
         if (getRes.status !== 410) throw new Error(`Expected 410 after deletion but got ${getRes.status}`)
+      })
+
+      await t.step('POST /deleteFile surfaces invalid manifest as 422, not 404', async () => {
+        // A stored value that parses as JSON but fails manifest validation is
+        // bad data, not a missing resource: it should map to 422.
+        const manifestData = JSON.stringify({
+          version: '2.0.0',
+          cipher: 'aes256gcm',
+          size: 1,
+          chunks: [[1, createCID('orphan-chunk', multicodes.SHELTER_FILE_CHUNK)]]
+        })
+        const manifestHash = createCID(manifestData + 'bad-version', multicodes.SHELTER_FILE_MANIFEST)
+        await sbp('chelonia.db/set', manifestHash, manifestData)
+        await sbp('chelonia.db/set', `_private_owner_${manifestHash}`, owner.contractID)
+        await sbp('chelonia.db/set', `_private_size_${manifestHash}`, '1')
+
+        const auth = buildShelterAuthHeader(owner.contractID, owner.SAK)
+        const res = await fetch(`${baseURL}/deleteFile/${manifestHash}`, {
+          method: 'POST',
+          headers: { authorization: auth }
+        })
+        await res.body?.cancel()
+        if (res.status !== 422) throw new Error(`Expected 422 for invalid manifest but got ${res.status}`)
       })
 
       await t.step('POST /deleteFile with bearer token deletes file', async () => {
@@ -515,6 +554,16 @@ Deno.test({
         form.append('manifest', new Blob([manifest], { type: 'application/vnd.shelter.filemanifest' }), 'manifest.json')
         form.append('0', new Blob([chunkContent], { type: 'application/octet-stream' }), '0')
 
+        // The owner's aggregate file size is only updated when it already exists
+        // (uploads use skipIfDeleted), mirroring an owner that already has files.
+        // Seed it so we can verify the upload increments it and the delete
+        // reclaims exactly the uploaded file's size, guarding against silent
+        // quota drift if size accounting regresses.
+        const sizeKey = `_private_contractFilesTotalSize_${owner.contractID}`
+        const manifestBytes = new TextEncoder().encode(manifest).byteLength
+        const expectedDelta = chunkContent.byteLength + manifestBytes
+        await sbp('chelonia.db/set', sizeKey, '1000')
+
         const uploadRes = await fetch(`${baseURL}/file`, {
           method: 'POST',
           headers: { authorization: auth },
@@ -523,6 +572,11 @@ Deno.test({
         const manifestHash = await uploadRes.text()
         if (uploadRes.status !== 200) throw new Error(`Expected 200 but got ${uploadRes.status}: ${manifestHash}`)
 
+        const sizeAfterUpload = parseInt(await sbp('chelonia.db/get', sizeKey) ?? '0', 10)
+        if (sizeAfterUpload - 1000 !== expectedDelta) {
+          throw new Error(`Expected upload to add ${expectedDelta}, added ${sizeAfterUpload - 1000}`)
+        }
+
         const deleteRes = await fetch(`${baseURL}/deleteFile/${manifestHash}`, {
           method: 'POST',
           headers: { authorization: auth }
@@ -530,6 +584,13 @@ Deno.test({
         await deleteRes.body?.cancel()
         if (deleteRes.status < 200 || deleteRes.status > 204) throw new Error(`Expected 2xx but got ${deleteRes.status}`)
         if (await sbp('chelonia.db/get', chunkHash)) throw new Error('Expected uploaded file chunk to be deleted')
+
+        const sizeAfterDelete = parseInt(await sbp('chelonia.db/get', sizeKey) ?? '0', 10)
+        if (sizeAfterUpload - sizeAfterDelete !== expectedDelta) {
+          throw new Error(`Expected delete to reclaim ${expectedDelta}, reclaimed ${sizeAfterUpload - sizeAfterDelete}`)
+        }
+        // Restore the absent-key invariant for later hand-seeded steps.
+        await sbp('chelonia.db/delete', sizeKey)
 
         const getRes = await fetch(`${baseURL}/file/${manifestHash}`)
         await getRes.body?.cancel()

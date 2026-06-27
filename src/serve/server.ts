@@ -1,6 +1,5 @@
 // deno-lint-ignore-file no-this-alias
 /* eslint-disable @typescript-eslint/no-this-alias */
-import { Buffer } from 'node:buffer'
 import { SPMessage } from 'npm:@chelonia/lib/SPMessage'
 import 'npm:@chelonia/lib/chelonia'
 import { multicodes, parseCID } from 'npm:@chelonia/lib/functions'
@@ -18,7 +17,7 @@ import { join } from 'node:path'
 import process from 'node:process'
 import { getClientIP, registerRoutes } from './routes.ts'
 import { CREDITS_WORKER_TASK_TIME_INTERVAL, OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL } from './constants.ts'
-import { KEYOP_SEGMENT_LENGTH, appendToIndexFactory, closeDB, initDB, lookupUltimateOwner, removeFromIndexFactory, updateSize } from './database.ts'
+import { KEYOP_SEGMENT_LENGTH, appendToIndexFactory, closeDB, dbValueToString, initDB, lookupUltimateOwner, removeFromIndexFactory, updateSize } from './database.ts'
 import { BackendErrorBadData, BackendErrorGone, BackendErrorNotFound } from './errors.ts'
 import { SERVER_RUNNING } from './events.ts'
 import { PUBSUB_INSTANCE, SERVER_INSTANCE } from './instance-keys.ts'
@@ -225,20 +224,19 @@ function installServerSelectorsOnce (): void {
       if (rawManifest === '') { if (skipIfDeleted) return; throw new BackendErrorGone() }
       if (!rawManifest) { if (skipIfDeleted) return; throw new BackendErrorNotFound() }
 
+      let manifest
       try {
-        const manifestText = typeof rawManifest === 'string'
-          ? rawManifest
-          : Buffer.from(rawManifest).toString()
-        const manifest = JSON.parse(manifestText)
-        if (!manifest || typeof manifest !== 'object') throw new BackendErrorBadData('manifest format is invalid')
-        if (manifest.version !== '1.0.0') throw new BackendErrorBadData('unsupported manifest version')
-        if (!Array.isArray(manifest.chunks) || !manifest.chunks.length) throw new BackendErrorBadData('missing chunks')
-        // Delete all chunks
-        await Promise.all(manifest.chunks.map(([, cid]: [unknown, string]) => sbp('chelonia.db/delete', cid)))
+        const manifestText = dbValueToString(rawManifest) as string
+        manifest = JSON.parse(manifestText)
       } catch (e: unknown) {
         console.warn(e, `Error parsing manifest for ${cid}. It's probably not a file manifest.`)
         throw new BackendErrorNotFound()
       }
+      if (!manifest || typeof manifest !== 'object') throw new BackendErrorBadData('manifest format is invalid')
+      if (manifest.version !== '1.0.0') throw new BackendErrorBadData('unsupported manifest version')
+      if (!Array.isArray(manifest.chunks) || !manifest.chunks.length) throw new BackendErrorBadData('missing chunks')
+      // Delete all chunks
+      await Promise.all(manifest.chunks.map(([, cid]: [unknown, string]) => sbp('chelonia.db/delete', cid)))
       // The keys to be deleted are not read from or updated, so they can be deleted
       // without using a queue
       const resourcesKey = `_private_resources_${owner}`

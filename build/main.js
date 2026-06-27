@@ -8,7 +8,7 @@ import { Buffer as Buffer22 } from "node:buffer";
 import { Buffer as Buffer5 } from "node:buffer";
 import { mkdir, readdir, readFile, rm, unlink, writeFile } from "node:fs/promises";
 import { basename as basename9, dirname as dirname9, join as join9, normalize as normalize8, resolve as resolve9 } from "node:path";
-import { Buffer as Buffer10 } from "node:buffer";
+import { Buffer as Buffer11 } from "node:buffer";
 
 // deno:https://jsr.io/@db/sqlite/0.13.0/deno.json
 var deno_default = {
@@ -3068,7 +3068,7 @@ var wrapTransaction = (fn, db2, { begin, commit, rollback, savepoint, release, r
 };
 
 // build/main.js-tmp
-import { Buffer as Buffer11 } from "node:buffer";
+import { Buffer as Buffer12 } from "node:buffer";
 import { mkdir as mkdir2 } from "node:fs/promises";
 import { basename as basename22, dirname as dirname22, join as join22, resolve as resolve22 } from "node:path";
 import process12 from "node:process";
@@ -3997,7 +3997,7 @@ function resolve8(...pathSegments) {
 }
 
 // build/main.js-tmp
-import { Buffer as Buffer12 } from "node:buffer";
+import { Buffer as Buffer13 } from "node:buffer";
 import process2 from "node:process";
 import { Readable } from "node:stream";
 import { Buffer as Buffer6 } from "node:buffer";
@@ -4007,6 +4007,7 @@ import { Buffer as Buffer7 } from "node:buffer";
 import { Buffer as Buffer9 } from "node:buffer";
 import { randomBytes as randomBytes2, timingSafeEqual } from "node:crypto";
 import { Buffer as Buffer8 } from "node:buffer";
+import { Buffer as Buffer10 } from "node:buffer";
 import { join as join32 } from "node:path";
 
 // deno:https://jsr.io/@std/encoding/1.0.10/_common64.ts
@@ -4099,25 +4100,24 @@ import { copyFile, mkdir as mkdir3, readFile as readFile3, writeFile as writeFil
 import { basename as basename42, dirname as dirname42, join as join62 } from "node:path";
 import process4 from "node:process";
 import process10 from "node:process";
-import { Buffer as Buffer16 } from "node:buffer";
 import { createServer as createServerHTTP } from "node:http";
 import { Http2ServerRequest as Http2ServerRequest2, constants as h2constants } from "node:http2";
 import { Http2ServerRequest } from "node:http2";
 import { Readable as Readable2 } from "node:stream";
 import crypto2 from "node:crypto";
-import { Buffer as Buffer13 } from "node:buffer";
+import { Buffer as Buffer14 } from "node:buffer";
 import { basename as basename52 } from "node:path";
 import process5 from "node:process";
 import { join as join72 } from "node:path";
 import process9 from "node:process";
-import { Buffer as Buffer14 } from "node:buffer";
+import { Buffer as Buffer15 } from "node:buffer";
 import { isIP } from "node:net";
 import path5 from "node:path";
 import process7 from "node:process";
 import { Readable as Readable3 } from "node:stream";
 import process6 from "node:process";
 import process8 from "node:process";
-import { Buffer as Buffer15 } from "node:buffer";
+import { Buffer as Buffer16 } from "node:buffer";
 import { pathToFileURL } from "node:url";
 import path6 from "node:path";
 import process11 from "node:process";
@@ -50489,7 +50489,7 @@ var init_database_redis = __esm({
           RESP: 3,
           url: this.url
         }).withTypeMapping({
-          [import_npm_redis.RESP_TYPES.BLOB_STRING]: Buffer10
+          [import_npm_redis.RESP_TYPES.BLOB_STRING]: Buffer11
         });
         await db2.connect();
         this.db = db2;
@@ -50581,8 +50581,8 @@ var init_database_sqlite = __esm({
       async readData(key) {
         const row = this.readStatement.get(key);
         const value = row?.value;
-        if (ArrayBuffer.isView(value) && !Buffer11.isBuffer(value)) {
-          return Buffer11.from(value);
+        if (ArrayBuffer.isView(value) && !Buffer12.isBuffer(value)) {
+          return Buffer12.from(value);
         } else {
           return value;
         }
@@ -69355,6 +69355,10 @@ var redeemSaltUpdateToken = async (contract, token) => {
 var import_npm_nconf2 = __toESM(require_nconf());
 init_esm();
 var KEYOP_SEGMENT_LENGTH = 1e4;
+function dbValueToString(value) {
+  if (value == null) return void 0;
+  return typeof value === "string" ? value : Buffer10.from(value).toString();
+}
 var updateSize = async (resourceID, sizeKey, size, skipIfDeleted) => {
   if (!Number.isSafeInteger(size)) {
     throw new TypeError(`Invalid given size ${size} for ${resourceID}`);
@@ -69813,7 +69817,7 @@ async function uploadEntryToURL([cid, buffer], url2) {
   });
 }
 function uploadEntryToDB([cid, buffer]) {
-  return esm_default("chelonia.db/set", cid, Buffer12.from(buffer)).then(() => cid);
+  return esm_default("chelonia.db/set", cid, Buffer13.from(buffer)).then(() => cid);
 }
 function handleFetchResult2(type) {
   return async function(r) {
@@ -73752,10 +73756,10 @@ var createAdaptorServer = (options2) => {
 };
 init_esm7();
 init_esm();
-Object.defineProperties(Buffer13, {
+Object.defineProperties(Buffer14, {
   [serdesDeserializeSymbol]: {
     value(buf2) {
-      return Buffer13.from(buf2);
+      return Buffer14.from(buf2);
     }
   },
   [serdesSerializeSymbol]: {
@@ -73767,7 +73771,7 @@ Object.defineProperties(Buffer13, {
     value: "node:buffer"
   }
 });
-deserializer.register(Buffer13);
+deserializer.register(Buffer14);
 var createWorker = (path8) => {
   let worker;
   let ready;
@@ -74595,7 +74599,7 @@ function registerRoutes(app) {
               await esm_default("chelonia.db/set", `_private_deletionTokenDgst_${deserializedHEAD.contractID}`, deletionTokenDgst);
             }
           }
-          await esm_default("backend/server/updateSize", deserializedHEAD.contractID, Buffer14.byteLength(payload), deserializedHEAD.isFirstMessage && !credentials?.billableContractID ? deserializedHEAD.contractID : void 0);
+          await esm_default("backend/server/updateSize", deserializedHEAD.contractID, Buffer15.byteLength(payload), deserializedHEAD.isFirstMessage && !credentials?.billableContractID ? deserializedHEAD.contractID : void 0);
         } catch (err) {
           if (err instanceof HTTPException) throw err;
           console.error(err, import_npm_chalk.default.bold.yellow(err.name));
@@ -74728,7 +74732,7 @@ function registerRoutes(app) {
   });
   app.post("/streams-test", async function(c) {
     const raw2 = await c.req.arrayBuffer();
-    const buf2 = Buffer14.from(raw2);
+    const buf2 = Buffer15.from(raw2);
     if (buf2.byteLength === 2 && buf2.toString() === "ok") {
       return c.body(null, 204);
     } else {
@@ -74747,7 +74751,7 @@ function registerRoutes(app) {
         if (!data || Array.isArray(data)) throw new HTTPException(400, { message: "missing data" });
         const parsed = maybeParseCID(hash3);
         if (!parsed) throw new HTTPException(400, { message: "invalid hash" });
-        const dataStringOrBytes = typeof data === "string" ? data : Buffer14.from(await data.bytes()).toString();
+        const dataStringOrBytes = typeof data === "string" ? data : Buffer15.from(await data.bytes()).toString();
         const ourHash = createCID(dataStringOrBytes, parsed.code);
         if (ourHash !== hash3) {
           console.error(`hash(${hash3}) != ourHash(${ourHash})`);
@@ -74783,7 +74787,7 @@ function registerRoutes(app) {
         if (!manifestFile) throw new HTTPException(400, { message: "missing manifest" });
         if (manifestFile.name !== "manifest.json") throw new HTTPException(400, { message: "wrong manifest filename" });
         const manifestPayload = new Uint8Array(await manifestFile.arrayBuffer());
-        const manifestText = Buffer14.from(manifestPayload).toString();
+        const manifestText = Buffer15.from(manifestPayload).toString();
         const manifest2 = (() => {
           try {
             return JSON.parse(manifestText);
@@ -74831,7 +74835,7 @@ function registerRoutes(app) {
             throw new Error(`Chunk ${cid} already exists`);
           }
         }));
-        await Promise.all(chunks.map(([cid, data]) => esm_default("chelonia.db/set", cid, Buffer14.from(data))));
+        await Promise.all(chunks.map(([cid, data]) => esm_default("chelonia.db/set", cid, Buffer15.from(data))));
         await esm_default("chelonia.db/set", manifestHash, manifestText);
         await esm_default("backend/server/saveOwner", credentials.billableContractID, manifestHash);
         const size = manifest2.size + manifestPayload.byteLength;
@@ -74990,7 +74994,7 @@ function registerRoutes(app) {
       if (!ctEq(credentials.billableContractID, contractID)) {
         throw new HTTPException(401);
       }
-      const payloadBuffer = Buffer14.from(await c.req.arrayBuffer());
+      const payloadBuffer = Buffer15.from(await c.req.arrayBuffer());
       return esm_default("chelonia/queueInvocation", contractID, async () => {
         const existing = await esm_default("chelonia.db/get", `_private_kv_${contractID}_${key}`);
         const expectedEtag = c.req.header("if-match");
@@ -75025,7 +75029,7 @@ function registerRoutes(app) {
           console.error(parseErr, "/kv/:contractID/:key", contractID, key);
           throw new HTTPException(422);
         }
-        const existingSize = existing ? Buffer14.from(existing).byteLength : 0;
+        const existingSize = existing ? Buffer15.from(existing).byteLength : 0;
         await esm_default("chelonia.db/set", `_private_kv_${contractID}_${key}`, payloadBuffer);
         await esm_default("backend/server/updateSize", contractID, payloadBuffer.byteLength - existingSize);
         await appendToIndexFactory(`_private_kvIdx_${contractID}`)(key);
@@ -75333,10 +75337,10 @@ var subscriptionInfoWrapper = (subscriptionId, subscriptionInfo, extra) => {
         return function() {
           if ((count | 0) === 0) {
             if (!salt) {
-              salt = Buffer15.from(this.keys.auth, "base64url");
+              salt = Buffer16.from(this.keys.auth, "base64url");
             }
             if (!uaPublic) {
-              uaPublic = Buffer15.from(this.keys.p256dh, "base64url");
+              uaPublic = Buffer16.from(this.keys.p256dh, "base64url");
             }
             resultPromise = rfc8291Ikm_default(uaPublic, salt);
             count = 1;
@@ -75372,7 +75376,7 @@ var encryptPayload = async (subscription, data) => {
       if (done) break;
       chunks.push(new Uint8Array(value));
     }
-    return Buffer15.concat(chunks);
+    return Buffer16.concat(chunks);
   });
 };
 var postEvent = async (subscription, event) => {
@@ -75420,7 +75424,7 @@ var pushServerActionhandlers = {
     const { applicationServerKey, settings, subscriptionInfo } = payload;
     if (applicationServerKey) {
       const ourVapidPublicKey = getVapidPublicKey();
-      const theirVapidPublicKey = Buffer15.from(applicationServerKey, "base64").toString("base64url");
+      const theirVapidPublicKey = Buffer16.from(applicationServerKey, "base64").toString("base64url");
       if (ourVapidPublicKey !== theirVapidPublicKey) {
         socket.send(createMessage(REQUEST_TYPE.PUSH_ACTION, { type: PUSH_SERVER_ACTION_TYPE.SEND_PUBLIC_KEY, data: getVapidPublicKey() }));
         console.warn({ ourVapidPublicKey, theirVapidPublicKey }, "Refusing to store subscription because the associated public VAPID key does not match ours");
@@ -75934,17 +75938,18 @@ function installServerSelectorsOnce() {
         if (skipIfDeleted) return;
         throw new BackendErrorNotFound();
       }
+      let manifest2;
       try {
-        const manifestText = typeof rawManifest === "string" ? rawManifest : Buffer16.from(rawManifest).toString();
-        const manifest2 = JSON.parse(manifestText);
-        if (!manifest2 || typeof manifest2 !== "object") throw new BackendErrorBadData("manifest format is invalid");
-        if (manifest2.version !== "1.0.0") throw new BackendErrorBadData("unsupported manifest version");
-        if (!Array.isArray(manifest2.chunks) || !manifest2.chunks.length) throw new BackendErrorBadData("missing chunks");
-        await Promise.all(manifest2.chunks.map(([, cid2]) => esm_default("chelonia.db/delete", cid2)));
+        const manifestText = dbValueToString(rawManifest);
+        manifest2 = JSON.parse(manifestText);
       } catch (e2) {
         console.warn(e2, `Error parsing manifest for ${cid}. It's probably not a file manifest.`);
         throw new BackendErrorNotFound();
       }
+      if (!manifest2 || typeof manifest2 !== "object") throw new BackendErrorBadData("manifest format is invalid");
+      if (manifest2.version !== "1.0.0") throw new BackendErrorBadData("unsupported manifest version");
+      if (!Array.isArray(manifest2.chunks) || !manifest2.chunks.length) throw new BackendErrorBadData("missing chunks");
+      await Promise.all(manifest2.chunks.map(([, cid2]) => esm_default("chelonia.db/delete", cid2)));
       const resourcesKey = `_private_resources_${owner}`;
       await removeFromIndexFactory(resourcesKey)(cid);
       await esm_default("backend/server/removeFromIndirectResourcesIndex", cid);

@@ -1,8 +1,21 @@
+import { Buffer } from 'node:buffer'
 import sbp from 'npm:@sbp/sbp'
 
 // Segment length for keyop index. Changing this value will require rebuilding
 // this index. The value should be a power of 10 (e.g., 10, 100, 1000, 10000)
 export const KEYOP_SEGMENT_LENGTH = 10_000
+
+// `chelonia.db/get` may return either a string or raw bytes, depending on how a
+// value was originally stored (e.g. a manifest uploaded as text vs. as bytes)
+// and on the backend serving it. Any reader that needs to JSON.parse a stored
+// value must normalize to text first; doing it in one place keeps that
+// invariant discoverable and prevents `JSON.parse(<bytes>)` regressions.
+export function dbValueToString (
+  value: string | Buffer | Uint8Array | null | undefined
+): string | undefined {
+  if (value == null) return undefined
+  return typeof value === 'string' ? value : Buffer.from(value).toString()
+}
 
 export const updateSize = async (resourceID: string, sizeKey: string, size: number, skipIfDeleted?: boolean) => {
   if (!Number.isSafeInteger(size)) {
