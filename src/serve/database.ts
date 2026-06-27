@@ -26,6 +26,37 @@ let currentBackend: DatabaseBackend | null = null
 let currentCache: LRU<string, Buffer | string> | null = null
 let isClosing = false
 
+// Derives a human-readable detail string from an error, handling AggregateError
+// (e.g. a redis URL pointing at `localhost` fails on both ::1 and 127.0.0.1 and
+// Node surfaces an AggregateError whose `.message` is empty).
+function errorDetail (e: unknown): string {
+  if (e && typeof e === 'object') {
+    const err = e as { message?: string; code?: string; errors?: unknown[] }
+    if (err.message) return err.message
+    if (Array.isArray(err.errors) && err.errors.length) {
+      const details = err.errors.map((sub) =>
+        sub instanceof Error ? sub.message : (typeof sub === 'string' ? sub : String(sub))
+      ).filter(Boolean)
+      if (details.length) return details.join('; ')
+    }
+    if (err.code) return err.code
+  }
+  return String(e)
+}
+
+// Wraps a backend init failure with a clear message that names the configured
+// backend and surfaces the original error detail. For the `router` backend, the
+// failing sub-backend is named when possible via `backendName` set by the router.
+function wrapBackendInitError (backendName: string, e: unknown): Error {
+  const subName = (e as { backendName?: string } | undefined)?.backendName
+  const display = backendName === 'router' && subName ? subName : backendName
+  return new Error(
+    `chel is configured for the "${display}" database backend, ` +
+    `but it failed to initialize: ${errorDetail(e)}`,
+    { cause: e }
+  )
+}
+
 let baseSelectorsInstalled = false
 function installBaseSelectorsOnce () {
   if (baseSelectorsInstalled) return
@@ -220,9 +251,22 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
       const ARCHIVE_MODE = nconf.get('server:archiveMode')
 
       if (persistence && persistence !== 'mem') {
-        const Ctor = (await import(`./database-${persistence}.ts`)).default
+        let Ctor
+        try {
+          Ctor = (await import(`./database-${persistence}.ts`)).default
+        } catch (e) {
+          throw new Error(
+            `chel is configured for the "${persistence}" database backend, ` +
+            `but the backend module failed to load: ${(e as Error).message || String(e)}`,
+            { cause: e }
+          )
+        }
         const instance = new Ctor(options[persistence]) as DatabaseBackend
-        await instance.init()
+        try {
+          await instance.init()
+        } catch (e) {
+          throw wrapBackendInitError(persistence, e)
+        }
         currentBackend = instance
 
         const cache = new LRU<string, Buffer | string>({

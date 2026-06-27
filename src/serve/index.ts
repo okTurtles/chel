@@ -8,8 +8,6 @@ import { SERVER_EXITING, SERVER_RUNNING } from './events.ts'
 import { startServer as startServerImpl, stopServer } from './server.ts'
 import { initializeLogger } from './logger.ts'
 
-console.info('NODE_ENV =', process.env.NODE_ENV)
-
 const dontLog: Record<string, boolean> = {
   'backend/server/broadcastEntry': true,
   'backend/server/broadcastDeletion': true,
@@ -111,6 +109,10 @@ export async function startServer (options: StartServerOptions = {}): Promise<{ 
 
   // Initialize pino logger (replaces console.* methods)
   initializeLogger()
+
+  console.info(chalk.bold(
+    `Running in ${process.env.NODE_ENV === 'production' ? 'production' : 'development'} mode.`
+  ))
 
   // Install global exception handlers once per process (only if signal handlers are enabled)
   if (shouldInstallSignalHandlers) {
