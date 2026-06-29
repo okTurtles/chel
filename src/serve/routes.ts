@@ -943,7 +943,8 @@ export function registerRoutes (app: Hono): void {
         // the ETag a true content-address of what was persisted, regardless of
         // whether the bytes are valid UTF-8.
         // `any:` _could_ return a string, so we wrap in `Buffer` to coerce the type
-        const existing = Buffer.from(await sbp('chelonia.db/get', `any:_private_kv_${contractID}_${key}`))
+        const existingRaw = await sbp('chelonia.db/get', `any:_private_kv_${contractID}_${key}`)
+        const existing = existingRaw != null && !Buffer.isBuffer(existingRaw) ? Buffer.from(existingRaw) : existingRaw
 
         // Some protection against accidental overwriting by implementing the if-match
         // header
@@ -1027,7 +1028,8 @@ export function registerRoutes (app: Hono): void {
       // of a UTF-8 decoded string, so the ETag content-addresses exactly what was
       // persisted and matches the CID the POST/412/409 paths return.
       // `any:` _could_ return a string, so we wrap in `Buffer` to coerce the type
-      const result = Buffer.from(await sbp('chelonia.db/get', `any:_private_kv_${contractID}_${key}`))
+      const resultRaw = await sbp('chelonia.db/get', `any:_private_kv_${contractID}_${key}`)
+      const result = resultRaw != null && !Buffer.isBuffer(resultRaw) ? Buffer.from(resultRaw) : resultRaw
       if (!result) {
         return notFoundNoCache(c)
       }
