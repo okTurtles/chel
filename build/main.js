@@ -74537,8 +74537,15 @@ function registerRoutes(app) {
           const credentials = c.get("credentials");
           if (!credentials?.billableContractID && deserializedHEAD.isFirstMessage) {
             const manifest2 = await esm_default("chelonia.db/get", deserializedHEAD.head.manifest);
-            const parsedManifest = JSON.parse(manifest2);
-            const { name } = JSON.parse(parsedManifest.body);
+            let name;
+            try {
+              if (!manifest2) throw new Error("empty manifest");
+              const parsedManifest = JSON.parse(manifest2);
+              ({ name } = JSON.parse(parsedManifest.body));
+            } catch (e2) {
+              if (e2 instanceof HTTPException) throw e2;
+              throw new HTTPException(422, { message: "Invalid manifest" });
+            }
             if (name !== "gi.contracts/identity") {
               throw new HTTPException(401, { message: "This contract type requires ownership information" });
             }
@@ -74782,9 +74789,10 @@ function registerRoutes(app) {
         if (!manifestFile) throw new HTTPException(400, { message: "missing manifest" });
         if (manifestFile.name !== "manifest.json") throw new HTTPException(400, { message: "wrong manifest filename" });
         const manifestPayload = new Uint8Array(await manifestFile.arrayBuffer());
+        const manifestText = Buffer14.from(manifestPayload).toString();
         const manifest2 = (() => {
           try {
-            return JSON.parse(Buffer14.from(manifestPayload).toString());
+            return JSON.parse(manifestText);
           } catch {
             throw new HTTPException(422, { message: "Error parsing manifest" });
           }
@@ -74829,8 +74837,8 @@ function registerRoutes(app) {
             throw new Error(`Chunk ${cid} already exists`);
           }
         }));
-        await Promise.all(chunks.map(([cid, data]) => esm_default("chelonia.db/set", cid, data)));
-        await esm_default("chelonia.db/set", manifestHash, manifestPayload);
+        await Promise.all(chunks.map(([cid, data]) => esm_default("chelonia.db/set", cid, Buffer14.from(data))));
+        await esm_default("chelonia.db/set", manifestHash, Buffer14.from(manifestPayload));
         await esm_default("backend/server/saveOwner", credentials.billableContractID, manifestHash);
         const size = manifest2.size + manifestPayload.byteLength;
         await esm_default("backend/server/updateSize", manifestHash, size);
@@ -75932,16 +75940,23 @@ function installServerSelectorsOnce() {
         if (skipIfDeleted) return;
         throw new BackendErrorNotFound();
       }
+      if (rawManifest == null) throw new BackendErrorBadData("manifest is missing");
+      const manifestText = rawManifest;
+      let manifest2;
       try {
-        const manifest2 = JSON.parse(rawManifest);
-        if (!manifest2 || typeof manifest2 !== "object") throw new BackendErrorBadData("manifest format is invalid");
-        if (manifest2.version !== "1.0.0") throw new BackendErrorBadData("unsupported manifest version");
-        if (!Array.isArray(manifest2.chunks) || !manifest2.chunks.length) throw new BackendErrorBadData("missing chunks");
-        await Promise.all(manifest2.chunks.map(([, cid2]) => esm_default("chelonia.db/delete", cid2)));
+        manifest2 = JSON.parse(manifestText);
       } catch (e2) {
+        if (owner) {
+          console.warn(e2, `Error parsing stored manifest for ${cid}`);
+          throw new BackendErrorBadData("manifest is not valid JSON");
+        }
         console.warn(e2, `Error parsing manifest for ${cid}. It's probably not a file manifest.`);
         throw new BackendErrorNotFound();
       }
+      if (!manifest2 || typeof manifest2 !== "object") throw new BackendErrorBadData("manifest format is invalid");
+      if (manifest2.version !== "1.0.0") throw new BackendErrorBadData("unsupported manifest version");
+      if (!Array.isArray(manifest2.chunks) || !manifest2.chunks.length) throw new BackendErrorBadData("missing chunks");
+      await Promise.all(manifest2.chunks.map(([, cid2]) => esm_default("chelonia.db/delete", cid2)));
       const resourcesKey = `_private_resources_${owner}`;
       await removeFromIndexFactory(resourcesKey)(cid);
       await esm_default("backend/server/removeFromIndirectResourcesIndex", cid);

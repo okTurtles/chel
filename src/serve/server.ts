@@ -224,17 +224,29 @@ function installServerSelectorsOnce (): void {
       if (rawManifest === '') { if (skipIfDeleted) return; throw new BackendErrorGone() }
       if (!rawManifest) { if (skipIfDeleted) return; throw new BackendErrorNotFound() }
 
+      if (rawManifest == null) throw new BackendErrorBadData('manifest is missing')
+      const manifestText = rawManifest
+
+      let manifest: { version?: unknown; chunks?: unknown }
       try {
-        const manifest = JSON.parse(rawManifest)
-        if (!manifest || typeof manifest !== 'object') throw new BackendErrorBadData('manifest format is invalid')
-        if (manifest.version !== '1.0.0') throw new BackendErrorBadData('unsupported manifest version')
-        if (!Array.isArray(manifest.chunks) || !manifest.chunks.length) throw new BackendErrorBadData('missing chunks')
-        // Delete all chunks
-        await Promise.all(manifest.chunks.map(([, cid]: [unknown, string]) => sbp('chelonia.db/delete', cid)))
+        manifest = JSON.parse(manifestText)
       } catch (e: unknown) {
+        // A registered resource (one that has an owner record) that fails to
+        // parse is corrupt stored data, not a missing file: surface it as bad
+        // data (422). Without an owner record, the key likely isn't a file
+        // manifest at all (e.g. a contract), so treat it as not found (404).
+        if (owner) {
+          console.warn(e, `Error parsing stored manifest for ${cid}`)
+          throw new BackendErrorBadData('manifest is not valid JSON')
+        }
         console.warn(e, `Error parsing manifest for ${cid}. It's probably not a file manifest.`)
         throw new BackendErrorNotFound()
       }
+      if (!manifest || typeof manifest !== 'object') throw new BackendErrorBadData('manifest format is invalid')
+      if (manifest.version !== '1.0.0') throw new BackendErrorBadData('unsupported manifest version')
+      if (!Array.isArray(manifest.chunks) || !manifest.chunks.length) throw new BackendErrorBadData('missing chunks')
+      // Delete all chunks
+      await Promise.all(manifest.chunks.map(([, cid]: [unknown, string]) => sbp('chelonia.db/delete', cid)))
       // The keys to be deleted are not read from or updated, so they can be deleted
       // without using a queue
       const resourcesKey = `_private_resources_${owner}`

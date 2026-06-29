@@ -1,4 +1,5 @@
 import 'jsr:@db/sqlite'
+import { Buffer } from 'node:buffer'
 import {
   blake32Hash,
   buildShelterAuthHeader,
@@ -208,6 +209,106 @@ Deno.test({
         const getRes = await fetch(`${baseURL}/file/${manifestHash}`)
         await getRes.body?.cancel()
         if (getRes.status !== 410) throw new Error(`Expected 410 after deletion but got ${getRes.status}`)
+      })
+
+      await t.step('POST /deleteFile deletes legacy byte manifest', async () => {
+        const chunkData = 'legacy-chunk-to-delete'
+        const chunkHash = createCID(chunkData, multicodes.SHELTER_FILE_CHUNK)
+        await sbp('chelonia.db/set', chunkHash, chunkData)
+
+        const manifestData = JSON.stringify({
+          version: '1.0.0',
+          cipher: 'aes256gcm',
+          size: chunkData.length,
+          chunks: [[chunkData.length, chunkHash]]
+        })
+        const manifestBytes = new TextEncoder().encode(manifestData)
+        const manifestHash = createCID(manifestBytes, multicodes.SHELTER_FILE_MANIFEST)
+        await sbp('chelonia.db/set', manifestHash, Buffer.from(manifestBytes))
+        await sbp('chelonia.db/set', `_private_owner_${manifestHash}`, owner.contractID)
+        await sbp('chelonia.db/set', `_private_size_${manifestHash}`, String(chunkData.length + manifestBytes.byteLength))
+
+        // Seed the owner's aggregate file size as a real upload would, so we can
+        // assert it is decremented by exactly the deleted file's size.
+        const sizeKey = `_private_contractFilesTotalSize_${owner.contractID}`
+        const sizeKeyOriginal = await sbp('chelonia.db/get', sizeKey)
+        const expectedDelta = chunkData.length + manifestBytes.byteLength
+        const sizeBefore = parseInt(await sbp('chelonia.db/get', sizeKey) ?? '0', 10)
+        await sbp('chelonia.db/set', sizeKey, String(sizeBefore + expectedDelta))
+
+        const auth = buildShelterAuthHeader(owner.contractID, owner.SAK)
+        const res = await fetch(`${baseURL}/deleteFile/${manifestHash}`, {
+          method: 'POST',
+          headers: { authorization: auth }
+        })
+        await res.body?.cancel()
+        if (res.status < 200 || res.status > 204) throw new Error(`Expected 2xx but got ${res.status}`)
+        if (await sbp('chelonia.db/get', chunkHash)) throw new Error('Expected legacy file chunk to be deleted')
+
+        const sizeAfter = parseInt(await sbp('chelonia.db/get', sizeKey) ?? '0', 10)
+        if ((sizeBefore + expectedDelta) - sizeAfter !== expectedDelta) {
+          throw new Error(`Expected aggregate size to drop by ${expectedDelta}, dropped by ${(sizeBefore + expectedDelta) - sizeAfter}`)
+        }
+        // Restore the exact pre-existing state so this step is independent of
+        // any ordering with later steps that touch the same aggregate key.
+        if (sizeKeyOriginal == null) {
+          await sbp('chelonia.db/delete', sizeKey)
+        } else {
+          await sbp('chelonia.db/set', sizeKey, sizeKeyOriginal)
+        }
+
+        const getRes = await fetch(`${baseURL}/file/${manifestHash}`)
+        await getRes.body?.cancel()
+        if (getRes.status !== 410) throw new Error(`Expected 410 after deletion but got ${getRes.status}`)
+      })
+
+      await t.step('POST /deleteFile surfaces invalid manifest as 422, not 404', async () => {
+        // A stored value that parses as JSON but fails manifest validation is
+        // bad data, not a missing resource: it should map to 422.
+        const manifestData = JSON.stringify({
+          version: '2.0.0',
+          cipher: 'aes256gcm',
+          size: 1,
+          chunks: [[1, createCID('orphan-chunk', multicodes.SHELTER_FILE_CHUNK)]]
+        })
+        const manifestHash = createCID(manifestData + 'bad-version', multicodes.SHELTER_FILE_MANIFEST)
+        await sbp('chelonia.db/set', manifestHash, manifestData)
+        await sbp('chelonia.db/set', `_private_owner_${manifestHash}`, owner.contractID)
+        await sbp('chelonia.db/set', `_private_size_${manifestHash}`, '1')
+
+        const auth = buildShelterAuthHeader(owner.contractID, owner.SAK)
+        const res = await fetch(`${baseURL}/deleteFile/${manifestHash}`, {
+          method: 'POST',
+          headers: { authorization: auth }
+        })
+        await res.body?.cancel()
+        if (res.status !== 422) throw new Error(`Expected 422 for invalid manifest but got ${res.status}`)
+
+        await sbp('chelonia.db/delete', manifestHash)
+        await sbp('chelonia.db/delete', `_private_owner_${manifestHash}`)
+        await sbp('chelonia.db/delete', `_private_size_${manifestHash}`)
+      })
+
+      await t.step('POST /deleteFile surfaces corrupt manifest JSON as 422, not 404', async () => {
+        // A stored value that is owned but is not valid JSON is corrupt stored
+        // data, not a missing resource: it should map to 422.
+        const garbage = 'this is not json {'
+        const manifestHash = createCID(garbage + 'corrupt', multicodes.SHELTER_FILE_MANIFEST)
+        await sbp('chelonia.db/set', manifestHash, garbage)
+        await sbp('chelonia.db/set', `_private_owner_${manifestHash}`, owner.contractID)
+        await sbp('chelonia.db/set', `_private_size_${manifestHash}`, '1')
+
+        const auth = buildShelterAuthHeader(owner.contractID, owner.SAK)
+        const res = await fetch(`${baseURL}/deleteFile/${manifestHash}`, {
+          method: 'POST',
+          headers: { authorization: auth }
+        })
+        await res.body?.cancel()
+        if (res.status !== 422) throw new Error(`Expected 422 for corrupt manifest but got ${res.status}`)
+
+        await sbp('chelonia.db/delete', manifestHash)
+        await sbp('chelonia.db/delete', `_private_owner_${manifestHash}`)
+        await sbp('chelonia.db/delete', `_private_size_${manifestHash}`)
       })
 
       await t.step('POST /deleteFile with bearer token deletes file', async () => {
@@ -468,6 +569,68 @@ Deno.test({
         const getRes = await fetch(`${baseURL}/file/${manifestHash}`)
         if (getRes.status !== 200) throw new Error(`GET file failed: ${getRes.status}`)
         await getRes.body?.cancel()
+      })
+
+      await t.step('POST /file uploaded file can be deleted', async () => {
+        const auth = buildShelterAuthHeader(owner.contractID, owner.SAK)
+        const chunkContent = new Uint8Array([68, 101, 108, 101, 116, 101])
+        const chunkHash = createCID(chunkContent, multicodes.SHELTER_FILE_CHUNK)
+        const manifest = JSON.stringify({
+          version: '1.0.0',
+          cipher: 'aes256gcm',
+          size: chunkContent.byteLength,
+          chunks: [[chunkContent.byteLength, chunkHash]]
+        })
+        const form = new FormData()
+        form.append('manifest', new Blob([manifest], { type: 'application/vnd.shelter.filemanifest' }), 'manifest.json')
+        form.append('0', new Blob([chunkContent], { type: 'application/octet-stream' }), '0')
+
+        // The owner's aggregate file size is only updated when it already exists
+        // (uploads use skipIfDeleted), mirroring an owner that already has files.
+        // Seed it so we can verify the upload increments it and the delete
+        // reclaims exactly the uploaded file's size, guarding against silent
+        // quota drift if size accounting regresses.
+        const sizeKey = `_private_contractFilesTotalSize_${owner.contractID}`
+        const sizeKeyOriginal = await sbp('chelonia.db/get', sizeKey)
+        const manifestBytes = new TextEncoder().encode(manifest).byteLength
+        const expectedDelta = chunkContent.byteLength + manifestBytes
+        await sbp('chelonia.db/set', sizeKey, '1000')
+
+        const uploadRes = await fetch(`${baseURL}/file`, {
+          method: 'POST',
+          headers: { authorization: auth },
+          body: form
+        })
+        const manifestHash = await uploadRes.text()
+        if (uploadRes.status !== 200) throw new Error(`Expected 200 but got ${uploadRes.status}: ${manifestHash}`)
+
+        const sizeAfterUpload = parseInt(await sbp('chelonia.db/get', sizeKey) ?? '0', 10)
+        if (sizeAfterUpload - 1000 !== expectedDelta) {
+          throw new Error(`Expected upload to add ${expectedDelta}, added ${sizeAfterUpload - 1000}`)
+        }
+
+        const deleteRes = await fetch(`${baseURL}/deleteFile/${manifestHash}`, {
+          method: 'POST',
+          headers: { authorization: auth }
+        })
+        await deleteRes.body?.cancel()
+        if (deleteRes.status < 200 || deleteRes.status > 204) throw new Error(`Expected 2xx but got ${deleteRes.status}`)
+        if (await sbp('chelonia.db/get', chunkHash)) throw new Error('Expected uploaded file chunk to be deleted')
+
+        const sizeAfterDelete = parseInt(await sbp('chelonia.db/get', sizeKey) ?? '0', 10)
+        if (sizeAfterUpload - sizeAfterDelete !== expectedDelta) {
+          throw new Error(`Expected delete to reclaim ${expectedDelta}, reclaimed ${sizeAfterUpload - sizeAfterDelete}`)
+        }
+        // Restore the exact pre-existing state for step independence.
+        if (sizeKeyOriginal == null) {
+          await sbp('chelonia.db/delete', sizeKey)
+        } else {
+          await sbp('chelonia.db/set', sizeKey, sizeKeyOriginal)
+        }
+
+        const getRes = await fetch(`${baseURL}/file/${manifestHash}`)
+        await getRes.body?.cancel()
+        if (getRes.status !== 410) throw new Error(`Expected 410 after deletion but got ${getRes.status}`)
       })
 
       await t.step('POST /file rejects duplicate upload', async () => {
