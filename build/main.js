@@ -74836,7 +74836,7 @@ function registerRoutes(app) {
           }
         }));
         await Promise.all(chunks.map(([cid, data]) => esm_default("chelonia.db/set", cid, Buffer15.from(data))));
-        await esm_default("chelonia.db/set", manifestHash, manifestText);
+        await esm_default("chelonia.db/set", manifestHash, manifestPayload);
         await esm_default("backend/server/saveOwner", credentials.billableContractID, manifestHash);
         const size = manifest2.size + manifestPayload.byteLength;
         await esm_default("backend/server/updateSize", manifestHash, size);
@@ -75938,11 +75938,16 @@ function installServerSelectorsOnce() {
         if (skipIfDeleted) return;
         throw new BackendErrorNotFound();
       }
+      const manifestText = dbValueToString(rawManifest);
+      if (manifestText == null) throw new BackendErrorBadData("manifest is missing");
       let manifest2;
       try {
-        const manifestText = dbValueToString(rawManifest);
         manifest2 = JSON.parse(manifestText);
       } catch (e2) {
+        if (owner) {
+          console.warn(e2, `Error parsing stored manifest for ${cid}`);
+          throw new BackendErrorBadData("manifest is not valid JSON");
+        }
         console.warn(e2, `Error parsing manifest for ${cid}. It's probably not a file manifest.`);
         throw new BackendErrorNotFound();
       }

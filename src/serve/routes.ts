@@ -747,7 +747,9 @@ export function registerRoutes (app: Hono): void {
         }))
         // Now, store all chunks and the manifest
         await Promise.all(chunks.map(([cid, data]) => sbp('chelonia.db/set', cid, Buffer.from(data))))
-        await sbp('chelonia.db/set', manifestHash, manifestText)
+        // Store the raw manifest bytes (not the decoded text) so the stored
+        // value is byte-identical to what `manifestHash` was computed from.
+        await sbp('chelonia.db/set', manifestHash, manifestPayload)
         // Store attribution information
         await sbp('backend/server/saveOwner', credentials.billableContractID, manifestHash)
         // Store size information

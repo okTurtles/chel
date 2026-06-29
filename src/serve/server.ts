@@ -224,11 +224,21 @@ function installServerSelectorsOnce (): void {
       if (rawManifest === '') { if (skipIfDeleted) return; throw new BackendErrorGone() }
       if (!rawManifest) { if (skipIfDeleted) return; throw new BackendErrorNotFound() }
 
-      let manifest
+      const manifestText = dbValueToString(rawManifest)
+      if (manifestText == null) throw new BackendErrorBadData('manifest is missing')
+
+      let manifest: { version?: unknown; chunks?: unknown }
       try {
-        const manifestText = dbValueToString(rawManifest) as string
         manifest = JSON.parse(manifestText)
       } catch (e: unknown) {
+        // A registered resource (one that has an owner record) that fails to
+        // parse is corrupt stored data, not a missing file: surface it as bad
+        // data (422). Without an owner record, the key likely isn't a file
+        // manifest at all (e.g. a contract), so treat it as not found (404).
+        if (owner) {
+          console.warn(e, `Error parsing stored manifest for ${cid}`)
+          throw new BackendErrorBadData('manifest is not valid JSON')
+        }
         console.warn(e, `Error parsing manifest for ${cid}. It's probably not a file manifest.`)
         throw new BackendErrorNotFound()
       }

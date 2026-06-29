@@ -230,6 +230,7 @@ Deno.test({
         // Seed the owner's aggregate file size as a real upload would, so we can
         // assert it is decremented by exactly the deleted file's size.
         const sizeKey = `_private_contractFilesTotalSize_${owner.contractID}`
+        const sizeKeyOriginal = await sbp('chelonia.db/get', sizeKey)
         const expectedDelta = chunkData.length + manifestBytes.byteLength
         const sizeBefore = parseInt(await sbp('chelonia.db/get', sizeKey) ?? '0', 10)
         await sbp('chelonia.db/set', sizeKey, String(sizeBefore + expectedDelta))
@@ -247,10 +248,13 @@ Deno.test({
         if ((sizeBefore + expectedDelta) - sizeAfter !== expectedDelta) {
           throw new Error(`Expected aggregate size to drop by ${expectedDelta}, dropped by ${(sizeBefore + expectedDelta) - sizeAfter}`)
         }
-        // Restore the pre-seeded state so later steps that delete hand-seeded
-        // files (whose sizes were never added to the aggregate) keep skipping
-        // the aggregate update instead of driving it negative.
-        await sbp('chelonia.db/delete', sizeKey)
+        // Restore the exact pre-existing state so this step is independent of
+        // any ordering with later steps that touch the same aggregate key.
+        if (sizeKeyOriginal == null) {
+          await sbp('chelonia.db/delete', sizeKey)
+        } else {
+          await sbp('chelonia.db/set', sizeKey, sizeKeyOriginal)
+        }
 
         const getRes = await fetch(`${baseURL}/file/${manifestHash}`)
         await getRes.body?.cancel()
@@ -278,6 +282,24 @@ Deno.test({
         })
         await res.body?.cancel()
         if (res.status !== 422) throw new Error(`Expected 422 for invalid manifest but got ${res.status}`)
+      })
+
+      await t.step('POST /deleteFile surfaces corrupt manifest JSON as 422, not 404', async () => {
+        // A stored value that is owned but is not valid JSON is corrupt stored
+        // data, not a missing resource: it should map to 422.
+        const garbage = 'this is not json {'
+        const manifestHash = createCID(garbage + 'corrupt', multicodes.SHELTER_FILE_MANIFEST)
+        await sbp('chelonia.db/set', manifestHash, garbage)
+        await sbp('chelonia.db/set', `_private_owner_${manifestHash}`, owner.contractID)
+        await sbp('chelonia.db/set', `_private_size_${manifestHash}`, '1')
+
+        const auth = buildShelterAuthHeader(owner.contractID, owner.SAK)
+        const res = await fetch(`${baseURL}/deleteFile/${manifestHash}`, {
+          method: 'POST',
+          headers: { authorization: auth }
+        })
+        await res.body?.cancel()
+        if (res.status !== 422) throw new Error(`Expected 422 for corrupt manifest but got ${res.status}`)
       })
 
       await t.step('POST /deleteFile with bearer token deletes file', async () => {
@@ -560,6 +582,7 @@ Deno.test({
         // reclaims exactly the uploaded file's size, guarding against silent
         // quota drift if size accounting regresses.
         const sizeKey = `_private_contractFilesTotalSize_${owner.contractID}`
+        const sizeKeyOriginal = await sbp('chelonia.db/get', sizeKey)
         const manifestBytes = new TextEncoder().encode(manifest).byteLength
         const expectedDelta = chunkContent.byteLength + manifestBytes
         await sbp('chelonia.db/set', sizeKey, '1000')
@@ -589,8 +612,12 @@ Deno.test({
         if (sizeAfterUpload - sizeAfterDelete !== expectedDelta) {
           throw new Error(`Expected delete to reclaim ${expectedDelta}, reclaimed ${sizeAfterUpload - sizeAfterDelete}`)
         }
-        // Restore the absent-key invariant for later hand-seeded steps.
-        await sbp('chelonia.db/delete', sizeKey)
+        // Restore the exact pre-existing state for step independence.
+        if (sizeKeyOriginal == null) {
+          await sbp('chelonia.db/delete', sizeKey)
+        } else {
+          await sbp('chelonia.db/set', sizeKey, sizeKeyOriginal)
+        }
 
         const getRes = await fetch(`${baseURL}/file/${manifestHash}`)
         await getRes.body?.cancel()
