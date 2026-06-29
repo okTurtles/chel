@@ -282,6 +282,10 @@ Deno.test({
         })
         await res.body?.cancel()
         if (res.status !== 422) throw new Error(`Expected 422 for invalid manifest but got ${res.status}`)
+
+        await sbp('chelonia.db/delete', manifestHash)
+        await sbp('chelonia.db/delete', `_private_owner_${manifestHash}`)
+        await sbp('chelonia.db/delete', `_private_size_${manifestHash}`)
       })
 
       await t.step('POST /deleteFile surfaces corrupt manifest JSON as 422, not 404', async () => {
@@ -300,6 +304,10 @@ Deno.test({
         })
         await res.body?.cancel()
         if (res.status !== 422) throw new Error(`Expected 422 for corrupt manifest but got ${res.status}`)
+
+        await sbp('chelonia.db/delete', manifestHash)
+        await sbp('chelonia.db/delete', `_private_owner_${manifestHash}`)
+        await sbp('chelonia.db/delete', `_private_size_${manifestHash}`)
       })
 
       await t.step('POST /deleteFile with bearer token deletes file', async () => {

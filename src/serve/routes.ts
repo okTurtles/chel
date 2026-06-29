@@ -19,7 +19,7 @@ import { zValidator } from 'npm:@hono/zod-validator'
 import type { Context, Hono, MiddlewareHandler } from 'npm:hono'
 import { bodyLimit } from 'npm:hono/body-limit'
 import { etag } from 'npm:hono/etag'
-import { appendToIndexFactory, lookupUltimateOwner } from './database.ts'
+import { appendToIndexFactory, dbValueToString, lookupUltimateOwner } from './database.ts'
 import logger from './logger.ts'
 import { getChallenge, getContractSalt, redeemSaltRegistrationToken, redeemSaltUpdateToken, register, registrationKey, updateContractSalt } from './zkppSalt.ts'
 // @deno-types="npm:@types/nconf"
@@ -363,8 +363,15 @@ export function registerRoutes (app: Hono): void {
           // Only allow identity contracts to be created without attribution
           if (!credentials?.billableContractID && deserializedHEAD.isFirstMessage) {
             const manifest = await sbp('chelonia.db/get', deserializedHEAD.head.manifest)
-            const parsedManifest = JSON.parse(manifest)
-            const { name } = JSON.parse(parsedManifest.body)
+            let name: string
+            try {
+              const parsedManifest = JSON.parse(dbValueToString(manifest) ?? 'null')
+              if (!parsedManifest) throw new Error('empty manifest')
+              ;({ name } = JSON.parse(parsedManifest.body))
+            } catch (e) {
+              if (e instanceof HTTPException) throw e
+              throw new HTTPException(422, { message: 'Invalid manifest' })
+            }
             if (name !== 'gi.contracts/identity') {
               throw new HTTPException(401, { message: 'This contract type requires ownership information' })
             }
