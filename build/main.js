@@ -74990,7 +74990,7 @@ function registerRoutes(app) {
       }
       const payloadBuffer = Buffer14.from(await c.req.arrayBuffer());
       return esm_default("chelonia/queueInvocation", contractID, async () => {
-        const existing = await esm_default("chelonia.db/get", `any:_private_kv_${contractID}_${key}`);
+        const existing = Buffer14.from(await esm_default("chelonia.db/get", `any:_private_kv_${contractID}_${key}`));
         const expectedEtag = c.req.header("if-match");
         if (!expectedEtag) {
           throw new HTTPException(400, { message: "if-match is required" });
@@ -75051,7 +75051,7 @@ function registerRoutes(app) {
       if (!ctEq(credentials.billableContractID, contractID)) {
         throw new HTTPException(401);
       }
-      const result = await esm_default("chelonia.db/get", `any:_private_kv_${contractID}_${key}`);
+      const result = Buffer14.from(await esm_default("chelonia.db/get", `any:_private_kv_${contractID}_${key}`));
       if (!result) {
         return notFoundNoCache(c);
       }
