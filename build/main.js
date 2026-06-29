@@ -18988,7 +18988,7 @@ var strToBuf;
 var strToB64;
 var getSubscriptionId;
 var init_functions = __esm({
-  "node_modules/.deno/@chelonia+lib@1.4.3/node_modules/@chelonia/lib/dist/esm/functions.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.4.4/node_modules/@chelonia/lib/dist/esm/functions.mjs"() {
     init_base58();
     init_blake2b();
     init_blake2bstream();
@@ -19422,71 +19422,6 @@ var has;
 var init_esm4 = __esm({
   "node_modules/.deno/turtledash@1.0.3/node_modules/turtledash/dist/esm/index.js"() {
     has = Function.prototype.call.bind(Object.prototype.hasOwnProperty);
-  }
-});
-var ChelErrorGenerator;
-var ChelErrorWarning;
-var ChelErrorAlreadyProcessed;
-var ChelErrorDBBadPreviousHEAD;
-var ChelErrorDBConnection;
-var ChelErrorUnexpected;
-var ChelErrorKeyAlreadyExists;
-var ChelErrorUnrecoverable;
-var ChelErrorForkedChain;
-var ChelErrorDecryptionError;
-var ChelErrorDecryptionKeyNotFound;
-var ChelErrorSignatureError;
-var ChelErrorSignatureKeyUnauthorized;
-var ChelErrorSignatureKeyNotFound;
-var ChelErrorFetchServerTimeFailed;
-var ChelErrorUnexpectedHttpResponseCode;
-var ChelErrorResourceGone;
-var ChelErrorJournalCorrupt;
-var ChelErrorKvSlotUnknown;
-var ChelErrorKvSlotInvalid;
-var ChelErrorKvUpdateInvalid;
-var ChelErrorKvValidation;
-var ChelErrorKvConflict;
-var init_errors3 = __esm({
-  "node_modules/.deno/@chelonia+lib@1.4.3/node_modules/@chelonia/lib/dist/esm/errors.mjs"() {
-    ChelErrorGenerator = (name, base2 = Error) => class extends base2 {
-      constructor(...params) {
-        super(...params);
-        this.name = name;
-        if (params[1]?.cause !== this.cause) {
-          Object.defineProperty(this, "cause", {
-            configurable: true,
-            writable: true,
-            value: params[1]?.cause
-          });
-        }
-        if (Error.captureStackTrace) {
-          Error.captureStackTrace(this, this.constructor);
-        }
-      }
-    };
-    ChelErrorWarning = ChelErrorGenerator("ChelErrorWarning");
-    ChelErrorAlreadyProcessed = ChelErrorGenerator("ChelErrorAlreadyProcessed");
-    ChelErrorDBBadPreviousHEAD = ChelErrorGenerator("ChelErrorDBBadPreviousHEAD");
-    ChelErrorDBConnection = ChelErrorGenerator("ChelErrorDBConnection");
-    ChelErrorUnexpected = ChelErrorGenerator("ChelErrorUnexpected");
-    ChelErrorKeyAlreadyExists = ChelErrorGenerator("ChelErrorKeyAlreadyExists");
-    ChelErrorUnrecoverable = ChelErrorGenerator("ChelErrorUnrecoverable");
-    ChelErrorForkedChain = ChelErrorGenerator("ChelErrorForkedChain");
-    ChelErrorDecryptionError = ChelErrorGenerator("ChelErrorDecryptionError");
-    ChelErrorDecryptionKeyNotFound = ChelErrorGenerator("ChelErrorDecryptionKeyNotFound", ChelErrorDecryptionError);
-    ChelErrorSignatureError = ChelErrorGenerator("ChelErrorSignatureError");
-    ChelErrorSignatureKeyUnauthorized = ChelErrorGenerator("ChelErrorSignatureKeyUnauthorized", ChelErrorSignatureError);
-    ChelErrorSignatureKeyNotFound = ChelErrorGenerator("ChelErrorSignatureKeyNotFound", ChelErrorSignatureError);
-    ChelErrorFetchServerTimeFailed = ChelErrorGenerator("ChelErrorFetchServerTimeFailed");
-    ChelErrorUnexpectedHttpResponseCode = ChelErrorGenerator("ChelErrorUnexpectedHttpResponseCode");
-    ChelErrorResourceGone = ChelErrorGenerator("ChelErrorResourceGone", ChelErrorUnexpectedHttpResponseCode);
-    ChelErrorJournalCorrupt = ChelErrorGenerator("ChelErrorJournalCorrupt");
-    ChelErrorKvSlotUnknown = ChelErrorGenerator("ChelErrorKvSlotUnknown");
-    ChelErrorKvSlotInvalid = ChelErrorGenerator("ChelErrorKvSlotInvalid");
-    ChelErrorKvUpdateInvalid = ChelErrorGenerator("ChelErrorKvUpdateInvalid");
-    ChelErrorKvValidation = ChelErrorGenerator("ChelErrorKvValidation");
-    ChelErrorKvConflict = ChelErrorGenerator("ChelErrorKvConflict");
   }
 });
 var init_esm5 = __esm({
@@ -22584,6 +22519,61 @@ var init_esm6 = __esm({
     };
   }
 });
+var ChelErrorGenerator;
+var ChelErrorWarning;
+var ChelErrorAlreadyProcessed;
+var ChelErrorDBBadPreviousHEAD;
+var ChelErrorDBConnection;
+var ChelErrorUnexpected;
+var ChelErrorKeyAlreadyExists;
+var ChelErrorUnrecoverable;
+var ChelErrorForkedChain;
+var ChelErrorDecryptionError;
+var ChelErrorDecryptionKeyNotFound;
+var ChelErrorSignatureError;
+var ChelErrorSignatureKeyUnauthorized;
+var ChelErrorSignatureKeyNotFound;
+var ChelErrorFetchServerTimeFailed;
+var ChelErrorUnexpectedHttpResponseCode;
+var ChelErrorResourceGone;
+var ChelErrorJournalCorrupt;
+var init_errors3 = __esm({
+  "node_modules/.deno/@chelonia+lib@1.4.4/node_modules/@chelonia/lib/dist/esm/errors.mjs"() {
+    ChelErrorGenerator = (name, base2 = Error) => class extends base2 {
+      constructor(...params) {
+        super(...params);
+        this.name = name;
+        if (params[1]?.cause !== this.cause) {
+          Object.defineProperty(this, "cause", {
+            configurable: true,
+            writable: true,
+            value: params[1]?.cause
+          });
+        }
+        if (Error.captureStackTrace) {
+          Error.captureStackTrace(this, this.constructor);
+        }
+      }
+    };
+    ChelErrorWarning = ChelErrorGenerator("ChelErrorWarning");
+    ChelErrorAlreadyProcessed = ChelErrorGenerator("ChelErrorAlreadyProcessed");
+    ChelErrorDBBadPreviousHEAD = ChelErrorGenerator("ChelErrorDBBadPreviousHEAD");
+    ChelErrorDBConnection = ChelErrorGenerator("ChelErrorDBConnection");
+    ChelErrorUnexpected = ChelErrorGenerator("ChelErrorUnexpected");
+    ChelErrorKeyAlreadyExists = ChelErrorGenerator("ChelErrorKeyAlreadyExists");
+    ChelErrorUnrecoverable = ChelErrorGenerator("ChelErrorUnrecoverable");
+    ChelErrorForkedChain = ChelErrorGenerator("ChelErrorForkedChain");
+    ChelErrorDecryptionError = ChelErrorGenerator("ChelErrorDecryptionError");
+    ChelErrorDecryptionKeyNotFound = ChelErrorGenerator("ChelErrorDecryptionKeyNotFound", ChelErrorDecryptionError);
+    ChelErrorSignatureError = ChelErrorGenerator("ChelErrorSignatureError");
+    ChelErrorSignatureKeyUnauthorized = ChelErrorGenerator("ChelErrorSignatureKeyUnauthorized", ChelErrorSignatureError);
+    ChelErrorSignatureKeyNotFound = ChelErrorGenerator("ChelErrorSignatureKeyNotFound", ChelErrorSignatureError);
+    ChelErrorFetchServerTimeFailed = ChelErrorGenerator("ChelErrorFetchServerTimeFailed");
+    ChelErrorUnexpectedHttpResponseCode = ChelErrorGenerator("ChelErrorUnexpectedHttpResponseCode");
+    ChelErrorResourceGone = ChelErrorGenerator("ChelErrorResourceGone", ChelErrorUnexpectedHttpResponseCode);
+    ChelErrorJournalCorrupt = ChelErrorGenerator("ChelErrorJournalCorrupt");
+  }
+});
 var serdesTagSymbol;
 var serdesSerializeSymbol;
 var serdesDeserializeSymbol;
@@ -22848,7 +22838,7 @@ var signedDataKeyId;
 var isRawSignedData;
 var rawSignedIncomingData;
 var init_signedData = __esm({
-  "node_modules/.deno/@chelonia+lib@1.4.3/node_modules/@chelonia/lib/dist/esm/signedData.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.4.4/node_modules/@chelonia/lib/dist/esm/signedData.mjs"() {
     init_esm6();
     init_esm();
     init_esm4();
@@ -23121,7 +23111,7 @@ var isRawEncryptedData;
 var unwrapMaybeEncryptedData;
 var maybeEncryptedIncomingData;
 var init_encryptedData = __esm({
-  "node_modules/.deno/@chelonia+lib@1.4.3/node_modules/@chelonia/lib/dist/esm/encryptedData.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.4.4/node_modules/@chelonia/lib/dist/esm/encryptedData.mjs"() {
     init_esm6();
     init_esm();
     init_esm4();
@@ -23386,7 +23376,7 @@ var decryptedAndVerifiedDeserializedMessage;
 var SPMessage;
 var keyOps;
 var init_SPMessage = __esm({
-  "node_modules/.deno/@chelonia+lib@1.4.3/node_modules/@chelonia/lib/dist/esm/SPMessage.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.4.4/node_modules/@chelonia/lib/dist/esm/SPMessage.mjs"() {
     init_esm6();
     init_esm7();
     init_esm4();
@@ -23804,7 +23794,7 @@ var prefixHandlers;
 var dbPrimitiveSelectors;
 var db_default;
 var init_db = __esm({
-  "node_modules/.deno/@chelonia+lib@1.4.3/node_modules/@chelonia/lib/dist/esm/db.mjs"() {
+  "node_modules/.deno/@chelonia+lib@1.4.4/node_modules/@chelonia/lib/dist/esm/db.mjs"() {
     init_esm3();
     init_esm2();
     init_esm();
@@ -62682,8 +62672,8 @@ function createMessage(type, data, meta) {
   });
   return message;
 }
-function createKvMessage(channelID, key, data, cid) {
-  return JSON.stringify({ type: NOTIFICATION_TYPE.KV, channelID, key, data, cid });
+function createKvMessage(channelID, key, data) {
+  return JSON.stringify({ type: NOTIFICATION_TYPE.KV, channelID, key, data });
 }
 function createPubMessage(channelID, data) {
   return JSON.stringify({ type: NOTIFICATION_TYPE.PUB, channelID, data });
@@ -63118,68 +63108,8 @@ for (const name of Object.keys(defaultClientEventHandlers)) {
     });
   }
 }
-init_errors3();
-var REINGEST_PER_CONTRACT_CAP = 20;
-var trackers = /* @__PURE__ */ new Map();
-var ensure = (contractID) => {
-  let s = trackers.get(contractID);
-  if (!s) {
-    s = /* @__PURE__ */ new Set();
-    trackers.set(contractID, s);
-  }
-  return s;
-};
-var noteFutureEvent = (contractID, hash3, height) => {
-  const s = ensure(contractID);
-  for (const entry of s) {
-    if (entry.hash === hash3)
-      return "duplicate";
-  }
-  if (s.size >= REINGEST_PER_CONTRACT_CAP) {
-    throw new ChelErrorUnrecoverable(`more than ${REINGEST_PER_CONTRACT_CAP} different bad previousHEAD errors for contract ${contractID}`);
-  }
-  s.add({ hash: hash3, height });
-  return "added";
-};
-var noteReingestSuccess = (contractID, hash3) => {
-  const s = trackers.get(contractID);
-  if (!s)
-    return false;
-  for (const entry of s) {
-    if (entry.hash === hash3) {
-      s.delete(entry);
-      if (s.size === 0)
-        trackers.delete(contractID);
-      return true;
-    }
-  }
-  return false;
-};
-var pruneStaleEntries = (contractID, processedHeight) => {
-  const s = trackers.get(contractID);
-  if (!s)
-    return 0;
-  let pruned = 0;
-  for (const entry of s) {
-    if (entry.height <= processedHeight) {
-      s.delete(entry);
-      pruned++;
-    }
-  }
-  if (s.size === 0)
-    trackers.delete(contractID);
-  return pruned;
-};
-var clearReingestTrackerForContract = (contractID) => {
-  trackers.delete(contractID);
-};
-var clearReingestTrackerAll = () => {
-  trackers.clear();
-};
 init_esm6();
 init_errors3();
-init_errors3();
-var ChelErrorKvMaxAttempts = ChelErrorGenerator("ChelErrorKvMaxAttempts");
 var CHELONIA_RESET = "chelonia-reset";
 var CONTRACT_IS_SYNCING = "contract-is-syncing";
 var CONTRACTS_MODIFIED = "contracts-modified";
@@ -63202,15 +63132,13 @@ var chelonia_utils_default = esm_default("sbp/selectors/register", {
   // `chelonia/kv/set`. However, the `chelonia/kv/set` primitive is needed if
   // the queueing logic needs to be more advanced, the key to use requires
   // custom logic or _if the `onconflict` callback also needs to be queued_.
-  "chelonia/kv/queuedSet": ({ contractID, key, data, onconflict, ifMatch, maxAttempts, signal, encryptionKeyName = "cek", signingKeyName = "csk" }) => {
+  "chelonia/kv/queuedSet": ({ contractID, key, data, onconflict, ifMatch, encryptionKeyName = "cek", signingKeyName = "csk" }) => {
     return esm_default("chelonia/queueInvocation", contractID, () => {
       return esm_default("chelonia/kv/set", contractID, key, data, {
         ifMatch,
         encryptionKeyId: esm_default("chelonia/contract/currentKeyIdByName", contractID, encryptionKeyName),
         signingKeyId: esm_default("chelonia/contract/currentKeyIdByName", contractID, signingKeyName),
-        onconflict,
-        maxAttempts,
-        signal
+        onconflict
       });
     });
   }
@@ -65440,8 +65368,6 @@ var internals_default = esm_default("sbp/selectors/register", {
   // Warning: avoid using this unless you know what you're doing. Prefer using /remove.
   "chelonia/private/removeImmediately": function(contractID, params) {
     const state = esm_default(this.config.stateSelector);
-    clearReingestTrackerForContract(contractID);
-    clearReprocessDebounceForContract(contractID);
     const contractName = state.contracts[contractID]?.type;
     if (!contractName) {
       console.error("[chelonia/private/removeImmediately] Missing contract name for contract", {
@@ -65475,13 +65401,6 @@ var internals_default = esm_default("sbp/selectors/register", {
       }
       this.config.reactiveDel(state, contractID);
     }
-    if (!params?.resync && esm_default("sbp/selectors/fn", "chelonia/kv/_cleanupContractRuntime")) {
-      try {
-        esm_default("chelonia/kv/_cleanupContractRuntime", contractID);
-      } catch (e2) {
-        console.error("[chelonia] KV cleanup on contract removal failed", e2);
-      }
-    }
     this.subscriptionSet.delete(contractID);
     esm_default("okTurtles.events/emit", CONTRACTS_MODIFIED, Array.from(this.subscriptionSet), {
       added: [],
@@ -65493,7 +65412,7 @@ var internals_default = esm_default("sbp/selectors/register", {
   // used by, e.g. 'chelonia/contract/wait'
   "chelonia/private/noop": function() {
   },
-  "chelonia/private/in/sync": function(contractIDs, params) {
+  "chelonia/private/out/sync": function(contractIDs, params) {
     const listOfIds = typeof contractIDs === "string" ? [contractIDs] : contractIDs;
     const forcedSync = !!params?.force;
     return Promise.all(listOfIds.map((contractID) => {
@@ -65585,7 +65504,7 @@ var internals_default = esm_default("sbp/selectors/register", {
             attempt += 1;
             await delay(randDelay);
             if (!entry.isFirstMessage() && entry.height() === lastAttemptedHeight) {
-              await esm_default("chelonia/private/in/sync", contractID, { force: true });
+              await esm_default("chelonia/private/out/sync", contractID, { force: true });
             }
           } else {
             const message = (await r.json())?.message;
@@ -65919,7 +65838,7 @@ var internals_default = esm_default("sbp/selectors/register", {
                 "chelonia/private/in/syncContract",
                 v2.contractID
               ]).then(() => {
-                esm_default("chelonia/private/in/sync", contractIdsToUpdate.filter((contractID2) => {
+                esm_default("chelonia/private/out/sync", contractIdsToUpdate.filter((contractID2) => {
                   return self2.subscriptionSet.has(contractID2);
                 }), { force: true, resync: true }).catch((e2) => {
                   console.error("[chelonia] Error resyncing contracts with foreign key references after key rotation", e2);
@@ -66924,32 +66843,10 @@ var internals_default = esm_default("sbp/selectors/register", {
     }
   }
 });
-var reprocessDebounceMap = /* @__PURE__ */ new Map();
-var reprocessDebounced = (contractID) => {
-  let d = reprocessDebounceMap.get(contractID);
-  if (!d) {
-    d = debounce(() => {
-      reprocessDebounceMap.delete(contractID);
-      esm_default("chelonia/private/in/sync", contractID, { force: true }).catch((e2) => {
-        console.error(`[chelonia] Error at reprocessDebounced for ${contractID}`, e2);
-      });
-    }, 1e3);
-    reprocessDebounceMap.set(contractID, d);
-  }
-  d();
-};
-var clearReprocessDebounceForContract = (contractID) => {
-  const d = reprocessDebounceMap.get(contractID);
-  if (d) {
-    d.clear();
-    reprocessDebounceMap.delete(contractID);
-  }
-};
-var clearReprocessDebounceAll = () => {
-  for (const d of reprocessDebounceMap.values())
-    d.clear();
-  reprocessDebounceMap.clear();
-};
+var eventsToReingest = [];
+var reprocessDebounced = debounce((contractID) => esm_default("chelonia/private/out/sync", contractID, { force: true }).catch((e2) => {
+  console.error(`[chelonia] Error at reprocessDebounced for ${contractID}`, e2);
+}), 1e3);
 var handleEvent = {
   checkMessageOrdering(message) {
     const contractID = message.contractID();
@@ -66970,9 +66867,12 @@ var handleEvent = {
       if (this.config.strictOrdering) {
         throw new ChelErrorDBBadPreviousHEAD(`Unexpected message ${hash3} with height ${height} in contract ${contractID}: height is too high. Current height: ${latestProcessedHeight}.`);
       }
-      const note = noteFutureEvent(contractID, hash3, height);
-      if (note === "added") {
+      if (eventsToReingest.length > 100) {
+        throw new ChelErrorUnrecoverable("more than 100 different bad previousHEAD errors");
+      }
+      if (!eventsToReingest.includes(hash3)) {
         console.warn(`[chelonia] WARN bad previousHEAD for ${message.description()}, will attempt to re-sync contract to reingest message`);
+        eventsToReingest.push(hash3);
         reprocessDebounced(contractID);
         return false;
       } else {
@@ -66980,10 +66880,11 @@ var handleEvent = {
         throw new ChelErrorDBBadPreviousHEAD(`Already attempted to reingest ${hash3}`);
       }
     }
-    if (noteReingestSuccess(contractID, hash3)) {
+    const reprocessIdx = eventsToReingest.indexOf(hash3);
+    if (reprocessIdx !== -1) {
       console.warn(`[chelonia] WARN: successfully reingested ${message.description()}`);
+      eventsToReingest.splice(reprocessIdx, 1);
     }
-    pruneStaleEntries(contractID, height);
   },
   async processMutation(message, state, internalSideEffectStack) {
     const contractID = message.contractID();
@@ -67352,19 +67253,9 @@ var chelonia_default = esm_default("sbp/selectors/register", {
     });
     this.ephemeralReferenceCount = /* @__PURE__ */ Object.create(null);
     this.subscriptionSet = /* @__PURE__ */ new Set();
-    this.kvSlots = /* @__PURE__ */ new Map();
-    this.kvSlotsByContractID = /* @__PURE__ */ new Map();
-    this.kvActiveFilters = /* @__PURE__ */ new Map();
-    this.kvFilterDirty = /* @__PURE__ */ new Set();
-    this.kvLocalEchoCIDs = /* @__PURE__ */ new Map();
-    this.kvPendingWrites = /* @__PURE__ */ new Map();
-    this.defContractKvByManifest = /* @__PURE__ */ new Map();
     this.pending = [];
     const rootState = esm_default(this.config.stateSelector);
     rootState.secretKeys = rootState.secretKeys || /* @__PURE__ */ Object.create(null);
-    if (!rootState._kv) {
-      this.config.reactiveSet(rootState, "_kv", /* @__PURE__ */ Object.create(null));
-    }
   },
   "chelonia/config": function() {
     const out = {
@@ -67515,10 +67406,6 @@ var chelonia_default = esm_default("sbp/selectors/register", {
     await esm_default("chelonia/contract/waitPublish");
     await esm_default("chelonia/contract/wait");
     const result = await postCleanupFn?.();
-    if (esm_default("sbp/selectors/fn", "chelonia/kv/_waitInFlight")) {
-      await esm_default("chelonia/kv/_waitInFlight");
-      await esm_default("chelonia/contract/wait");
-    }
     const rootState = esm_default(this.config.stateSelector);
     this._instance = /* @__PURE__ */ Object.create(null);
     this.abortController.abort();
@@ -67526,12 +67413,6 @@ var chelonia_default = esm_default("sbp/selectors/register", {
     reactiveClearObject(rootState, this.config.reactiveDel);
     this.config.reactiveSet(rootState, "contracts", /* @__PURE__ */ Object.create(null));
     this.config.reactiveSet(rootState, "secretKeys", /* @__PURE__ */ Object.create(null));
-    this.config.reactiveSet(rootState, "_kv", /* @__PURE__ */ Object.create(null));
-    this.kvSlotsByContractID.clear();
-    this.kvActiveFilters.clear();
-    this.kvFilterDirty.clear();
-    this.kvLocalEchoCIDs.clear();
-    this.kvPendingWrites.clear();
     clearObject(this.ephemeralReferenceCount);
     this.pending.splice(0);
     clearObject(this.currentSyncs);
@@ -67539,8 +67420,6 @@ var chelonia_default = esm_default("sbp/selectors/register", {
     clearObject(this.sideEffectStacks);
     const removedContractIDs = Array.from(this.subscriptionSet);
     this.subscriptionSet.clear();
-    clearReingestTrackerAll();
-    clearReprocessDebounceAll();
     esm_default("chelonia/clearTransientSecretKeys");
     esm_default("okTurtles.events/emit", CHELONIA_RESET);
     esm_default("okTurtles.events/emit", CONTRACTS_MODIFIED, Array.from(this.subscriptionSet), {
@@ -67778,7 +67657,6 @@ var chelonia_default = esm_default("sbp/selectors/register", {
       esm_default("chelonia/private/stopClockSync");
     }
     esm_default("chelonia/private/startClockSync");
-    const legacyKvHandler = options2.messageHandlers?.[NOTIFICATION_TYPE.KV];
     this.pubsub = createClient(pubsubURL, {
       ...this.config.connectionOptions,
       handlers: {
@@ -67788,7 +67666,7 @@ var chelonia_default = esm_default("sbp/selectors/register", {
         "subscription-succeeded": function(event) {
           const { channelID } = event.detail;
           if (this.subscriptionSet.has(channelID)) {
-            esm_default("chelonia/private/in/sync", channelID, { force: true }).catch((err) => {
+            esm_default("chelonia/private/out/sync", channelID, { force: true }).catch((err) => {
               console.warn(`[chelonia] Syncing contract ${channelID} failed: ${err.message}`);
             });
           }
@@ -67821,6 +67699,32 @@ var chelonia_default = esm_default("sbp/selectors/register", {
                   });
                 }
               ];
+            case NOTIFICATION_TYPE.KV:
+              return [
+                k,
+                (msg) => {
+                  if (!msg.channelID || !msg.key) {
+                    console.info("[chelonia] Discarding kv event without channelID or key");
+                    return;
+                  }
+                  if (!this.subscriptionSet.has(msg.channelID)) {
+                    console.info(`[chelonia] Discarding kv event for ${msg.channelID} because it's not in the current subscriptionSet`);
+                    return;
+                  }
+                  esm_default("chelonia/queueInvocation", msg.channelID, () => {
+                    v2.call(this.pubsub, [
+                      msg.key,
+                      parseEncryptedOrUnencryptedMessage(this, {
+                        contractID: msg.channelID,
+                        meta: msg.key,
+                        serializedData: JSON.parse(Buffer6.from(msg.data).toString())
+                      })
+                    ]);
+                  }).catch((e2) => {
+                    console.error(`[chelonia] Error processing kv event for ${msg.channelID} and key ${msg.key}`, msg, e2);
+                  });
+                }
+              ];
             case NOTIFICATION_TYPE.DELETION:
               return [
                 k,
@@ -67830,40 +67734,6 @@ var chelonia_default = esm_default("sbp/selectors/register", {
               return [k, v2];
           }
         })),
-        [NOTIFICATION_TYPE.KV]: (msg) => {
-          if (!msg.channelID || !msg.key) {
-            console.info("[chelonia] Discarding kv event without channelID or key");
-            return;
-          }
-          if (!this.subscriptionSet.has(msg.channelID)) {
-            console.info(`[chelonia] Discarding kv event for ${msg.channelID} because it's not in the current subscriptionSet`);
-            return;
-          }
-          esm_default("chelonia/queueInvocation", msg.channelID, async () => {
-            const parsed = parseEncryptedOrUnencryptedMessage(this, {
-              contractID: msg.channelID,
-              meta: msg.key,
-              serializedData: JSON.parse(Buffer6.from(msg.data).toString())
-            });
-            if (legacyKvHandler) {
-              try {
-                ;
-                legacyKvHandler.call(this.pubsub, [msg.key, parsed]);
-              } catch (e2) {
-                console.error(`[chelonia] legacy kv pubsub callback threw for ${msg.channelID}::${msg.key}`, e2);
-              }
-            }
-            if (esm_default("sbp/selectors/fn", "chelonia/kv/_handleRemote")) {
-              try {
-                await esm_default("chelonia/kv/_handleRemote", msg.channelID, msg.key, parsed, msg.cid);
-              } catch (e2) {
-                console.error(`[chelonia] kv slot _handleRemote threw for ${msg.channelID}::${msg.key}`, e2);
-              }
-            }
-          }).catch((e2) => {
-            console.error(`[chelonia] Error processing kv event for ${msg.channelID} and key ${msg.key}`, msg, e2);
-          });
-        },
         [NOTIFICATION_TYPE.ENTRY](msg) {
           const { contractID } = SPMessage.deserializeHEAD(msg.data);
           esm_default("chelonia/private/in/enqueueHandleEvent", contractID, msg.data);
@@ -67873,24 +67743,6 @@ var chelonia_default = esm_default("sbp/selectors/register", {
     if (!this.contractsModifiedListener) {
       this.contractsModifiedListener = () => esm_default("chelonia/pubsub/update");
       esm_default("okTurtles.events/on", CONTRACTS_MODIFIED, this.contractsModifiedListener);
-    }
-    if (!this.kvReconnectListener) {
-      this.kvReconnectListener = (client) => {
-        if (client.isNew)
-          return;
-        esm_default("chelonia/kv/_onReconnect");
-      };
-      esm_default("okTurtles.events/on", PUBSUB_RECONNECTION_SUCCEEDED, this.kvReconnectListener);
-    }
-    if (!this.kvContractsModifiedListener) {
-      this.kvContractsModifiedListener = (_contracts, payload) => {
-        try {
-          esm_default("chelonia/kv/_onContractsModified", payload);
-        } catch (e2) {
-          console.error("[chelonia/kv] CONTRACTS_MODIFIED listener threw", e2);
-        }
-      };
-      esm_default("okTurtles.events/on", CONTRACTS_MODIFIED, this.kvContractsModifiedListener);
     }
     return this.pubsub;
   },
@@ -67913,7 +67765,6 @@ var chelonia_default = esm_default("sbp/selectors/register", {
     contract.state = (contractID) => esm_default(this.config.stateSelector)[contractID];
     contract.manifest = this.defContractManifest;
     contract.sbp = this.defContractSBP;
-    const prevKv = this.defContractKvByManifest.get(contract.manifest);
     this.defContractSelectors = [];
     this.defContract = contract;
     this.defContractSelectors.push(...esm_default("sbp/selectors/register", {
@@ -67981,15 +67832,6 @@ var chelonia_default = esm_default("sbp/selectors/register", {
       }));
     }
     esm_default("okTurtles.events/emit", CONTRACT_REGISTERED, contract);
-    if (prevKv || contract.kv) {
-      esm_default("chelonia/kv/_cleanupContractSlots", contract.manifest, prevKv, contract.kv ?? {});
-    }
-    if (contract.kv) {
-      esm_default("chelonia/kv/_registerContractSlots", contract.manifest, contract.kv);
-      this.defContractKvByManifest.set(contract.manifest, contract.kv);
-    } else if (prevKv) {
-      this.defContractKvByManifest.delete(contract.manifest);
-    }
   },
   "chelonia/queueInvocation": (contractID, sbpInvocation) => {
     return esm_default("chelonia/private/queueEvent", contractID, ["chelonia/private/noop"]).then(() => esm_default("chelonia/private/queueEvent", "public:" + contractID, sbpInvocation));
@@ -68048,7 +67890,7 @@ var chelonia_default = esm_default("sbp/selectors/register", {
         throw new Error("Missing reference count for contract");
       }
     });
-    return esm_default("chelonia/private/in/sync", listOfIds, { ...params, force: true });
+    return esm_default("chelonia/private/out/sync", listOfIds, { ...params, force: true });
   },
   "chelonia/contract/isSyncing": function(contractID, { firstSync = false } = {}) {
     const isSyncing = !!this.currentSyncs[contractID];
@@ -68122,7 +67964,7 @@ var chelonia_default = esm_default("sbp/selectors/register", {
         }
       });
     }
-    return await esm_default("chelonia/private/in/sync", listOfIds);
+    return await esm_default("chelonia/private/out/sync", listOfIds);
   },
   // the `try` parameter does not affect (ephemeral or persistent) reference
   // counts, but rather removes a contract if the reference count is zero
@@ -68391,16 +68233,14 @@ var chelonia_default = esm_default("sbp/selectors/register", {
           contractID2,
           {
             contractState: rootState[contractID2],
-            cheloniaState: rootState.contracts[contractID2],
-            kvState: rootState._kv?.[contractID2]
+            cheloniaState: rootState.contracts[contractID2]
           }
         ];
       }));
     }
     return {
       contractState: rootState[contractID],
-      cheloniaState: rootState.contracts[contractID],
-      kvState: rootState._kv?.[contractID]
+      cheloniaState: rootState.contracts[contractID]
     };
   },
   // 'chelonia/out' - selectors that send data out to the server
@@ -68437,7 +68277,7 @@ var chelonia_default = esm_default("sbp/selectors/register", {
       prepublish: hooks.prepublishContract,
       postpublish: hooks.postpublishContract
     });
-    await esm_default("chelonia/private/in/sync", contractID);
+    await esm_default("chelonia/private/out/sync", contractID);
     const msg = await esm_default(actionEncryptionKeyId ? "chelonia/out/actionEncrypted" : "chelonia/out/actionUnencrypted", {
       action: contractName,
       contractID,
@@ -68816,16 +68656,13 @@ var chelonia_default = esm_default("sbp/selectors/register", {
   // this case, see if `chelonia/kv/queuedSet` covers your needs.
   // `data` is allowed to be falsy, in which case a fetch will occur first and
   // the `onconflict` handler will be called.
-  "chelonia/kv/set": async function(contractID, key, data, { ifMatch, innerSigningKeyId, encryptionKeyId, signingKeyId, maxAttempts, onconflict, signal: callerSignal }) {
+  "chelonia/kv/set": async function(contractID, key, data, { ifMatch, innerSigningKeyId, encryptionKeyId, signingKeyId, maxAttempts, onconflict }) {
     maxAttempts = maxAttempts ?? 3;
     const url2 = `${this.config.connectionURL}/kv/${encodeURIComponent(contractID)}/${encodeURIComponent(key)}`;
     const hasOnconflict = typeof onconflict === "function";
-    const fetchSignal = callerSignal ? AbortSignal.any([this.abortController.signal, callerSignal]) : this.abortController.signal;
     let response;
-    let lastEtag = null;
-    let currentValue;
-    const resolveData = async (invokeOnConflict = true) => {
-      currentValue = void 0;
+    const resolveData = async () => {
+      let currentValue;
       if (response.ok || response.status === 409 || response.status === 412) {
         const serializedDataText = await response.text();
         currentValue = serializedDataText ? parseEncryptedOrUnencryptedMessage(this, {
@@ -68836,32 +68673,6 @@ var chelonia_default = esm_default("sbp/selectors/register", {
       } else if (response.status !== 404 && response.status !== 410) {
         throw new ChelErrorUnexpectedHttpResponseCode("[kv/set] Invalid response code: " + response.status);
       }
-      let headerEtag = response.headers.get("x-cid") || response.headers.get("etag");
-      if (headerEtag)
-        lastEtag = headerEtag;
-      if (!headerEtag && !currentValue && (response.status === 409 || response.status === 412)) {
-        const getResp = await this.config.fetch(url2, {
-          headers: new Headers([
-            ["authorization", buildShelterAuthorizationHeader.call(this, contractID)]
-          ]),
-          signal: fetchSignal
-        });
-        if (getResp.ok) {
-          const getText2 = await getResp.text();
-          if (getText2) {
-            currentValue = parseEncryptedOrUnencryptedMessage(this, {
-              contractID,
-              serializedData: JSON.parse(getText2),
-              meta: key
-            });
-          }
-          headerEtag = getResp.headers.get("x-cid") || getResp.headers.get("etag");
-        }
-        if (headerEtag)
-          lastEtag = headerEtag;
-      }
-      if (!invokeOnConflict)
-        return false;
       const result = await onconflict({
         contractID,
         key,
@@ -68871,7 +68682,7 @@ var chelonia_default = esm_default("sbp/selectors/register", {
         // returned as undefined, which will then use the `''` fallback value
         // when writing. This allows 404 / 410 responses to work even if no
         // etag is explicitly given
-        etag: headerEtag,
+        etag: response.headers.get("x-cid") || response.headers.get("etag"),
         get currentData() {
           return currentValue?.data;
         },
@@ -68900,7 +68711,7 @@ var chelonia_default = esm_default("sbp/selectors/register", {
           ]),
           method: "POST",
           body: JSON.stringify(serializedData),
-          signal: fetchSignal
+          signal: this.abortController.signal
         });
       } else {
         if (!hasOnconflict) {
@@ -68910,7 +68721,7 @@ var chelonia_default = esm_default("sbp/selectors/register", {
           headers: new Headers([
             ["authorization", buildShelterAuthorizationHeader.call(this, contractID)]
           ]),
-          signal: fetchSignal
+          signal: this.abortController.signal
         });
         if (await resolveData()) {
           continue;
@@ -68921,37 +68732,23 @@ var chelonia_default = esm_default("sbp/selectors/register", {
       if (!response.ok) {
         if (response.status === 409 || response.status === 412) {
           if (--maxAttempts <= 0) {
-            await resolveData(false);
-            let currentData;
-            try {
-              currentData = currentValue?.data;
-            } catch {
-            }
-            throw new ChelErrorKvMaxAttempts("kv/set conflict setting KV value", {
-              cause: { currentData, etag: lastEtag ?? null }
-            });
-          }
-          if (callerSignal?.aborted) {
-            throw callerSignal.reason instanceof Error ? callerSignal.reason : new DOMException("Aborted", "AbortError");
-          }
-          if (!hasOnconflict) {
-            throw new Error(`kv/set failed with status ${response.status} and no onconflict handler was provided`);
+            throw new Error("kv/set conflict setting KV value");
           }
           await delay(randomIntFromRange(0, 1500));
-          if (await resolveData()) {
-            continue;
+          if (hasOnconflict) {
+            if (await resolveData()) {
+              continue;
+            } else {
+              break;
+            }
           } else {
-            break;
+            throw new Error(`kv/set failed with status ${response.status} and no onconflict handler was provided`);
           }
         }
         throw new ChelErrorUnexpectedHttpResponseCode("kv/set invalid response status: " + response.status);
       }
-      const successEtag = response.headers.get("x-cid") || response.headers.get("etag");
-      if (successEtag)
-        lastEtag = successEtag;
       break;
     }
-    return { etag: lastEtag };
   },
   "chelonia/kv/get": async function(contractID, key) {
     const response = await this.config.fetch(`${this.config.connectionURL}/kv/${encodeURIComponent(contractID)}/${encodeURIComponent(key)}`, {
@@ -68966,20 +68763,12 @@ var chelonia_default = esm_default("sbp/selectors/register", {
     if (!response.ok) {
       throw new Error("Invalid response status: " + response.status);
     }
-    const etag2 = response.headers.get("x-cid") || response.headers.get("etag");
     const data = await response.json();
-    const parsed = parseEncryptedOrUnencryptedMessage(this, {
+    return parseEncryptedOrUnencryptedMessage(this, {
       contractID,
       serializedData: data,
       meta: key
     });
-    Object.defineProperty(parsed, "etag", {
-      value: etag2,
-      enumerable: true,
-      writable: true,
-      configurable: true
-    });
-    return parsed;
   },
   // To set filters for a contract, call with `filter` set to an array of KV
   // keys to receive updates for over the WebSocket. An empty array means that
@@ -77148,7 +76937,7 @@ var module12 = {
   }
 };
 function version2() {
-  console.log("3.3.1");
+  console.log("3.3.2");
 }
 var module13 = {
   command: "version",
@@ -81294,7 +81083,7 @@ var parseArgs = () => {
   const commandModules = Object.values(commands_exports).map(
     (c) => handlerWrapper(c)
   );
-  const yargsInstance = yargs_default(hideBin(process12.argv)).version("3.3.1").strict().command(commandModules).demandCommand().help();
+  const yargsInstance = yargs_default(hideBin(process12.argv)).version("3.3.2").strict().command(commandModules).demandCommand().help();
   return yargsInstance;
 };
 var parseArgs_default = parseArgs;

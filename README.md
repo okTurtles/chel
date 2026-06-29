@@ -1,3 +1,9 @@
+<p align="center">
+    <a title="Slack" href="https://join.slack.com/t/okturtles/shared_invite/zt-10jmpfgxj-tXQ1MKW7t8qqdyY6fB7uyQ"><img src="https://img.shields.io/badge/slack-%23e2e--protocol-green"></a>
+    <a title="Ask DeepWiki" href="https://deepwiki.com/okTurtles/chel"><img src="https://deepwiki.com/badge.svg" alt="Ask DeepWiki"></a>
+    <a title="Donate" href="https://okturtles.org/donate/"><img src="https://img.shields.io/badge/donate%20-%3D%E2%9D%A4-blue.svg"></a>
+</p>
+
 # Chel: Chelonia Command-line Interface
 
 Modern CLI for Chelonia contract development, deployment, and management.
@@ -44,7 +50,7 @@ Note: in many (if not all) instances, the `<url>` parameter can refer to a local
 # First, generate cryptographic keys (required for production)
 chel keygen
 
-# Then pin contracts with re-signing
+# Then pin contracts with re-signing`
 chel pin <manifest-file-path> <version>
 
 # Pin specific contract to a version using its manifest (from dist/contracts)
