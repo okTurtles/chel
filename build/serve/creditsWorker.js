@@ -4674,7 +4674,10 @@ var esm_default2 = esm_default("sbp/selectors/register", {
   }
 });
 var import_npm_pino = __toESM(require_pino());
-var prettyPrint = process2.env.NODE_ENV === "development" || process2.env.CI || process2.env.CYPRESS_RECORD_KEY || process2.env.PRETTY;
+var verboseByDefault = process2.env.NODE_ENV === "development" || process2.env.CI || process2.env.CYPRESS_RECORD_KEY || process2.env.PRETTY;
+function getLogLevel() {
+  return process2.env.LOG_LEVEL || (verboseByDefault ? "debug" : "info");
+}
 function logMethod(args, method) {
   const stringIdx = typeof args[0] === "string" ? 0 : 1;
   if (args.length > 1) {
@@ -4684,26 +4687,8 @@ function logMethod(args, method) {
   }
   method.apply(this, args);
 }
-var logger;
-if (prettyPrint) {
-  try {
-    logger = (0, import_npm_pino.default)({
-      hooks: { logMethod },
-      transport: {
-        target: "pino-pretty",
-        options: {
-          colorize: true
-        }
-      }
-    });
-  } catch (e) {
-    console.warn("pino-pretty transport unavailable, using basic logging", e);
-    logger = (0, import_npm_pino.default)({ hooks: { logMethod } });
-  }
-} else {
-  logger = (0, import_npm_pino.default)({ hooks: { logMethod } });
-}
-var logLevel = process2.env.LOG_LEVEL || (prettyPrint ? "debug" : "info");
+var logger = (0, import_npm_pino.default)({ hooks: { logMethod } });
+var logLevel = getLogLevel();
 if (Object.keys(logger.levels.values).includes(logLevel)) {
   logger.level = logLevel;
 } else {

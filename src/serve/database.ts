@@ -15,6 +15,7 @@ import nconf from 'npm:nconf'
 import type { ImportMeta } from '../types/build.d.ts'
 import type DatabaseBackend from './DatabaseBackend.ts'
 import { KEYOP_SEGMENT_LENGTH, appendToNamesIndex, namespaceKey } from './db-utils.ts'
+import { wrapBackendError } from './db-errors.ts'
 
 const production = process.env.NODE_ENV === 'production'
 
@@ -220,9 +221,18 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
       const ARCHIVE_MODE = nconf.get('server:archiveMode')
 
       if (persistence && persistence !== 'mem') {
-        const Ctor = (await import(`./database-${persistence}.ts`)).default
+        let Ctor
+        try {
+          Ctor = (await import(`./database-${persistence}.ts`)).default
+        } catch (e) {
+          throw wrapBackendError(persistence, 'load', e)
+        }
         const instance = new Ctor(options[persistence]) as DatabaseBackend
-        await instance.init()
+        try {
+          await instance.init()
+        } catch (e) {
+          throw wrapBackendError(persistence, 'init', e)
+        }
         currentBackend = instance
 
         const cache = new LRU<string, Buffer | string>({

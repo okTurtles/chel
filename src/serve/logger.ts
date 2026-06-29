@@ -1,7 +1,14 @@
 import process from 'node:process'
 import pino from 'npm:pino'
 
-const prettyPrint = process.env.NODE_ENV === 'development' || process.env.CI || process.env.CYPRESS_RECORD_KEY || process.env.PRETTY
+// `PRETTY` (and dev/CI envs) only raise the default log level to `debug`; it no
+// longer enables pretty rendering here (that happens externally via a piped
+// `pino-pretty`, see the NOTE below). Kept for backward compatibility.
+const verboseByDefault = process.env.NODE_ENV === 'development' || process.env.CI || process.env.CYPRESS_RECORD_KEY || process.env.PRETTY
+
+function getLogLevel (): string {
+  return process.env.LOG_LEVEL || (verboseByDefault ? 'debug' : 'info')
+}
 
 function logMethod (this: unknown, args: unknown[], method: (...args: unknown[]) => void): void {
   const stringIdx = typeof args[0] === 'string' ? 0 : 1
@@ -13,7 +20,7 @@ function logMethod (this: unknown, args: unknown[], method: (...args: unknown[])
   method.apply(this, args)
 }
 
-let logger: {
+type Logger = {
   level: string;
   levels: { values: Record<string, unknown> };
   debug: (...args: unknown[]) => void;
@@ -22,26 +29,15 @@ let logger: {
   error: (...args: unknown[]) => void;
 }
 
-if (prettyPrint) {
-  try {
-    logger = (pino as unknown as (config: unknown) => typeof logger)({
-      hooks: { logMethod },
-      transport: {
-        target: 'pino-pretty',
-        options: {
-          colorize: true
-        }
-      }
-    })
-  } catch (e) {
-    console.warn('pino-pretty transport unavailable, using basic logging', e)
-    logger = (pino as unknown as (config: unknown) => typeof logger)({ hooks: { logMethod } })
-  }
-} else {
-  logger = (pino as unknown as (config: unknown) => typeof logger)({ hooks: { logMethod } })
-}
+// NOTE: We deliberately avoid pino's `transport` option (e.g. `pino-pretty`).
+// pino transports run in a worker thread that resolves the target module at
+// runtime, which breaks inside `deno compile` binaries and results in a
+// confusing "unable to determine transport target" warning. Callers that want
+// pretty output should pipe our stderr through `pino-pretty` externally (this
+// is what Group Income does).
+const logger = (pino as unknown as (config: unknown) => Logger)({ hooks: { logMethod } })
 
-const logLevel = process.env.LOG_LEVEL || (prettyPrint ? 'debug' : 'info')
+const logLevel = getLogLevel()
 if (Object.keys(logger.levels.values).includes(logLevel)) {
   logger.level = logLevel
 } else {
