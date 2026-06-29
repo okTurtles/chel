@@ -19,6 +19,9 @@ export async function createEntryFromFile (filepath: string, multicode: number):
 }
 
 export function exit (x: unknown, internal = false): never {
+  // A numeric argument is treated as a raw process exit code (e.g. the
+  // `128 + signal` convention used by the migrate and serve signal handlers).
+  // Those callers log their own context first, so no message is printed here.
   if (typeof x === 'number') {
     Deno.exit(x)
   }
@@ -32,22 +35,24 @@ export function exit (x: unknown, internal = false): never {
 }
 
 // Derives a non-empty message from any error value. AggregateError and other
-// errors with an empty `.message` (e.g. a failed `localhost` redis connection
-// that aggregates ECONNREFUSED from both ::1 and 127.0.0.1) are unwrapped so
-// the actual cause is surfaced instead of a blank string. The full stack trace
-// is intentionally not used as the message; callers that need it can inspect
-// the error's `cause` instead.
+// errors carrying sub-errors (e.g. a failed `localhost` redis connection that
+// aggregates ECONNREFUSED from both ::1 and 127.0.0.1) are unwrapped so the
+// actual cause is surfaced. When the outer error has its own message AND
+// sub-errors, both are combined so the more specific detail isn't lost. The
+// full stack trace is intentionally not used as the message; callers that need
+// it can inspect the error's `cause` instead.
 export function errorMessage (x: unknown): string {
   if (x instanceof Error) {
-    if (x.message) return x.message
-    // AggregateError: join sub-errors' messages.
+    // AggregateError (and similar): collect the sub-errors' messages.
     const agg = x as Error & { errors?: unknown[] }
-    if (Array.isArray(agg.errors) && agg.errors.length) {
-      const parts = agg.errors
+    const subParts = Array.isArray(agg.errors) && agg.errors.length
+      ? agg.errors
         .map((sub) => errorMessage(sub))
         .filter((m) => m && m !== '(unknown error)')
-      if (parts.length) return parts.join('; ')
-    }
+      : []
+    if (x.message && subParts.length) return `${x.message} (${subParts.join('; ')})`
+    if (x.message) return x.message
+    if (subParts.length) return subParts.join('; ')
     const code = (x as { code?: string }).code
     if (code) return code
     return x.name || '(unknown error)'

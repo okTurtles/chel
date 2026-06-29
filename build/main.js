@@ -24842,12 +24842,11 @@ function exit(x3, internal = false) {
 }
 function errorMessage(x3) {
   if (x3 instanceof Error) {
-    if (x3.message) return x3.message;
     const agg = x3;
-    if (Array.isArray(agg.errors) && agg.errors.length) {
-      const parts = agg.errors.map((sub) => errorMessage(sub)).filter((m3) => m3 && m3 !== "(unknown error)");
-      if (parts.length) return parts.join("; ");
-    }
+    const subParts = Array.isArray(agg.errors) && agg.errors.length ? agg.errors.map((sub) => errorMessage(sub)).filter((m3) => m3 && m3 !== "(unknown error)") : [];
+    if (x3.message && subParts.length) return `${x3.message} (${subParts.join("; ")})`;
+    if (x3.message) return x3.message;
+    if (subParts.length) return subParts.join("; ");
     const code2 = x3.code;
     if (code2) return code2;
     return x3.name || "(unknown error)";
