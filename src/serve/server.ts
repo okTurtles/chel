@@ -17,7 +17,6 @@ import { join } from 'node:path'
 import process from 'node:process'
 import { getClientIP, registerRoutes } from './routes.ts'
 import { CREDITS_WORKER_TASK_TIME_INTERVAL, OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL } from './constants.ts'
-import { dbValueToString } from './db-utils.ts'
 import { KEYOP_SEGMENT_LENGTH, appendToIndexFactory, closeDB, initDB, lookupUltimateOwner, removeFromIndexFactory, updateSize } from './database.ts'
 import { BackendErrorBadData, BackendErrorGone, BackendErrorNotFound } from './errors.ts'
 import { SERVER_RUNNING } from './events.ts'
@@ -225,8 +224,8 @@ function installServerSelectorsOnce (): void {
       if (rawManifest === '') { if (skipIfDeleted) return; throw new BackendErrorGone() }
       if (!rawManifest) { if (skipIfDeleted) return; throw new BackendErrorNotFound() }
 
-      const manifestText = dbValueToString(rawManifest)
-      if (manifestText == null) throw new BackendErrorBadData('manifest is missing')
+      if (rawManifest == null) throw new BackendErrorBadData('manifest is missing')
+      const manifestText = rawManifest
 
       let manifest: { version?: unknown; chunks?: unknown }
       try {

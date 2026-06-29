@@ -4,7 +4,6 @@ var __require = __deno_internal_createRequire(import.meta.url);
 
 // build/serve/ownerSizeTotalWorker.js-tmp
 import { Buffer as Buffer2 } from "node:buffer";
-import { Buffer as Buffer3 } from "node:buffer";
 import process2 from "node:process";
 var __create = Object.create;
 var __defProp = Object.defineProperty;
@@ -4806,10 +4805,10 @@ function initializeLogger() {
   console.error = logger.error.bind(logger);
 }
 initializeLogger();
-Object.defineProperties(Buffer3, {
+Object.defineProperties(Buffer2, {
   [serdesDeserializeSymbol]: {
     value(buf) {
-      return Buffer3.from(buf);
+      return Buffer2.from(buf);
     }
   },
   [serdesSerializeSymbol]: {
@@ -4821,7 +4820,7 @@ Object.defineProperties(Buffer3, {
     value: "node:buffer"
   }
 });
-deserializer.register(Buffer3);
+deserializer.register(Buffer2);
 var readyQueueName = "parentPort";
 var rpc = (...args) => {
   return new Promise((resolve, reject) => {

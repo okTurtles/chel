@@ -19,7 +19,7 @@ import { zValidator } from 'npm:@hono/zod-validator'
 import type { Context, Hono, MiddlewareHandler } from 'npm:hono'
 import { bodyLimit } from 'npm:hono/body-limit'
 import { etag } from 'npm:hono/etag'
-import { appendToIndexFactory, dbValueToString, lookupUltimateOwner } from './database.ts'
+import { appendToIndexFactory, lookupUltimateOwner } from './database.ts'
 import logger from './logger.ts'
 import { getChallenge, getContractSalt, redeemSaltRegistrationToken, redeemSaltUpdateToken, register, registrationKey, updateContractSalt } from './zkppSalt.ts'
 // @deno-types="npm:@types/nconf"
@@ -365,8 +365,8 @@ export function registerRoutes (app: Hono): void {
             const manifest = await sbp('chelonia.db/get', deserializedHEAD.head.manifest)
             let name: string
             try {
-              const parsedManifest = JSON.parse(dbValueToString(manifest) ?? 'null')
-              if (!parsedManifest) throw new Error('empty manifest')
+              if (!manifest) throw new Error('empty manifest')
+              const parsedManifest = JSON.parse(manifest)
               ;({ name } = JSON.parse(parsedManifest.body))
             } catch (e) {
               if (e instanceof HTTPException) throw e
@@ -756,7 +756,7 @@ export function registerRoutes (app: Hono): void {
         await Promise.all(chunks.map(([cid, data]) => sbp('chelonia.db/set', cid, Buffer.from(data))))
         // Store the raw manifest bytes (not the decoded text) so the stored
         // value is byte-identical to what `manifestHash` was computed from.
-        await sbp('chelonia.db/set', manifestHash, manifestPayload)
+        await sbp('chelonia.db/set', manifestHash, Buffer.from(manifestPayload))
         // Store attribution information
         await sbp('backend/server/saveOwner', credentials.billableContractID, manifestHash)
         // Store size information

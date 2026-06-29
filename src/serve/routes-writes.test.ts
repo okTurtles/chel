@@ -1,4 +1,5 @@
 import 'jsr:@db/sqlite'
+import { Buffer } from 'node:buffer'
 import {
   blake32Hash,
   buildShelterAuthHeader,
@@ -223,7 +224,7 @@ Deno.test({
         })
         const manifestBytes = new TextEncoder().encode(manifestData)
         const manifestHash = createCID(manifestBytes, multicodes.SHELTER_FILE_MANIFEST)
-        await sbp('chelonia.db/set', manifestHash, manifestBytes)
+        await sbp('chelonia.db/set', manifestHash, Buffer.from(manifestBytes))
         await sbp('chelonia.db/set', `_private_owner_${manifestHash}`, owner.contractID)
         await sbp('chelonia.db/set', `_private_size_${manifestHash}`, String(chunkData.length + manifestBytes.byteLength))
 
