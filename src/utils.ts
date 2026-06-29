@@ -31,7 +31,7 @@ export function exit (x: unknown, internal = false): never {
 // errors with an empty `.message` (e.g. a failed `localhost` redis connection
 // that aggregates ECONNREFUSED from both ::1 and 127.0.0.1) are unwrapped so
 // the actual cause is surfaced instead of a blank string.
-function errorMessage (x: unknown): string {
+export function errorMessage (x: unknown): string {
   if (x instanceof Error) {
     if (x.message) return x.message
     // AggregateError: join sub-errors' messages.
@@ -42,6 +42,8 @@ function errorMessage (x: unknown): string {
         .filter(Boolean)
       if (parts.length) return parts.join('; ')
     }
+    const code = (x as { code?: string }).code
+    if (code) return code
     if (x.stack) return x.stack
   }
   const s = String(x)

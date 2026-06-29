@@ -15,6 +15,7 @@ import nconf from 'npm:nconf'
 import type { ImportMeta } from '../types/build.d.ts'
 import type DatabaseBackend from './DatabaseBackend.ts'
 import { KEYOP_SEGMENT_LENGTH, appendToNamesIndex, namespaceKey } from './db-utils.ts'
+import { errorMessage } from '~/utils.ts'
 
 const production = process.env.NODE_ENV === 'production'
 
@@ -26,24 +27,6 @@ let currentBackend: DatabaseBackend | null = null
 let currentCache: LRU<string, Buffer | string> | null = null
 let isClosing = false
 
-// Derives a human-readable detail string from an error, handling AggregateError
-// (e.g. a redis URL pointing at `localhost` fails on both ::1 and 127.0.0.1 and
-// Node surfaces an AggregateError whose `.message` is empty).
-function errorDetail (e: unknown): string {
-  if (e && typeof e === 'object') {
-    const err = e as { message?: string; code?: string; errors?: unknown[] }
-    if (err.message) return err.message
-    if (Array.isArray(err.errors) && err.errors.length) {
-      const details = err.errors.map((sub) =>
-        sub instanceof Error ? sub.message : (typeof sub === 'string' ? sub : String(sub))
-      ).filter(Boolean)
-      if (details.length) return details.join('; ')
-    }
-    if (err.code) return err.code
-  }
-  return String(e)
-}
-
 // Wraps a backend init failure with a clear message that names the configured
 // backend and surfaces the original error detail. For the `router` backend, the
 // failing sub-backend is named when possible via `backendName` set by the router.
@@ -52,7 +35,7 @@ function wrapBackendInitError (backendName: string, e: unknown): Error {
   const display = backendName === 'router' && subName ? subName : backendName
   return new Error(
     `chel is configured for the "${display}" database backend, ` +
-    `but it failed to initialize: ${errorDetail(e)}`,
+    `but it failed to initialize: ${errorMessage(e)}`,
     { cause: e }
   )
 }

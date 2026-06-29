@@ -3,7 +3,7 @@ import pino from 'npm:pino'
 
 const prettyPrint = process.env.NODE_ENV === 'development' || process.env.CI || process.env.CYPRESS_RECORD_KEY || process.env.PRETTY
 
-export function getLogLevel (): string {
+function getLogLevel (): string {
   return process.env.LOG_LEVEL || (prettyPrint ? 'debug' : 'info')
 }
 
