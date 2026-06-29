@@ -15,7 +15,7 @@ import nconf from 'npm:nconf'
 import type { ImportMeta } from '../types/build.d.ts'
 import type DatabaseBackend from './DatabaseBackend.ts'
 import { KEYOP_SEGMENT_LENGTH, appendToNamesIndex, namespaceKey } from './db-utils.ts'
-import { errorMessage } from '~/utils.ts'
+import { wrapBackendError } from './db-errors.ts'
 
 const production = process.env.NODE_ENV === 'production'
 
@@ -26,19 +26,6 @@ const production = process.env.NODE_ENV === 'production'
 let currentBackend: DatabaseBackend | null = null
 let currentCache: LRU<string, Buffer | string> | null = null
 let isClosing = false
-
-// Wraps a backend init failure with a clear message that names the configured
-// backend and surfaces the original error detail. For the `router` backend, the
-// failing sub-backend is named when possible via `backendName` set by the router.
-function wrapBackendInitError (backendName: string, e: unknown): Error {
-  const subName = (e as { backendName?: string } | undefined)?.backendName
-  const display = backendName === 'router' && subName ? subName : backendName
-  return new Error(
-    `chel is configured for the "${display}" database backend, ` +
-    `but it failed to initialize: ${errorMessage(e)}`,
-    { cause: e }
-  )
-}
 
 let baseSelectorsInstalled = false
 function installBaseSelectorsOnce () {
@@ -238,17 +225,13 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
         try {
           Ctor = (await import(`./database-${persistence}.ts`)).default
         } catch (e) {
-          throw new Error(
-            `chel is configured for the "${persistence}" database backend, ` +
-            `but the backend module failed to load: ${(e as Error).message || String(e)}`,
-            { cause: e }
-          )
+          throw wrapBackendError(persistence, 'load', e)
         }
         const instance = new Ctor(options[persistence]) as DatabaseBackend
         try {
           await instance.init()
         } catch (e) {
-          throw wrapBackendInitError(persistence, e)
+          throw wrapBackendError(persistence, 'init', e)
         }
         currentBackend = instance
 

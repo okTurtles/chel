@@ -1,7 +1,7 @@
 import type { Buffer } from 'node:buffer'
 import * as z from 'npm:zod'
 import DatabaseBackend from './DatabaseBackend.ts'
-import { errorMessage } from '~/utils.ts'
+import { tagBackendError } from './db-errors.ts'
 
 const ConfigEntrySchema = z.strictObject({
   name: z.string(),
@@ -73,21 +73,13 @@ export default class RouterBackend extends DatabaseBackend {
       try {
         Ctor = (await import(`./database-${name}.ts`)).default
       } catch (e) {
-        throw new Error(
-          `sub-backend "${name}" module failed to load: ${errorMessage(e)}`,
-          { cause: e }
-        )
+        throw tagBackendError(name, e)
       }
       const backend = new Ctor(options)
       try {
         await backend.init()
       } catch (e) {
-        // Wrap the failure with the sub-backend name so that callers can
-        // produce a clear, backend-specific error message, without mutating
-        // the original thrown error.
-        const wrapped = new Error(errorMessage(e), { cause: e })
-        ;(wrapped as { backendName?: string }).backendName = name
-        throw wrapped
+        throw tagBackendError(name, e)
       }
       this.backends[keyPrefix] = backend
     }))

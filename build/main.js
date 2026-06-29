@@ -24832,6 +24832,9 @@ async function createEntryFromFile(filepath, multicode) {
   return [key, buffer];
 }
 function exit(x3, internal = false) {
+  if (typeof x3 === "number") {
+    Deno.exit(x3);
+  }
   const msg = errorMessage(x3);
   if (internal) throw new Error(msg);
   console.error("[chel]", red("Error:"), msg);
@@ -24842,12 +24845,12 @@ function errorMessage(x3) {
     if (x3.message) return x3.message;
     const agg = x3;
     if (Array.isArray(agg.errors) && agg.errors.length) {
-      const parts = agg.errors.map((sub) => sub instanceof Error ? sub.message : String(sub)).filter(Boolean);
+      const parts = agg.errors.map((sub) => errorMessage(sub)).filter((m3) => m3 && m3 !== "(unknown error)");
       if (parts.length) return parts.join("; ");
     }
     const code2 = x3.code;
     if (code2) return code2;
-    if (x3.stack) return x3.stack;
+    return x3.name || "(unknown error)";
   }
   const s = String(x3);
   return s === "" ? "(unknown error)" : s;
@@ -24902,6 +24905,28 @@ var init_utils = __esm({
       const realPath = await Deno.realPath(path8);
       return internal(realPath);
     };
+  }
+});
+function tagBackendError(name, e2) {
+  const wrapped = new Error(errorMessage(e2), { cause: e2 });
+  wrapped.backendName = name;
+  return wrapped;
+}
+function wrapBackendError(backendName, phase, e2) {
+  const subName = e2?.backendName;
+  const display = backendName === "router" && subName ? subName : backendName;
+  const verb = phase === "load" ? "be loaded" : "initialize";
+  const wrapped = new Error(
+    `chel is configured for the "${display}" database backend, but it failed to ${verb}: ${errorMessage(e2)}`,
+    { cause: e2 }
+  );
+  if (backendName === "router" && subName) wrapped.backendName = subName;
+  return wrapped;
+}
+var init_db_errors = __esm({
+  "src/serve/db-errors.ts"() {
+    "use strict";
+    init_utils();
   }
 });
 var requiredMethodNames;
@@ -50709,7 +50734,7 @@ var init_database_router = __esm({
     "use strict";
     init_zod();
     init_DatabaseBackend();
-    init_utils();
+    init_db_errors();
     init_();
     ConfigEntrySchema = strictObject({
       name: string2(),
@@ -50769,18 +50794,13 @@ var init_database_router = __esm({
           try {
             Ctor = (await globImport_database_ts(`./database-${name}.ts`)).default;
           } catch (e2) {
-            throw new Error(
-              `sub-backend "${name}" module failed to load: ${errorMessage(e2)}`,
-              { cause: e2 }
-            );
+            throw tagBackendError(name, e2);
           }
           const backend = new Ctor(options2);
           try {
             await backend.init();
           } catch (e2) {
-            const wrapped = new Error(errorMessage(e2), { cause: e2 });
-            wrapped.backendName = name;
-            throw wrapped;
+            throw tagBackendError(name, e2);
           }
           this.backends[keyPrefix] = backend;
         }));
@@ -69535,7 +69555,7 @@ var lookupUltimateOwner = async (resourceID) => {
   }
   return ownerID;
 };
-init_utils();
+init_db_errors();
 var globImport_database_ts2 = __glob({
   "./database-fs.ts": () => Promise.resolve().then(() => (init_database_fs(), database_fs_exports)),
   "./database-redis.ts": () => Promise.resolve().then(() => (init_database_redis(), database_redis_exports)),
@@ -69547,14 +69567,6 @@ var production = process2.env.NODE_ENV === "production";
 var currentBackend = null;
 var currentCache = null;
 var isClosing = false;
-function wrapBackendInitError(backendName, e2) {
-  const subName = e2?.backendName;
-  const display = backendName === "router" && subName ? subName : backendName;
-  return new Error(
-    `chel is configured for the "${display}" database backend, but it failed to initialize: ${errorMessage(e2)}`,
-    { cause: e2 }
-  );
-}
 var baseSelectorsInstalled = false;
 function installBaseSelectorsOnce() {
   if (baseSelectorsInstalled) return;
@@ -69691,16 +69703,13 @@ var initDB = async ({ skipDbPreloading } = {}) => {
         try {
           Ctor = (await globImport_database_ts2(`./database-${persistence}.ts`)).default;
         } catch (e2) {
-          throw new Error(
-            `chel is configured for the "${persistence}" database backend, but the backend module failed to load: ${e2.message || String(e2)}`,
-            { cause: e2 }
-          );
+          throw wrapBackendError(persistence, "load", e2);
         }
         const instance = new Ctor(options2[persistence]);
         try {
           await instance.init();
         } catch (e2) {
-          throw wrapBackendInitError(persistence, e2);
+          throw wrapBackendError(persistence, "init", e2);
         }
         currentBackend = instance;
         const cache2 = new import_npm_lru_cache.default({
@@ -74256,9 +74265,9 @@ var etag = (options2) => {
   };
 };
 var import_npm_pino = __toESM(require_pino());
-var prettyPrint = process6.env.NODE_ENV === "development" || process6.env.CI || process6.env.CYPRESS_RECORD_KEY || process6.env.PRETTY;
+var verboseByDefault = process6.env.NODE_ENV === "development" || process6.env.CI || process6.env.CYPRESS_RECORD_KEY || process6.env.PRETTY;
 function getLogLevel() {
-  return process6.env.LOG_LEVEL || (prettyPrint ? "debug" : "info");
+  return process6.env.LOG_LEVEL || (verboseByDefault ? "debug" : "info");
 }
 function logMethod(args, method) {
   const stringIdx = typeof args[0] === "string" ? 0 : 1;

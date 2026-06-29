@@ -4674,9 +4674,9 @@ var esm_default2 = esm_default("sbp/selectors/register", {
   }
 });
 var import_npm_pino = __toESM(require_pino());
-var prettyPrint = process2.env.NODE_ENV === "development" || process2.env.CI || process2.env.CYPRESS_RECORD_KEY || process2.env.PRETTY;
+var verboseByDefault = process2.env.NODE_ENV === "development" || process2.env.CI || process2.env.CYPRESS_RECORD_KEY || process2.env.PRETTY;
 function getLogLevel() {
-  return process2.env.LOG_LEVEL || (prettyPrint ? "debug" : "info");
+  return process2.env.LOG_LEVEL || (verboseByDefault ? "debug" : "info");
 }
 function logMethod(args, method) {
   const stringIdx = typeof args[0] === "string" ? 0 : 1;

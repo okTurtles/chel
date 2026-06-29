@@ -1,10 +1,13 @@
 import process from 'node:process'
 import pino from 'npm:pino'
 
-const prettyPrint = process.env.NODE_ENV === 'development' || process.env.CI || process.env.CYPRESS_RECORD_KEY || process.env.PRETTY
+// `PRETTY` (and dev/CI envs) only raise the default log level to `debug`; it no
+// longer enables pretty rendering here (that happens externally via a piped
+// `pino-pretty`, see the NOTE below). Kept for backward compatibility.
+const verboseByDefault = process.env.NODE_ENV === 'development' || process.env.CI || process.env.CYPRESS_RECORD_KEY || process.env.PRETTY
 
 function getLogLevel (): string {
-  return process.env.LOG_LEVEL || (prettyPrint ? 'debug' : 'info')
+  return process.env.LOG_LEVEL || (verboseByDefault ? 'debug' : 'info')
 }
 
 function logMethod (this: unknown, args: unknown[], method: (...args: unknown[]) => void): void {

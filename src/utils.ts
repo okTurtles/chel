@@ -19,6 +19,10 @@ export async function createEntryFromFile (filepath: string, multicode: number):
 }
 
 export function exit (x: unknown, internal = false): never {
+  if (typeof x === 'number') {
+    Deno.exit(x)
+  }
+
   const msg = errorMessage(x)
 
   if (internal) throw new Error(msg)
@@ -30,7 +34,9 @@ export function exit (x: unknown, internal = false): never {
 // Derives a non-empty message from any error value. AggregateError and other
 // errors with an empty `.message` (e.g. a failed `localhost` redis connection
 // that aggregates ECONNREFUSED from both ::1 and 127.0.0.1) are unwrapped so
-// the actual cause is surfaced instead of a blank string.
+// the actual cause is surfaced instead of a blank string. The full stack trace
+// is intentionally not used as the message; callers that need it can inspect
+// the error's `cause` instead.
 export function errorMessage (x: unknown): string {
   if (x instanceof Error) {
     if (x.message) return x.message
@@ -38,13 +44,13 @@ export function errorMessage (x: unknown): string {
     const agg = x as Error & { errors?: unknown[] }
     if (Array.isArray(agg.errors) && agg.errors.length) {
       const parts = agg.errors
-        .map((sub) => (sub instanceof Error ? sub.message : String(sub)))
-        .filter(Boolean)
+        .map((sub) => errorMessage(sub))
+        .filter((m) => m && m !== '(unknown error)')
       if (parts.length) return parts.join('; ')
     }
     const code = (x as { code?: string }).code
     if (code) return code
-    if (x.stack) return x.stack
+    return x.name || '(unknown error)'
   }
   const s = String(x)
   return s === '' ? '(unknown error)' : s
