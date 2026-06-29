@@ -124,6 +124,32 @@ Deno.test({
         if (getCid !== postCid) throw new Error('POST x-cid must match subsequent GET x-cid')
       })
 
+      await t.step('POST /kv with multi-byte UTF-8 body round-trips identical x-cid', async () => {
+        const auth = buildShelterAuthHeader(owner.contractID, owner.SAK)
+        // Non-ASCII bytes where Buffer.toString('utf-8') semantics are observable,
+        // unlike the pure-ASCII payloads used elsewhere.
+        const payload = buildSignedKvPayload(owner.contractID, 'utf8key', 0, { msg: 'café ☕️ 🚀' }, owner.SAK)
+        const res = await fetch(`${baseURL}/kv/${owner.contractID}/utf8key`, {
+          method: 'POST',
+          headers: {
+            authorization: auth,
+            'content-type': 'application/octet-stream',
+            'if-match': '*'
+          },
+          body: payload
+        })
+        await res.body?.cancel()
+        if (res.status !== 204) throw new Error(`Expected 204 but got ${res.status}`)
+        const postCid = res.headers.get('x-cid')
+        if (!postCid) throw new Error('Expected x-cid header on 204')
+        const getRes = await fetch(`${baseURL}/kv/${owner.contractID}/utf8key`, {
+          headers: { authorization: buildShelterAuthHeader(owner.contractID, owner.SAK) }
+        })
+        const getCid = getRes.headers.get('x-cid')
+        await getRes.body?.cancel()
+        if (getCid !== postCid) throw new Error(`Multi-byte round-trip mismatch: POST=${postCid} GET=${getCid}`)
+      })
+
       await t.step('GET /kv without auth returns 401', async () => {
         const res = await fetch(`${baseURL}/kv/${owner.contractID}/testkey`)
         await res.body?.cancel()

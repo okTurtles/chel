@@ -963,8 +963,9 @@ export function registerRoutes (app: Hono): void {
           }
         }
 
+        const payloadString = payloadBuffer.toString()
         try {
-          const serializedData = JSON.parse(payloadBuffer.toString())
+          const serializedData = JSON.parse(payloadString)
           const { contracts } = sbp('chelonia/rootState')
           // Check that the height is the latest value
           if (contracts[contractID].height !== Number(serializedData.height)) {
@@ -989,7 +990,6 @@ export function registerRoutes (app: Hono): void {
         await sbp('backend/server/updateSize', contractID, payloadBuffer.byteLength - existingSize)
         await appendToIndexFactory(`_private_kvIdx_${contractID}`)(key)
         // No await on broadcast for faster responses
-        const payloadString = payloadBuffer.toString()
         sbp('backend/server/broadcastKV', contractID, key, payloadString).catch((e: Error) => console.error(e, 'Error broadcasting KV update', contractID, key))
         // ETag/x-cid consistency: hash the UTF-8 string form (what @chelonia/lib's
         // '' prefix handler returns on every read), NOT the raw payloadBuffer, so

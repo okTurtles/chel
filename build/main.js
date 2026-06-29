@@ -75005,8 +75005,9 @@ function registerRoutes(app) {
             });
           }
         }
+        const payloadString = payloadBuffer.toString();
         try {
-          const serializedData = JSON.parse(payloadBuffer.toString());
+          const serializedData = JSON.parse(payloadString);
           const { contracts } = esm_default("chelonia/rootState");
           if (contracts[contractID].height !== Number(serializedData.height)) {
             return c.body(existing || "", 409, {
@@ -75027,7 +75028,6 @@ function registerRoutes(app) {
         await esm_default("chelonia.db/set", `_private_kv_${contractID}_${key}`, payloadBuffer);
         await esm_default("backend/server/updateSize", contractID, payloadBuffer.byteLength - existingSize);
         await appendToIndexFactory(`_private_kvIdx_${contractID}`)(key);
-        const payloadString = payloadBuffer.toString();
         esm_default("backend/server/broadcastKV", contractID, key, payloadString).catch((e2) => console.error(e2, "Error broadcasting KV update", contractID, key));
         const newCID = createCID(payloadString, multicodes.RAW);
         return c.body(null, 204, {
