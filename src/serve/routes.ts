@@ -938,7 +938,11 @@ export function registerRoutes (app: Hono): void {
       // Use a queue to prevent race conditions (for example, writing to a contract
       // that's being deleted or updated)
       return sbp('chelonia/queueInvocation', contractID, async () => {
-        const existing = await sbp('chelonia.db/get', `_private_kv_${contractID}_${key}`)
+        // Read with the `any:` prefix so the value comes back as the raw stored
+        // bytes (Buffer) rather than being UTF-8 decoded to a string. This makes
+        // the ETag a true content-address of what was persisted, regardless of
+        // whether the bytes are valid UTF-8.
+        const existing = await sbp('chelonia.db/get', `any:_private_kv_${contractID}_${key}`)
 
         // Some protection against accidental overwriting by implementing the if-match
         // header
@@ -947,16 +951,15 @@ export function registerRoutes (app: Hono): void {
           throw new HTTPException(400, { message: 'if-match is required' })
         }
         // "Quote" string (to match ETag format)
-        // ETag/x-cid consistency: `existing` was decoded to a UTF-8 string by
-        // @chelonia/lib's '' prefix handler on read, so hashing it here matches
-        // the ETag a GET computes for the same stored value.
+        // ETag/x-cid is the content-address of the raw stored bytes; GET hashes
+        // the same bytes (also read via `any:`), so all ETags for a value match.
         const cid = existing ? createCID(existing, multicodes.RAW) : ''
 
         if (expectedEtag === '*') {
           // pass through
         } else {
           if (!expectedEtag.split(',').map((v: string) => v.trim()).includes(`"${cid}"`)) {
-            return c.body(existing || '', 412, {
+            return c.body(existing ?? new Uint8Array(), 412, {
               'ETag': `"${cid}"`,
               'x-cid': `"${cid}"`
             })
@@ -969,7 +972,7 @@ export function registerRoutes (app: Hono): void {
           const { contracts } = sbp('chelonia/rootState')
           // Check that the height is the latest value
           if (contracts[contractID].height !== Number(serializedData.height)) {
-            return c.body(existing || '', 409, {
+            return c.body(existing ?? new Uint8Array(), 409, {
               'ETag': `"${cid}"`,
               'x-cid': `"${cid}"`
             })
@@ -985,16 +988,16 @@ export function registerRoutes (app: Hono): void {
           throw new HTTPException(422)
         }
 
-        const existingSize = existing ? Buffer.from(existing).byteLength : 0
+        const existingSize = existing ? existing.byteLength : 0
         await sbp('chelonia.db/set', `_private_kv_${contractID}_${key}`, payloadBuffer)
         await sbp('backend/server/updateSize', contractID, payloadBuffer.byteLength - existingSize)
         await appendToIndexFactory(`_private_kvIdx_${contractID}`)(key)
         // No await on broadcast for faster responses
         sbp('backend/server/broadcastKV', contractID, key, payloadString).catch((e: Error) => console.error(e, 'Error broadcasting KV update', contractID, key))
-        // ETag/x-cid consistency: hash the UTF-8 string form (what @chelonia/lib's
-        // '' prefix handler returns on every read), NOT the raw payloadBuffer, so
-        // this ETag equals the one a later GET computes from the stored value.
-        const newCID = createCID(payloadString, multicodes.RAW)
+        // ETag/x-cid is the content-address of the exact bytes just persisted, so
+        // it equals the one a later GET computes from the stored value (also read
+        // as raw bytes via the `any:` prefix).
+        const newCID = createCID(payloadBuffer, multicodes.RAW)
 
         return c.body(null, 204, {
           'ETag': `"${newCID}"`,
@@ -1019,14 +1022,14 @@ export function registerRoutes (app: Hono): void {
         throw new HTTPException(401)
       }
 
-      const result = await sbp('chelonia.db/get', `_private_kv_${contractID}_${key}`)
+      // Read with the `any:` prefix to get the raw stored bytes (Buffer) instead
+      // of a UTF-8 decoded string, so the ETag content-addresses exactly what was
+      // persisted and matches the CID the POST/412/409 paths return.
+      const result = await sbp('chelonia.db/get', `any:_private_kv_${contractID}_${key}`)
       if (!result) {
         return notFoundNoCache(c)
       }
 
-      // ETag/x-cid consistency: `result` is the stored value decoded to a UTF-8
-      // string by @chelonia/lib's '' prefix handler; the POST/412/409 paths hash
-      // the same string form so all ETags for a value match and if-match round-trips.
       const cid = createCID(result, multicodes.RAW)
       return c.body(result, 200, {
         'ETag': `"${cid}"`,

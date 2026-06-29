@@ -115,6 +115,12 @@ Deno.test({
         if (!postEtag) throw new Error('Expected ETag header on 204')
         if (!postCid) throw new Error('Expected x-cid header on 204')
         if (postEtag !== postCid) throw new Error('Expected x-cid to match ETag on 204')
+        // The returned CID must be the actual content-address of the posted bytes,
+        // not merely self-consistent across POST/GET.
+        const expectedCid = createCID(payload, multicodes.RAW)
+        if (postCid !== `"${expectedCid}"`) {
+          throw new Error(`POST x-cid ${postCid} does not match expected "${expectedCid}"`)
+        }
         // Round-trip: a subsequent GET must compute the same CID the POST returned.
         const getRes = await fetch(`${baseURL}/kv/${owner.contractID}/testkey`, {
           headers: { authorization: buildShelterAuthHeader(owner.contractID, owner.SAK) }
@@ -142,12 +148,31 @@ Deno.test({
         if (res.status !== 204) throw new Error(`Expected 204 but got ${res.status}`)
         const postCid = res.headers.get('x-cid')
         if (!postCid) throw new Error('Expected x-cid header on 204')
+        // The POST CID must content-address the exact posted bytes.
+        const postedBytes = new TextEncoder().encode(payload)
+        if (postCid !== `"${createCID(postedBytes, multicodes.RAW)}"`) {
+          throw new Error(`POST x-cid ${postCid} does not address the raw posted bytes`)
+        }
         const getRes = await fetch(`${baseURL}/kv/${owner.contractID}/utf8key`, {
           headers: { authorization: buildShelterAuthHeader(owner.contractID, owner.SAK) }
         })
         const getCid = getRes.headers.get('x-cid')
-        await getRes.body?.cancel()
+        const getBytes = new Uint8Array(await getRes.arrayBuffer())
         if (getCid !== postCid) throw new Error(`Multi-byte round-trip mismatch: POST=${postCid} GET=${getCid}`)
+        // The served bytes must be byte-identical to what was posted (proving the
+        // `any:` raw-byte read path, not a UTF-8 decode/re-encode).
+        if (getBytes.length !== postedBytes.length) {
+          throw new Error(`Served byte length ${getBytes.length} != posted ${postedBytes.length}`)
+        }
+        for (let i = 0; i < postedBytes.length; i++) {
+          if (getBytes[i] !== postedBytes[i]) {
+            throw new Error(`Served bytes differ from posted bytes at offset ${i}`)
+          }
+        }
+        // And the served bytes must hash to the advertised CID.
+        if (getCid !== `"${createCID(getBytes, multicodes.RAW)}"`) {
+          throw new Error(`GET x-cid ${getCid} does not address the served bytes`)
+        }
       })
 
       await t.step('GET /kv without auth returns 401', async () => {

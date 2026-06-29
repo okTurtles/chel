@@ -74990,7 +74990,7 @@ function registerRoutes(app) {
       }
       const payloadBuffer = Buffer14.from(await c.req.arrayBuffer());
       return esm_default("chelonia/queueInvocation", contractID, async () => {
-        const existing = await esm_default("chelonia.db/get", `_private_kv_${contractID}_${key}`);
+        const existing = await esm_default("chelonia.db/get", `any:_private_kv_${contractID}_${key}`);
         const expectedEtag = c.req.header("if-match");
         if (!expectedEtag) {
           throw new HTTPException(400, { message: "if-match is required" });
@@ -74999,7 +74999,7 @@ function registerRoutes(app) {
         if (expectedEtag === "*") {
         } else {
           if (!expectedEtag.split(",").map((v2) => v2.trim()).includes(`"${cid}"`)) {
-            return c.body(existing || "", 412, {
+            return c.body(existing ?? new Uint8Array(), 412, {
               "ETag": `"${cid}"`,
               "x-cid": `"${cid}"`
             });
@@ -75010,7 +75010,7 @@ function registerRoutes(app) {
           const serializedData = JSON.parse(payloadString);
           const { contracts } = esm_default("chelonia/rootState");
           if (contracts[contractID].height !== Number(serializedData.height)) {
-            return c.body(existing || "", 409, {
+            return c.body(existing ?? new Uint8Array(), 409, {
               "ETag": `"${cid}"`,
               "x-cid": `"${cid}"`
             });
@@ -75024,12 +75024,12 @@ function registerRoutes(app) {
           console.error(parseErr, "/kv/:contractID/:key", contractID, key);
           throw new HTTPException(422);
         }
-        const existingSize = existing ? Buffer14.from(existing).byteLength : 0;
+        const existingSize = existing ? existing.byteLength : 0;
         await esm_default("chelonia.db/set", `_private_kv_${contractID}_${key}`, payloadBuffer);
         await esm_default("backend/server/updateSize", contractID, payloadBuffer.byteLength - existingSize);
         await appendToIndexFactory(`_private_kvIdx_${contractID}`)(key);
         esm_default("backend/server/broadcastKV", contractID, key, payloadString).catch((e2) => console.error(e2, "Error broadcasting KV update", contractID, key));
-        const newCID = createCID(payloadString, multicodes.RAW);
+        const newCID = createCID(payloadBuffer, multicodes.RAW);
         return c.body(null, 204, {
           "ETag": `"${newCID}"`,
           "x-cid": `"${newCID}"`
@@ -75051,7 +75051,7 @@ function registerRoutes(app) {
       if (!ctEq(credentials.billableContractID, contractID)) {
         throw new HTTPException(401);
       }
-      const result = await esm_default("chelonia.db/get", `_private_kv_${contractID}_${key}`);
+      const result = await esm_default("chelonia.db/get", `any:_private_kv_${contractID}_${key}`);
       if (!result) {
         return notFoundNoCache(c);
       }
