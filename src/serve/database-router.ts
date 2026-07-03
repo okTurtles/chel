@@ -1,6 +1,7 @@
 import type { Buffer } from 'node:buffer'
 import * as z from 'npm:zod'
 import DatabaseBackend from './DatabaseBackend.ts'
+import { tagBackendError } from './db-errors.ts'
 
 const ConfigEntrySchema = z.strictObject({
   name: z.string(),
@@ -68,9 +69,18 @@ export default class RouterBackend extends DatabaseBackend {
     const entries = Object.entries(this.config)
     await Promise.all(entries.map(async entry => {
       const [keyPrefix, { name, options }] = entry
-      const Ctor = (await import(`./database-${name}.ts`)).default
+      let Ctor
+      try {
+        Ctor = (await import(`./database-${name}.ts`)).default
+      } catch (e) {
+        throw tagBackendError(name, e)
+      }
       const backend = new Ctor(options)
-      await backend.init()
+      try {
+        await backend.init()
+      } catch (e) {
+        throw tagBackendError(name, e)
+      }
       this.backends[keyPrefix] = backend
     }))
   }
