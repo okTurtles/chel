@@ -363,8 +363,15 @@ export function registerRoutes (app: Hono): void {
           // Only allow identity contracts to be created without attribution
           if (!credentials?.billableContractID && deserializedHEAD.isFirstMessage) {
             const manifest = await sbp('chelonia.db/get', deserializedHEAD.head.manifest)
-            const parsedManifest = JSON.parse(manifest)
-            const { name } = JSON.parse(parsedManifest.body)
+            let name: string
+            try {
+              if (!manifest) throw new Error('empty manifest')
+              const parsedManifest = JSON.parse(manifest)
+              ;({ name } = JSON.parse(parsedManifest.body))
+            } catch (e) {
+              if (e instanceof HTTPException) throw e
+              throw new HTTPException(422, { message: 'Invalid manifest' })
+            }
             if (name !== 'gi.contracts/identity') {
               throw new HTTPException(401, { message: 'This contract type requires ownership information' })
             }
@@ -672,10 +679,11 @@ export function registerRoutes (app: Hono): void {
         if (!manifestFile) throw new HTTPException(400, { message: 'missing manifest' })
         if (manifestFile.name !== 'manifest.json') throw new HTTPException(400, { message: 'wrong manifest filename' })
         const manifestPayload = new Uint8Array(await manifestFile.arrayBuffer())
+        const manifestText = Buffer.from(manifestPayload).toString()
 
         const manifest = (() => {
           try {
-            return JSON.parse(Buffer.from(manifestPayload).toString())
+            return JSON.parse(manifestText)
           } catch {
             throw new HTTPException(422, { message: 'Error parsing manifest' })
           }
@@ -745,8 +753,10 @@ export function registerRoutes (app: Hono): void {
           }
         }))
         // Now, store all chunks and the manifest
-        await Promise.all(chunks.map(([cid, data]) => sbp('chelonia.db/set', cid, data)))
-        await sbp('chelonia.db/set', manifestHash, manifestPayload)
+        await Promise.all(chunks.map(([cid, data]) => sbp('chelonia.db/set', cid, Buffer.from(data))))
+        // Store the raw manifest bytes (not the decoded text) so the stored
+        // value is byte-identical to what `manifestHash` was computed from.
+        await sbp('chelonia.db/set', manifestHash, Buffer.from(manifestPayload))
         // Store attribution information
         await sbp('backend/server/saveOwner', credentials.billableContractID, manifestHash)
         // Store size information
