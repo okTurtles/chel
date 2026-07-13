@@ -5,10 +5,7 @@
   "main": "src/main.ts",
   "scripts": {
     "test": "deno task test",
-    "postinstall": "node ./scripts/install.js"
-  },
-  "bin": {
-    "chel": "./bin/chel"
+    "prepublishOnly": "deno task publish"
   },
   "repository": {
     "type": "git",
@@ -16,11 +13,13 @@
   },
   "author": "Greg Slepak <greg@okturtles.org>",
   "license": "AGPL-3.0",
-  "files": [
-    "scripts/**/*"
-  ],
-  "dependencies": {
-    "rimraf": "3.0.2",
-    "tar": "7.5.7"
-  }
+  "optionalDependencies": {
+    "@chelonia/cli-arm64-darwin": "3.3.2",
+    "@chelonia/cli-arm64-linux": "3.3.2",
+    "@chelonia/cli-x64-darwin": "3.3.2",
+    "@chelonia/cli-x64-win32": "3.3.2",
+    "@chelonia/cli-x64-linux": "3.3.2"
+  },
+  "os": ["darwin", "linux", "win32"],
+  "cpu": ["arm64", "x64"]
 }
