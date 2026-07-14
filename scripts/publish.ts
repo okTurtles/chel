@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-run --allow-read --allow-write=./dist --allow-env
+#!/usr/bin/env -S deno run --allow-run --allow-read --allow-write=./dist,./package.json --allow-env
 
 // Pre-publish helper for @chelonia/cli.
 //
@@ -15,24 +15,14 @@
 // Compiled binaries live under `dist/` (gitignored) and are never committed,
 // matching the previous `bin/` behavior.
 
-import { shell } from '~/utils.ts'
+import { $ } from '~/utils.ts'
+import { TARGETS, compileBinary, subPackageName, subPackageDir } from './targets.ts'
+import { reconcileOptionalDeps, rootPackagePath } from './sync-versions.ts'
 
-function $ (command: string): Promise<string> {
-  return shell(command, { printOutput: true })
-}
-
+// Static import for TS JSON-import-attribute type inference. The path also
+// lives in `rootPackagePath()` from `./sync-versions.ts` (used at line 76);
+// keep both in sync if it ever changes.
 const { default: rootPkg } = await import('../package.json', { with: { type: 'json' } })
-
-// Maps each `deno compile --target` value to the npm platform identifiers
-// (`os` matches `process.platform`, `cpu` matches `process.arch`) and the
-// resulting binary filename.
-const TARGETS = [
-  { denoTarget: 'x86_64-unknown-linux-gnu', os: 'linux', cpu: 'x64', binary: 'chel' },
-  { denoTarget: 'aarch64-unknown-linux-gnu', os: 'linux', cpu: 'arm64', binary: 'chel' },
-  { denoTarget: 'x86_64-pc-windows-msvc', os: 'win32', cpu: 'x64', binary: 'chel.exe' },
-  { denoTarget: 'x86_64-apple-darwin', os: 'darwin', cpu: 'x64', binary: 'chel' },
-  { denoTarget: 'aarch64-apple-darwin', os: 'darwin', cpu: 'arm64', binary: 'chel' }
-] as const
 
 async function buildBundle (): Promise<void> {
   console.log('=== Step 1: Building JS bundle ===')
@@ -44,24 +34,24 @@ async function createSubPackages (): Promise<void> {
   await $('rm -rf ./dist && mkdir -p ./dist')
 
   for (const target of TARGETS) {
-    const subPkgName = `@chelonia/cli-${target.cpu}-${target.os}`
-    const subDir = `dist/cli-${target.cpu}-${target.os}`
+    const subPkgName = subPackageName(target)
+    const subDir = subPackageDir(target)
 
     console.log(`\n--- ${subPkgName} (${target.denoTarget}) ---`)
     await $(`mkdir -p ${subDir}`)
 
-    await $(
-      'deno compile --allow-env --allow-ffi --allow-sys=hostname --allow-read --allow-write=./ --allow-net ' +
-      `-o ${subDir}/${target.binary} --target ${target.denoTarget} ` +
-      '--exclude node_modules --include ./build/serve --include ./build/dist-dashboard ./build/main.js'
-    )
+    await compileBinary(`${subDir}/${target.binary}`, target)
 
     const subPkg = {
       name: subPkgName,
       version: rootPkg.version,
       description: `${rootPkg.description} (${target.os}/${target.cpu})`,
+      repository: rootPkg.repository,
+      author: rootPkg.author,
+      license: rootPkg.license,
       os: [target.os],
       cpu: [target.cpu],
+      files: [target.binary],
       bin: {
         chel: target.binary
       }
@@ -76,8 +66,8 @@ async function createSubPackages (): Promise<void> {
 async function publishSubPackages (): Promise<void> {
   console.log('\n=== Step 3: Publishing sub-packages ===')
   for (const target of TARGETS) {
-    const subPkgName = `@chelonia/cli-${target.cpu}-${target.os}`
-    const subDir = `dist/cli-${target.cpu}-${target.os}`
+    const subPkgName = subPackageName(target)
+    const subDir = subPackageDir(target)
     console.log(`\n--- Publishing ${subPkgName} ---`)
     await $(`cd ${subDir} && npm publish --access public`)
   }
@@ -87,6 +77,9 @@ try {
   await buildBundle()
   await createSubPackages()
   await publishSubPackages()
+  const pkgPath = rootPackagePath()
+  const synced = await reconcileOptionalDeps(pkgPath, rootPkg.version, TARGETS)
+  if (synced) console.log(`\nSynced optionalDependencies -> ${rootPkg.version}`)
   console.log('\n=== Sub-packages published. Publishing main package... ===')
 } catch (e) {
   console.error('caught:', e)

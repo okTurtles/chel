@@ -1,26 +1,19 @@
 #!/usr/bin/env -S deno run --allow-run --allow-read=. --allow-write=./dist
 
-import { shell } from '~/utils.ts'
+import { shell, $ } from '~/utils.ts'
+import { TARGETS, compileBinary } from './targets.ts'
 
-function $ (command: string) {
-  return shell(command, { printOutput: true })
-}
-
+// Static import for TS JSON-import-attribute type inference. The path also
+// lives in `rootPackagePath()` from `./sync-versions.ts`; keep both in sync.
 const { default: { version } } = await import('../package.json', { with: { type: 'json' } })
 
 export async function compile (): Promise<void> {
-  const archs = ['x86_64-unknown-linux-gnu', 'aarch64-unknown-linux-gnu', 'x86_64-pc-windows-msvc', 'x86_64-apple-darwin', 'aarch64-apple-darwin']
-  for (const arch of archs) {
+  for (const target of TARGETS) {
+    const { denoTarget: arch, binary } = target
     const dir = `./dist/tmp/${arch}`
-    const bin = arch.includes('windows') ? 'chel.exe' : 'chel'
     // note: could also use https://examples.deno.land/temporary-files
     await $(`mkdir -vp ${dir}`)
-    // --allow-read instead of --allow-read=. needed because Deno might try to
-    // load things from the Deno cache, and the location of the cache isn't
-    // known at the time the binary is generated.
-    // TODO: This should either be fixed in Deno or by programmatically dropping
-    // permissions at runtime.
-    await $(`deno compile --allow-env --allow-ffi --allow-sys=hostname --allow-read --allow-write=./ --allow-net -o ${dir}/${bin} --target ${arch} --exclude node_modules --include ./build/serve --include ./build/dist-dashboard ./build/main.js`)
+    await compileBinary(`${dir}/${binary}`, target)
     await $(`tar -C ./dist/tmp -czvf ./dist/chel-v${version}-${arch}.tar.gz ${arch}`)
   }
   await $(`sha256sum dist/chel-v${version}-*`)

@@ -5,6 +5,7 @@
   "main": "src/main.ts",
   "scripts": {
     "test": "deno task test",
+    "version": "deno task sync-versions",
     "prepublishOnly": "deno task publish"
   },
   "repository": {
@@ -13,13 +14,26 @@
   },
   "author": "Greg Slepak <greg@okturtles.org>",
   "license": "AGPL-3.0",
+  "files": [
+    "bin/chel.js"
+  ],
+  "bin": {
+    "chel": "bin/chel.js"
+  },
   "optionalDependencies": {
     "@chelonia/cli-arm64-darwin": "3.3.2",
     "@chelonia/cli-arm64-linux": "3.3.2",
     "@chelonia/cli-x64-darwin": "3.3.2",
-    "@chelonia/cli-x64-win32": "3.3.2",
-    "@chelonia/cli-x64-linux": "3.3.2"
+    "@chelonia/cli-x64-linux": "3.3.2",
+    "@chelonia/cli-x64-win32": "3.3.2"
   },
-  "os": ["darwin", "linux", "win32"],
-  "cpu": ["arm64", "x64"]
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "cpu": [
+    "arm64",
+    "x64"
+  ]
 }
