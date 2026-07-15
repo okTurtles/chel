@@ -60,6 +60,14 @@ async function createSubPackages (): Promise<void> {
       `${subDir}/package.json`,
       JSON.stringify(subPkg, null, 2) + '\n'
     )
+    await Deno.writeTextFile(
+      `${subDir}/README.md`,
+      `# ${subPkgName}\n\n` +
+      `Platform-specific binary for ${rootPkg.description} ` +
+      `(${target.os}/${target.cpu}).\n\n` +
+      'Installed automatically via the `optionalDependencies` of `@chelonia/cli`; ' +
+      'do not depend on this package directly.\n'
+    )
   }
 }
 

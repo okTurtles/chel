@@ -60,8 +60,9 @@ export async function reconcileOptionalDeps (
   for (const [k, v] of Object.entries(current)) {
     if (!isCliSubPackage(k)) reconciled[k] = v
   }
-  for (const name of targets.map(subPackageName).sort()) {
-    reconciled[name] = version
+  const expected = expectedOptionalDeps(version, targets)
+  for (const name of Object.keys(expected).sort()) {
+    reconciled[name] = expected[name]
   }
 
   // Treat an ordering difference as a change (keeps diffs deterministic).
@@ -82,6 +83,9 @@ if (import.meta.main) {
   if (changed) {
     // Stage the rewrite so it lands in the `npm version` commit. Harmless
     // elsewhere (git add on an unchanged file is a no-op).
+    // `shell()` routes through `/bin/sh -c`, so Deno's --allow-run must permit
+    // the shell binary rather than `git` specifically. Scoping to `git` alone
+    // would be denied at runtime. See src/utils.ts:shell().
     await shell('git add package.json', { printOutput: false })
     console.log(`synced optionalDependencies -> ${version}`)
   } else {

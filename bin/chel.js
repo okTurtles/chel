@@ -11,11 +11,25 @@
 // The sub-package naming convention `@chelonia/cli-<arch>-<platform>` matches
 // `subPackageName` in scripts/targets.ts, where <arch> is `process.arch`
 // ('x64' | 'arm64') and <platform> is `process.platform`
-// ('linux' | 'darwin' | 'win32'). Keeping the convention identical on both
-// sides is what lets this stay in sync without importing the TS module.
+// ('linux' | 'darwin' | 'win32'). This duplication is intentional (this file
+// is CommonJS run at install time and cannot import the TS module) and is
+// pinned by `scripts/targets.test.ts` — if you change the convention here or
+// in targets.ts, that test will fail. Update both together.
 
 const { spawn } = require('node:child_process')
 const path = require('node:path')
+const os = require('node:os')
+
+// Translate the child's (code, signal) into a POSIX-conformant exit status:
+// 128 + signum when killed by a signal (130 for SIGINT, 143 for SIGTERM), so
+// callers can distinguish "interrupted" from "failed".
+function exitCodeFor (code, signal) {
+  if (code != null) return code
+  if (signal && os.constants.signals[signal] != null) {
+    return 128 + os.constants.signals[signal]
+  }
+  return 1
+}
 
 const subPkgName = `@chelonia/cli-${process.arch}-${process.platform}`
 
@@ -25,7 +39,9 @@ try {
 } catch {
   console.error(
     `chel: no binary for ${process.platform}/${process.arch}. ` +
-    `The platform package '${subPkgName}' is not installed.`
+    `The platform package '${subPkgName}' is not installed. ` +
+    `This platform may be unsupported; see ` +
+    `https://github.com/okTurtles/chel for the list of supported targets.`
   )
   process.exit(127)
 }
@@ -41,10 +57,23 @@ if (!binRel) {
 
 const binPath = path.join(path.dirname(pkgJsonPath), binRel)
 const child = spawn(binPath, process.argv.slice(2), { stdio: 'inherit' })
+
+// Track whether the child has actually exited, so we keep forwarding repeat
+// signals until it's truly gone. (child.killed flips to true on the first
+// kill() call, not on exit, so it can't be used to gate forwarding.) With
+// stdio:'inherit' the process group usually delivers these to both already;
+// this covers a targeted `kill <parent-pid>`.
+let childExited = false
+
+for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
+  process.on(sig, () => { if (!childExited) child.kill(sig) })
+}
+
 child.on('error', (err) => {
   console.error('chel:', err)
   process.exit(1)
 })
-child.on('close', (code) => {
-  process.exit(code ?? 1)
+child.on('close', (code, signal) => {
+  childExited = true
+  process.exit(exitCodeFor(code, signal))
 })
