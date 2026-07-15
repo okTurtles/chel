@@ -16,11 +16,12 @@ import { shell } from '~/utils.ts'
 import { TARGETS, subPackageName, isCliSubPackage, type Target } from './targets.ts'
 
 // Absolute path to the root package.json. Used by runtime lookups in this file
-// (line 77) and in `publish.ts` (line 76) via `Deno.readTextFile`. The literal
-// `'../package.json'` also appears in static `import(... { with: { type: 'json' } })`
-// calls in `publish.ts`, `compile.ts`, and `build.ts`; those cannot use this
-// function because TS needs a static string for JSON-import-attribute type
-// inference. Keep all references in sync if the path ever changes.
+// (the `import.meta.main` CLI block) and in `publish.ts` (the `try` block) via
+// `Deno.readTextFile`. The literal `'../package.json'` also appears in static
+// `import(... { with: { type: 'json' } })` calls in `publish.ts`, `compile.ts`,
+// and `build.ts`; those cannot use this function because TS needs a static
+// string for JSON-import-attribute type inference. Keep all references in sync
+// if the path ever changes.
 export const rootPackagePath = (): URL =>
   new URL('../package.json', import.meta.url)
 
@@ -51,36 +52,24 @@ export async function reconcileOptionalDeps (
   targets: readonly Target[]
 ): Promise<boolean> {
   const pkg = JSON.parse(await Deno.readTextFile(pkgPath))
-  const expected = expectedOptionalDeps(version, targets)
   const current: Record<string, string> = pkg.optionalDependencies ?? {}
 
-  // Preserve unrelated deps; replace the @chelonia/cli-* set wholesale.
+  // Preserve unrelated deps in their original order; replace the @chelonia/cli-*
+  // set, sorted alphabetically for deterministic diffs.
   const reconciled: Record<string, string> = {}
   for (const [k, v] of Object.entries(current)) {
     if (!isCliSubPackage(k)) reconciled[k] = v
   }
-  Object.assign(reconciled, expected)
-
-  // Preserve the caller's ordering for unrelated deps; sort only our
-  // @chelonia/cli-* keys for deterministic diffs.
-  const sortOwnedKeys = (o: Record<string, string>): Record<string, string> => {
-    const result: Record<string, string> = {}
-    for (const [k, v] of Object.entries(o)) {
-      if (!isCliSubPackage(k)) result[k] = v
-    }
-    for (const k of Object.keys(o).filter(isCliSubPackage).sort()) {
-      result[k] = o[k]
-    }
-    return result
+  for (const name of targets.map(subPackageName).sort()) {
+    reconciled[name] = version
   }
 
-  // Compare sorted-reconciled against raw-current so an ordering difference
-  // is treated as a change (keeps diffs deterministic; one-time reorder).
-  if (JSON.stringify(sortOwnedKeys(reconciled)) === JSON.stringify(current)) {
+  // Treat an ordering difference as a change (keeps diffs deterministic).
+  if (JSON.stringify(reconciled) === JSON.stringify(current)) {
     return false
   }
 
-  pkg.optionalDependencies = sortOwnedKeys(reconciled)
+  pkg.optionalDependencies = reconciled
   await Deno.writeTextFile(pkgPath, JSON.stringify(pkg, null, 2) + '\n')
   return true
 }

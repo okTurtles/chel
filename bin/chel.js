@@ -31,7 +31,9 @@ try {
 }
 
 const subPkg = require(pkgJsonPath)
-const binRel = subPkg.bin && (subPkg.bin.chel || Object.values(subPkg.bin)[0])
+const binRel = typeof subPkg.bin === 'string'
+  ? subPkg.bin
+  : subPkg.bin && (subPkg.bin.chel || Object.values(subPkg.bin)[0])
 if (!binRel) {
   console.error(`chel: '${subPkgName}' does not declare a binary`)
   process.exit(1)

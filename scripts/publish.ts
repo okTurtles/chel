@@ -20,8 +20,8 @@ import { TARGETS, compileBinary, subPackageName, subPackageDir } from './targets
 import { reconcileOptionalDeps, rootPackagePath } from './sync-versions.ts'
 
 // Static import for TS JSON-import-attribute type inference. The path also
-// lives in `rootPackagePath()` from `./sync-versions.ts` (used at line 76);
-// keep both in sync if it ever changes.
+// lives in `rootPackagePath()` from `./sync-versions.ts` (used in the `try`
+// block below); keep both in sync if it ever changes.
 const { default: rootPkg } = await import('../package.json', { with: { type: 'json' } })
 
 async function buildBundle (): Promise<void> {
