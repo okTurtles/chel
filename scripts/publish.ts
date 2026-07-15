@@ -51,7 +51,7 @@ async function createSubPackages (): Promise<void> {
       license: rootPkg.license,
       os: [target.os],
       cpu: [target.cpu],
-      files: [target.binary],
+      files: [target.binary, 'LICENSE'],
       bin: {
         chel: target.binary
       }
@@ -68,6 +68,7 @@ async function createSubPackages (): Promise<void> {
       'Installed automatically via the `optionalDependencies` of `@chelonia/cli`; ' +
       'do not depend on this package directly.\n'
     )
+    await Deno.copyFile('./LICENSE', `${subDir}/LICENSE`)
   }
 }
 
