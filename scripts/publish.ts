@@ -15,7 +15,7 @@
 // Compiled binaries live under `dist/` (gitignored) and are never committed,
 // matching the previous `bin/` behavior.
 
-import { $ } from '~/utils.ts'
+import { shell, $ } from '~/utils.ts'
 import { TARGETS, compileBinary, subPackageName, subPackageDir } from './targets.ts'
 import { reconcileOptionalDeps, rootPackagePath } from './sync-versions.ts'
 
@@ -77,8 +77,20 @@ async function publishSubPackages (): Promise<void> {
   for (const target of TARGETS) {
     const subPkgName = subPackageName(target)
     const subDir = subPackageDir(target)
+
+    const check = new Deno.Command('npm', {
+      args: ['view', `${subPkgName}@${rootPkg.version}`, 'version'],
+      stdout: 'null',
+      stderr: 'null'
+    })
+    const { code: alreadyPublished } = await check.output()
+    if (alreadyPublished === 0) {
+      console.log(`\n--- Skipping ${subPkgName} (already published) ---`)
+      continue
+    }
+
     console.log(`\n--- Publishing ${subPkgName} ---`)
-    await $(`cd ${subDir} && npm publish --access public`)
+    await shell('npm publish --access public', { printOutput: true, cwd: subDir })
   }
 }
 

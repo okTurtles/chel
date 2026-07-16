@@ -27,6 +27,10 @@ try {
   console.error('caught:', e)
   exitCode = 1
 } finally {
-  await shell('rm -rf ./dist/tmp')
+  try {
+    await shell('rm -rf ./dist/tmp')
+  } catch (e) {
+    console.error('cleanup failed:', e)
+  }
 }
 if (exitCode !== 0) Deno.exit(exitCode)
