@@ -61,13 +61,20 @@ export function isCliSubPackage (name: string): boolean {
 // TODO: fix upstream in Deno, or drop permissions programmatically at runtime.
 const COMPILE_FLAGS =
   '--allow-env --allow-ffi --allow-sys=hostname --allow-read --allow-write=./ --allow-net ' +
-  '--exclude node_modules --include ./build/serve --include ./build/dist-dashboard ./build/main.js'
+  '--exclude node_modules --include ./build/serve --include ./build/dist-dashboard'
+
+// The entry-point positional argument to `deno compile`. Kept separate from
+// COMPILE_FLAGS so that flags and positionals can't collide: anything appended
+// to COMPILE_FLAGS stays a flag, and the entry point stays last on the command
+// line (appending after it would make `deno compile` treat it as a second
+// entry point or silently ignore it).
+const ENTRY_POINT = './build/main.js'
 
 // Runs a native compilation for `target`, writing the binary to `outputPath`
 // (the full path including the binary filename). Prints command output.
 export async function compileBinary (outputPath: string, target: Target): Promise<void> {
   await shell(
-    `deno compile -o ${outputPath} --target ${target.denoTarget} ${COMPILE_FLAGS}`,
+    `deno compile -o ${outputPath} --target ${target.denoTarget} ${COMPILE_FLAGS} ${ENTRY_POINT}`,
     { printOutput: true }
   )
 }
