@@ -81,6 +81,10 @@ export const init = async (args: ArgumentsCamelCase<Params>): Promise<void> => {
           `Refusing to overwrite existing '${DEFAULT_CONFIG_PATH}'. Re-run with --force to overwrite.`
         )
       }
+      // `createNew: true` above created the file before the write failed;
+      // remove the partial/empty result so the next run isn't blocked by a
+      // file the user never intentionally created.
+      await Deno.remove(configPath).catch(() => {})
       throw err
     }
   }

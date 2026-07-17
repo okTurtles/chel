@@ -31,7 +31,7 @@ import {
   createServer,
   type WSS
 } from './pubsub.ts'
-import { addChannelToSubscription, deleteChannelFromSubscription, deleteSubscriptionFromIndex, postEvent, pushServerActionhandlers, subscriptionInfoWrapper } from './push.ts'
+import { addChannelToSubscription, deleteChannelFromSubscription, deleteSubscriptionFromIndex, postEvent, pushServerActionhandlers, serializePushSubscriptionPayload, subscriptionInfoWrapper } from './push.ts'
 import type { PushSubscriptionJSON } from './push.ts'
 import { pathToFileURL } from 'node:url'
 import { HTTPException } from 'npm:hono/http-exception'
@@ -656,12 +656,12 @@ export async function startServer (): Promise<{ uri: string }> {
       // current id so the upgrade doesn't interrupt push delivery.
       if (serverId === undefined) {
         adopted++
-        await sbp('chelonia.db/set', `_private_webpush_${subscriptionId}`, JSON.stringify({
-          serverId: configuredServerId,
+        await sbp('chelonia.db/set', `_private_webpush_${subscriptionId}`, serializePushSubscriptionPayload(
+          configuredServerId,
           settings,
           subscriptionInfo,
           channelIDs
-        }))
+        ))
         loadIntoMemory(subscriptionId, settings, subscriptionInfo, channelIDs)
         return
       }
