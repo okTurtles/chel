@@ -69,12 +69,7 @@ export const init = async (args: ArgumentsCamelCase<Params>): Promise<void> => {
     await Deno.writeTextFile(configPath, contents)
   } else {
     try {
-      const file = await Deno.open(configPath, { createNew: true, write: true })
-      try {
-        await file.write(new TextEncoder().encode(contents))
-      } finally {
-        file.close()
-      }
+      await Deno.writeTextFile(configPath, contents, { createNew: true })
     } catch (err: unknown) {
       if (err instanceof Deno.errors.AlreadyExists) {
         throw new Error(

@@ -406,7 +406,7 @@ export function assertServerIdConfigured (): void {
   if (!nconf.get('server_id')) {
     throw new Error(
       'Missing required config \'server_id\'. Run `chel init` to generate one, ' +
-      'or set it in chel.toml / the server_id environment variable.'
+      'or set it in chel.toml / the `server_id` environment variable.'
     )
   }
 }
