@@ -12,6 +12,11 @@ const parseConfig = () => {
     .argv(parseArgs())
     .file({ file: 'chel.toml', format: { parse, stringify } })
     .defaults({
+      // Unique identity for this server instance. Must not be reused across
+      // environments (prod / staging / dev) that share a database, otherwise
+      // push notifications may be delivered to clients registered against a
+      // different instance. `chel serve` refuses to start when this is unset.
+      server_id: undefined,
       server: {
         appDir: '.',
         host: '0.0.0.0',

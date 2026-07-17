@@ -6,6 +6,7 @@ import encrypt from 'npm:@apeleghq/rfc8188/encrypt'
 import { getSubscriptionId } from 'npm:@chelonia/lib/functions'
 import { PUSH_SERVER_ACTION_TYPE, REQUEST_TYPE, createMessage } from 'npm:@chelonia/lib/pubsub'
 import sbp from 'npm:@sbp/sbp'
+import nconf from 'npm:nconf'
 import { appendToIndexFactory, removeFromIndexFactory } from './database.ts'
 import { PUBSUB_INSTANCE } from './instance-keys.ts'
 import type { WS, WSS } from './pubsub.ts'
@@ -49,10 +50,14 @@ interface PushServerActionHandlers {
 // const pushController = require('web-push') - commented out as not used
 
 const addSubscriptionToIndex = appendToIndexFactory('_private_webpush_index')
-const deleteSubscriptionFromIndex = removeFromIndexFactory('_private_webpush_index')
+export const deleteSubscriptionFromIndex = removeFromIndexFactory('_private_webpush_index')
 
 const saveSubscription = (server: WSS, subscriptionId: string): Promise<void> => {
   return sbp('chelonia.db/set', `_private_webpush_${subscriptionId}`, JSON.stringify({
+    // Tag the subscription with the configured `server_id` so that, on load,
+    // entries written by a different instance (e.g. a staging DB restored from
+    // a prod backup) can be detected and skipped. See `src/serve/server.ts`.
+    serverId: nconf.get('server_id'),
     settings: server.pushSubscriptions[subscriptionId].settings,
     subscriptionInfo: server.pushSubscriptions[subscriptionId],
     channelIDs: [...server.pushSubscriptions[subscriptionId].subscriptions]

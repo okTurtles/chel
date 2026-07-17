@@ -31,7 +31,8 @@ import {
   createServer,
   type WSS
 } from './pubsub.ts'
-import { addChannelToSubscription, deleteChannelFromSubscription, postEvent, pushServerActionhandlers, subscriptionInfoWrapper } from './push.ts'
+import { addChannelToSubscription, deleteChannelFromSubscription, deleteSubscriptionFromIndex, postEvent, pushServerActionhandlers, subscriptionInfoWrapper } from './push.ts'
+import type { PushSubscriptionJSON } from './push.ts'
 import { pathToFileURL } from 'node:url'
 import { HTTPException } from 'npm:hono/http-exception'
 // @deno-types="npm:@types/nconf"
@@ -597,24 +598,64 @@ export async function startServer (): Promise<{ uri: string }> {
     Object.assign(sbp('chelonia/rootState'), recoveredState)
   }
 
-  // Then, load push subscriptions
+  // Then, load push subscriptions. Entries are classified and counted so we
+  // emit a single summary line instead of one warn per entry.
+  //   - missing payload  -> de-index (resolves a long-standing TODO)
+  //   - legacy (no serverId, from before server_id existed) -> adopt:
+  //     re-tag with the current id and load, so an upgrade doesn't silently
+  //     drop every existing push subscription.
+  //   - mismatched serverId (e.g. staging DB restored from prod) -> reclaim:
+  //     delete the entry and remove it from the index so the DB doesn't leak.
+  const configuredServerId = nconf.get('server_id')
   const savedWebPushIndex = await sbp('chelonia.db/get', '_private_webpush_index')
   if (savedWebPushIndex) {
     const { pushSubscriptions, subscribersByChannelID } = sbp('okTurtles.data/get', PUBSUB_INSTANCE)
-    await Promise.all(savedWebPushIndex.split('\x00').map(async (subscriptionId: string) => {
-      const subscriptionSerialized = await sbp('chelonia.db/get', `_private_webpush_${subscriptionId}`)
-      if (!subscriptionSerialized) {
-        console.warn(`[server] missing state for subscriptionId '${subscriptionId}' - skipping setup for this subscription`)
-        // TODO: implement removing the missing subscriptionId from the index
-        return
-      }
-      const { settings, subscriptionInfo, channelIDs } = JSON.parse(subscriptionSerialized)
+    let missing = 0
+    let adopted = 0
+    let reclaimed = 0
+    const loadIntoMemory = (subscriptionId: string, settings: unknown, subscriptionInfo: PushSubscriptionJSON, channelIDs: string[]) => {
       pushSubscriptions[subscriptionId] = subscriptionInfoWrapper(subscriptionId, subscriptionInfo, { channelIDs, settings })
       channelIDs.forEach((channelID: string) => {
         if (!subscribersByChannelID[channelID]) subscribersByChannelID[channelID] = new Set()
         subscribersByChannelID[channelID].add(pushSubscriptions[subscriptionId])
       })
+    }
+    await Promise.all(savedWebPushIndex.split('\x00').map(async (subscriptionId: string) => {
+      const subscriptionSerialized = await sbp('chelonia.db/get', `_private_webpush_${subscriptionId}`)
+      // Missing payload: reclaim by de-indexing (the entry key is already absent).
+      if (!subscriptionSerialized) {
+        missing++
+        await deleteSubscriptionFromIndex(subscriptionId)
+        return
+      }
+      const { serverId, settings, subscriptionInfo, channelIDs } = JSON.parse(subscriptionSerialized)
+      // Legacy entry written before `server_id` existed (`serverId === undefined`
+      // because JSON.stringify drops undefined): adopt it by re-tagging with the
+      // current id so the upgrade doesn't interrupt push delivery.
+      if (serverId === undefined) {
+        adopted++
+        loadIntoMemory(subscriptionId, settings, subscriptionInfo, channelIDs)
+        await sbp('chelonia.db/set', `_private_webpush_${subscriptionId}`, JSON.stringify({
+          serverId: configuredServerId,
+          settings,
+          subscriptionInfo,
+          channelIDs
+        }))
+        return
+      }
+      // Written by a different server instance: reclaim (delete + de-index) to
+      // avoid unbounded accumulation of orphaned entries on id rotation.
+      if (serverId !== configuredServerId) {
+        reclaimed++
+        await sbp('chelonia.db/delete', `_private_webpush_${subscriptionId}`)
+        await deleteSubscriptionFromIndex(subscriptionId)
+        return
+      }
+      loadIntoMemory(subscriptionId, settings, subscriptionInfo, channelIDs)
     }))
+    if (missing || adopted || reclaimed) {
+      console.warn(`[server] push-subscription restore: ${adopted} adopted (legacy), ${reclaimed} reclaimed (server_id mismatch), ${missing} missing (de-indexed)`)
+    }
   }
 
   // Fire-and-forget persistent actions load

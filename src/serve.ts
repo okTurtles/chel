@@ -1,5 +1,7 @@
 import * as colors from 'jsr:@std/fmt/colors'
 import sbp from 'npm:@sbp/sbp'
+// @deno-types="npm:@types/nconf"
+import nconf from 'npm:nconf'
 import { debounce } from 'npm:turtledash'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { deploy } from './deploy.ts'
@@ -86,6 +88,16 @@ async function watch (args: ArgumentsCamelCase<Params>): Promise<void> {
 }
 
 export async function serve (args: ArgumentsCamelCase<Params>) {
+  // `server_id` is required so that push subscriptions can be scoped to this
+  // specific server instance. Refuse to start when it is missing, before any
+  // DB / port resources are allocated. Run `chel init` (or set the
+  // `server_id` key in `chel.toml` / the `server_id` env var) to fix this.
+  if (!nconf.get('server_id')) {
+    throw new Error(
+      'Missing required config \'server_id\'. Run `chel init` to generate one, ' +
+      'or set it in chel.toml / the server_id environment variable.'
+    )
+  }
   // `deployManifests` / `watch` will open the database and then close it.
   // By calling `initDB` here, we ensure that the DB isn't closed.
   await initDB()
