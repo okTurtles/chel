@@ -35,7 +35,8 @@ export const SERVER_DEFAULTS = {
     logLevel: 'debug',
     messages: [],
     maxEventsBatchSize: 500,
-    archiveMode: false
+    archiveMode: false,
+    reclaimForeignSubscriptions: false
   },
   database: {
     lruNumItems: 10000,

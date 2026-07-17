@@ -1,15 +1,23 @@
 import * as colors from 'jsr:@std/fmt/colors'
 import * as path from 'jsr:@std/path'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
+import { SERVER_DEFAULTS } from './parseConfig.ts'
 
 type Params = { force?: boolean }
 
 const DEFAULT_CONFIG_PATH = 'chel.toml'
 
-// Template written by `chel init`. Mirrors the defaults from
-// `src/parseConfig.ts` and adds a freshly-generated `server_id`. Comments
-// explain the meaning of each section so first-time operators have guidance.
+// Template written by `chel init`. Every default value is interpolated from
+// `SERVER_DEFAULTS` (single source of truth in `src/parseConfig.ts`) so the
+// generated `chel.toml` cannot silently drift from the runtime defaults.
+const tomlValue = (v: unknown): string => {
+  if (typeof v === 'string') return `"${v}"`
+  if (typeof v === 'boolean' || typeof v === 'number') return String(v)
+  throw new Error(`Cannot render default value into TOML template: ${String(v)}`)
+}
+
 const buildTemplate = (serverId: string): string => {
+  const d = SERVER_DEFAULTS
   return `# Chel server configuration.
 # See https://github.com/okTurtles/chelonia for documentation.
 
@@ -17,57 +25,65 @@ const buildTemplate = (serverId: string): string => {
 # environments (prod / staging / dev) that share a database, or push
 # notifications may be delivered to clients registered against a different
 # instance. The server refuses to start when this is unset. Do NOT change
-# this value on an existing database: push subscriptions tagged with the
-# previous id will be reclaimed on next boot.
+# this value on an existing database: mismatched push subscriptions are
+# skipped by default and only reclaimed when 'server.reclaimForeignSubscriptions'
+# is enabled.
 server_id = "${serverId}"
 
 [server]
-# appDir = "."
-host = "0.0.0.0"
-port = 8000
-dashboardPort = 8888
-# fileUploadMaxBytes = 31457280
-# logLevel = "debug"
-# maxEventsBatchSize = 500
-# archiveMode = false
+# appDir = ${tomlValue(d.server.appDir)}
+host = ${tomlValue(d.server.host)}
+port = ${tomlValue(d.server.port)}
+dashboardPort = ${tomlValue(d.server.dashboardPort)}
+# fileUploadMaxBytes = ${tomlValue(d.server.fileUploadMaxBytes)}
+# logLevel = ${tomlValue(d.server.logLevel)}
+# maxEventsBatchSize = ${tomlValue(d.server.maxEventsBatchSize)}
+# archiveMode = ${tomlValue(d.server.archiveMode)}
+# reclaimForeignSubscriptions = ${tomlValue(d.server.reclaimForeignSubscriptions)}
 
 [server.signup]
-# disabled = false
+# disabled = ${tomlValue(d.server.signup.disabled)}
 
 [server.signup.limit]
-# disabled = false
-# minute = 2
-# hour = 10
-# day = 50
+# disabled = ${tomlValue(d.server.signup.limit.disabled)}
+# minute = ${tomlValue(d.server.signup.limit.minute)}
+# hour = ${tomlValue(d.server.signup.limit.hour)}
+# day = ${tomlValue(d.server.signup.limit.day)}
 
 [server.signup.vapid]
 # email = "you@example.com"
 
 [database]
-backend = "mem"
+backend = ${tomlValue(d.database.backend)}
 
 [database.backendOptions]
-# lruNumItems = 10000
+# lruNumItems = ${tomlValue(d.database.lruNumItems)}
 `
 }
 
 export const init = async (args: ArgumentsCamelCase<Params>): Promise<void> => {
   const configPath = path.resolve(DEFAULT_CONFIG_PATH)
-  const exists = await Deno.stat(configPath).then(
-    () => true,
-    (err: unknown) => {
-      if (err instanceof Deno.errors.NotFound) return false
-      throw err
-    }
-  )
-  if (exists && !args.force) {
-    throw new Error(
-      `Refusing to overwrite existing '${DEFAULT_CONFIG_PATH}'. Re-run with --force to overwrite.`
-    )
-  }
   const serverId = crypto.randomUUID()
   const contents = buildTemplate(serverId)
-  await Deno.writeTextFile(configPath, contents)
+  if (args.force) {
+    await Deno.writeTextFile(configPath, contents)
+  } else {
+    try {
+      const file = await Deno.open(configPath, { createNew: true, write: true })
+      try {
+        await file.write(new TextEncoder().encode(contents))
+      } finally {
+        file.close()
+      }
+    } catch (err: unknown) {
+      if (err instanceof Deno.errors.AlreadyExists) {
+        throw new Error(
+          `Refusing to overwrite existing '${DEFAULT_CONFIG_PATH}'. Re-run with --force to overwrite.`
+        )
+      }
+      throw err
+    }
+  }
   console.log(colors.green('wrote:'), DEFAULT_CONFIG_PATH)
   console.log(
     colors.blue('server_id:'),

@@ -30,12 +30,16 @@ import { serve } from '../serve.ts'
 // We deliberately use `nconf.defaults()` because `server_id` is read via
 // `nconf.get('server_id')` whose lowest-precedence layer is `defaults`.
 const withServerId = async <T>(value: string | undefined, fn: () => Promise<T>): Promise<T> => {
-  const previous = nconf.get('server_id')
+  const previousDefault = nconf.get('server_id')
+  const previousEnv = process.env.server_id
+  delete process.env.server_id
   nconf.defaults({ server_id: value })
   try {
     return await fn()
   } finally {
-    nconf.defaults({ server_id: previous })
+    nconf.defaults({ server_id: previousDefault })
+    if (previousEnv !== undefined) process.env.server_id = previousEnv
+    else delete process.env.server_id
   }
 }
 
@@ -72,7 +76,7 @@ const withEnv = async <T>(
 // `MessagePort` instances that the Deno leak detector flags. The
 // `bugfix-messageport-leak` branch addresses that separately; we don't want
 // to depend on it here.
-const applyServerDefaults = (serverId: string): void => {
+const applyServerDefaults = (serverId: string, opts?: { reclaim?: boolean }): void => {
   nconf.defaults({
     server_id: serverId,
     server: {
@@ -87,7 +91,8 @@ const applyServerDefaults = (serverId: string): void => {
       logLevel: 'error',
       messages: [],
       maxEventsBatchSize: 500,
-      archiveMode: true
+      archiveMode: true,
+      ...(opts?.reclaim ? { reclaimForeignSubscriptions: true } : {})
     },
     database: {
       lruNumItems: 100,
@@ -166,7 +171,7 @@ Deno.test({
 // ---------------------------------------------------------------------------
 
 Deno.test({
-  name: 'server startServer() adopts legacy, reclaims mismatched, and loads matching push subscriptions',
+  name: 'server startServer() adopts legacy, skips mismatched, and loads matching push subscriptions (default)',
   async fn (): Promise<void> {
     const configuredId = 'configured-instance-id'
     const otherId = 'some-other-instance-id'
@@ -197,7 +202,8 @@ Deno.test({
           | undefined
         assert(pubsub, 'PUBSUB_INSTANCE should be populated after startServer()')
 
-        // Matching + legacy (adopted) are loaded; mismatched is reclaimed.
+        // Matching + legacy (adopted) are loaded; mismatched is skipped (not
+        // loaded into memory).
         const loaded = Object.keys(pubsub.pushSubscriptions).sort()
         assertEquals(loaded, ['sub-legacy', 'sub-matching'])
       } finally {
@@ -205,19 +211,82 @@ Deno.test({
         // Clean up the in-mem DB so the next test doesn't see these entries.
         await initDB()
         try {
-          // After the load loop: `sub-mismatched` should have been reclaimed
-          // (key deleted + de-indexed) and `sub-legacy` re-tagged with the
-          // configured id. Verify those DB-level effects here.
+          // After the load loop (default): `sub-mismatched` should have been
+          // skipped (key + index retained, not loaded) and `sub-legacy`
+          // re-tagged with the configured id. Verify those DB-level effects.
           const index = await sbp('chelonia.db/get', WEBPUSH_INDEX) as string | undefined
           const mismatchedKey = await sbp('chelonia.db/get', '_private_webpush_sub-mismatched')
           const legacyKey = await sbp('chelonia.db/get', '_private_webpush_sub-legacy') as string | undefined
 
-          // Reclaimed: key gone and absent from the index.
-          assert(!mismatchedKey, 'mismatched subscription key should have been deleted')
-          assert(!index || !index.split('\x00').includes('sub-mismatched'),
-            'mismatched subscription id should have been removed from the index')
+          // Skipped: key retained on disk and in the index (not loaded).
+          assert(mismatchedKey, 'mismatched subscription key should be retained on disk by default')
+          assert(index && index.split('\x00').includes('sub-mismatched'),
+            'mismatched subscription id should remain in the index by default')
 
           // Adopted: key still present and now tagged with the configured id.
+          assert(legacyKey, 'legacy subscription key should still exist (adopted, not deleted)')
+          assertEquals(JSON.parse(legacyKey).serverId, configuredId,
+            'legacy subscription should have been re-tagged with the configured server_id')
+
+          await Promise.all([
+            sbp('chelonia.db/delete', '_private_webpush_sub-matching'),
+            sbp('chelonia.db/delete', '_private_webpush_sub-mismatched'),
+            sbp('chelonia.db/delete', '_private_webpush_sub-legacy'),
+            sbp('chelonia.db/delete', WEBPUSH_INDEX)
+          ])
+        } finally {
+          await closeDB()
+        }
+      }
+    })
+  }
+})
+
+// ---------------------------------------------------------------------------
+// reclaimForeignSubscriptions opt-in reclaims mismatched entries
+// ---------------------------------------------------------------------------
+
+Deno.test({
+  name: 'server startServer() reclaims mismatched push subscriptions when reclaimForeignSubscriptions is set',
+  async fn (): Promise<void> {
+    const configuredId = 'reclaim-opt-in-id'
+    const otherId = 'some-other-instance-id'
+
+    await withEnv({ NODE_ENV: 'development', CI: 'true' }, async () => {
+      applyServerDefaults(configuredId, { reclaim: true })
+      await initDB()
+      try {
+        await writeSubscription('sub-matching', configuredId, 'https://example.com/push/matching')
+        await writeSubscription('sub-mismatched', otherId, 'https://example.com/push/mismatched')
+        await writeSubscription('sub-legacy', undefined, 'https://example.com/push/legacy')
+        await sbp('chelonia.db/set', WEBPUSH_INDEX, 'sub-matching\x00sub-mismatched\x00sub-legacy')
+      } finally {
+        await closeDB()
+      }
+
+      try {
+        await startServer({ installSignalHandlers: false })
+
+        const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE) as
+          | { pushSubscriptions: Record<string, unknown> }
+          | undefined
+        assert(pubsub, 'PUBSUB_INSTANCE should be populated after startServer()')
+
+        // Matching + legacy (adopted) are loaded; mismatched is reclaimed.
+        const loaded = Object.keys(pubsub.pushSubscriptions).sort()
+        assertEquals(loaded, ['sub-legacy', 'sub-matching'])
+      } finally {
+        await stopServer()
+        await initDB()
+        try {
+          const index = await sbp('chelonia.db/get', WEBPUSH_INDEX) as string | undefined
+          const mismatchedKey = await sbp('chelonia.db/get', '_private_webpush_sub-mismatched')
+          const legacyKey = await sbp('chelonia.db/get', '_private_webpush_sub-legacy') as string | undefined
+
+          assert(!mismatchedKey, 'mismatched subscription key should have been deleted under opt-in reclaim')
+          assert(!index || !index.split('\x00').includes('sub-mismatched'),
+            'mismatched subscription id should have been removed from the index under opt-in reclaim')
+
           assert(legacyKey, 'legacy subscription key should still exist (adopted, not deleted)')
           assertEquals(JSON.parse(legacyKey).serverId, configuredId,
             'legacy subscription should have been re-tagged with the configured server_id')
@@ -288,11 +357,6 @@ Deno.test({
 // ---------------------------------------------------------------------------
 // serve() throws when server_id is unset
 // ---------------------------------------------------------------------------
-// NOTE: `withServerId` writes via `nconf.defaults()`, the lowest-precedence
-// layer. The assertion holds because `parseConfig()` is not invoked under
-// `deno test` (it's imported only by `src/main.ts`), so no env/file layer is
-// registered and nothing can override the default. If a future test wires up
-// `parseConfig`, harden this by stashing/deleting `process.env.server_id`.
 
 Deno.test({
   name: 'serve.serve() refuses to start without a configured server_id',

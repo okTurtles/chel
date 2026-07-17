@@ -96,15 +96,16 @@ Deno.test({
       })
     })
 
-    // Drift guard: the template in `init.ts` hand-writes a subset of the
-    // defaults from `parseConfig.ts` (uncommented = active, commented =
-    // guidance). This step fails if the two sources disagree on any value
-    // the template emits uncommented, so a default change in one place
-    // forces a conscious update in the other rather than silent drift.
-    await t.step('template active values match SERVER_DEFAULTS', async () => {
+    // Drift guard: the template in `init.ts` interpolates every default from
+    // `SERVER_DEFAULTS` (single source of truth in `parseConfig.ts`). This
+    // step fails if anyone hardcodes a value in the template instead of
+    // interpolating, or if `SERVER_DEFAULTS` changes shape without updating
+    // the template structure.
+    await t.step('template values match SERVER_DEFAULTS (active and commented)', async () => {
       await withTempCwd(async () => {
         await init({} as never)
-        const parsed = toml.parse(await Deno.readTextFile('chel.toml')) as Record<string, unknown> & {
+        const raw = await Deno.readTextFile('chel.toml')
+        const parsed = toml.parse(raw) as Record<string, unknown> & {
           server?: Record<string, unknown>
           database?: Record<string, unknown>
         }
@@ -113,6 +114,25 @@ Deno.test({
         assertEquals(parsed.server!.port, SERVER_DEFAULTS.server.port)
         assertEquals(parsed.server!.dashboardPort, SERVER_DEFAULTS.server.dashboardPort)
         assertEquals(parsed.database!.backend, SERVER_DEFAULTS.database.backend)
+
+        const d = SERVER_DEFAULTS
+        const expectedCommented = [
+          `# appDir = "${d.server.appDir}"`,
+          `# fileUploadMaxBytes = ${d.server.fileUploadMaxBytes}`,
+          `# logLevel = "${d.server.logLevel}"`,
+          `# maxEventsBatchSize = ${d.server.maxEventsBatchSize}`,
+          `# archiveMode = ${d.server.archiveMode}`,
+          `# reclaimForeignSubscriptions = ${d.server.reclaimForeignSubscriptions}`,
+          `# disabled = ${d.server.signup.disabled}`,
+          `# disabled = ${d.server.signup.limit.disabled}`,
+          `# minute = ${d.server.signup.limit.minute}`,
+          `# hour = ${d.server.signup.limit.hour}`,
+          `# day = ${d.server.signup.limit.day}`,
+          `# lruNumItems = ${d.database.lruNumItems}`
+        ]
+        for (const line of expectedCommented) {
+          assert(raw.includes(line), `template should contain guidance line: ${line}`)
+        }
       })
     })
   }
