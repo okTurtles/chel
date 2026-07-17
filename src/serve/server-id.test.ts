@@ -92,7 +92,7 @@ const applyServerDefaults = (serverId: string, opts?: { reclaim?: boolean }): vo
       messages: [],
       maxEventsBatchSize: 500,
       archiveMode: true,
-      ...(opts?.reclaim ? { reclaimForeignSubscriptions: true } : {})
+      reclaimForeignSubscriptions: !!opts?.reclaim
     },
     database: {
       lruNumItems: 100,

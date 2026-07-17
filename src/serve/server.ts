@@ -681,9 +681,7 @@ export async function startServer (): Promise<{ uri: string }> {
       loadIntoMemory(subscriptionId, settings, subscriptionInfo, channelIDs)
     }))
     if (missing || adopted || reclaimed || skipped) {
-      const msg = `[server] push-subscription restore: ${adopted} adopted (legacy), ${reclaimed} reclaimed (deleted, server_id mismatch), ${skipped} skipped (server_id mismatch, retained on disk), ${missing} missing (de-indexed)`
-      if (reclaimed > 0) console.error(msg)
-      else console.warn(msg)
+      console.warn(`[server] push-subscription restore: ${adopted} adopted (legacy), ${reclaimed} reclaimed (deleted, server_id mismatch), ${skipped} skipped (server_id mismatch, retained on disk), ${missing} missing (de-indexed)`)
     }
   }
 
