@@ -1,12 +1,10 @@
 import * as colors from 'jsr:@std/fmt/colors'
 import sbp from 'npm:@sbp/sbp'
-// @deno-types="npm:@types/nconf"
-import nconf from 'npm:nconf'
 import { debounce } from 'npm:turtledash'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { deploy } from './deploy.ts'
 import { findManifestFiles } from './utils.ts'
-import { startServer } from './serve/index.ts'
+import { assertServerIdConfigured, startServer } from './serve/index.ts'
 import { startDashboard } from './serve/dashboard-server.ts'
 import { closeDB, initDB } from '~/serve/database.ts'
 
@@ -88,16 +86,11 @@ async function watch (args: ArgumentsCamelCase<Params>): Promise<void> {
 }
 
 export async function serve (args: ArgumentsCamelCase<Params>) {
-  // `server_id` is required so that push subscriptions can be scoped to this
-  // specific server instance. Refuse to start when it is missing, before any
-  // DB / port resources are allocated. Run `chel init` (or set the
-  // `server_id` key in `chel.toml` / the `server_id` env var) to fix this.
-  if (!nconf.get('server_id')) {
-    throw new Error(
-      'Missing required config \'server_id\'. Run `chel init` to generate one, ' +
-      'or set it in chel.toml / the server_id environment variable.'
-    )
-  }
+  // `server_id` is required so push subscriptions can be scoped to this
+  // specific server instance. Fail fast, before any DB / port resources are
+  // allocated. `startServer()` re-checks this (defense in depth) via the same
+  // helper, so any caller that bypasses `serve()` is still protected.
+  assertServerIdConfigured()
   // `deployManifests` / `watch` will open the database and then close it.
   // By calling `initDB` here, we ensure that the DB isn't closed.
   await initDB()

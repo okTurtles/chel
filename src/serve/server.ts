@@ -396,7 +396,25 @@ function installServerSelectorsOnce (): void {
 // Exported server lifecycle functions
 // ============================================================================
 
+// `server_id` is required so push subscriptions can be scoped to this specific
+// server instance: without it, the load loop below cannot distinguish legacy
+// entries (to adopt) from foreign ones (to reclaim), and would either drop or
+// re-tag subscriptions incorrectly. Both `serve()` in `src/serve.ts` and
+// `startServer()` here call this so the invariant holds regardless of entry
+// point — including any future library consumer that bypasses `serve()`.
+export function assertServerIdConfigured (): void {
+  if (!nconf.get('server_id')) {
+    throw new Error(
+      'Missing required config \'server_id\'. Run `chel init` to generate one, ' +
+      'or set it in chel.toml / the server_id environment variable.'
+    )
+  }
+}
+
 export async function startServer (): Promise<{ uri: string }> {
+  // Defense in depth: refuse to boot before touching the DB or binding ports.
+  assertServerIdConfigured()
+  const configuredServerId = nconf.get('server_id')
   // Read configuration from nconf
   const appManifest = nconf.get('appManifest') || join(nconf.get('server:appDir') || process.cwd(), 'chelonia.json')
   const ARCHIVE_MODE = nconf.get('server:archiveMode')
@@ -606,7 +624,6 @@ export async function startServer (): Promise<{ uri: string }> {
   //     drop every existing push subscription.
   //   - mismatched serverId (e.g. staging DB restored from prod) -> reclaim:
   //     delete the entry and remove it from the index so the DB doesn't leak.
-  const configuredServerId = nconf.get('server_id')
   const savedWebPushIndex = await sbp('chelonia.db/get', '_private_webpush_index')
   if (savedWebPushIndex) {
     const { pushSubscriptions, subscribersByChannelID } = sbp('okTurtles.data/get', PUBSUB_INSTANCE)
@@ -622,7 +639,8 @@ export async function startServer (): Promise<{ uri: string }> {
     }
     await Promise.all(savedWebPushIndex.split('\x00').map(async (subscriptionId: string) => {
       const subscriptionSerialized = await sbp('chelonia.db/get', `_private_webpush_${subscriptionId}`)
-      // Missing payload: reclaim by de-indexing (the entry key is already absent).
+      // Missing payload: de-index (the payload key was never written or has
+      // already been deleted, so we only need to remove the stale index entry).
       if (!subscriptionSerialized) {
         missing++
         await deleteSubscriptionFromIndex(subscriptionId)

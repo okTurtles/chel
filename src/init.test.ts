@@ -1,8 +1,8 @@
-import { assert } from 'jsr:@std/assert'
-import { assertEquals, assertRejects } from 'jsr:@std/assert'
+import { assert, assertEquals, assertRejects } from 'jsr:@std/assert'
 import * as path from 'jsr:@std/path'
 import * as toml from 'npm:smol-toml'
 import { init } from './init.ts'
+import { SERVER_DEFAULTS } from './parseConfig.ts'
 
 // Run `chel init` against a clean temporary working directory so the test
 // never touches a real repo-local `chel.toml`. Each subtest gets its own
@@ -93,6 +93,26 @@ Deno.test({
         assertEquals(resolved, path.join(dir, 'chel.toml'))
         const stat = await Deno.stat(resolved)
         assert(stat.isFile, 'resolved chel.toml path should exist')
+      })
+    })
+
+    // Drift guard: the template in `init.ts` hand-writes a subset of the
+    // defaults from `parseConfig.ts` (uncommented = active, commented =
+    // guidance). This step fails if the two sources disagree on any value
+    // the template emits uncommented, so a default change in one place
+    // forces a conscious update in the other rather than silent drift.
+    await t.step('template active values match SERVER_DEFAULTS', async () => {
+      await withTempCwd(async () => {
+        await init({} as never)
+        const parsed = toml.parse(await Deno.readTextFile('chel.toml')) as Record<string, unknown> & {
+          server?: Record<string, unknown>
+          database?: Record<string, unknown>
+        }
+
+        assertEquals(parsed.server!.host, SERVER_DEFAULTS.server.host)
+        assertEquals(parsed.server!.port, SERVER_DEFAULTS.server.port)
+        assertEquals(parsed.server!.dashboardPort, SERVER_DEFAULTS.server.dashboardPort)
+        assertEquals(parsed.database!.backend, SERVER_DEFAULTS.database.backend)
       })
     })
   }

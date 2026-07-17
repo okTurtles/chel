@@ -39,6 +39,32 @@ const withServerId = async <T>(value: string | undefined, fn: () => Promise<T>):
   }
 }
 
+// Save and restore the listed `process.env` entries around each test so that
+// global env state never leaks across tests (process.env is process-global).
+// An override value of `undefined` means "delete the key for the duration of
+// the callback, then restore whatever was there before."
+const withEnv = async <T>(
+  overrides: Record<string, string | undefined>,
+  fn: () => Promise<T>
+): Promise<T> => {
+  const snapshot: Record<string, string | undefined> = {}
+  for (const k of Object.keys(overrides)) {
+    snapshot[k] = process.env[k]
+  }
+  try {
+    for (const [k, v] of Object.entries(overrides)) {
+      if (v === undefined) delete process.env[k]
+      else process.env[k] = v
+    }
+    return await fn()
+  } finally {
+    for (const [k, v] of Object.entries(snapshot)) {
+      if (v === undefined) delete process.env[k]
+      else process.env[k] = v
+    }
+  }
+}
+
 // Minimum nconf defaults required for `startServer()` to boot. Mirrors the
 // subset of `routes-test-helpers.ts::startTestServer` that we care about,
 // plus an explicit `server_id`. We set `archiveMode: true` so that
@@ -93,7 +119,7 @@ const writeSubscription = async (
 const WEBPUSH_INDEX = '_private_webpush_index'
 
 // ---------------------------------------------------------------------------
-// Test 1: saveSubscription persists server_id
+// saveSubscription persists server_id
 // ---------------------------------------------------------------------------
 
 Deno.test({
@@ -136,7 +162,7 @@ Deno.test({
 })
 
 // ---------------------------------------------------------------------------
-// Test 2: load loop skips subscriptions whose serverId doesn't match
+// load loop skips subscriptions whose serverId doesn't match
 // ---------------------------------------------------------------------------
 
 Deno.test({
@@ -147,121 +173,120 @@ Deno.test({
 
     // Ensure NODE_ENV is set so the dev-only request logging middleware
     // doesn't trip over `process.env.CI`.
-    process.env.NODE_ENV = 'development'
-    process.env.CI = 'true'
-
-    // Pre-populate the in-memory DB with three subscriptions before the
-    // server boots. The mem backend lives in `okTurtles.data` (module-level),
-    // so it survives our `closeDB()` here and is read by the load loop when
-    // `startServer()` re-initialises the DB below.
-    applyServerDefaults(configuredId)
-    await initDB()
-    try {
-      await writeSubscription('sub-matching', configuredId, 'https://example.com/push/matching')
-      await writeSubscription('sub-mismatched', otherId, 'https://example.com/push/mismatched')
-      await writeSubscription('sub-legacy', undefined, 'https://example.com/push/legacy')
-      await sbp('chelonia.db/set', WEBPUSH_INDEX, 'sub-matching\x00sub-mismatched\x00sub-legacy')
-    } finally {
-      await closeDB()
-    }
-
-    try {
-      await startServer({ installSignalHandlers: false })
-
-      const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE) as
-        | { pushSubscriptions: Record<string, unknown> }
-        | undefined
-      assert(pubsub, 'PUBSUB_INSTANCE should be populated after startServer()')
-
-      // Matching + legacy (adopted) are loaded; mismatched is reclaimed.
-      const loaded = Object.keys(pubsub.pushSubscriptions).sort()
-      assertEquals(loaded, ['sub-legacy', 'sub-matching'])
-    } finally {
-      await stopServer()
-      // Clean up the in-mem DB so the next test doesn't see these entries.
+    await withEnv({ NODE_ENV: 'development', CI: 'true' }, async () => {
+      // Pre-populate the in-memory DB with three subscriptions before the
+      // server boots. The mem backend lives in `okTurtles.data` (module-level),
+      // so it survives our `closeDB()` here and is read by the load loop when
+      // `startServer()` re-initialises the DB below.
+      applyServerDefaults(configuredId)
       await initDB()
       try {
-        // After the load loop: `sub-mismatched` should have been reclaimed
-        // (key deleted + de-indexed) and `sub-legacy` re-tagged with the
-        // configured id. Verify those DB-level effects here.
-        const index = await sbp('chelonia.db/get', WEBPUSH_INDEX) as string | undefined
-        const mismatchedKey = await sbp('chelonia.db/get', '_private_webpush_sub-mismatched')
-        const legacyKey = await sbp('chelonia.db/get', '_private_webpush_sub-legacy') as string | undefined
-
-        // Reclaimed: key gone and absent from the index.
-        assert(!mismatchedKey, 'mismatched subscription key should have been deleted')
-        assert(!index || !index.split('\x00').includes('sub-mismatched'),
-          'mismatched subscription id should have been removed from the index')
-
-        // Adopted: key still present and now tagged with the configured id.
-        assert(legacyKey, 'legacy subscription key should still exist (adopted, not deleted)')
-        assertEquals(JSON.parse(legacyKey).serverId, configuredId,
-          'legacy subscription should have been re-tagged with the configured server_id')
-
-        await Promise.all([
-          sbp('chelonia.db/delete', '_private_webpush_sub-matching'),
-          sbp('chelonia.db/delete', '_private_webpush_sub-mismatched'),
-          sbp('chelonia.db/delete', '_private_webpush_sub-legacy'),
-          sbp('chelonia.db/delete', WEBPUSH_INDEX)
-        ])
+        await writeSubscription('sub-matching', configuredId, 'https://example.com/push/matching')
+        await writeSubscription('sub-mismatched', otherId, 'https://example.com/push/mismatched')
+        await writeSubscription('sub-legacy', undefined, 'https://example.com/push/legacy')
+        await sbp('chelonia.db/set', WEBPUSH_INDEX, 'sub-matching\x00sub-mismatched\x00sub-legacy')
       } finally {
         await closeDB()
       }
-    }
+
+      try {
+        await startServer({ installSignalHandlers: false })
+
+        const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE) as
+          | { pushSubscriptions: Record<string, unknown> }
+          | undefined
+        assert(pubsub, 'PUBSUB_INSTANCE should be populated after startServer()')
+
+        // Matching + legacy (adopted) are loaded; mismatched is reclaimed.
+        const loaded = Object.keys(pubsub.pushSubscriptions).sort()
+        assertEquals(loaded, ['sub-legacy', 'sub-matching'])
+      } finally {
+        await stopServer()
+        // Clean up the in-mem DB so the next test doesn't see these entries.
+        await initDB()
+        try {
+          // After the load loop: `sub-mismatched` should have been reclaimed
+          // (key deleted + de-indexed) and `sub-legacy` re-tagged with the
+          // configured id. Verify those DB-level effects here.
+          const index = await sbp('chelonia.db/get', WEBPUSH_INDEX) as string | undefined
+          const mismatchedKey = await sbp('chelonia.db/get', '_private_webpush_sub-mismatched')
+          const legacyKey = await sbp('chelonia.db/get', '_private_webpush_sub-legacy') as string | undefined
+
+          // Reclaimed: key gone and absent from the index.
+          assert(!mismatchedKey, 'mismatched subscription key should have been deleted')
+          assert(!index || !index.split('\x00').includes('sub-mismatched'),
+            'mismatched subscription id should have been removed from the index')
+
+          // Adopted: key still present and now tagged with the configured id.
+          assert(legacyKey, 'legacy subscription key should still exist (adopted, not deleted)')
+          assertEquals(JSON.parse(legacyKey).serverId, configuredId,
+            'legacy subscription should have been re-tagged with the configured server_id')
+
+          await Promise.all([
+            sbp('chelonia.db/delete', '_private_webpush_sub-matching'),
+            sbp('chelonia.db/delete', '_private_webpush_sub-mismatched'),
+            sbp('chelonia.db/delete', '_private_webpush_sub-legacy'),
+            sbp('chelonia.db/delete', WEBPUSH_INDEX)
+          ])
+        } finally {
+          await closeDB()
+        }
+      }
+    })
   }
 })
 
 // ---------------------------------------------------------------------------
-// Test 4: missing payload is de-indexed (resolves the former TODO)
+// missing payload is de-indexed (resolves the former TODO)
 // ---------------------------------------------------------------------------
 
 Deno.test({
   name: 'server startServer() de-indexes push subscriptions whose payload is missing',
   async fn (): Promise<void> {
     const configuredId = 'missing-payload-test-id'
-    process.env.NODE_ENV = 'development'
-    process.env.CI = 'true'
 
-    applyServerDefaults(configuredId)
-    await initDB()
-    try {
-      // Write a valid subscription plus an index entry that points at a
-      // subscription id whose payload was never written.
-      await writeSubscription('sub-present', configuredId, 'https://example.com/push/present')
-      await sbp('chelonia.db/set', WEBPUSH_INDEX, 'sub-present\x00sub-ghost')
-    } finally {
-      await closeDB()
-    }
-
-    try {
-      await startServer({ installSignalHandlers: false })
-
-      const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE) as
-        | { pushSubscriptions: Record<string, unknown> }
-        | undefined
-      assert(pubsub, 'PUBSUB_INSTANCE should be populated after startServer()')
-      assertEquals(Object.keys(pubsub.pushSubscriptions).sort(), ['sub-present'])
-    } finally {
-      await stopServer()
+    await withEnv({ NODE_ENV: 'development', CI: 'true' }, async () => {
+      applyServerDefaults(configuredId)
       await initDB()
       try {
-        // The ghost id should have been removed from the index.
-        const index = await sbp('chelonia.db/get', WEBPUSH_INDEX) as string | undefined
-        assert(!index || !index.split('\x00').includes('sub-ghost'),
-          'ghost subscription id should have been removed from the index')
-        await Promise.all([
-          sbp('chelonia.db/delete', '_private_webpush_sub-present'),
-          sbp('chelonia.db/delete', WEBPUSH_INDEX)
-        ])
+        // Write a valid subscription plus an index entry that points at a
+        // subscription id whose payload was never written.
+        await writeSubscription('sub-present', configuredId, 'https://example.com/push/present')
+        await sbp('chelonia.db/set', WEBPUSH_INDEX, 'sub-present\x00sub-ghost')
       } finally {
         await closeDB()
       }
-    }
+
+      try {
+        await startServer({ installSignalHandlers: false })
+
+        const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE) as
+          | { pushSubscriptions: Record<string, unknown> }
+          | undefined
+        assert(pubsub, 'PUBSUB_INSTANCE should be populated after startServer()')
+        assertEquals(Object.keys(pubsub.pushSubscriptions).sort(), ['sub-present'])
+      } finally {
+        await stopServer()
+        await initDB()
+        try {
+          // The ghost id should have been removed from the index.
+          const index = await sbp('chelonia.db/get', WEBPUSH_INDEX) as string | undefined
+          assert(!index || !index.split('\x00').includes('sub-ghost'),
+            'ghost subscription id should have been removed from the index')
+          await Promise.all([
+            sbp('chelonia.db/delete', '_private_webpush_sub-present'),
+            sbp('chelonia.db/delete', WEBPUSH_INDEX)
+          ])
+        } finally {
+          await closeDB()
+        }
+      }
+    })
   }
 })
 
 // ---------------------------------------------------------------------------
-// Test 3: serve() throws when server_id is unset
+// serve() throws when server_id is unset
 // ---------------------------------------------------------------------------
 // NOTE: `withServerId` writes via `nconf.defaults()`, the lowest-precedence
 // layer. The assertion holds because `parseConfig()` is not invoked under
@@ -278,6 +303,27 @@ Deno.test({
       // arg is touched — so a minimal stand-in is enough.
       await assertRejects(
         () => serve({} as never),
+        Error,
+        'server_id'
+      )
+    })
+  }
+})
+
+// ---------------------------------------------------------------------------
+// startServer() (the library entry point) refuses to boot without server_id
+// ---------------------------------------------------------------------------
+// Defense in depth: this exercises the guard inside `startServerImpl()`
+// directly, bypassing `serve()`. It protects any future caller that reaches
+// the server via `startServer()` without going through the `chel serve`
+// command wrapper.
+
+Deno.test({
+  name: 'startServer() refuses to boot without a configured server_id',
+  async fn (): Promise<void> {
+    await withServerId(undefined, async () => {
+      await assertRejects(
+        () => startServer({ installSignalHandlers: false }),
         Error,
         'server_id'
       )

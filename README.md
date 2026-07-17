@@ -16,6 +16,7 @@ chel help [command]
 chel version
 chel pin [--dir <output-directory>] [--overwrite] <manifest-file-path> <version>
 chel test
+chel init [--force]
 chel keygen [--out=<key.json>]
 chel manifest [-k|--key <pubkey1> [-k|--key <pubkey2> ...]] [--out=<manifest.json>] [-s|--slim <contract-slim.js>] [-V|--contract-version <version>] <key.json> <contract-bundle.js>
 chel deploy <url-or-dir-or-sqlitedb> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
@@ -95,6 +96,37 @@ contracts/
 **Command Options:**
 - **`--overwrite`**: Force overwrite existing versions
 - **Default**: Create new version by copying from source
+
+### `chel init` - Generate `chel.toml`
+
+Generates a template `chel.toml` in the current directory, pre-populated with
+sensible defaults and a freshly-generated `server_id`. This is the recommended
+way to bootstrap a new server instance.
+
+```
+chel init [--force]
+```
+
+**Options:**
+- `--force`: Overwrite an existing `chel.toml`. Without this flag, `chel init`
+  refuses to clobber an existing file — a safety against accidentally rotating
+  `server_id`, which would orphan push subscriptions tagged with the old id
+  (see [`chel.toml`](#cheltoml--runtime-cli-configuration)).
+
+**What it writes:**
+- A top-level `server_id` (a random UUID). Keep this stable for the lifetime of
+  the database; do **not** reuse it across environments (prod / staging / dev)
+  that share a database.
+- `[server]` / `[database]` blocks mirroring the defaults from `parseConfig.ts`,
+  with less-common options left as commented-out lines for guidance.
+
+**Example:**
+```bash
+$ chel init
+wrote: chel.toml
+server_id: 7b3f2c1a-... keep this stable; do not reuse across environments,
+                        and do not rotate it on an existing DB.
+```
 
 ### `chel serve` - Development Server with Contract Preloading
 
