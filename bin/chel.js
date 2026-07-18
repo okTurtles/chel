@@ -65,8 +65,16 @@ const child = spawn(binPath, process.argv.slice(2), { stdio: 'inherit' })
 // this covers a targeted `kill <parent-pid>`.
 let childExited = false
 
-for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
-  process.on(sig, () => { if (!childExited) child.kill(sig) })
+// Forward every catchable signal the platform knows about, so the child sees
+// the same control flow the parent does. SIGKILL/SIGSTOP cannot be caught
+// (Node throws if you try to add a listener) and SIGCHLD is reserved by libuv
+// for child-process bookkeeping, so those are skipped. Deriving the set from
+// os.constants.signals also picks up platform-specific entries (SIGINFO on
+// BSDs, SIGPWR/SIGSTKFLT on Linux, etc.) instead of a hardcoded list.
+const nonForwardable = new Set(['SIGKILL', 'SIGSTOP', 'SIGCHLD'])
+for (const name of Object.keys(os.constants.signals)) {
+  if (nonForwardable.has(name)) continue
+  process.on(name, () => { if (!childExited) child.kill(name) })
 }
 
 child.on('error', (err) => {
