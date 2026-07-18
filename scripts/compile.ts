@@ -12,10 +12,11 @@ const { default: { version } } = await import('../package.json', { with: { type:
 // which makes consecutive builds produce different output even when the file
 // contents are identical. Setting every mtime below `build/` to a fixed value
 // (the UNIX epoch) before compiling restores determinism on a given host.
-async function normalizeMtimes (dir: string, atime: number, mtime: number): Promise<void> {
+async function normalizeMtimes (dir: string, time: number): Promise<void> {
   let entries: Deno.DirEntry[]
   try {
-    entries = Array.from(Deno.readDirSync(dir))
+    entries = []
+    for await (const entry of Deno.readDir(dir)) entries.push(entry)
   } catch (e) {
     if (e instanceof Error && e.name === 'NotFound') return
     throw e
@@ -23,12 +24,12 @@ async function normalizeMtimes (dir: string, atime: number, mtime: number): Prom
   for (const entry of entries) {
     const path = `${dir}/${entry.name}`
     try {
-      await Deno.utime(path, atime, mtime)
+      await Deno.utime(path, time, time)
     } catch (e) {
       if (!(e instanceof Error && e.name === 'NotFound')) throw e
     }
     if (entry.isDirectory) {
-      await normalizeMtimes(path, atime, mtime)
+      await normalizeMtimes(path, time)
     }
   }
 }
@@ -60,17 +61,31 @@ async function reproducibleTarGz (
     stderr: 'inherit'
   }).spawn()
 
-  tar.stdout.pipeTo(gzip.stdin).catch(() => {})
+  // Don't swallow pipe errors: if gzip dies mid-stream, tar would otherwise
+  // block on a full stdout pipe and `tar.status` would never settle, which
+  // would hang the build and prevent the `finally` cleanup below from running.
+  const pipe = tar.stdout.pipeTo(gzip.stdin)
+  pipe.catch(() => {}) // prevent unhandled rejection if a status check throws first
+
   const output = await Deno.open(target, { create: true, write: true, truncate: true })
-  await gzip.stdout.pipeTo(output.writable)
+  try {
+    await gzip.stdout.pipeTo(output.writable)
+  } catch (e) {
+    // pipeTo only closes the destination on successful source completion.
+    output.close()
+    throw e
+  }
 
   const [tarStatus, gzipStatus] = await Promise.all([tar.status, gzip.status])
   if (!tarStatus.success) throw new Error(`tar exited with code ${tarStatus.code}`)
   if (!gzipStatus.success) throw new Error(`gzip exited with code ${gzipStatus.code}`)
+  // Awaited last: both processes have exited so this won't hang, and the
+  // status errors above are more informative than a broken-pipe error.
+  await pipe
 }
 
 export async function compile (): Promise<void> {
-  await normalizeMtimes('./build', 0, 0)
+  await normalizeMtimes('./build', 0)
   const archs = ['x86_64-unknown-linux-gnu', 'aarch64-unknown-linux-gnu', 'x86_64-pc-windows-msvc', 'x86_64-apple-darwin', 'aarch64-apple-darwin']
   for (const arch of archs) {
     const dir = `./dist/tmp/${arch}`
