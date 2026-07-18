@@ -22,6 +22,10 @@ async function normalizeMtimes (dir: string, time: number): Promise<void> {
     throw e
   }
   for (const entry of entries) {
+    // Don't follow links out of build/: Deno.utime follows symlinks (there is
+    // no lutime equivalent), and a symlinked directory would otherwise be
+    // recursed into via entry.isDirectory, mutating the target's mtime.
+    if (entry.isSymlink) continue
     const path = `${dir}/${entry.name}`
     try {
       await Deno.utime(path, time, time)
@@ -43,45 +47,64 @@ async function reproducibleTarGz (
   target: string,
   entry: string
 ): Promise<void> {
-  const tar = new Deno.Command('tar', {
-    args: [
-      '-C', srcDir,
-      '--sort=name', '--owner=0', '--group=0',
-      '--numeric-owner', '--mtime=@0', '--format=ustar',
-      '-cvf', '-', entry
-    ],
-    stdout: 'piped',
-    stderr: 'inherit'
-  }).spawn()
-
-  const gzip = new Deno.Command('gzip', {
-    args: ['-n', '-9'],
-    stdin: 'piped',
-    stdout: 'piped',
-    stderr: 'inherit'
-  }).spawn()
-
-  // Don't swallow pipe errors: if gzip dies mid-stream, tar would otherwise
-  // block on a full stdout pipe and `tar.status` would never settle, which
-  // would hang the build and prevent the `finally` cleanup below from running.
-  const pipe = tar.stdout.pipeTo(gzip.stdin)
-  pipe.catch(() => {}) // prevent unhandled rejection if a status check throws first
-
-  const output = await Deno.open(target, { create: true, write: true, truncate: true })
+  let output: Deno.FsFile | undefined
+  let tar: Deno.ChildProcess | undefined
+  let gzip: Deno.ChildProcess | undefined
   try {
-    await gzip.stdout.pipeTo(output.writable)
-  } catch (e) {
-    // pipeTo only closes the destination on successful source completion.
-    output.close()
-    throw e
-  }
+    // Open the target before spawning anything so a failure here can't leave
+    // orphaned child processes blocking on a full pipe (see kill() below).
+    output = await Deno.open(target, { create: true, write: true, truncate: true })
 
-  const [tarStatus, gzipStatus] = await Promise.all([tar.status, gzip.status])
-  if (!tarStatus.success) throw new Error(`tar exited with code ${tarStatus.code}`)
-  if (!gzipStatus.success) throw new Error(`gzip exited with code ${gzipStatus.code}`)
-  // Awaited last: both processes have exited so this won't hang, and the
-  // status errors above are more informative than a broken-pipe error.
-  await pipe
+    tar = new Deno.Command('tar', {
+      args: [
+        '-C', srcDir,
+        // `--sort=name` is required for reproducibility: it makes the archive
+        // independent of filesystem iteration order. Supported by GNU tar and
+        // bsdtar/libarchive >= 3.3.0; a host without it would silently produce
+        // valid-looking but un-sorted archives.
+        '--sort=name', '--owner=0', '--group=0',
+        '--numeric-owner', '--mtime=@0', '--format=ustar',
+        '-cvf', '-', entry
+      ],
+      stdout: 'piped',
+      stderr: 'inherit'
+    }).spawn()
+
+    gzip = new Deno.Command('gzip', {
+      args: ['-n', '-9'],
+      stdin: 'piped',
+      stdout: 'piped',
+      stderr: 'inherit'
+    }).spawn()
+
+    // Save the pipe promise so we can surface its error at the bottom. The
+    // no-op `.catch` only suppresses the unhandled-rejection warning in case
+    // we throw before reaching `await pipe` below; the real error is re-thrown
+    // by that `await pipe`. If the rejection went unobserved AND gzip died
+    // mid-stream, tar would block on a full stdout pipe, `tar.status` would
+    // never settle, and the script-level `finally` cleanup could never run.
+    const pipe = tar.stdout.pipeTo(gzip.stdin)
+    pipe.catch(() => {})
+
+    await gzip.stdout.pipeTo(output.writable)
+    const [tarStatus, gzipStatus] = await Promise.all([tar.status, gzip.status])
+    if (!tarStatus.success) throw new Error(`tar exited with code ${tarStatus.code}`)
+    if (!gzipStatus.success) throw new Error(`gzip exited with code ${gzipStatus.code}`)
+    // Awaited last: both processes have exited so this won't hang, and the
+    // status errors above are more informative than a broken-pipe error.
+    await pipe
+  } catch (e) {
+    // Kill both children on any error path so neither can outlive this call.
+    // Wrapped because kill() throws if the process has already exited; `?.`
+    // guards against the spawn itself throwing before assignment.
+    try { tar?.kill('SIGKILL') } catch { /* already exited */ }
+    try { gzip?.kill('SIGKILL') } catch { /* already exited */ }
+    throw e
+  } finally {
+    // pipeTo closes the WritableStream on success, so close() may throw in
+    // the happy path; guard it regardless.
+    try { output?.close() } catch { /* already closed by pipeTo */ }
+  }
 }
 
 export async function compile (): Promise<void> {
