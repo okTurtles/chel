@@ -385,6 +385,12 @@ dashboardPort = 8888
 backend = "sqlite"
 ```
 
+The contents of `chel.toml` are validated against a whitelist of known options when `chel` starts:
+
+- **Unknown keys** (likely typos) print a warning, including a "did you mean …?" suggestion when one is close. They do not stop execution.
+- **Values of the wrong type or shape** (e.g. `port = 70000`, `backend = "mongodb"`, or a Redis `url` without a `redis://`, `rediss://`, or `unix://` scheme) are fatal: `chel` prints a clear message naming the offending key and exits with code 1.
+- Options for *all* database backends are checked, not just the active one, so a misconfigured backend is caught early.
+
 ### `chelonia.json` — App Properties
 
 `chelonia.json` is an **app-level properties file** that describes which

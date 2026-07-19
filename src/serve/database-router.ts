@@ -1,16 +1,7 @@
 import type { Buffer } from 'node:buffer'
-import * as z from 'npm:zod'
+import { RouterOptionsSchema as ConfigSchema } from './backend-schemas.ts'
 import DatabaseBackend from './DatabaseBackend.ts'
 import { tagBackendError } from './db-errors.ts'
-
-const ConfigEntrySchema = z.strictObject({
-  name: z.string(),
-  options: z.object()
-})
-const ConfigSchema = z.intersection(
-  z.object({ '*': ConfigEntrySchema }),
-  z.record(z.string(), ConfigEntrySchema)
-)
 
 type ConfigEntry = { name: string; options: Record<string, unknown> }
 type Config = {

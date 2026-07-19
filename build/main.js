@@ -3997,6 +3997,7 @@ var wrapTransaction = (fn, db2, { begin, commit, rollback, savepoint, release, r
 import { Buffer as Buffer11 } from "node:buffer";
 import { mkdir as mkdir2 } from "node:fs/promises";
 import { basename as basename22, dirname as dirname22, join as join32, resolve as resolve32 } from "node:path";
+import { readFile as readFile4 } from "node:fs/promises";
 import process12 from "node:process";
 import { Buffer as Buffer12 } from "node:buffer";
 import process2 from "node:process";
@@ -22599,8 +22600,8 @@ var init_esm7 = __esm({
       const registry2 = new FinalizationRegistry((heldValue) => {
         heldValue.close();
       });
-      return (fn, port) => {
-        registry2.register(fn, port);
+      return (fn, port2) => {
+        registry2.register(fn, port2);
       };
     })();
     serializer = (data, noFn) => {
@@ -22681,7 +22682,7 @@ var init_esm7 = __esm({
                   try {
                     ev.data[0].postMessage([true, data2], transferables2);
                   } catch (e2) {
-                    revokables2.forEach((port) => port.close());
+                    revokables2.forEach((port2) => port2.close());
                     throw e2;
                   }
                 } catch (e2) {
@@ -22720,7 +22721,7 @@ var init_esm7 = __esm({
           revokables: Array.from(revokables)
         };
       } catch (e2) {
-        revokables.forEach((port) => port.close());
+        revokables.forEach((port2) => port2.close());
         throw e2;
       }
     };
@@ -22790,7 +22791,7 @@ var init_esm7 = __esm({
                       reject(e2);
                     } finally {
                       rcvPort.close();
-                      revokables.forEach((port) => port.close());
+                      revokables.forEach((port2) => port2.close());
                     }
                   };
                   rcvPort.onmessageerror = () => {
@@ -22798,14 +22799,14 @@ var init_esm7 = __esm({
                       reject(new Error("Message error"));
                     } finally {
                       rcvPort.close();
-                      revokables.forEach((port) => port.close());
+                      revokables.forEach((port2) => port2.close());
                     }
                   };
                   try {
                     mp.postMessage([sendingPort, data2], [sendingPort, ...transferables]);
                   } catch (e2) {
                     rcvPort.close();
-                    revokables.forEach((port) => port.close());
+                    revokables.forEach((port2) => port2.close());
                     reject(e2);
                   }
                 });
@@ -24928,6 +24929,40 @@ var init_db_errors = __esm({
     init_utils();
   }
 });
+var FsOptionsSchema;
+var SqliteOptionsSchema;
+var RedisOptionsSchema;
+var RouterConfigEntrySchema;
+var RouterOptionsSchema;
+var init_backend_schemas = __esm({
+  "src/serve/backend-schemas.ts"() {
+    "use strict";
+    init_zod();
+    FsOptionsSchema = strictObject({
+      dirname: optional(string2()),
+      depth: optional(number2()),
+      keyChunkLength: optional(number2()),
+      skipFsCaseSensitivityCheck: optional(boolean2())
+    });
+    SqliteOptionsSchema = strictObject({
+      filepath: optional(string2())
+    });
+    RedisOptionsSchema = strictObject({
+      url: optional(url({
+        protocol: /^(rediss?|unix)$/,
+        error: '"url" must begin with redis://, rediss://, or unix://'
+      }))
+    });
+    RouterConfigEntrySchema = strictObject({
+      name: string2(),
+      options: object()
+    });
+    RouterOptionsSchema = record(string2(), RouterConfigEntrySchema).refine(
+      (v2) => "*" in v2,
+      { error: 'router backend requires a "*" (fallback) entry' }
+    );
+  }
+});
 var requiredMethodNames;
 var DatabaseBackend;
 var init_DatabaseBackend = __esm({
@@ -24976,21 +25011,14 @@ async function testCaseSensitivity(backend) {
     await deleteData(originalKey);
   }
 }
-var ConfigSchema;
 var splitAndGroup;
 var FsBackend;
 var init_database_fs = __esm({
   "src/serve/database-fs.ts"() {
     "use strict";
     init_db();
-    init_zod();
+    init_backend_schemas();
     init_DatabaseBackend();
-    ConfigSchema = strictObject({
-      dirname: optional(string2()),
-      depth: optional(number2()),
-      keyChunkLength: optional(number2()),
-      skipFsCaseSensitivityCheck: optional(boolean2())
-    });
     splitAndGroup = (input, chunkLength, depth) => input.slice(0, chunkLength * depth).split("").reduce((acc, cv, i2) => {
       acc[i2 / chunkLength | 0] = (acc[i2 / chunkLength | 0] || "") + cv;
       return acc;
@@ -25002,7 +25030,7 @@ var init_database_fs = __esm({
       skipFsCaseSensitivityCheck = false;
       constructor(options2 = {}) {
         super();
-        ConfigSchema.parse(options2);
+        FsOptionsSchema.parse(options2);
         if (options2.dirname) this.dataFolder = resolve22(options2.dirname);
         if (options2.depth) this.depth = options2.depth;
         if (options2.keyChunkLength) this.keyChunkLength = options2.keyChunkLength;
@@ -28062,8 +28090,8 @@ var require_CLUSTER_MEET = __commonJS({
        * @param host - Host name or IP address of the node
        * @param port - TCP port of the node
        */
-      parseCommand(parser3, host, port) {
-        parser3.push("CLUSTER", "MEET", host, port.toString());
+      parseCommand(parser3, host, port2) {
+        parser3.push("CLUSTER", "MEET", host, port2.toString());
       },
       transformReply: void 0
     };
@@ -28275,10 +28303,10 @@ var require_CLUSTER_SLOTS = __commonJS({
       }
     };
     function transformNode(node) {
-      const [host, port, id] = node;
+      const [host, port2, id] = node;
       return {
         host,
-        port,
+        port: port2,
         id
       };
     }
@@ -32058,8 +32086,8 @@ var require_MIGRATE = __commonJS({
        * @param options - Optional parameters including COPY, REPLACE, and AUTH
        * @see https://redis.io/commands/migrate/
        */
-      parseCommand(parser3, host, port, key, destinationDb, timeout, options2) {
-        parser3.push("MIGRATE", host, port.toString());
+      parseCommand(parser3, host, port2, key, destinationDb, timeout, options2) {
+        parser3.push("MIGRATE", host, port2.toString());
         const isKeyArray = Array.isArray(key);
         if (isKeyArray) {
           parser3.push("");
@@ -32837,8 +32865,8 @@ var require_REPLICAOF = __commonJS({
        * @param port - The port of the master to replicate from
        * @see https://redis.io/commands/replicaof/
        */
-      parseCommand(parser3, host, port) {
-        parser3.push("REPLICAOF", host, port.toString());
+      parseCommand(parser3, host, port2) {
+        parser3.push("REPLICAOF", host, port2.toString());
       },
       transformReply: void 0
     };
@@ -32931,10 +32959,10 @@ var require_ROLE = __commonJS({
               role,
               replicationOffest,
               replicas: replicas.map((replica) => {
-                const [host, port, replicationOffest2] = replica;
+                const [host, port2, replicationOffest2] = replica;
                 return {
                   host,
-                  port: Number(port),
+                  port: Number(port2),
                   replicationOffest: Number(replicationOffest2)
                 };
               })
@@ -37874,7 +37902,7 @@ var require_enterprise_maintenance_manager = __commonJS({
       #onMoving = async (afterSeconds, url2) => {
         this.#onMigrating();
         let host;
-        let port;
+        let port2;
         if (url2 === null) {
           (0, node_assert_1.default)(this.#options.maintEndpointType === "none");
           (0, node_assert_1.default)(this.#options.socket !== void 0);
@@ -37882,14 +37910,14 @@ var require_enterprise_maintenance_manager = __commonJS({
           (0, node_assert_1.default)(typeof this.#options.socket.host === "string");
           host = this.#options.socket.host;
           (0, node_assert_1.default)(typeof this.#options.socket.port === "number");
-          port = this.#options.socket.port;
+          port2 = this.#options.socket.port;
           const waitTime = afterSeconds * 1e3 / 2;
           (0, exports2.dbgMaintenance)(`Wait for ${waitTime}ms`);
           await (0, promises_2.setTimeout)(waitTime);
         } else {
           const split = url2.split(":");
           host = split[0];
-          port = Number(split[1]);
+          port2 = Number(split[1]);
         }
         (0, exports2.dbgMaintenance)("Pausing writing of new commands to old socket");
         this.#client._pause();
@@ -37898,13 +37926,13 @@ var require_enterprise_maintenance_manager = __commonJS({
         if (this.#options.url) {
           const u2 = new URL(this.#options.url);
           u2.hostname = host;
-          u2.port = String(port);
+          u2.port = String(port2);
           this.#options.url = u2.toString();
         } else {
           this.#options.socket = {
             ...this.#options.socket,
             host,
-            port
+            port: port2
           };
         }
         const tmpClient = this.#client.duplicate();
@@ -37917,7 +37945,7 @@ var require_enterprise_maintenance_manager = __commonJS({
           relaxedCommandTimeout: this.#options.maintRelaxedCommandTimeout,
           relaxedSocketTimeout: this.#options.maintRelaxedSocketTimeout
         });
-        (0, exports2.dbgMaintenance)(`Connecting tmp client: ${host}:${port}`);
+        (0, exports2.dbgMaintenance)(`Connecting tmp client: ${host}:${port2}`);
         start = performance.now();
         await tmpClient.connect();
         (0, exports2.dbgMaintenance)(`Connected to tmp client in ${(performance.now() - start).toFixed(2)}ms`);
@@ -40886,7 +40914,7 @@ var require_client = __commonJS({
         return options2;
       }
       static parseURL(url2) {
-        const { hostname: hostname2, port, protocol, username, password, pathname } = new node_url_1.URL(url2), parsed = {
+        const { hostname: hostname2, port: port2, protocol, username, password, pathname } = new node_url_1.URL(url2), parsed = {
           socket: {
             host: hostname2,
             tls: false
@@ -40896,8 +40924,8 @@ var require_client = __commonJS({
           throw new TypeError("Invalid protocol");
         }
         parsed.socket.tls = protocol === "rediss:";
-        if (port) {
-          parsed.socket.port = Number(port);
+        if (port2) {
+          parsed.socket.port = Number(port2);
         }
         if (username) {
           parsed.username = decodeURIComponent(username);
@@ -43278,8 +43306,8 @@ var require_SENTINEL_MONITOR = __commonJS({
        * @param port - Port of the master.
        * @param quorum - Number of Sentinels that need to agree to trigger a failover.
        */
-      parseCommand(parser3, dbname, host, port, quorum) {
-        parser3.push("SENTINEL", "MONITOR", dbname, host, port, quorum);
+      parseCommand(parser3, dbname, host, port2, quorum) {
+        parser3.push("SENTINEL", "MONITOR", dbname, host, port2, quorum);
       },
       transformReply: void 0
     };
@@ -50566,23 +50594,19 @@ __export(database_redis_exports, {
   default: () => RedisBackend
 });
 var import_npm_redis;
-var ConfigSchema2;
 var RedisBackend;
 var init_database_redis = __esm({
   "src/serve/database-redis.ts"() {
     "use strict";
     import_npm_redis = __toESM(require_dist2());
-    init_zod();
+    init_backend_schemas();
     init_DatabaseBackend();
-    ConfigSchema2 = strictObject({
-      url: optional(url({ protocol: /^rediss?$/ }))
-    });
     RedisBackend = class extends DatabaseBackend {
       db = null;
       url;
       constructor(options2 = {}) {
         super();
-        ConfigSchema2.parse(options2);
+        RedisOptionsSchema.parse(options2);
         this.url = options2.url;
       }
       async init() {
@@ -50627,16 +50651,12 @@ var database_sqlite_exports = {};
 __export(database_sqlite_exports, {
   default: () => SqliteBackend
 });
-var ConfigSchema3;
 var SqliteBackend;
 var init_database_sqlite = __esm({
   "src/serve/database-sqlite.ts"() {
     "use strict";
-    init_zod();
+    init_backend_schemas();
     init_DatabaseBackend();
-    ConfigSchema3 = strictObject({
-      filepath: optional(string2())
-    });
     SqliteBackend = class extends DatabaseBackend {
       dataFolder = "data";
       db = null;
@@ -50648,7 +50668,7 @@ var init_database_sqlite = __esm({
       keyCountStatement = null;
       constructor(options2 = {}) {
         super();
-        ConfigSchema3.parse(options2);
+        SqliteOptionsSchema.parse(options2);
         const { filepath } = options2;
         if (!filepath) return;
         const resolvedPath = resolve32(filepath);
@@ -50725,30 +50745,20 @@ var database_router_exports = {};
 __export(database_router_exports, {
   default: () => RouterBackend
 });
-var ConfigEntrySchema;
-var ConfigSchema4;
 var RouterBackend;
 var init_database_router = __esm({
   "src/serve/database-router.ts"() {
     "use strict";
-    init_zod();
+    init_backend_schemas();
     init_DatabaseBackend();
     init_db_errors();
     init_();
-    ConfigEntrySchema = strictObject({
-      name: string2(),
-      options: object()
-    });
-    ConfigSchema4 = intersection(
-      object({ "*": ConfigEntrySchema }),
-      record(string2(), ConfigEntrySchema)
-    );
     RouterBackend = class extends DatabaseBackend {
       backends;
       config;
       constructor(config2 = {}) {
         super();
-        ConfigSchema4.parse(config2);
+        RouterOptionsSchema.parse(config2);
         const configCopy = Object.fromEntries(Object.entries(config2).sort((a, b) => b[0].length - a[0].length));
         const errors2 = this.validateConfig(configCopy);
         if (errors2.length) {
@@ -73864,15 +73874,15 @@ var createWorker = (path8) => {
           }, false);
           resolve82();
         } else if (msg && typeof msg === "object" && msg.type === "sbp" && Array.isArray(msg.data) && String(msg.data[0]).startsWith("chelonia.db/")) {
-          const port = msg.port;
+          const port2 = msg.port;
           Promise.try(() => esm_default(...deserializer(msg.data))).then((r) => {
             const { data, transferables } = serializer(r);
-            port.postMessage([true, data], transferables);
+            port2.postMessage([true, data], transferables);
           }).catch((e2) => {
             const { data, transferables } = serializer(e2);
-            port.postMessage([false, data], transferables);
+            port2.postMessage([false, data], transferables);
           }).finally(() => {
-            port.close();
+            port2.close();
           });
         }
       };
@@ -73916,12 +73926,12 @@ init_functions();
 var getConnInfo = (c) => {
   const bindings = c.env.server ? c.env.server : c.env;
   const address = bindings.incoming.socket.remoteAddress;
-  const port = bindings.incoming.socket.remotePort;
+  const port2 = bindings.incoming.socket.remotePort;
   const family = bindings.incoming.socket.remoteFamily;
   return {
     remote: {
       address,
-      port,
+      port: port2,
       addressType: family === "IPv4" ? "IPv4" : family === "IPv6" ? "IPv6" : void 0
     }
   };
@@ -75059,7 +75069,8 @@ function registerRoutes(app) {
       }
       const payloadBuffer = Buffer14.from(await c.req.arrayBuffer());
       return esm_default("chelonia/queueInvocation", contractID, async () => {
-        const existing = Buffer14.from(await esm_default("chelonia.db/get", `any:_private_kv_${contractID}_${key}`));
+        const existingRaw = await esm_default("chelonia.db/get", `any:_private_kv_${contractID}_${key}`);
+        const existing = existingRaw != null && !Buffer14.isBuffer(existingRaw) ? Buffer14.from(existingRaw) : existingRaw;
         const expectedEtag = c.req.header("if-match");
         if (!expectedEtag) {
           throw new HTTPException(400, { message: "if-match is required" });
@@ -75120,7 +75131,8 @@ function registerRoutes(app) {
       if (!ctEq(credentials.billableContractID, contractID)) {
         throw new HTTPException(401);
       }
-      const result = Buffer14.from(await esm_default("chelonia.db/get", `any:_private_kv_${contractID}_${key}`));
+      const resultRaw = await esm_default("chelonia.db/get", `any:_private_kv_${contractID}_${key}`);
+      const result = resultRaw != null && !Buffer14.isBuffer(resultRaw) ? Buffer14.from(resultRaw) : resultRaw;
       if (!result) {
         return notFoundNoCache(c);
       }
@@ -76138,7 +76150,7 @@ async function startServer() {
   const appManifest = import_npm_nconf6.default.get("appManifest") || join72(import_npm_nconf6.default.get("server:appDir") || process9.cwd(), "chelonia.json");
   const ARCHIVE_MODE = import_npm_nconf6.default.get("server:archiveMode");
   const host = import_npm_nconf6.default.get("server:host") || "0.0.0.0";
-  const port = import_npm_nconf6.default.get("server:port") ?? 8e3;
+  const port2 = import_npm_nconf6.default.get("server:port") ?? 8e3;
   if (CREDITS_WORKER_TASK_TIME_INTERVAL && OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL > CREDITS_WORKER_TASK_TIME_INTERVAL) {
     console.error("The size calculation worker must run more frequently than the credits worker for accurate billing");
     throw new Error("The size calculation worker must run more frequently than the credits worker for accurate billing");
@@ -76325,7 +76337,7 @@ async function startServer() {
     });
   }, 1 * 60 * 60 * 1e3);
   const uri = await new Promise((resolve82, reject) => {
-    currentHttpServer.listen(port, host, () => {
+    currentHttpServer.listen(port2, host, () => {
       const addr = currentHttpServer.address();
       const uri2 = `http://${addr.address}:${addr.port}`;
       console.info("Backend server running at:", uri2);
@@ -76733,7 +76745,7 @@ var getDashboardPath = () => {
   return dashboardPath;
 };
 async function startDashboard() {
-  const port = import_npm_nconf7.default.get("server:dashboardPort");
+  const port2 = import_npm_nconf7.default.get("server:dashboardPort");
   const host = import_npm_nconf7.default.get("server:host") || "0.0.0.0";
   const dashboardRoot = getDashboardPath();
   const app = new Hono2();
@@ -76754,7 +76766,7 @@ async function startDashboard() {
   });
   const server = createAdaptorServer({ fetch: app.fetch });
   await new Promise((resolve82, reject) => {
-    server.listen(port, host, () => {
+    server.listen(port2, host, () => {
       const addr = server.address();
       const uri = `http://${addr.address}:${addr.port}`;
       console.info("Dashboard server running at:", uri);
@@ -81166,7 +81178,138 @@ var parseArgs = () => {
   return yargsInstance;
 };
 var parseArgs_default = parseArgs;
-var parseConfig = () => {
+init_zod();
+init_backend_schemas();
+var port = number2().int().min(1, "must be an integer between 1 and 65535").max(65535, "must be an integer between 1 and 65535");
+var positiveInt = number2().int().positive("must be a positive integer");
+var nonNegativeInt = number2().int().min(0, "must be a non-negative integer");
+var BackendOptionsSchema = strictObject({
+  fs: optional(FsOptionsSchema),
+  sqlite: optional(SqliteOptionsSchema),
+  redis: optional(RedisOptionsSchema),
+  router: optional(RouterOptionsSchema)
+});
+var ConfigSchema = strictObject({
+  // Set via the `--app-manifest` CLI flag; allowed in TOML for completeness.
+  appManifest: optional(string2()),
+  server: optional(strictObject({
+    appDir: optional(string2()),
+    host: optional(string2().min(1, "must be a non-empty string")),
+    port: optional(port),
+    dashboardPort: optional(port),
+    fileUploadMaxBytes: optional(positiveInt),
+    logLevel: optional(_enum(["trace", "debug", "info", "warn", "error", "fatal", "silent"])),
+    messages: optional(array(record(string2(), unknown()))),
+    maxEventsBatchSize: optional(positiveInt),
+    archiveMode: optional(boolean2()),
+    signup: optional(strictObject({
+      disabled: optional(boolean2()),
+      limit: optional(strictObject({
+        disabled: optional(boolean2()),
+        minute: optional(nonNegativeInt),
+        hour: optional(nonNegativeInt),
+        day: optional(nonNegativeInt)
+      })),
+      vapid: optional(strictObject({
+        email: optional(string2())
+      }))
+    })),
+    // `vapid` may also appear directly under `server` (see `src/serve/vapid.ts`,
+    // which reads `server:vapid:email`). Both locations are accepted.
+    vapid: optional(strictObject({
+      email: optional(string2())
+    }))
+  })),
+  database: optional(strictObject({
+    backend: optional(_enum(["mem", "fs", "sqlite", "redis", "router"], {
+      error: '"backend" must be one of: mem, fs, sqlite, redis, router'
+    })),
+    lruNumItems: optional(positiveInt),
+    backendOptions: optional(BackendOptionsSchema)
+  }))
+});
+function editDistance(a, b) {
+  const m3 = a.length;
+  const n = b.length;
+  const d = Array.from({ length: m3 + 1 }, () => new Array(n + 1).fill(0));
+  for (let i2 = 0; i2 <= m3; i2++) d[i2][0] = i2;
+  for (let j = 0; j <= n; j++) d[0][j] = j;
+  for (let i2 = 1; i2 <= m3; i2++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i2 - 1] === b[j - 1] ? 0 : 1;
+      d[i2][j] = Math.min(
+        d[i2 - 1][j] + 1,
+        d[i2][j - 1] + 1,
+        d[i2 - 1][j - 1] + cost
+      );
+      if (i2 > 1 && j > 1 && a[i2 - 1] === b[j - 2] && a[i2 - 2] === b[j - 1]) {
+        d[i2][j] = Math.min(d[i2][j], d[i2 - 2][j - 2] + 1);
+      }
+    }
+  }
+  return d[m3][n];
+}
+function suggest(key, candidates) {
+  let best;
+  let bestDist = Infinity;
+  for (const c of candidates) {
+    const dist = editDistance(key, c);
+    if (dist < bestDist && dist <= Math.max(1, Math.floor(key.length / 2))) {
+      best = c;
+      bestDist = dist;
+    }
+  }
+  return best;
+}
+function formatPath(path8) {
+  return path8.map(String).join(".");
+}
+function validateTomlConfig(parsed) {
+  const warnings = [];
+  const errors2 = [];
+  const result = ConfigSchema.safeParse(parsed);
+  if (result.success) return { warnings, errors: errors2 };
+  for (const issue2 of result.error.issues) {
+    if (issue2.code === "unrecognized_keys") {
+      const parentPath = formatPath(issue2.path);
+      const known = knownKeysFor(issue2.path);
+      for (const key of issue2.keys) {
+        const fullPath = parentPath ? `${parentPath}.${key}` : key;
+        const hint = suggest(key, known);
+        warnings.push(
+          hint ? `unknown key ${fullPath} (did you mean ${hint}?)` : `unknown key ${fullPath}`
+        );
+      }
+    } else {
+      const path8 = formatPath(issue2.path);
+      errors2.push(path8 ? `${path8}: ${issue2.message}` : issue2.message);
+    }
+  }
+  return { warnings, errors: errors2 };
+}
+function knownKeysFor(path8) {
+  const joined = formatPath(path8);
+  switch (joined) {
+    case "":
+      return ["appManifest", "server", "database"];
+    case "server":
+      return ["appDir", "host", "port", "dashboardPort", "fileUploadMaxBytes", "logLevel", "messages", "maxEventsBatchSize", "archiveMode", "signup", "vapid"];
+    case "server.signup":
+      return ["disabled", "limit", "vapid"];
+    case "server.signup.limit":
+      return ["disabled", "minute", "hour", "day"];
+    case "server.vapid":
+    case "server.signup.vapid":
+      return ["email"];
+    case "database":
+      return ["backend", "lruNumItems", "backendOptions"];
+    case "database.backendOptions":
+      return ["fs", "sqlite", "redis", "router"];
+    default:
+      return [];
+  }
+}
+var parseConfig = async () => {
   import_npm_nconf8.default.env({
     separator: "__",
     parseValues: true
@@ -81200,11 +81343,36 @@ var parseConfig = () => {
       backendOptions: {}
     }
   });
+  await validateConfigFile("chel.toml");
 };
+async function validateConfigFile(filePath) {
+  let raw2;
+  try {
+    raw2 = await readFile4(filePath, { encoding: "utf-8", flag: "r" });
+  } catch (e2) {
+    if (e2?.code === "ENOENT") return;
+    throw e2;
+  }
+  let parsed;
+  try {
+    parsed = parse8(raw2);
+  } catch (e2) {
+    throw new Error(`Could not parse ${filePath}: ${e2.message}`);
+  }
+  const { warnings, errors: errors2 } = validateTomlConfig(parsed);
+  for (const warning of warnings) {
+    console.warn(`[chel] ${filePath}: ${warning}`);
+  }
+  if (errors2.length) {
+    const listing = errors2.map((e2) => `  - ${e2}`).join("\n");
+    throw new Error(`Invalid ${filePath}:
+${listing}`);
+  }
+}
 var parseConfig_default = parseConfig;
 init_utils();
-parseConfig_default();
 try {
+  await parseConfig_default();
   await handlerState.postHandler();
 } catch (e2) {
   exit(e2);
