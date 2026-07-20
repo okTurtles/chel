@@ -161,9 +161,35 @@ export function validateTomlConfig (parsed: unknown): ValidationResult {
   return { warnings, errors }
 }
 
+// Derives the set of valid immediate child keys for every object path in the
+// config tree directly from `ConfigSchema`, so that typo suggestions can never
+// drift out of sync with the schema definition.
+interface SchemaNode {
+  unwrap?: () => SchemaNode
+  shape?: Record<string, SchemaNode>
+}
+
+function collectKnownKeys (schema: z.ZodType): Map<string, string[]> {
+  const map = new Map<string, string[]>()
+  const walk = (node: SchemaNode, segments: string[]) => {
+    const unwrapped = typeof node.unwrap === 'function' ? node.unwrap() : node
+    const shape = unwrapped?.shape
+    // Record-typed nodes (e.g. `database.backendOptions.router`) have no
+    // `.shape`: they accept arbitrary keys, so there is no fixed known-key list.
+    if (!shape) return
+    map.set(segments.join('.'), Object.keys(shape))
+    for (const [key, child] of Object.entries(shape)) {
+      walk(child, [...segments, key])
+    }
+  }
+  walk(schema as SchemaNode, [])
+  return map
+}
+
+const knownKeysMap = collectKnownKeys(ConfigSchema)
+
 // Returns the set of valid immediate child keys for a given path in the config
-// tree, used to generate typo suggestions. Keep in sync with `ConfigSchema`
-// above.
+// tree, used to generate typo suggestions.
 export function knownKeysFor (path: PropertyKey[]): string[] {
   // Keys *within* a router entry (`database.backendOptions.router.<prefix>`) are
   // described by `RouterConfigEntrySchema`, which has a fixed shape even though
@@ -178,35 +204,7 @@ export function knownKeysFor (path: PropertyKey[]): string[] {
   ) {
     return Object.keys(RouterConfigEntrySchema.shape)
   }
-  const joined = formatPath(path)
-  switch (joined) {
-    case '': return ['appManifest', 'server', 'database']
-    case 'server':
-      return ['appDir', 'host', 'port', 'dashboardPort', 'fileUploadMaxBytes', 'logLevel', 'messages', 'maxEventsBatchSize', 'archiveMode', 'signup', 'vapid']
-    case 'server.signup':
-      return ['disabled', 'limit']
-    case 'server.signup.limit':
-      return ['disabled', 'minute', 'hour', 'day']
-    case 'server.vapid':
-      return ['email']
-    case 'database':
-      return ['backend', 'lruNumItems', 'backendOptions']
-    case 'database.backendOptions':
-      return ['fs', 'sqlite', 'redis', 'router']
-    case 'database.backendOptions.fs':
-      return ['dirname', 'depth', 'keyChunkLength', 'skipFsCaseSensitivityCheck']
-    case 'database.backendOptions.sqlite':
-      return ['filepath']
-    case 'database.backendOptions.redis':
-      return ['url']
-    // No case for `database.backendOptions.router` itself: it is a `z.record()`
-    // accepting arbitrary prefix keys, so the prefix level never produces
-    // unrecognized-key suggestions (its mandatory `*` fallback is enforced by a
-    // refine in `backend-schemas.ts`). Keys within each entry are handled by the
-    // guard at the top of this function.
-    default:
-      return []
-  }
+  return knownKeysMap.get(formatPath(path)) ?? []
 }
 
 // Reads, parses, and validates a TOML config file against `ConfigSchema`.

@@ -36,25 +36,15 @@ export default class RouterBackend extends DatabaseBackend {
   }
 
   validateConfig (config: Config): Array<{ msg: string; entry?: [string, ConfigEntry] }> {
-    const errors = []
-    // The constructor's `ConfigSchema.parse()` already rejects a missing `*`,
-    // but this check is retained because `validateConfig` is public and may be
-    // called on its own (e.g. by tests) without a prior `.parse()`.
-    if (!config['*']) {
-      errors.push({ msg: 'Missing key: "*" (fallback storage is required)' })
-    }
-    for (const entry of Object.entries(config)) {
-      const value = entry[1]
-      if (typeof value?.name !== 'string' || typeof value?.options !== 'object') {
-        errors.push({ msg: 'entry value must be of type { name: string, options: Object }', entry })
-        continue
-      }
-      if (value.name === 'router') {
-        errors.push({ msg: 'Router backends cannot be nested.', entry })
-        continue
-      }
-    }
-    return errors
+    // Delegate to the shared schema (single source of truth) so these checks
+    // never drift from `backend-schemas.ts`. The constructor's `.parse()` is the
+    // runtime guard for env-supplied config; this public method reuses the same
+    // schema so it can be called standalone (e.g. by tests) without a `.parse()`.
+    const result = ConfigSchema.safeParse(config)
+    if (result.success) return []
+    return result.error.issues.map((issue) => ({
+      msg: issue.path.length ? `${issue.path.join('.')}: ${issue.message}` : issue.message
+    }))
   }
 
   async init (): Promise<void> {

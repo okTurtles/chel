@@ -50781,22 +50781,11 @@ var init_database_router = __esm({
         return backends["*"];
       }
       validateConfig(config2) {
-        const errors2 = [];
-        if (!config2["*"]) {
-          errors2.push({ msg: 'Missing key: "*" (fallback storage is required)' });
-        }
-        for (const entry of Object.entries(config2)) {
-          const value = entry[1];
-          if (typeof value?.name !== "string" || typeof value?.options !== "object") {
-            errors2.push({ msg: "entry value must be of type { name: string, options: Object }", entry });
-            continue;
-          }
-          if (value.name === "router") {
-            errors2.push({ msg: "Router backends cannot be nested.", entry });
-            continue;
-          }
-        }
-        return errors2;
+        const result = RouterOptionsSchema.safeParse(config2);
+        if (result.success) return [];
+        return result.error.issues.map((issue2) => ({
+          msg: issue2.path.length ? `${issue2.path.join(".")}: ${issue2.message}` : issue2.message
+        }));
       }
       async init() {
         this.backends = /* @__PURE__ */ Object.create(null);
@@ -81328,40 +81317,26 @@ function validateTomlConfig(parsed) {
   }
   return { warnings, errors: errors2 };
 }
+function collectKnownKeys(schema) {
+  const map = /* @__PURE__ */ new Map();
+  const walk2 = (node, segments) => {
+    const unwrapped = typeof node.unwrap === "function" ? node.unwrap() : node;
+    const shape = unwrapped?.shape;
+    if (!shape) return;
+    map.set(segments.join("."), Object.keys(shape));
+    for (const [key, child] of Object.entries(shape)) {
+      walk2(child, [...segments, key]);
+    }
+  };
+  walk2(schema, []);
+  return map;
+}
+var knownKeysMap = collectKnownKeys(ConfigSchema);
 function knownKeysFor(path8) {
   if (path8.length === 4 && path8[0] === "database" && path8[1] === "backendOptions" && path8[2] === "router") {
     return Object.keys(RouterConfigEntrySchema.shape);
   }
-  const joined = formatPath(path8);
-  switch (joined) {
-    case "":
-      return ["appManifest", "server", "database"];
-    case "server":
-      return ["appDir", "host", "port", "dashboardPort", "fileUploadMaxBytes", "logLevel", "messages", "maxEventsBatchSize", "archiveMode", "signup", "vapid"];
-    case "server.signup":
-      return ["disabled", "limit"];
-    case "server.signup.limit":
-      return ["disabled", "minute", "hour", "day"];
-    case "server.vapid":
-      return ["email"];
-    case "database":
-      return ["backend", "lruNumItems", "backendOptions"];
-    case "database.backendOptions":
-      return ["fs", "sqlite", "redis", "router"];
-    case "database.backendOptions.fs":
-      return ["dirname", "depth", "keyChunkLength", "skipFsCaseSensitivityCheck"];
-    case "database.backendOptions.sqlite":
-      return ["filepath"];
-    case "database.backendOptions.redis":
-      return ["url"];
-    // No case for `database.backendOptions.router` itself: it is a `z.record()`
-    // accepting arbitrary prefix keys, so the prefix level never produces
-    // unrecognized-key suggestions (its mandatory `*` fallback is enforced by a
-    // refine in `backend-schemas.ts`). Keys within each entry are handled by the
-    // guard at the top of this function.
-    default:
-      return [];
-  }
+  return knownKeysMap.get(formatPath(path8)) ?? [];
 }
 async function validateConfigFile(filePath) {
   let raw2;

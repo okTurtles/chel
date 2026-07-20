@@ -280,47 +280,28 @@ Deno.test({
       }
     })
 
-    await t.step('knownKeysFor stays in sync with ConfigSchema', () => {
-      // NOTE: this walk introspects Zod internals (`ZodOptional.unwrap()` and
-      // `ZodObject.shape`) that are coupled to the current Zod major version
-      // (v4). A Zod upgrade that renames or removes them would make the walk
-      // visit fewer nodes; the size assertion below turns that silent skip into
-      // a loud failure.
-      interface SchemaNode {
-        unwrap?: () => SchemaNode
-        shape?: Record<string, SchemaNode>
-      }
-      const schemaKeys = new Map<string, string[]>()
-      const walk = (node: SchemaNode, segments: string[]) => {
-        const unwrapped = typeof node.unwrap === 'function' ? node.unwrap() : node
-        const shape = unwrapped?.shape
-        // Record-typed nodes (e.g. `database.backendOptions.router`) have no
-        // `.shape`: they accept arbitrary keys, so there is no fixed known-key
-        // list to keep in sync and they are intentionally excluded here.
-        if (!shape) return
-        schemaKeys.set(segments.join('.'), Object.keys(shape))
-        for (const [key, child] of Object.entries(shape)) {
-          walk(child, [...segments, key])
-        }
-      }
-      walk(ConfigSchema as SchemaNode, [])
-
-      // Fail loudly if a Zod change makes the walk silently visit fewer (or
-      // more) strictObject paths, which would otherwise hide real drift.
-      assertEquals(
-        schemaKeys.size,
-        10,
-        'schema walk visited an unexpected number of strictObject paths; ' +
-          'update this count if ConfigSchema changed intentionally'
-      )
-
-      for (const [path, keys] of schemaKeys) {
+    await t.step('knownKeysFor covers all strictObject paths in ConfigSchema', () => {
+      // knownKeysFor is derived from ConfigSchema at module load, so this test
+      // verifies the derivation walk actually visits every expected path rather
+      // than silently producing an empty or partial map.
+      const expectedPaths = [
+        '',
+        'server',
+        'server.signup',
+        'server.signup.limit',
+        'server.vapid',
+        'database',
+        'database.backendOptions',
+        'database.backendOptions.fs',
+        'database.backendOptions.sqlite',
+        'database.backendOptions.redis'
+      ]
+      for (const path of expectedPaths) {
         const segments = path ? path.split('.') : []
-        assertEquals(
-          knownKeysFor(segments).sort(),
-          keys.sort(),
-          `knownKeysFor drift at "${path || '(root)'}"`
-        )
+        const keys = knownKeysFor(segments)
+        if (keys.length === 0) {
+          throw new Error(`knownKeysFor returned no keys for "${path || '(root)'}"`)
+        }
       }
 
       assertEquals(
