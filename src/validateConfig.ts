@@ -11,17 +11,19 @@
 // are also validated here (e.g. a malformed `backendOptions.redis` is caught
 // even when `backend = "fs"`).
 
+import { readFile } from 'node:fs/promises'
 import * as z from 'npm:zod'
+import { parse } from 'npm:smol-toml'
 import {
   FsOptionsSchema,
   SqliteOptionsSchema,
   RedisOptionsSchema,
-  RouterOptionsSchema
+  RouterOptionsSchema,
+  RouterConfigEntrySchema
 } from './serve/backend-schemas.ts'
 
 const port = z.number().int().min(1, 'must be an integer between 1 and 65535').max(65535, 'must be an integer between 1 and 65535')
 const positiveInt = z.number().int().positive('must be a positive integer')
-const nonNegativeInt = z.number().int().min(0, 'must be a non-negative integer')
 
 const BackendOptionsSchema = z.strictObject({
   fs: z.optional(FsOptionsSchema),
@@ -30,7 +32,7 @@ const BackendOptionsSchema = z.strictObject({
   router: z.optional(RouterOptionsSchema)
 })
 
-const ConfigSchema = z.strictObject({
+export const ConfigSchema = z.strictObject({
   // Set via the `--app-manifest` CLI flag; allowed in TOML for completeness.
   appManifest: z.optional(z.string()),
   server: z.optional(z.strictObject({
@@ -39,7 +41,13 @@ const ConfigSchema = z.strictObject({
     port: z.optional(port),
     dashboardPort: z.optional(port),
     fileUploadMaxBytes: z.optional(positiveInt),
+    // NOTE: validated for shape only; the logger currently reads `LOG_LEVEL`
+    // from the environment directly (see `src/serve/logger.ts`), so this key
+    // has no runtime effect yet.
     logLevel: z.optional(z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent'])),
+    // Deliberately loose: server messages are app-defined and passed verbatim
+    // to clients (see `routes.ts /serverMessages`), so only the array-of-objects
+    // shape is enforced, not the fields within each message.
     messages: z.optional(z.array(z.record(z.string(), z.unknown()))),
     maxEventsBatchSize: z.optional(positiveInt),
     archiveMode: z.optional(z.boolean()),
@@ -47,16 +55,16 @@ const ConfigSchema = z.strictObject({
       disabled: z.optional(z.boolean()),
       limit: z.optional(z.strictObject({
         disabled: z.optional(z.boolean()),
-        minute: z.optional(nonNegativeInt),
-        hour: z.optional(nonNegativeInt),
-        day: z.optional(nonNegativeInt)
-      })),
-      vapid: z.optional(z.strictObject({
-        email: z.optional(z.string())
+        // Positive (not merely non-negative) to match the runtime, which falls
+        // back to a default when these are falsy (see `routes.ts`), so `0`
+        // would be silently ignored rather than meaning "no signups".
+        minute: z.optional(positiveInt),
+        hour: z.optional(positiveInt),
+        day: z.optional(positiveInt)
       }))
     })),
-    // `vapid` may also appear directly under `server` (see `src/serve/vapid.ts`,
-    // which reads `server:vapid:email`). Both locations are accepted.
+    // The VAPID email is read from `server:vapid:email` at runtime
+    // (see `src/serve/vapid.ts`).
     vapid: z.optional(z.strictObject({
       email: z.optional(z.string())
     }))
@@ -70,10 +78,9 @@ const ConfigSchema = z.strictObject({
   }))
 })
 
-export type ChelConfig = z.infer<typeof ConfigSchema>
-
-// Damerau-Levenshtein distance, used to suggest the intended key name when an
-// unknown key looks like a typo of a known one.
+// Optimal String Alignment (restricted edit) distance with adjacent
+// transpositions, used to suggest the intended key name when an unknown key
+// looks like a typo of a known one.
 function editDistance (a: string, b: string): number {
   const m = a.length
   const n = b.length
@@ -157,26 +164,80 @@ export function validateTomlConfig (parsed: unknown): ValidationResult {
 // Returns the set of valid immediate child keys for a given path in the config
 // tree, used to generate typo suggestions. Keep in sync with `ConfigSchema`
 // above.
-function knownKeysFor (path: PropertyKey[]): string[] {
+export function knownKeysFor (path: PropertyKey[]): string[] {
+  // Keys *within* a router entry (`database.backendOptions.router.<prefix>`) are
+  // described by `RouterConfigEntrySchema`, which has a fixed shape even though
+  // the surrounding `z.record()` accepts arbitrary prefix keys. The prefix is
+  // the 4th path segment and may itself contain dots (e.g. `gi.contracts/`), so
+  // match on the path array rather than the joined string.
+  if (
+    path.length === 4 &&
+    path[0] === 'database' &&
+    path[1] === 'backendOptions' &&
+    path[2] === 'router'
+  ) {
+    return Object.keys(RouterConfigEntrySchema.shape)
+  }
   const joined = formatPath(path)
   switch (joined) {
     case '': return ['appManifest', 'server', 'database']
     case 'server':
       return ['appDir', 'host', 'port', 'dashboardPort', 'fileUploadMaxBytes', 'logLevel', 'messages', 'maxEventsBatchSize', 'archiveMode', 'signup', 'vapid']
     case 'server.signup':
-      return ['disabled', 'limit', 'vapid']
+      return ['disabled', 'limit']
     case 'server.signup.limit':
       return ['disabled', 'minute', 'hour', 'day']
     case 'server.vapid':
-    case 'server.signup.vapid':
       return ['email']
     case 'database':
       return ['backend', 'lruNumItems', 'backendOptions']
     case 'database.backendOptions':
       return ['fs', 'sqlite', 'redis', 'router']
+    case 'database.backendOptions.fs':
+      return ['dirname', 'depth', 'keyChunkLength', 'skipFsCaseSensitivityCheck']
+    case 'database.backendOptions.sqlite':
+      return ['filepath']
+    case 'database.backendOptions.redis':
+      return ['url']
+    // No case for `database.backendOptions.router` itself: it is a `z.record()`
+    // accepting arbitrary prefix keys, so the prefix level never produces
+    // unrecognized-key suggestions (its mandatory `*` fallback is enforced by a
+    // refine in `backend-schemas.ts`). Keys within each entry are handled by the
+    // guard at the top of this function.
     default:
       return []
   }
 }
 
-export default validateTomlConfig
+// Reads, parses, and validates a TOML config file against `ConfigSchema`.
+// Prints warnings for unknown keys and throws an `Error` (listing every
+// value-shape problem) on invalid values. A missing file is ignored, mirroring
+// nconf's behaviour. Exported so the file-level behaviour (ENOENT handling,
+// TOML parse errors and error aggregation) can be tested directly.
+export async function validateConfigFile (filePath: string): Promise<void> {
+  let raw: string
+  try {
+    raw = await readFile(filePath, { encoding: 'utf-8', flag: 'r' })
+  } catch (e: unknown) {
+    // No config file is the common case (e.g. for non-server commands); mirror
+    // nconf's behaviour and skip validation.
+    if ((e as NodeJS.ErrnoException)?.code === 'ENOENT') return
+    throw e
+  }
+
+  let parsed: unknown
+  try {
+    parsed = parse(raw)
+  } catch (e: unknown) {
+    throw new Error(`Could not parse ${filePath}: ${(e as Error).message}`)
+  }
+
+  const { warnings, errors } = validateTomlConfig(parsed)
+  for (const warning of warnings) {
+    console.warn(`[chel] ${filePath}: ${warning}`)
+  }
+  if (errors.length) {
+    const listing = errors.map((e) => `  - ${e}`).join('\n')
+    throw new Error(`Invalid ${filePath}:\n${listing}`)
+  }
+}

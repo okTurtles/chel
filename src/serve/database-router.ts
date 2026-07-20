@@ -37,6 +37,9 @@ export default class RouterBackend extends DatabaseBackend {
 
   validateConfig (config: Config): Array<{ msg: string; entry?: [string, ConfigEntry] }> {
     const errors = []
+    // The constructor's `ConfigSchema.parse()` already rejects a missing `*`,
+    // but this check is retained because `validateConfig` is public and may be
+    // called on its own (e.g. by tests) without a prior `.parse()`.
     if (!config['*']) {
       errors.push({ msg: 'Missing key: "*" (fallback storage is required)' })
     }

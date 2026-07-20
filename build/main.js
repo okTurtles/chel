@@ -3997,7 +3997,6 @@ var wrapTransaction = (fn, db2, { begin, commit, rollback, savepoint, release, r
 import { Buffer as Buffer11 } from "node:buffer";
 import { mkdir as mkdir2 } from "node:fs/promises";
 import { basename as basename22, dirname as dirname22, join as join32, resolve as resolve32 } from "node:path";
-import { readFile as readFile4 } from "node:fs/promises";
 import process12 from "node:process";
 import { Buffer as Buffer12 } from "node:buffer";
 import process2 from "node:process";
@@ -4135,6 +4134,7 @@ import { basename as basename62, dirname as dirname72, extname as extname8, rela
 import { readFileSync as readFileSync2, statSync as statSync2, writeFile as writeFile3 } from "node:fs";
 import { format as format32 } from "node:util";
 import { resolve as resolve62 } from "node:path";
+import { readFile as readFile4 } from "node:fs/promises";
 var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -24932,6 +24932,7 @@ var init_db_errors = __esm({
 var FsOptionsSchema;
 var SqliteOptionsSchema;
 var RedisOptionsSchema;
+var routerBackendName;
 var RouterConfigEntrySchema;
 var RouterOptionsSchema;
 var init_backend_schemas = __esm({
@@ -24940,8 +24941,8 @@ var init_backend_schemas = __esm({
     init_zod();
     FsOptionsSchema = strictObject({
       dirname: optional(string2()),
-      depth: optional(number2()),
-      keyChunkLength: optional(number2()),
+      depth: optional(number2().int().min(0)),
+      keyChunkLength: optional(number2().int().positive()),
       skipFsCaseSensitivityCheck: optional(boolean2())
     });
     SqliteOptionsSchema = strictObject({
@@ -24953,8 +24954,11 @@ var init_backend_schemas = __esm({
         error: '"url" must begin with redis://, rediss://, or unix://'
       }))
     });
+    routerBackendName = _enum(["fs", "sqlite", "redis"], {
+      error: '"name" must be one of: fs, sqlite, redis (router backends cannot be nested)'
+    });
     RouterConfigEntrySchema = strictObject({
-      name: string2(),
+      name: routerBackendName,
       options: object()
     });
     RouterOptionsSchema = record(string2(), RouterConfigEntrySchema).refine(
@@ -50903,6 +50907,38 @@ var init_database_router_test = __esm({
           delete config2["*"].name;
           const errors2 = db.validateConfig(config2);
           if (errors2.length !== 1) throw new Error(`Expected 1 error but got ${errors2.length}`);
+        });
+      }
+    });
+    Deno.test({
+      name: "DatabaseRouter::constructor",
+      async fn(t) {
+        await t.step('rejects a config missing the "*" fallback', () => {
+          let threw = false;
+          try {
+            new RouterBackend({ "gi.contracts/": { name: "fs", options: {} } });
+          } catch {
+            threw = true;
+          }
+          if (!threw) throw new Error('Expected the constructor to throw on a missing "*" entry');
+        });
+        await t.step("rejects a config whose entry options are not an object", () => {
+          let threw = false;
+          try {
+            new RouterBackend({ "*": { name: "fs", options: "not-an-object" } });
+          } catch {
+            threw = true;
+          }
+          if (!threw) throw new Error("Expected the constructor to throw on non-object options");
+        });
+        await t.step("rejects a config with an unknown backend name", () => {
+          let threw = false;
+          try {
+            new RouterBackend({ "*": { name: "mongodb", options: {} } });
+          } catch {
+            threw = true;
+          }
+          if (!threw) throw new Error("Expected the constructor to throw on an unknown backend name");
         });
       }
     });
@@ -81182,7 +81218,6 @@ init_zod();
 init_backend_schemas();
 var port = number2().int().min(1, "must be an integer between 1 and 65535").max(65535, "must be an integer between 1 and 65535");
 var positiveInt = number2().int().positive("must be a positive integer");
-var nonNegativeInt = number2().int().min(0, "must be a non-negative integer");
 var BackendOptionsSchema = strictObject({
   fs: optional(FsOptionsSchema),
   sqlite: optional(SqliteOptionsSchema),
@@ -81198,7 +81233,13 @@ var ConfigSchema = strictObject({
     port: optional(port),
     dashboardPort: optional(port),
     fileUploadMaxBytes: optional(positiveInt),
+    // NOTE: validated for shape only; the logger currently reads `LOG_LEVEL`
+    // from the environment directly (see `src/serve/logger.ts`), so this key
+    // has no runtime effect yet.
     logLevel: optional(_enum(["trace", "debug", "info", "warn", "error", "fatal", "silent"])),
+    // Deliberately loose: server messages are app-defined and passed verbatim
+    // to clients (see `routes.ts /serverMessages`), so only the array-of-objects
+    // shape is enforced, not the fields within each message.
     messages: optional(array(record(string2(), unknown()))),
     maxEventsBatchSize: optional(positiveInt),
     archiveMode: optional(boolean2()),
@@ -81206,16 +81247,16 @@ var ConfigSchema = strictObject({
       disabled: optional(boolean2()),
       limit: optional(strictObject({
         disabled: optional(boolean2()),
-        minute: optional(nonNegativeInt),
-        hour: optional(nonNegativeInt),
-        day: optional(nonNegativeInt)
-      })),
-      vapid: optional(strictObject({
-        email: optional(string2())
+        // Positive (not merely non-negative) to match the runtime, which falls
+        // back to a default when these are falsy (see `routes.ts`), so `0`
+        // would be silently ignored rather than meaning "no signups".
+        minute: optional(positiveInt),
+        hour: optional(positiveInt),
+        day: optional(positiveInt)
       }))
     })),
-    // `vapid` may also appear directly under `server` (see `src/serve/vapid.ts`,
-    // which reads `server:vapid:email`). Both locations are accepted.
+    // The VAPID email is read from `server:vapid:email` at runtime
+    // (see `src/serve/vapid.ts`).
     vapid: optional(strictObject({
       email: optional(string2())
     }))
@@ -81288,6 +81329,9 @@ function validateTomlConfig(parsed) {
   return { warnings, errors: errors2 };
 }
 function knownKeysFor(path8) {
+  if (path8.length === 4 && path8[0] === "database" && path8[1] === "backendOptions" && path8[2] === "router") {
+    return Object.keys(RouterConfigEntrySchema.shape);
+  }
   const joined = formatPath(path8);
   switch (joined) {
     case "":
@@ -81295,56 +81339,30 @@ function knownKeysFor(path8) {
     case "server":
       return ["appDir", "host", "port", "dashboardPort", "fileUploadMaxBytes", "logLevel", "messages", "maxEventsBatchSize", "archiveMode", "signup", "vapid"];
     case "server.signup":
-      return ["disabled", "limit", "vapid"];
+      return ["disabled", "limit"];
     case "server.signup.limit":
       return ["disabled", "minute", "hour", "day"];
     case "server.vapid":
-    case "server.signup.vapid":
       return ["email"];
     case "database":
       return ["backend", "lruNumItems", "backendOptions"];
     case "database.backendOptions":
       return ["fs", "sqlite", "redis", "router"];
+    case "database.backendOptions.fs":
+      return ["dirname", "depth", "keyChunkLength", "skipFsCaseSensitivityCheck"];
+    case "database.backendOptions.sqlite":
+      return ["filepath"];
+    case "database.backendOptions.redis":
+      return ["url"];
+    // No case for `database.backendOptions.router` itself: it is a `z.record()`
+    // accepting arbitrary prefix keys, so the prefix level never produces
+    // unrecognized-key suggestions (its mandatory `*` fallback is enforced by a
+    // refine in `backend-schemas.ts`). Keys within each entry are handled by the
+    // guard at the top of this function.
     default:
       return [];
   }
 }
-var parseConfig = async () => {
-  import_npm_nconf8.default.env({
-    separator: "__",
-    parseValues: true
-  }).argv(parseArgs_default()).file({ file: "chel.toml", format: { parse: parse8, stringify } }).defaults({
-    server: {
-      appDir: ".",
-      host: "0.0.0.0",
-      port: 8e3,
-      dashboardPort: 8888,
-      fileUploadMaxBytes: 31457280,
-      signup: {
-        disabled: false,
-        limit: {
-          disabled: false,
-          minute: 2,
-          hour: 10,
-          day: 50
-        },
-        vapid: {
-          email: void 0
-        }
-      },
-      logLevel: "debug",
-      messages: [],
-      maxEventsBatchSize: 500,
-      archiveMode: false
-    },
-    database: {
-      lruNumItems: 1e4,
-      backend: "mem",
-      backendOptions: {}
-    }
-  });
-  await validateConfigFile("chel.toml");
-};
 async function validateConfigFile(filePath) {
   let raw2;
   try {
@@ -81369,6 +81387,40 @@ async function validateConfigFile(filePath) {
 ${listing}`);
   }
 }
+var nconfDefaults = {
+  server: {
+    appDir: ".",
+    host: "0.0.0.0",
+    port: 8e3,
+    dashboardPort: 8888,
+    fileUploadMaxBytes: 31457280,
+    signup: {
+      disabled: false,
+      limit: {
+        disabled: false,
+        minute: 2,
+        hour: 10,
+        day: 50
+      }
+    },
+    logLevel: "debug",
+    messages: [],
+    maxEventsBatchSize: 500,
+    archiveMode: false
+  },
+  database: {
+    lruNumItems: 1e4,
+    backend: "mem",
+    backendOptions: {}
+  }
+};
+var parseConfig = async () => {
+  import_npm_nconf8.default.env({
+    separator: "__",
+    parseValues: true
+  }).argv(parseArgs_default()).file({ file: "chel.toml", format: { parse: parse8, stringify } }).defaults(nconfDefaults);
+  await validateConfigFile("chel.toml");
+};
 var parseConfig_default = parseConfig;
 init_utils();
 try {

@@ -52,6 +52,42 @@ Deno.test({
 })
 
 Deno.test({
+  name: 'DatabaseRouter::constructor',
+  async fn (t: Deno.TestContext) {
+    await t.step('rejects a config missing the "*" fallback', () => {
+      let threw = false
+      try {
+        new RouterBackend({ 'gi.contracts/': { name: 'fs', options: {} } })
+      } catch {
+        threw = true
+      }
+      if (!threw) throw new Error('Expected the constructor to throw on a missing "*" entry')
+    })
+
+    await t.step('rejects a config whose entry options are not an object', () => {
+      let threw = false
+      try {
+        // @ts-expect-error: intentionally invalid, options must be an object
+        new RouterBackend({ '*': { name: 'fs', options: 'not-an-object' } })
+      } catch {
+        threw = true
+      }
+      if (!threw) throw new Error('Expected the constructor to throw on non-object options')
+    })
+
+    await t.step('rejects a config with an unknown backend name', () => {
+      let threw = false
+      try {
+        new RouterBackend({ '*': { name: 'mongodb', options: {} } })
+      } catch {
+        threw = true
+      }
+      if (!threw) throw new Error('Expected the constructor to throw on an unknown backend name')
+    })
+  }
+})
+
+Deno.test({
   name: 'DatabaseRouter::lookupBackend',
   async fn (t: Deno.TestContext) {
     // Setup

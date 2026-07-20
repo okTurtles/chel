@@ -10,8 +10,8 @@ import * as z from 'npm:zod'
 
 export const FsOptionsSchema = z.strictObject({
   dirname: z.optional(z.string()),
-  depth: z.optional(z.number()),
-  keyChunkLength: z.optional(z.number()),
+  depth: z.optional(z.number().int().min(0)),
+  keyChunkLength: z.optional(z.number().int().positive()),
   skipFsCaseSensitivityCheck: z.optional(z.boolean())
 })
 
@@ -26,8 +26,12 @@ export const RedisOptionsSchema = z.strictObject({
   }))
 })
 
+const routerBackendName = z.enum(['fs', 'sqlite', 'redis'], {
+  error: '"name" must be one of: fs, sqlite, redis (router backends cannot be nested)'
+})
+
 export const RouterConfigEntrySchema = z.strictObject({
-  name: z.string(),
+  name: routerBackendName,
   options: z.object()
 })
 
