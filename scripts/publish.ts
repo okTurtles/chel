@@ -1,5 +1,11 @@
 #!/usr/bin/env -S deno run --allow-run --allow-read --allow-write=./dist,./package.json --allow-env
 
+// When: Automatically invoked by `npm publish` via the "prepublishOnly"
+//       script in package.json. Runs just before the main package is
+//       published to the npm registry.
+//
+// How:  deno task publish
+//
 // Pre-publish helper for @chelonia/cli.
 //
 // Wired into `npm publish` via the `prepublishOnly` npm script (see package.json),

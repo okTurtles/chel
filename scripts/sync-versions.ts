@@ -1,5 +1,11 @@
 #!/usr/bin/env -S deno run --allow-read=. --allow-write=. --allow-run
 
+// When: Automatically invoked by `npm version` via the "version" lifecycle
+//       hook in package.json, so it runs every time you bump the version
+//       (e.g. `npm version patch`). Rarely needs to be called by hand.
+//
+// How:  deno task sync-versions
+//
 // Keeps `optionalDependencies` in lockstep with the top-level `version` field
 // and the set of compilation TARGETS in package.json.
 //

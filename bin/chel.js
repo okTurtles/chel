@@ -41,7 +41,7 @@ try {
     `chel: no binary for ${process.platform}/${process.arch}. ` +
     `The platform package '${subPkgName}' is not installed. ` +
     `This platform may be unsupported; see ` +
-    `https://github.com/okTurtles/chel for the list of supported targets.`
+    `https://github.com/okTurtles/chel#supported-platforms for the list of supported platforms.`
   )
   process.exit(127)
 }
