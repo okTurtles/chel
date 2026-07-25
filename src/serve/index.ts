@@ -4,6 +4,8 @@ import 'npm:@sbp/okturtles.eventqueue'
 import 'npm:@sbp/okturtles.events'
 import sbp from 'npm:@sbp/sbp'
 import chalk from 'npm:chalk'
+// @deno-types="npm:@types/nconf"
+import nconf from 'npm:nconf'
 import { SERVER_EXITING, SERVER_RUNNING } from './events.ts'
 import { startServer as startServerImpl, stopServer } from './server.ts'
 import { initializeLogger } from './logger.ts'
@@ -109,6 +111,15 @@ export async function startServer (options: StartServerOptions = {}): Promise<{ 
 
   // Initialize pino logger (replaces console.* methods)
   initializeLogger()
+
+  // server.logLevel is validated in chel.toml but the logger reads LOG_LEVEL
+  // from the environment. Warn so users aren't silently surprised.
+  if (nconf.get('server:logLevel') && !process.env.LOG_LEVEL) {
+    console.warn(
+      '[chel] Note: server.logLevel in chel.toml has no effect; ' +
+      'set the LOG_LEVEL environment variable instead.'
+    )
+  }
 
   console.info(chalk.bold(
     `Running in ${process.env.NODE_ENV === 'production' ? 'production' : 'development'} mode.`

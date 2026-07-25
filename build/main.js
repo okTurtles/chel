@@ -728,11 +728,11 @@ function resolve(...pathSegments) {
     let path;
     if (i2 >= 0) path = pathSegments[i2];
     else {
-      const { Deno: Deno3 } = globalThis;
-      if (typeof Deno3?.cwd !== "function") {
+      const { Deno: Deno4 } = globalThis;
+      if (typeof Deno4?.cwd !== "function") {
         throw new TypeError("Resolved a relative path without a current working directory (CWD)");
       }
-      path = Deno3.cwd();
+      path = Deno4.cwd();
     }
     assertPath(path);
     if (path.length === 0) {
@@ -821,19 +821,19 @@ function resolve2(...pathSegments) {
   let resolvedAbsolute = false;
   for (let i2 = pathSegments.length - 1; i2 >= -1; i2--) {
     let path;
-    const { Deno: Deno3 } = globalThis;
+    const { Deno: Deno4 } = globalThis;
     if (i2 >= 0) {
       path = pathSegments[i2];
     } else if (!resolvedDevice) {
-      if (typeof Deno3?.cwd !== "function") {
+      if (typeof Deno4?.cwd !== "function") {
         throw new TypeError("Resolved a drive-letter-less path without a current working directory (CWD)");
       }
-      path = Deno3.cwd();
+      path = Deno4.cwd();
     } else {
-      if (typeof Deno3?.env?.get !== "function" || typeof Deno3?.cwd !== "function") {
+      if (typeof Deno4?.env?.get !== "function" || typeof Deno4?.cwd !== "function") {
         throw new TypeError("Resolved a relative path without a current working directory (CWD)");
       }
-      path = Deno3.cwd();
+      path = Deno4.cwd();
       if (path === void 0 || path.slice(0, 3).toLowerCase() !== `${resolvedDevice.toLowerCase()}\\`) {
         path = `${resolvedDevice}\\`;
       }
@@ -1607,11 +1607,11 @@ function resolve6(...pathSegments) {
     let path;
     if (i2 >= 0) path = pathSegments[i2];
     else {
-      const { Deno: Deno3 } = globalThis;
-      if (typeof Deno3?.cwd !== "function") {
+      const { Deno: Deno4 } = globalThis;
+      if (typeof Deno4?.cwd !== "function") {
         throw new TypeError("Resolved a relative path without a current working directory (CWD)");
       }
-      path = Deno3.cwd();
+      path = Deno4.cwd();
     }
     assertPath3(path);
     if (path.length === 0) {
@@ -1635,19 +1635,19 @@ function resolve7(...pathSegments) {
   let resolvedAbsolute = false;
   for (let i2 = pathSegments.length - 1; i2 >= -1; i2--) {
     let path;
-    const { Deno: Deno3 } = globalThis;
+    const { Deno: Deno4 } = globalThis;
     if (i2 >= 0) {
       path = pathSegments[i2];
     } else if (!resolvedDevice) {
-      if (typeof Deno3?.cwd !== "function") {
+      if (typeof Deno4?.cwd !== "function") {
         throw new TypeError("Resolved a drive-letter-less path without a current working directory (CWD)");
       }
-      path = Deno3.cwd();
+      path = Deno4.cwd();
     } else {
-      if (typeof Deno3?.env?.get !== "function" || typeof Deno3?.cwd !== "function") {
+      if (typeof Deno4?.env?.get !== "function" || typeof Deno4?.cwd !== "function") {
         throw new TypeError("Resolved a relative path without a current working directory (CWD)");
       }
-      path = Deno3.cwd();
+      path = Deno4.cwd();
       if (path === void 0 || path.slice(0, 3).toLowerCase() !== `${resolvedDevice.toLowerCase()}\\`) {
         path = `${resolvedDevice}\\`;
       }
@@ -3997,6 +3997,112 @@ var wrapTransaction = (fn, db2, { begin, commit, rollback, savepoint, release, r
 import { Buffer as Buffer11 } from "node:buffer";
 import { mkdir as mkdir2 } from "node:fs/promises";
 import { basename as basename22, dirname as dirname22, join as join32, resolve as resolve32 } from "node:path";
+
+// deno:https://jsr.io/@std/assert/1.0.13/assertion_error.ts
+var AssertionError = class extends Error {
+  /** Constructs a new instance.
+   *
+   * @param message The error message.
+   * @param options Additional options. This argument is still unstable. It may change in the future release.
+   */
+  constructor(message, options2) {
+    super(message, options2);
+    this.name = "AssertionError";
+  }
+};
+
+// deno:https://jsr.io/@std/assert/1.0.13/equal.ts
+var Temporal = globalThis.Temporal ?? new Proxy({}, {
+  get: () => {
+  }
+});
+var stringComparablePrototypes = new Set([
+  Intl.Locale,
+  RegExp,
+  Temporal.Duration,
+  Temporal.Instant,
+  Temporal.PlainDate,
+  Temporal.PlainDateTime,
+  Temporal.PlainTime,
+  Temporal.PlainYearMonth,
+  Temporal.PlainMonthDay,
+  Temporal.ZonedDateTime,
+  URL,
+  URLSearchParams
+].filter((x3) => x3 != null).map((x3) => x3.prototype));
+var TypedArray = Object.getPrototypeOf(Uint8Array);
+
+// deno:https://jsr.io/@std/internal/1.0.12/styles.ts
+var { Deno: Deno3 } = globalThis;
+var noColor2 = typeof Deno3?.noColor === "boolean" ? Deno3.noColor : false;
+var ANSI_PATTERN2 = new RegExp([
+  "[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)",
+  "(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TXZcf-nq-uy=><~]))"
+].join("|"), "g");
+function stripAnsiCode(string3) {
+  return string3.replace(ANSI_PATTERN2, "");
+}
+
+// deno:https://jsr.io/@std/assert/1.0.13/is_error.ts
+function assertIsError(error2, ErrorClass, msgMatches, msg) {
+  const msgSuffix = msg ? `: ${msg}` : ".";
+  if (!(error2 instanceof Error)) {
+    throw new AssertionError(`Expected "error" to be an Error object${msgSuffix}`);
+  }
+  if (ErrorClass && !(error2 instanceof ErrorClass)) {
+    msg = `Expected error to be instance of "${ErrorClass.name}", but was "${error2?.constructor?.name}"${msgSuffix}`;
+    throw new AssertionError(msg);
+  }
+  let msgCheck;
+  if (typeof msgMatches === "string") {
+    msgCheck = stripAnsiCode(error2.message).includes(stripAnsiCode(msgMatches));
+  }
+  if (msgMatches instanceof RegExp) {
+    msgCheck = msgMatches.test(stripAnsiCode(error2.message));
+  }
+  if (msgMatches && !msgCheck) {
+    msg = `Expected error message to include ${msgMatches instanceof RegExp ? msgMatches.toString() : JSON.stringify(msgMatches)}, but got ${JSON.stringify(error2?.message)}${msgSuffix}`;
+    throw new AssertionError(msg);
+  }
+}
+
+// deno:https://jsr.io/@std/assert/1.0.13/throws.ts
+function assertThrows(fn, errorClassOrMsg, msgIncludesOrMsg, msg) {
+  let ErrorClass;
+  let msgIncludes;
+  let err;
+  if (typeof errorClassOrMsg !== "string") {
+    if (errorClassOrMsg === void 0 || errorClassOrMsg?.prototype instanceof Error || errorClassOrMsg?.prototype === Error.prototype) {
+      ErrorClass = errorClassOrMsg;
+      msgIncludes = msgIncludesOrMsg;
+    } else {
+      msg = msgIncludesOrMsg;
+    }
+  } else {
+    msg = errorClassOrMsg;
+  }
+  let doesThrow = false;
+  const msgSuffix = msg ? `: ${msg}` : ".";
+  try {
+    fn();
+  } catch (error2) {
+    if (ErrorClass) {
+      if (error2 instanceof Error === false) {
+        throw new AssertionError(`A non-Error object was thrown${msgSuffix}`);
+      }
+      assertIsError(error2, ErrorClass, msgIncludes, msg);
+    }
+    err = error2;
+    doesThrow = true;
+  }
+  if (!doesThrow) {
+    msg = `Expected function to throw${msgSuffix}`;
+    throw new AssertionError(msg);
+  }
+  return err;
+}
+
+// build/main.js-tmp
 import process12 from "node:process";
 import { Buffer as Buffer12 } from "node:buffer";
 import process2 from "node:process";
@@ -8276,15 +8382,15 @@ var require_conversions = __commonJS({
       const g2 = rgb[1] / 255;
       const b = rgb[2] / 255;
       const v2 = Math.max(r, g2, b);
-      const diff = v2 - Math.min(r, g2, b);
+      const diff2 = v2 - Math.min(r, g2, b);
       const diffc = function(c) {
-        return (v2 - c) / 6 / diff + 1 / 2;
+        return (v2 - c) / 6 / diff2 + 1 / 2;
       };
-      if (diff === 0) {
+      if (diff2 === 0) {
         h2 = 0;
         s = 0;
       } else {
-        s = diff / v2;
+        s = diff2 / v2;
         rdif = diffc(r);
         gdif = diffc(g2);
         bdif = diffc(b);
@@ -8841,17 +8947,17 @@ var require_conversions = __commonJS({
       return [0, 0, args[0]];
     };
     convert.gray.hsv = convert.gray.hsl;
-    convert.gray.hwb = function(gray2) {
-      return [0, 100, gray2[0]];
+    convert.gray.hwb = function(gray22) {
+      return [0, 100, gray22[0]];
     };
-    convert.gray.cmyk = function(gray2) {
-      return [0, 0, 0, gray2[0]];
+    convert.gray.cmyk = function(gray22) {
+      return [0, 0, 0, gray22[0]];
     };
-    convert.gray.lab = function(gray2) {
-      return [gray2[0], 0, 0];
+    convert.gray.lab = function(gray22) {
+      return [gray22[0], 0, 0];
     };
-    convert.gray.hex = function(gray2) {
-      const val = Math.round(gray2[0] / 100 * 255) & 255;
+    convert.gray.hex = function(gray22) {
+      const val = Math.round(gray22[0] / 100 * 255) & 255;
       const integer2 = (val << 16) + (val << 8) + val;
       const string3 = integer2.toString(16).toUpperCase();
       return "000000".substring(string3.length) + string3;
@@ -12771,29 +12877,29 @@ var require_nconf = __commonJS({
   "node_modules/.deno/nconf@0.13.0/node_modules/nconf/lib/nconf.js"(exports2, module14) {
     var common4 = require_common();
     var Provider = require_provider().Provider;
-    var nconf9 = module14.exports = new Provider();
-    nconf9.version = require_package().version;
-    nconf9.__defineGetter__("Argv", function() {
+    var nconf10 = module14.exports = new Provider();
+    nconf10.version = require_package().version;
+    nconf10.__defineGetter__("Argv", function() {
       return require_argv().Argv;
     });
-    nconf9.__defineGetter__("Env", function() {
+    nconf10.__defineGetter__("Env", function() {
       return require_env().Env;
     });
-    nconf9.__defineGetter__("File", function() {
+    nconf10.__defineGetter__("File", function() {
       return require_file().File;
     });
-    nconf9.__defineGetter__("Literal", function() {
+    nconf10.__defineGetter__("Literal", function() {
       return require_literal().Literal;
     });
-    nconf9.__defineGetter__("Memory", function() {
+    nconf10.__defineGetter__("Memory", function() {
       return require_memory().Memory;
     });
-    nconf9.key = common4.key;
-    nconf9.path = common4.path;
-    nconf9.loadFiles = common4.loadFiles;
-    nconf9.loadFilesSync = common4.loadFilesSync;
-    nconf9.formats = require_formats();
-    nconf9.Provider = Provider;
+    nconf10.key = common4.key;
+    nconf10.path = common4.path;
+    nconf10.loadFiles = common4.loadFiles;
+    nconf10.loadFilesSync = common4.loadFilesSync;
+    nconf10.formats = require_formats();
+    nconf10.Provider = Provider;
   }
 });
 // @__NO_SIDE_EFFECTS__
@@ -14300,9 +14406,11 @@ var $ZodNever;
 var $ZodArray;
 var $ZodObject;
 var $ZodUnion;
+var $ZodDiscriminatedUnion;
 var $ZodIntersection;
 var $ZodRecord;
 var $ZodEnum;
+var $ZodLiteral;
 var $ZodTransform;
 var $ZodOptional;
 var $ZodNullable;
@@ -14968,6 +15076,70 @@ var init_schemas = __esm({
         });
       };
     });
+    $ZodDiscriminatedUnion = /* @__PURE__ */ $constructor("$ZodDiscriminatedUnion", (inst, def) => {
+      $ZodUnion.init(inst, def);
+      const _super = inst._zod.parse;
+      defineLazy(inst._zod, "propValues", () => {
+        const propValues = {};
+        for (const option of def.options) {
+          const pv = option._zod.propValues;
+          if (!pv || Object.keys(pv).length === 0)
+            throw new Error(`Invalid discriminated union option at index "${def.options.indexOf(option)}"`);
+          for (const [k, v2] of Object.entries(pv)) {
+            if (!propValues[k])
+              propValues[k] = /* @__PURE__ */ new Set();
+            for (const val of v2) {
+              propValues[k].add(val);
+            }
+          }
+        }
+        return propValues;
+      });
+      const disc = cached(() => {
+        const opts = def.options;
+        const map = /* @__PURE__ */ new Map();
+        for (const o2 of opts) {
+          const values = o2._zod.propValues?.[def.discriminator];
+          if (!values || values.size === 0)
+            throw new Error(`Invalid discriminated union option at index "${def.options.indexOf(o2)}"`);
+          for (const v2 of values) {
+            if (map.has(v2)) {
+              throw new Error(`Duplicate discriminator value "${String(v2)}"`);
+            }
+            map.set(v2, o2);
+          }
+        }
+        return map;
+      });
+      inst._zod.parse = (payload, ctx) => {
+        const input = payload.value;
+        if (!isObject(input)) {
+          payload.issues.push({
+            code: "invalid_type",
+            expected: "object",
+            input,
+            inst
+          });
+          return payload;
+        }
+        const opt = disc.value.get(input?.[def.discriminator]);
+        if (opt) {
+          return opt._zod.run(payload, ctx);
+        }
+        if (def.unionFallback) {
+          return _super(payload, ctx);
+        }
+        payload.issues.push({
+          code: "invalid_union",
+          errors: [],
+          note: "No matching discriminator",
+          input,
+          path: [def.discriminator],
+          inst
+        });
+        return payload;
+      };
+    });
     $ZodIntersection = /* @__PURE__ */ $constructor("$ZodIntersection", (inst, def) => {
       $ZodType.init(inst, def);
       inst._zod.parse = (payload, ctx) => {
@@ -15089,6 +15261,24 @@ var init_schemas = __esm({
         payload.issues.push({
           code: "invalid_value",
           values,
+          input,
+          inst
+        });
+        return payload;
+      };
+    });
+    $ZodLiteral = /* @__PURE__ */ $constructor("$ZodLiteral", (inst, def) => {
+      $ZodType.init(inst, def);
+      inst._zod.values = new Set(def.values);
+      inst._zod.pattern = new RegExp(`^(${def.values.map((o2) => typeof o2 === "string" ? escapeRegex(o2) : o2 ? o2.toString() : String(o2)).join("|")})$`);
+      inst._zod.parse = (payload, _ctx) => {
+        const input = payload.value;
+        if (inst._zod.values.has(input)) {
+          return payload;
+        }
+        payload.issues.push({
+          code: "invalid_value",
+          values: def.values,
           input,
           inst
         });
@@ -16121,6 +16311,14 @@ function union(options2, params) {
     ...util_exports.normalizeParams(params)
   });
 }
+function discriminatedUnion(discriminator, options2, params) {
+  return new ZodDiscriminatedUnion({
+    type: "union",
+    options: options2,
+    discriminator,
+    ...util_exports.normalizeParams(params)
+  });
+}
 function intersection(left2, right2) {
   return new ZodIntersection({
     type: "intersection",
@@ -16141,6 +16339,13 @@ function _enum(values, params) {
   return new ZodEnum({
     type: "enum",
     entries,
+    ...util_exports.normalizeParams(params)
+  });
+}
+function literal(value, params) {
+  return new ZodLiteral({
+    type: "literal",
+    values: Array.isArray(value) ? value : [value],
     ...util_exports.normalizeParams(params)
   });
 }
@@ -16270,9 +16475,11 @@ var ZodNever;
 var ZodArray;
 var ZodObject;
 var ZodUnion;
+var ZodDiscriminatedUnion;
 var ZodIntersection;
 var ZodRecord;
 var ZodEnum;
+var ZodLiteral;
 var ZodTransform;
 var ZodOptional;
 var ZodNullable;
@@ -16565,6 +16772,10 @@ var init_schemas2 = __esm({
       ZodType.init(inst, def);
       inst.options = def.options;
     });
+    ZodDiscriminatedUnion = /* @__PURE__ */ $constructor("ZodDiscriminatedUnion", (inst, def) => {
+      ZodUnion.init(inst, def);
+      $ZodDiscriminatedUnion.init(inst, def);
+    });
     ZodIntersection = /* @__PURE__ */ $constructor("ZodIntersection", (inst, def) => {
       $ZodIntersection.init(inst, def);
       ZodType.init(inst, def);
@@ -16611,6 +16822,19 @@ var init_schemas2 = __esm({
           entries: newEntries
         });
       };
+    });
+    ZodLiteral = /* @__PURE__ */ $constructor("ZodLiteral", (inst, def) => {
+      $ZodLiteral.init(inst, def);
+      ZodType.init(inst, def);
+      inst.values = new Set(def.values);
+      Object.defineProperty(inst, "value", {
+        get() {
+          if (def.values.length > 1) {
+            throw new Error("This schema contains multiple valid literal values. Use `.values` instead.");
+          }
+          return def.values[0];
+        }
+      });
     });
     ZodTransform = /* @__PURE__ */ $constructor("ZodTransform", (inst, def) => {
       $ZodTransform.init(inst, def);
@@ -18624,7 +18848,7 @@ var init_interface = __esm({
   "node_modules/.deno/@chelonia+multiformats@1.0.0/node_modules/@chelonia/multiformats/dist/esm/link/interface.mjs"() {
   }
 });
-function format7(link, base2) {
+function format8(link, base2) {
   const { bytes, version: version3 } = link;
   switch (version3) {
     case 0:
@@ -18791,10 +19015,10 @@ var init_cid = __esm({
         return unknown2 != null && self2.code === unknown2.code && self2.version === unknown2.version && equals2(self2.multihash, unknown2.multihash);
       }
       toString(base2) {
-        return format7(this, base2);
+        return format8(this, base2);
       }
       toJSON() {
-        return { "/": format7(this) };
+        return { "/": format8(this) };
       }
       link() {
         return this;
@@ -22600,8 +22824,8 @@ var init_esm7 = __esm({
       const registry2 = new FinalizationRegistry((heldValue) => {
         heldValue.close();
       });
-      return (fn, port2) => {
-        registry2.register(fn, port2);
+      return (fn, port) => {
+        registry2.register(fn, port);
       };
     })();
     serializer = (data, noFn) => {
@@ -22682,7 +22906,7 @@ var init_esm7 = __esm({
                   try {
                     ev.data[0].postMessage([true, data2], transferables2);
                   } catch (e2) {
-                    revokables2.forEach((port2) => port2.close());
+                    revokables2.forEach((port) => port.close());
                     throw e2;
                   }
                 } catch (e2) {
@@ -22721,7 +22945,7 @@ var init_esm7 = __esm({
           revokables: Array.from(revokables)
         };
       } catch (e2) {
-        revokables.forEach((port2) => port2.close());
+        revokables.forEach((port) => port.close());
         throw e2;
       }
     };
@@ -22791,7 +23015,7 @@ var init_esm7 = __esm({
                       reject(e2);
                     } finally {
                       rcvPort.close();
-                      revokables.forEach((port2) => port2.close());
+                      revokables.forEach((port) => port.close());
                     }
                   };
                   rcvPort.onmessageerror = () => {
@@ -22799,14 +23023,14 @@ var init_esm7 = __esm({
                       reject(new Error("Message error"));
                     } finally {
                       rcvPort.close();
-                      revokables.forEach((port2) => port2.close());
+                      revokables.forEach((port) => port.close());
                     }
                   };
                   try {
                     mp.postMessage([sendingPort, data2], [sendingPort, ...transferables]);
                   } catch (e2) {
                     rcvPort.close();
-                    revokables.forEach((port2) => port2.close());
+                    revokables.forEach((port) => port.close());
                     reject(e2);
                   }
                 });
@@ -24932,7 +25156,6 @@ var init_db_errors = __esm({
 var FsOptionsSchema;
 var SqliteOptionsSchema;
 var RedisOptionsSchema;
-var routerBackendName;
 var RouterConfigEntrySchema;
 var RouterOptionsSchema;
 var init_backend_schemas = __esm({
@@ -24954,13 +25177,11 @@ var init_backend_schemas = __esm({
         error: '"url" must begin with redis://, rediss://, or unix://'
       }))
     });
-    routerBackendName = _enum(["fs", "sqlite", "redis"], {
-      error: '"name" must be one of: fs, sqlite, redis (router backends cannot be nested)'
-    });
-    RouterConfigEntrySchema = strictObject({
-      name: routerBackendName,
-      options: object()
-    });
+    RouterConfigEntrySchema = discriminatedUnion("name", [
+      strictObject({ name: literal("fs"), options: FsOptionsSchema }),
+      strictObject({ name: literal("sqlite"), options: SqliteOptionsSchema }),
+      strictObject({ name: literal("redis"), options: RedisOptionsSchema })
+    ]);
     RouterOptionsSchema = record(string2(), RouterConfigEntrySchema).refine(
       (v2) => "*" in v2,
       { error: 'router backend requires a "*" (fallback) entry' }
@@ -28094,8 +28315,8 @@ var require_CLUSTER_MEET = __commonJS({
        * @param host - Host name or IP address of the node
        * @param port - TCP port of the node
        */
-      parseCommand(parser3, host, port2) {
-        parser3.push("CLUSTER", "MEET", host, port2.toString());
+      parseCommand(parser3, host, port) {
+        parser3.push("CLUSTER", "MEET", host, port.toString());
       },
       transformReply: void 0
     };
@@ -28307,10 +28528,10 @@ var require_CLUSTER_SLOTS = __commonJS({
       }
     };
     function transformNode(node) {
-      const [host, port2, id] = node;
+      const [host, port, id] = node;
       return {
         host,
-        port: port2,
+        port,
         id
       };
     }
@@ -32090,8 +32311,8 @@ var require_MIGRATE = __commonJS({
        * @param options - Optional parameters including COPY, REPLACE, and AUTH
        * @see https://redis.io/commands/migrate/
        */
-      parseCommand(parser3, host, port2, key, destinationDb, timeout, options2) {
-        parser3.push("MIGRATE", host, port2.toString());
+      parseCommand(parser3, host, port, key, destinationDb, timeout, options2) {
+        parser3.push("MIGRATE", host, port.toString());
         const isKeyArray = Array.isArray(key);
         if (isKeyArray) {
           parser3.push("");
@@ -32869,8 +33090,8 @@ var require_REPLICAOF = __commonJS({
        * @param port - The port of the master to replicate from
        * @see https://redis.io/commands/replicaof/
        */
-      parseCommand(parser3, host, port2) {
-        parser3.push("REPLICAOF", host, port2.toString());
+      parseCommand(parser3, host, port) {
+        parser3.push("REPLICAOF", host, port.toString());
       },
       transformReply: void 0
     };
@@ -32963,10 +33184,10 @@ var require_ROLE = __commonJS({
               role,
               replicationOffest,
               replicas: replicas.map((replica) => {
-                const [host, port2, replicationOffest2] = replica;
+                const [host, port, replicationOffest2] = replica;
                 return {
                   host,
-                  port: Number(port2),
+                  port: Number(port),
                   replicationOffest: Number(replicationOffest2)
                 };
               })
@@ -37906,7 +38127,7 @@ var require_enterprise_maintenance_manager = __commonJS({
       #onMoving = async (afterSeconds, url2) => {
         this.#onMigrating();
         let host;
-        let port2;
+        let port;
         if (url2 === null) {
           (0, node_assert_1.default)(this.#options.maintEndpointType === "none");
           (0, node_assert_1.default)(this.#options.socket !== void 0);
@@ -37914,14 +38135,14 @@ var require_enterprise_maintenance_manager = __commonJS({
           (0, node_assert_1.default)(typeof this.#options.socket.host === "string");
           host = this.#options.socket.host;
           (0, node_assert_1.default)(typeof this.#options.socket.port === "number");
-          port2 = this.#options.socket.port;
+          port = this.#options.socket.port;
           const waitTime = afterSeconds * 1e3 / 2;
           (0, exports2.dbgMaintenance)(`Wait for ${waitTime}ms`);
           await (0, promises_2.setTimeout)(waitTime);
         } else {
           const split = url2.split(":");
           host = split[0];
-          port2 = Number(split[1]);
+          port = Number(split[1]);
         }
         (0, exports2.dbgMaintenance)("Pausing writing of new commands to old socket");
         this.#client._pause();
@@ -37930,13 +38151,13 @@ var require_enterprise_maintenance_manager = __commonJS({
         if (this.#options.url) {
           const u2 = new URL(this.#options.url);
           u2.hostname = host;
-          u2.port = String(port2);
+          u2.port = String(port);
           this.#options.url = u2.toString();
         } else {
           this.#options.socket = {
             ...this.#options.socket,
             host,
-            port: port2
+            port
           };
         }
         const tmpClient = this.#client.duplicate();
@@ -37949,7 +38170,7 @@ var require_enterprise_maintenance_manager = __commonJS({
           relaxedCommandTimeout: this.#options.maintRelaxedCommandTimeout,
           relaxedSocketTimeout: this.#options.maintRelaxedSocketTimeout
         });
-        (0, exports2.dbgMaintenance)(`Connecting tmp client: ${host}:${port2}`);
+        (0, exports2.dbgMaintenance)(`Connecting tmp client: ${host}:${port}`);
         start = performance.now();
         await tmpClient.connect();
         (0, exports2.dbgMaintenance)(`Connected to tmp client in ${(performance.now() - start).toFixed(2)}ms`);
@@ -40918,7 +41139,7 @@ var require_client = __commonJS({
         return options2;
       }
       static parseURL(url2) {
-        const { hostname: hostname2, port: port2, protocol, username, password, pathname } = new node_url_1.URL(url2), parsed = {
+        const { hostname: hostname2, port, protocol, username, password, pathname } = new node_url_1.URL(url2), parsed = {
           socket: {
             host: hostname2,
             tls: false
@@ -40928,8 +41149,8 @@ var require_client = __commonJS({
           throw new TypeError("Invalid protocol");
         }
         parsed.socket.tls = protocol === "rediss:";
-        if (port2) {
-          parsed.socket.port = Number(port2);
+        if (port) {
+          parsed.socket.port = Number(port);
         }
         if (username) {
           parsed.username = decodeURIComponent(username);
@@ -43310,8 +43531,8 @@ var require_SENTINEL_MONITOR = __commonJS({
        * @param port - Port of the master.
        * @param quorum - Number of Sentinels that need to agree to trigger a failover.
        */
-      parseCommand(parser3, dbname, host, port2, quorum) {
-        parser3.push("SENTINEL", "MONITOR", dbname, host, port2, quorum);
+      parseCommand(parser3, dbname, host, port, quorum) {
+        parser3.push("SENTINEL", "MONITOR", dbname, host, port, quorum);
       },
       transformReply: void 0
     };
@@ -50763,12 +50984,9 @@ var init_database_router = __esm({
       constructor(config2 = {}) {
         super();
         RouterOptionsSchema.parse(config2);
-        const configCopy = Object.fromEntries(Object.entries(config2).sort((a, b) => b[0].length - a[0].length));
-        const errors2 = this.validateConfig(configCopy);
-        if (errors2.length) {
-          throw new Error(`[${this.constructor.name}] ${errors2.length} error(s) found in your config.`, { cause: errors2 });
-        }
-        this.config = configCopy;
+        this.config = Object.fromEntries(
+          Object.entries(config2).sort((a, b) => b[0].length - a[0].length)
+        );
       }
       lookupBackend(key) {
         const { backends, config: config2 } = this;
@@ -50880,7 +51098,7 @@ var init_database_router_test = __esm({
     };
     db = new RouterBackend(validConfig);
     Deno.test({
-      name: "DatabaseRouter::validateConfig",
+      name: "RouterBackend::validateConfig",
       async fn(t) {
         await t.step("should accept a valid config", () => {
           const errors2 = db.validateConfig(validConfig);
@@ -50900,39 +51118,31 @@ var init_database_router_test = __esm({
       }
     });
     Deno.test({
-      name: "DatabaseRouter::constructor",
+      name: "RouterBackend::constructor",
       async fn(t) {
         await t.step('rejects a config missing the "*" fallback', () => {
-          let threw = false;
-          try {
-            new RouterBackend({ "gi.contracts/": { name: "fs", options: {} } });
-          } catch {
-            threw = true;
-          }
-          if (!threw) throw new Error('Expected the constructor to throw on a missing "*" entry');
+          assertThrows(
+            () => new RouterBackend({ "gi.contracts/": { name: "fs", options: {} } }),
+            Error
+          );
         });
         await t.step("rejects a config whose entry options are not an object", () => {
-          let threw = false;
-          try {
-            new RouterBackend({ "*": { name: "fs", options: "not-an-object" } });
-          } catch {
-            threw = true;
-          }
-          if (!threw) throw new Error("Expected the constructor to throw on non-object options");
+          assertThrows(
+            // @ts-expect-error: intentionally invalid, options must be an object
+            () => new RouterBackend({ "*": { name: "fs", options: "not-an-object" } }),
+            Error
+          );
         });
         await t.step("rejects a config with an unknown backend name", () => {
-          let threw = false;
-          try {
-            new RouterBackend({ "*": { name: "mongodb", options: {} } });
-          } catch {
-            threw = true;
-          }
-          if (!threw) throw new Error("Expected the constructor to throw on an unknown backend name");
+          assertThrows(
+            () => new RouterBackend({ "*": { name: "mongodb", options: {} } }),
+            Error
+          );
         });
       }
     });
     Deno.test({
-      name: "DatabaseRouter::lookupBackend",
+      name: "RouterBackend::lookupBackend",
       async fn(t) {
         await db.init();
         try {
@@ -61739,7 +61949,7 @@ var require_websocket_server = __commonJS({
     }
   }
 });
-var import_npm_nconf8 = __toESM(require_nconf());
+var import_npm_nconf9 = __toESM(require_nconf());
 function getLineColFromPtr(string3, ptr) {
   let lines = string3.slice(0, ptr).split(/\r\n|\n|\r/g);
   return [lines.length, lines.pop().length + 1];
@@ -63595,9 +63805,9 @@ function resolveJournalConfig(cfg) {
   const snapshotInterval = typeof cfg?.snapshotInterval === "number" ? cfg.snapshotInterval : DEFAULT_SNAPSHOT_INTERVAL;
   const contractIDs = cfg?.contractIDs && cfg.contractIDs.length > 0 ? new Set(cfg.contractIDs) : null;
   const redactions = cfg?.redactions ?? [];
-  const diff = cfg?.diff ?? defaultDiff;
+  const diff2 = cfg?.diff ?? defaultDiff;
   const applyPatch = cfg?.applyPatch ?? defaultApplyPatch;
-  return { enabled: enabled2, snapshotInterval, contractIDs, redactions, diff, applyPatch };
+  return { enabled: enabled2, snapshotInterval, contractIDs, redactions, diff: diff2, applyPatch };
 }
 function indexOfLastSnapshot(entries) {
   for (let i2 = entries.length - 1; i2 >= 0; i2--) {
@@ -70904,6 +71114,7 @@ init_esm3();
 init_esm2();
 init_esm();
 var import_npm_chalk4 = __toESM(require_source());
+var import_npm_nconf7 = __toESM(require_nconf());
 var SERVER_EXITING = "server-exiting";
 var SERVER_RUNNING = "server-running";
 init_SPMessage();
@@ -73899,15 +74110,15 @@ var createWorker = (path8) => {
           }, false);
           resolve82();
         } else if (msg && typeof msg === "object" && msg.type === "sbp" && Array.isArray(msg.data) && String(msg.data[0]).startsWith("chelonia.db/")) {
-          const port2 = msg.port;
+          const port = msg.port;
           Promise.try(() => esm_default(...deserializer(msg.data))).then((r) => {
             const { data, transferables } = serializer(r);
-            port2.postMessage([true, data], transferables);
+            port.postMessage([true, data], transferables);
           }).catch((e2) => {
             const { data, transferables } = serializer(e2);
-            port2.postMessage([false, data], transferables);
+            port.postMessage([false, data], transferables);
           }).finally(() => {
-            port2.close();
+            port.close();
           });
         }
       };
@@ -73951,12 +74162,12 @@ init_functions();
 var getConnInfo = (c) => {
   const bindings = c.env.server ? c.env.server : c.env;
   const address = bindings.incoming.socket.remoteAddress;
-  const port2 = bindings.incoming.socket.remotePort;
+  const port = bindings.incoming.socket.remotePort;
   const family = bindings.incoming.socket.remoteFamily;
   return {
     remote: {
       address,
-      port: port2,
+      port,
       addressType: family === "IPv4" ? "IPv4" : family === "IPv6" ? "IPv6" : void 0
     }
   };
@@ -75596,7 +75807,7 @@ var wrapper_default = import_websocket.default;
 var isPushSubscriptionInfo = (x3) => {
   return has(x3, "endpoint");
 };
-var { bold } = import_npm_chalk2.default;
+var { bold: bold2 } = import_npm_chalk2.default;
 var { PING, PONG, PUB, SUB, UNSUB, KV_FILTER } = NOTIFICATION_TYPE;
 var { ERROR, OK } = RESPONSE_TYPE;
 var defaultOptions3 = {
@@ -75611,9 +75822,9 @@ var generateSocketID = /* @__PURE__ */ (() => {
   return (debugID) => String(counter++) + (debugID ? "-" + debugID : "");
 })();
 var log = logger_default.info.bind(logger_default, tag2);
-log.bold = (...args) => logger_default.debug(bold(tag2, ...args));
+log.bold = (...args) => logger_default.debug(bold2(tag2, ...args));
 log.debug = logger_default.debug.bind(logger_default, tag2);
-log.error = (error2, ...args) => logger_default.error(error2, bold.red(tag2, ...args));
+log.error = (error2, ...args) => logger_default.error(error2, bold2.red(tag2, ...args));
 function createErrorResponse(data) {
   return JSON.stringify({ type: ERROR, data });
 }
@@ -76175,7 +76386,7 @@ async function startServer() {
   const appManifest = import_npm_nconf6.default.get("appManifest") || join72(import_npm_nconf6.default.get("server:appDir") || process9.cwd(), "chelonia.json");
   const ARCHIVE_MODE = import_npm_nconf6.default.get("server:archiveMode");
   const host = import_npm_nconf6.default.get("server:host") || "0.0.0.0";
-  const port2 = import_npm_nconf6.default.get("server:port") ?? 8e3;
+  const port = import_npm_nconf6.default.get("server:port") ?? 8e3;
   if (CREDITS_WORKER_TASK_TIME_INTERVAL && OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL > CREDITS_WORKER_TASK_TIME_INTERVAL) {
     console.error("The size calculation worker must run more frequently than the credits worker for accurate billing");
     throw new Error("The size calculation worker must run more frequently than the credits worker for accurate billing");
@@ -76362,7 +76573,7 @@ async function startServer() {
     });
   }, 1 * 60 * 60 * 1e3);
   const uri = await new Promise((resolve82, reject) => {
-    currentHttpServer.listen(port2, host, () => {
+    currentHttpServer.listen(port, host, () => {
       const addr = currentHttpServer.address();
       const uri2 = `http://${addr.address}:${addr.port}`;
       console.info("Backend server running at:", uri2);
@@ -76478,6 +76689,11 @@ var exit2 = (code2) => {
 async function startServer2(options2 = {}) {
   const { installSignalHandlers: shouldInstallSignalHandlers = true } = options2;
   initializeLogger();
+  if (import_npm_nconf7.default.get("server:logLevel") && !process10.env.LOG_LEVEL) {
+    console.warn(
+      "[chel] Note: server.logLevel in chel.toml has no effect; set the LOG_LEVEL environment variable instead."
+    );
+  }
   console.info(import_npm_chalk4.default.bold(
     `Running in ${process10.env.NODE_ENV === "production" ? "production" : "development"} mode.`
   ));
@@ -76763,15 +76979,15 @@ var upgradeWebSocket = defineWebSocketHelper(async (c, events, options2) => {
   socket.onerror = (evt) => events.onError?.(evt, wsContext);
   return response;
 });
-var import_npm_nconf7 = __toESM(require_nconf());
+var import_npm_nconf8 = __toESM(require_nconf());
 var getDashboardPath = () => {
   const baseDir = import.meta.dirname || path6.join(process11.cwd(), "build");
   const dashboardPath = path6.resolve(baseDir, "dist-dashboard");
   return dashboardPath;
 };
 async function startDashboard() {
-  const port2 = import_npm_nconf7.default.get("server:dashboardPort");
-  const host = import_npm_nconf7.default.get("server:host") || "0.0.0.0";
+  const port = import_npm_nconf8.default.get("server:dashboardPort");
+  const host = import_npm_nconf8.default.get("server:host") || "0.0.0.0";
   const dashboardRoot = getDashboardPath();
   const app = new Hono2();
   const staticMiddleware = serveStatic2({ root: dashboardRoot, rewriteRequestPath: (p) => p });
@@ -76791,7 +77007,7 @@ async function startDashboard() {
   });
   const server = createAdaptorServer({ fetch: app.fetch });
   await new Promise((resolve82, reject) => {
-    server.listen(port2, host, () => {
+    server.listen(port, host, () => {
       const addr = server.address();
       const uri = `http://${addr.address}:${addr.port}`;
       console.info("Dashboard server running at:", uri);
@@ -81205,7 +81421,7 @@ var parseArgs = () => {
 var parseArgs_default = parseArgs;
 init_zod();
 init_backend_schemas();
-var port = number2().int().min(1, "must be an integer between 1 and 65535").max(65535, "must be an integer between 1 and 65535");
+var portSchema = number2().int().min(1, "must be an integer between 1 and 65535").max(65535, "must be an integer between 1 and 65535");
 var positiveInt = number2().int().positive("must be a positive integer");
 var BackendOptionsSchema = strictObject({
   fs: optional(FsOptionsSchema),
@@ -81219,12 +81435,12 @@ var ConfigSchema = strictObject({
   server: optional(strictObject({
     appDir: optional(string2()),
     host: optional(string2().min(1, "must be a non-empty string")),
-    port: optional(port),
-    dashboardPort: optional(port),
+    port: optional(portSchema),
+    dashboardPort: optional(portSchema),
     fileUploadMaxBytes: optional(positiveInt),
-    // NOTE: validated for shape only; the logger currently reads `LOG_LEVEL`
-    // from the environment directly (see `src/serve/logger.ts`), so this key
-    // has no runtime effect yet.
+    // NOTE: validated for shape only; the logger reads `LOG_LEVEL` from the
+    // environment directly (see `src/serve/logger.ts`). A warning is printed
+    // at server startup if this key is set without `LOG_LEVEL`.
     logLevel: optional(_enum(["trace", "debug", "info", "warn", "error", "fatal", "silent"])),
     // Deliberately loose: server messages are app-defined and passed verbatim
     // to clients (see `routes.ts /serverMessages`), so only the array-of-objects
@@ -81291,6 +81507,9 @@ function suggest(key, candidates) {
   }
   return best;
 }
+var movedKeys = {
+  "server.signup.vapid": "server.vapid"
+};
 function formatPath(path8) {
   return path8.map(String).join(".");
 }
@@ -81305,6 +81524,11 @@ function validateTomlConfig(parsed) {
       const known = knownKeysFor(issue2.path);
       for (const key of issue2.keys) {
         const fullPath = parentPath ? `${parentPath}.${key}` : key;
+        const movedTo = movedKeys[fullPath];
+        if (movedTo) {
+          warnings.push(`unknown key ${fullPath} (moved to ${movedTo})`);
+          continue;
+        }
         const hint = suggest(key, known);
         warnings.push(
           hint ? `unknown key ${fullPath} (did you mean ${hint}?)` : `unknown key ${fullPath}`
@@ -81332,9 +81556,12 @@ function collectKnownKeys(schema) {
   return map;
 }
 var knownKeysMap = collectKnownKeys(ConfigSchema);
+var routerEntryKeys = Object.keys(
+  RouterConfigEntrySchema.options[0].shape
+);
 function knownKeysFor(path8) {
   if (path8.length === 4 && path8[0] === "database" && path8[1] === "backendOptions" && path8[2] === "router") {
-    return Object.keys(RouterConfigEntrySchema.shape);
+    return routerEntryKeys;
   }
   return knownKeysMap.get(formatPath(path8)) ?? [];
 }
@@ -81390,7 +81617,7 @@ var nconfDefaults = {
   }
 };
 var parseConfig = async () => {
-  import_npm_nconf8.default.env({
+  import_npm_nconf9.default.env({
     separator: "__",
     parseValues: true
   }).argv(parseArgs_default()).file({ file: "chel.toml", format: { parse: parse8, stringify } }).defaults(nconfDefaults);

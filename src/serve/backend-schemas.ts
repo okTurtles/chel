@@ -1,6 +1,6 @@
 // Zod schemas describing the options accepted by each database backend.
 //
-// These live in a dedicated, dependency-free module so that `validateConfig.ts`
+// These live in a dedicated, lightweight module so that `validateConfig.ts`
 // can compose them without pulling in the backends' heavy native/runtime imports
 // (e.g. the SQLite FFI or the Redis client). The backend modules import the same
 // schemas as their single source of truth and call `.parse()` at construction
@@ -26,14 +26,11 @@ export const RedisOptionsSchema = z.strictObject({
   }))
 })
 
-const routerBackendName = z.enum(['fs', 'sqlite', 'redis'], {
-  error: '"name" must be one of: fs, sqlite, redis (router backends cannot be nested)'
-})
-
-export const RouterConfigEntrySchema = z.strictObject({
-  name: routerBackendName,
-  options: z.object()
-})
+export const RouterConfigEntrySchema = z.discriminatedUnion('name', [
+  z.strictObject({ name: z.literal('fs'), options: FsOptionsSchema }),
+  z.strictObject({ name: z.literal('sqlite'), options: SqliteOptionsSchema }),
+  z.strictObject({ name: z.literal('redis'), options: RedisOptionsSchema })
+])
 
 // A router config maps key prefixes (including the mandatory `*` fallback) to
 // `{ name, options }` entries. The refine check gives a clearer message than the

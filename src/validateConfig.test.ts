@@ -1,5 +1,7 @@
 import { assertEquals, assertRejects } from 'jsr:@std/assert'
-import { validateTomlConfig, ConfigSchema, knownKeysFor, validateConfigFile } from './validateConfig.ts'
+import {
+  validateTomlConfig, ConfigSchema, knownKeysFor, validateConfigFile
+} from './validateConfig.ts'
 import { RouterConfigEntrySchema } from './serve/backend-schemas.ts'
 import { nconfDefaults } from './config-defaults.ts'
 
@@ -57,7 +59,10 @@ Deno.test({
       const result = validateTomlConfig({ server: { signup: { xdisabled: true } } })
       assertEquals(result.errors, [])
       assertEquals(result.warnings.length, 1)
-      assertEquals(result.warnings[0], 'unknown key server.signup.xdisabled (did you mean disabled?)')
+      assertEquals(
+        result.warnings[0],
+        'unknown key server.signup.xdisabled (did you mean disabled?)'
+      )
     })
 
     await t.step('reports multiple unknown keys at once', () => {
@@ -238,7 +243,7 @@ Deno.test({
       assertEquals(result.errors.length, 1)
       assertEquals(
         result.errors[0],
-        'database.backendOptions.router.*.name: "name" must be one of: fs, sqlite, redis (router backends cannot be nested)'
+        'database.backendOptions.router.*.name: Invalid input'
       )
     })
 
@@ -250,13 +255,44 @@ Deno.test({
       assertEquals(result.errors.length, 1)
     })
 
+    await t.step('errors on invalid options inside a router entry', () => {
+      const result = validateTomlConfig({
+        database: {
+          backendOptions: {
+            router: { '*': { name: 'fs', options: { depth: 'not-a-number' } } }
+          }
+        }
+      })
+      assertEquals(result.warnings, [])
+      assertEquals(result.errors.length, 1)
+      if (!result.errors[0].includes('database.backendOptions.router.*.options.depth')) {
+        throw new Error(`Unexpected error: ${result.errors[0]}`)
+      }
+    })
+
+    await t.step('warns on unknown keys inside a router entry options', () => {
+      const result = validateTomlConfig({
+        database: {
+          backendOptions: {
+            router: { '*': { name: 'fs', options: { bogus: true } } }
+          }
+        }
+      })
+      assertEquals(result.errors, [])
+      assertEquals(result.warnings.length, 1)
+      assertEquals(
+        result.warnings[0],
+        'unknown key database.backendOptions.router.*.options.bogus'
+      )
+    })
+
     await t.step('warns that server.signup.vapid is not a recognised key', () => {
       const result = validateTomlConfig({
         server: { signup: { vapid: { email: 'a@b.c' } } }
       })
       assertEquals(result.errors, [])
       assertEquals(result.warnings.length, 1)
-      assertEquals(result.warnings[0], 'unknown key server.signup.vapid')
+      assertEquals(result.warnings[0], 'unknown key server.signup.vapid (moved to server.vapid)')
     })
 
     await t.step('errors when the top-level value is not an object', () => {
@@ -276,7 +312,9 @@ Deno.test({
     await t.step('nconf defaults conform to ConfigSchema', () => {
       const result = ConfigSchema.safeParse(nconfDefaults)
       if (!result.success) {
-        throw new Error(`nconfDefaults do not conform to ConfigSchema: ${JSON.stringify(result.error.issues)}`)
+        throw new Error(
+          `nconfDefaults do not conform to ConfigSchema: ${JSON.stringify(result.error.issues)}`
+        )
       }
     })
 
@@ -304,9 +342,12 @@ Deno.test({
         }
       }
 
+      const firstVariant = RouterConfigEntrySchema.options[0] as unknown as {
+        shape: Record<string, unknown>
+      }
       assertEquals(
         knownKeysFor(['database', 'backendOptions', 'router', '*']).sort(),
-        Object.keys(RouterConfigEntrySchema.shape).sort(),
+        Object.keys(firstVariant.shape).sort(),
         'knownKeysFor drift at router entry'
       )
     })

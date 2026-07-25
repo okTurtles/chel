@@ -22,7 +22,11 @@ import {
   RouterConfigEntrySchema
 } from './serve/backend-schemas.ts'
 
-const port = z.number().int().min(1, 'must be an integer between 1 and 65535').max(65535, 'must be an integer between 1 and 65535')
+const portSchema = z
+  .number()
+  .int()
+  .min(1, 'must be an integer between 1 and 65535')
+  .max(65535, 'must be an integer between 1 and 65535')
 const positiveInt = z.number().int().positive('must be a positive integer')
 
 const BackendOptionsSchema = z.strictObject({
@@ -38,12 +42,12 @@ export const ConfigSchema = z.strictObject({
   server: z.optional(z.strictObject({
     appDir: z.optional(z.string()),
     host: z.optional(z.string().min(1, 'must be a non-empty string')),
-    port: z.optional(port),
-    dashboardPort: z.optional(port),
+    port: z.optional(portSchema),
+    dashboardPort: z.optional(portSchema),
     fileUploadMaxBytes: z.optional(positiveInt),
-    // NOTE: validated for shape only; the logger currently reads `LOG_LEVEL`
-    // from the environment directly (see `src/serve/logger.ts`), so this key
-    // has no runtime effect yet.
+    // NOTE: validated for shape only; the logger reads `LOG_LEVEL` from the
+    // environment directly (see `src/serve/logger.ts`). A warning is printed
+    // at server startup if this key is set without `LOG_LEVEL`.
     logLevel: z.optional(z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal', 'silent'])),
     // Deliberately loose: server messages are app-defined and passed verbatim
     // to clients (see `routes.ts /serverMessages`), so only the array-of-objects
@@ -123,6 +127,12 @@ export interface ValidationResult {
   errors: string[]
 }
 
+// Keys that moved between config versions; the warning names the new location
+// so upgraders don't have to guess.
+const movedKeys: Record<string, string> = {
+  'server.signup.vapid': 'server.vapid'
+}
+
 function formatPath (path: PropertyKey[]): string {
   return path.map(String).join('.')
 }
@@ -145,6 +155,11 @@ export function validateTomlConfig (parsed: unknown): ValidationResult {
       const known = knownKeysFor(issue.path)
       for (const key of issue.keys) {
         const fullPath = parentPath ? `${parentPath}.${key}` : key
+        const movedTo = movedKeys[fullPath]
+        if (movedTo) {
+          warnings.push(`unknown key ${fullPath} (moved to ${movedTo})`)
+          continue
+        }
         const hint = suggest(key, known)
         warnings.push(
           hint
@@ -188,21 +203,29 @@ function collectKnownKeys (schema: z.ZodType): Map<string, string[]> {
 
 const knownKeysMap = collectKnownKeys(ConfigSchema)
 
+// All variants of the `RouterConfigEntrySchema` discriminated union share the
+// same top-level keys; derive them from the first variant so typo suggestions
+// stay in sync with the schema automatically.
+const routerEntryKeys = Object.keys(
+  (RouterConfigEntrySchema.options[0] as unknown as { shape: Record<string, unknown> }).shape
+)
+
 // Returns the set of valid immediate child keys for a given path in the config
 // tree, used to generate typo suggestions.
 export function knownKeysFor (path: PropertyKey[]): string[] {
   // Keys *within* a router entry (`database.backendOptions.router.<prefix>`) are
-  // described by `RouterConfigEntrySchema`, which has a fixed shape even though
-  // the surrounding `z.record()` accepts arbitrary prefix keys. The prefix is
-  // the 4th path segment and may itself contain dots (e.g. `gi.contracts/`), so
-  // match on the path array rather than the joined string.
+  // described by `RouterConfigEntrySchema`, a discriminated union whose variants
+  // all share the same top-level keys. The surrounding `z.record()` accepts
+  // arbitrary prefix keys; the prefix is the 4th path segment and may itself
+  // contain dots (e.g. `gi.contracts/`), so match on the path array rather than
+  // the joined string.
   if (
     path.length === 4 &&
     path[0] === 'database' &&
     path[1] === 'backendOptions' &&
     path[2] === 'router'
   ) {
-    return Object.keys(RouterConfigEntrySchema.shape)
+    return routerEntryKeys
   }
   return knownKeysMap.get(formatPath(path)) ?? []
 }

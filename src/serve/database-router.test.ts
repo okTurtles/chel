@@ -2,6 +2,7 @@
 // 'jsr:@db/sqlite' loaded to prevent memory leak checker from failing test
 // (otherwise, it'll complain that the sqlite dynamic library wasn't unloaded)
 import 'jsr:@db/sqlite'
+import { assertThrows } from 'jsr:@std/assert'
 import { cloneDeep, omit } from 'npm:turtledash'
 import RouterBackend from './database-router.ts'
 
@@ -29,7 +30,7 @@ const validConfig = {
 const db = new RouterBackend(validConfig)
 
 Deno.test({
-  name: 'DatabaseRouter::validateConfig',
+  name: 'RouterBackend::validateConfig',
   async fn (t: Deno.TestContext) {
     await t.step('should accept a valid config', () => {
       const errors = db.validateConfig(validConfig)
@@ -52,43 +53,34 @@ Deno.test({
 })
 
 Deno.test({
-  name: 'DatabaseRouter::constructor',
+  name: 'RouterBackend::constructor',
   async fn (t: Deno.TestContext) {
     await t.step('rejects a config missing the "*" fallback', () => {
-      let threw = false
-      try {
-        new RouterBackend({ 'gi.contracts/': { name: 'fs', options: {} } })
-      } catch {
-        threw = true
-      }
-      if (!threw) throw new Error('Expected the constructor to throw on a missing "*" entry')
+      assertThrows(
+        () => new RouterBackend({ 'gi.contracts/': { name: 'fs', options: {} } }),
+        Error
+      )
     })
 
     await t.step('rejects a config whose entry options are not an object', () => {
-      let threw = false
-      try {
+      assertThrows(
         // @ts-expect-error: intentionally invalid, options must be an object
-        new RouterBackend({ '*': { name: 'fs', options: 'not-an-object' } })
-      } catch {
-        threw = true
-      }
-      if (!threw) throw new Error('Expected the constructor to throw on non-object options')
+        () => new RouterBackend({ '*': { name: 'fs', options: 'not-an-object' } }),
+        Error
+      )
     })
 
     await t.step('rejects a config with an unknown backend name', () => {
-      let threw = false
-      try {
-        new RouterBackend({ '*': { name: 'mongodb', options: {} } })
-      } catch {
-        threw = true
-      }
-      if (!threw) throw new Error('Expected the constructor to throw on an unknown backend name')
+      assertThrows(
+        () => new RouterBackend({ '*': { name: 'mongodb', options: {} } }),
+        Error
+      )
     })
   }
 })
 
 Deno.test({
-  name: 'DatabaseRouter::lookupBackend',
+  name: 'RouterBackend::lookupBackend',
   async fn (t: Deno.TestContext) {
     // Setup
     await db.init()

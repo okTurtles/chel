@@ -14,14 +14,10 @@ export default class RouterBackend extends DatabaseBackend {
 
   constructor (config: Config = {}) {
     super()
-    // Return a sorted copy where entries with longer keys come first.
     ConfigSchema.parse(config)
-    const configCopy = Object.fromEntries(Object.entries(config).sort((a, b) => b[0].length - a[0].length)) as Config
-    const errors = this.validateConfig(configCopy)
-    if (errors.length) {
-      throw new Error(`[${this.constructor.name}] ${errors.length} error(s) found in your config.`, { cause: errors })
-    }
-    this.config = configCopy
+    this.config = Object.fromEntries(
+      Object.entries(config).sort((a, b) => b[0].length - a[0].length)
+    ) as Config
   }
 
   lookupBackend (key: string): DatabaseBackend {
@@ -36,10 +32,9 @@ export default class RouterBackend extends DatabaseBackend {
   }
 
   validateConfig (config: Config): Array<{ msg: string; entry?: [string, ConfigEntry] }> {
-    // Delegate to the shared schema (single source of truth) so these checks
-    // never drift from `backend-schemas.ts`. The constructor's `.parse()` is the
-    // runtime guard for env-supplied config; this public method reuses the same
-    // schema so it can be called standalone (e.g. by tests) without a `.parse()`.
+    // Validates a config without throwing, returning an array of error objects.
+    // The constructor already validates via ConfigSchema.parse(); this method
+    // exists for callers (e.g. tests) that need a non-throwing check.
     const result = ConfigSchema.safeParse(config)
     if (result.success) return []
     return result.error.issues.map((issue) => ({
