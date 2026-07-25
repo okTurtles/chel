@@ -122,9 +122,9 @@ function installServerSelectorsOnce (): void {
       }
     },
     'backend/server/appendToContractIndex': appendToIndexFactory('_private_cheloniaState_index'),
-    'backend/server/broadcastKV': async function (contractID: string, key: string, entry: string) {
+    'backend/server/broadcastKV': async function (contractID: string, key: string, entry: string, cid?: string) {
       const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE) as WSS
-      const pubsubMessage = createKvMessage(contractID, key, entry)
+      const pubsubMessage = createKvMessage(contractID, key, entry, cid)
       const subscribers = pubsub.enumerateSubscribers(contractID, key)
       console.debug(chalk.blue.bold(`[pubsub] Broadcasting KV change on ${contractID} to key ${key}`))
       await pubsub.broadcast(pubsubMessage, { to: subscribers, wsOnly: true })

@@ -1004,16 +1004,19 @@ export function registerRoutes (app: Hono): void {
         await sbp('chelonia.db/set', `_private_kv_${contractID}_${key}`, payloadBuffer)
         await sbp('backend/server/updateSize', contractID, payloadBuffer.byteLength - existingSize)
         await appendToIndexFactory(`_private_kvIdx_${contractID}`)(key)
-        // No await on broadcast for faster responses
-        sbp('backend/server/broadcastKV', contractID, key, payloadString).catch((e: Error) => console.error(e, 'Error broadcasting KV update', contractID, key))
         // ETag/x-cid is the content-address of the exact bytes just persisted, so
         // it equals the one a later GET computes from the stored value (also read
         // as raw bytes via the `any:` prefix).
         const newCID = createCID(payloadBuffer, multicodes.RAW)
+        // The broadcast cid must be the exact quoted string emitted in the x-cid
+        // header, since clients record and re-send it verbatim as an if-match etag.
+        const quotedCID = `"${newCID}"`
+        // No await on broadcast for faster responses
+        sbp('backend/server/broadcastKV', contractID, key, payloadString, quotedCID).catch((e: Error) => console.error(e, 'Error broadcasting KV update', contractID, key))
 
         return c.body(null, 204, {
-          'ETag': `"${newCID}"`,
-          'x-cid': `"${newCID}"`
+          'ETag': quotedCID,
+          'x-cid': quotedCID
         })
       })
     })
