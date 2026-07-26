@@ -250,6 +250,13 @@ function notFoundNoCache (c: Context): Response {
   return c.body(null, 404, { 'Cache-Control': 'no-store' })
 }
 
+// ETag/x-cid values are strong validators: the CID wrapped in double quotes.
+// Centralized so the "quoted CID = ETag" rule, which clients replay verbatim as
+// an If-Match precondition, lives in exactly one place.
+function quoteEtag (cid: string): string {
+  return `"${cid}"`
+}
+
 function safePathWithin (base: string, subpath: string): string | null {
   const normalizedBase = path.resolve(base)
   const resolved = path.resolve(normalizedBase, subpath)
@@ -798,7 +805,7 @@ export function registerRoutes (app: Hono): void {
       const type = cidLookupTable[parsed.code] || 'application/octet-stream'
 
       return c.body(blobOrString, 200, {
-        'ETag': `"${hash}"`,
+        'ETag': quoteEtag(hash),
         'Cache-Control': 'public,max-age=31536000,immutable',
         // CSP to disable everything -- this only affects direct navigation to the
         // `/file` URL.
@@ -962,7 +969,6 @@ export function registerRoutes (app: Hono): void {
         if (!expectedEtag) {
           throw new HTTPException(400, { message: 'if-match is required' })
         }
-        // "Quote" string (to match ETag format)
         // ETag/x-cid is the content-address of the raw stored bytes; GET hashes
         // the same bytes (also read via `any:`), so all ETags for a value match.
         const cid = existing ? createCID(existing, multicodes.RAW) : ''
@@ -970,10 +976,10 @@ export function registerRoutes (app: Hono): void {
         if (expectedEtag === '*') {
           // pass through
         } else {
-          if (!expectedEtag.split(',').map((v: string) => v.trim()).includes(`"${cid}"`)) {
+          if (!expectedEtag.split(',').map((v: string) => v.trim()).includes(quoteEtag(cid))) {
             return c.body(existing ?? new Uint8Array(), 412, {
-              'ETag': `"${cid}"`,
-              'x-cid': `"${cid}"`
+              'ETag': quoteEtag(cid),
+              'x-cid': quoteEtag(cid)
             })
           }
         }
@@ -985,8 +991,8 @@ export function registerRoutes (app: Hono): void {
           // Check that the height is the latest value
           if (contracts[contractID].height !== Number(serializedData.height)) {
             return c.body(existing ?? new Uint8Array(), 409, {
-              'ETag': `"${cid}"`,
-              'x-cid': `"${cid}"`
+              'ETag': quoteEtag(cid),
+              'x-cid': quoteEtag(cid)
             })
           }
           // Check that the signature is valid
@@ -1004,16 +1010,19 @@ export function registerRoutes (app: Hono): void {
         await sbp('chelonia.db/set', `_private_kv_${contractID}_${key}`, payloadBuffer)
         await sbp('backend/server/updateSize', contractID, payloadBuffer.byteLength - existingSize)
         await appendToIndexFactory(`_private_kvIdx_${contractID}`)(key)
-        // No await on broadcast for faster responses
-        sbp('backend/server/broadcastKV', contractID, key, payloadString).catch((e: Error) => console.error(e, 'Error broadcasting KV update', contractID, key))
         // ETag/x-cid is the content-address of the exact bytes just persisted, so
         // it equals the one a later GET computes from the stored value (also read
         // as raw bytes via the `any:` prefix).
         const newCID = createCID(payloadBuffer, multicodes.RAW)
+        // The broadcast cid must be the exact quoted string emitted in the x-cid
+        // header, since clients record and re-send it verbatim as an if-match etag.
+        const quotedCID = quoteEtag(newCID)
+        // No await on broadcast for faster responses
+        sbp('backend/server/broadcastKV', contractID, key, payloadString, quotedCID).catch((e: Error) => console.error(e, 'Error broadcasting KV update', contractID, key))
 
         return c.body(null, 204, {
-          'ETag': `"${newCID}"`,
-          'x-cid': `"${newCID}"`
+          'ETag': quotedCID,
+          'x-cid': quotedCID
         })
       })
     })
@@ -1046,8 +1055,8 @@ export function registerRoutes (app: Hono): void {
 
       const cid = createCID(result, multicodes.RAW)
       return c.body(result, 200, {
-        'ETag': `"${cid}"`,
-        'x-cid': `"${cid}"`,
+        'ETag': quoteEtag(cid),
+        'x-cid': quoteEtag(cid),
         'Cache-Control': 'no-store'
       })
     })
