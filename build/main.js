@@ -4198,10 +4198,11 @@ async function writeAll(writer, data) {
 }
 
 // build/main.js-tmp
-import { readFile as readFile2 } from "node:fs/promises";
+import { readFile as readFile3 } from "node:fs/promises";
 import process3 from "node:process";
+import { readFile as readFile2 } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { copyFile, mkdir as mkdir3, readFile as readFile3, writeFile as writeFile2 } from "node:fs/promises";
+import { copyFile, mkdir as mkdir3, readFile as readFile4, writeFile as writeFile2 } from "node:fs/promises";
 import { basename as basename42, dirname as dirname42, join as join62 } from "node:path";
 import process4 from "node:process";
 import process10 from "node:process";
@@ -4240,7 +4241,6 @@ import { basename as basename62, dirname as dirname72, extname as extname8, rela
 import { readFileSync as readFileSync2, statSync as statSync2, writeFile as writeFile3 } from "node:fs";
 import { format as format32 } from "node:util";
 import { resolve as resolve62 } from "node:path";
-import { readFile as readFile4 } from "node:fs/promises";
 var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -25206,16 +25206,17 @@ var init_backend_schemas = __esm({
     });
     RedisOptionsSchema = strictObject({
       url: optional(url({
-        protocol: /^(rediss?|unix)$/,
-        error: '"url" must begin with redis://, rediss://, or unix://'
+        protocol: /^rediss?$/,
+        error: '"url" must begin with redis:// or rediss://'
       }))
     });
     RouterConfigEntrySchema = discriminatedUnion("name", [
       strictObject({ name: literal("fs"), options: FsOptionsSchema }),
       strictObject({ name: literal("sqlite"), options: SqliteOptionsSchema }),
-      strictObject({ name: literal("redis"), options: RedisOptionsSchema })
+      strictObject({ name: literal("redis"), options: RedisOptionsSchema }),
+      strictObject({ name: literal("router"), options: record(string2(), unknown()) }).refine(() => false, { error: "router backends cannot be nested", path: ["name"] })
     ], {
-      error: '"name" must be one of: fs, sqlite, redis (router backends cannot be nested)'
+      error: '"name" must be one of: fs, sqlite, redis'
     });
     RouterOptionsSchema = record(string2(), RouterConfigEntrySchema).refine(
       (v2) => "*" in v2,
@@ -51018,9 +51019,9 @@ var init_database_router = __esm({
       config;
       constructor(config2 = {}) {
         super();
-        RouterOptionsSchema.parse(config2);
+        const parsed = RouterOptionsSchema.parse(config2);
         this.config = Object.fromEntries(
-          Object.entries(config2).sort((a, b) => b[0].length - a[0].length)
+          Object.entries(parsed).sort((a, b) => b[0].length - a[0].length)
         );
       }
       lookupBackend(key) {
@@ -51032,13 +51033,6 @@ var init_database_router = __esm({
           }
         }
         return backends["*"];
-      }
-      validateConfig(config2) {
-        const result = RouterOptionsSchema.safeParse(config2);
-        if (result.success) return [];
-        return result.error.issues.map((issue2) => ({
-          msg: issue2.path.length ? `${issue2.path.join(".")}: ${issue2.message}` : issue2.message
-        }));
       }
       async init() {
         this.backends = /* @__PURE__ */ Object.create(null);
@@ -51114,6 +51108,7 @@ var init_database_router_test = __esm({
     "use strict";
     init_esm4();
     init_database_router();
+    init_backend_schemas();
     CID2 = "Q";
     randomKeyWithPrefix = (prefix) => `${prefix}${globalThis.crypto.randomUUID().replaceAll("-", "")}`;
     validConfig = {
@@ -51133,22 +51128,22 @@ var init_database_router_test = __esm({
     };
     db = new RouterBackend(validConfig);
     Deno.test({
-      name: "RouterBackend::validateConfig",
+      name: "RouterOptionsSchema validation",
       async fn(t) {
         await t.step("should accept a valid config", () => {
-          const errors2 = db.validateConfig(validConfig);
-          if (errors2.length !== 0) throw new Error(`Expected 0 errors but got ${errors2.length}`);
+          const result = RouterOptionsSchema.safeParse(validConfig);
+          if (!result.success) throw new Error(`Expected success but got ${result.error.issues.length} errors`);
         });
         await t.step("should reject configs missing a * key", () => {
           const config2 = omit2(validConfig, ["*"]);
-          const errors2 = db.validateConfig(config2);
-          if (errors2.length !== 1) throw new Error(`Expected 1 error but got ${errors2.length}`);
+          const result = RouterOptionsSchema.safeParse(config2);
+          if (result.success || result.error.issues.length !== 1) throw new Error(`Expected 1 error but got ${result.success ? 0 : result.error.issues.length}`);
         });
         await t.step("should reject config entries missing a name", () => {
           const config2 = cloneDeep(validConfig);
           delete config2["*"].name;
-          const errors2 = db.validateConfig(config2);
-          if (errors2.length !== 1) throw new Error(`Expected 1 error but got ${errors2.length}`);
+          const result = RouterOptionsSchema.safeParse(config2);
+          if (result.success || result.error.issues.length !== 1) throw new Error(`Expected 1 error but got ${result.success ? 0 : result.error.issues.length}`);
         });
       }
     });
@@ -72517,6 +72512,7 @@ async function deploy(args) {
   await upload({ ...args, files: toUpload }, true);
 }
 var module3 = {
+  validatesConfig: true,
   builder: (yargs) => {
     return yargs.option("url", {
       describe: "URL of a remote server",
@@ -73069,6 +73065,184 @@ var module8 = {
 };
 init_esm();
 init_utils();
+init_zod();
+init_backend_schemas();
+var portSchema = number2().int().min(1, "must be an integer between 1 and 65535").max(65535, "must be an integer between 1 and 65535");
+var positiveInt = number2().int().positive("must be a positive integer");
+var BackendOptionsSchema = strictObject({
+  fs: optional(FsOptionsSchema),
+  sqlite: optional(SqliteOptionsSchema),
+  redis: optional(RedisOptionsSchema),
+  router: optional(RouterOptionsSchema)
+});
+var ConfigSchema = strictObject({
+  // Set via the `--app-manifest` CLI flag; allowed in TOML for completeness.
+  appManifest: optional(string2()),
+  server: optional(strictObject({
+    appDir: optional(string2()),
+    host: optional(string2().min(1, "must be a non-empty string")),
+    port: optional(portSchema),
+    dashboardPort: optional(portSchema),
+    fileUploadMaxBytes: optional(positiveInt),
+    // NOTE: validated for shape only; the logger reads `LOG_LEVEL` from the
+    // environment directly (see `src/serve/logger.ts`). A warning is printed
+    // at server startup if this key is set without `LOG_LEVEL`.
+    logLevel: optional(_enum(["trace", "debug", "info", "warn", "error", "fatal", "silent"])),
+    // Deliberately loose: server messages are app-defined and passed verbatim
+    // to clients (see `routes.ts /serverMessages`), so only the array-of-objects
+    // shape is enforced, not the fields within each message.
+    messages: optional(array(record(string2(), unknown()))),
+    maxEventsBatchSize: optional(positiveInt),
+    archiveMode: optional(boolean2()),
+    signup: optional(strictObject({
+      disabled: optional(boolean2()),
+      limit: optional(strictObject({
+        disabled: optional(boolean2()),
+        // Positive (not merely non-negative) to match the runtime, which falls
+        // back to a default when these are falsy (see `routes.ts`), so `0`
+        // would be silently ignored rather than meaning "no signups".
+        minute: optional(positiveInt),
+        hour: optional(positiveInt),
+        day: optional(positiveInt)
+      }))
+    })),
+    // The VAPID email is read from `server:vapid:email` at runtime
+    // (see `src/serve/vapid.ts`).
+    vapid: optional(strictObject({
+      email: optional(string2())
+    }))
+  })),
+  database: optional(strictObject({
+    backend: optional(_enum(["mem", "fs", "sqlite", "redis", "router"], {
+      error: '"backend" must be one of: mem, fs, sqlite, redis, router'
+    })),
+    lruNumItems: optional(positiveInt),
+    backendOptions: optional(BackendOptionsSchema)
+  }))
+});
+function editDistance(a, b) {
+  const m3 = a.length;
+  const n = b.length;
+  const d = Array.from({ length: m3 + 1 }, () => new Array(n + 1).fill(0));
+  for (let i2 = 0; i2 <= m3; i2++) d[i2][0] = i2;
+  for (let j = 0; j <= n; j++) d[0][j] = j;
+  for (let i2 = 1; i2 <= m3; i2++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i2 - 1] === b[j - 1] ? 0 : 1;
+      d[i2][j] = Math.min(
+        d[i2 - 1][j] + 1,
+        d[i2][j - 1] + 1,
+        d[i2 - 1][j - 1] + cost
+      );
+      if (i2 > 1 && j > 1 && a[i2 - 1] === b[j - 2] && a[i2 - 2] === b[j - 1]) {
+        d[i2][j] = Math.min(d[i2][j], d[i2 - 2][j - 2] + 1);
+      }
+    }
+  }
+  return d[m3][n];
+}
+function suggest(key, candidates) {
+  let best;
+  let bestDist = Infinity;
+  for (const c of candidates) {
+    const dist = editDistance(key, c);
+    if (dist < bestDist && dist <= Math.max(1, Math.floor(key.length / 2))) {
+      best = c;
+      bestDist = dist;
+    }
+  }
+  return best;
+}
+var movedKeys = {
+  "server.signup.vapid": "server.vapid"
+};
+function formatPath(path8) {
+  return path8.map(String).join(".");
+}
+function validateTomlConfig(parsed) {
+  const warnings = [];
+  const errors2 = [];
+  const result = ConfigSchema.safeParse(parsed);
+  if (result.success) return { warnings, errors: errors2 };
+  for (const issue2 of result.error.issues) {
+    if (issue2.code === "unrecognized_keys") {
+      const parentPath = formatPath(issue2.path);
+      const known = knownKeysFor(issue2.path);
+      for (const key of issue2.keys) {
+        const fullPath = parentPath ? `${parentPath}.${key}` : key;
+        const movedTo = movedKeys[fullPath];
+        if (movedTo) {
+          warnings.push(`unknown key ${fullPath} (moved to ${movedTo})`);
+          continue;
+        }
+        const hint = suggest(key, known);
+        warnings.push(
+          hint ? `unknown key ${fullPath} (did you mean ${hint}?)` : `unknown key ${fullPath}`
+        );
+      }
+    } else {
+      const path8 = formatPath(issue2.path);
+      errors2.push(path8 ? `${path8}: ${issue2.message}` : issue2.message);
+    }
+  }
+  return { warnings, errors: errors2 };
+}
+function collectKnownKeys(schema) {
+  const map = /* @__PURE__ */ new Map();
+  const walk2 = (node, segments) => {
+    if (node instanceof ZodOptional) {
+      walk2(node.unwrap(), segments);
+      return;
+    }
+    if (!(node instanceof ZodObject)) return;
+    const shape = node.shape;
+    map.set(segments.join("."), Object.keys(shape));
+    for (const [key, child] of Object.entries(shape)) {
+      walk2(child, [...segments, key]);
+    }
+  };
+  walk2(schema, []);
+  return map;
+}
+var knownKeysMap = collectKnownKeys(ConfigSchema);
+var firstRouterVariant = RouterConfigEntrySchema.options[0];
+if (!(firstRouterVariant instanceof ZodObject)) {
+  throw new Error("RouterConfigEntrySchema variant is not an object schema");
+}
+var routerEntryKeys = Object.keys(firstRouterVariant.shape);
+function knownKeysFor(path8) {
+  if (path8.length === 4 && path8[0] === "database" && path8[1] === "backendOptions" && path8[2] === "router") {
+    return routerEntryKeys;
+  }
+  return knownKeysMap.get(formatPath(path8)) ?? [];
+}
+function validateParsedConfig(parsed, label) {
+  const { warnings, errors: errors2 } = validateTomlConfig(parsed);
+  for (const warning of warnings) {
+    console.warn(`[chel] ${label}: ${warning}`);
+  }
+  if (errors2.length) {
+    const listing = errors2.map((e2) => `  - ${e2}`).join("\n");
+    throw new Error(`Invalid ${label}:
+${listing}`);
+  }
+}
+async function validateConfigFile(filePath) {
+  let raw2;
+  try {
+    raw2 = await readFile2(filePath, { encoding: "utf-8", flag: "r" });
+  } catch (e2) {
+    if (e2?.code === "ENOENT") return;
+    throw e2;
+  }
+  let parsed;
+  try {
+    parsed = parse8(raw2);
+  } catch (e2) {
+    throw new Error(`Could not parse ${filePath}: ${e2.message}`);
+  }
+  validateParsedConfig(parsed, filePath);
+}
 var import_npm_nconf3 = __toESM(require_nconf());
 var globImport_serve_database_ts = __glob({
   "./serve/database-fs.ts": () => Promise.resolve().then(() => (init_database_fs(), database_fs_exports)),
@@ -73080,7 +73254,8 @@ var globImport_serve_database_ts = __glob({
 async function migrate(args) {
   const { to } = args;
   if (args.fromConfig) {
-    const fromConfig = parse8(await readFile2(args.fromConfig, { encoding: "utf-8", flag: "r" }));
+    const fromConfig = parse8(await readFile3(args.fromConfig, { encoding: "utf-8", flag: "r" }));
+    validateParsedConfig(fromConfig, args.fromConfig);
     const backend = import_npm_nconf3.default.get("database:backend");
     const fromBackend = fromConfig?.database?.backend;
     if (fromBackend !== backend) {
@@ -73099,7 +73274,8 @@ async function migrate(args) {
   try {
     let toConfigOpts;
     if (args.toConfig) {
-      const toConfig = parse8(await readFile2(args.toConfig, { encoding: "utf-8", flag: "r" }));
+      const toConfig = parse8(await readFile3(args.toConfig, { encoding: "utf-8", flag: "r" }));
+      validateParsedConfig(toConfig, args.toConfig);
       const toBackend = toConfig?.database?.backend;
       if (toBackend !== to) {
         console.warn(`--to-config has backend ${toBackend} but --to is ${to}`);
@@ -73305,7 +73481,7 @@ async function pin(args) {
   console.log(gray(`Location: contracts/${contractName}/${manifestVersion}/`));
 }
 async function parseManifest(manifestPath) {
-  const manifestContent = await readFile3(manifestPath, "utf8");
+  const manifestContent = await readFile4(manifestPath, "utf8");
   const manifest2 = JSON.parse(manifestContent);
   const body = JSON.parse(manifest2.body);
   const fullContractName = body.name;
@@ -73378,7 +73554,7 @@ async function loadCheloniaConfig() {
   cheloniaConfig = { contracts: {} };
   if (existsSync(configPath)) {
     try {
-      const configContent = await readFile3(configPath, "utf8");
+      const configContent = await readFile4(configPath, "utf8");
       cheloniaConfig = JSON.parse(configContent);
       console.log(blue("\u{1F4C4} Loaded existing chelonia.json"));
     } catch (error2) {
@@ -83764,181 +83940,6 @@ var parseArgs = () => {
   return yargsInstance;
 };
 var parseArgs_default = parseArgs;
-init_zod();
-init_backend_schemas();
-var portSchema = number2().int().min(1, "must be an integer between 1 and 65535").max(65535, "must be an integer between 1 and 65535");
-var positiveInt = number2().int().positive("must be a positive integer");
-var BackendOptionsSchema = strictObject({
-  fs: optional(FsOptionsSchema),
-  sqlite: optional(SqliteOptionsSchema),
-  redis: optional(RedisOptionsSchema),
-  router: optional(RouterOptionsSchema)
-});
-var ConfigSchema = strictObject({
-  // Set via the `--app-manifest` CLI flag; allowed in TOML for completeness.
-  appManifest: optional(string2()),
-  server: optional(strictObject({
-    appDir: optional(string2()),
-    host: optional(string2().min(1, "must be a non-empty string")),
-    port: optional(portSchema),
-    dashboardPort: optional(portSchema),
-    fileUploadMaxBytes: optional(positiveInt),
-    // NOTE: validated for shape only; the logger reads `LOG_LEVEL` from the
-    // environment directly (see `src/serve/logger.ts`). A warning is printed
-    // at server startup if this key is set without `LOG_LEVEL`.
-    logLevel: optional(_enum(["trace", "debug", "info", "warn", "error", "fatal", "silent"])),
-    // Deliberately loose: server messages are app-defined and passed verbatim
-    // to clients (see `routes.ts /serverMessages`), so only the array-of-objects
-    // shape is enforced, not the fields within each message.
-    messages: optional(array(record(string2(), unknown()))),
-    maxEventsBatchSize: optional(positiveInt),
-    archiveMode: optional(boolean2()),
-    signup: optional(strictObject({
-      disabled: optional(boolean2()),
-      limit: optional(strictObject({
-        disabled: optional(boolean2()),
-        // Positive (not merely non-negative) to match the runtime, which falls
-        // back to a default when these are falsy (see `routes.ts`), so `0`
-        // would be silently ignored rather than meaning "no signups".
-        minute: optional(positiveInt),
-        hour: optional(positiveInt),
-        day: optional(positiveInt)
-      }))
-    })),
-    // The VAPID email is read from `server:vapid:email` at runtime
-    // (see `src/serve/vapid.ts`).
-    vapid: optional(strictObject({
-      email: optional(string2())
-    }))
-  })),
-  database: optional(strictObject({
-    backend: optional(_enum(["mem", "fs", "sqlite", "redis", "router"], {
-      error: '"backend" must be one of: mem, fs, sqlite, redis, router'
-    })),
-    lruNumItems: optional(positiveInt),
-    backendOptions: optional(BackendOptionsSchema)
-  }))
-});
-function editDistance(a, b) {
-  const m3 = a.length;
-  const n = b.length;
-  const d = Array.from({ length: m3 + 1 }, () => new Array(n + 1).fill(0));
-  for (let i2 = 0; i2 <= m3; i2++) d[i2][0] = i2;
-  for (let j = 0; j <= n; j++) d[0][j] = j;
-  for (let i2 = 1; i2 <= m3; i2++) {
-    for (let j = 1; j <= n; j++) {
-      const cost = a[i2 - 1] === b[j - 1] ? 0 : 1;
-      d[i2][j] = Math.min(
-        d[i2 - 1][j] + 1,
-        d[i2][j - 1] + 1,
-        d[i2 - 1][j - 1] + cost
-      );
-      if (i2 > 1 && j > 1 && a[i2 - 1] === b[j - 2] && a[i2 - 2] === b[j - 1]) {
-        d[i2][j] = Math.min(d[i2][j], d[i2 - 2][j - 2] + 1);
-      }
-    }
-  }
-  return d[m3][n];
-}
-function suggest(key, candidates) {
-  let best;
-  let bestDist = Infinity;
-  for (const c of candidates) {
-    const dist = editDistance(key, c);
-    if (dist < bestDist && dist <= Math.max(1, Math.floor(key.length / 2))) {
-      best = c;
-      bestDist = dist;
-    }
-  }
-  return best;
-}
-var movedKeys = {
-  "server.signup.vapid": "server.vapid"
-};
-function formatPath(path8) {
-  return path8.map(String).join(".");
-}
-function validateTomlConfig(parsed) {
-  const warnings = [];
-  const errors2 = [];
-  const result = ConfigSchema.safeParse(parsed);
-  if (result.success) return { warnings, errors: errors2 };
-  for (const issue2 of result.error.issues) {
-    if (issue2.code === "unrecognized_keys") {
-      const parentPath = formatPath(issue2.path);
-      const known = knownKeysFor(issue2.path);
-      for (const key of issue2.keys) {
-        const fullPath = parentPath ? `${parentPath}.${key}` : key;
-        const movedTo = movedKeys[fullPath];
-        if (movedTo) {
-          warnings.push(`unknown key ${fullPath} (moved to ${movedTo})`);
-          continue;
-        }
-        const hint = suggest(key, known);
-        warnings.push(
-          hint ? `unknown key ${fullPath} (did you mean ${hint}?)` : `unknown key ${fullPath}`
-        );
-      }
-    } else {
-      const path8 = formatPath(issue2.path);
-      errors2.push(path8 ? `${path8}: ${issue2.message}` : issue2.message);
-    }
-  }
-  return { warnings, errors: errors2 };
-}
-function collectKnownKeys(schema) {
-  const map = /* @__PURE__ */ new Map();
-  const walk2 = (node, segments) => {
-    if (node instanceof ZodOptional) {
-      walk2(node.unwrap(), segments);
-      return;
-    }
-    if (!(node instanceof ZodObject)) return;
-    const shape = node.shape;
-    map.set(segments.join("."), Object.keys(shape));
-    for (const [key, child] of Object.entries(shape)) {
-      walk2(child, [...segments, key]);
-    }
-  };
-  walk2(schema, []);
-  return map;
-}
-var knownKeysMap = collectKnownKeys(ConfigSchema);
-var firstRouterVariant = RouterConfigEntrySchema.options[0];
-if (!(firstRouterVariant instanceof ZodObject)) {
-  throw new Error("RouterConfigEntrySchema variant is not an object schema");
-}
-var routerEntryKeys = Object.keys(firstRouterVariant.shape);
-function knownKeysFor(path8) {
-  if (path8.length === 4 && path8[0] === "database" && path8[1] === "backendOptions" && path8[2] === "router") {
-    return routerEntryKeys;
-  }
-  return knownKeysMap.get(formatPath(path8)) ?? [];
-}
-async function validateConfigFile(filePath) {
-  let raw2;
-  try {
-    raw2 = await readFile4(filePath, { encoding: "utf-8", flag: "r" });
-  } catch (e2) {
-    if (e2?.code === "ENOENT") return;
-    throw e2;
-  }
-  let parsed;
-  try {
-    parsed = parse8(raw2);
-  } catch (e2) {
-    throw new Error(`Could not parse ${filePath}: ${e2.message}`);
-  }
-  const { warnings, errors: errors2 } = validateTomlConfig(parsed);
-  for (const warning of warnings) {
-    console.warn(`[chel] ${filePath}: ${warning}`);
-  }
-  if (errors2.length) {
-    const listing = errors2.map((e2) => `  - ${e2}`).join("\n");
-    throw new Error(`Invalid ${filePath}:
-${listing}`);
-  }
-}
 var nconfDefaults = {
   server: {
     appDir: ".",
@@ -83955,7 +83956,6 @@ var nconfDefaults = {
         day: 50
       }
     },
-    logLevel: "debug",
     messages: [],
     maxEventsBatchSize: 500,
     archiveMode: false

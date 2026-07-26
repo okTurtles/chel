@@ -5,6 +5,7 @@ import 'jsr:@db/sqlite'
 import { assertThrows } from 'jsr:@std/assert'
 import { cloneDeep, omit } from 'npm:turtledash'
 import RouterBackend from './database-router.ts'
+import { RouterOptionsSchema } from './backend-schemas.ts'
 
 // CID for shelter-contract-text.
 const CID = '\x51\x1e\x01'
@@ -30,24 +31,24 @@ const validConfig = {
 const db = new RouterBackend(validConfig)
 
 Deno.test({
-  name: 'RouterBackend::validateConfig',
+  name: 'RouterOptionsSchema validation',
   async fn (t: Deno.TestContext) {
     await t.step('should accept a valid config', () => {
-      const errors = db.validateConfig(validConfig)
-      if (errors.length !== 0) throw new Error(`Expected 0 errors but got ${errors.length}`)
+      const result = RouterOptionsSchema.safeParse(validConfig)
+      if (!result.success) throw new Error(`Expected success but got ${result.error.issues.length} errors`)
     })
 
     await t.step('should reject configs missing a * key', () => {
       const config = omit(validConfig, ['*'])
-      const errors = db.validateConfig(config)
-      if (errors.length !== 1) throw new Error(`Expected 1 error but got ${errors.length}`)
+      const result = RouterOptionsSchema.safeParse(config)
+      if (result.success || result.error.issues.length !== 1) throw new Error(`Expected 1 error but got ${result.success ? 0 : result.error.issues.length}`)
     })
 
     await t.step('should reject config entries missing a name', () => {
       const config = cloneDeep(validConfig)
       delete config['*'].name
-      const errors = db.validateConfig(config)
-      if (errors.length !== 1) throw new Error(`Expected 1 error but got ${errors.length}`)
+      const result = RouterOptionsSchema.safeParse(config)
+      if (result.success || result.error.issues.length !== 1) throw new Error(`Expected 1 error but got ${result.success ? 0 : result.error.issues.length}`)
     })
   }
 })

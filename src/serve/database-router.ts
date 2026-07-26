@@ -31,17 +31,6 @@ export default class RouterBackend extends DatabaseBackend {
     return backends['*']
   }
 
-  validateConfig (config: Config): Array<{ msg: string }> {
-    // Validates a config without throwing, returning an array of error objects.
-    // The constructor already validates via ConfigSchema.parse(); this method
-    // exists for callers (e.g. tests) that need a non-throwing check.
-    const result = ConfigSchema.safeParse(config)
-    if (result.success) return []
-    return result.error.issues.map((issue) => ({
-      msg: issue.path.length ? `${issue.path.join('.')}: ${issue.message}` : issue.message
-    }))
-  }
-
   async init (): Promise<void> {
     // Init backends
     this.backends = Object.create(null) as { [key: string]: DatabaseBackend }

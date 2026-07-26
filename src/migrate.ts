@@ -9,6 +9,7 @@ import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import type DatabaseBackend from './serve/DatabaseBackend.ts'
 import { closeDB, initDB } from './serve/database.ts'
 import { exit, isValidKey } from './utils.ts'
+import { validateParsedConfig } from './validateConfig.ts'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
 import { parse, type TomlTable } from 'npm:smol-toml'
@@ -20,6 +21,7 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
 
   if (args.fromConfig) {
     const fromConfig = parse(await readFile(args.fromConfig, { encoding: 'utf-8', flag: 'r' }))
+    validateParsedConfig(fromConfig, args.fromConfig)
     const backend = nconf.get('database:backend')
     const fromBackend = (fromConfig?.database as TomlTable)?.backend
     if (fromBackend !== backend) {
@@ -42,6 +44,7 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
     let toConfigOpts: unknown
     if (args.toConfig) {
       const toConfig = parse(await readFile(args.toConfig, { encoding: 'utf-8', flag: 'r' }))
+      validateParsedConfig(toConfig, args.toConfig)
       const toBackend = (toConfig?.database as TomlTable)?.backend as string
       if (toBackend !== to) {
         console.warn(`--to-config has backend ${toBackend} but --to is ${to}`)

@@ -241,6 +241,21 @@ export function knownKeysFor (path: PropertyKey[]): string[] {
   return knownKeysMap.get(formatPath(path)) ?? []
 }
 
+// Validates an already-parsed TOML config object, printing warnings and
+// throwing an aggregated error listing on invalid values. Exported so callers
+// that parse TOML themselves (e.g. `migrate --from-config`) can share the same
+// validation path as `chel.toml`.
+export function validateParsedConfig (parsed: unknown, label: string): void {
+  const { warnings, errors } = validateTomlConfig(parsed)
+  for (const warning of warnings) {
+    console.warn(`[chel] ${label}: ${warning}`)
+  }
+  if (errors.length) {
+    const listing = errors.map((e) => `  - ${e}`).join('\n')
+    throw new Error(`Invalid ${label}:\n${listing}`)
+  }
+}
+
 // Reads, parses, and validates a TOML config file against `ConfigSchema`.
 // Prints warnings for unknown keys and throws an `Error` (listing every
 // value-shape problem) on invalid values. A missing file is ignored, mirroring
@@ -264,12 +279,5 @@ export async function validateConfigFile (filePath: string): Promise<void> {
     throw new Error(`Could not parse ${filePath}: ${(e as Error).message}`)
   }
 
-  const { warnings, errors } = validateTomlConfig(parsed)
-  for (const warning of warnings) {
-    console.warn(`[chel] ${filePath}: ${warning}`)
-  }
-  if (errors.length) {
-    const listing = errors.map((e) => `  - ${e}`).join('\n')
-    throw new Error(`Invalid ${filePath}:\n${listing}`)
-  }
+  validateParsedConfig(parsed, filePath)
 }

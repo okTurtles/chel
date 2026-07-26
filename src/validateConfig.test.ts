@@ -247,7 +247,7 @@ Deno.test({
       assertEquals(result.errors.length, 1)
       assertEquals(
         result.errors[0],
-        'database.backendOptions.router.*.name: "name" must be one of: fs, sqlite, redis (router backends cannot be nested)'
+        'database.backendOptions.router.*.name: "name" must be one of: fs, sqlite, redis'
       )
     })
 
@@ -259,7 +259,7 @@ Deno.test({
       assertEquals(result.errors.length, 1)
       assertEquals(
         result.errors[0],
-        'database.backendOptions.router.*.name: "name" must be one of: fs, sqlite, redis (router backends cannot be nested)'
+        'database.backendOptions.router.*.name: router backends cannot be nested'
       )
     })
 

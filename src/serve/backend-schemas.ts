@@ -29,9 +29,11 @@ export const RedisOptionsSchema = z.strictObject({
 export const RouterConfigEntrySchema = z.discriminatedUnion('name', [
   z.strictObject({ name: z.literal('fs'), options: FsOptionsSchema }),
   z.strictObject({ name: z.literal('sqlite'), options: SqliteOptionsSchema }),
-  z.strictObject({ name: z.literal('redis'), options: RedisOptionsSchema })
+  z.strictObject({ name: z.literal('redis'), options: RedisOptionsSchema }),
+  z.strictObject({ name: z.literal('router'), options: z.record(z.string(), z.unknown()) })
+    .refine(() => false, { error: 'router backends cannot be nested', path: ['name'] })
 ], {
-  error: '"name" must be one of: fs, sqlite, redis (router backends cannot be nested)'
+  error: '"name" must be one of: fs, sqlite, redis'
 })
 
 // A router config maps key prefixes (including the mandatory `*` fallback) to

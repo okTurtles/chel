@@ -56,6 +56,7 @@ export async function deploy (args: ArgumentsCamelCase<Params>): Promise<void> {
 }
 
 export const module = {
+  validatesConfig: true,
   builder: (yargs) => {
     return yargs
       .option('url', {
