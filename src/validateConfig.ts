@@ -137,6 +137,17 @@ function formatPath (path: PropertyKey[]): string {
   return path.map(String).join('.')
 }
 
+// Several schemas in `backend-schemas.ts` name the offending field in their
+// error message (e.g. `"url" must begin with …`) because the backends parse
+// those schemas directly, with no surrounding path context. Here the path is
+// already printed alongside the message, so drop the redundant name.
+function stripFieldPrefix (issue: { path: PropertyKey[]; message: string }): string {
+  const last = issue.path[issue.path.length - 1]
+  if (last === undefined) return issue.message
+  const prefix = `"${String(last)}" `
+  return issue.message.startsWith(prefix) ? issue.message.slice(prefix.length) : issue.message
+}
+
 // Runs the whitelist + shape validation against an already-parsed TOML object.
 // Returns `{ warnings, errors }` as human-readable strings; never throws so that
 // callers (and tests) can decide how to surface the results.
@@ -169,7 +180,7 @@ export function validateTomlConfig (parsed: unknown): ValidationResult {
       }
     } else {
       const path = formatPath(issue.path)
-      errors.push(path ? `${path}: ${issue.message}` : issue.message)
+      errors.push(path ? `${path}: ${stripFieldPrefix(issue)}` : issue.message)
     }
   }
 

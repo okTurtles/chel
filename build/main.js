@@ -73159,6 +73159,12 @@ var movedKeys = {
 function formatPath(path8) {
   return path8.map(String).join(".");
 }
+function stripFieldPrefix(issue2) {
+  const last = issue2.path[issue2.path.length - 1];
+  if (last === void 0) return issue2.message;
+  const prefix = `"${String(last)}" `;
+  return issue2.message.startsWith(prefix) ? issue2.message.slice(prefix.length) : issue2.message;
+}
 function validateTomlConfig(parsed) {
   const warnings = [];
   const errors2 = [];
@@ -73182,7 +73188,7 @@ function validateTomlConfig(parsed) {
       }
     } else {
       const path8 = formatPath(issue2.path);
-      errors2.push(path8 ? `${path8}: ${issue2.message}` : issue2.message);
+      errors2.push(path8 ? `${path8}: ${stripFieldPrefix(issue2)}` : issue2.message);
     }
   }
   return { warnings, errors: errors2 };

@@ -81,7 +81,7 @@ Deno.test({
       assertEquals(result.errors.length, 1)
       assertEquals(
         result.errors[0],
-        'database.backend: "backend" must be one of: mem, fs, sqlite, redis, router'
+        'database.backend: must be one of: mem, fs, sqlite, redis, router'
       )
     })
 
@@ -163,7 +163,7 @@ Deno.test({
         assertEquals(result.errors.length, 1, `expected 1 error for ${url}`)
         assertEquals(
           result.errors[0],
-          'database.backendOptions.redis.url: "url" must begin with redis:// or rediss://',
+          'database.backendOptions.redis.url: must begin with redis:// or rediss://',
           `unexpected message for ${url}`
         )
       }
@@ -247,7 +247,7 @@ Deno.test({
       assertEquals(result.errors.length, 1)
       assertEquals(
         result.errors[0],
-        'database.backendOptions.router.*.name: "name" must be one of: fs, sqlite, redis'
+        'database.backendOptions.router.*.name: must be one of: fs, sqlite, redis'
       )
     })
 
