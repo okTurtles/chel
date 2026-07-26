@@ -21,8 +21,8 @@ export const SqliteOptionsSchema = z.strictObject({
 
 export const RedisOptionsSchema = z.strictObject({
   url: z.optional(z.url({
-    protocol: /^(rediss?|unix)$/,
-    error: '"url" must begin with redis://, rediss://, or unix://'
+    protocol: /^rediss?$/,
+    error: '"url" must begin with redis:// or rediss://'
   }))
 })
 

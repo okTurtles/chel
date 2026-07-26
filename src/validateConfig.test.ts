@@ -155,19 +155,22 @@ Deno.test({
       assertEquals(result.errors.length, 1)
     })
 
-    await t.step('errors on a redis url that is not a redis(s):// or unix:// url', () => {
-      const result = validateTomlConfig({
-        database: { backend: 'redis', backendOptions: { redis: { url: 'localhost:6379' } } }
-      })
-      assertEquals(result.errors.length, 1)
-      assertEquals(
-        result.errors[0],
-        'database.backendOptions.redis.url: "url" must begin with redis://, rediss://, or unix://'
-      )
+    await t.step('errors on a redis url that is not a redis(s):// url', () => {
+      for (const url of ['localhost:6379', 'unix:///var/run/redis.sock']) {
+        const result = validateTomlConfig({
+          database: { backend: 'redis', backendOptions: { redis: { url } } }
+        })
+        assertEquals(result.errors.length, 1, `expected 1 error for ${url}`)
+        assertEquals(
+          result.errors[0],
+          'database.backendOptions.redis.url: "url" must begin with redis:// or rediss://',
+          `unexpected message for ${url}`
+        )
+      }
     })
 
-    await t.step('accepts rediss:// and unix:// redis urls', () => {
-      for (const url of ['rediss://example.com:6379', 'unix:///var/run/redis.sock']) {
+    await t.step('accepts redis:// and rediss:// urls', () => {
+      for (const url of ['redis://localhost:6379', 'rediss://example.com:6379']) {
         const result = validateTomlConfig({
           database: { backend: 'redis', backendOptions: { redis: { url } } }
         })

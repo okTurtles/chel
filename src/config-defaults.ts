@@ -14,7 +14,6 @@ export const nconfDefaults = {
         day: 50
       }
     },
-    logLevel: 'debug',
     messages: [],
     maxEventsBatchSize: 500,
     archiveMode: false

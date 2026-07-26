@@ -14,9 +14,9 @@ export default class RouterBackend extends DatabaseBackend {
 
   constructor (config: Config = {}) {
     super()
-    ConfigSchema.parse(config)
+    const parsed = ConfigSchema.parse(config)
     this.config = Object.fromEntries(
-      Object.entries(config).sort((a, b) => b[0].length - a[0].length)
+      Object.entries(parsed).sort((a, b) => b[0].length - a[0].length)
     ) as Config
   }
 
