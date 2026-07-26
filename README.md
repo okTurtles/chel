@@ -465,6 +465,59 @@ It may also contain an `appVersion` field for the overall application version.
 | **Format** | TOML | JSON |
 | **Example content** | Database configuration | Contract versions |
 
+## Supported Platforms
+
+Pre-compiled native binaries are published for the following platforms:
+
+| OS      | Architecture | npm sub-package              |
+|---------|--------------|------------------------------|
+| Linux   | x64          | `@chelonia/cli-x64-linux`    |
+| Linux   | arm64        | `@chelonia/cli-arm64-linux`  |
+| Windows | x64          | `@chelonia/cli-x64-win32`    |
+| macOS   | x64 (Intel)  | `@chelonia/cli-x64-darwin`   |
+| macOS   | arm64 (Apple Silicon) | `@chelonia/cli-arm64-darwin` |
+
+When you install `@chelonia/cli`, npm automatically selects the correct
+sub-package for your platform via `optionalDependencies`. Windows arm64 is
+currently **not** supported.
+
+## Packaging
+
+Steps to publish a new release of `@chelonia/cli` to npm:
+
+1. **Bump the version:**
+
+   ```bash
+   npm version patch   # or minor / major
+   ```
+
+   This triggers the `version` lifecycle hook, which runs `deno task sync-versions`
+   to update `optionalDependencies` in `package.json` so they match the new version.
+   The hook also stages the change so it is included in the version commit.
+
+2. **Publish:**
+
+   ```bash
+   npm publish
+   ```
+
+   This triggers the `prepublishOnly` hook, which runs `deno task publish`.
+   That script:
+   - Builds the JS bundle (`deno task build`)
+   - Compiles a native binary for each supported platform
+   - Creates and publishes a platform sub-package (`@chelonia/cli-<arch>-<os>`) for each target
+   - Reconciles `optionalDependencies` as a final safety check
+
+   After the sub-packages are published, `npm publish` proceeds to publish the
+   main `@chelonia/cli` package, whose `optionalDependencies` now point to the
+   freshly published sub-packages.
+
+3. **Push the version commit and tag:**
+
+   ```bash
+   git push && git push --tags
+   ```
+
 ## History
 
 See [HISTORY.md](HISTORY.md)

@@ -6,3 +6,4 @@ data/
 chelonia.json
 chel.toml
 /.agents/
+/test/temp/

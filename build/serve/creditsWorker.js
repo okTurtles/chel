@@ -4784,9 +4784,19 @@ self.addEventListener("message", (ev) => {
     })();
   });
 });
-esm_default("okTurtles.eventQueue/queueEvent", readyQueueName, () => {
-  self.postMessage("ready");
-});
+var signalReady = () => {
+  esm_default("okTurtles.eventQueue/queueEvent", readyQueueName, () => {
+    self.postMessage("ready");
+  });
+};
+var signalInitError = (e) => {
+  esm_default("okTurtles.eventQueue/queueEvent", readyQueueName, () => {
+    self.postMessage({
+      type: "init-error",
+      error: e instanceof Error ? e.message : String(e)
+    });
+  });
+};
 var PICOCREDITS_PER_BYTESECOND = BigInt(10);
 var GRANULAR_HISTORY_MAX_ENTRIES = 1e3;
 var COARSE_HISTORY_MAX_ENTRIES = 1e3;
@@ -4878,7 +4888,14 @@ var updateCredits = async (billableEntity, type, amount) => {
     await esm_default("chelonia.db/set", granularHistoryKey, JSON.stringify(granularHistory));
   });
 };
-esm_default("okTurtles.eventQueue/queueEvent", readyQueueName, () => setTimeout(esm_default, CREDITS_WORKER_TASK_TIME_INTERVAL, "worker/computeCredits"));
+esm_default("okTurtles.eventQueue/queueEvent", readyQueueName, () => {
+  try {
+    setTimeout(esm_default, CREDITS_WORKER_TASK_TIME_INTERVAL, "worker/computeCredits");
+    signalReady();
+  } catch (e) {
+    signalInitError(e);
+  }
+});
 esm_default("sbp/selectors/register", {
   "worker/computeCredits": async () => {
     const billableEntities = await esm_default("chelonia.db/get", "_private_billable_entities", { bypassCache: true });

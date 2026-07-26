@@ -52,6 +52,15 @@ const createWorker = (path: string): WorkerType => {
             })
           }, false)
           resolve()
+        } else if (msg && typeof msg === 'object' && msg.type === 'init-error') {
+          // Worker initialization failed. Reject the `ready` promise so server
+          // startup fails loudly instead of silently proceeding with a
+          // half-initialized worker, and terminate the broken worker to avoid
+          // leaking it. See `signalInitError` in genericWorker.ts.
+          worker.removeEventListener('message', msgHandler, false)
+          worker.removeEventListener('error', reject, { capture: false })
+          worker.terminate()
+          reject(new Error(`Worker ${basename(path)} failed to initialize: ${String((msg as { error?: string }).error)}`))
         } else if (msg && typeof msg === 'object' && msg.type === 'sbp' && Array.isArray(msg.data) && String(msg.data[0]).startsWith('chelonia.db/')) {
           const port = msg.port
           Promise.try(() => sbp(...(deserializer(msg.data)) as [string, ...unknown[]])).then((r) => {
