@@ -3,7 +3,7 @@ import * as sqlite from 'jsr:@db/sqlite'
 import { Buffer } from 'node:buffer'
 import { mkdir } from 'node:fs/promises'
 import { basename, dirname, join, resolve } from 'node:path'
-import { SqliteOptionsSchema as ConfigSchema } from './backend-schemas.ts'
+import { SqliteOptionsSchema as ConfigSchema, type SqliteOptions } from './backend-schemas.ts'
 import DatabaseBackend from './DatabaseBackend.ts'
 
 export default class SqliteBackend extends DatabaseBackend {
@@ -16,7 +16,7 @@ export default class SqliteBackend extends DatabaseBackend {
   iterKeysStatement: { iter: () => Iterable<{key: string}> } | null = null
   keyCountStatement: { get: () => { count: number } | undefined } | null = null
 
-  constructor (options: { filepath?: string } = {}) {
+  constructor (options: SqliteOptions = {}) {
     super()
     ConfigSchema.parse(options)
     const { filepath } = options

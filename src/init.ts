@@ -8,7 +8,7 @@ type Params = { force?: boolean }
 const DEFAULT_CONFIG_PATH = 'chel.toml'
 
 // Template written by `chel init`. Every default value is interpolated from
-// `SERVER_DEFAULTS` (single source of truth in `src/parseConfig.ts`) so the
+// `SERVER_DEFAULTS` (single source of truth in `src/config-defaults.ts`) so the
 // generated `chel.toml` cannot silently drift from the runtime defaults.
 const tomlValue = (v: unknown): string => {
   if (typeof v === 'string') return `"${v}"`
@@ -36,7 +36,6 @@ host = ${tomlValue(d.server.host)}
 port = ${tomlValue(d.server.port)}
 dashboardPort = ${tomlValue(d.server.dashboardPort)}
 # fileUploadMaxBytes = ${tomlValue(d.server.fileUploadMaxBytes)}
-# logLevel = ${tomlValue(d.server.logLevel)}
 # maxEventsBatchSize = ${tomlValue(d.server.maxEventsBatchSize)}
 # archiveMode = ${tomlValue(d.server.archiveMode)}
 # reclaimForeignSubscriptions = ${tomlValue(d.server.reclaimForeignSubscriptions)}

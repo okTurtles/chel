@@ -9,7 +9,6 @@ export const nconfDefaults = {
     port: 8000,
     dashboardPort: 8888,
     fileUploadMaxBytes: 31457280,
-    logLevel: 'debug',
     signup: {
       disabled: false,
       limit: {

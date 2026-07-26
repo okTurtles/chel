@@ -294,6 +294,22 @@ Deno.test({
       )
     })
 
+    await t.step('suggests a known key for typos inside a router entry options', () => {
+      const result = validateTomlConfig({
+        database: {
+          backendOptions: {
+            router: { '*': { name: 'fs', options: { dirnaem: 'data' } } }
+          }
+        }
+      })
+      assertEquals(result.errors, [])
+      assertEquals(result.warnings.length, 1)
+      assertEquals(
+        result.warnings[0],
+        'unknown key database.backendOptions.router.*.options.dirnaem (did you mean dirname?)'
+      )
+    })
+
     await t.step('warns that server.signup.vapid is not a recognised key', () => {
       const result = validateTomlConfig({
         server: { signup: { vapid: { email: 'a@b.c' } } }
@@ -358,6 +374,14 @@ Deno.test({
         knownKeysFor(['database', 'backendOptions', 'router', '*']).sort(),
         Object.keys(firstVariant.shape).sort(),
         'knownKeysFor drift at router entry'
+      )
+      assertEquals(
+        knownKeysFor(['database', 'backendOptions', 'router', '*', 'options']).sort(),
+        [
+          'depth', 'dirname', 'filepath', 'keyChunkLength',
+          'skipFsCaseSensitivityCheck', 'url'
+        ].sort(),
+        'knownKeysFor drift at router entry options'
       )
     })
   }

@@ -2,7 +2,7 @@ import type { Buffer } from 'node:buffer'
 import { mkdir, readdir, readFile, rm, unlink, writeFile } from 'node:fs/promises'
 import { basename, dirname, join, normalize, resolve } from 'node:path'
 import { checkKey } from 'npm:@chelonia/lib/db'
-import { FsOptionsSchema as ConfigSchema } from './backend-schemas.ts'
+import { FsOptionsSchema as ConfigSchema, type FsOptions } from './backend-schemas.ts'
 import DatabaseBackend from './DatabaseBackend.ts'
 
 // Some operating systems (such as macOS and Windows) use case-insensitive
@@ -47,7 +47,7 @@ export default class FsBackend extends DatabaseBackend {
   keyChunkLength: number = 2
   skipFsCaseSensitivityCheck: boolean = false
 
-  constructor (options: { dirname?: string; depth?: number; keyChunkLength?: number, skipFsCaseSensitivityCheck?: boolean } = {}) {
+  constructor (options: FsOptions = {}) {
     super()
     ConfigSchema.parse(options)
     if (options.dirname) this.dataFolder = resolve(options.dirname)

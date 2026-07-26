@@ -45,3 +45,9 @@ export const RouterOptionsSchema = z
     (v) => '*' in v,
     { error: 'router backend requires a "*" (fallback) entry' }
   )
+
+// Inferred option types, exported so each backend's constructor signature stays
+// in sync with its schema automatically instead of hand-writing the same shape.
+export type FsOptions = z.infer<typeof FsOptionsSchema>
+export type SqliteOptions = z.infer<typeof SqliteOptionsSchema>
+export type RedisOptions = z.infer<typeof RedisOptionsSchema>

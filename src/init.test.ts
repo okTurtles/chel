@@ -120,7 +120,6 @@ Deno.test({
         const expectedCommented = [
           `# appDir = "${d.server.appDir}"`,
           `# fileUploadMaxBytes = ${d.server.fileUploadMaxBytes}`,
-          `# logLevel = "${d.server.logLevel}"`,
           `# maxEventsBatchSize = ${d.server.maxEventsBatchSize}`,
           `# archiveMode = ${d.server.archiveMode}`,
           `# reclaimForeignSubscriptions = ${d.server.reclaimForeignSubscriptions}`,

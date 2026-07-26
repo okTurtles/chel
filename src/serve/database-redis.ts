@@ -1,13 +1,13 @@
 import { Buffer } from 'node:buffer'
 import { RESP_TYPES, createClient, type RedisClientType } from 'npm:redis'
-import { RedisOptionsSchema as ConfigSchema } from './backend-schemas.ts'
+import { RedisOptionsSchema as ConfigSchema, type RedisOptions } from './backend-schemas.ts'
 import DatabaseBackend from './DatabaseBackend.ts'
 
 export default class RedisBackend extends DatabaseBackend {
   db: RedisClientType | null = null
   url: string | undefined
 
-  constructor (options: { url?: string } = {}) {
+  constructor (options: RedisOptions = {}) {
     super()
     ConfigSchema.parse(options)
     this.url = options.url

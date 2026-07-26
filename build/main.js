@@ -72929,7 +72929,6 @@ host = ${tomlValue(d.server.host)}
 port = ${tomlValue(d.server.port)}
 dashboardPort = ${tomlValue(d.server.dashboardPort)}
 # fileUploadMaxBytes = ${tomlValue(d.server.fileUploadMaxBytes)}
-# logLevel = ${tomlValue(d.server.logLevel)}
 # maxEventsBatchSize = ${tomlValue(d.server.maxEventsBatchSize)}
 # archiveMode = ${tomlValue(d.server.archiveMode)}
 # reclaimForeignSubscriptions = ${tomlValue(d.server.reclaimForeignSubscriptions)}
@@ -73314,9 +73313,20 @@ if (!(firstRouterVariant instanceof ZodObject)) {
   throw new Error("RouterConfigEntrySchema variant is not an object schema");
 }
 var routerEntryKeys = Object.keys(firstRouterVariant.shape);
+var routerEntryOptionKeys = Array.from(new Set(
+  RouterConfigEntrySchema.options.flatMap((variant) => {
+    if (!(variant instanceof ZodObject)) return [];
+    const options2 = variant.shape.options;
+    const inner = options2 instanceof ZodOptional ? options2.unwrap() : options2;
+    return inner instanceof ZodObject ? Object.keys(inner.shape) : [];
+  })
+));
 function knownKeysFor(path9) {
   if (path9.length === 4 && path9[0] === "database" && path9[1] === "backendOptions" && path9[2] === "router") {
     return routerEntryKeys;
+  }
+  if (path9.length === 5 && path9[0] === "database" && path9[1] === "backendOptions" && path9[2] === "router" && path9[4] === "options") {
+    return routerEntryOptionKeys;
   }
   return knownKeysMap.get(formatPath(path9)) ?? [];
 }
@@ -84120,7 +84130,6 @@ var nconfDefaults = {
     port: 8e3,
     dashboardPort: 8888,
     fileUploadMaxBytes: 31457280,
-    logLevel: "debug",
     signup: {
       disabled: false,
       limit: {

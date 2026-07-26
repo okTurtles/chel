@@ -238,6 +238,19 @@ if (!(firstRouterVariant instanceof z.ZodObject)) {
 }
 const routerEntryKeys = Object.keys(firstRouterVariant.shape)
 
+// Keys valid inside a router entry's `options` object. Each variant of the
+// discriminated union carries its own options schema; union the object keys
+// across variants so typo suggestions work whatever backend the entry targets.
+// The nested `router` variant's record-typed options contribute no fixed keys.
+const routerEntryOptionKeys = Array.from(new Set(
+  RouterConfigEntrySchema.options.flatMap((variant) => {
+    if (!(variant instanceof z.ZodObject)) return []
+    const options = (variant.shape as Record<string, z.ZodType>).options
+    const inner = options instanceof z.ZodOptional ? options.unwrap() as z.ZodType : options
+    return inner instanceof z.ZodObject ? Object.keys(inner.shape) : []
+  })
+))
+
 // Returns the set of valid immediate child keys for a given path in the config
 // tree, used to generate typo suggestions.
 export function knownKeysFor (path: PropertyKey[]): string[] {
@@ -254,6 +267,19 @@ export function knownKeysFor (path: PropertyKey[]): string[] {
     path[2] === 'router'
   ) {
     return routerEntryKeys
+  }
+  // Keys *within* a router entry's `options` object
+  // (`database.backendOptions.router.<prefix>.options`). The valid keys depend
+  // on the entry's `name`, but we suggest from the union across variants; the
+  // prefix is the 4th segment and may contain dots, so match on the array.
+  if (
+    path.length === 5 &&
+    path[0] === 'database' &&
+    path[1] === 'backendOptions' &&
+    path[2] === 'router' &&
+    path[4] === 'options'
+  ) {
+    return routerEntryOptionKeys
   }
   return knownKeysMap.get(formatPath(path)) ?? []
 }
