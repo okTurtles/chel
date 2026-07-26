@@ -72943,14 +72943,14 @@ dashboardPort = ${tomlValue(d.server.dashboardPort)}
 # hour = ${tomlValue(d.server.signup.limit.hour)}
 # day = ${tomlValue(d.server.signup.limit.day)}
 
-[server.signup.vapid]
+[server.vapid]
 # email = "you@example.com"
 
 [database]
 backend = ${tomlValue(d.database.backend)}
+# lruNumItems = ${tomlValue(d.database.lruNumItems)}
 
 [database.backendOptions]
-# lruNumItems = ${tomlValue(d.database.lruNumItems)}
 `;
 };
 var init2 = async (args) => {
