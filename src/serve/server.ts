@@ -127,7 +127,7 @@ function installServerSelectorsOnce (): void {
     // response header. Clients store it and replay it verbatim as an If-Match
     // precondition; broadcasting an unquoted CID permanently breaks echo
     // suppression and causes subsequent local writes to fail with 412.
-    'backend/server/broadcastKV': async function (contractID: string, key: string, entry: string, etag?: string) {
+    'backend/server/broadcastKV': async function (contractID: string, key: string, entry: string, etag: string) {
       const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE) as WSS
       const pubsubMessage = createKvMessage(contractID, key, entry, etag)
       const subscribers = pubsub.enumerateSubscribers(contractID, key)

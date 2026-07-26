@@ -969,7 +969,6 @@ export function registerRoutes (app: Hono): void {
         if (!expectedEtag) {
           throw new HTTPException(400, { message: 'if-match is required' })
         }
-        // "Quote" string (to match ETag format)
         // ETag/x-cid is the content-address of the raw stored bytes; GET hashes
         // the same bytes (also read via `any:`), so all ETags for a value match.
         const cid = existing ? createCID(existing, multicodes.RAW) : ''
