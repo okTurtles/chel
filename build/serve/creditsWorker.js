@@ -4687,7 +4687,18 @@ function logMethod(args, method) {
   }
   method.apply(this, args);
 }
-var logger = (0, import_npm_pino.default)({ hooks: { logMethod } });
+var isTestRun = (() => {
+  try {
+    return /\.test\.[mc]?[tj]sx?(?:$|\?)/.test(new URL(Deno.mainModule).pathname);
+  } catch {
+    return false;
+  }
+})();
+var pinoFactory = import_npm_pino.default;
+var logger = isTestRun ? pinoFactory(
+  { hooks: { logMethod } },
+  import_npm_pino.default.destination({ fd: process2.stdout.fd || 1, sync: true })
+) : pinoFactory({ hooks: { logMethod } });
 var logLevel = getLogLevel();
 if (Object.keys(logger.levels.values).includes(logLevel)) {
   logger.level = logLevel;

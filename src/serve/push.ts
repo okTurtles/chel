@@ -6,6 +6,7 @@ import encrypt from 'npm:@apeleghq/rfc8188/encrypt'
 import { getSubscriptionId } from 'npm:@chelonia/lib/functions'
 import { PUSH_SERVER_ACTION_TYPE, REQUEST_TYPE, createMessage } from 'npm:@chelonia/lib/pubsub'
 import sbp from 'npm:@sbp/sbp'
+import nconf from 'npm:nconf'
 import { appendToIndexFactory, removeFromIndexFactory } from './database.ts'
 import { PUBSUB_INSTANCE } from './instance-keys.ts'
 import type { WS, WSS } from './pubsub.ts'
@@ -49,14 +50,31 @@ interface PushServerActionHandlers {
 // const pushController = require('web-push') - commented out as not used
 
 const addSubscriptionToIndex = appendToIndexFactory('_private_webpush_index')
-const deleteSubscriptionFromIndex = removeFromIndexFactory('_private_webpush_index')
+export const deleteSubscriptionFromIndex = removeFromIndexFactory('_private_webpush_index')
+
+// Shared by `saveSubscription` (live writes) and the legacy adoption path in
+// `server.ts` (one-shot re-tag on restart). Keep the shape in one place so the
+// two paths cannot drift — a mismatch would only surface on the *next* restart
+// when re-tagged entries fail to deserialize.
+export const serializePushSubscriptionPayload = (
+  serverId: string,
+  settings: unknown,
+  subscriptionInfo: unknown,
+  channelIDs: string[]
+): string => {
+  return JSON.stringify({ serverId, settings, subscriptionInfo, channelIDs })
+}
 
 const saveSubscription = (server: WSS, subscriptionId: string): Promise<void> => {
-  return sbp('chelonia.db/set', `_private_webpush_${subscriptionId}`, JSON.stringify({
-    settings: server.pushSubscriptions[subscriptionId].settings,
-    subscriptionInfo: server.pushSubscriptions[subscriptionId],
-    channelIDs: [...server.pushSubscriptions[subscriptionId].subscriptions]
-  })).catch((e: unknown) => {
+  return sbp('chelonia.db/set', `_private_webpush_${subscriptionId}`, serializePushSubscriptionPayload(
+    // Tag the subscription with the configured `server_id` so that, on load,
+    // entries written by a different instance (e.g. a staging DB restored from
+    // a prod backup) can be detected and skipped. See `src/serve/server.ts`.
+    nconf.get('server_id'),
+    server.pushSubscriptions[subscriptionId].settings,
+    server.pushSubscriptions[subscriptionId],
+    [...server.pushSubscriptions[subscriptionId].subscriptions]
+  )).catch((e: unknown) => {
     console.error(e, 'Error saving subscription', subscriptionId)
     throw e // rethrow
   })

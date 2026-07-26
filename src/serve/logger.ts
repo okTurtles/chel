@@ -35,7 +35,35 @@ type Logger = {
 // confusing "unable to determine transport target" warning. Callers that want
 // pretty output should pipe our stderr through `pino-pretty` externally (this
 // is what Group Income does).
-const logger = (pino as unknown as (config: unknown) => Logger)({ hooks: { logMethod } })
+// Detect whether this process is a `deno test` run. Under `deno test` the main
+// module is the test file (e.g. `…/server-id.test.ts`); under the real server
+// it is `main.ts` or the compiled binary, never a `*.test.*` file. We use this
+// to make logging synchronous only under the test runner — see below.
+const isTestRun = (() => {
+  try {
+    return /\.test\.[mc]?[tj]sx?(?:$|\?)/.test(new URL(Deno.mainModule).pathname)
+  } catch {
+    return false
+  }
+})()
+
+// Pino's default destination is an async `sonic-boom` (with `minLength: 0`),
+// so every log line dispatches an `fs.write` (`op_write`) that may still be in
+// flight when a Deno test ends — Deno's resource sanitizer then reports "An
+// async call to op_write was started before the test, but completed during the
+// test." That async behaviour is what we want for the real server (it keeps the
+// event loop from blocking on every log line), but under `deno test` we route
+// output through a *synchronous* destination (`fs.writeSync` per line) so each
+// write completes inline and no async op straddles a test boundary. The
+// production path is left on pino's built-in default destination, unchanged.
+const pinoFactory = pino as unknown as (config: unknown, dest?: unknown) => Logger
+const logger = isTestRun
+  ? pinoFactory(
+    { hooks: { logMethod } },
+    (pino as unknown as { destination: (opts: { fd: number; sync: boolean }) => unknown })
+      .destination({ fd: process.stdout.fd || 1, sync: true })
+  )
+  : pinoFactory({ hooks: { logMethod } })
 
 const logLevel = getLogLevel()
 if (Object.keys(logger.levels.values).includes(logLevel)) {
