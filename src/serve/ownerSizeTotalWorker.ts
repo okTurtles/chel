@@ -1,7 +1,7 @@
 import sbp from 'npm:@sbp/sbp'
 import { OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL as TASK_TIME_INTERVAL } from './constants.ts'
 import { appendToIndexFactory, lookupUltimateOwner, removeFromIndexFactory, updateSize } from './db-utils.ts'
-import { readyQueueName } from './genericWorker.ts'
+import { readyQueueName, signalReady, signalInitError } from './genericWorker.ts'
 
 // This file defines two different methods for doing size computations:
 // `backend/server/computeSizeTaskDeltas` and `backend/server/computeSizeTask`.
@@ -74,27 +74,39 @@ const removeFromTempIndex = (cids: string[]) => {
  * previous unclean shutdown).
  */
 sbp('okTurtles.eventQueue/queueEvent', readyQueueName, async () => {
-  // Iterate through all 256 possible bucket keys.
-  for (let i = 0; i < 256; i++) {
-    // Fetch the content of the bucket
-    // (bypassCache isn't really needed here as the cache should be empty, but
-    // it's added for clarity.)
-    const data = await sbp('chelonia.db/get', `_private_pendingIdx_ownerTotalSize_${i}`, { bypassCache: true })
-    if (data) {
-      // Split the string and add mark each CID as requiring full recalculation
-      (data as string).split('\x00').forEach((cid: string) => {
-        updatedSizeList.add(cid)
-      })
+  try {
+    // Iterate through all 256 possible bucket keys.
+    for (let i = 0; i < 256; i++) {
+      // Fetch the content of the bucket
+      // (bypassCache isn't really needed here as the cache should be empty, but
+      // it's added for clarity.)
+      const data = await sbp('chelonia.db/get', `_private_pendingIdx_ownerTotalSize_${i}`, { bypassCache: true })
+      if (data) {
+        // Split the string and add mark each CID as requiring full recalculation
+        (data as string).split('\x00').forEach((cid: string) => {
+          updatedSizeList.add(cid)
+        })
+      }
     }
-  }
 
-  console.info(`[ownerSizeTotalWorker] Loaded ${updatedSizeList.size} CIDs for full recalculation.`)
-  if (updatedSizeList.size) {
-    sbp('backend/server/computeSizeTask')
-  }
+    console.info(`[ownerSizeTotalWorker] Loaded ${updatedSizeList.size} CIDs for full recalculation.`)
+    if (updatedSizeList.size) {
+      sbp('backend/server/computeSizeTask')
+    }
 
-  // Schedule the recurring delta computation task
-  setTimeout(sbp, TASK_TIME_INTERVAL, 'backend/server/computeSizeTaskDeltas')
+    // Schedule the recurring delta computation task
+    setTimeout(sbp, TASK_TIME_INTERVAL, 'backend/server/computeSizeTaskDeltas')
+    // Signal ready only after init completes successfully. This must run
+    // after the 256 init DB calls so their `rpc()` MessagePorts are fully
+    // drained and closed on the main thread before `ready` fires. See
+    // `signalReady` in genericWorker.ts for the full rationale.
+    signalReady()
+  } catch (e) {
+    console.error('[ownerSizeTotalWorker] Initialization error:', e)
+    // Surface the failure so server startup fails loudly instead of silently
+    // proceeding with a half-initialized worker.
+    signalInitError(e)
+  }
 })
 
 sbp('sbp/selectors/register', {

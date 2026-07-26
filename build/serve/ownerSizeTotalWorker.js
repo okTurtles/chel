@@ -4858,9 +4858,19 @@ self.addEventListener("message", (ev) => {
     })();
   });
 });
-esm_default("okTurtles.eventQueue/queueEvent", readyQueueName, () => {
-  self.postMessage("ready");
-});
+var signalReady = () => {
+  esm_default("okTurtles.eventQueue/queueEvent", readyQueueName, () => {
+    self.postMessage("ready");
+  });
+};
+var signalInitError = (e) => {
+  esm_default("okTurtles.eventQueue/queueEvent", readyQueueName, () => {
+    self.postMessage({
+      type: "init-error",
+      error: e instanceof Error ? e.message : String(e)
+    });
+  });
+};
 var updatedSizeList = /* @__PURE__ */ new Set();
 var updatedSizeMap = /* @__PURE__ */ new Map();
 var cachedUltimateOwnerMap = /* @__PURE__ */ new Map();
@@ -4889,19 +4899,25 @@ var removeFromTempIndex = (cids) => {
   }));
 };
 esm_default("okTurtles.eventQueue/queueEvent", readyQueueName, async () => {
-  for (let i = 0; i < 256; i++) {
-    const data = await esm_default("chelonia.db/get", `_private_pendingIdx_ownerTotalSize_${i}`, { bypassCache: true });
-    if (data) {
-      data.split("\0").forEach((cid) => {
-        updatedSizeList.add(cid);
-      });
+  try {
+    for (let i = 0; i < 256; i++) {
+      const data = await esm_default("chelonia.db/get", `_private_pendingIdx_ownerTotalSize_${i}`, { bypassCache: true });
+      if (data) {
+        data.split("\0").forEach((cid) => {
+          updatedSizeList.add(cid);
+        });
+      }
     }
+    console.info(`[ownerSizeTotalWorker] Loaded ${updatedSizeList.size} CIDs for full recalculation.`);
+    if (updatedSizeList.size) {
+      esm_default("backend/server/computeSizeTask");
+    }
+    setTimeout(esm_default, OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL, "backend/server/computeSizeTaskDeltas");
+    signalReady();
+  } catch (e) {
+    console.error("[ownerSizeTotalWorker] Initialization error:", e);
+    signalInitError(e);
   }
-  console.info(`[ownerSizeTotalWorker] Loaded ${updatedSizeList.size} CIDs for full recalculation.`);
-  if (updatedSizeList.size) {
-    esm_default("backend/server/computeSizeTask");
-  }
-  setTimeout(esm_default, OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL, "backend/server/computeSizeTaskDeltas");
 });
 esm_default("sbp/selectors/register", {
   /**
