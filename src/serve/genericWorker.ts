@@ -86,6 +86,34 @@ self.addEventListener('message', (ev) => {
   })
 })
 
-sbp('okTurtles.eventQueue/queueEvent', readyQueueName, () => {
-  self.postMessage('ready')
-})
+// Signals to the main thread that the worker is fully initialized and ready
+// to handle RPC calls. This MUST be called by each concrete worker at the end
+// of a *successful* init task — not at module load time, and not from a
+// `finally` block. If `ready` is posted before init completes, the main thread
+// treats the worker as usable and may terminate it while init-era `rpc()`
+// MessagePorts are still in flight on the worker->main message channel. Those
+// ports were already transferred out of the worker (so it can't close them)
+// but never reached the main thread's `msgHandler` (so it can't close them
+// either), leaving them orphaned and triggering Deno's resource sanitizer
+// leak detector. On init failure, call `signalInitError` instead so the main
+// thread rejects the `ready` promise and fails loudly rather than silently
+// proceeding with a half-initialized worker.
+export const signalReady = () => {
+  sbp('okTurtles.eventQueue/queueEvent', readyQueueName, () => {
+    self.postMessage('ready')
+  })
+}
+
+// Signals an initialization failure to the main thread. The main thread
+// rejects the worker's `ready` promise with the supplied error (and terminates
+// the worker), causing server startup to fail rather than silently proceeding
+// with a half-initialized worker. Use this in the `catch` block of a worker's
+// init task.
+export const signalInitError = (e: unknown) => {
+  sbp('okTurtles.eventQueue/queueEvent', readyQueueName, () => {
+    self.postMessage({
+      type: 'init-error',
+      error: e instanceof Error ? e.message : String(e)
+    })
+  })
+}

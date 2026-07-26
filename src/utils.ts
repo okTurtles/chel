@@ -154,6 +154,11 @@ export async function shell (command: string, options: ShellOptions = {}): Promi
   return decoder.decode(stdout).trim()
 }
 
+// Convenience wrapper for the common case of running a shell command with
+// `printOutput: true`. Returns the (trimmed) stdout.
+export const $ = (command: string): Promise<string> =>
+  shell(command, { printOutput: true })
+
 export const findManifestFiles = async (path: string): Promise<Set<string>> => {
   const visited = new Set<string>()
   const internal = async (path: string) => {

@@ -1,6 +1,6 @@
 import sbp from 'npm:@sbp/sbp'
 import { CREDITS_WORKER_TASK_TIME_INTERVAL as TASK_TIME_INTERVAL } from './constants.ts'
-import { readyQueueName } from './genericWorker.ts'
+import { readyQueueName, signalReady, signalInitError } from './genericWorker.ts'
 
 // Type definitions for credit history entries
 interface GranularHistoryEntryBase {
@@ -187,7 +187,16 @@ const updateCredits = async (billableEntity: string, type: 'credit' | 'charge', 
   })
 }
 
-sbp('okTurtles.eventQueue/queueEvent', readyQueueName, () => setTimeout(sbp, TASK_TIME_INTERVAL, 'worker/computeCredits'))
+sbp('okTurtles.eventQueue/queueEvent', readyQueueName, () => {
+  try {
+    setTimeout(sbp, TASK_TIME_INTERVAL, 'worker/computeCredits')
+    // Signal ready only after init completes. See `signalReady` in
+    // genericWorker.ts for why ordering matters.
+    signalReady()
+  } catch (e) {
+    signalInitError(e)
+  }
+})
 
 sbp('sbp/selectors/register', {
   'worker/computeCredits': async () => {

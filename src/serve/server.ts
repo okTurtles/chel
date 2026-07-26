@@ -122,9 +122,14 @@ function installServerSelectorsOnce (): void {
       }
     },
     'backend/server/appendToContractIndex': appendToIndexFactory('_private_cheloniaState_index'),
-    'backend/server/broadcastKV': async function (contractID: string, key: string, entry: string) {
+    // The `etag` argument MUST be the fully-formed, double-quoted strong
+    // validator string (e.g. '"zQm…"') exactly as emitted in the x-cid / ETag
+    // response header. Clients store it and replay it verbatim as an If-Match
+    // precondition; broadcasting an unquoted CID permanently breaks echo
+    // suppression and causes subsequent local writes to fail with 412.
+    'backend/server/broadcastKV': async function (contractID: string, key: string, entry: string, etag: string) {
       const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE) as WSS
-      const pubsubMessage = createKvMessage(contractID, key, entry)
+      const pubsubMessage = createKvMessage(contractID, key, entry, etag)
       const subscribers = pubsub.enumerateSubscribers(contractID, key)
       console.debug(chalk.blue.bold(`[pubsub] Broadcasting KV change on ${contractID} to key ${key}`))
       await pubsub.broadcast(pubsubMessage, { to: subscribers, wsOnly: true })

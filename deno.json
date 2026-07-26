@@ -2,10 +2,13 @@
   "tasks": {
     "chel": "deno task lint && deno task build && deno run --allow-net --allow-read=.,../locales,../../../locales,$HOME/.cache/deno,$HOME/Library/Caches/deno --allow-ffi --allow-write=. --allow-sys --allow-env build/main.js",
     "lint": "deno run --allow-env --allow-read --allow-sys='cpus' npm:eslint@9.31.0 ./src ./scripts",
+    "check": "deno check scripts/",
     "compile": "deno run --allow-env --allow-ffi --allow-sys='hostname' --allow-run --allow-read --allow-write=./build,./dist scripts/compile.ts",
     "build": "deno run --node-modules-dir --allow-ffi --allow-run --allow-read --allow-env --allow-write=./build --allow-sys='cpus,homedir' scripts/dashboard-esbuild.ts && deno run --node-modules-dir --allow-ffi --allow-run --allow-read --allow-env --allow-write=./build --allow-sys='cpus,homedir,hostname' scripts/build.ts",
     "dist": "deno task lint && deno task build && deno task compile",
-    "test": "deno task lint && deno test --unstable-worker-options --allow-read=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-write=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-env --allow-ffi --allow-net --allow-sys"
+    "publish": "deno run --allow-run --allow-read --allow-write=./dist,./package.json --allow-env scripts/publish.ts",
+    "sync-versions": "deno run --allow-read=. --allow-write=. --allow-run scripts/sync-versions.ts",
+    "test": "deno task lint && deno task check && deno test --unstable-worker-options --allow-read=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-write=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-env --allow-ffi --allow-net --allow-sys --allow-run=node"
   },
   "imports": {
     "@db/sqlite": "jsr:@db/sqlite@0.13.0",
@@ -45,7 +48,7 @@
     "npm:vuelidate": "npm:vuelidate@0.7.6",
     "npm:vuex": "npm:vuex@3.6.0",
     "npm:multiformats/": "npm:multiformats@11.0.2/",
-    "npm:@chelonia/lib/": "npm:@chelonia/lib@1.4.4/",
+    "npm:@chelonia/lib/": "npm:@chelonia/lib@1.5.0/",
     "npm:lru-cache": "npm:lru-cache@7.14.0",
     "npm:pino": "npm:pino@8.19.0",
     "npm:tweetnacl": "npm:tweetnacl@1.0.3",
