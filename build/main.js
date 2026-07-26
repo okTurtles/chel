@@ -77262,7 +77262,7 @@ function registerRoutes(app) {
       }
       const type = cidLookupTable[parsed.code] || "application/octet-stream";
       return c.body(blobOrString, 200, {
-        "ETag": `"${hash3}"`,
+        "ETag": quoteEtag(hash3),
         "Cache-Control": "public,max-age=31536000,immutable",
         // CSP to disable everything -- this only affects direct navigation to the
         // `/file` URL.

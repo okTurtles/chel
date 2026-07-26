@@ -805,7 +805,7 @@ export function registerRoutes (app: Hono): void {
       const type = cidLookupTable[parsed.code] || 'application/octet-stream'
 
       return c.body(blobOrString, 200, {
-        'ETag': `"${hash}"`,
+        'ETag': quoteEtag(hash),
         'Cache-Control': 'public,max-age=31536000,immutable',
         // CSP to disable everything -- this only affects direct navigation to the
         // `/file` URL.

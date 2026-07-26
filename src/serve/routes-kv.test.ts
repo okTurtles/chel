@@ -328,7 +328,7 @@ Deno.test({
             throw new Error(`Broadcast cid ${kvFrames[0].cid} does not match x-cid header ${headerCid}`)
           }
         } finally {
-          delete pubsub.broadcast
+          pubsub.broadcast = originalBroadcast
         }
       })
 
