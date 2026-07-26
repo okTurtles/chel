@@ -683,6 +683,9 @@ export async function startServer (): Promise<{ uri: string }> {
     if (missing || adopted || reclaimed || skipped) {
       console.warn(`[server] push-subscription restore: ${adopted} adopted (legacy), ${reclaimed} reclaimed (deleted, server_id mismatch), ${skipped} skipped (server_id mismatch, retained on disk), ${missing} missing (de-indexed)`)
     }
+    if (skipped) {
+      console.warn(`[server] ${skipped} push subscription(s) belong to a different server_id and were left untouched. If this server_id change is intentional and permanent, set 'reclaimForeignSubscriptions = true' under [server] in chel.toml (or set the environment variable server__reclaimForeignSubscriptions=true) to delete these reclaimable entries on next startup. Otherwise, restore the previous server_id to reactivate them.`)
+    }
   }
 
   // Fire-and-forget persistent actions load

@@ -12770,29 +12770,29 @@ var require_nconf = __commonJS({
   "node_modules/.deno/nconf@0.13.0/node_modules/nconf/lib/nconf.js"(exports2, module15) {
     var common4 = require_common();
     var Provider = require_provider().Provider;
-    var nconf11 = module15.exports = new Provider();
-    nconf11.version = require_package().version;
-    nconf11.__defineGetter__("Argv", function() {
+    var nconf10 = module15.exports = new Provider();
+    nconf10.version = require_package().version;
+    nconf10.__defineGetter__("Argv", function() {
       return require_argv().Argv;
     });
-    nconf11.__defineGetter__("Env", function() {
+    nconf10.__defineGetter__("Env", function() {
       return require_env().Env;
     });
-    nconf11.__defineGetter__("File", function() {
+    nconf10.__defineGetter__("File", function() {
       return require_file().File;
     });
-    nconf11.__defineGetter__("Literal", function() {
+    nconf10.__defineGetter__("Literal", function() {
       return require_literal().Literal;
     });
-    nconf11.__defineGetter__("Memory", function() {
+    nconf10.__defineGetter__("Memory", function() {
       return require_memory().Memory;
     });
-    nconf11.key = common4.key;
-    nconf11.path = common4.path;
-    nconf11.loadFiles = common4.loadFiles;
-    nconf11.loadFilesSync = common4.loadFilesSync;
-    nconf11.formats = require_formats();
-    nconf11.Provider = Provider;
+    nconf10.key = common4.key;
+    nconf10.path = common4.path;
+    nconf10.loadFiles = common4.loadFiles;
+    nconf10.loadFilesSync = common4.loadFilesSync;
+    nconf10.formats = require_formats();
+    nconf10.Provider = Provider;
   }
 });
 // @__NO_SIDE_EFFECTS__
@@ -61704,7 +61704,7 @@ var require_websocket_server = __commonJS({
     }
   }
 });
-var import_npm_nconf10 = __toESM(require_nconf());
+var import_npm_nconf9 = __toESM(require_nconf());
 function getLineColFromPtr(string3, ptr) {
   let lines = string3.slice(0, ptr).split(/\r\n|\n|\r/g);
   return [lines.length, lines.pop().length + 1];
@@ -70337,67 +70337,80 @@ var module6 = {
   }
 };
 var DEFAULT_CONFIG_PATH = "chel.toml";
+var tomlValue = (v2) => {
+  if (typeof v2 === "string") return `"${v2}"`;
+  if (typeof v2 === "boolean" || typeof v2 === "number") return String(v2);
+  throw new Error(`Cannot render default value into TOML template: ${String(v2)}`);
+};
 var buildTemplate = (serverId) => {
+  const d = SERVER_DEFAULTS;
   return `# Chel server configuration.
 # See https://github.com/okTurtles/chelonia for documentation.
 
 # Unique identity for this server instance. Do NOT reuse this value across
 # environments (prod / staging / dev) that share a database, or push
 # notifications may be delivered to clients registered against a different
-# instance. \`chel serve\` refuses to start when this is unset.
+# instance. The server refuses to start when this is unset. Do NOT change
+# this value on an existing database: mismatched push subscriptions are
+# skipped by default and only reclaimed when 'server.reclaimForeignSubscriptions'
+# is enabled.
 server_id = "${serverId}"
 
 [server]
-# appDir = "."
-host = "0.0.0.0"
-port = 8000
-dashboardPort = 8888
-# fileUploadMaxBytes = 31457280
-# logLevel = "debug"
-# maxEventsBatchSize = 500
-# archiveMode = false
+# appDir = ${tomlValue(d.server.appDir)}
+host = ${tomlValue(d.server.host)}
+port = ${tomlValue(d.server.port)}
+dashboardPort = ${tomlValue(d.server.dashboardPort)}
+# fileUploadMaxBytes = ${tomlValue(d.server.fileUploadMaxBytes)}
+# logLevel = ${tomlValue(d.server.logLevel)}
+# maxEventsBatchSize = ${tomlValue(d.server.maxEventsBatchSize)}
+# archiveMode = ${tomlValue(d.server.archiveMode)}
+# reclaimForeignSubscriptions = ${tomlValue(d.server.reclaimForeignSubscriptions)}
 
 [server.signup]
-# disabled = false
+# disabled = ${tomlValue(d.server.signup.disabled)}
 
 [server.signup.limit]
-# disabled = false
-# minute = 2
-# hour = 10
-# day = 50
+# disabled = ${tomlValue(d.server.signup.limit.disabled)}
+# minute = ${tomlValue(d.server.signup.limit.minute)}
+# hour = ${tomlValue(d.server.signup.limit.hour)}
+# day = ${tomlValue(d.server.signup.limit.day)}
 
 [server.signup.vapid]
 # email = "you@example.com"
 
 [database]
-backend = "mem"
+backend = ${tomlValue(d.database.backend)}
 
 [database.backendOptions]
-# lruNumItems = 10000
+# lruNumItems = ${tomlValue(d.database.lruNumItems)}
 `;
 };
 var init2 = async (args) => {
   const configPath = resolve8(DEFAULT_CONFIG_PATH);
-  const exists = await Deno.stat(configPath).then(
-    () => true,
-    (err) => {
-      if (err instanceof Deno.errors.NotFound) return false;
-      throw err;
-    }
-  );
-  if (exists && !args.force) {
-    throw new Error(
-      `Refusing to overwrite existing '${DEFAULT_CONFIG_PATH}'. Re-run with --force to overwrite.`
-    );
-  }
   const serverId = crypto.randomUUID();
   const contents = buildTemplate(serverId);
-  await Deno.writeTextFile(configPath, contents);
+  if (args.force) {
+    await Deno.writeTextFile(configPath, contents);
+  } else {
+    try {
+      await Deno.writeTextFile(configPath, contents, { createNew: true });
+    } catch (err) {
+      if (err instanceof Deno.errors.AlreadyExists) {
+        throw new Error(
+          `Refusing to overwrite existing '${DEFAULT_CONFIG_PATH}'. Re-run with --force to overwrite.`
+        );
+      }
+      await Deno.remove(configPath).catch(() => {
+      });
+      throw err;
+    }
+  }
   console.log(green("wrote:"), DEFAULT_CONFIG_PATH);
   console.log(
     blue("server_id:"),
     serverId,
-    yellow("\u2014 keep this stable; do not reuse across environments.")
+    yellow("keep this stable; do not reuse across environments, and do not rotate it on an existing DB.")
   );
 };
 var module7 = {
@@ -70942,7 +70955,6 @@ var module11 = {
   }
 };
 init_esm();
-var import_npm_nconf9 = __toESM(require_nconf());
 init_esm4();
 init_utils();
 init_esm3();
@@ -74357,7 +74369,18 @@ function logMethod(args, method) {
   }
   method.apply(this, args);
 }
-var logger = (0, import_npm_pino.default)({ hooks: { logMethod } });
+var isTestRun = (() => {
+  try {
+    return /\.test\.[mc]?[tj]sx?(?:$|\?)/.test(new URL(Deno.mainModule).pathname);
+  } catch {
+    return false;
+  }
+})();
+var pinoFactory = import_npm_pino.default;
+var logger = isTestRun ? pinoFactory(
+  { hooks: { logMethod } },
+  import_npm_pino.default.destination({ fd: process6.stdout.fd || 1, sync: true })
+) : pinoFactory({ hooks: { logMethod } });
 var logLevel = getLogLevel();
 if (Object.keys(logger.levels.values).includes(logLevel)) {
   logger.level = logLevel;
@@ -75432,16 +75455,19 @@ var rfc8291Ikm_default = async (uaPublic, salt) => {
 };
 var addSubscriptionToIndex = appendToIndexFactory("_private_webpush_index");
 var deleteSubscriptionFromIndex = removeFromIndexFactory("_private_webpush_index");
+var serializePushSubscriptionPayload = (serverId, settings, subscriptionInfo, channelIDs) => {
+  return JSON.stringify({ serverId, settings, subscriptionInfo, channelIDs });
+};
 var saveSubscription = (server, subscriptionId) => {
-  return esm_default("chelonia.db/set", `_private_webpush_${subscriptionId}`, JSON.stringify({
+  return esm_default("chelonia.db/set", `_private_webpush_${subscriptionId}`, serializePushSubscriptionPayload(
     // Tag the subscription with the configured `server_id` so that, on load,
     // entries written by a different instance (e.g. a staging DB restored from
     // a prod backup) can be detected and skipped. See `src/serve/server.ts`.
-    serverId: import_npm_nconf6.default.get("server_id"),
-    settings: server.pushSubscriptions[subscriptionId].settings,
-    subscriptionInfo: server.pushSubscriptions[subscriptionId],
-    channelIDs: [...server.pushSubscriptions[subscriptionId].subscriptions]
-  })).catch((e2) => {
+    import_npm_nconf6.default.get("server_id"),
+    server.pushSubscriptions[subscriptionId].settings,
+    server.pushSubscriptions[subscriptionId],
+    [...server.pushSubscriptions[subscriptionId].subscriptions]
+  )).catch((e2) => {
     console.error(e2, "Error saving subscription", subscriptionId);
     throw e2;
   });
@@ -76221,7 +76247,17 @@ function installServerSelectorsOnce() {
     }
   });
 }
+function assertServerIdConfigured() {
+  if (!import_npm_nconf7.default.get("server_id")) {
+    throw new Error(
+      "Missing required config 'server_id'. Run `chel init` to generate one, or set it in chel.toml / the `server_id` environment variable."
+    );
+  }
+}
 async function startServer() {
+  assertServerIdConfigured();
+  const configuredServerId = import_npm_nconf7.default.get("server_id");
+  const reclaimForeignSubscriptions = !!import_npm_nconf7.default.get("server:reclaimForeignSubscriptions");
   const appManifest = import_npm_nconf7.default.get("appManifest") || join72(import_npm_nconf7.default.get("server:appDir") || process9.cwd(), "chelonia.json");
   const ARCHIVE_MODE = import_npm_nconf7.default.get("server:archiveMode");
   const host = import_npm_nconf7.default.get("server:host") || "0.0.0.0";
@@ -76373,27 +76409,57 @@ async function startServer() {
     }));
     Object.assign(esm_default("chelonia/rootState"), recoveredState);
   }
-  const configuredServerId = import_npm_nconf7.default.get("server_id");
   const savedWebPushIndex = await esm_default("chelonia.db/get", "_private_webpush_index");
   if (savedWebPushIndex) {
     const { pushSubscriptions, subscribersByChannelID } = esm_default("okTurtles.data/get", PUBSUB_INSTANCE);
-    await Promise.all(savedWebPushIndex.split("\0").map(async (subscriptionId) => {
-      const subscriptionSerialized = await esm_default("chelonia.db/get", `_private_webpush_${subscriptionId}`);
-      if (!subscriptionSerialized) {
-        console.warn(`[server] missing state for subscriptionId '${subscriptionId}' - skipping setup for this subscription`);
-        return;
-      }
-      const { serverId, settings, subscriptionInfo, channelIDs } = JSON.parse(subscriptionSerialized);
-      if (serverId !== configuredServerId) {
-        console.warn(`[server] skipping push subscription '${subscriptionId}': server_id mismatch (stored=${serverId}, configured=${configuredServerId})`);
-        return;
-      }
+    let missing = 0;
+    let adopted = 0;
+    let reclaimed = 0;
+    let skipped = 0;
+    const loadIntoMemory = (subscriptionId, settings, subscriptionInfo, channelIDs) => {
       pushSubscriptions[subscriptionId] = subscriptionInfoWrapper(subscriptionId, subscriptionInfo, { channelIDs, settings });
       channelIDs.forEach((channelID) => {
         if (!subscribersByChannelID[channelID]) subscribersByChannelID[channelID] = /* @__PURE__ */ new Set();
         subscribersByChannelID[channelID].add(pushSubscriptions[subscriptionId]);
       });
+    };
+    await Promise.all(savedWebPushIndex.split("\0").map(async (subscriptionId) => {
+      const subscriptionSerialized = await esm_default("chelonia.db/get", `_private_webpush_${subscriptionId}`);
+      if (!subscriptionSerialized) {
+        missing++;
+        await deleteSubscriptionFromIndex(subscriptionId);
+        return;
+      }
+      const { serverId, settings, subscriptionInfo, channelIDs } = JSON.parse(subscriptionSerialized);
+      if (serverId === void 0) {
+        adopted++;
+        await esm_default("chelonia.db/set", `_private_webpush_${subscriptionId}`, serializePushSubscriptionPayload(
+          configuredServerId,
+          settings,
+          subscriptionInfo,
+          channelIDs
+        ));
+        loadIntoMemory(subscriptionId, settings, subscriptionInfo, channelIDs);
+        return;
+      }
+      if (serverId !== configuredServerId) {
+        if (reclaimForeignSubscriptions) {
+          reclaimed++;
+          await esm_default("chelonia.db/delete", `_private_webpush_${subscriptionId}`);
+          await deleteSubscriptionFromIndex(subscriptionId);
+        } else {
+          skipped++;
+        }
+        return;
+      }
+      loadIntoMemory(subscriptionId, settings, subscriptionInfo, channelIDs);
     }));
+    if (missing || adopted || reclaimed || skipped) {
+      console.warn(`[server] push-subscription restore: ${adopted} adopted (legacy), ${reclaimed} reclaimed (deleted, server_id mismatch), ${skipped} skipped (server_id mismatch, retained on disk), ${missing} missing (de-indexed)`);
+    }
+    if (skipped) {
+      console.warn(`[server] ${skipped} push subscription(s) belong to a different server_id and were left untouched. If this server_id change is intentional and permanent, set 'reclaimForeignSubscriptions = true' under [server] in chel.toml (or set the environment variable server__reclaimForeignSubscriptions=true) to delete these reclaimable entries on next startup. Otherwise, restore the previous server_id to reactivate them.`);
+    }
   }
   esm_default("chelonia.persistentActions/load").catch((e2) => {
     console.error(e2, "Error loading persistent actions");
@@ -76918,11 +76984,7 @@ async function watch(args) {
   })();
 }
 async function serve(args) {
-  if (!import_npm_nconf9.default.get("server_id")) {
-    throw new Error(
-      "Missing required config 'server_id'. Run `chel init` to generate one, or set it in chel.toml / the server_id environment variable."
-    );
-  }
+  assertServerIdConfigured();
   await initDB();
   try {
     try {
@@ -81263,45 +81325,47 @@ var parseArgs = () => {
   return yargsInstance;
 };
 var parseArgs_default = parseArgs;
+var SERVER_DEFAULTS = {
+  // Unique identity for this server instance. Must not be reused across
+  // environments (prod / staging / dev) that share a database, otherwise
+  // push notifications may be delivered to clients registered against a
+  // different instance. `chel serve` refuses to start when this is unset.
+  server_id: void 0,
+  server: {
+    appDir: ".",
+    host: "0.0.0.0",
+    port: 8e3,
+    dashboardPort: 8888,
+    fileUploadMaxBytes: 31457280,
+    signup: {
+      disabled: false,
+      limit: {
+        disabled: false,
+        minute: 2,
+        hour: 10,
+        day: 50
+      },
+      vapid: {
+        email: void 0
+      }
+    },
+    logLevel: "debug",
+    messages: [],
+    maxEventsBatchSize: 500,
+    archiveMode: false,
+    reclaimForeignSubscriptions: false
+  },
+  database: {
+    lruNumItems: 1e4,
+    backend: "mem",
+    backendOptions: {}
+  }
+};
 var parseConfig = () => {
-  import_npm_nconf10.default.env({
+  import_npm_nconf9.default.env({
     separator: "__",
     parseValues: true
-  }).argv(parseArgs_default()).file({ file: "chel.toml", format: { parse: parse8, stringify } }).defaults({
-    // Unique identity for this server instance. Must not be reused across
-    // environments (prod / staging / dev) that share a database, otherwise
-    // push notifications may be delivered to clients registered against a
-    // different instance. `chel serve` refuses to start when this is unset.
-    server_id: void 0,
-    server: {
-      appDir: ".",
-      host: "0.0.0.0",
-      port: 8e3,
-      dashboardPort: 8888,
-      fileUploadMaxBytes: 31457280,
-      signup: {
-        disabled: false,
-        limit: {
-          disabled: false,
-          minute: 2,
-          hour: 10,
-          day: 50
-        },
-        vapid: {
-          email: void 0
-        }
-      },
-      logLevel: "debug",
-      messages: [],
-      maxEventsBatchSize: 500,
-      archiveMode: false
-    },
-    database: {
-      lruNumItems: 1e4,
-      backend: "mem",
-      backendOptions: {}
-    }
-  });
+  }).argv(parseArgs_default()).file({ file: "chel.toml", format: { parse: parse8, stringify } }).defaults(SERVER_DEFAULTS);
 };
 var parseConfig_default = parseConfig;
 init_utils();
