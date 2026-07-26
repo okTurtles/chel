@@ -39,6 +39,9 @@ const BackendOptionsSchema = z.strictObject({
 export const ConfigSchema = z.strictObject({
   // Set via the `--app-manifest` CLI flag; allowed in TOML for completeness.
   appManifest: z.optional(z.string()),
+  // Unique, stable identity for this server instance; required at runtime by
+  // `chel serve` (see `src/serve/server.ts`) to scope push subscriptions.
+  server_id: z.optional(z.string()),
   server: z.optional(z.strictObject({
     appDir: z.optional(z.string()),
     host: z.optional(z.string().min(1, 'must be a non-empty string')),
@@ -55,6 +58,9 @@ export const ConfigSchema = z.strictObject({
     messages: z.optional(z.array(z.record(z.string(), z.unknown()))),
     maxEventsBatchSize: z.optional(positiveInt),
     archiveMode: z.optional(z.boolean()),
+    // Opt-in deletion of push subscriptions tagged with a different `server_id`
+    // (see `src/serve/server.ts`); foreign subscriptions are retained by default.
+    reclaimForeignSubscriptions: z.optional(z.boolean()),
     signup: z.optional(z.strictObject({
       disabled: z.optional(z.boolean()),
       limit: z.optional(z.strictObject({

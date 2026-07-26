@@ -5,6 +5,13 @@ import parseArgs, { handlerState } from './parseArgs.ts'
 import { validateConfigFile } from './validateConfig.ts'
 import { nconfDefaults } from './config-defaults.ts'
 
+// Re-exported for `chel init` (see `src/init.ts`), which interpolates the
+// generated `chel.toml` template from these values so it cannot silently drift
+// from the runtime defaults. The canonical definition lives in
+// `config-defaults.ts` so it can be shared (e.g. with `validateConfig.test.ts`)
+// without pulling in the whole config-loading stack.
+export const SERVER_DEFAULTS = nconfDefaults
+
 // Loads the `chel.toml` config into nconf and validates its contents against a
 // whitelist of known options. The file is loaded manually first so that:
 //   - unknown keys print a warning (likely a typo);

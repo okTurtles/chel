@@ -7,7 +7,7 @@ import chalk from 'npm:chalk'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
 import { SERVER_EXITING, SERVER_RUNNING } from './events.ts'
-import { startServer as startServerImpl, stopServer } from './server.ts'
+import { startServer as startServerImpl, stopServer, assertServerIdConfigured } from './server.ts'
 import { initializeLogger } from './logger.ts'
 
 const dontLog: Record<string, boolean> = {
@@ -144,4 +144,4 @@ export async function startServer (options: StartServerOptions = {}): Promise<{ 
 
 // Backwards compatibility: default export is startServer
 export default startServer
-export { stopServer }
+export { stopServer, assertServerIdConfigured }
