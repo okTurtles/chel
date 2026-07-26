@@ -250,6 +250,13 @@ function notFoundNoCache (c: Context): Response {
   return c.body(null, 404, { 'Cache-Control': 'no-store' })
 }
 
+// ETag/x-cid values are strong validators: the CID wrapped in double quotes.
+// Centralized so the "quoted CID = ETag" rule, which clients replay verbatim as
+// an If-Match precondition, lives in exactly one place.
+function quoteEtag (cid: string): string {
+  return `"${cid}"`
+}
+
 function safePathWithin (base: string, subpath: string): string | null {
   const normalizedBase = path.resolve(base)
   const resolved = path.resolve(normalizedBase, subpath)
@@ -970,10 +977,10 @@ export function registerRoutes (app: Hono): void {
         if (expectedEtag === '*') {
           // pass through
         } else {
-          if (!expectedEtag.split(',').map((v: string) => v.trim()).includes(`"${cid}"`)) {
+          if (!expectedEtag.split(',').map((v: string) => v.trim()).includes(quoteEtag(cid))) {
             return c.body(existing ?? new Uint8Array(), 412, {
-              'ETag': `"${cid}"`,
-              'x-cid': `"${cid}"`
+              'ETag': quoteEtag(cid),
+              'x-cid': quoteEtag(cid)
             })
           }
         }
@@ -985,8 +992,8 @@ export function registerRoutes (app: Hono): void {
           // Check that the height is the latest value
           if (contracts[contractID].height !== Number(serializedData.height)) {
             return c.body(existing ?? new Uint8Array(), 409, {
-              'ETag': `"${cid}"`,
-              'x-cid': `"${cid}"`
+              'ETag': quoteEtag(cid),
+              'x-cid': quoteEtag(cid)
             })
           }
           // Check that the signature is valid
@@ -1010,7 +1017,7 @@ export function registerRoutes (app: Hono): void {
         const newCID = createCID(payloadBuffer, multicodes.RAW)
         // The broadcast cid must be the exact quoted string emitted in the x-cid
         // header, since clients record and re-send it verbatim as an if-match etag.
-        const quotedCID = `"${newCID}"`
+        const quotedCID = quoteEtag(newCID)
         // No await on broadcast for faster responses
         sbp('backend/server/broadcastKV', contractID, key, payloadString, quotedCID).catch((e: Error) => console.error(e, 'Error broadcasting KV update', contractID, key))
 
@@ -1049,8 +1056,8 @@ export function registerRoutes (app: Hono): void {
 
       const cid = createCID(result, multicodes.RAW)
       return c.body(result, 200, {
-        'ETag': `"${cid}"`,
-        'x-cid': `"${cid}"`,
+        'ETag': quoteEtag(cid),
+        'x-cid': quoteEtag(cid),
         'Cache-Control': 'no-store'
       })
     })

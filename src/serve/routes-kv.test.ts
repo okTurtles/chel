@@ -9,6 +9,7 @@ import {
   startTestServer,
   stopTestServer
 } from './routes-test-helpers.ts'
+import { PUBSUB_INSTANCE } from './instance-keys.ts'
 
 Deno.test({
   name: 'routes: KV store endpoints',
@@ -286,6 +287,49 @@ Deno.test({
         })
         if (res.status !== 409) throw new Error(`Expected 409 but got ${res.status}`)
         await res.body?.cancel()
+      })
+
+      await t.step('POST /kv broadcasts the quoted CID (etag) to KV subscribers', async () => {
+        const pubsub = sbp('okTurtles.data/get', PUBSUB_INSTANCE)
+        const originalBroadcast = pubsub.broadcast
+        const frames: string[] = []
+        pubsub.broadcast = function (...args: Parameters<typeof originalBroadcast>) {
+          const message = args[0]
+          if (typeof message === 'string') frames.push(message)
+          return originalBroadcast.apply(pubsub, args)
+        }
+        try {
+          const auth = buildShelterAuthHeader(owner.contractID, owner.SAK)
+          const payload = buildSignedKvPayload(owner.contractID, 'broadcastkey', 0, { broadcast: true }, owner.SAK)
+          const res = await fetch(`${baseURL}/kv/${owner.contractID}/broadcastkey`, {
+            method: 'POST',
+            headers: {
+              authorization: auth,
+              'content-type': 'application/octet-stream',
+              'if-match': '*'
+            },
+            body: payload
+          })
+          await res.body?.cancel()
+          if (res.status !== 204) throw new Error(`Expected 204 but got ${res.status}`)
+          // Isolate the KV frame for this key, ignoring any unrelated frames.
+          const kvFrames = frames.map((f) => JSON.parse(f)).filter((f) => f.key === 'broadcastkey')
+          if (kvFrames.length !== 1) throw new Error(`Expected exactly one KV broadcast frame, got ${kvFrames.length}`)
+          // The broadcast cid must be the double-quoted content-address of the
+          // exact posted bytes, byte-for-byte equal to the x-cid header clients
+          // record and replay as If-Match (echo suppression / issue #151).
+          const postedBytes = new TextEncoder().encode(payload)
+          const expectedEtag = `"${createCID(postedBytes, multicodes.RAW)}"`
+          if (kvFrames[0].cid !== expectedEtag) {
+            throw new Error(`Broadcast cid ${kvFrames[0].cid} is not the quoted CID ${expectedEtag}`)
+          }
+          const headerCid = res.headers.get('x-cid')
+          if (kvFrames[0].cid !== headerCid) {
+            throw new Error(`Broadcast cid ${kvFrames[0].cid} does not match x-cid header ${headerCid}`)
+          }
+        } finally {
+          delete pubsub.broadcast
+        }
       })
 
       await t.step('POST /kv with invalid payload returns 422', async () => {

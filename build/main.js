@@ -76834,6 +76834,9 @@ function getClientIP(c) {
 function notFoundNoCache(c) {
   return c.body(null, 404, { "Cache-Control": "no-store" });
 }
+function quoteEtag(cid) {
+  return `"${cid}"`;
+}
 function safePathWithin(base2, subpath) {
   const normalizedBase = path5.resolve(base2);
   const resolved = path5.resolve(normalizedBase, subpath);
@@ -77394,10 +77397,10 @@ function registerRoutes(app) {
         const cid = existing ? createCID(existing, multicodes.RAW) : "";
         if (expectedEtag === "*") {
         } else {
-          if (!expectedEtag.split(",").map((v2) => v2.trim()).includes(`"${cid}"`)) {
+          if (!expectedEtag.split(",").map((v2) => v2.trim()).includes(quoteEtag(cid))) {
             return c.body(existing ?? new Uint8Array(), 412, {
-              "ETag": `"${cid}"`,
-              "x-cid": `"${cid}"`
+              "ETag": quoteEtag(cid),
+              "x-cid": quoteEtag(cid)
             });
           }
         }
@@ -77407,8 +77410,8 @@ function registerRoutes(app) {
           const { contracts } = esm_default("chelonia/rootState");
           if (contracts[contractID].height !== Number(serializedData.height)) {
             return c.body(existing ?? new Uint8Array(), 409, {
-              "ETag": `"${cid}"`,
-              "x-cid": `"${cid}"`
+              "ETag": quoteEtag(cid),
+              "x-cid": quoteEtag(cid)
             });
           }
           esm_default("chelonia/parseEncryptedOrUnencryptedDetachedMessage", {
@@ -77425,7 +77428,7 @@ function registerRoutes(app) {
         await esm_default("backend/server/updateSize", contractID, payloadBuffer.byteLength - existingSize);
         await appendToIndexFactory(`_private_kvIdx_${contractID}`)(key);
         const newCID = createCID(payloadBuffer, multicodes.RAW);
-        const quotedCID = `"${newCID}"`;
+        const quotedCID = quoteEtag(newCID);
         esm_default("backend/server/broadcastKV", contractID, key, payloadString, quotedCID).catch((e2) => console.error(e2, "Error broadcasting KV update", contractID, key));
         return c.body(null, 204, {
           "ETag": quotedCID,
@@ -77455,8 +77458,8 @@ function registerRoutes(app) {
       }
       const cid = createCID(result, multicodes.RAW);
       return c.body(result, 200, {
-        "ETag": `"${cid}"`,
-        "x-cid": `"${cid}"`,
+        "ETag": quoteEtag(cid),
+        "x-cid": quoteEtag(cid),
         "Cache-Control": "no-store"
       });
     }
@@ -78243,9 +78246,14 @@ function installServerSelectorsOnce() {
       }
     },
     "backend/server/appendToContractIndex": appendToIndexFactory("_private_cheloniaState_index"),
-    "backend/server/broadcastKV": async function(contractID, key, entry, cid) {
+    // The `etag` argument MUST be the fully-formed, double-quoted strong
+    // validator string (e.g. '"zQm…"') exactly as emitted in the x-cid / ETag
+    // response header. Clients store it and replay it verbatim as an If-Match
+    // precondition; broadcasting an unquoted CID permanently breaks echo
+    // suppression and causes subsequent local writes to fail with 412.
+    "backend/server/broadcastKV": async function(contractID, key, entry, etag2) {
       const pubsub = esm_default("okTurtles.data/get", PUBSUB_INSTANCE);
-      const pubsubMessage = createKvMessage(contractID, key, entry, cid);
+      const pubsubMessage = createKvMessage(contractID, key, entry, etag2);
       const subscribers = pubsub.enumerateSubscribers(contractID, key);
       console.debug(import_npm_chalk3.default.blue.bold(`[pubsub] Broadcasting KV change on ${contractID} to key ${key}`));
       await pubsub.broadcast(pubsubMessage, { to: subscribers, wsOnly: true });
