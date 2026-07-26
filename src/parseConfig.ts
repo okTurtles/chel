@@ -23,10 +23,17 @@ const parseConfig = async (): Promise<void> => {
     .file({ file: 'chel.toml', format: { parse, stringify } })
     .defaults(nconfDefaults)
 
-  // Manually re-read and validate the raw TOML so that only the file's own
-  // contents (not merged env/CLI/defaults) are checked. nconf silently ignores
-  // a missing `chel.toml`, so we do the same.
-  await validateConfigFile('chel.toml')
+  // Only commands that actually read server/database config opt into
+  // validation (via `validatesConfig` on their command module). This keeps a
+  // malformed `chel.toml` from blocking file- or URL-only commands such as
+  // `chel hash` or `chel keygen`. `handlerState` is populated by the yargs
+  // parse that `.argv()` above triggers.
+  if (handlerState.validatesConfig) {
+    // Manually re-read and validate the raw TOML so that only the file's own
+    // contents (not merged env/CLI/defaults) are checked. nconf silently
+    // ignores a missing `chel.toml`, so we do the same.
+    await validateConfigFile('chel.toml')
+  }
 }
 
 export default parseConfig

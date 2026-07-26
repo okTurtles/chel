@@ -152,6 +152,7 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
 }
 
 export const module = {
+  validatesConfig: true,
   builder: (yargs) => {
     return (
       yargs

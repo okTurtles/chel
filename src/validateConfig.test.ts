@@ -1,4 +1,5 @@
 import { assertEquals, assertRejects } from 'jsr:@std/assert'
+import * as z from 'npm:zod'
 import {
   validateTomlConfig, ConfigSchema, knownKeysFor, validateConfigFile
 } from './validateConfig.ts'
@@ -243,7 +244,7 @@ Deno.test({
       assertEquals(result.errors.length, 1)
       assertEquals(
         result.errors[0],
-        'database.backendOptions.router.*.name: Invalid input'
+        'database.backendOptions.router.*.name: "name" must be one of: fs, sqlite, redis (router backends cannot be nested)'
       )
     })
 
@@ -253,6 +254,10 @@ Deno.test({
       })
       assertEquals(result.warnings, [])
       assertEquals(result.errors.length, 1)
+      assertEquals(
+        result.errors[0],
+        'database.backendOptions.router.*.name: "name" must be one of: fs, sqlite, redis (router backends cannot be nested)'
+      )
     })
 
     await t.step('errors on invalid options inside a router entry', () => {
@@ -342,8 +347,9 @@ Deno.test({
         }
       }
 
-      const firstVariant = RouterConfigEntrySchema.options[0] as unknown as {
-        shape: Record<string, unknown>
+      const firstVariant = RouterConfigEntrySchema.options[0]
+      if (!(firstVariant instanceof z.ZodObject)) {
+        throw new Error('RouterConfigEntrySchema variant is not an object schema')
       }
       assertEquals(
         knownKeysFor(['database', 'backendOptions', 'router', '*']).sort(),

@@ -31,7 +31,7 @@ export default class RouterBackend extends DatabaseBackend {
     return backends['*']
   }
 
-  validateConfig (config: Config): Array<{ msg: string; entry?: [string, ConfigEntry] }> {
+  validateConfig (config: Config): Array<{ msg: string }> {
     // Validates a config without throwing, returning an array of error objects.
     // The constructor already validates via ConfigSchema.parse(); this method
     // exists for callers (e.g. tests) that need a non-throwing check.

@@ -88,6 +88,7 @@ export function handleFetchResult (type: ResponseTypeFn): (r: Response) => unkno
 }
 
 export const module = {
+  validatesConfig: true,
   builder: (yargs) => {
     return yargs
       .option('url', {

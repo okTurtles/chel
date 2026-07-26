@@ -30,7 +30,9 @@ export const RouterConfigEntrySchema = z.discriminatedUnion('name', [
   z.strictObject({ name: z.literal('fs'), options: FsOptionsSchema }),
   z.strictObject({ name: z.literal('sqlite'), options: SqliteOptionsSchema }),
   z.strictObject({ name: z.literal('redis'), options: RedisOptionsSchema })
-])
+], {
+  error: '"name" must be one of: fs, sqlite, redis (router backends cannot be nested)'
+})
 
 // A router config maps key prefixes (including the mandatory `*` fallback) to
 // `{ name, options }` entries. The refine check gives a clearer message than the

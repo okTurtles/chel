@@ -179,25 +179,34 @@ export function validateTomlConfig (parsed: unknown): ValidationResult {
 // Derives the set of valid immediate child keys for every object path in the
 // config tree directly from `ConfigSchema`, so that typo suggestions can never
 // drift out of sync with the schema definition.
-interface SchemaNode {
-  unwrap?: () => SchemaNode
-  shape?: Record<string, SchemaNode>
-}
-
+//
+// This relies only on Zod's public accessors (`instanceof` checks, `.unwrap()`
+// and `.shape`). The *set* of node kinds handled here is nonetheless
+// version-sensitive: a future Zod release that wraps object schemas in a new
+// node type would make this walk silently skip that path. The `knownKeysFor`
+// test guards against that drift.
 function collectKnownKeys (schema: z.ZodType): Map<string, string[]> {
   const map = new Map<string, string[]>()
-  const walk = (node: SchemaNode, segments: string[]) => {
-    const unwrapped = typeof node.unwrap === 'function' ? node.unwrap() : node
-    const shape = unwrapped?.shape
-    // Record-typed nodes (e.g. `database.backendOptions.router`) have no
-    // `.shape`: they accept arbitrary keys, so there is no fixed known-key list.
-    if (!shape) return
+  const walk = (node: z.ZodType, segments: string[]) => {
+    // Optional wrappers (`z.optional(z.strictObject(...))`) carry no keys of
+    // their own; descend into the wrapped schema. `.unwrap()` is typed against
+    // Zod's core `$ZodType`, so bridge it back to the classic `ZodType` used
+    // here; the `instanceof` guards below are what actually drive the walk.
+    if (node instanceof z.ZodOptional) {
+      walk(node.unwrap() as z.ZodType, segments)
+      return
+    }
+    // Only object schemas expose a fixed set of child keys. Record-typed nodes
+    // (e.g. `database.backendOptions.router`) accept arbitrary keys, so there
+    // is no fixed known-key list to record.
+    if (!(node instanceof z.ZodObject)) return
+    const shape = node.shape
     map.set(segments.join('.'), Object.keys(shape))
     for (const [key, child] of Object.entries(shape)) {
       walk(child, [...segments, key])
     }
   }
-  walk(schema as SchemaNode, [])
+  walk(schema, [])
   return map
 }
 
@@ -206,9 +215,11 @@ const knownKeysMap = collectKnownKeys(ConfigSchema)
 // All variants of the `RouterConfigEntrySchema` discriminated union share the
 // same top-level keys; derive them from the first variant so typo suggestions
 // stay in sync with the schema automatically.
-const routerEntryKeys = Object.keys(
-  (RouterConfigEntrySchema.options[0] as unknown as { shape: Record<string, unknown> }).shape
-)
+const firstRouterVariant = RouterConfigEntrySchema.options[0]
+if (!(firstRouterVariant instanceof z.ZodObject)) {
+  throw new Error('RouterConfigEntrySchema variant is not an object schema')
+}
+const routerEntryKeys = Object.keys(firstRouterVariant.shape)
 
 // Returns the set of valid immediate child keys for a given path in the config
 // tree, used to generate typo suggestions.

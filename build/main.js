@@ -25181,7 +25181,9 @@ var init_backend_schemas = __esm({
       strictObject({ name: literal("fs"), options: FsOptionsSchema }),
       strictObject({ name: literal("sqlite"), options: SqliteOptionsSchema }),
       strictObject({ name: literal("redis"), options: RedisOptionsSchema })
-    ]);
+    ], {
+      error: '"name" must be one of: fs, sqlite, redis (router backends cannot be nested)'
+    });
     RouterOptionsSchema = record(string2(), RouterConfigEntrySchema).refine(
       (v2) => "*" in v2,
       { error: 'router backend requires a "*" (fallback) entry' }
@@ -70133,6 +70135,7 @@ function handleFetchResult2(type) {
   };
 }
 var module2 = {
+  validatesConfig: true,
   builder: (yargs) => {
     return yargs.option("url", {
       describe: "URL of a remote server",
@@ -70483,6 +70486,7 @@ async function getRemoteMessagesSince(src2, contractID, sinceHeight, limit) {
   );
 }
 var module4 = {
+  validatesConfig: true,
   builder: (yargs) => {
     return yargs.option("limit", {
       describe: "Limit",
@@ -70541,6 +70545,7 @@ async function get({ key, url: url2 }) {
   }
 }
 var module5 = {
+  validatesConfig: true,
   builder: (yargs) => {
     return yargs.option("url", {
       describe: "URL of a remote server",
@@ -70864,6 +70869,7 @@ async function migrate(args) {
   }
 }
 var module9 = {
+  validatesConfig: true,
   builder: (yargs) => {
     return yargs.option("from", {
       describe: "Source backend",
@@ -71077,6 +71083,7 @@ async function updateCheloniaConfig(fullContractName, contractName, version3, ma
   console.log(green("\u2705 Saved chelonia.json"));
 }
 var module10 = {
+  validatesConfig: true,
   builder: (yargs) => {
     return yargs.option("overwrite", {
       describe: "Overwrite existing files",
@@ -77111,6 +77118,7 @@ async function serve(args) {
   }
 }
 var module11 = {
+  validatesConfig: true,
   builder: (yargs) => {
     return yargs.option("port", {
       default: 8e3,
@@ -81398,7 +81406,8 @@ var Yargs2 = YargsWithShim(esm_default5);
 var yargs_default = Yargs2;
 var handlerState = {
   postHandler: () => {
-  }
+  },
+  validatesConfig: false
 };
 var parseArgs = () => {
   const handlerWrapper = (commandModule) => {
@@ -81406,6 +81415,7 @@ var parseArgs = () => {
       ...commandModule,
       handler: (argv) => {
         handlerState.postHandler = () => commandModule.postHandler(argv);
+        handlerState.validatesConfig = commandModule.validatesConfig === true;
         if (commandModule.handler) {
           return commandModule.handler(argv);
         }
@@ -81544,9 +81554,12 @@ function validateTomlConfig(parsed) {
 function collectKnownKeys(schema) {
   const map = /* @__PURE__ */ new Map();
   const walk2 = (node, segments) => {
-    const unwrapped = typeof node.unwrap === "function" ? node.unwrap() : node;
-    const shape = unwrapped?.shape;
-    if (!shape) return;
+    if (node instanceof ZodOptional) {
+      walk2(node.unwrap(), segments);
+      return;
+    }
+    if (!(node instanceof ZodObject)) return;
+    const shape = node.shape;
     map.set(segments.join("."), Object.keys(shape));
     for (const [key, child] of Object.entries(shape)) {
       walk2(child, [...segments, key]);
@@ -81556,9 +81569,11 @@ function collectKnownKeys(schema) {
   return map;
 }
 var knownKeysMap = collectKnownKeys(ConfigSchema);
-var routerEntryKeys = Object.keys(
-  RouterConfigEntrySchema.options[0].shape
-);
+var firstRouterVariant = RouterConfigEntrySchema.options[0];
+if (!(firstRouterVariant instanceof ZodObject)) {
+  throw new Error("RouterConfigEntrySchema variant is not an object schema");
+}
+var routerEntryKeys = Object.keys(firstRouterVariant.shape);
 function knownKeysFor(path8) {
   if (path8.length === 4 && path8[0] === "database" && path8[1] === "backendOptions" && path8[2] === "router") {
     return routerEntryKeys;
@@ -81621,7 +81636,9 @@ var parseConfig = async () => {
     separator: "__",
     parseValues: true
   }).argv(parseArgs_default()).file({ file: "chel.toml", format: { parse: parse8, stringify } }).defaults(nconfDefaults);
-  await validateConfigFile("chel.toml");
+  if (handlerState.validatesConfig) {
+    await validateConfigFile("chel.toml");
+  }
 };
 var parseConfig_default = parseConfig;
 init_utils();

@@ -41,6 +41,7 @@ export async function get ({ key, url }: ArgumentsCamelCase<Params>): Promise<vo
 }
 
 export const module = {
+  validatesConfig: true,
   builder: (yargs) => {
     return yargs
       .option('url', {

@@ -393,6 +393,7 @@ async function getRemoteMessagesSince (
 }
 
 export const module = {
+  validatesConfig: true,
   builder: (yargs) => {
     return yargs
       .option('limit', {

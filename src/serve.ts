@@ -136,6 +136,7 @@ export async function serve (args: ArgumentsCamelCase<Params>) {
 // ./node_modules/.bin/chel deploy ${dest ? `--url ${dest}` : ''} ${manifestDir}/*.manifest.json
 
 export const module = {
+  validatesConfig: true,
   builder: (yargs) => {
     return yargs
       .option('port', {
