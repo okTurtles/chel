@@ -86,7 +86,7 @@ async function sortedFileList (root: string, prefix: string): Promise<string[]> 
 
 async function buildTarArgs (
   srcDir: string,
-  target: string,
+  archivePath: string,
   entry: string
 ): Promise<string[]> {
   if (await isGnuTar()) {
@@ -98,7 +98,7 @@ async function buildTarArgs (
       '--sort=name', '--owner=0', '--group=0',
       '--numeric-owner', '--mtime=@0', '--format=ustar',
       '--use-compress-program=gzip -n -9',
-      '-cvf', target,
+      '-cvf', archivePath,
       entry
     ]
   }
@@ -117,18 +117,18 @@ async function buildTarArgs (
     '--uid', '0', '--gid', '0',
     '--numeric-owner', '--format', 'ustar',
     '--use-compress-program', 'gzip -n -9',
-    '-cvf', target,
+    '-cvf', archivePath,
     ...files
   ]
 }
 
 async function reproducibleTarGz (
   srcDir: string,
-  target: string,
+  archivePath: string,
   entry: string
 ): Promise<void> {
   try {
-    const args = await buildTarArgs(srcDir, target, entry)
+    const args = await buildTarArgs(srcDir, archivePath, entry)
     const { code, signal } = await new Deno.Command('tar', {
       args,
       stdout: 'inherit',
@@ -141,7 +141,7 @@ async function reproducibleTarGz (
     // tar writes the gzip header before validating the entry list, so a failed
     // run can leave a small, valid-looking-but-truncated .tar.gz behind; remove
     // it so a corrupt archive can't masquerade as a valid one.
-    try { Deno.removeSync(target) } catch { /* may not have been created */ }
+    try { Deno.removeSync(archivePath) } catch { /* may not have been created */ }
     throw e
   }
 }

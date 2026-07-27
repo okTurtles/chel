@@ -55,13 +55,13 @@ async function assertFreshBundle (): Promise<void> {
     stamp = JSON.parse(await Deno.readTextFile(VERSION_STAMP_PATH))
   } catch {
     throw new Error(
-      'build/version.json is missing; run `npm version <patch|minor|major>` ' +
+      `${VERSION_STAMP_PATH} is missing; run \`npm version <patch|minor|major>\` ` +
       'to rebuild and commit the bundle before publishing'
     )
   }
   if (stamp.version !== rootPkg.version) {
     throw new Error(
-      `build/version.json is stamped with ${stamp.version ?? '(nothing)'} but ` +
+      `${VERSION_STAMP_PATH} is stamped with ${stamp.version ?? '(nothing)'} but ` +
       `package.json has ${rootPkg.version}; run \`npm version\` to rebuild and ` +
       'commit the bundle before publishing'
     )
@@ -71,7 +71,7 @@ async function assertFreshBundle (): Promise<void> {
     await Deno.stat(`${DASHBOARD_DIR}/index.html`)
   } catch {
     throw new Error(
-      'build/dist-dashboard is missing or incomplete; run `npm version` ' +
+      `${DASHBOARD_DIR} is missing or incomplete; run \`npm version\` ` +
       'to rebuild the dashboard before publishing'
     )
   }
@@ -86,10 +86,10 @@ async function assertFreshBundle (): Promise<void> {
     )
     if (code !== 0) {
       throw new Error(
-        `${staged ? 'Staged' : 'Unstaged'} changes under build/ or package.json; ` +
+        `${staged ? 'Staged' : 'Unstaged'} changes under ${BUILD_DIR}/ or package.json; ` +
         'the published bundle must match the version commit. Discard them with ' +
-        '`git checkout -- build/ package.json`, or rebuild and amend with ' +
-        '`deno task build && git add build/ package.json && git commit --amend --no-edit` ' +
+        `\`git checkout -- ${BUILD_DIR}/ package.json\`, or rebuild and amend with ` +
+        `\`deno task build && git add ${BUILD_DIR}/ package.json && git commit --amend --no-edit\` ` +
         '(then re-tag with `git tag -f v<version>` if you amended)'
       )
     }
