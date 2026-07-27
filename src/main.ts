@@ -11,11 +11,10 @@
 import parseConfig, { handlerState } from './parseConfig.ts'
 import { exit } from './utils.ts'
 
-parseConfig()
-
 // `postHandler` is set by `parseArgs` (called by `parseConfig`)
 // Run the selected subcommand
 try {
+  await parseConfig()
   await handlerState.postHandler()
 } catch (e) {
   exit(e)

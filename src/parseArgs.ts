@@ -6,8 +6,9 @@ import yargs, { type ArgumentsCamelCase, type CommandModule as YCommandModule } 
 import { hideBin } from 'npm:yargs/helpers'
 
 // Use an object to hold the handler to ensure live binding works
-const handlerState: { postHandler: () => void | Promise<void> } = {
-  postHandler: () => {}
+const handlerState: { postHandler: () => void | Promise<void>; validatesConfig: boolean } = {
+  postHandler: () => {},
+  validatesConfig: false
 }
 
 const parseArgs = () => {
@@ -18,6 +19,7 @@ const parseArgs = () => {
       ...commandModule,
       handler: (argv: ArgumentsCamelCase<U>) => {
         handlerState.postHandler = () => commandModule.postHandler(argv)
+        handlerState.validatesConfig = commandModule.validatesConfig === true
         if (commandModule.handler) {
           return commandModule.handler(argv)
         }

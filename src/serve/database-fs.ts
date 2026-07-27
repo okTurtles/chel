@@ -2,15 +2,8 @@ import type { Buffer } from 'node:buffer'
 import { mkdir, readdir, readFile, rm, unlink, writeFile } from 'node:fs/promises'
 import { basename, dirname, join, normalize, resolve } from 'node:path'
 import { checkKey } from 'npm:@chelonia/lib/db'
-import * as z from 'npm:zod'
+import { FsOptionsSchema as ConfigSchema, type FsOptions } from './backend-schemas.ts'
 import DatabaseBackend from './DatabaseBackend.ts'
-
-const ConfigSchema = z.strictObject({
-  dirname: z.optional(z.string()),
-  depth: z.optional(z.number()),
-  keyChunkLength: z.optional(z.number()),
-  skipFsCaseSensitivityCheck: z.optional(z.boolean()),
-})
 
 // Some operating systems (such as macOS and Windows) use case-insensitive
 // filesystems by default. This can be problematic for Chelonia / Group Income,
@@ -54,7 +47,7 @@ export default class FsBackend extends DatabaseBackend {
   keyChunkLength: number = 2
   skipFsCaseSensitivityCheck: boolean = false
 
-  constructor (options: { dirname?: string; depth?: number; keyChunkLength?: number, skipFsCaseSensitivityCheck?: boolean } = {}) {
+  constructor (options: FsOptions = {}) {
     super()
     ConfigSchema.parse(options)
     if (options.dirname) this.dataFolder = resolve(options.dirname)

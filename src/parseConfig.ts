@@ -2,50 +2,25 @@
 import nconf from 'npm:nconf'
 import { parse, stringify } from 'npm:smol-toml'
 import parseArgs, { handlerState } from './parseArgs.ts'
+import { validateConfigFile } from './validateConfig.ts'
+import { nconfDefaults } from './config-defaults.ts'
 
-// Single source of truth for server defaults. Consumed by `parseConfig()`
-// below and by `chel init` (via `src/init.ts`) so the generated `chel.toml`
-// template cannot silently drift from the runtime defaults. Exported as a
-// plain (mutable-shape) object because nconf's `.defaults()` expects a
-// record; nothing should mutate it.
-export const SERVER_DEFAULTS = {
-  // Unique identity for this server instance. Must not be reused across
-  // environments (prod / staging / dev) that share a database, otherwise
-  // push notifications may be delivered to clients registered against a
-  // different instance. `chel serve` refuses to start when this is unset.
-  server_id: undefined,
-  server: {
-    appDir: '.',
-    host: '0.0.0.0',
-    port: 8000,
-    dashboardPort: 8888,
-    fileUploadMaxBytes: 31457280,
-    signup: {
-      disabled: false,
-      limit: {
-        disabled: false,
-        minute: 2,
-        hour: 10,
-        day: 50
-      },
-      vapid: {
-        email: undefined
-      }
-    },
-    logLevel: 'debug',
-    messages: [],
-    maxEventsBatchSize: 500,
-    archiveMode: false,
-    reclaimForeignSubscriptions: false
-  },
-  database: {
-    lruNumItems: 10000,
-    backend: 'mem',
-    backendOptions: {}
-  }
-}
+// Re-exported for `chel init` (see `src/init.ts`), which interpolates the
+// generated `chel.toml` template from these values so it cannot silently drift
+// from the runtime defaults. The canonical definition lives in
+// `config-defaults.ts` so it can be shared (e.g. with `validateConfig.test.ts`)
+// without pulling in the whole config-loading stack.
+export const SERVER_DEFAULTS = nconfDefaults
 
-const parseConfig = () => {
+// Loads the `chel.toml` config into nconf and validates its contents against a
+// whitelist of known options. The file is loaded manually first so that:
+//   - unknown keys print a warning (likely a typo);
+//   - values of the wrong shape fail with a helpful error message.
+//
+// This function is async because reading the TOML is async; any validation
+// error is thrown so that `main.ts` can surface it via `exit()` instead of
+// becoming an unhandled rejection (see issue #104).
+const parseConfig = async (): Promise<void> => {
   nconf
     .env({
       separator: '__',
@@ -53,7 +28,19 @@ const parseConfig = () => {
     })
     .argv(parseArgs())
     .file({ file: 'chel.toml', format: { parse, stringify } })
-    .defaults(SERVER_DEFAULTS)
+    .defaults(nconfDefaults)
+
+  // Only commands that actually read server/database config opt into
+  // validation (via `validatesConfig` on their command module). This keeps a
+  // malformed `chel.toml` from blocking file- or URL-only commands such as
+  // `chel hash` or `chel keygen`. `handlerState` is populated by the yargs
+  // parse that `.argv()` above triggers.
+  if (handlerState.validatesConfig) {
+    // Manually re-read and validate the raw TOML so that only the file's own
+    // contents (not merged env/CLI/defaults) are checked. nconf silently
+    // ignores a missing `chel.toml`, so we do the same.
+    await validateConfigFile('chel.toml')
+  }
 }
 
 export default parseConfig

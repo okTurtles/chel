@@ -3,6 +3,7 @@ import * as path from 'jsr:@std/path'
 import * as toml from 'npm:smol-toml'
 import { init } from './init.ts'
 import { SERVER_DEFAULTS } from './parseConfig.ts'
+import { validateTomlConfig } from './validateConfig.ts'
 
 // Run `chel init` against a clean temporary working directory so the test
 // never touches a real repo-local `chel.toml`. Each subtest gets its own
@@ -119,7 +120,6 @@ Deno.test({
         const expectedCommented = [
           `# appDir = "${d.server.appDir}"`,
           `# fileUploadMaxBytes = ${d.server.fileUploadMaxBytes}`,
-          `# logLevel = "${d.server.logLevel}"`,
           `# maxEventsBatchSize = ${d.server.maxEventsBatchSize}`,
           `# archiveMode = ${d.server.archiveMode}`,
           `# reclaimForeignSubscriptions = ${d.server.reclaimForeignSubscriptions}`,
@@ -133,6 +133,17 @@ Deno.test({
         for (const line of expectedCommented) {
           assert(raw.includes(line), `template should contain guidance line: ${line}`)
         }
+      })
+    })
+
+    await t.step('generated chel.toml passes validation with no warnings', async () => {
+      await withTempCwd(async () => {
+        await init({} as never)
+        const raw = await Deno.readTextFile('chel.toml')
+        const parsed = toml.parse(raw)
+        const result = validateTomlConfig(parsed)
+        assertEquals(result.errors, [])
+        assertEquals(result.warnings, [])
       })
     })
   }

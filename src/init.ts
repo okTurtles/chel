@@ -8,7 +8,7 @@ type Params = { force?: boolean }
 const DEFAULT_CONFIG_PATH = 'chel.toml'
 
 // Template written by `chel init`. Every default value is interpolated from
-// `SERVER_DEFAULTS` (single source of truth in `src/parseConfig.ts`) so the
+// `SERVER_DEFAULTS` (single source of truth in `src/config-defaults.ts`) so the
 // generated `chel.toml` cannot silently drift from the runtime defaults.
 const tomlValue = (v: unknown): string => {
   if (typeof v === 'string') return `"${v}"`
@@ -36,7 +36,6 @@ host = ${tomlValue(d.server.host)}
 port = ${tomlValue(d.server.port)}
 dashboardPort = ${tomlValue(d.server.dashboardPort)}
 # fileUploadMaxBytes = ${tomlValue(d.server.fileUploadMaxBytes)}
-# logLevel = ${tomlValue(d.server.logLevel)}
 # maxEventsBatchSize = ${tomlValue(d.server.maxEventsBatchSize)}
 # archiveMode = ${tomlValue(d.server.archiveMode)}
 # reclaimForeignSubscriptions = ${tomlValue(d.server.reclaimForeignSubscriptions)}
@@ -50,14 +49,22 @@ dashboardPort = ${tomlValue(d.server.dashboardPort)}
 # hour = ${tomlValue(d.server.signup.limit.hour)}
 # day = ${tomlValue(d.server.signup.limit.day)}
 
-[server.signup.vapid]
+[server.vapid]
 # email = "you@example.com"
 
 [database]
 backend = ${tomlValue(d.database.backend)}
-
-[database.backendOptions]
 # lruNumItems = ${tomlValue(d.database.lruNumItems)}
+
+# Backend-specific options; uncomment the block matching your backend.
+# [database.backendOptions.fs]
+# dirname = "data"
+#
+# [database.backendOptions.sqlite]
+# filepath = "data/chelonia.db"
+#
+# [database.backendOptions.redis]
+# url = "redis://localhost:6379"
 `
 }
 

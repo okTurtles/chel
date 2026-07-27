@@ -3,6 +3,11 @@ import type { ArgumentsCamelCase, CommandModule as YCommandModule } from 'npm:ya
 export type CommandModule<T, U> = Omit<YCommandModule<T, U>, 'handler'> & {
   handler?: YCommandModule<T, U>['handler']
   postHandler: YCommandModule<T, U>['handler']
+  // When true, `parseConfig` validates `chel.toml` before running the command.
+  // Commands that read server/database config opt in; file- and URL-only
+  // commands (hash, keygen, ...) leave it unset so a malformed config file
+  // doesn't block them.
+  validatesConfig?: boolean
 }
 export type { ArgumentsCamelCase }
 

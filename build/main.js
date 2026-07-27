@@ -728,11 +728,11 @@ function resolve(...pathSegments) {
     let path;
     if (i2 >= 0) path = pathSegments[i2];
     else {
-      const { Deno: Deno3 } = globalThis;
-      if (typeof Deno3?.cwd !== "function") {
+      const { Deno: Deno4 } = globalThis;
+      if (typeof Deno4?.cwd !== "function") {
         throw new TypeError("Resolved a relative path without a current working directory (CWD)");
       }
-      path = Deno3.cwd();
+      path = Deno4.cwd();
     }
     assertPath(path);
     if (path.length === 0) {
@@ -821,19 +821,19 @@ function resolve2(...pathSegments) {
   let resolvedAbsolute = false;
   for (let i2 = pathSegments.length - 1; i2 >= -1; i2--) {
     let path;
-    const { Deno: Deno3 } = globalThis;
+    const { Deno: Deno4 } = globalThis;
     if (i2 >= 0) {
       path = pathSegments[i2];
     } else if (!resolvedDevice) {
-      if (typeof Deno3?.cwd !== "function") {
+      if (typeof Deno4?.cwd !== "function") {
         throw new TypeError("Resolved a drive-letter-less path without a current working directory (CWD)");
       }
-      path = Deno3.cwd();
+      path = Deno4.cwd();
     } else {
-      if (typeof Deno3?.env?.get !== "function" || typeof Deno3?.cwd !== "function") {
+      if (typeof Deno4?.env?.get !== "function" || typeof Deno4?.cwd !== "function") {
         throw new TypeError("Resolved a relative path without a current working directory (CWD)");
       }
-      path = Deno3.cwd();
+      path = Deno4.cwd();
       if (path === void 0 || path.slice(0, 3).toLowerCase() !== `${resolvedDevice.toLowerCase()}\\`) {
         path = `${resolvedDevice}\\`;
       }
@@ -1607,11 +1607,11 @@ function resolve6(...pathSegments) {
     let path;
     if (i2 >= 0) path = pathSegments[i2];
     else {
-      const { Deno: Deno3 } = globalThis;
-      if (typeof Deno3?.cwd !== "function") {
+      const { Deno: Deno4 } = globalThis;
+      if (typeof Deno4?.cwd !== "function") {
         throw new TypeError("Resolved a relative path without a current working directory (CWD)");
       }
-      path = Deno3.cwd();
+      path = Deno4.cwd();
     }
     assertPath3(path);
     if (path.length === 0) {
@@ -1635,19 +1635,19 @@ function resolve7(...pathSegments) {
   let resolvedAbsolute = false;
   for (let i2 = pathSegments.length - 1; i2 >= -1; i2--) {
     let path;
-    const { Deno: Deno3 } = globalThis;
+    const { Deno: Deno4 } = globalThis;
     if (i2 >= 0) {
       path = pathSegments[i2];
     } else if (!resolvedDevice) {
-      if (typeof Deno3?.cwd !== "function") {
+      if (typeof Deno4?.cwd !== "function") {
         throw new TypeError("Resolved a drive-letter-less path without a current working directory (CWD)");
       }
-      path = Deno3.cwd();
+      path = Deno4.cwd();
     } else {
-      if (typeof Deno3?.env?.get !== "function" || typeof Deno3?.cwd !== "function") {
+      if (typeof Deno4?.env?.get !== "function" || typeof Deno4?.cwd !== "function") {
         throw new TypeError("Resolved a relative path without a current working directory (CWD)");
       }
-      path = Deno3.cwd();
+      path = Deno4.cwd();
       if (path === void 0 || path.slice(0, 3).toLowerCase() !== `${resolvedDevice.toLowerCase()}\\`) {
         path = `${resolvedDevice}\\`;
       }
@@ -3997,6 +3997,112 @@ var wrapTransaction = (fn, db2, { begin, commit, rollback, savepoint, release, r
 import { Buffer as Buffer11 } from "node:buffer";
 import { mkdir as mkdir2 } from "node:fs/promises";
 import { basename as basename22, dirname as dirname22, join as join32, resolve as resolve32 } from "node:path";
+
+// deno:https://jsr.io/@std/assert/1.0.13/assertion_error.ts
+var AssertionError = class extends Error {
+  /** Constructs a new instance.
+   *
+   * @param message The error message.
+   * @param options Additional options. This argument is still unstable. It may change in the future release.
+   */
+  constructor(message, options2) {
+    super(message, options2);
+    this.name = "AssertionError";
+  }
+};
+
+// deno:https://jsr.io/@std/assert/1.0.13/equal.ts
+var Temporal = globalThis.Temporal ?? new Proxy({}, {
+  get: () => {
+  }
+});
+var stringComparablePrototypes = new Set([
+  Intl.Locale,
+  RegExp,
+  Temporal.Duration,
+  Temporal.Instant,
+  Temporal.PlainDate,
+  Temporal.PlainDateTime,
+  Temporal.PlainTime,
+  Temporal.PlainYearMonth,
+  Temporal.PlainMonthDay,
+  Temporal.ZonedDateTime,
+  URL,
+  URLSearchParams
+].filter((x3) => x3 != null).map((x3) => x3.prototype));
+var TypedArray = Object.getPrototypeOf(Uint8Array);
+
+// deno:https://jsr.io/@std/internal/1.0.12/styles.ts
+var { Deno: Deno3 } = globalThis;
+var noColor2 = typeof Deno3?.noColor === "boolean" ? Deno3.noColor : false;
+var ANSI_PATTERN2 = new RegExp([
+  "[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)",
+  "(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TXZcf-nq-uy=><~]))"
+].join("|"), "g");
+function stripAnsiCode(string3) {
+  return string3.replace(ANSI_PATTERN2, "");
+}
+
+// deno:https://jsr.io/@std/assert/1.0.13/is_error.ts
+function assertIsError(error2, ErrorClass, msgMatches, msg) {
+  const msgSuffix = msg ? `: ${msg}` : ".";
+  if (!(error2 instanceof Error)) {
+    throw new AssertionError(`Expected "error" to be an Error object${msgSuffix}`);
+  }
+  if (ErrorClass && !(error2 instanceof ErrorClass)) {
+    msg = `Expected error to be instance of "${ErrorClass.name}", but was "${error2?.constructor?.name}"${msgSuffix}`;
+    throw new AssertionError(msg);
+  }
+  let msgCheck;
+  if (typeof msgMatches === "string") {
+    msgCheck = stripAnsiCode(error2.message).includes(stripAnsiCode(msgMatches));
+  }
+  if (msgMatches instanceof RegExp) {
+    msgCheck = msgMatches.test(stripAnsiCode(error2.message));
+  }
+  if (msgMatches && !msgCheck) {
+    msg = `Expected error message to include ${msgMatches instanceof RegExp ? msgMatches.toString() : JSON.stringify(msgMatches)}, but got ${JSON.stringify(error2?.message)}${msgSuffix}`;
+    throw new AssertionError(msg);
+  }
+}
+
+// deno:https://jsr.io/@std/assert/1.0.13/throws.ts
+function assertThrows(fn, errorClassOrMsg, msgIncludesOrMsg, msg) {
+  let ErrorClass;
+  let msgIncludes;
+  let err;
+  if (typeof errorClassOrMsg !== "string") {
+    if (errorClassOrMsg === void 0 || errorClassOrMsg?.prototype instanceof Error || errorClassOrMsg?.prototype === Error.prototype) {
+      ErrorClass = errorClassOrMsg;
+      msgIncludes = msgIncludesOrMsg;
+    } else {
+      msg = msgIncludesOrMsg;
+    }
+  } else {
+    msg = errorClassOrMsg;
+  }
+  let doesThrow = false;
+  const msgSuffix = msg ? `: ${msg}` : ".";
+  try {
+    fn();
+  } catch (error2) {
+    if (ErrorClass) {
+      if (error2 instanceof Error === false) {
+        throw new AssertionError(`A non-Error object was thrown${msgSuffix}`);
+      }
+      assertIsError(error2, ErrorClass, msgIncludes, msg);
+    }
+    err = error2;
+    doesThrow = true;
+  }
+  if (!doesThrow) {
+    msg = `Expected function to throw${msgSuffix}`;
+    throw new AssertionError(msg);
+  }
+  return err;
+}
+
+// build/main.js-tmp
 import process12 from "node:process";
 import { Buffer as Buffer12 } from "node:buffer";
 import process2 from "node:process";
@@ -4092,10 +4198,11 @@ async function writeAll(writer, data) {
 }
 
 // build/main.js-tmp
-import { readFile as readFile2 } from "node:fs/promises";
+import { readFile as readFile3 } from "node:fs/promises";
 import process3 from "node:process";
+import { readFile as readFile2 } from "node:fs/promises";
 import { existsSync } from "node:fs";
-import { copyFile, mkdir as mkdir3, readFile as readFile3, writeFile as writeFile2 } from "node:fs/promises";
+import { copyFile, mkdir as mkdir3, readFile as readFile4, writeFile as writeFile2 } from "node:fs/promises";
 import { basename as basename42, dirname as dirname42, join as join62 } from "node:path";
 import process4 from "node:process";
 import process10 from "node:process";
@@ -8275,15 +8382,15 @@ var require_conversions = __commonJS({
       const g2 = rgb[1] / 255;
       const b = rgb[2] / 255;
       const v2 = Math.max(r, g2, b);
-      const diff = v2 - Math.min(r, g2, b);
+      const diff2 = v2 - Math.min(r, g2, b);
       const diffc = function(c) {
-        return (v2 - c) / 6 / diff + 1 / 2;
+        return (v2 - c) / 6 / diff2 + 1 / 2;
       };
-      if (diff === 0) {
+      if (diff2 === 0) {
         h2 = 0;
         s = 0;
       } else {
-        s = diff / v2;
+        s = diff2 / v2;
         rdif = diffc(r);
         gdif = diffc(g2);
         bdif = diffc(b);
@@ -8840,17 +8947,17 @@ var require_conversions = __commonJS({
       return [0, 0, args[0]];
     };
     convert.gray.hsv = convert.gray.hsl;
-    convert.gray.hwb = function(gray2) {
-      return [0, 100, gray2[0]];
+    convert.gray.hwb = function(gray22) {
+      return [0, 100, gray22[0]];
     };
-    convert.gray.cmyk = function(gray2) {
-      return [0, 0, 0, gray2[0]];
+    convert.gray.cmyk = function(gray22) {
+      return [0, 0, 0, gray22[0]];
     };
-    convert.gray.lab = function(gray2) {
-      return [gray2[0], 0, 0];
+    convert.gray.lab = function(gray22) {
+      return [gray22[0], 0, 0];
     };
-    convert.gray.hex = function(gray2) {
-      const val = Math.round(gray2[0] / 100 * 255) & 255;
+    convert.gray.hex = function(gray22) {
+      const val = Math.round(gray22[0] / 100 * 255) & 255;
       const integer2 = (val << 16) + (val << 8) + val;
       const string3 = integer2.toString(16).toUpperCase();
       return "000000".substring(string3.length) + string3;
@@ -12770,29 +12877,29 @@ var require_nconf = __commonJS({
   "node_modules/.deno/nconf@0.13.0/node_modules/nconf/lib/nconf.js"(exports2, module15) {
     var common4 = require_common();
     var Provider = require_provider().Provider;
-    var nconf10 = module15.exports = new Provider();
-    nconf10.version = require_package().version;
-    nconf10.__defineGetter__("Argv", function() {
+    var nconf11 = module15.exports = new Provider();
+    nconf11.version = require_package().version;
+    nconf11.__defineGetter__("Argv", function() {
       return require_argv().Argv;
     });
-    nconf10.__defineGetter__("Env", function() {
+    nconf11.__defineGetter__("Env", function() {
       return require_env().Env;
     });
-    nconf10.__defineGetter__("File", function() {
+    nconf11.__defineGetter__("File", function() {
       return require_file().File;
     });
-    nconf10.__defineGetter__("Literal", function() {
+    nconf11.__defineGetter__("Literal", function() {
       return require_literal().Literal;
     });
-    nconf10.__defineGetter__("Memory", function() {
+    nconf11.__defineGetter__("Memory", function() {
       return require_memory().Memory;
     });
-    nconf10.key = common4.key;
-    nconf10.path = common4.path;
-    nconf10.loadFiles = common4.loadFiles;
-    nconf10.loadFilesSync = common4.loadFilesSync;
-    nconf10.formats = require_formats();
-    nconf10.Provider = Provider;
+    nconf11.key = common4.key;
+    nconf11.path = common4.path;
+    nconf11.loadFiles = common4.loadFiles;
+    nconf11.loadFilesSync = common4.loadFilesSync;
+    nconf11.formats = require_formats();
+    nconf11.Provider = Provider;
   }
 });
 // @__NO_SIDE_EFFECTS__
@@ -14299,9 +14406,11 @@ var $ZodNever;
 var $ZodArray;
 var $ZodObject;
 var $ZodUnion;
+var $ZodDiscriminatedUnion;
 var $ZodIntersection;
 var $ZodRecord;
 var $ZodEnum;
+var $ZodLiteral;
 var $ZodTransform;
 var $ZodOptional;
 var $ZodNullable;
@@ -14967,6 +15076,70 @@ var init_schemas = __esm({
         });
       };
     });
+    $ZodDiscriminatedUnion = /* @__PURE__ */ $constructor("$ZodDiscriminatedUnion", (inst, def) => {
+      $ZodUnion.init(inst, def);
+      const _super = inst._zod.parse;
+      defineLazy(inst._zod, "propValues", () => {
+        const propValues = {};
+        for (const option of def.options) {
+          const pv = option._zod.propValues;
+          if (!pv || Object.keys(pv).length === 0)
+            throw new Error(`Invalid discriminated union option at index "${def.options.indexOf(option)}"`);
+          for (const [k, v2] of Object.entries(pv)) {
+            if (!propValues[k])
+              propValues[k] = /* @__PURE__ */ new Set();
+            for (const val of v2) {
+              propValues[k].add(val);
+            }
+          }
+        }
+        return propValues;
+      });
+      const disc = cached(() => {
+        const opts = def.options;
+        const map = /* @__PURE__ */ new Map();
+        for (const o2 of opts) {
+          const values = o2._zod.propValues?.[def.discriminator];
+          if (!values || values.size === 0)
+            throw new Error(`Invalid discriminated union option at index "${def.options.indexOf(o2)}"`);
+          for (const v2 of values) {
+            if (map.has(v2)) {
+              throw new Error(`Duplicate discriminator value "${String(v2)}"`);
+            }
+            map.set(v2, o2);
+          }
+        }
+        return map;
+      });
+      inst._zod.parse = (payload, ctx) => {
+        const input = payload.value;
+        if (!isObject(input)) {
+          payload.issues.push({
+            code: "invalid_type",
+            expected: "object",
+            input,
+            inst
+          });
+          return payload;
+        }
+        const opt = disc.value.get(input?.[def.discriminator]);
+        if (opt) {
+          return opt._zod.run(payload, ctx);
+        }
+        if (def.unionFallback) {
+          return _super(payload, ctx);
+        }
+        payload.issues.push({
+          code: "invalid_union",
+          errors: [],
+          note: "No matching discriminator",
+          input,
+          path: [def.discriminator],
+          inst
+        });
+        return payload;
+      };
+    });
     $ZodIntersection = /* @__PURE__ */ $constructor("$ZodIntersection", (inst, def) => {
       $ZodType.init(inst, def);
       inst._zod.parse = (payload, ctx) => {
@@ -15088,6 +15261,24 @@ var init_schemas = __esm({
         payload.issues.push({
           code: "invalid_value",
           values,
+          input,
+          inst
+        });
+        return payload;
+      };
+    });
+    $ZodLiteral = /* @__PURE__ */ $constructor("$ZodLiteral", (inst, def) => {
+      $ZodType.init(inst, def);
+      inst._zod.values = new Set(def.values);
+      inst._zod.pattern = new RegExp(`^(${def.values.map((o2) => typeof o2 === "string" ? escapeRegex(o2) : o2 ? o2.toString() : String(o2)).join("|")})$`);
+      inst._zod.parse = (payload, _ctx) => {
+        const input = payload.value;
+        if (inst._zod.values.has(input)) {
+          return payload;
+        }
+        payload.issues.push({
+          code: "invalid_value",
+          values: def.values,
           input,
           inst
         });
@@ -16120,6 +16311,14 @@ function union(options2, params) {
     ...util_exports.normalizeParams(params)
   });
 }
+function discriminatedUnion(discriminator, options2, params) {
+  return new ZodDiscriminatedUnion({
+    type: "union",
+    options: options2,
+    discriminator,
+    ...util_exports.normalizeParams(params)
+  });
+}
 function intersection(left2, right2) {
   return new ZodIntersection({
     type: "intersection",
@@ -16140,6 +16339,13 @@ function _enum(values, params) {
   return new ZodEnum({
     type: "enum",
     entries,
+    ...util_exports.normalizeParams(params)
+  });
+}
+function literal(value, params) {
+  return new ZodLiteral({
+    type: "literal",
+    values: Array.isArray(value) ? value : [value],
     ...util_exports.normalizeParams(params)
   });
 }
@@ -16269,9 +16475,11 @@ var ZodNever;
 var ZodArray;
 var ZodObject;
 var ZodUnion;
+var ZodDiscriminatedUnion;
 var ZodIntersection;
 var ZodRecord;
 var ZodEnum;
+var ZodLiteral;
 var ZodTransform;
 var ZodOptional;
 var ZodNullable;
@@ -16564,6 +16772,10 @@ var init_schemas2 = __esm({
       ZodType.init(inst, def);
       inst.options = def.options;
     });
+    ZodDiscriminatedUnion = /* @__PURE__ */ $constructor("ZodDiscriminatedUnion", (inst, def) => {
+      ZodUnion.init(inst, def);
+      $ZodDiscriminatedUnion.init(inst, def);
+    });
     ZodIntersection = /* @__PURE__ */ $constructor("ZodIntersection", (inst, def) => {
       $ZodIntersection.init(inst, def);
       ZodType.init(inst, def);
@@ -16610,6 +16822,19 @@ var init_schemas2 = __esm({
           entries: newEntries
         });
       };
+    });
+    ZodLiteral = /* @__PURE__ */ $constructor("ZodLiteral", (inst, def) => {
+      $ZodLiteral.init(inst, def);
+      ZodType.init(inst, def);
+      inst.values = new Set(def.values);
+      Object.defineProperty(inst, "value", {
+        get() {
+          if (def.values.length > 1) {
+            throw new Error("This schema contains multiple valid literal values. Use `.values` instead.");
+          }
+          return def.values[0];
+        }
+      });
     });
     ZodTransform = /* @__PURE__ */ $constructor("ZodTransform", (inst, def) => {
       $ZodTransform.init(inst, def);
@@ -18623,7 +18848,7 @@ var init_interface = __esm({
   "node_modules/.deno/@chelonia+multiformats@1.0.0/node_modules/@chelonia/multiformats/dist/esm/link/interface.mjs"() {
   }
 });
-function format7(link, base2) {
+function format8(link, base2) {
   const { bytes, version: version3 } = link;
   switch (version3) {
     case 0:
@@ -18790,10 +19015,10 @@ var init_cid = __esm({
         return unknown2 != null && self2.code === unknown2.code && self2.version === unknown2.version && equals2(self2.multihash, unknown2.multihash);
       }
       toString(base2) {
-        return format7(this, base2);
+        return format8(this, base2);
       }
       toJSON() {
-        return { "/": format7(this) };
+        return { "/": format8(this) };
       }
       link() {
         return this;
@@ -24961,6 +25186,44 @@ var init_db_errors = __esm({
     init_utils();
   }
 });
+var FsOptionsSchema;
+var SqliteOptionsSchema;
+var RedisOptionsSchema;
+var RouterConfigEntrySchema;
+var RouterOptionsSchema;
+var init_backend_schemas = __esm({
+  "src/serve/backend-schemas.ts"() {
+    "use strict";
+    init_zod();
+    FsOptionsSchema = strictObject({
+      dirname: optional(string2()),
+      depth: optional(number2().int().min(0)),
+      keyChunkLength: optional(number2().int().positive()),
+      skipFsCaseSensitivityCheck: optional(boolean2())
+    });
+    SqliteOptionsSchema = strictObject({
+      filepath: optional(string2())
+    });
+    RedisOptionsSchema = strictObject({
+      url: optional(url({
+        protocol: /^rediss?$/,
+        error: '"url" must begin with redis:// or rediss://'
+      }))
+    });
+    RouterConfigEntrySchema = discriminatedUnion("name", [
+      strictObject({ name: literal("fs"), options: FsOptionsSchema }),
+      strictObject({ name: literal("sqlite"), options: SqliteOptionsSchema }),
+      strictObject({ name: literal("redis"), options: RedisOptionsSchema }),
+      strictObject({ name: literal("router"), options: record(string2(), unknown()) }).refine(() => false, { error: "router backends cannot be nested", path: ["name"] })
+    ], {
+      error: '"name" must be one of: fs, sqlite, redis'
+    });
+    RouterOptionsSchema = record(string2(), RouterConfigEntrySchema).refine(
+      (v2) => "*" in v2,
+      { error: 'router backend requires a "*" (fallback) entry' }
+    );
+  }
+});
 var requiredMethodNames;
 var DatabaseBackend;
 var init_DatabaseBackend = __esm({
@@ -25009,21 +25272,14 @@ async function testCaseSensitivity(backend) {
     await deleteData(originalKey);
   }
 }
-var ConfigSchema;
 var splitAndGroup;
 var FsBackend;
 var init_database_fs = __esm({
   "src/serve/database-fs.ts"() {
     "use strict";
     init_db();
-    init_zod();
+    init_backend_schemas();
     init_DatabaseBackend();
-    ConfigSchema = strictObject({
-      dirname: optional(string2()),
-      depth: optional(number2()),
-      keyChunkLength: optional(number2()),
-      skipFsCaseSensitivityCheck: optional(boolean2())
-    });
     splitAndGroup = (input, chunkLength, depth) => input.slice(0, chunkLength * depth).split("").reduce((acc, cv, i2) => {
       acc[i2 / chunkLength | 0] = (acc[i2 / chunkLength | 0] || "") + cv;
       return acc;
@@ -25035,7 +25291,7 @@ var init_database_fs = __esm({
       skipFsCaseSensitivityCheck = false;
       constructor(options2 = {}) {
         super();
-        ConfigSchema.parse(options2);
+        FsOptionsSchema.parse(options2);
         if (options2.dirname) this.dataFolder = resolve22(options2.dirname);
         if (options2.depth) this.depth = options2.depth;
         if (options2.keyChunkLength) this.keyChunkLength = options2.keyChunkLength;
@@ -50599,23 +50855,19 @@ __export(database_redis_exports, {
   default: () => RedisBackend
 });
 var import_npm_redis;
-var ConfigSchema2;
 var RedisBackend;
 var init_database_redis = __esm({
   "src/serve/database-redis.ts"() {
     "use strict";
     import_npm_redis = __toESM(require_dist2());
-    init_zod();
+    init_backend_schemas();
     init_DatabaseBackend();
-    ConfigSchema2 = strictObject({
-      url: optional(url({ protocol: /^rediss?$/ }))
-    });
     RedisBackend = class extends DatabaseBackend {
       db = null;
       url;
       constructor(options2 = {}) {
         super();
-        ConfigSchema2.parse(options2);
+        RedisOptionsSchema.parse(options2);
         this.url = options2.url;
       }
       async init() {
@@ -50660,16 +50912,12 @@ var database_sqlite_exports = {};
 __export(database_sqlite_exports, {
   default: () => SqliteBackend
 });
-var ConfigSchema3;
 var SqliteBackend;
 var init_database_sqlite = __esm({
   "src/serve/database-sqlite.ts"() {
     "use strict";
-    init_zod();
+    init_backend_schemas();
     init_DatabaseBackend();
-    ConfigSchema3 = strictObject({
-      filepath: optional(string2())
-    });
     SqliteBackend = class extends DatabaseBackend {
       dataFolder = "data";
       db = null;
@@ -50681,7 +50929,7 @@ var init_database_sqlite = __esm({
       keyCountStatement = null;
       constructor(options2 = {}) {
         super();
-        ConfigSchema3.parse(options2);
+        SqliteOptionsSchema.parse(options2);
         const { filepath } = options2;
         if (!filepath) return;
         const resolvedPath = resolve32(filepath);
@@ -50758,36 +51006,23 @@ var database_router_exports = {};
 __export(database_router_exports, {
   default: () => RouterBackend
 });
-var ConfigEntrySchema;
-var ConfigSchema4;
 var RouterBackend;
 var init_database_router = __esm({
   "src/serve/database-router.ts"() {
     "use strict";
-    init_zod();
+    init_backend_schemas();
     init_DatabaseBackend();
     init_db_errors();
     init_();
-    ConfigEntrySchema = strictObject({
-      name: string2(),
-      options: object()
-    });
-    ConfigSchema4 = intersection(
-      object({ "*": ConfigEntrySchema }),
-      record(string2(), ConfigEntrySchema)
-    );
     RouterBackend = class extends DatabaseBackend {
       backends;
       config;
       constructor(config2 = {}) {
         super();
-        ConfigSchema4.parse(config2);
-        const configCopy = Object.fromEntries(Object.entries(config2).sort((a, b) => b[0].length - a[0].length));
-        const errors2 = this.validateConfig(configCopy);
-        if (errors2.length) {
-          throw new Error(`[${this.constructor.name}] ${errors2.length} error(s) found in your config.`, { cause: errors2 });
-        }
-        this.config = configCopy;
+        const parsed = RouterOptionsSchema.parse(config2);
+        this.config = Object.fromEntries(
+          Object.entries(parsed).sort((a, b) => b[0].length - a[0].length)
+        );
       }
       lookupBackend(key) {
         const { backends, config: config2 } = this;
@@ -50798,24 +51033,6 @@ var init_database_router = __esm({
           }
         }
         return backends["*"];
-      }
-      validateConfig(config2) {
-        const errors2 = [];
-        if (!config2["*"]) {
-          errors2.push({ msg: 'Missing key: "*" (fallback storage is required)' });
-        }
-        for (const entry of Object.entries(config2)) {
-          const value = entry[1];
-          if (typeof value?.name !== "string" || typeof value?.options !== "object") {
-            errors2.push({ msg: "entry value must be of type { name: string, options: Object }", entry });
-            continue;
-          }
-          if (value.name === "router") {
-            errors2.push({ msg: "Router backends cannot be nested.", entry });
-            continue;
-          }
-        }
-        return errors2;
       }
       async init() {
         this.backends = /* @__PURE__ */ Object.create(null);
@@ -50891,6 +51108,7 @@ var init_database_router_test = __esm({
     "use strict";
     init_esm4();
     init_database_router();
+    init_backend_schemas();
     CID2 = "Q";
     randomKeyWithPrefix = (prefix) => `${prefix}${globalThis.crypto.randomUUID().replaceAll("-", "")}`;
     validConfig = {
@@ -50910,27 +51128,51 @@ var init_database_router_test = __esm({
     };
     db = new RouterBackend(validConfig);
     Deno.test({
-      name: "DatabaseRouter::validateConfig",
+      name: "RouterOptionsSchema validation",
       async fn(t) {
         await t.step("should accept a valid config", () => {
-          const errors2 = db.validateConfig(validConfig);
-          if (errors2.length !== 0) throw new Error(`Expected 0 errors but got ${errors2.length}`);
+          const result = RouterOptionsSchema.safeParse(validConfig);
+          if (!result.success) throw new Error(`Expected success but got ${result.error.issues.length} errors`);
         });
         await t.step("should reject configs missing a * key", () => {
           const config2 = omit2(validConfig, ["*"]);
-          const errors2 = db.validateConfig(config2);
-          if (errors2.length !== 1) throw new Error(`Expected 1 error but got ${errors2.length}`);
+          const result = RouterOptionsSchema.safeParse(config2);
+          if (result.success || result.error.issues.length !== 1) throw new Error(`Expected 1 error but got ${result.success ? 0 : result.error.issues.length}`);
         });
         await t.step("should reject config entries missing a name", () => {
           const config2 = cloneDeep(validConfig);
           delete config2["*"].name;
-          const errors2 = db.validateConfig(config2);
-          if (errors2.length !== 1) throw new Error(`Expected 1 error but got ${errors2.length}`);
+          const result = RouterOptionsSchema.safeParse(config2);
+          if (result.success || result.error.issues.length !== 1) throw new Error(`Expected 1 error but got ${result.success ? 0 : result.error.issues.length}`);
         });
       }
     });
     Deno.test({
-      name: "DatabaseRouter::lookupBackend",
+      name: "RouterBackend::constructor",
+      async fn(t) {
+        await t.step('rejects a config missing the "*" fallback', () => {
+          assertThrows(
+            () => new RouterBackend({ "gi.contracts/": { name: "fs", options: {} } }),
+            Error
+          );
+        });
+        await t.step("rejects a config whose entry options are not an object", () => {
+          assertThrows(
+            // @ts-expect-error: intentionally invalid, options must be an object
+            () => new RouterBackend({ "*": { name: "fs", options: "not-an-object" } }),
+            Error
+          );
+        });
+        await t.step("rejects a config with an unknown backend name", () => {
+          assertThrows(
+            () => new RouterBackend({ "*": { name: "mongodb", options: {} } }),
+            Error
+          );
+        });
+      }
+    });
+    Deno.test({
+      name: "RouterBackend::lookupBackend",
       async fn(t) {
         await db.init();
         try {
@@ -61737,7 +61979,7 @@ var require_websocket_server = __commonJS({
     }
   }
 });
-var import_npm_nconf9 = __toESM(require_nconf());
+var import_npm_nconf10 = __toESM(require_nconf());
 function getLineColFromPtr(string3, ptr) {
   let lines = string3.slice(0, ptr).split(/\r\n|\n|\r/g);
   return [lines.length, lines.pop().length + 1];
@@ -63659,9 +63901,9 @@ function resolveJournalConfig(cfg) {
   const snapshotInterval = typeof cfg?.snapshotInterval === "number" ? cfg.snapshotInterval : DEFAULT_SNAPSHOT_INTERVAL;
   const contractIDs = cfg?.contractIDs && cfg.contractIDs.length > 0 ? new Set(cfg.contractIDs) : null;
   const redactions = cfg?.redactions ?? [];
-  const diff = cfg?.diff ?? defaultDiff;
+  const diff2 = cfg?.diff ?? defaultDiff;
   const applyPatch = cfg?.applyPatch ?? defaultApplyPatch;
-  return { enabled: enabled2, snapshotInterval, contractIDs, redactions, diff, applyPatch };
+  return { enabled: enabled2, snapshotInterval, contractIDs, redactions, diff: diff2, applyPatch };
 }
 function indexOfLastSnapshot(entries) {
   for (let i2 = entries.length - 1; i2 >= 0; i2--) {
@@ -72210,6 +72452,7 @@ function handleFetchResult2(type) {
   };
 }
 var module2 = {
+  validatesConfig: true,
   builder: (yargs) => {
     return yargs.option("url", {
       describe: "URL of a remote server",
@@ -72270,6 +72513,7 @@ async function deploy(args) {
   await upload({ ...args, files: toUpload }, true);
 }
 var module3 = {
+  validatesConfig: true,
   builder: (yargs) => {
     return yargs.option("url", {
       describe: "URL of a remote server",
@@ -72560,6 +72804,7 @@ async function getRemoteMessagesSince(src2, contractID, sinceHeight, limit) {
   );
 }
 var module4 = {
+  validatesConfig: true,
   builder: (yargs) => {
     return yargs.option("limit", {
       describe: "Limit",
@@ -72618,6 +72863,7 @@ async function get({ key, url: url2 }) {
   }
 }
 var module5 = {
+  validatesConfig: true,
   builder: (yargs) => {
     return yargs.option("url", {
       describe: "URL of a remote server",
@@ -72683,7 +72929,6 @@ host = ${tomlValue(d.server.host)}
 port = ${tomlValue(d.server.port)}
 dashboardPort = ${tomlValue(d.server.dashboardPort)}
 # fileUploadMaxBytes = ${tomlValue(d.server.fileUploadMaxBytes)}
-# logLevel = ${tomlValue(d.server.logLevel)}
 # maxEventsBatchSize = ${tomlValue(d.server.maxEventsBatchSize)}
 # archiveMode = ${tomlValue(d.server.archiveMode)}
 # reclaimForeignSubscriptions = ${tomlValue(d.server.reclaimForeignSubscriptions)}
@@ -72697,14 +72942,22 @@ dashboardPort = ${tomlValue(d.server.dashboardPort)}
 # hour = ${tomlValue(d.server.signup.limit.hour)}
 # day = ${tomlValue(d.server.signup.limit.day)}
 
-[server.signup.vapid]
+[server.vapid]
 # email = "you@example.com"
 
 [database]
 backend = ${tomlValue(d.database.backend)}
-
-[database.backendOptions]
 # lruNumItems = ${tomlValue(d.database.lruNumItems)}
+
+# Backend-specific options; uncomment the block matching your backend.
+# [database.backendOptions.fs]
+# dirname = "data"
+#
+# [database.backendOptions.sqlite]
+# filepath = "data/chelonia.db"
+#
+# [database.backendOptions.redis]
+# url = "redis://localhost:6379"
 `;
 };
 var init2 = async (args) => {
@@ -72911,6 +73164,207 @@ var module9 = {
 };
 init_esm();
 init_utils();
+init_zod();
+init_backend_schemas();
+var portSchema = number2().int().min(1, "must be an integer between 1 and 65535").max(65535, "must be an integer between 1 and 65535");
+var positiveInt = number2().int().positive("must be a positive integer");
+var BackendOptionsSchema = strictObject({
+  fs: optional(FsOptionsSchema),
+  sqlite: optional(SqliteOptionsSchema),
+  redis: optional(RedisOptionsSchema),
+  router: optional(RouterOptionsSchema)
+});
+var ConfigSchema = strictObject({
+  // Set via the `--app-manifest` CLI flag; allowed in TOML for completeness.
+  appManifest: optional(string2()),
+  // Unique, stable identity for this server instance; required at runtime by
+  // `chel serve` (see `src/serve/server.ts`) to scope push subscriptions.
+  server_id: optional(string2()),
+  server: optional(strictObject({
+    appDir: optional(string2()),
+    host: optional(string2().min(1, "must be a non-empty string")),
+    port: optional(portSchema),
+    dashboardPort: optional(portSchema),
+    fileUploadMaxBytes: optional(positiveInt),
+    // NOTE: validated for shape only; the logger reads `LOG_LEVEL` from the
+    // environment directly (see `src/serve/logger.ts`). A warning is printed
+    // at server startup if this key is set without `LOG_LEVEL`.
+    logLevel: optional(_enum(["trace", "debug", "info", "warn", "error", "fatal", "silent"])),
+    // Deliberately loose: server messages are app-defined and passed verbatim
+    // to clients (see `routes.ts /serverMessages`), so only the array-of-objects
+    // shape is enforced, not the fields within each message.
+    messages: optional(array(record(string2(), unknown()))),
+    maxEventsBatchSize: optional(positiveInt),
+    archiveMode: optional(boolean2()),
+    // Opt-in deletion of push subscriptions tagged with a different `server_id`
+    // (see `src/serve/server.ts`); foreign subscriptions are retained by default.
+    reclaimForeignSubscriptions: optional(boolean2()),
+    signup: optional(strictObject({
+      disabled: optional(boolean2()),
+      limit: optional(strictObject({
+        disabled: optional(boolean2()),
+        // Positive (not merely non-negative) to match the runtime, which falls
+        // back to a default when these are falsy (see `routes.ts`), so `0`
+        // would be silently ignored rather than meaning "no signups".
+        minute: optional(positiveInt),
+        hour: optional(positiveInt),
+        day: optional(positiveInt)
+      }))
+    })),
+    // The VAPID email is read from `server:vapid:email` at runtime
+    // (see `src/serve/vapid.ts`).
+    vapid: optional(strictObject({
+      email: optional(string2())
+    }))
+  })),
+  database: optional(strictObject({
+    backend: optional(_enum(["mem", "fs", "sqlite", "redis", "router"], {
+      error: '"backend" must be one of: mem, fs, sqlite, redis, router'
+    })),
+    lruNumItems: optional(positiveInt),
+    backendOptions: optional(BackendOptionsSchema)
+  }))
+});
+function editDistance(a, b) {
+  const m3 = a.length;
+  const n = b.length;
+  const d = Array.from({ length: m3 + 1 }, () => new Array(n + 1).fill(0));
+  for (let i2 = 0; i2 <= m3; i2++) d[i2][0] = i2;
+  for (let j = 0; j <= n; j++) d[0][j] = j;
+  for (let i2 = 1; i2 <= m3; i2++) {
+    for (let j = 1; j <= n; j++) {
+      const cost = a[i2 - 1] === b[j - 1] ? 0 : 1;
+      d[i2][j] = Math.min(
+        d[i2 - 1][j] + 1,
+        d[i2][j - 1] + 1,
+        d[i2 - 1][j - 1] + cost
+      );
+      if (i2 > 1 && j > 1 && a[i2 - 1] === b[j - 2] && a[i2 - 2] === b[j - 1]) {
+        d[i2][j] = Math.min(d[i2][j], d[i2 - 2][j - 2] + 1);
+      }
+    }
+  }
+  return d[m3][n];
+}
+function suggest(key, candidates) {
+  let best;
+  let bestDist = Infinity;
+  for (const c of candidates) {
+    const dist = editDistance(key, c);
+    if (dist < bestDist && dist <= Math.max(1, Math.floor(key.length / 2))) {
+      best = c;
+      bestDist = dist;
+    }
+  }
+  return best;
+}
+var movedKeys = {
+  "server.signup.vapid": "server.vapid"
+};
+function formatPath(path9) {
+  return path9.map(String).join(".");
+}
+function stripFieldPrefix(issue2) {
+  const last = issue2.path[issue2.path.length - 1];
+  if (last === void 0) return issue2.message;
+  const prefix = `"${String(last)}" `;
+  return issue2.message.startsWith(prefix) ? issue2.message.slice(prefix.length) : issue2.message;
+}
+function validateTomlConfig(parsed) {
+  const warnings = [];
+  const errors2 = [];
+  const result = ConfigSchema.safeParse(parsed);
+  if (result.success) return { warnings, errors: errors2 };
+  for (const issue2 of result.error.issues) {
+    if (issue2.code === "unrecognized_keys") {
+      const parentPath = formatPath(issue2.path);
+      const known = knownKeysFor(issue2.path);
+      for (const key of issue2.keys) {
+        const fullPath = parentPath ? `${parentPath}.${key}` : key;
+        const movedTo = movedKeys[fullPath];
+        if (movedTo) {
+          warnings.push(`unknown key ${fullPath} (moved to ${movedTo})`);
+          continue;
+        }
+        const hint = suggest(key, known);
+        warnings.push(
+          hint ? `unknown key ${fullPath} (did you mean ${hint}?)` : `unknown key ${fullPath}`
+        );
+      }
+    } else {
+      const path9 = formatPath(issue2.path);
+      errors2.push(path9 ? `${path9}: ${stripFieldPrefix(issue2)}` : issue2.message);
+    }
+  }
+  return { warnings, errors: errors2 };
+}
+function collectKnownKeys(schema) {
+  const map = /* @__PURE__ */ new Map();
+  const walk2 = (node, segments) => {
+    if (node instanceof ZodOptional) {
+      walk2(node.unwrap(), segments);
+      return;
+    }
+    if (!(node instanceof ZodObject)) return;
+    const shape = node.shape;
+    map.set(segments.join("."), Object.keys(shape));
+    for (const [key, child] of Object.entries(shape)) {
+      walk2(child, [...segments, key]);
+    }
+  };
+  walk2(schema, []);
+  return map;
+}
+var knownKeysMap = collectKnownKeys(ConfigSchema);
+var firstRouterVariant = RouterConfigEntrySchema.options[0];
+if (!(firstRouterVariant instanceof ZodObject)) {
+  throw new Error("RouterConfigEntrySchema variant is not an object schema");
+}
+var routerEntryKeys = Object.keys(firstRouterVariant.shape);
+var routerEntryOptionKeys = Array.from(new Set(
+  RouterConfigEntrySchema.options.flatMap((variant) => {
+    if (!(variant instanceof ZodObject)) return [];
+    const options2 = variant.shape.options;
+    const inner = options2 instanceof ZodOptional ? options2.unwrap() : options2;
+    return inner instanceof ZodObject ? Object.keys(inner.shape) : [];
+  })
+));
+function knownKeysFor(path9) {
+  if (path9.length === 4 && path9[0] === "database" && path9[1] === "backendOptions" && path9[2] === "router") {
+    return routerEntryKeys;
+  }
+  if (path9.length === 5 && path9[0] === "database" && path9[1] === "backendOptions" && path9[2] === "router" && path9[4] === "options") {
+    return routerEntryOptionKeys;
+  }
+  return knownKeysMap.get(formatPath(path9)) ?? [];
+}
+function validateParsedConfig(parsed, label) {
+  const { warnings, errors: errors2 } = validateTomlConfig(parsed);
+  for (const warning of warnings) {
+    console.warn(`[chel] ${label}: ${warning}`);
+  }
+  if (errors2.length) {
+    const listing = errors2.map((e2) => `  - ${e2}`).join("\n");
+    throw new Error(`Invalid ${label}:
+${listing}`);
+  }
+}
+async function validateConfigFile(filePath) {
+  let raw2;
+  try {
+    raw2 = await readFile2(filePath, { encoding: "utf-8", flag: "r" });
+  } catch (e2) {
+    if (e2?.code === "ENOENT") return;
+    throw e2;
+  }
+  let parsed;
+  try {
+    parsed = parse8(raw2);
+  } catch (e2) {
+    throw new Error(`Could not parse ${filePath}: ${e2.message}`);
+  }
+  validateParsedConfig(parsed, filePath);
+}
 var import_npm_nconf3 = __toESM(require_nconf());
 var globImport_serve_database_ts = __glob({
   "./serve/database-fs.ts": () => Promise.resolve().then(() => (init_database_fs(), database_fs_exports)),
@@ -72922,7 +73376,8 @@ var globImport_serve_database_ts = __glob({
 async function migrate(args) {
   const { to } = args;
   if (args.fromConfig) {
-    const fromConfig = parse8(await readFile2(args.fromConfig, { encoding: "utf-8", flag: "r" }));
+    const fromConfig = parse8(await readFile3(args.fromConfig, { encoding: "utf-8", flag: "r" }));
+    validateParsedConfig(fromConfig, args.fromConfig);
     const backend = import_npm_nconf3.default.get("database:backend");
     const fromBackend = fromConfig?.database?.backend;
     if (fromBackend !== backend) {
@@ -72941,7 +73396,8 @@ async function migrate(args) {
   try {
     let toConfigOpts;
     if (args.toConfig) {
-      const toConfig = parse8(await readFile2(args.toConfig, { encoding: "utf-8", flag: "r" }));
+      const toConfig = parse8(await readFile3(args.toConfig, { encoding: "utf-8", flag: "r" }));
+      validateParsedConfig(toConfig, args.toConfig);
       const toBackend = toConfig?.database?.backend;
       if (toBackend !== to) {
         console.warn(`--to-config has backend ${toBackend} but --to is ${to}`);
@@ -73032,6 +73488,7 @@ async function migrate(args) {
   }
 }
 var module10 = {
+  validatesConfig: true,
   builder: (yargs) => {
     return yargs.option("from", {
       describe: "Source backend",
@@ -73146,7 +73603,7 @@ async function pin(args) {
   console.log(gray(`Location: contracts/${contractName}/${manifestVersion}/`));
 }
 async function parseManifest(manifestPath) {
-  const manifestContent = await readFile3(manifestPath, "utf8");
+  const manifestContent = await readFile4(manifestPath, "utf8");
   const manifest2 = JSON.parse(manifestContent);
   const body = JSON.parse(manifest2.body);
   const fullContractName = body.name;
@@ -73219,7 +73676,7 @@ async function loadCheloniaConfig() {
   cheloniaConfig = { contracts: {} };
   if (existsSync(configPath)) {
     try {
-      const configContent = await readFile3(configPath, "utf8");
+      const configContent = await readFile4(configPath, "utf8");
       cheloniaConfig = JSON.parse(configContent);
       console.log(blue("\u{1F4C4} Loaded existing chelonia.json"));
     } catch (error2) {
@@ -73245,6 +73702,7 @@ async function updateCheloniaConfig(fullContractName, contractName, version3, ma
   console.log(green("\u2705 Saved chelonia.json"));
 }
 var module11 = {
+  validatesConfig: true,
   builder: (yargs) => {
     return yargs.option("overwrite", {
       describe: "Overwrite existing files",
@@ -73282,6 +73740,7 @@ init_esm3();
 init_esm2();
 init_esm();
 var import_npm_chalk4 = __toESM(require_source());
+var import_npm_nconf8 = __toESM(require_nconf());
 var SERVER_EXITING = "server-exiting";
 var SERVER_RUNNING = "server-running";
 init_SPMessage();
@@ -78002,7 +78461,7 @@ var wrapper_default = import_websocket.default;
 var isPushSubscriptionInfo = (x3) => {
   return has(x3, "endpoint");
 };
-var { bold } = import_npm_chalk2.default;
+var { bold: bold2 } = import_npm_chalk2.default;
 var { PING, PONG, PUB, SUB, UNSUB, KV_FILTER } = NOTIFICATION_TYPE;
 var { ERROR, OK } = RESPONSE_TYPE;
 var defaultOptions3 = {
@@ -78017,9 +78476,9 @@ var generateSocketID = /* @__PURE__ */ (() => {
   return (debugID) => String(counter++) + (debugID ? "-" + debugID : "");
 })();
 var log = logger_default.info.bind(logger_default, tag2);
-log.bold = (...args) => logger_default.debug(bold(tag2, ...args));
+log.bold = (...args) => logger_default.debug(bold2(tag2, ...args));
 log.debug = logger_default.debug.bind(logger_default, tag2);
-log.error = (error2, ...args) => logger_default.error(error2, bold.red(tag2, ...args));
+log.error = (error2, ...args) => logger_default.error(error2, bold2.red(tag2, ...args));
 function createErrorResponse(data) {
   return JSON.stringify({ type: ERROR, data });
 }
@@ -78934,6 +79393,11 @@ var exit2 = (code2) => {
 async function startServer2(options2 = {}) {
   const { installSignalHandlers: shouldInstallSignalHandlers = true } = options2;
   initializeLogger();
+  if (import_npm_nconf8.default.get("server:logLevel") && !process10.env.LOG_LEVEL) {
+    console.warn(
+      "[chel] Note: the server.logLevel setting has no effect; set the LOG_LEVEL environment variable instead."
+    );
+  }
   console.info(import_npm_chalk4.default.bold(
     `Running in ${process10.env.NODE_ENV === "production" ? "production" : "development"} mode.`
   ));
@@ -79219,15 +79683,15 @@ var upgradeWebSocket = defineWebSocketHelper(async (c, events, options2) => {
   socket.onerror = (evt) => events.onError?.(evt, wsContext);
   return response;
 });
-var import_npm_nconf8 = __toESM(require_nconf());
+var import_npm_nconf9 = __toESM(require_nconf());
 var getDashboardPath = () => {
   const baseDir = import.meta.dirname || path7.join(process11.cwd(), "build");
   const dashboardPath = path7.resolve(baseDir, "dist-dashboard");
   return dashboardPath;
 };
 async function startDashboard() {
-  const port = import_npm_nconf8.default.get("server:dashboardPort");
-  const host = import_npm_nconf8.default.get("server:host") || "0.0.0.0";
+  const port = import_npm_nconf9.default.get("server:dashboardPort");
+  const host = import_npm_nconf9.default.get("server:host") || "0.0.0.0";
   const dashboardRoot = getDashboardPath();
   const app = new Hono2();
   const staticMiddleware = serveStatic2({ root: dashboardRoot, rewriteRequestPath: (p) => p });
@@ -79352,6 +79816,7 @@ async function serve(args) {
   }
 }
 var module12 = {
+  validatesConfig: true,
   builder: (yargs) => {
     return yargs.option("port", {
       default: 8e3,
@@ -83639,7 +84104,8 @@ var Yargs2 = YargsWithShim(esm_default5);
 var yargs_default = Yargs2;
 var handlerState = {
   postHandler: () => {
-  }
+  },
+  validatesConfig: false
 };
 var parseArgs = () => {
   const handlerWrapper = (commandModule) => {
@@ -83647,6 +84113,7 @@ var parseArgs = () => {
       ...commandModule,
       handler: (argv) => {
         handlerState.postHandler = () => commandModule.postHandler(argv);
+        handlerState.validatesConfig = commandModule.validatesConfig === true;
         if (commandModule.handler) {
           return commandModule.handler(argv);
         }
@@ -83660,11 +84127,10 @@ var parseArgs = () => {
   return yargsInstance;
 };
 var parseArgs_default = parseArgs;
-var SERVER_DEFAULTS = {
-  // Unique identity for this server instance. Must not be reused across
-  // environments (prod / staging / dev) that share a database, otherwise
-  // push notifications may be delivered to clients registered against a
-  // different instance. `chel serve` refuses to start when this is unset.
+var nconfDefaults = {
+  // Unique, stable identity for this server instance. Required at runtime by
+  // `chel serve` (see `src/serve/server.ts`) to scope push subscriptions;
+  // left unset here so that file-only commands and `chel init` work without it.
   server_id: void 0,
   server: {
     appDir: ".",
@@ -83679,12 +84145,11 @@ var SERVER_DEFAULTS = {
         minute: 2,
         hour: 10,
         day: 50
-      },
-      vapid: {
-        email: void 0
       }
     },
-    logLevel: "debug",
+    vapid: {
+      email: void 0
+    },
     messages: [],
     maxEventsBatchSize: 500,
     archiveMode: false,
@@ -83696,16 +84161,20 @@ var SERVER_DEFAULTS = {
     backendOptions: {}
   }
 };
-var parseConfig = () => {
-  import_npm_nconf9.default.env({
+var SERVER_DEFAULTS = nconfDefaults;
+var parseConfig = async () => {
+  import_npm_nconf10.default.env({
     separator: "__",
     parseValues: true
-  }).argv(parseArgs_default()).file({ file: "chel.toml", format: { parse: parse8, stringify } }).defaults(SERVER_DEFAULTS);
+  }).argv(parseArgs_default()).file({ file: "chel.toml", format: { parse: parse8, stringify } }).defaults(nconfDefaults);
+  if (handlerState.validatesConfig) {
+    await validateConfigFile("chel.toml");
+  }
 };
 var parseConfig_default = parseConfig;
 init_utils();
-parseConfig_default();
 try {
+  await parseConfig_default();
   await handlerState.postHandler();
 } catch (e2) {
   exit(e2);

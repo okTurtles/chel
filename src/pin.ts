@@ -256,6 +256,7 @@ async function updateCheloniaConfig (
 }
 
 export const module = {
+  validatesConfig: true,
   builder: (yargs) => {
     return yargs
       .option('overwrite', {

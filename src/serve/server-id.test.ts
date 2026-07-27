@@ -88,7 +88,6 @@ const applyServerDefaults = (serverId: string, opts?: { reclaim?: boolean }): vo
         disabled: false,
         limit: { disabled: false, minute: 100, hour: 1000, day: 10000 }
       },
-      logLevel: 'error',
       messages: [],
       maxEventsBatchSize: 500,
       archiveMode: true,

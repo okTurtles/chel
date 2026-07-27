@@ -413,6 +413,9 @@ host = "0.0.0.0"
 port = 8000
 dashboardPort = 8888
 
+[server.vapid]
+email = "admin@example.com"
+
 [database]
 backend = "sqlite"
 ```

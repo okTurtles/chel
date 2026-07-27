@@ -1,16 +1,7 @@
 import type { Buffer } from 'node:buffer'
-import * as z from 'npm:zod'
+import { RouterOptionsSchema as ConfigSchema } from './backend-schemas.ts'
 import DatabaseBackend from './DatabaseBackend.ts'
 import { tagBackendError } from './db-errors.ts'
-
-const ConfigEntrySchema = z.strictObject({
-  name: z.string(),
-  options: z.object()
-})
-const ConfigSchema = z.intersection(
-  z.object({ '*': ConfigEntrySchema }),
-  z.record(z.string(), ConfigEntrySchema)
-)
 
 type ConfigEntry = { name: string; options: Record<string, unknown> }
 type Config = {
@@ -23,14 +14,10 @@ export default class RouterBackend extends DatabaseBackend {
 
   constructor (config: Config = {}) {
     super()
-    // Return a sorted copy where entries with longer keys come first.
-    ConfigSchema.parse(config)
-    const configCopy = Object.fromEntries(Object.entries(config).sort((a, b) => b[0].length - a[0].length)) as Config
-    const errors = this.validateConfig(configCopy)
-    if (errors.length) {
-      throw new Error(`[${this.constructor.name}] ${errors.length} error(s) found in your config.`, { cause: errors })
-    }
-    this.config = configCopy
+    const parsed = ConfigSchema.parse(config)
+    this.config = Object.fromEntries(
+      Object.entries(parsed).sort((a, b) => b[0].length - a[0].length)
+    ) as Config
   }
 
   lookupBackend (key: string): DatabaseBackend {
@@ -42,25 +29,6 @@ export default class RouterBackend extends DatabaseBackend {
       }
     }
     return backends['*']
-  }
-
-  validateConfig (config: Config): Array<{ msg: string; entry?: [string, ConfigEntry] }> {
-    const errors = []
-    if (!config['*']) {
-      errors.push({ msg: 'Missing key: "*" (fallback storage is required)' })
-    }
-    for (const entry of Object.entries(config)) {
-      const value = entry[1]
-      if (typeof value?.name !== 'string' || typeof value?.options !== 'object') {
-        errors.push({ msg: 'entry value must be of type { name: string, options: Object }', entry })
-        continue
-      }
-      if (value.name === 'router') {
-        errors.push({ msg: 'Router backends cannot be nested.', entry })
-        continue
-      }
-    }
-    return errors
   }
 
   async init (): Promise<void> {
