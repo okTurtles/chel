@@ -30,6 +30,7 @@
 import { shell, $ } from '~/utils.ts'
 import { TARGETS, compileBinary, subPackageName, subPackageDir } from './targets.ts'
 import { reconcileOptionalDeps, rootPackagePath } from './sync-versions.ts'
+import { BUILD_DIR, VERSION_STAMP_PATH, DASHBOARD_DIR } from './paths.ts'
 
 // Static import for TS JSON-import-attribute type inference. The path also
 // lives in `rootPackagePath()` from `./sync-versions.ts` (used in the `try`
@@ -49,7 +50,7 @@ async function assertFreshBundle (): Promise<void> {
 
   let stamp: { version?: string }
   try {
-    stamp = JSON.parse(await Deno.readTextFile('./build/version.json'))
+    stamp = JSON.parse(await Deno.readTextFile(VERSION_STAMP_PATH))
   } catch {
     throw new Error(
       'build/version.json is missing; run `npm version <patch|minor|major>` ' +
@@ -65,7 +66,7 @@ async function assertFreshBundle (): Promise<void> {
   }
 
   try {
-    await Deno.stat('./build/dist-dashboard/index.html')
+    await Deno.stat(`${DASHBOARD_DIR}/index.html`)
   } catch {
     throw new Error(
       'build/dist-dashboard is missing or incomplete; run `npm version` ' +
@@ -79,7 +80,7 @@ async function assertFreshBundle (): Promise<void> {
 
   for (const staged of [false, true]) {
     const { code } = await git(
-      ['diff', ...(staged ? ['--cached'] : []), '--quiet', '--', 'build', 'package.json']
+      ['diff', ...(staged ? ['--cached'] : []), '--quiet', '--', BUILD_DIR, 'package.json']
     )
     if (code !== 0) {
       throw new Error(
@@ -90,7 +91,7 @@ async function assertFreshBundle (): Promise<void> {
     }
   }
 
-  const { stdout } = await git(['ls-files', '--others', '--exclude-standard', '--', 'build'])
+  const { stdout } = await git(['ls-files', '--others', '--exclude-standard', '--', BUILD_DIR])
   if (new TextDecoder().decode(stdout).trim()) {
     throw new Error(
       'Untracked files under build/ would be embedded into the binaries but are ' +

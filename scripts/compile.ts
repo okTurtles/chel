@@ -1,6 +1,7 @@
 #!/usr/bin/env -S deno run --allow-run --allow-read=. --allow-write=./build,./dist
 
 import { shell, $ } from '~/utils.ts'
+import { encodeHex } from 'jsr:@std/encoding/hex'
 import { TARGETS, compileBinary } from './targets.ts'
 
 // Static import for TS JSON-import-attribute type inference. The path also
@@ -45,12 +46,9 @@ async function normalizeMtimes (dir: string, time: number): Promise<void> {
 // the compressor and its flags as one argv entry; both GNU tar and bsdtar
 // (libarchive) split the value into argv, applying gzip's `-n` (omit name+mtime
 // header) and `-9` (max compression), both required for byte-identical archives
-// on a given host. The remaining flags pin owner/group/format/mtime and sort
-// entries by name.
-//
-// GNU tar and bsdtar (the macOS default) accept different flag sets, so the
-// implementation is detected first and the reproducibility guarantees are
-// achieved differently on each (see buildTarArgs below).
+// on a given host. The owner/group/format/mtime and entry-order guarantees are
+// achieved with different flag sets on GNU tar vs bsdtar (the macOS default);
+// see buildTarArgs below.
 
 // Detect whether the system `tar` is GNU tar. bsdtar (macOS default) rejects
 // GNU-only options such as `--sort=name`, `--owner`, `--group` and `--mtime`.
@@ -148,6 +146,23 @@ async function reproducibleTarGz (
   }
 }
 
+// Prints SHA-256 checksums for every archive in `dir` whose name starts with
+// `prefix`, in `sha256sum`-compatible format (`<hex>  <path>`) so the output
+// can be verified with `sha256sum -c` / `shasum -a 256 -c`. Done in-process
+// with Web Crypto rather than shelling out, because macOS does not ship
+// `sha256sum` (it ships `shasum`), and this keeps `deno task dist` working on
+// both platforms without probing for binaries.
+async function printSha256Sums (dir: string, prefix: string): Promise<void> {
+  const names = Array.from(Deno.readDirSync(dir))
+    .filter(e => e.isFile && e.name.startsWith(prefix))
+    .map(e => e.name)
+    .sort()
+  for (const name of names) {
+    const digest = await crypto.subtle.digest('SHA-256', await Deno.readFile(`${dir}/${name}`))
+    console.log(`${encodeHex(digest)}  ${dir}/${name}`)
+  }
+}
+
 export async function compile (): Promise<void> {
   await normalizeMtimes('./build', 0)
   for (const target of TARGETS) {
@@ -158,7 +173,7 @@ export async function compile (): Promise<void> {
     await compileBinary(`${dir}/${binary}`, target)
     await reproducibleTarGz('./dist/tmp', `./dist/chel-v${version}-${denoTarget}.tar.gz`, denoTarget)
   }
-  await $(`sha256sum dist/chel-v${version}-*`)
+  await printSha256Sums('dist', `chel-v${version}-`)
   // TODO: sign the sha256sum! pipe this to gpg and include a link to your GPG key in the release notes!
 }
 

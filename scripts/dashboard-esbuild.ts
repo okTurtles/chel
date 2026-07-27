@@ -9,6 +9,7 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import esbuild from 'npm:esbuild'
 import { vuePlugin } from './esbuild-plugins/vue-plugin.ts'
+import { DASHBOARD_DIR } from './paths.ts'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -55,7 +56,7 @@ async function copyIndexHtml (outDir: string) {
 }
 
 const dashboardDir = 'src/serve/dashboard'
-const outDir = 'build/dist-dashboard'
+const outDir = DASHBOARD_DIR
 
 // Path aliases are defined inline in the esbuild config
 

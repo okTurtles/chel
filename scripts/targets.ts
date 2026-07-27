@@ -5,6 +5,7 @@
 // permission flags, and --include paths cannot drift between the two.
 
 import { shell } from '~/utils.ts'
+import { BUNDLE_PATH, SERVE_DIR, DASHBOARD_DIR } from './paths.ts'
 
 export interface Target {
   // `deno compile --target` value
@@ -61,14 +62,14 @@ export function isCliSubPackage (name: string): boolean {
 // TODO: fix upstream in Deno, or drop permissions programmatically at runtime.
 const COMPILE_FLAGS =
   '--allow-env --allow-ffi --allow-sys=hostname --allow-read --allow-write=./ --allow-net ' +
-  '--exclude node_modules --include ./build/serve --include ./build/dist-dashboard'
+  `--exclude node_modules --include ./${SERVE_DIR} --include ./${DASHBOARD_DIR}`
 
 // The entry-point positional argument to `deno compile`. Kept separate from
 // COMPILE_FLAGS so that flags and positionals can't collide: anything appended
 // to COMPILE_FLAGS stays a flag, and the entry point stays last on the command
 // line (appending after it would make `deno compile` treat it as a second
 // entry point or silently ignore it).
-const ENTRY_POINT = './build/main.js'
+const ENTRY_POINT = `./${BUNDLE_PATH}`
 
 // Runs a native compilation for `target`, writing the binary to `outputPath`
 // (the full path including the binary filename). Prints command output.

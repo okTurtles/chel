@@ -3,6 +3,7 @@
 import * as esbuild from 'npm:esbuild@0.25.6'
 import * as colors from 'jsr:@std/fmt/colors'
 import { builtinModules } from 'node:module'
+import { VERSION_STAMP_PATH } from './paths.ts'
 
 const { default: { version } } = await import('../package.json', { with: { type: 'json' } })
 
@@ -92,7 +93,7 @@ for (const outfile of result.outputFiles!) {
 // to publish unless the stamp matches package.json, so what gets published is
 // always exactly what the version commit and tag contain.
 await Deno.writeTextFile(
-  'build/version.json',
+  VERSION_STAMP_PATH,
   JSON.stringify({ version }, null, 2) + '\n'
 )
 
