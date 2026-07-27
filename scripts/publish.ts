@@ -91,10 +91,12 @@ async function assertFreshBundle (): Promise<void> {
     }
   }
 
-  const { stdout } = await git(['ls-files', '--others', '--exclude-standard', '--', BUILD_DIR])
+  const { stdout } = await git([
+     'ls-files', '--others', '--ignored', '--exclude-standard', '--', BUILD_DIR
+  ])
   if (new TextDecoder().decode(stdout).trim()) {
     throw new Error(
-      'Untracked files under build/ would be embedded into the binaries but are ' +
+      'Untracked or ignored files under build/ would be embedded into the binaries but are ' +
       'not committed; remove them or run `npm version` again'
     )
   }
