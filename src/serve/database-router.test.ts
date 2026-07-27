@@ -1,4 +1,3 @@
-// import { assert } from 'jsr:@std/assert' // TODO: Add tests using assert
 // 'jsr:@db/sqlite' loaded to prevent memory leak checker from failing test
 // (otherwise, it'll complain that the sqlite dynamic library wasn't unloaded)
 import 'jsr:@db/sqlite'

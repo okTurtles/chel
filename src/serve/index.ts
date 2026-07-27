@@ -112,11 +112,12 @@ export async function startServer (options: StartServerOptions = {}): Promise<{ 
   // Initialize pino logger (replaces console.* methods)
   initializeLogger()
 
-  // server.logLevel is validated in chel.toml but the logger reads LOG_LEVEL
-  // from the environment. Warn so users aren't silently surprised.
+  // server.logLevel is accepted in the config (from chel.toml, env or CLI
+  // args) but the logger reads LOG_LEVEL from the environment. Warn so users
+  // aren't silently surprised.
   if (nconf.get('server:logLevel') && !process.env.LOG_LEVEL) {
     console.warn(
-      '[chel] Note: server.logLevel in chel.toml has no effect; ' +
+      '[chel] Note: the server.logLevel setting has no effect; ' +
       'set the LOG_LEVEL environment variable instead.'
     )
   }

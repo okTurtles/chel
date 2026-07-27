@@ -128,7 +128,6 @@ export function startTestServer (): Promise<string> {
           disabled: false,
           limit: { disabled: false, minute: 100, hour: 1000, day: 10000 }
         },
-        logLevel: 'error',
         messages: [{ type: 'info', text: 'test message' }],
         maxEventsBatchSize: 500,
         archiveMode: false

@@ -56,7 +56,15 @@ dashboardPort = ${tomlValue(d.server.dashboardPort)}
 backend = ${tomlValue(d.database.backend)}
 # lruNumItems = ${tomlValue(d.database.lruNumItems)}
 
-[database.backendOptions]
+# Backend-specific options; uncomment the block matching your backend.
+# [database.backendOptions.fs]
+# dirname = "data"
+#
+# [database.backendOptions.sqlite]
+# filepath = "data/chelonia.db"
+#
+# [database.backendOptions.redis]
+# url = "redis://localhost:6379"
 `
 }
 

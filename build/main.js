@@ -72949,7 +72949,15 @@ dashboardPort = ${tomlValue(d.server.dashboardPort)}
 backend = ${tomlValue(d.database.backend)}
 # lruNumItems = ${tomlValue(d.database.lruNumItems)}
 
-[database.backendOptions]
+# Backend-specific options; uncomment the block matching your backend.
+# [database.backendOptions.fs]
+# dirname = "data"
+#
+# [database.backendOptions.sqlite]
+# filepath = "data/chelonia.db"
+#
+# [database.backendOptions.redis]
+# url = "redis://localhost:6379"
 `;
 };
 var init2 = async (args) => {
@@ -79387,7 +79395,7 @@ async function startServer2(options2 = {}) {
   initializeLogger();
   if (import_npm_nconf8.default.get("server:logLevel") && !process10.env.LOG_LEVEL) {
     console.warn(
-      "[chel] Note: server.logLevel in chel.toml has no effect; set the LOG_LEVEL environment variable instead."
+      "[chel] Note: the server.logLevel setting has no effect; set the LOG_LEVEL environment variable instead."
     );
   }
   console.info(import_npm_chalk4.default.bold(
