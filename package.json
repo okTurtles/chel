@@ -1,6 +1,6 @@
 {
   "name": "@chelonia/cli",
-  "version": "3.3.2",
+  "version": "3.4.0",
   "description": "Chelonia Command-line Interface",
   "main": "src/main.ts",
   "scripts": {
@@ -21,11 +21,11 @@
     "chel": "bin/chel.js"
   },
   "optionalDependencies": {
-    "@chelonia/cli-arm64-darwin": "3.3.2",
-    "@chelonia/cli-arm64-linux": "3.3.2",
-    "@chelonia/cli-x64-darwin": "3.3.2",
-    "@chelonia/cli-x64-linux": "3.3.2",
-    "@chelonia/cli-x64-win32": "3.3.2"
+    "@chelonia/cli-arm64-darwin": "3.4.0",
+    "@chelonia/cli-arm64-linux": "3.4.0",
+    "@chelonia/cli-x64-darwin": "3.4.0",
+    "@chelonia/cli-x64-linux": "3.4.0",
+    "@chelonia/cli-x64-win32": "3.4.0"
   },
   "os": [
     "darwin",
