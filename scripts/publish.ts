@@ -10,10 +10,16 @@
 //
 // Wired into `npm publish` via the `prepublishOnly` npm script (see package.json),
 // which calls `deno task publish`. It:
-//   1. Builds the JS bundle (`deno task build`)
-//   2. For each OS/CPU target, compiles a native binary and writes it under
-//      `dist/cli-<cpu>-<os>/` together with a minimal `package.json`
-//   3. Publishes each platform sub-package to npm
+//   0. Verifies the committed bundle is fresh and the tree is clean for the
+//      bundle paths (see assertFreshBundle); refuses to publish otherwise
+//   1. For each OS/CPU target, compiles a native binary from the committed
+//      `build/` bundle and writes it under `dist/cli-<cpu>-<os>/` together
+//      with a minimal `package.json`
+//   2. Publishes each platform sub-package to npm
+//
+// The JS bundle itself is NOT rebuilt here: it is built and committed by the
+// npm `version` lifecycle hook (see package.json), so what gets published is
+// exactly what the version commit and tag contain.
 //
 // When this script finishes, the outer `npm publish` publishes the main package,
 // whose `optionalDependencies` now reference the freshly published sub-packages.
@@ -24,19 +30,85 @@
 import { shell, $ } from '~/utils.ts'
 import { TARGETS, compileBinary, subPackageName, subPackageDir } from './targets.ts'
 import { reconcileOptionalDeps, rootPackagePath } from './sync-versions.ts'
+import { BUILD_DIR, VERSION_STAMP_PATH, SERVE_DIR, DASHBOARD_DIR } from './paths.ts'
 
 // Static import for TS JSON-import-attribute type inference. The path also
 // lives in `rootPackagePath()` from `./sync-versions.ts` (used in the `try`
 // block below); keep both in sync if it ever changes.
 const { default: rootPkg } = await import('../package.json', { with: { type: 'json' } })
 
-async function buildBundle (): Promise<void> {
-  console.log('=== Step 1: Building JS bundle ===')
-  await $('deno task build')
+// Refuses to publish unless the bundle about to be compiled is exactly what
+// the version commit and tag contain:
+//   - `build/version.json` (written by scripts/build.ts, committed by the npm
+//     `version` hook) must exist and match the package.json version
+//   - `build/dist-dashboard` (embedded into every binary via targets.ts) must
+//     be present
+//   - git must report no staged/unstaged changes under `build/` or
+//     `package.json`, and no untracked files under the two directories that
+//     `deno compile` embeds into every binary (`build/serve`,
+//     `build/dist-dashboard`)
+async function assertFreshBundle (): Promise<void> {
+  console.log('=== Step 0: Verifying committed bundle ===')
+
+  let stamp: { version?: string }
+  try {
+    stamp = JSON.parse(await Deno.readTextFile(VERSION_STAMP_PATH))
+  } catch {
+    throw new Error(
+      `${VERSION_STAMP_PATH} is missing; run \`npm version <patch|minor|major>\` ` +
+      'to rebuild and commit the bundle before publishing'
+    )
+  }
+  if (stamp.version !== rootPkg.version) {
+    throw new Error(
+      `${VERSION_STAMP_PATH} is stamped with ${stamp.version ?? '(nothing)'} but ` +
+      `package.json has ${rootPkg.version}; run \`npm version\` to rebuild and ` +
+      'commit the bundle before publishing'
+    )
+  }
+
+  try {
+    await Deno.stat(`${DASHBOARD_DIR}/index.html`)
+  } catch {
+    throw new Error(
+      `${DASHBOARD_DIR} is missing or incomplete; run \`npm version\` ` +
+      'to rebuild the dashboard before publishing'
+    )
+  }
+
+  const git = (args: string[]) => new Deno.Command('git', {
+    args, stdout: 'piped', stderr: 'null'
+  }).output()
+
+  for (const staged of [false, true]) {
+    const { code } = await git(
+      ['diff', ...(staged ? ['--cached'] : []), '--quiet', '--', BUILD_DIR, 'package.json']
+    )
+    if (code !== 0) {
+      throw new Error(
+        `${staged ? 'Staged' : 'Unstaged'} changes under ${BUILD_DIR}/ or package.json; ` +
+        'the published bundle must match the version commit. Discard them with ' +
+        `\`git checkout -- ${BUILD_DIR}/ package.json\`, or rebuild and amend with ` +
+        `\`deno task build && git add ${BUILD_DIR}/ package.json && git commit --amend --no-edit\` ` +
+        '(then re-tag with `git tag -f v<version>` if you amended)'
+      )
+    }
+  }
+
+  const { stdout } = await git([
+    'ls-files', '--others', '--', SERVE_DIR, DASHBOARD_DIR
+  ])
+  if (new TextDecoder().decode(stdout).trim()) {
+    throw new Error(
+      `Untracked files under ${SERVE_DIR}/ or ${DASHBOARD_DIR}/ would be embedded ` +
+      'into the compiled binaries but are not committed; remove them, or rebuild ' +
+      'and amend the version commit (see the release steps in README.md)'
+    )
+  }
 }
 
 async function createSubPackages (): Promise<void> {
-  console.log('\n=== Step 2: Compiling binaries & creating sub-packages ===')
+  console.log('=== Step 1: Compiling binaries & creating sub-packages ===')
   await $('rm -rf ./dist && mkdir -p ./dist')
 
   for (const target of TARGETS) {
@@ -79,7 +151,7 @@ async function createSubPackages (): Promise<void> {
 }
 
 async function publishSubPackages (): Promise<void> {
-  console.log('\n=== Step 3: Publishing sub-packages ===')
+  console.log('\n=== Step 2: Publishing sub-packages ===')
   for (const target of TARGETS) {
     const subPkgName = subPackageName(target)
     const subDir = subPackageDir(target)
@@ -101,7 +173,7 @@ async function publishSubPackages (): Promise<void> {
 }
 
 try {
-  await buildBundle()
+  await assertFreshBundle()
   await createSubPackages()
   await publishSubPackages()
   const pkgPath = rootPackagePath()

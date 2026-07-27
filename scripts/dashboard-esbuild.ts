@@ -9,6 +9,7 @@ import process from 'node:process'
 import { fileURLToPath } from 'node:url'
 import esbuild from 'npm:esbuild'
 import { vuePlugin } from './esbuild-plugins/vue-plugin.ts'
+import { DASHBOARD_DIR } from './paths.ts'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -55,12 +56,17 @@ async function copyIndexHtml (outDir: string) {
 }
 
 const dashboardDir = 'src/serve/dashboard'
-const outDir = 'build/dist-dashboard'
+const outDir = DASHBOARD_DIR
 
 // Path aliases are defined inline in the esbuild config
 
 async function build () {
   console.log('🚀 Starting dashboard build...')
+
+  // Start from a clean output directory so stale assets (e.g. chunks from a
+  // previous build with different content hashes) can't survive a rebuild and
+  // later get committed or embedded into the compiled binaries.
+  fs.rmSync(outDir, { recursive: true, force: true })
 
   const mainScssPath = join(dashboardDir, 'assets/style/main.scss')
 
@@ -191,4 +197,4 @@ async function build () {
   }
 }
 
-await build()
+if (!(await build())) process.exit(1)

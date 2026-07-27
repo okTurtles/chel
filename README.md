@@ -488,26 +488,54 @@ currently **not** supported.
 
 Steps to publish a new release of `@chelonia/cli` to npm:
 
-1. **Bump the version:**
+1. **Login to npm** (prerequisite):
+
+   ```bash
+   npm login
+   ```
+
+   If your account uses 2FA, `npm publish` may prompt for authentication.
+   Do not rely on `--otp=<code>`: the publish step compiles all five native
+   binaries before publishing the first sub-package. Compilation is usually
+   fast but can take several minutes, so a TOTP code entered at the start
+   will likely have expired by the time the first `npm publish` runs.
+   Complete the browser-based authentication flow when prompted, or use a
+   granular automation token instead.
+
+2. **Bump the version:**
 
    ```bash
    npm version patch   # or minor / major
    ```
 
-   This triggers the `version` lifecycle hook, which runs `deno task sync-versions`
-   to update `optionalDependencies` in `package.json` so they match the new version.
-   The hook also stages the change so it is included in the version commit.
+   This triggers the `version` lifecycle hook, which runs *after* the version
+   is bumped but *before* `npm version` commits and tags. The hook:
+   - Runs `deno task sync-versions` to update `optionalDependencies` in
+     `package.json` so they match the new version (and stages the change)
+   - Runs `deno task build` to rebuild the JS bundle (stamped with the new
+     version in `build/version.json`) and the dashboard
+   - Stages the rebuilt `build/` artifacts
 
-2. **Publish:**
+   As a result, the version commit and tag contain the up-to-date bundle and
+   the working directory stays clean. The publish step verifies that what it
+   compiles is exactly this committed bundle and refuses to run otherwise.
+   This also guarantees the maintainer rebuilds the bundle on `master`
+   (merged PRs can each produce a correct bundle individually, yet the
+   combined result on `master` may still differ).
+
+3. **Publish:**
 
    ```bash
-   npm publish
+   npm publish --access public
    ```
 
    This triggers the `prepublishOnly` hook, which runs `deno task publish`.
    That script:
-   - Builds the JS bundle (`deno task build`)
-   - Compiles a native binary for each supported platform
+   - Verifies that the committed bundle matches `package.json` (via
+     `build/version.json`) and that the working tree is clean for `build/`
+     and `package.json`, refusing to publish otherwise
+   - Compiles a native binary for each supported platform from the committed
+     `build/` bundle (the bundle is *not* rebuilt here)
    - Creates and publishes a platform sub-package (`@chelonia/cli-<arch>-<os>`) for each target
    - Reconciles `optionalDependencies` as a final safety check
 
@@ -515,7 +543,21 @@ Steps to publish a new release of `@chelonia/cli` to npm:
    main `@chelonia/cli` package, whose `optionalDependencies` now point to the
    freshly published sub-packages.
 
-3. **Push the version commit and tag:**
+4. **Generate the release tarballs** (for the GitHub release):
+
+   ```bash
+   deno task dist
+   git diff --exit-code -- build   # fails if the rebuild diverged from the tag
+   ```
+
+   This lints, builds, and compiles native binaries into
+   `dist/chel-v<version>-<target>.tar.gz`, printing SHA256 checksums. It must
+   run *after* `npm publish`: `deno task dist` rebuilds `build/`, which would
+   dirty the working tree that the publish verification requires to be clean.
+   The `git diff --exit-code -- build` afterwards confirms the rebuild is
+   byte-identical to the version commit, i.e. that the build is reproducible.
+
+5. **Push the version commit and tag:**
 
    ```bash
    git push && git push --tags
