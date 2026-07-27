@@ -197,4 +197,4 @@ async function build () {
   }
 }
 
-await build()
+if (!(await build())) process.exit(1)

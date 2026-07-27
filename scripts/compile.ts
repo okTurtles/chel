@@ -116,7 +116,7 @@ async function buildTarArgs (
     '-C', srcDir,
     '--uid', '0', '--gid', '0',
     '--numeric-owner', '--format', 'ustar',
-    '--use-compress-program', 'gzip -n -9',
+    '--use-compress-program=gzip -n -9',
     '-cvf', archivePath,
     ...files
   ]
