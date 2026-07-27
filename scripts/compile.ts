@@ -47,25 +47,92 @@ async function normalizeMtimes (dir: string, time: number): Promise<void> {
 // header) and `-9` (max compression), both required for byte-identical archives
 // on a given host. The remaining flags pin owner/group/format/mtime and sort
 // entries by name.
+//
+// GNU tar and bsdtar (the macOS default) accept different flag sets, so the
+// implementation is detected first and the reproducibility guarantees are
+// achieved differently on each (see buildTarArgs below).
+
+// Detect whether the system `tar` is GNU tar. bsdtar (macOS default) rejects
+// GNU-only options such as `--sort=name`, `--owner`, `--group` and `--mtime`.
+let cachedIsGnuTar: boolean | undefined
+async function isGnuTar (): Promise<boolean> {
+  if (cachedIsGnuTar === undefined) {
+    const { code, stdout } = await new Deno.Command('tar', {
+      args: ['--version'],
+      stdout: 'piped',
+      stderr: 'null'
+    }).output()
+    cachedIsGnuTar = code === 0 &&
+      new TextDecoder().decode(stdout).includes('GNU tar')
+  }
+  return cachedIsGnuTar
+}
+
+// Recursively collects the files under `root`/`prefix`, returned as paths
+// relative to `root`, sorted lexically. Used on the bsdtar path to obtain a
+// deterministic entry order without `--sort=name`: the sorted list is passed
+// explicitly on the command line, making the archive independent of
+// filesystem iteration order.
+async function sortedFileList (root: string, prefix: string): Promise<string[]> {
+  const files: string[] = []
+  for await (const entry of Deno.readDir(`${root}/${prefix}`)) {
+    const rel = `${prefix}/${entry.name}`
+    if (entry.isDirectory) {
+      files.push(...await sortedFileList(root, rel))
+    } else {
+      files.push(rel)
+    }
+  }
+  return files.sort()
+}
+
+async function buildTarArgs (
+  srcDir: string,
+  target: string,
+  entry: string
+): Promise<string[]> {
+  if (await isGnuTar()) {
+    return [
+      '-C', srcDir,
+      // `--sort=name` is required for reproducibility: it makes the archive
+      // independent of filesystem iteration order. GNU-tar-only (>= 1.28);
+      // bsdtar and other implementations reject it, hence the fallback below.
+      '--sort=name', '--owner=0', '--group=0',
+      '--numeric-owner', '--mtime=@0', '--format=ustar',
+      '--use-compress-program=gzip -n -9',
+      '-cvf', target,
+      entry
+    ]
+  }
+  // bsdtar (macOS default) fallback: no `--sort`, `--owner`, `--group` or
+  // `--mtime`. Equivalent reproducibility is obtained by:
+  //   - pinning mtimes on disk to the epoch before archiving (in place of
+  //     `--mtime=@0`)
+  //   - passing an explicitly sorted file list (in place of `--sort=name`);
+  //     directory entries are omitted from the archive, but extraction still
+  //     recreates them
+  //   - `--uid 0 --gid 0` (bsdtar's spelling of `--owner=0 --group=0`)
+  await normalizeMtimes(srcDir, 0)
+  const files = await sortedFileList(srcDir, entry)
+  return [
+    '-C', srcDir,
+    '--uid', '0', '--gid', '0',
+    '--numeric-owner', '--format', 'ustar',
+    '--use-compress-program', 'gzip -n -9',
+    '-cvf', target,
+    ...files
+  ]
+}
+
 async function reproducibleTarGz (
   srcDir: string,
   target: string,
   entry: string
 ): Promise<void> {
   try {
+    const args = await buildTarArgs(srcDir, target, entry)
     const { code, signal } = await new Deno.Command('tar', {
-      args: [
-        '-C', srcDir,
-        // `--sort=name` is required for reproducibility: it makes the archive
-        // independent of filesystem iteration order. Supported by GNU tar and
-        // bsdtar/libarchive >= 3.3.0; older/other implementations will reject
-        // the unknown option and fail the build.
-        '--sort=name', '--owner=0', '--group=0',
-        '--numeric-owner', '--mtime=@0', '--format=ustar',
-        '--use-compress-program=gzip -n -9',
-        '-cvf', target,
-        entry
-      ],
+      args,
       stdout: 'inherit',
       stderr: 'inherit'
     }).output()

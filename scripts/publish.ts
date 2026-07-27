@@ -10,10 +10,14 @@
 //
 // Wired into `npm publish` via the `prepublishOnly` npm script (see package.json),
 // which calls `deno task publish`. It:
-//   1. Builds the JS bundle (`deno task build`)
-//   2. For each OS/CPU target, compiles a native binary and writes it under
-//      `dist/cli-<cpu>-<os>/` together with a minimal `package.json`
-//   3. Publishes each platform sub-package to npm
+//   1. For each OS/CPU target, compiles a native binary from the committed
+//      `build/` bundle and writes it under `dist/cli-<cpu>-<os>/` together
+//      with a minimal `package.json`
+//   2. Publishes each platform sub-package to npm
+//
+// The JS bundle itself is NOT rebuilt here: it is built and committed by the
+// npm `version` lifecycle hook (see package.json), so what gets published is
+// exactly what the version commit and tag contain.
 //
 // When this script finishes, the outer `npm publish` publishes the main package,
 // whose `optionalDependencies` now reference the freshly published sub-packages.
@@ -30,13 +34,8 @@ import { reconcileOptionalDeps, rootPackagePath } from './sync-versions.ts'
 // block below); keep both in sync if it ever changes.
 const { default: rootPkg } = await import('../package.json', { with: { type: 'json' } })
 
-async function buildBundle (): Promise<void> {
-  console.log('=== Step 1: Building JS bundle ===')
-  await $('deno task build')
-}
-
 async function createSubPackages (): Promise<void> {
-  console.log('\n=== Step 2: Compiling binaries & creating sub-packages ===')
+  console.log('=== Step 1: Compiling binaries & creating sub-packages ===')
   await $('rm -rf ./dist && mkdir -p ./dist')
 
   for (const target of TARGETS) {
@@ -79,7 +78,7 @@ async function createSubPackages (): Promise<void> {
 }
 
 async function publishSubPackages (): Promise<void> {
-  console.log('\n=== Step 3: Publishing sub-packages ===')
+  console.log('\n=== Step 2: Publishing sub-packages ===')
   for (const target of TARGETS) {
     const subPkgName = subPackageName(target)
     const subDir = subPackageDir(target)
@@ -101,7 +100,6 @@ async function publishSubPackages (): Promise<void> {
 }
 
 try {
-  await buildBundle()
   await createSubPackages()
   await publishSubPackages()
   const pkgPath = rootPackagePath()

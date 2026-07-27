@@ -5,12 +5,12 @@
   "main": "src/main.ts",
   "scripts": {
     "test": "deno task test",
-    "version": "deno task sync-versions",
+    "version": "deno task sync-versions && deno task build && git add build",
     "prepublishOnly": "deno task publish"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/okTurtles/chel"
+    "url": "git+https://github.com/okTurtles/chel.git"
   },
   "author": "Greg Slepak <greg@okturtles.org>",
   "license": "AGPL-3.0",
