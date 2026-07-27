@@ -168,7 +168,9 @@ async function publishSubPackages (): Promise<void> {
     }
 
     console.log(`\n--- Publishing ${subPkgName} ---`)
-    await shell('npm publish --access public', { printOutput: true, cwd: subDir })
+    // Inherit stdio so npm keeps its TTY and can prompt for an OTP
+    // (otherwise 2FA-protected publishes fail with EOTP).
+    await shell('npm publish --access public', { interactive: true, cwd: subDir })
   }
 }
 

@@ -552,7 +552,7 @@ Steps to publish a new release of `@chelonia/cli` to npm:
 
    This lints, builds, and compiles native binaries into
    `dist/chel-v<version>-<target>.tar.gz`, printing SHA256 checksums. It must
-   run *after* `npm publish`: `deno task dist` rebuilds `build/`, which would
+   run *after* `npm publish`: `deno task dist` rebuilds `build/`, which might
    dirty the working tree that the publish verification requires to be clean.
    The `git diff --exit-code -- build` afterwards confirms the rebuild is
    byte-identical to the version commit, i.e. that the build is reproducible.

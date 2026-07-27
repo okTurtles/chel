@@ -128,10 +128,30 @@ export interface ShellOptions {
   printOutput?: boolean
   shell?: string
   cwd?: string
+  // When true, the command inherits stdin/stdout/stderr from the current
+  // process (keeping the TTY), allowing interactive prompts (e.g. npm OTP).
+  // The command's stdout is not captured; an empty string is returned.
+  interactive?: boolean
 }
 
 export async function shell (command: string, options: ShellOptions = {}): Promise<string> {
-  const { printOutput = false, shell = '/bin/sh', cwd } = options
+  const { printOutput = false, shell = '/bin/sh', cwd, interactive = false } = options
+
+  if (interactive) {
+    const cmd = new Deno.Command(shell, {
+      args: ['-c', command],
+      stdin: 'inherit',
+      stdout: 'inherit',
+      stderr: 'inherit',
+      cwd
+    })
+    const { code } = await cmd.spawn().status
+    if (code !== 0) {
+      throw new Error(`Command failed with exit code ${code}`)
+    }
+    return ''
+  }
+
   const cmd = new Deno.Command(shell, {
     args: ['-c', command],
     stdout: 'piped',
