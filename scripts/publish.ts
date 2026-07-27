@@ -92,7 +92,7 @@ async function assertFreshBundle (): Promise<void> {
   }
 
   const { stdout } = await git([
-     'ls-files', '--others', '--ignored', '--exclude-standard', '--', BUILD_DIR
+    'ls-files', '--others', '--ignored', '--exclude-standard', '--', BUILD_DIR
   ])
   if (new TextDecoder().decode(stdout).trim()) {
     throw new Error(
