@@ -496,7 +496,7 @@ Steps to publish a new release of `@chelonia/cli` to npm:
 
    If your account uses 2FA, `npm publish` may prompt for authentication.
    Do not rely on `--otp=<code>`: TOTP codes expire in about 30 seconds, but
-   the publish step compiles five native binaries (several minutes of work)
+   the publish step produces five native binaries (usually fast, but it could be several minutes of work)
    before the first package is published, so the code will have expired by
    then. Complete the browser-based authentication flow when prompted, or use
    a granular automation token instead.
