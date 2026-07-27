@@ -30,7 +30,7 @@
 import { shell, $ } from '~/utils.ts'
 import { TARGETS, compileBinary, subPackageName, subPackageDir } from './targets.ts'
 import { reconcileOptionalDeps, rootPackagePath } from './sync-versions.ts'
-import { BUILD_DIR, VERSION_STAMP_PATH, DASHBOARD_DIR } from './paths.ts'
+import { BUILD_DIR, VERSION_STAMP_PATH, SERVE_DIR, DASHBOARD_DIR } from './paths.ts'
 
 // Static import for TS JSON-import-attribute type inference. The path also
 // lives in `rootPackagePath()` from `./sync-versions.ts` (used in the `try`
@@ -43,8 +43,10 @@ const { default: rootPkg } = await import('../package.json', { with: { type: 'js
 //     `version` hook) must exist and match the package.json version
 //   - `build/dist-dashboard` (embedded into every binary via targets.ts) must
 //     be present
-//   - git must report no staged/unstaged changes or untracked files under
-//     `build/` or `package.json`
+//   - git must report no staged/unstaged changes under `build/` or
+//     `package.json`, and no untracked files under the two directories that
+//     `deno compile` embeds into every binary (`build/serve`,
+//     `build/dist-dashboard`)
 async function assertFreshBundle (): Promise<void> {
   console.log('=== Step 0: Verifying committed bundle ===')
 
@@ -85,19 +87,22 @@ async function assertFreshBundle (): Promise<void> {
     if (code !== 0) {
       throw new Error(
         `${staged ? 'Staged' : 'Unstaged'} changes under build/ or package.json; ` +
-        'the published bundle must match the version commit — run `npm version` ' +
-        'again, or commit/discard the changes first'
+        'the published bundle must match the version commit. Discard them with ' +
+        '`git checkout -- build/ package.json`, or rebuild and amend with ' +
+        '`deno task build && git add build/ package.json && git commit --amend --no-edit` ' +
+        '(then re-tag with `git tag -f v<version>` if you amended)'
       )
     }
   }
 
   const { stdout } = await git([
-    'ls-files', '--others', '--ignored', '--exclude-standard', '--', BUILD_DIR
+    'ls-files', '--others', '--', SERVE_DIR, DASHBOARD_DIR
   ])
   if (new TextDecoder().decode(stdout).trim()) {
     throw new Error(
-      'Untracked or ignored files under build/ would be embedded into the binaries but are ' +
-      'not committed; remove them or run `npm version` again'
+      `Untracked files under ${SERVE_DIR}/ or ${DASHBOARD_DIR}/ would be embedded ` +
+      'into the compiled binaries but are not committed; remove them, or rebuild ' +
+      'and amend the version commit (see the release steps in README.md)'
     )
   }
 }

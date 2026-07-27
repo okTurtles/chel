@@ -495,11 +495,12 @@ Steps to publish a new release of `@chelonia/cli` to npm:
    ```
 
    If your account uses 2FA, `npm publish` may prompt for authentication.
-   Do not rely on `--otp=<code>`: TOTP codes expire in about 30 seconds, but
-   the publish step produces five native binaries (usually fast, but it could be several minutes of work)
-   before the first package is published, so the code will have expired by
-   then. Complete the browser-based authentication flow when prompted, or use
-   a granular automation token instead.
+   Do not rely on `--otp=<code>`: the publish step compiles all five native
+   binaries before publishing the first sub-package. Compilation is usually
+   fast but can take several minutes, so a TOTP code entered at the start
+   will likely have expired by the time the first `npm publish` runs.
+   Complete the browser-based authentication flow when prompted, or use a
+   granular automation token instead.
 
 2. **Bump the version:**
 
@@ -550,9 +551,11 @@ Steps to publish a new release of `@chelonia/cli` to npm:
    ```
 
    This lints, builds, and compiles native binaries into
-   `dist/chel-v<version>-<target>.tar.gz`, printing SHA256 checksums. Run it
-   *after* publishing: it rebuilds `build/`, and the publish step above
-   requires `build/` to exactly match the version commit.
+   `dist/chel-v<version>-<target>.tar.gz`, printing SHA256 checksums. It must
+   run *after* `npm publish`: `deno task dist` rebuilds `build/`, which would
+   dirty the working tree that the publish verification requires to be clean.
+   The `git diff --exit-code -- build` afterwards confirms the rebuild is
+   byte-identical to the version commit, i.e. that the build is reproducible.
 
 5. **Push the version commit and tag:**
 
