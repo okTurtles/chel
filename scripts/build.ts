@@ -87,4 +87,13 @@ for (const outfile of result.outputFiles!) {
   }
 }
 
+// Stamp the bundle with the version it was built from. The npm `version` hook
+// commits this file together with the bundle, and `scripts/publish.ts` refuses
+// to publish unless the stamp matches package.json, so what gets published is
+// always exactly what the version commit and tag contain.
+await Deno.writeTextFile(
+  'build/version.json',
+  JSON.stringify({ version }, null, 2) + '\n'
+)
+
 esbuild.stop()

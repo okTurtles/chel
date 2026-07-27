@@ -10,6 +10,8 @@
 //
 // Wired into `npm publish` via the `prepublishOnly` npm script (see package.json),
 // which calls `deno task publish`. It:
+//   0. Verifies the committed bundle is fresh and the tree is clean for the
+//      bundle paths (see assertFreshBundle); refuses to publish otherwise
 //   1. For each OS/CPU target, compiles a native binary from the committed
 //      `build/` bundle and writes it under `dist/cli-<cpu>-<os>/` together
 //      with a minimal `package.json`
@@ -33,6 +35,69 @@ import { reconcileOptionalDeps, rootPackagePath } from './sync-versions.ts'
 // lives in `rootPackagePath()` from `./sync-versions.ts` (used in the `try`
 // block below); keep both in sync if it ever changes.
 const { default: rootPkg } = await import('../package.json', { with: { type: 'json' } })
+
+// Refuses to publish unless the bundle about to be compiled is exactly what
+// the version commit and tag contain:
+//   - `build/version.json` (written by scripts/build.ts, committed by the npm
+//     `version` hook) must exist and match the package.json version
+//   - `build/dist-dashboard` (embedded into every binary via targets.ts) must
+//     be present
+//   - git must report no staged/unstaged changes or untracked files under
+//     `build/` or `package.json`
+async function assertFreshBundle (): Promise<void> {
+  console.log('=== Step 0: Verifying committed bundle ===')
+
+  let stamp: { version?: string }
+  try {
+    stamp = JSON.parse(await Deno.readTextFile('./build/version.json'))
+  } catch {
+    throw new Error(
+      'build/version.json is missing; run `npm version <patch|minor|major>` ' +
+      'to rebuild and commit the bundle before publishing'
+    )
+  }
+  if (stamp.version !== rootPkg.version) {
+    throw new Error(
+      `build/version.json is stamped with ${stamp.version ?? '(nothing)'} but ` +
+      `package.json has ${rootPkg.version}; run \`npm version\` to rebuild and ` +
+      'commit the bundle before publishing'
+    )
+  }
+
+  try {
+    await Deno.stat('./build/dist-dashboard/index.html')
+  } catch {
+    throw new Error(
+      'build/dist-dashboard is missing or incomplete; run `npm version` ' +
+      'to rebuild the dashboard before publishing'
+    )
+  }
+
+  const git = (args: string[]) => new Deno.Command('git', {
+    args, stdout: 'piped', stderr: 'null'
+  }).output()
+
+  for (const staged of [false, true]) {
+    const { code } = await git(
+      ['diff', ...(staged ? ['--cached'] : []), '--quiet', '--', 'build', 'package.json']
+    )
+    if (code !== 0) {
+      throw new Error(
+        `${staged ? 'Staged' : 'Unstaged'} changes under build/ or package.json; ` +
+        'the published bundle must match the version commit — run `npm version` ' +
+        'again, or commit/discard the changes first'
+      )
+    }
+  }
+
+  const { stdout } = await git(['ls-files', '--others', '--exclude-standard', '--', 'build'])
+  if (new TextDecoder().decode(stdout).trim()) {
+    throw new Error(
+      'Untracked files under build/ would be embedded into the binaries but are ' +
+      'not committed; remove them or run `npm version` again'
+    )
+  }
+}
 
 async function createSubPackages (): Promise<void> {
   console.log('=== Step 1: Compiling binaries & creating sub-packages ===')
@@ -100,6 +165,7 @@ async function publishSubPackages (): Promise<void> {
 }
 
 try {
+  await assertFreshBundle()
   await createSubPackages()
   await publishSubPackages()
   const pkgPath = rootPackagePath()

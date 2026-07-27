@@ -5,7 +5,7 @@
   "main": "src/main.ts",
   "scripts": {
     "test": "deno task test",
-    "version": "deno task sync-versions && deno task build && git add build",
+    "version": "deno task sync-versions && deno task build && git add build/main.js build/serve build/dist-dashboard build/version.json",
     "prepublishOnly": "deno task publish"
   },
   "repository": {
