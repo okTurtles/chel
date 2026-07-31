@@ -484,6 +484,22 @@ When you install `@chelonia/cli`, npm automatically selects the correct
 sub-package for your platform via `optionalDependencies`. Windows arm64 is
 currently **not** supported.
 
+The `chel` command itself is always provided by the main `@chelonia/cli`
+package, which ships a small launcher that spawns the native binary from the
+sub-package npm selected. The sub-packages intentionally declare no command of
+their own: if they did, they would compete with the main package for the same
+`chel` entry in `node_modules/.bin`, and npm would end up wiring `chel` to a
+bare platform binary (or to nothing at all when the main package is the project
+root). Because npm therefore never adjusts the binary's permissions at install
+time, the executable bit is baked into the published sub-package instead.
+
+This layout is verified against npm 10, pnpm (both its isolated and hoisted
+layouts), Yarn 1, and Yarn 4 (both Plug'n'Play and `node-modules`), for local
+and global installs. If `chel` cannot start, the launcher explains why rather
+than printing a stack trace: exit code 127 means no sub-package for your
+platform is installed, and 126 means one was found but its binary is missing or
+not executable (reinstall with `npm install --force @chelonia/cli`).
+
 ## Packaging
 
 Steps to publish a new release of `@chelonia/cli` to npm:

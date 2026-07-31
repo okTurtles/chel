@@ -28,7 +28,13 @@
 // matching the previous `bin/` behavior.
 
 import { shell, $ } from '~/utils.ts'
-import { TARGETS, compileBinary, subPackageName, subPackageDir } from './targets.ts'
+import {
+  TARGETS,
+  compileBinary,
+  subPackageName,
+  subPackageDir,
+  subPackageManifest
+} from './targets.ts'
 import { reconcileOptionalDeps, rootPackagePath } from './sync-versions.ts'
 import { BUILD_DIR, VERSION_STAMP_PATH, SERVE_DIR, DASHBOARD_DIR } from './paths.ts'
 
@@ -120,20 +126,7 @@ async function createSubPackages (): Promise<void> {
 
     await compileBinary(`${subDir}/${target.binary}`, target)
 
-    const subPkg = {
-      name: subPkgName,
-      version: rootPkg.version,
-      description: `${rootPkg.description} (${target.os}/${target.cpu})`,
-      repository: rootPkg.repository,
-      author: rootPkg.author,
-      license: rootPkg.license,
-      os: [target.os],
-      cpu: [target.cpu],
-      files: [target.binary, 'LICENSE'],
-      bin: {
-        chel: target.binary
-      }
-    }
+    const subPkg = subPackageManifest(target, rootPkg)
     await Deno.writeTextFile(
       `${subDir}/package.json`,
       JSON.stringify(subPkg, null, 2) + '\n'
