@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-run --allow-read=. --allow-write=./build,./dist
+#!/usr/bin/env -S deno run --allow-env --allow-run --allow-read=. --allow-write=./build,./dist
 
 // When: `deno task compile`, and as the last step of `deno task dist`.
 //
@@ -38,6 +38,19 @@ const { default: { version } } = await import('../package.json', { with: { type:
 // on a given host. The owner/group/format/mtime and entry-order guarantees are
 // achieved with different flag sets on GNU tar vs bsdtar (the macOS default);
 // see buildTarArgs below.
+
+// The archive bytes depend on the tar invocation below as much as on the
+// binaries going into it, but the bundle fingerprint from ./binaries.ts only
+// covers the latter. Bump this whenever anything that shapes the archive
+// changes (the tar flags, the compression level, the entry order, the bsdtar
+// fallback), so cached tarballs from earlier runs are rebuilt instead of
+// silently reused.
+const TAR_FORMAT_VERSION = '1'
+
+// Cache key for a tarball: the inputs it holds, plus how it was packed.
+export function tarFingerprint (bundleFingerprint: string): string {
+  return `${bundleFingerprint}:tar${TAR_FORMAT_VERSION}`
+}
 
 // Detect whether the system `tar` is GNU tar. bsdtar (macOS default) rejects
 // GNU-only options such as `--sort=name`, `--owner`, `--group` and `--mtime`.
@@ -154,7 +167,7 @@ async function printSha256Sums (dir: string, prefix: string): Promise<void> {
 
 export async function compile (): Promise<void> {
   await ensureBinaries()
-  const fingerprint = await bundleFingerprint()
+  const fingerprint = tarFingerprint(await bundleFingerprint())
   for (const target of TARGETS) {
     const { denoTarget } = target
     const archivePath = `${DIST_DIR}/chel-v${version}-${denoTarget}.tar.gz`
@@ -168,9 +181,14 @@ export async function compile (): Promise<void> {
   // TODO: sign the sha256sum! pipe this to gpg and include a link to your GPG key in the release notes!
 }
 
-try {
-  await compile()
-} catch (e) {
-  console.error('caught:', e)
-  Deno.exit(1)
+// Guarded like the CLI body in ./sync-versions.ts, so this module can be
+// imported (by tests, or by a future release script) without kicking off a
+// multi-target compile as a side effect of the import.
+if (import.meta.main) {
+  try {
+    await compile()
+  } catch (e) {
+    console.error('caught:', e)
+    Deno.exit(1)
+  }
 }

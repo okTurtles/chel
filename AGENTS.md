@@ -88,7 +88,7 @@ scripts/
 ├── sync-versions.ts     # Keeps optionalDependencies in sync (version hook)
 ├── dashboard-esbuild.ts # Dashboard UI bundling
 ├── lint.ts              # ESLint wrapper
-└── dist.ts              # Distribution script (TODO)
+└── dist.ts              # Inert placeholder; `deno task dist` is defined in deno.json
 
 test/
 ├── assets/              # Test fixtures (keys, manifests, contracts)

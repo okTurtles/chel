@@ -33,6 +33,22 @@ const TARGET: Target = {
   binary: 'chel'
 }
 
+// Runs `fn` with CHEL_FORCE_COMPILE set to `value`, restoring whatever the
+// surrounding environment had (including it being unset) afterwards.
+const withForceCompile = async (value: string, fn: () => Promise<void>): Promise<void> => {
+  const previous = Deno.env.get('CHEL_FORCE_COMPILE')
+  Deno.env.set('CHEL_FORCE_COMPILE', value)
+  try {
+    await fn()
+  } finally {
+    if (previous === undefined) {
+      Deno.env.delete('CHEL_FORCE_COMPILE')
+    } else {
+      Deno.env.set('CHEL_FORCE_COMPILE', previous)
+    }
+  }
+}
+
 Deno.test('artifact paths', async (t) => {
   await t.step('binaries are laid out as <bin dir>/<target>/<binary>', () => {
     assertEquals(binaryPath(TARGET), `${BIN_DIR}/x86_64-unknown-linux-gnu/chel`)
@@ -153,6 +169,34 @@ Deno.test('isFresh', async (t) => {
       const stamp = `${dir}/nested/deeper/stamp.json`
       await writeStamp(stamp, 'abc')
       assertStringIncludes(await Deno.readTextFile(stamp), 'abc')
+    })
+  })
+
+  // CHEL_FORCE_COMPILE is the only environment input the build scripts read,
+  // and it is why they need `--allow-env`.
+  await t.step('CHEL_FORCE_COMPILE overrides an otherwise fresh cache', async () => {
+    await withTempDir(async (dir) => {
+      const artifact = `${dir}/chel`
+      const stamp = `${dir}/stamp.json`
+      await Deno.writeTextFile(artifact, 'binary')
+      await writeStamp(stamp, 'abc')
+      await withForceCompile('1', async () => {
+        assertEquals(await isFresh(stamp, 'abc', artifact), false)
+      })
+    })
+  })
+
+  await t.step('falsy CHEL_FORCE_COMPILE values leave the cache in use', async () => {
+    await withTempDir(async (dir) => {
+      const artifact = `${dir}/chel`
+      const stamp = `${dir}/stamp.json`
+      await Deno.writeTextFile(artifact, 'binary')
+      await writeStamp(stamp, 'abc')
+      for (const value of ['', '0', 'false']) {
+        await withForceCompile(value, async () => {
+          assertEquals(await isFresh(stamp, 'abc', artifact), true)
+        })
+      }
     })
   })
 })
