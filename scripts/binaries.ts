@@ -168,10 +168,22 @@ export async function isFresh (
   }
 }
 
+// The stamp is deleted before `fn` runs and only written after it returns, so
+// an interrupted or failed run leaves the artifact marked stale rather than
+// falsely fresh. Shared by every cached artifact, so that invariant lives in
+// one place.
+async function rebuildWithStamp (
+  stampFile: string,
+  fingerprint: string,
+  fn: () => Promise<void>
+): Promise<void> {
+  await removeIfPresent(stampFile)
+  await fn()
+  await writeStamp(stampFile, fingerprint)
+}
+
 // Runs `fn` to (re)create `artifactPath` unless a previous run already
-// produced it from the same inputs. The stamp is deleted before `fn` runs and
-// only written after it returns, so an interrupted or failed run leaves the
-// artifact marked stale rather than falsely fresh.
+// produced it from the same inputs.
 export async function ensureArtifact (
   kind: ArtifactKind,
   target: Target,
@@ -184,9 +196,7 @@ export async function ensureArtifact (
     console.log(`Reusing ${artifactPath} (unchanged inputs)`)
     return false
   }
-  await removeIfPresent(stampFile)
-  await fn()
-  await writeStamp(stampFile, fingerprint)
+  await rebuildWithStamp(stampFile, fingerprint, fn)
   return true
 }
 
@@ -212,11 +222,9 @@ export async function ensureBinaries (targets: readonly Target[] = TARGETS): Pro
   for (const target of stale) {
     console.log(`\n--- Compiling ${target.denoTarget} ---`)
     await Deno.mkdir(binaryDir(target), { recursive: true })
-    // Mark stale up front, stamp only on success: an interrupted compile must
-    // never leave a half-written binary looking current.
-    await removeIfPresent(stampPath('bin', target))
-    await compileBinary(binaryPath(target), target)
-    await writeStamp(stampPath('bin', target), fingerprint)
+    await rebuildWithStamp(stampPath('bin', target), fingerprint, () =>
+      compileBinary(binaryPath(target), target)
+    )
   }
   return stale.length
 }

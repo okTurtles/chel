@@ -48,8 +48,8 @@ const { default: { version } } = await import('../package.json', { with: { type:
 const TAR_FORMAT_VERSION = '1'
 
 // Cache key for a tarball: the inputs it holds, plus how it was packed.
-export function tarFingerprint (bundleFingerprint: string): string {
-  return `${bundleFingerprint}:tar${TAR_FORMAT_VERSION}`
+export function tarFingerprint (bundleFp: string): string {
+  return `${bundleFp}:tar${TAR_FORMAT_VERSION}`
 }
 
 // Detect whether the system `tar` is GNU tar. bsdtar (macOS default) rejects
