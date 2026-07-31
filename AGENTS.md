@@ -16,7 +16,7 @@ All commands are run via Deno tasks defined in `deno.json`:
 deno task lint            # Lint the codebase
 deno task test            # Run tests
 deno task build           # Build the project (outputs to build/)
-deno task compile         # Compile native binaries for multiple platforms (outputs to dist/)
+deno task compile         # Native binaries + release tarballs (outputs to dist/)
 deno task dist            # Full distribution (lint + build + compile)
 deno task chel -- <args>  # Run the CLI locally (lint + build + execute)
 ```
@@ -80,7 +80,12 @@ src/
 
 scripts/
 ├── build.ts             # esbuild bundling
-├── compile.ts           # Deno compile for native binaries
+├── binaries.ts          # Shared, content-addressed native binary cache
+├── compile.ts           # Release tarballs (reproducible .tar.gz + checksums)
+├── publish.ts           # npm platform sub-packages (prepublishOnly hook)
+├── targets.ts           # Supported platforms + `deno compile` invocation
+├── paths.ts             # Shared build/release artifact paths
+├── sync-versions.ts     # Keeps optionalDependencies in sync (version hook)
 ├── dashboard-esbuild.ts # Dashboard UI bundling
 ├── lint.ts              # ESLint wrapper
 └── dist.ts              # Distribution script (TODO)
@@ -320,7 +325,12 @@ These are version controlled to catch bugs or vulnerabilities in the transpilati
 
 ## Release Process
 
-1. Update version in `package.json`
-2. Run `deno task dist` to build and compile binaries
-3. Binaries output to `dist/chel-v<version>-<arch>.tar.gz`
-4. SHA256 checksums printed for verification
+1. `npm version <patch|minor|major>` (rebuilds and commits the bundle)
+2. `deno task dist` to compile the binaries and pack the release tarballs
+   (`dist/chel-v<version>-<target>.tar.gz`, SHA256 checksums printed)
+3. `git diff --exit-code -- build` to confirm the rebuild is reproducible
+4. `npm publish --access public`, which reuses the binaries from step 2
+   instead of compiling its own copies
+
+See the Packaging section of README.md for the full procedure and for how the
+binary cache decides what can be reused.

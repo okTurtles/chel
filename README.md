@@ -511,12 +511,10 @@ Steps to publish a new release of `@chelonia/cli` to npm:
    ```
 
    If your account uses 2FA, `npm publish` may prompt for authentication.
-   Do not rely on `--otp=<code>`: the publish step compiles all five native
-   binaries before publishing the first sub-package. Compilation is usually
-   fast but can take several minutes, so a TOTP code entered at the start
-   will likely have expired by the time the first `npm publish` runs.
-   Complete the browser-based authentication flow when prompted, or use a
-   granular automation token instead.
+   Do not rely on `--otp=<code>`: a TOTP code entered at the start of the
+   release may well have expired by the time the first sub-package is
+   published. Complete the browser-based authentication flow when prompted,
+   or use a granular automation token instead.
 
 2. **Bump the version:**
 
@@ -534,12 +532,28 @@ Steps to publish a new release of `@chelonia/cli` to npm:
 
    As a result, the version commit and tag contain the up-to-date bundle and
    the working directory stays clean. The publish step verifies that what it
-   compiles is exactly this committed bundle and refuses to run otherwise.
+   ships is exactly this committed bundle and refuses to run otherwise.
    This also guarantees the maintainer rebuilds the bundle on `master`
    (merged PRs can each produce a correct bundle individually, yet the
    combined result on `master` may still differ).
 
-3. **Publish:**
+3. **Build the release artifacts** (the tarballs for the GitHub release):
+
+   ```bash
+   deno task dist
+   git diff --exit-code -- build   # fails if the rebuild diverged from the tag
+   ```
+
+   This lints, rebuilds the bundle, compiles one native binary per supported
+   platform, and packs each one into `dist/chel-v<version>-<target>.tar.gz`,
+   printing SHA256 checksums.
+
+   The `git diff --exit-code -- build` afterwards confirms the rebuild is
+   byte-identical to the version commit, i.e. that the build is reproducible.
+   It also has to pass before publishing, since the next step requires a clean
+   `build/`. If it fails, do not publish: investigate the divergence first.
+
+4. **Publish:**
 
    ```bash
    npm publish --access public
@@ -550,8 +564,11 @@ Steps to publish a new release of `@chelonia/cli` to npm:
    - Verifies that the committed bundle matches `package.json` (via
      `build/version.json`) and that the working tree is clean for `build/`
      and `package.json`, refusing to publish otherwise
-   - Compiles a native binary for each supported platform from the committed
-     `build/` bundle (the bundle is *not* rebuilt here)
+   - Reuses the native binaries from step 3 instead of compiling its own
+     copies, so a release compiles each binary once and npm and GitHub are
+     guaranteed to ship identical bytes. If a binary is missing, or was built
+     from a different bundle, it is compiled here instead — publishing without
+     step 3 works, it just takes several minutes longer
    - Creates and publishes a platform sub-package (`@chelonia/cli-<arch>-<os>`) for each target
    - Reconciles `optionalDependencies` as a final safety check
 
@@ -559,25 +576,27 @@ Steps to publish a new release of `@chelonia/cli` to npm:
    main `@chelonia/cli` package, whose `optionalDependencies` now point to the
    freshly published sub-packages.
 
-4. **Generate the release tarballs** (for the GitHub release):
-
-   ```bash
-   deno task dist
-   git diff --exit-code -- build   # fails if the rebuild diverged from the tag
-   ```
-
-   This lints, builds, and compiles native binaries into
-   `dist/chel-v<version>-<target>.tar.gz`, printing SHA256 checksums. It must
-   run *after* `npm publish`: `deno task dist` rebuilds `build/`, which might
-   dirty the working tree that the publish verification requires to be clean.
-   The `git diff --exit-code -- build` afterwards confirms the rebuild is
-   byte-identical to the version commit, i.e. that the build is reproducible.
-
 5. **Push the version commit and tag:**
 
    ```bash
    git push && git push --tags
    ```
+
+### Build caching
+
+Compiling the five native binaries is by far the slowest part of a release, so
+the tarballs and the npm sub-packages share one set of them, kept under the
+gitignored `dist/` directory. `deno task dist` remains usable on its own, at
+any time, to produce the tarballs without publishing anything.
+
+Reuse is decided by content, not timestamps: each artifact is stamped with a
+fingerprint of everything the binary embeds (all of `build/`), plus the Deno
+version and the compile flags. Any change to the bundle, a Deno upgrade, or a
+change to the compile flags therefore recompiles automatically, while
+re-running `deno task dist` with nothing changed does no work at all. An
+interrupted or failed run never leaves a half-built artifact looking current.
+To rebuild everything from scratch anyway, set `CHEL_FORCE_COMPILE=1` or delete
+`dist/`.
 
 ## History
 

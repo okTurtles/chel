@@ -1,8 +1,8 @@
 // Shared compilation target metadata and `deno compile` invocation.
 //
-// Consumed by both `scripts/compile.ts` (local native builds) and
-// `scripts/publish.ts` (release sub-packages) so that the set of targets,
-// permission flags, and --include paths cannot drift between the two.
+// Consumed through `scripts/binaries.ts` by both `scripts/compile.ts` (release
+// tarballs) and `scripts/publish.ts` (npm sub-packages), so that the set of
+// targets, permission flags, and --include paths cannot drift between the two.
 
 import { shell } from '~/utils.ts'
 import { BUNDLE_PATH, SERVE_DIR, DASHBOARD_DIR } from './paths.ts'
@@ -101,13 +101,17 @@ export function isCliSubPackage (name: string): boolean {
 }
 
 // The full `deno compile` permission flag set + static include/exclude paths.
-// Kept here so the two call sites (compile.ts, publish.ts) cannot diverge.
+// Kept here so the two call sites (the release tarballs and the npm
+// sub-packages, both of which go through scripts/binaries.ts) cannot diverge.
+//
+// Exported because the binary cache folds it into its fingerprint: changing a
+// flag changes the resulting binaries, so it must invalidate cached ones.
 //
 // `--allow-read` (unrestricted) instead of `--allow-read=.` because Deno may
 // need to load from its cache at runtime, and the cache path isn't known at
 // compile time.
 // TODO: fix upstream in Deno, or drop permissions programmatically at runtime.
-const COMPILE_FLAGS =
+export const COMPILE_FLAGS =
   '--allow-env --allow-ffi --allow-sys=hostname --allow-read --allow-write=./ --allow-net ' +
   `--exclude node_modules --include ./${SERVE_DIR} --include ./${DASHBOARD_DIR}`
 

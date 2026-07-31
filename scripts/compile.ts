@@ -1,43 +1,32 @@
 #!/usr/bin/env -S deno run --allow-run --allow-read=. --allow-write=./build,./dist
 
-import { shell, $ } from '~/utils.ts'
+// When: `deno task compile`, and as the last step of `deno task dist`.
+//
+// Produces the GitHub release tarballs: one reproducible
+// `dist/chel-v<version>-<target>.tar.gz` per supported platform, followed by
+// their SHA-256 checksums.
+//
+// The native binaries themselves are not compiled here; they are requested
+// from the shared cache in `./binaries.ts`, which is also what the npm
+// publish step uses. Running this script before `npm publish` therefore makes
+// the release compile each binary once instead of once per consumer, and
+// guarantees the bytes shipped to npm are the bytes shipped on GitHub.
+// Re-running it is close to free: unchanged targets are neither recompiled
+// nor re-archived.
+
 import { encodeHex } from 'jsr:@std/encoding/hex'
-import { TARGETS, compileBinary } from './targets.ts'
+import { TARGETS } from './targets.ts'
+import { BIN_DIR, DIST_DIR } from './paths.ts'
+import {
+  bundleFingerprint,
+  ensureArtifact,
+  ensureBinaries,
+  normalizeMtimes
+} from './binaries.ts'
 
 // Static import for TS JSON-import-attribute type inference. The path also
 // lives in `rootPackagePath()` from `./sync-versions.ts`; keep both in sync.
 const { default: { version } } = await import('../package.json', { with: { type: 'json' } })
-
-// `deno compile` embeds each source file's mtime into the resulting binary,
-// which makes consecutive builds produce different output even when the file
-// contents are identical. Setting every mtime below `build/` to a fixed value
-// (the UNIX epoch) before compiling restores determinism on a given host.
-async function normalizeMtimes (dir: string, time: number): Promise<void> {
-  const entries: Deno.DirEntry[] = []
-  try {
-    for await (const entry of Deno.readDir(dir)) entries.push(entry)
-  } catch (e) {
-    if (e instanceof Error && e.name === 'NotFound') return
-    throw e
-  }
-  for (const entry of entries) {
-    // Skip symlinks: Deno.utime follows symlinks (there is no lutime
-    // equivalent), so calling it on a symlink would mutate the target's
-    // mtime rather than the link's. entry.isDirectory is lstat-based and
-    // therefore already false for symlinks, so this guard (not the
-    // recursion below) is what prevents the utime side-effect.
-    if (entry.isSymlink) continue
-    const path = `${dir}/${entry.name}`
-    try {
-      await Deno.utime(path, time, time)
-    } catch (e) {
-      if (!(e instanceof Error && e.name === 'NotFound')) throw e
-    }
-    if (entry.isDirectory) {
-      await normalizeMtimes(path, time)
-    }
-  }
-}
 
 // Build a reproducible .tar.gz in a single tar invocation. Running tar and gzip
 // in one process group (rather than a shell pipeline `tar | gzip > out`) yields
@@ -164,30 +153,24 @@ async function printSha256Sums (dir: string, prefix: string): Promise<void> {
 }
 
 export async function compile (): Promise<void> {
-  await normalizeMtimes('./build', 0)
+  await ensureBinaries()
+  const fingerprint = await bundleFingerprint()
   for (const target of TARGETS) {
-    const { denoTarget, binary } = target
-    const dir = `./dist/tmp/${denoTarget}`
-    // note: could also use https://examples.deno.land/temporary-files
-    await $(`mkdir -vp ${dir}`)
-    await compileBinary(`${dir}/${binary}`, target)
-    await reproducibleTarGz('./dist/tmp', `./dist/chel-v${version}-${denoTarget}.tar.gz`, denoTarget)
+    const { denoTarget } = target
+    const archivePath = `${DIST_DIR}/chel-v${version}-${denoTarget}.tar.gz`
+    // The archive holds `<target>/<binary>`, so it can be created straight out
+    // of the shared binary cache: BIN_DIR is already laid out that way.
+    await ensureArtifact('tar', target, archivePath, fingerprint, () =>
+      reproducibleTarGz(BIN_DIR, archivePath, denoTarget)
+    )
   }
-  await printSha256Sums('dist', `chel-v${version}-`)
+  await printSha256Sums(DIST_DIR, `chel-v${version}-`)
   // TODO: sign the sha256sum! pipe this to gpg and include a link to your GPG key in the release notes!
 }
 
-let exitCode = 0
 try {
   await compile()
 } catch (e) {
   console.error('caught:', e)
-  exitCode = 1
-} finally {
-  try {
-    await shell('rm -rf ./dist/tmp')
-  } catch (e) {
-    console.error('cleanup failed:', e)
-  }
+  Deno.exit(1)
 }
-if (exitCode !== 0) Deno.exit(exitCode)

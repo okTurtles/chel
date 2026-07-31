@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-run --allow-read --allow-write=./dist,./package.json --allow-env
+#!/usr/bin/env -S deno run --allow-run --allow-read --allow-write=./build,./dist,./package.json --allow-env
 
 // When: Automatically invoked by `npm publish` via the "prepublishOnly"
 //       script in package.json. Runs just before the main package is
@@ -12,14 +12,23 @@
 // which calls `deno task publish`. It:
 //   0. Verifies the committed bundle is fresh and the tree is clean for the
 //      bundle paths (see assertFreshBundle); refuses to publish otherwise
-//   1. For each OS/CPU target, compiles a native binary from the committed
-//      `build/` bundle and writes it under `dist/cli-<cpu>-<os>/` together
-//      with a minimal `package.json`
+//   1. For each OS/CPU target, obtains a native binary built from the
+//      committed `build/` bundle and assembles `dist/cli-<cpu>-<os>/` around
+//      it, together with a minimal `package.json`
 //   2. Publishes each platform sub-package to npm
 //
 // The JS bundle itself is NOT rebuilt here: it is built and committed by the
 // npm `version` lifecycle hook (see package.json), so what gets published is
 // exactly what the version commit and tag contain.
+//
+// The binaries are likewise not necessarily compiled here: they come from the
+// shared cache in `./binaries.ts`. A release that already produced the GitHub
+// tarballs (`deno task dist`) therefore reuses those exact binaries instead of
+// spending minutes recompiling identical ones, which also guarantees npm and
+// GitHub ship the same bytes. If no cached binary matches the committed
+// bundle, it is compiled on demand, so publishing on its own still works.
+// Compiling writes nothing to `build/` beyond pinning mtimes for
+// reproducibility, which is why this script may write there.
 //
 // When this script finishes, the outer `npm publish` publishes the main package,
 // whose `optionalDependencies` now reference the freshly published sub-packages.
@@ -30,11 +39,11 @@
 import { shell, $ } from '~/utils.ts'
 import {
   TARGETS,
-  compileBinary,
   subPackageName,
   subPackageDir,
   subPackageManifest
 } from './targets.ts'
+import { binaryPath, ensureBinaries } from './binaries.ts'
 import { reconcileOptionalDeps, rootPackagePath } from './sync-versions.ts'
 import { BUILD_DIR, VERSION_STAMP_PATH, SERVE_DIR, DASHBOARD_DIR } from './paths.ts'
 
@@ -114,17 +123,26 @@ async function assertFreshBundle (): Promise<void> {
 }
 
 async function createSubPackages (): Promise<void> {
-  console.log('=== Step 1: Compiling binaries & creating sub-packages ===')
-  await $('rm -rf ./dist && mkdir -p ./dist')
+  console.log('=== Step 1: Obtaining binaries & creating sub-packages ===')
+  await ensureBinaries()
 
   for (const target of TARGETS) {
     const subPkgName = subPackageName(target)
     const subDir = subPackageDir(target)
 
     console.log(`\n--- ${subPkgName} (${target.denoTarget}) ---`)
-    await $(`mkdir -p ${subDir}`)
+    // Only the sub-package directory is wiped, never the whole of `dist/`:
+    // that is where the shared binary cache and the release tarballs live.
+    await $(`rm -rf ${subDir} && mkdir -p ${subDir}`)
 
-    await compileBinary(`${subDir}/${target.binary}`, target)
+    const binaryDest = `${subDir}/${target.binary}`
+    await Deno.copyFile(binaryPath(target), binaryDest)
+    // Deno.copyFile preserves the mode, but the executable bit has to be
+    // present in the published tarball (npm never fixes it up, see
+    // BINARY_FIELD), so make it a guarantee rather than an assumption.
+    if (target.os !== 'win32') {
+      await Deno.chmod(binaryDest, 0o755)
+    }
 
     const subPkg = subPackageManifest(target, rootPkg)
     await Deno.writeTextFile(

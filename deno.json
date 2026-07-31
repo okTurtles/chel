@@ -6,7 +6,7 @@
     "compile": "deno run --allow-env --allow-ffi --allow-sys='hostname' --allow-run --allow-read --allow-write=./build,./dist scripts/compile.ts",
     "build": "deno run --node-modules-dir --allow-ffi --allow-run --allow-read --allow-env --allow-write=./build --allow-sys='cpus,homedir' scripts/dashboard-esbuild.ts && deno run --node-modules-dir --allow-ffi --allow-run --allow-read --allow-env --allow-write=./build --allow-sys='cpus,homedir,hostname' scripts/build.ts",
     "dist": "deno task lint && deno task build && deno task compile",
-    "publish": "deno run --allow-run --allow-read --allow-write=./dist,./package.json --allow-env scripts/publish.ts",
+    "publish": "deno run --allow-run --allow-read --allow-write=./build,./dist,./package.json --allow-env scripts/publish.ts",
     "sync-versions": "deno run --allow-read=. --allow-write=. --allow-run scripts/sync-versions.ts",
     "test": "deno task lint && deno task check && deno test --unstable-worker-options --allow-read=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-write=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-env --allow-ffi --allow-net --allow-sys --allow-run=node"
   },
