@@ -39,6 +39,7 @@
 import { shell, $ } from '~/utils.ts'
 import {
   TARGETS,
+  EXEC_MODE,
   subPackageName,
   subPackageDir,
   subPackageManifest
@@ -141,7 +142,7 @@ async function createSubPackages (): Promise<void> {
     // present in the published tarball (npm never fixes it up, see
     // BINARY_FIELD), so make it a guarantee rather than an assumption.
     if (target.os !== 'win32') {
-      await Deno.chmod(binaryDest, 0o755)
+      await Deno.chmod(binaryDest, EXEC_MODE)
     }
 
     const subPkg = subPackageManifest(target, rootPkg)

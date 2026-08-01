@@ -73,10 +73,12 @@ try {
   fs.accessSync(binPath, fs.constants.X_OK)
 } catch (err) {
   const reason = err.code === 'ENOENT'
-    ? 'the file is missing'
-    : (err.code === 'EACCES' ? 'the file is not executable' : `cannot run it (${err.code})`)
+    ? 'its binary is missing'
+    : (err.code === 'EACCES'
+        ? 'its binary is not executable'
+        : `its binary cannot be run (${err.code})`)
   console.error(
-    `chel: found '${subPkgName}' but ${reason}: ${binPath}\n` +
+    `chel: platform package '${subPkgName}' is installed but ${reason}:\n  ${binPath}\n` +
     `Try reinstalling: npm install --force @chelonia/cli`
   )
   process.exit(126)

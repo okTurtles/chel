@@ -59,6 +59,12 @@ export function subPackageName (t: Target): string {
 // `bin` entries.
 export const BINARY_FIELD = 'chelBinary'
 
+// Mode the native binaries are published with. Shared by the compile step and
+// the sub-package staging step so the two cannot drift; both need it because
+// the executable bit has to be present in the published tarball itself (see
+// BINARY_FIELD for why npm never sets it for us).
+export const EXEC_MODE = 0o755
+
 // Subset of the root package.json that sub-packages inherit metadata from.
 export interface RootPackageMeta {
   version: string
@@ -137,6 +143,6 @@ export async function compileBinary (outputPath: string, target: Target): Promis
     { printOutput: true }
   )
   if (target.os !== 'win32') {
-    await Deno.chmod(outputPath, 0o755)
+    await Deno.chmod(outputPath, EXEC_MODE)
   }
 }

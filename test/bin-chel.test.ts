@@ -131,7 +131,7 @@ Deno.test('bin/chel.js reports a missing binary without a stack trace', async ()
     await Deno.remove(`${tmpDir}/${name}/fake-chel.js`)
     const { code, stderr } = await runShimCapturingStderr(tmpDir)
     assertEquals(code, 126)
-    assertStringIncludes(stderr, 'the file is missing')
+    assertStringIncludes(stderr, 'its binary is missing')
     assertEquals(stderr.includes('    at '), false)
   } finally {
     await Deno.remove(tmpDir, { recursive: true })
