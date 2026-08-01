@@ -157,7 +157,7 @@ export async function isFresh (
   fingerprint: string,
   artifactPath: string
 ): Promise<boolean> {
-  const force = Deno.env.get('CHEL_FORCE_COMPILE')
+  const force = Deno.env.get('CHEL_FORCE_COMPILE')?.toLowerCase()
   if (force && force !== '0' && force !== 'false') return false
   if (!await exists(artifactPath)) return false
   try {

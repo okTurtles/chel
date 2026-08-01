@@ -299,10 +299,6 @@ Manifests are JSON with signed body:
 }
 ```
 
-### 9. dist/ under version control, ignore it!
-
-These are version controlled to catch bugs or vulnerabilities in the transpilation process, but they are not intended for review unless there is a vulnerability introduced that's not found in src/.
-
 ## Key Dependencies
 
 - `@sbp/sbp` - Selector-based programming / dependency injection

@@ -192,7 +192,7 @@ Deno.test('isFresh', async (t) => {
       const stamp = `${dir}/stamp.json`
       await Deno.writeTextFile(artifact, 'binary')
       await writeStamp(stamp, 'abc')
-      for (const value of ['', '0', 'false']) {
+      for (const value of ['', '0', 'false', 'False', 'FALSE']) {
         await withForceCompile(value, async () => {
           assertEquals(await isFresh(stamp, 'abc', artifact), true)
         })
