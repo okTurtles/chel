@@ -22,8 +22,8 @@ import { shell } from '~/utils.ts'
 import { TARGETS, subPackageName, isCliSubPackage, type Target } from './targets.ts'
 
 // Absolute path to the root package.json. Used by runtime lookups in this file
-// (the `import.meta.main` CLI block) and in `publish.ts` (the `try` block) via
-// `Deno.readTextFile`. The literal `'../package.json'` also appears in static
+// (the `import.meta.main` CLI block) and in `publish.ts` (its own
+// `import.meta.main` block) via `Deno.readTextFile`. The literal `'../package.json'` also appears in static
 // `import(... { with: { type: 'json' } })` calls in `publish.ts`, `compile.ts`,
 // and `build.ts`; those cannot use this function because TS needs a static
 // string for JSON-import-attribute type inference. Keep all references in sync

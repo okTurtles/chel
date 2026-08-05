@@ -1,8 +1,8 @@
 // Shared compilation target metadata and `deno compile` invocation.
 //
-// Consumed by both `scripts/compile.ts` (local native builds) and
-// `scripts/publish.ts` (release sub-packages) so that the set of targets,
-// permission flags, and --include paths cannot drift between the two.
+// Consumed through `scripts/binaries.ts` by both `scripts/compile.ts` (release
+// tarballs) and `scripts/publish.ts` (npm sub-packages), so that the set of
+// targets, permission flags, and --include paths cannot drift between the two.
 
 import { shell } from '~/utils.ts'
 import { BUNDLE_PATH, SERVE_DIR, DASHBOARD_DIR } from './paths.ts'
@@ -45,6 +45,59 @@ export function subPackageName (t: Target): string {
   return `${CLI_SUBPACKAGE_PREFIX}${t.cpu}-${t.os}`
 }
 
+// Field under which a sub-package advertises its binary's filename.
+//
+// Sub-packages must NOT use `bin` for this. npm links the `bin` entries of
+// every package in the tree into the same `node_modules/.bin` directory, so a
+// sub-package claiming the name `chel` competes with the root package's
+// launcher for that link: whichever is linked last wins, and on npm 10 that is
+// frequently the sub-package, leaving `.bin/chel` pointing at a native binary
+// whose sibling packages were never checked (and, on install failures, a
+// dangling link). Publishing the filename under a field npm ignores keeps
+// `chel` owned solely by the root package while still letting bin/chel.js find
+// the executable. `directories.bin` is likewise unusable: npm expands it into
+// `bin` entries.
+export const BINARY_FIELD = 'chelBinary'
+
+// Mode the native binaries are published with. Shared by the compile step and
+// the sub-package staging step so the two cannot drift; both need it because
+// the executable bit has to be present in the published tarball itself (see
+// BINARY_FIELD for why npm never sets it for us).
+export const EXEC_MODE = 0o755
+
+// Subset of the root package.json that sub-packages inherit metadata from.
+export interface RootPackageMeta {
+  version: string
+  description: string
+  repository: unknown
+  author: string
+  license: string
+}
+
+// The complete package.json contents for `target`'s sub-package. Shared with
+// the tests so the "no bin field" invariant is pinned rather than assumed.
+export function subPackageManifest (
+  target: Target,
+  rootPkg: RootPackageMeta
+): Record<string, unknown> {
+  return {
+    name: subPackageName(target),
+    version: rootPkg.version,
+    description: `${rootPkg.description} (${target.os}/${target.cpu})`,
+    repository: rootPkg.repository,
+    author: rootPkg.author,
+    license: rootPkg.license,
+    os: [target.os],
+    cpu: [target.cpu],
+    files: [target.binary, 'LICENSE'],
+    // Yarn's Plug'n'Play keeps packages zipped by default, which would leave
+    // the launcher with no executable to spawn. Since npm no longer unpacks
+    // this package on our behalf via `bin`, ask for it explicitly.
+    preferUnplugged: true,
+    [BINARY_FIELD]: target.binary
+  }
+}
+
 export function subPackageDir (t: Target): string {
   return `dist/cli-${t.cpu}-${t.os}`
 }
@@ -54,13 +107,17 @@ export function isCliSubPackage (name: string): boolean {
 }
 
 // The full `deno compile` permission flag set + static include/exclude paths.
-// Kept here so the two call sites (compile.ts, publish.ts) cannot diverge.
+// Kept here so the two call sites (the release tarballs and the npm
+// sub-packages, both of which go through scripts/binaries.ts) cannot diverge.
+//
+// Exported because the binary cache folds it into its fingerprint: changing a
+// flag changes the resulting binaries, so it must invalidate cached ones.
 //
 // `--allow-read` (unrestricted) instead of `--allow-read=.` because Deno may
 // need to load from its cache at runtime, and the cache path isn't known at
 // compile time.
 // TODO: fix upstream in Deno, or drop permissions programmatically at runtime.
-const COMPILE_FLAGS =
+export const COMPILE_FLAGS =
   '--allow-env --allow-ffi --allow-sys=hostname --allow-read --allow-write=./ --allow-net ' +
   `--exclude node_modules --include ./${SERVE_DIR} --include ./${DASHBOARD_DIR}`
 
@@ -73,9 +130,19 @@ const ENTRY_POINT = `./${BUNDLE_PATH}`
 
 // Runs a native compilation for `target`, writing the binary to `outputPath`
 // (the full path including the binary filename). Prints command output.
+//
+// The explicit chmod matters for publishing: because sub-packages don't declare
+// `bin` (see BINARY_FIELD), npm never fixes the mode at install time, so the
+// executable bit has to be present in the published tarball itself. npm's
+// packing preserves it; `deno compile` normally sets it, and this makes that a
+// guarantee rather than an assumption. Skipped on Windows, which has no
+// executable bit.
 export async function compileBinary (outputPath: string, target: Target): Promise<void> {
   await shell(
     `deno compile -o ${outputPath} --target ${target.denoTarget} ${COMPILE_FLAGS} ${ENTRY_POINT}`,
     { printOutput: true }
   )
+  if (target.os !== 'win32') {
+    await Deno.chmod(outputPath, EXEC_MODE)
+  }
 }

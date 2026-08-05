@@ -2775,6 +2775,9 @@ var buf = Deno.UnsafePointerView.getArrayBuffer;
 var readCstr = Deno.UnsafePointerView.getCString;
 
 // deno:https://jsr.io/@db/sqlite/0.13.0/src/statement.ts
+var _computedKey;
+var _computedKey1;
+var _computedKey2;
 var { sqlite3_prepare_v2, sqlite3_reset, sqlite3_clear_bindings, sqlite3_step, sqlite3_column_count, sqlite3_column_type, sqlite3_column_value, sqlite3_value_subtype, sqlite3_column_text, sqlite3_finalize, sqlite3_column_int64, sqlite3_column_double, sqlite3_column_blob, sqlite3_column_bytes, sqlite3_column_name, sqlite3_expanded_sql, sqlite3_bind_parameter_count, sqlite3_bind_int, sqlite3_bind_int64, sqlite3_bind_text, sqlite3_bind_blob, sqlite3_bind_double, sqlite3_bind_parameter_index, sqlite3_sql, sqlite3_stmt_readonly, sqlite3_bind_parameter_name, sqlite3_changes, sqlite3_column_int } = ffi_default;
 var STATEMENTS_TO_DB = /* @__PURE__ */ new Map();
 var emptyStringBuffer = new Uint8Array(1);
@@ -2828,6 +2831,7 @@ function getColumn(handle, i2, int64, parseJson) {
     }
   }
 }
+_computedKey = Symbol.iterator, _computedKey1 = Symbol.dispose, _computedKey2 = Symbol.for("Deno.customInspect");
 var Statement = class {
   db;
   #handle;
@@ -3305,19 +3309,22 @@ var Statement = class {
     }
     sqlite3_reset(this.#handle);
   }
-  [Symbol.iterator]() {
+  [_computedKey]() {
     return this.iter();
   }
-  [Symbol.dispose]() {
+  [_computedKey1]() {
     this.finalize();
   }
-  [Symbol.for("Deno.customInspect")]() {
+  [_computedKey2]() {
     return `Statement { ${this.expandedSql} }`;
   }
 };
 
 // deno:https://jsr.io/@db/sqlite/0.13.0/src/blob.ts
+var _computedKey3;
+var _computedKey12;
 var { sqlite3_blob_open, sqlite3_blob_bytes, sqlite3_blob_close, sqlite3_blob_read, sqlite3_blob_write } = ffi_default;
+_computedKey3 = Symbol.iterator, _computedKey12 = Symbol.for("Deno.customInspect");
 var SQLBlob = class {
   #handle;
   constructor(db2, options2) {
@@ -3392,7 +3399,7 @@ var SQLBlob = class {
       }
     });
   }
-  *[Symbol.iterator]() {
+  *[_computedKey3]() {
     const length2 = this.byteLength;
     let offset = 0;
     while (offset < length2) {
@@ -3403,16 +3410,18 @@ var SQLBlob = class {
       yield buffer;
     }
   }
-  [Symbol.for("Deno.customInspect")]() {
+  [_computedKey12]() {
     return `SQLite3.Blob(0x${this.byteLength.toString(16)})`;
   }
 };
 
 // deno:https://jsr.io/@db/sqlite/0.13.0/src/database.ts
+var _computedKey4;
 var { sqlite3_open_v2, sqlite3_close_v2, sqlite3_changes: sqlite3_changes2, sqlite3_total_changes, sqlite3_last_insert_rowid, sqlite3_get_autocommit, sqlite3_exec, sqlite3_free, sqlite3_libversion, sqlite3_sourceid, sqlite3_complete, sqlite3_finalize: sqlite3_finalize2, sqlite3_result_blob, sqlite3_result_double, sqlite3_result_error, sqlite3_result_int64, sqlite3_result_null, sqlite3_result_text, sqlite3_value_blob, sqlite3_value_bytes, sqlite3_value_double, sqlite3_value_int64, sqlite3_value_text, sqlite3_value_type, sqlite3_create_function, sqlite3_result_int, sqlite3_aggregate_context, sqlite3_enable_load_extension, sqlite3_load_extension, sqlite3_backup_init, sqlite3_backup_step, sqlite3_backup_finish, sqlite3_errcode } = ffi_default;
 var SQLITE_VERSION = readCstr(sqlite3_libversion());
 var SQLITE_SOURCEID = readCstr(sqlite3_sourceid());
 var BIG_MAX2 = BigInt(Number.MAX_SAFE_INTEGER);
+_computedKey4 = Symbol.for("Deno.customInspect");
 var Database = class {
   #path;
   #handle;
@@ -3926,7 +3935,7 @@ var Database = class {
       unwrap(sqlite3_errcode(dest.#handle), dest.#handle);
     }
   }
-  [Symbol.for("Deno.customInspect")]() {
+  [_computedKey4]() {
     return `SQLite3.Database { path: ${this.path} }`;
   }
 };
@@ -4272,7 +4281,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   // file that has been converted to a CommonJS file using a Babel-
   // compatible transform (i.e. "__esModule" has not been set), then set
   // "default" to the CommonJS "module.exports" for node compatibility.
-  1 ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
   mod
 ));
 var require_async = __commonJS({

@@ -8,6 +8,10 @@
 // resolves the platform sub-package selected by npm and spawns its native
 // binary, forwarding all arguments and stdio.
 //
+// The sub-packages deliberately declare no `bin` of their own: doing so would
+// make them fight the root package for the `chel` link inside
+// `node_modules/.bin`. See BINARY_FIELD in scripts/targets.ts.
+//
 // The sub-package naming convention `@chelonia/cli-<arch>-<platform>` matches
 // `subPackageName` in scripts/targets.ts, where <arch> is `process.arch`
 // ('x64' | 'arm64') and <platform> is `process.platform`
@@ -19,6 +23,7 @@
 const { spawn } = require('node:child_process')
 const path = require('node:path')
 const os = require('node:os')
+const fs = require('node:fs')
 
 // Translate the child's (code, signal) into a POSIX-conformant exit status:
 // 128 + signum when killed by a signal (130 for SIGINT, 143 for SIGTERM), so
@@ -47,15 +52,38 @@ try {
 }
 
 const subPkg = require(pkgJsonPath)
-const binRel = typeof subPkg.bin === 'string'
-  ? subPkg.bin
-  : subPkg.bin && (subPkg.bin.chel || Object.values(subPkg.bin)[0])
-if (!binRel) {
-  console.error(`chel: '${subPkgName}' does not declare a binary`)
-  process.exit(1)
-}
+// Sub-packages advertise their binary under `chelBinary` rather than `bin`, so
+// that npm links the name `chel` for this package only (see BINARY_FIELD in
+// scripts/targets.ts). The platform-derived fallback keeps the shim working
+// with sub-packages that predate that field, and is pinned by
+// scripts/targets.test.ts against the filenames in TARGETS.
+const binRel = typeof subPkg.chelBinary === 'string' && subPkg.chelBinary
+  ? subPkg.chelBinary
+  : (process.platform === 'win32' ? 'chel.exe' : 'chel')
 
 const binPath = path.join(path.dirname(pkgJsonPath), binRel)
+
+// Check the binary before spawning so a broken install reports something
+// actionable instead of a raw ENOENT/EACCES stack trace. This is worth doing
+// explicitly because the sub-package declares no `bin`, so npm never touches
+// the file's permissions at install time: the executable bit comes from the
+// published tarball, and a package manager or filesystem that drops it would
+// otherwise fail here in a confusing way.
+try {
+  fs.accessSync(binPath, fs.constants.X_OK)
+} catch (err) {
+  const reason = err.code === 'ENOENT'
+    ? 'its binary is missing'
+    : (err.code === 'EACCES'
+        ? 'its binary is not executable'
+        : `its binary cannot be run (${err.code})`)
+  console.error(
+    `chel: platform package '${subPkgName}' is installed but ${reason}:\n  ${binPath}\n` +
+    `Try reinstalling: npm install --force @chelonia/cli`
+  )
+  process.exit(126)
+}
+
 const child = spawn(binPath, process.argv.slice(2), { stdio: 'inherit' })
 
 // Track whether the child has actually exited, so we keep forwarding repeat
@@ -77,9 +105,19 @@ for (const name of Object.keys(os.constants.signals)) {
   process.on(name, () => { if (!childExited) child.kill(name) })
 }
 
+// spawn can still fail after the pre-check passes (e.g. on Windows X_OK is
+// only an existence check, so a corrupt binary gets this far; on Unix a file
+// on a noexec mount or one open for writing passes accessSync but not
+// execve). Report that in the same style as the pre-check above, with the
+// same "found but cannot be run" exit code, instead of dumping the raw error
+// object and its stack trace.
 child.on('error', (err) => {
-  console.error('chel:', err)
-  process.exit(1)
+  console.error(
+    `chel: platform package '${subPkgName}' is installed but its binary ` +
+    `cannot be run (${err.code ?? 'unknown error'}):\n  ${binPath}\n` +
+    `Try reinstalling: npm install --force @chelonia/cli`
+  )
+  process.exit(126)
 })
 child.on('close', (code, signal) => {
   childExited = true
