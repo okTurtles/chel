@@ -6,6 +6,15 @@ await Deno.mkdir('./test/temp', { recursive: true })
 
 const BIN_CHEL = new URL('../bin/chel.js', import.meta.url).pathname
 
+// The fake sub-package binary is a Node script with a shebang, which only
+// Unix kernels know how to execute. Windows resolves the fallback name to
+// chel.exe and CreateProcessW refuses to run a text file, so the shim reports
+// a spawn error rather than the child's real outcome. Signal delivery differs
+// too: Windows has no real SIGTERM, so a killed child never reports a signal
+// and 128+signum cannot be observed. Tests that need to actually run the fake
+// binary are therefore Unix-only.
+const SKIP_SPAWNING_TESTS = Deno.build.os === 'windows'
+
 // Determines the sub-package name that bin/chel.js will look for on this
 // machine, by asking Node directly (avoids hardcoding arch/platform mappings).
 async function currentSubPkgName (): Promise<string> {
@@ -74,6 +83,7 @@ async function runShimCapturingStderr (
 }
 
 Deno.test('bin/chel.js forwards normal exit code from child', async () => {
+  if (SKIP_SPAWNING_TESTS) return
   const tmpDir = await Deno.makeTempDir({ dir: './test/temp' })
   try {
     const name = await currentSubPkgName()
@@ -86,6 +96,7 @@ Deno.test('bin/chel.js forwards normal exit code from child', async () => {
 })
 
 Deno.test('bin/chel.js exits 128+signum when child dies by signal', async () => {
+  if (SKIP_SPAWNING_TESTS) return
   const tmpDir = await Deno.makeTempDir({ dir: './test/temp' })
   try {
     const name = await currentSubPkgName()
@@ -98,6 +109,7 @@ Deno.test('bin/chel.js exits 128+signum when child dies by signal', async () => 
 })
 
 Deno.test('bin/chel.js falls back to the default binary name', async () => {
+  if (SKIP_SPAWNING_TESTS) return
   const tmpDir = await Deno.makeTempDir({ dir: './test/temp' })
   try {
     const name = await currentSubPkgName()
