@@ -217,9 +217,20 @@ Deno.test('ensureArtifact', async (t) => {
     }
   }
 
+  // The stamps live in the real STAMP_DIR, so remove them even when an
+  // assertion throws; otherwise a failing run would leak the fake stamps
+  // into the cache directory.
+  const withCleanup = async (target: Target, fn: () => Promise<void>): Promise<void> => {
+    try {
+      await fn()
+    } finally {
+      await cleanup(target)
+    }
+  }
+
   await t.step('skips work when a previous run used the same inputs', async () => {
     const target = fakeTarget('reuse')
-    await withTempDir(async (dir) => {
+    await withCleanup(target, () => withTempDir(async (dir) => {
       const artifact = `${dir}/artifact`
       let runs = 0
       const build = async () => {
@@ -229,13 +240,12 @@ Deno.test('ensureArtifact', async (t) => {
       assertEquals(await ensureArtifact('tar', target, artifact, 'fp1', build), true)
       assertEquals(await ensureArtifact('tar', target, artifact, 'fp1', build), false)
       assertEquals(runs, 1)
-    })
-    await cleanup(target)
+    }))
   })
 
   await t.step('redoes the work when the inputs changed', async () => {
     const target = fakeTarget('stale')
-    await withTempDir(async (dir) => {
+    await withCleanup(target, () => withTempDir(async (dir) => {
       const artifact = `${dir}/artifact`
       let runs = 0
       const build = async () => {
@@ -246,15 +256,14 @@ Deno.test('ensureArtifact', async (t) => {
       assertEquals(await ensureArtifact('tar', target, artifact, 'fp2', build), true)
       assertEquals(runs, 2)
       assertEquals(await Deno.readTextFile(artifact), 'built 2')
-    })
-    await cleanup(target)
+    }))
   })
 
   await t.step('a failed run leaves the artifact marked stale', async () => {
     // Otherwise a half-written binary from an interrupted release would be
     // reused, and shipped.
     const target = fakeTarget('failure')
-    await withTempDir(async (dir) => {
+    await withCleanup(target, () => withTempDir(async (dir) => {
       const artifact = `${dir}/artifact`
       await Deno.writeTextFile(artifact, 'stale leftovers')
       await writeStamp(stampPath('tar', target), 'fp1')
@@ -270,7 +279,6 @@ Deno.test('ensureArtifact', async (t) => {
       assertEquals(failed, true)
       assertEquals(await isFresh(stampPath('tar', target), 'fp1', artifact), false)
       assertEquals(await isFresh(stampPath('tar', target), 'fp2', artifact), false)
-    })
-    await cleanup(target)
+    }))
   })
 })

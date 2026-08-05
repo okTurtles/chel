@@ -105,9 +105,19 @@ for (const name of Object.keys(os.constants.signals)) {
   process.on(name, () => { if (!childExited) child.kill(name) })
 }
 
+// spawn can still fail after the pre-check passes (e.g. on Windows X_OK is
+// only an existence check, so a corrupt binary gets this far; on Unix a file
+// on a noexec mount or one open for writing passes accessSync but not
+// execve). Report that in the same style as the pre-check above, with the
+// same "found but cannot be run" exit code, instead of dumping the raw error
+// object and its stack trace.
 child.on('error', (err) => {
-  console.error('chel:', err)
-  process.exit(1)
+  console.error(
+    `chel: platform package '${subPkgName}' is installed but its binary ` +
+    `cannot be run (${err.code ?? 'unknown error'}):\n  ${binPath}\n` +
+    `Try reinstalling: npm install --force @chelonia/cli`
+  )
+  process.exit(126)
 })
 child.on('close', (code, signal) => {
   childExited = true

@@ -186,15 +186,22 @@ async function publishSubPackages (): Promise<void> {
   }
 }
 
-try {
-  await assertFreshBundle()
-  await createSubPackages()
-  await publishSubPackages()
-  const pkgPath = rootPackagePath()
-  const synced = await reconcileOptionalDeps(pkgPath, rootPkg.version, TARGETS)
-  if (synced) console.log(`\nSynced optionalDependencies -> ${rootPkg.version}`)
-  console.log('\n=== Sub-packages published. Publishing main package... ===')
-} catch (e) {
-  console.error('caught:', e)
-  Deno.exit(1)
+// Guarded like ./compile.ts and ./sync-versions.ts, so importing this module
+// can never publish to npm as a side effect. publish.ts is the one place
+// where that would be destructive: publishing is close to irreversible
+// (sub-packages can only be unpublished within 72h), so it must only happen
+// when the script is actually run, never when it is merely imported.
+if (import.meta.main) {
+  try {
+    await assertFreshBundle()
+    await createSubPackages()
+    await publishSubPackages()
+    const pkgPath = rootPackagePath()
+    const synced = await reconcileOptionalDeps(pkgPath, rootPkg.version, TARGETS)
+    if (synced) console.log(`\nSynced optionalDependencies -> ${rootPkg.version}`)
+    console.log('\n=== Sub-packages published. Publishing main package... ===')
+  } catch (e) {
+    console.error('caught:', e)
+    Deno.exit(1)
+  }
 }
