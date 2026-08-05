@@ -123,11 +123,13 @@ async function fileDigests (dir: string, prefix = ''): Promise<string[]> {
 // toolchain, and the flags. Two runs sharing a fingerprint produce the same
 // binaries, so a cached artifact carrying it can be reused as-is.
 export async function computeFingerprint (dir: string = BUILD_DIR): Promise<string> {
+  // Using NUL because `fileDigests` could contain
+  // most other characters
   const payload = [
     `deno:${Deno.version.deno}`,
     `flags:${COMPILE_FLAGS}`,
     ...(await fileDigests(dir)).sort()
-  ].join('\n')
+  ].join('\0')
   return await sha256(new TextEncoder().encode(payload))
 }
 
