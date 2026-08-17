@@ -7,6 +7,9 @@ import 'npm:@sbp/okturtles.data'
 import 'npm:@sbp/okturtles.events'
 import 'npm:@sbp/okturtles.eventqueue'
 import { blake32Hash, createCID, multicodes } from 'npm:@chelonia/lib/functions'
+import { SPMessage } from 'npm:@chelonia/lib/SPMessage'
+import type { SPOpContract, SPOpValue, SPKey } from 'npm:@chelonia/lib/SPMessage'
+import { signedOutgoingDataWithRawKey } from 'npm:@chelonia/lib/signedData'
 import { EDWARDS25519SHA512BATCH, keygen, keyId, serializeKey, sign } from 'npm:@chelonia/crypto'
 import { AUTHSALT, CONTRACTSALT, CS, SALT_LENGTH_IN_OCTETS } from 'npm:@chelonia/lib/zkppConstants'
 import tweetnacl from 'npm:tweetnacl'
@@ -88,7 +91,8 @@ export function createTestIdentity () {
   }
   rootState.contracts = rootState.contracts || Object.create(null)
   rootState.contracts[contractID] = {
-    type: 'gi.contracts/identity',
+    // No `type` is set: the server no longer treats contract names specially,
+    // and identity is defined by being an unattributed billable entity
     HEAD: createCID(contractData + '-head', multicodes.SHELTER_CONTRACT_DATA),
     height: 0
   }
@@ -101,6 +105,85 @@ export function buildShelterAuthHeader (contractID: string, SAK: ReturnType<type
   crypto.getRandomValues(nonceBytes)
   const data = `${contractID} ${Date.now()}.${Buffer.from(nonceBytes).toString('base64')}`
   return `shelter ${data}.${sign(SAK, data)}`
+}
+
+// Builds and seeds everything needed to register a new root contract over
+// POST /event: a signed manifest with its contract source(s) stored in the
+// database, plus a validly signed OP_CONTRACT first message for it (the same
+// shape `chelonia/out/registerContract` in @chelonia/lib produces).
+// `sourceBytes` / `slimSourceBytes` control the byte length of the stored
+// contract sources, and `messagePaddingBytes` inflates the serialized message
+// itself (via a padding key name), for testing the signup size caps.
+export async function createTestContractRegistration ({
+  name = 'gi.contracts/identity',
+  sourceBytes = 64,
+  slimSourceBytes,
+  messagePaddingBytes = 0
+}: {
+  name?: string
+  sourceBytes?: number
+  slimSourceBytes?: number
+  messagePaddingBytes?: number
+} = {}): Promise<{ serialized: string, contractID: string }> {
+  const manifestSigningKey = keygen(EDWARDS25519SHA512BATCH)
+  const paddedSource = (bytes: number, marker: string) => {
+    return marker + 'x'.repeat(Math.max(0, bytes - marker.length))
+  }
+
+  const contractSource = paddedSource(sourceBytes, `export default {} // ${name}`)
+  const contractHash = createCID(contractSource, multicodes.SHELTER_CONTRACT_TEXT)
+  await sbp('chelonia.db/set', contractHash, contractSource)
+
+  const body: { [key: string]: unknown } = {
+    name,
+    version: '0.0.1',
+    contract: { hash: contractHash, file: 'contract.js' },
+    signingKeys: [serializeKey(manifestSigningKey, false)]
+  }
+  if (slimSourceBytes != null) {
+    const slimSource = paddedSource(slimSourceBytes, `export default {} // slim ${name}`)
+    const slimHash = createCID(slimSource, multicodes.SHELTER_CONTRACT_TEXT)
+    await sbp('chelonia.db/set', slimHash, slimSource)
+    body.contractSlim = { hash: slimHash, file: 'contract-slim.js' }
+  }
+  const serializedBody = JSON.stringify(body)
+  const serializedHead = JSON.stringify({ manifestVersion: '1.0.0' })
+  const manifest = JSON.stringify({
+    head: serializedHead,
+    body: serializedBody,
+    signature: {
+      keyId: keyId(manifestSigningKey),
+      value: sign(manifestSigningKey, serializedBody + serializedHead)
+    }
+  })
+  const manifestHash = createCID(manifest, multicodes.SHELTER_CONTRACT_MANIFEST)
+  await sbp('chelonia.db/set', manifestHash, manifest)
+
+  const CSK = keygen(EDWARDS25519SHA512BATCH)
+  const payload: SPOpContract = {
+    type: name,
+    keys: [{
+      id: keyId(CSK),
+      name: messagePaddingBytes > 0 ? '#csk' + 'x'.repeat(messagePaddingBytes) : '#csk',
+      purpose: ['sig'],
+      ringLevel: 0,
+      permissions: '*',
+      allowedActions: '*',
+      data: serializeKey(CSK, false),
+      _notBeforeHeight: 0,
+      _notAfterHeight: undefined
+    } as SPKey]
+  }
+  const message = SPMessage.createV1_0({
+    contractID: null,
+    height: 0,
+    op: [
+      SPMessage.OP_CONTRACT,
+      signedOutgoingDataWithRawKey<SPOpValue, object>(CSK, payload)
+    ],
+    manifest: manifestHash
+  })
+  return { serialized: message.serialize(), contractID: message.hash() }
 }
 
 let cachedServerAddress: Promise<string> | undefined
@@ -126,7 +209,12 @@ export function startTestServer (): Promise<string> {
         fileUploadMaxBytes: 31457280,
         signup: {
           disabled: false,
+          maxFirstMessageBytes: 5 * 1024,
+          maxContractSizeBytes: 500 * 1024,
           limit: { disabled: false, minute: 100, hour: 1000, day: 10000 }
+        },
+        billing: {
+          freeAllowanceBytes: 10 * 1024 * 1024
         },
         messages: [{ type: 'info', text: 'test message' }],
         maxEventsBatchSize: 500,

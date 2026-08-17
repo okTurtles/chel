@@ -1,12 +1,18 @@
 import { createCID } from 'npm:@chelonia/lib/functions'
 import sbp from 'npm:@sbp/sbp'
-// import { assert } from 'jsr:@std/assert' // TODO: Use for additional test assertions
+import { assertEquals } from 'jsr:@std/assert'
 import createWorker from './createWorker.ts'
 import { appendToIndexFactory, closeDB, initDB, updateSize as updateSize_ } from './database.ts'
 
 let worker = createWorker(new URL('./ownerSizeTotalWorker.ts', import.meta.url).toString())
 
 const randInt = (upperBound: number) => Math.random() * upperBound | 0
+
+const randCID = () => {
+  const buffer = new Uint8Array(16)
+  crypto.getRandomValues(buffer)
+  return createCID(buffer)
+}
 
 const updateSize = (resourceID: string, sizeKey: string, size: number) => {
   return updateSize_(resourceID, sizeKey, size).then(() => {
@@ -263,6 +269,67 @@ Deno.test({
       })
     } finally {
       // Teardown
+      await closeDB()
+      await worker.terminate()
+    }
+  }
+})
+
+// Regression test for the billing free tier: an identity contract and the DMs
+// it owns must share a single `_private_ownerTotalSize_<identity>` total,
+// since the credits worker subtracts the free allowance from that one value
+// (see creditsWorker.ts). A DM is a regular subresource: a contract whose
+// `_private_owner_` chain leads back to the identity that created it.
+Deno.test({
+  name: 'Identity contract and its DM subresources share a single total size',
+  async fn () {
+    await initDB()
+    const worker = createWorker(new URL('./ownerSizeTotalWorker.ts', import.meta.url).toString())
+    await worker.ready
+
+    try {
+      // The identity: an unattributed billable entity with no owner of its own
+      const identityID = randCID()
+      await sbp('chelonia.db/set', identityID, 'identity-contract-data')
+      await appendToIndexFactory('_private_billable_entities')(identityID)
+      const identityFirstMessageBytes = 700
+      await updateSize_(identityID, `_private_size_${identityID}`, identityFirstMessageBytes)
+      await worker.rpcSbp('worker/updateSizeSideEffects', {
+        resourceID: identityID,
+        size: identityFirstMessageBytes,
+        ultimateOwnerID: identityID
+      })
+
+      // A DM created by that identity: owned subresource...
+      const dmID = randCID()
+      await sbp('chelonia.db/set', dmID, 'dm-contract-data')
+      await updateSize_(dmID, `_private_size_${dmID}`, 600)
+      await sbp('chelonia.db/set', `_private_owner_${dmID}`, identityID)
+      await appendToIndexFactory(`_private_resources_${identityID}`)(dmID)
+      // ...which later receives a message of its own
+      await updateSize_(dmID, `_private_size_${dmID}`, 200)
+      await worker.rpcSbp('worker/updateSizeSideEffects', {
+        resourceID: dmID,
+        size: 600,
+        ultimateOwnerID: identityID
+      })
+      await worker.rpcSbp('worker/updateSizeSideEffects', {
+        resourceID: dmID,
+        size: 200,
+        ultimateOwnerID: identityID
+      })
+
+      await worker.rpcSbp('backend/server/computeSizeTaskDeltas')
+
+      const expectedTotal = identityFirstMessageBytes + 600 + 200
+      assertEquals(
+        await sbp('chelonia.db/get', `_private_ownerTotalSize_${identityID}`, { bypassCache: true }),
+        String(expectedTotal)
+      )
+      // The DM itself is not a billable entity and gets no total of its own
+      const dmTotal = await sbp('chelonia.db/get', `_private_ownerTotalSize_${dmID}`, { bypassCache: true })
+      if (dmTotal != null) throw new Error(`Expected no total size for the DM subresource but got ${dmTotal}`)
+    } finally {
       await closeDB()
       await worker.terminate()
     }

@@ -42,12 +42,21 @@ dashboardPort = ${tomlValue(d.server.dashboardPort)}
 
 [server.signup]
 # disabled = ${tomlValue(d.server.signup.disabled)}
+# Size sanity caps for ownerless (unattributed) first messages, i.e. identity
+# contract registration. They bound how much data can be written 'for free'.
+# maxFirstMessageBytes = ${tomlValue(d.server.signup.maxFirstMessageBytes)}
+# maxContractSizeBytes = ${tomlValue(d.server.signup.maxContractSizeBytes)}
 
 [server.signup.limit]
 # disabled = ${tomlValue(d.server.signup.limit.disabled)}
 # minute = ${tomlValue(d.server.signup.limit.minute)}
 # hour = ${tomlValue(d.server.signup.limit.hour)}
 # day = ${tomlValue(d.server.signup.limit.day)}
+
+[server.billing]
+# Per-billable-entity storage (identity contract + everything it owns) that is
+# not charged for. Set to 0 to charge from the first byte.
+# freeAllowanceBytes = ${tomlValue(d.server.billing.freeAllowanceBytes)}
 
 [server.vapid]
 # email = "you@example.com"

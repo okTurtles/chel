@@ -28,6 +28,7 @@ const portSchema = z
   .min(1, 'must be an integer between 1 and 65535')
   .max(65535, 'must be an integer between 1 and 65535')
 const positiveInt = z.number().int().positive('must be a positive integer')
+const nonNegativeInt = z.number().int().nonnegative('must be a non-negative integer')
 
 const BackendOptionsSchema = z.strictObject({
   fs: z.optional(FsOptionsSchema),
@@ -63,6 +64,11 @@ export const ConfigSchema = z.strictObject({
     reclaimForeignSubscriptions: z.optional(z.boolean()),
     signup: z.optional(z.strictObject({
       disabled: z.optional(z.boolean()),
+      // Size sanity caps for ownerless (unattributed) first messages; a cap of
+      // 0 is rejected because 'disabled = true' is the supported way to block
+      // signups entirely.
+      maxFirstMessageBytes: z.optional(positiveInt),
+      maxContractSizeBytes: z.optional(positiveInt),
       limit: z.optional(z.strictObject({
         disabled: z.optional(z.boolean()),
         // Positive (not merely non-negative) to match the runtime, which falls
@@ -72,6 +78,12 @@ export const ConfigSchema = z.strictObject({
         hour: z.optional(positiveInt),
         day: z.optional(positiveInt)
       }))
+    })),
+    billing: z.optional(z.strictObject({
+      // Per-billable-entity storage that is not charged for; 0 disables the
+      // free tier (charging from the first byte), so non-negative values are
+      // accepted (unlike the signup caps above).
+      freeAllowanceBytes: z.optional(nonNegativeInt)
     })),
     // The VAPID email is read from `server:vapid:email` at runtime
     // (see `src/serve/vapid.ts`).

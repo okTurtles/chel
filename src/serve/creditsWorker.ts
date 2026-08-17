@@ -198,9 +198,27 @@ sbp('okTurtles.eventQueue/queueEvent', readyQueueName, () => {
   }
 })
 
+// Reads the free storage allowance (per billable entity) from the database.
+// Workers run in a separate process without access to nconf, so the main
+// server persists `server.billing.freeAllowanceBytes` at startup
+// (see server.ts) and it is re-read every billing cycle. A missing or invalid
+// value falls back to 0 (charge the full size), preserving the behavior from
+// before the allowance existed.
+const readFreeAllowanceBytes = async (): Promise<number> => {
+  const stored = await sbp('chelonia.db/get', '_private_freeAllowanceBytes', { bypassCache: true })
+  const allowance = parseInt(stored ?? '', 10)
+  if (!(allowance >= 0)) {
+    console.warn(`[creditsWorker] Invalid free allowance '${stored}', using 0`)
+    return 0
+  }
+  return allowance
+}
+
 sbp('sbp/selectors/register', {
   'worker/computeCredits': async () => {
     const billableEntities: string | null = await sbp('chelonia.db/get', '_private_billable_entities', { bypassCache: true })
+
+    const freeAllowanceBytes = await readFreeAllowanceBytes()
 
     // Fetch the list of all entities that should be billed.
     // Using bypassCache here ensures we don't miss newly added entities at the
@@ -225,9 +243,13 @@ sbp('sbp/selectors/register', {
       // }
 
       // Call updateCredits to calculate and record the charge based on current size and time elapsed.
+      // Only storage in excess of the free allowance is charged; entities within
+      // their allowance still get a zero-charge history entry, which anchors the
+      // next charge to when the excess started existing (rather than billing
+      // the excess retroactively over the free period).
       // Not using await to queue the call and immediately proceed with the next
       // billable entity
-      updateCredits(billableEntity, 'charge', size).catch((e) => {
+      updateCredits(billableEntity, 'charge', Math.max(0, size - freeAllowanceBytes)).catch((e) => {
         console.error(e, '[creditsWorker] Error computing balance', billableEntity)
       })
     }))

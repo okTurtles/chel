@@ -588,6 +588,12 @@ export async function startServer (): Promise<{ uri: string }> {
   // Initialize database
   await initDB()
 
+  // Persist the configured free allowance so the credits worker (which runs in
+  // a separate process with no access to nconf) can read it from the database.
+  // Written on every startup so configuration changes are picked up, and it
+  // also survives worker relaunches (see createWorker.ts).
+  await sbp('chelonia.db/set', '_private_freeAllowanceBytes', String(nconf.get('server:billing:freeAllowanceBytes') ?? 0))
+
   // Wait for workers to be ready
   await currentOwnerSizeTotalWorker?.ready
   await currentCreditsWorker?.ready

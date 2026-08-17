@@ -1,0 +1,26 @@
+import { assertEquals } from 'jsr:@std/assert'
+import { sbp, startTestServer, stopTestServer } from './routes-test-helpers.ts'
+
+// The credits worker runs in a separate process without access to nconf, so
+// `server.billing.freeAllowanceBytes` is persisted to the database at startup
+// and re-read by the worker every billing cycle (see creditsWorker.ts). These
+// tests verify that contract from the main process: the key must exist and
+// hold the configured value as a decimal string once the server has started.
+// (creditsWorker.ts cannot be imported directly here because registering its
+// `chelonia.db/*` RPC selector would shadow the real database selectors.)
+Deno.test({
+  name: 'billing configuration',
+  async fn (t: Deno.TestContext) {
+    await startTestServer()
+
+    try {
+      await t.step('server persists the free allowance at startup', async () => {
+        const stored = await sbp('chelonia.db/get', '_private_freeAllowanceBytes')
+        // 10 MiB, matching the test-server default in routes-test-helpers.ts
+        assertEquals(stored, String(10 * 1024 * 1024))
+      })
+    } finally {
+      await stopTestServer()
+    }
+  }
+})

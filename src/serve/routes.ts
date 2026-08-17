@@ -367,20 +367,33 @@ export function registerRoutes (app: Hono): void {
             throw new HTTPException(422, { message: 'Invalid manifest' })
           }
           const credentials = c.get('credentials') as AuthCredentials | undefined
-          // Only allow identity contracts to be created without attribution
+          // Unattributed (ownerless) first messages, i.e. identity contract
+          // registration, are only allowed within configured size limits
           if (!credentials?.billableContractID && deserializedHEAD.isFirstMessage) {
+            if (Buffer.byteLength(payload) > nconf.get('server:signup:maxFirstMessageBytes')) {
+              throw new HTTPException(413, { message: 'First message exceeds size limit' })
+            }
             const manifest = await sbp('chelonia.db/get', deserializedHEAD.head.manifest)
-            let name: string
+            let contractSourceHashes: string[]
             try {
               if (!manifest) throw new Error('empty manifest')
               const parsedManifest = JSON.parse(manifest)
-              ;({ name } = JSON.parse(parsedManifest.body))
+              const { contract, contractSlim } = JSON.parse(parsedManifest.body)
+              if (typeof contract?.hash !== 'string') throw new Error('missing contract hash')
+              contractSourceHashes = [contract.hash]
+              if (typeof contractSlim?.hash === 'string') contractSourceHashes.push(contractSlim.hash)
             } catch (e) {
               if (e instanceof HTTPException) throw e
               throw new HTTPException(422, { message: 'Invalid manifest' })
             }
-            if (name !== 'gi.contracts/identity') {
-              throw new HTTPException(401, { message: 'This contract type requires ownership information' })
+            let contractSizeBytes = 0
+            for (const hash of contractSourceHashes) {
+              const source = await sbp('chelonia.db/get', hash)
+              if (typeof source !== 'string') throw new HTTPException(422, { message: 'Missing contract source' })
+              contractSizeBytes += Buffer.byteLength(source)
+            }
+            if (contractSizeBytes > nconf.get('server:signup:maxContractSizeBytes')) {
+              throw new HTTPException(413, { message: 'Contract source exceeds size limit' })
             }
             if (nconf.get('server:signup:disabled')) {
               throw new HTTPException(403, { message: 'Registration disabled' })
@@ -424,9 +437,10 @@ export function registerRoutes (app: Hono): void {
             // registering a name for the new contract
             const name = validatedHeaders['shelter-namespace-registration']
             if (name) {
-              // Name registation is enabled only for identity contracts
-              const cheloniaState = sbp('chelonia/rootState')
-              if (cheloniaState.contracts[deserializedHEAD.contractID]?.type === 'gi.contracts/identity') {
+              // Name registration is enabled only for contracts that become
+              // billable entities in this request (identity-like root contracts),
+              // regardless of the contract's name
+              if (!credentials?.billableContractID) {
                 try {
                   await sbp('backend/db/registerName', name, deserializedHEAD.contractID)
                 } catch (registerErr: unknown) {

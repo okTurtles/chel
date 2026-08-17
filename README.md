@@ -418,7 +418,46 @@ email = "admin@example.com"
 
 [database]
 backend = "sqlite"
+
+# Signup size caps and the billing free tier; see
+# "Signup, registration, and billing" below.
+# [server.signup]
+# maxFirstMessageBytes = 5120
+# maxContractSizeBytes = 512000
+#
+# [server.billing]
+# freeAllowanceBytes = 10485760
 ```
+
+#### Signup, registration, and billing
+
+The first message of a contract posted to `POST /event` without shelter
+credentials (an *ownerless* first message) creates a new **billable entity** —
+an identity-like root contract. This is name-agnostic: any contract manifest is
+accepted, not just `gi.contracts/identity`, and username registration via the
+`shelter-namespace-registration` header likewise works for any such contract.
+Contract naming therefore no longer affects registration. Ownerless first
+messages are still subject to:
+
+- `server.signup.disabled` (default `false`) — reject new registrations with
+  `403` when `true`.
+- `server.signup.limit.{minute,hour,day}` (defaults `2`/`10`/`50` per IP) —
+  reject with `429` when an IP exceeds a limit. Disable all rate limiting with
+  `server.signup.limit.disabled = true`.
+- `server.signup.maxFirstMessageBytes` (default `5120`) — reject with `413`
+  when the serialized first message exceeds this size.
+- `server.signup.maxContractSizeBytes` (default `512000`) — reject with `413`
+  when the combined size of the contract sources referenced by the manifest
+  (including the slim variant, if any) exceeds this size.
+
+Each billable entity is billed for its total owned storage: the root contract
+plus everything it owns (e.g. direct-message contracts, file attachments, and
+KV data). Storage up to `server.billing.freeAllowanceBytes` (default
+`10485760`, i.e. 10 MiB, shared across all of the entity's owned resources) is
+free; only the excess is charged. Set it to `0` to disable the free tier and
+charge from the first byte. Because the billing worker runs in a separate
+process without access to `chel.toml`, the server persists the allowance to the
+database at startup, so changes take effect on the next server start.
 
 ### `chelonia.json` — App Properties
 
