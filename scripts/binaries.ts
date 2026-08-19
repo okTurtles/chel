@@ -26,7 +26,7 @@
 import { encodeHex } from 'jsr:@std/encoding/hex'
 import { dirname } from 'jsr:@std/path/'
 import { BIN_DIR, BUILD_DIR, STAMP_DIR } from './paths.ts'
-import { COMPILE_FLAGS, TARGETS, compileBinary, type Target } from './targets.ts'
+import { COMPILE_FLAGS, NATIVE_ADDON_PATHS, TARGETS, compileBinary, type Target } from './targets.ts'
 
 // Kinds of cached artifact, each with its own stamp file per target.
 export type ArtifactKind = 'bin' | 'tar'
@@ -93,6 +93,27 @@ export async function normalizeMtimes (dir: string, time: number): Promise<void>
     if (entry.isDirectory) {
       await normalizeMtimes(path, time)
     }
+  }
+}
+
+// Same purpose as normalizeMtimes, for an entry that may be either a file or a
+// directory: the native-addon paths embedded into the binaries (see
+// NATIVE_ADDON_PATHS) mix the two. Missing paths are ignored, so a checkout
+// without the optional native package still compiles.
+async function normalizePathMtimes (path: string, time: number): Promise<void> {
+  let info: Deno.FileInfo
+  try {
+    info = await Deno.lstat(path)
+  } catch (e) {
+    if (isNotFound(e)) return
+    throw e
+  }
+  // Symlinks are left alone for the reason given in normalizeMtimes; the real
+  // path they point at is normalized when it is reached directly.
+  if (info.isSymlink) return
+  await Deno.utime(path, time, time)
+  if (info.isDirectory) {
+    await normalizeMtimes(path, time)
   }
 }
 
@@ -221,6 +242,11 @@ export async function ensureBinaries (targets: readonly Target[] = TARGETS): Pro
   // once for all of them: the binaries must be reproducible across targets and
   // across the tarball/sub-package consumers alike.
   await normalizeMtimes(BUILD_DIR, 0)
+  // The native addon's files are embedded straight out of node_modules rather
+  // than out of build/, so they need the same treatment.
+  for (const path of NATIVE_ADDON_PATHS) {
+    await normalizePathMtimes(path, 0)
+  }
   for (const target of stale) {
     console.log(`\n--- Compiling ${target.denoTarget} ---`)
     await Deno.mkdir(binaryDir(target), { recursive: true })

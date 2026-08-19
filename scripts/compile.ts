@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-env --allow-run --allow-read=. --allow-write=./build,./dist
+#!/usr/bin/env -S deno run --allow-env --allow-run --allow-read=. --allow-write=./build,./dist,./node_modules
 
 // When: `deno task compile`, and as the last step of `deno task dist`.
 //

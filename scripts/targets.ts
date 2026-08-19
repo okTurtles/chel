@@ -106,6 +106,37 @@ export function isCliSubPackage (name: string): boolean {
   return name.startsWith(CLI_SUBPACKAGE_PREFIX)
 }
 
+// Directories holding the runtime files of npm packages that ship a native
+// addon (currently only better-sqlite3, behind the `sqlite` database backend).
+// Such a package cannot be inlined into the JavaScript bundle: its `.node`
+// binary has to remain a real file for the runtime to load, so `deno compile`
+// embeds these directories as data and the bundle keeps importing the package
+// by its bare `npm:` specifier (see scripts/build.ts).
+//
+// Listed at file granularity rather than as the whole package directory so the
+// ~10 MB of C sources better-sqlite3 ships for building from source stay out of
+// every released binary. Only `lib/` (the JavaScript), `prebuilds/` (the
+// per-platform addons) and `package.json` (needed to resolve the package) are
+// used at runtime. Paths are given through the `node_modules/<name>` symlink so
+// that no pinned version number is baked in here.
+//
+// All platforms' prebuilt addons end up in every binary, because these paths
+// feed a single flag set shared by all compile targets (see COMPILE_FLAGS).
+// Narrowing them per target would shave a further ~14 MB off each binary, but
+// only once the binary cache's fingerprint accounts for per-target flags.
+//
+// `deno compile` embeds the mtime of every file it includes, so these paths are
+// also what scripts/binaries.ts pins to a fixed timestamp before compiling;
+// without that, a fresh `npm install` would silently change the released
+// binaries even when nothing about their contents changed.
+export const NATIVE_ADDON_PATHS: readonly string[] = [
+  'node_modules/better-sqlite3/package.json',
+  'node_modules/better-sqlite3/lib',
+  'node_modules/better-sqlite3/prebuilds'
+] as const
+
+const NATIVE_ADDON_INCLUDES = NATIVE_ADDON_PATHS.map((p) => `--include ./${p}`).join(' ')
+
 // The full `deno compile` permission flag set + static include/exclude paths.
 // Kept here so the two call sites (the release tarballs and the npm
 // sub-packages, both of which go through scripts/binaries.ts) cannot diverge.
@@ -117,9 +148,17 @@ export function isCliSubPackage (name: string): boolean {
 // need to load from its cache at runtime, and the cache path isn't known at
 // compile time.
 // TODO: fix upstream in Deno, or drop permissions programmatically at runtime.
+//
+// `--allow-sys` covers `hostname` plus `cpus` and `networkInterfaces`: the
+// SQLite backend's native addon inspects the process report on Linux to tell
+// glibc and musl builds apart before picking a prebuilt binary, and Deno gates
+// that report behind those two extra `sys` scopes. Both are already implied by
+// the unrestricted network access the server needs.
 export const COMPILE_FLAGS =
-  '--allow-env --allow-ffi --allow-sys=hostname --allow-read --allow-write=./ --allow-net ' +
-  `--exclude node_modules --include ./${SERVE_DIR} --include ./${DASHBOARD_DIR}`
+  '--allow-env --allow-ffi --allow-sys=hostname,cpus,networkInterfaces --allow-read ' +
+  '--allow-write=./ --allow-net ' +
+  `--exclude node_modules ${NATIVE_ADDON_INCLUDES} ` +
+  `--include ./${SERVE_DIR} --include ./${DASHBOARD_DIR}`
 
 // The entry-point positional argument to `deno compile`. Kept separate from
 // COMPILE_FLAGS so that flags and positionals can't collide: anything appended

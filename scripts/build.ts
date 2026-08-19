@@ -3,11 +3,19 @@
 import * as esbuild from 'npm:esbuild@0.25.6'
 import * as colors from 'jsr:@std/fmt/colors'
 import { builtinModules } from 'node:module'
+import { dirname } from 'jsr:@std/path/'
 import { VERSION_STAMP_PATH } from './paths.ts'
 
 const { default: { version } } = await import('../package.json', { with: { type: 'json' } })
 
 const nodeBuiltins = new Set(builtinModules.filter((m: string) => !m.startsWith('_')))
+
+// npm packages that ship a native addon, and therefore cannot be inlined into
+// a JavaScript bundle: the `.node` binary has to stay a real file that the
+// runtime loads at startup. They are left as bare `npm:` specifiers in the
+// bundle, so `deno run` resolves them from the npm cache and `deno compile`
+// embeds the package (prebuilt binaries included) into the executable.
+const nativeAddonPackages = ['npm:better-sqlite3']
 
 const options: esbuild.BuildOptions = {
   entryPoints: [
@@ -29,6 +37,14 @@ const options: esbuild.BuildOptions = {
   splitting: false,
   write: false,
   plugins: [
+    {
+      name: 'native-addons',
+      setup (build) {
+        build.onResolve({ filter: /^npm:/, namespace: 'file' }, ({ path }) => {
+          return nativeAddonPackages.includes(path) ? { path, external: true } : null
+        })
+      }
+    },
     {
       name: 'npm',
       setup (build) {
@@ -69,6 +85,9 @@ console.log(colors.green('built:'), options.outdir)
 for (const outfile of result.outputFiles!) {
   const tmpFile = outfile.path + '-tmp'
   try {
+    // esbuild runs with `write: false`, so output directories are never
+    // created; without this the build fails on a tree with no `build/` yet.
+    await Deno.mkdir(dirname(outfile.path), { recursive: true })
     Deno.writeFileSync(tmpFile, outfile.contents)
     try {
       Deno.removeSync(outfile.path)
@@ -76,7 +95,12 @@ for (const outfile of result.outputFiles!) {
       if (e instanceof Error && e.name !== 'NotFound') throw e
     }
     const output = await new Deno.Command(Deno.execPath(), {
-      args: ['bundle', '-o', outfile.path, tmpFile]
+      args: [
+        'bundle',
+        ...nativeAddonPackages.flatMap((pkg) => ['--external', pkg]),
+        '-o', outfile.path,
+        tmpFile
+      ]
     }).output()
     if (!output.success) {
       Deno.stdout.writeSync(output.stdout)
@@ -84,7 +108,11 @@ for (const outfile of result.outputFiles!) {
       throw new Error('Failed to call \'deno bundle\'')
     }
   } finally {
-    Deno.removeSync(tmpFile)
+    // Best-effort: the tmp file may legitimately be gone (e.g. the write above
+    // failed), and in that case the original error must not be masked.
+    try {
+      Deno.removeSync(tmpFile)
+    } catch { /* already gone */ }
   }
 }
 

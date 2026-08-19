@@ -1,4 +1,3 @@
-import 'jsr:@db/sqlite'
 import {
   createCID,
   multicodes,

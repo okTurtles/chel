@@ -1,6 +1,3 @@
-// 'jsr:@db/sqlite' loaded to prevent memory leak checker from failing test
-// (otherwise, it'll complain that the sqlite dynamic library wasn't unloaded)
-import 'jsr:@db/sqlite'
 import { assertThrows } from 'jsr:@std/assert'
 import { cloneDeep, omit } from 'npm:turtledash'
 import RouterBackend from './database-router.ts'

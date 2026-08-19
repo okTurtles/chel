@@ -1,5 +1,6 @@
-import type { Database as SQLiteDB } from 'jsr:@db/sqlite'
-import * as sqlite from 'jsr:@db/sqlite'
+// @deno-types="npm:@types/better-sqlite3"
+import Database from 'npm:better-sqlite3'
+import type { Database as SQLiteDB } from 'npm:@types/better-sqlite3'
 import { Buffer } from 'node:buffer'
 import { mkdir } from 'node:fs/promises'
 import { basename, dirname, join, resolve } from 'node:path'
@@ -13,7 +14,7 @@ export default class SqliteBackend extends DatabaseBackend {
   readStatement: { get: (key: string) => { value?: Buffer | string } | undefined } | null = null
   writeStatement: { run: (key: string, value: Buffer | string) => unknown } | null = null
   deleteStatement: { run: (key: string) => unknown } | null = null
-  iterKeysStatement: { iter: () => Iterable<{key: string}> } | null = null
+  iterKeysStatement: { iterate: () => Iterable<{key: string}> } | null = null
   keyCountStatement: { get: () => { count: number } | undefined } | null = null
 
   constructor (options: SqliteOptions = {}) {
@@ -38,10 +39,12 @@ export default class SqliteBackend extends DatabaseBackend {
     if (this.db) {
       throw new Error(`The ${filename} SQLite database is already open.`)
     }
-    this.db = new sqlite.Database(join(dataFolder, filename))
+    this.db = new Database(join(dataFolder, filename))
     this.run('CREATE TABLE IF NOT EXISTS Data(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)')
     console.info(`Connected to the ${filename} SQLite database.`)
-    // Case to BLOB to avoid https://github.com/denodrivers/sqlite3/issues/158
+    // Cast to BLOB so that values are always read back as raw bytes. Without
+    // it, values stored as TEXT come back as JS strings, which is lossy for
+    // the binary payloads Chelonia stores.
     this.readStatement = this.db.prepare('SELECT CAST(value AS BLOB) value FROM Data WHERE key = ?')
     this.writeStatement = this.db.prepare('REPLACE INTO Data(key, value) VALUES(?, ?)')
     this.deleteStatement = this.db.prepare('DELETE FROM Data WHERE key = ?')
@@ -82,7 +85,7 @@ export default class SqliteBackend extends DatabaseBackend {
   }
 
   async * iterKeys () {
-    for (const row of this.iterKeysStatement!.iter()) {
+    for (const row of this.iterKeysStatement!.iterate()) {
       yield row.key
     }
   }
