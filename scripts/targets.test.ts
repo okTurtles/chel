@@ -2,12 +2,15 @@ import { assertEquals } from 'jsr:@std/assert'
 import {
   TARGETS,
   BINARY_FIELD,
+  COMPILE_FLAGS,
+  NATIVE_ADDON_PATHS,
   subPackageName,
   subPackageDir,
   subPackageManifest,
   isCliSubPackage,
   type Target
 } from './targets.ts'
+import { BUNDLE_PATH, NATIVE_ADDON_PACKAGES } from './paths.ts'
 
 const ROOT_PKG = {
   version: '9.9.9',
@@ -176,6 +179,51 @@ Deno.test('isCliSubPackage', async (t) => {
 
   await t.step('false for empty string', () => {
     assertEquals(isCliSubPackage(''), false)
+  })
+})
+
+Deno.test('native addon packages', async (t) => {
+  await t.step('every declared subpath is embedded into the binaries', () => {
+    // A package left out here still gets imported by the bundle but is absent
+    // from the compiled binary, which only fails at runtime, on the machine of
+    // whoever enabled the backend that needs it.
+    for (const { name, paths } of NATIVE_ADDON_PACKAGES) {
+      for (const subpath of paths) {
+        const flag = `--include ./node_modules/${name}/${subpath}`
+        assertEquals(
+          COMPILE_FLAGS.includes(flag),
+          true,
+          `COMPILE_FLAGS is missing '${flag}'`
+        )
+        assertEquals(NATIVE_ADDON_PATHS.includes(`node_modules/${name}/${subpath}`), true)
+      }
+    }
+  })
+
+  await t.step('the node_modules exclusion comes before the includes', () => {
+    // `deno compile` applies the exclusion to the npm snapshot it would
+    // otherwise embed wholesale, and the later, deeper --include paths add back
+    // only what is listed. Reversing the order drops the addons again.
+    const exclude = COMPILE_FLAGS.indexOf('--exclude node_modules')
+    assertEquals(exclude === -1, false, 'COMPILE_FLAGS must exclude node_modules')
+    for (const path of NATIVE_ADDON_PATHS) {
+      const include = COMPILE_FLAGS.indexOf(`--include ./${path}`)
+      assertEquals(include > exclude, true, `--include ./${path} must follow the exclusion`)
+    }
+  })
+
+  await t.step('the committed bundle still imports each package externally', () => {
+    // The counterpart of the above: the bundler must have kept the bare `npm:`
+    // specifier instead of inlining the package. Checked against the committed
+    // bundle so a lost external marking cannot reach a release unnoticed.
+    const bundle = Deno.readTextFileSync(new URL(`../${BUNDLE_PATH}`, import.meta.url))
+    for (const { name } of NATIVE_ADDON_PACKAGES) {
+      assertEquals(
+        bundle.includes(`"npm:${name}"`) || bundle.includes(`'npm:${name}'`),
+        true,
+        `${BUNDLE_PATH} must import npm:${name} rather than inline it`
+      )
+    }
   })
 })
 

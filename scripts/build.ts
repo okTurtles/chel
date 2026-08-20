@@ -4,18 +4,21 @@ import * as esbuild from 'npm:esbuild@0.25.6'
 import * as colors from 'jsr:@std/fmt/colors'
 import { builtinModules } from 'node:module'
 import { dirname } from 'jsr:@std/path/'
-import { VERSION_STAMP_PATH } from './paths.ts'
+import { NATIVE_ADDON_PACKAGES, VERSION_STAMP_PATH } from './paths.ts'
 
 const { default: { version } } = await import('../package.json', { with: { type: 'json' } })
 
 const nodeBuiltins = new Set(builtinModules.filter((m: string) => !m.startsWith('_')))
 
-// npm packages that ship a native addon, and therefore cannot be inlined into
-// a JavaScript bundle: the `.node` binary has to stay a real file that the
-// runtime loads at startup. They are left as bare `npm:` specifiers in the
-// bundle, so `deno run` resolves them from the npm cache and `deno compile`
+// Specifiers of the packages that ship a native addon, and therefore cannot be
+// inlined into a JavaScript bundle: the `.node` binary has to stay a real file
+// that the runtime loads at startup. They are left as bare `npm:` specifiers in
+// the bundle, so `deno run` resolves them from the npm cache and `deno compile`
 // embeds the package (prebuilt binaries included) into the executable.
-const nativeAddonPackages = ['npm:better-sqlite3']
+//
+// Derived from the shared list so this cannot disagree with the paths the
+// compiler embeds (see NATIVE_ADDON_PACKAGES).
+const nativeAddonSpecifiers = new Set(NATIVE_ADDON_PACKAGES.map(({ name }) => `npm:${name}`))
 
 const options: esbuild.BuildOptions = {
   entryPoints: [
@@ -41,7 +44,7 @@ const options: esbuild.BuildOptions = {
       name: 'native-addons',
       setup (build) {
         build.onResolve({ filter: /^npm:/, namespace: 'file' }, ({ path }) => {
-          return nativeAddonPackages.includes(path) ? { path, external: true } : null
+          return nativeAddonSpecifiers.has(path) ? { path, external: true } : null
         })
       }
     },
@@ -97,7 +100,7 @@ for (const outfile of result.outputFiles!) {
     const output = await new Deno.Command(Deno.execPath(), {
       args: [
         'bundle',
-        ...nativeAddonPackages.flatMap((pkg) => ['--external', pkg]),
+        ...[...nativeAddonSpecifiers].flatMap((pkg) => ['--external', pkg]),
         '-o', outfile.path,
         tmpFile
       ]

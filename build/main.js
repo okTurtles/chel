@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-net --allow-read=. --allow-write=. --allow-sys --allow-env
+#!/usr/bin/env -S deno run --allow-net --allow-read=. --allow-write=. --allow-sys --allow-env --allow-ffi
 import { createRequire as __deno_internal_createRequire } from "node:module";
 var __require = __deno_internal_createRequire(import.meta.url);
 
@@ -48527,8 +48527,12 @@ var init_database_sqlite = __esm({
         this.db = new Database(join32(dataFolder, filename));
         this.run("CREATE TABLE IF NOT EXISTS Data(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)");
         console.info(`Connected to the ${filename} SQLite database.`);
-        this.readStatement = this.db.prepare("SELECT CAST(value AS BLOB) value FROM Data WHERE key = ?");
-        this.writeStatement = this.db.prepare("REPLACE INTO Data(key, value) VALUES(?, ?)");
+        this.readStatement = this.db.prepare(
+          "SELECT CAST(value AS BLOB) value FROM Data WHERE key = ?"
+        );
+        this.writeStatement = this.db.prepare(
+          "REPLACE INTO Data(key, value) VALUES(?, ?)"
+        );
         this.deleteStatement = this.db.prepare("DELETE FROM Data WHERE key = ?");
         this.iterKeysStatement = this.db.prepare("SELECT key FROM Data");
         this.keyCountStatement = this.db.prepare("SELECT COUNT(*) count FROM Data");

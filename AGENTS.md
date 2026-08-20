@@ -27,7 +27,7 @@ After building, run the CLI directly:
 
 ```bash
 # Development (via Deno)
-deno run --allow-net --allow-read=. --allow-write=. --allow-sys --allow-env src/main.ts <command>
+deno run --allow-net --allow-read=. --allow-write=. --allow-sys --allow-env --allow-ffi src/main.ts <command>
 
 # Or after building
 ./build/main.js <command>
@@ -246,8 +246,11 @@ Test fixtures are in `test/assets/` including:
 Deno requires explicit permissions. Scripts include shebangs with required flags:
 
 ```typescript
-#!/usr/bin/env -S deno run --allow-net --allow-read=. --allow-write=. --allow-sys --allow-env
+#!/usr/bin/env -S deno run --allow-net --allow-read=. --allow-write=. --allow-sys --allow-env --allow-ffi
 ```
+
+`--allow-ffi` is what lets the `sqlite` database backend load its native addon;
+without it, selecting that backend fails at startup.
 
 ### 2. Deno Bundle Deprecation
 
@@ -307,7 +310,7 @@ Manifests are JSON with signed body:
 - `yargs` - CLI argument parsing
 - `zod` - Schema validation
 - `@hapi/hapi` - HTTP server framework
-- `@db/sqlite` - SQLite bindings for Deno
+- `better-sqlite3` - SQLite bindings (native addon, prebuilt binaries embedded into releases)
 - `multiformats` - CID / multihash support
 - `esbuild` - Bundling
 

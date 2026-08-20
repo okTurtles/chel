@@ -23,3 +23,23 @@ export const BIN_DIR = `${DIST_DIR}/bin`
 // Freshness records for the cached artifacts. Deliberately outside BIN_DIR so
 // that archiving `BIN_DIR/<target>` cannot sweep them into a release tarball.
 export const STAMP_DIR = `${DIST_DIR}/.stamps`
+
+// npm packages that ship a native addon, and the subpaths of each that a
+// release actually needs. Declared here, in the dependency-free module, because
+// two unrelated build steps consume the same list and must not drift: the
+// bundler keeps these packages external (scripts/build.ts) and the compiler
+// embeds the subpaths below as data (NATIVE_ADDON_PATHS in scripts/targets.ts).
+// Getting only the first half right yields a bundle that imports an addon the
+// released binary does not contain.
+//
+// The subpaths follow the prebuildify layout better-sqlite3 uses: `lib/` is the
+// JavaScript, `prebuilds/` the per-platform `.node` binaries, and
+// `package.json` is what makes the directory resolvable as a package. Anything
+// else the package ships (for better-sqlite3, ~10 MB of C sources for building
+// from source) is deliberately left out.
+export const NATIVE_ADDON_PACKAGES: readonly {
+  name: string
+  paths: readonly string[]
+}[] = [
+  { name: 'better-sqlite3', paths: ['package.json', 'lib', 'prebuilds'] }
+] as const

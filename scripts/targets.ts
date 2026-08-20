@@ -5,7 +5,7 @@
 // targets, permission flags, and --include paths cannot drift between the two.
 
 import { shell } from '~/utils.ts'
-import { BUNDLE_PATH, SERVE_DIR, DASHBOARD_DIR } from './paths.ts'
+import { BUNDLE_PATH, SERVE_DIR, DASHBOARD_DIR, NATIVE_ADDON_PACKAGES } from './paths.ts'
 
 export interface Target {
   // `deno compile --target` value
@@ -113,12 +113,11 @@ export function isCliSubPackage (name: string): boolean {
 // embeds these directories as data and the bundle keeps importing the package
 // by its bare `npm:` specifier (see scripts/build.ts).
 //
-// Listed at file granularity rather than as the whole package directory so the
-// ~10 MB of C sources better-sqlite3 ships for building from source stay out of
-// every released binary. Only `lib/` (the JavaScript), `prebuilds/` (the
-// per-platform addons) and `package.json` (needed to resolve the package) are
-// used at runtime. Paths are given through the `node_modules/<name>` symlink so
-// that no pinned version number is baked in here.
+// Derived from NATIVE_ADDON_PACKAGES so that the bundler's list of external
+// packages and the compiler's list of embedded paths cannot disagree; which
+// subpaths a package contributes, and why the rest is left out, is documented
+// there. Paths are given through the `node_modules/<name>` symlink so that no
+// pinned version number is baked in here.
 //
 // All platforms' prebuilt addons end up in every binary, because these paths
 // feed a single flag set shared by all compile targets (see COMPILE_FLAGS).
@@ -128,12 +127,13 @@ export function isCliSubPackage (name: string): boolean {
 // `deno compile` embeds the mtime of every file it includes, so these paths are
 // also what scripts/binaries.ts pins to a fixed timestamp before compiling;
 // without that, a fresh `npm install` would silently change the released
-// binaries even when nothing about their contents changed.
-export const NATIVE_ADDON_PATHS: readonly string[] = [
-  'node_modules/better-sqlite3/package.json',
-  'node_modules/better-sqlite3/lib',
-  'node_modules/better-sqlite3/prebuilds'
-] as const
+// binaries even when nothing about their contents changed. The same paths are
+// hashed into the binary cache's fingerprint: upgrading the package changes
+// neither the bundle (it keeps the bare `npm:` specifier) nor these paths (they
+// carry no version number), so their contents are the only thing that can tell
+// the cache a rebuild is due.
+export const NATIVE_ADDON_PATHS: readonly string[] = NATIVE_ADDON_PACKAGES
+  .flatMap(({ name, paths }) => paths.map((p) => `node_modules/${name}/${p}`))
 
 const NATIVE_ADDON_INCLUDES = NATIVE_ADDON_PATHS.map((p) => `--include ./${p}`).join(' ')
 
@@ -152,8 +152,8 @@ const NATIVE_ADDON_INCLUDES = NATIVE_ADDON_PATHS.map((p) => `--include ./${p}`).
 // `--allow-sys` covers `hostname` plus `cpus` and `networkInterfaces`: the
 // SQLite backend's native addon inspects the process report on Linux to tell
 // glibc and musl builds apart before picking a prebuilt binary, and Deno gates
-// that report behind those two extra `sys` scopes. Both are already implied by
-// the unrestricted network access the server needs.
+// that report behind those two extra `sys` scopes. Neither exposes anything the
+// unrestricted network access the server already has could not probe.
 export const COMPILE_FLAGS =
   '--allow-env --allow-ffi --allow-sys=hostname,cpus,networkInterfaces --allow-read ' +
   '--allow-write=./ --allow-net ' +

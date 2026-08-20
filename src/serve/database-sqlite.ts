@@ -1,21 +1,30 @@
 // @deno-types="npm:@types/better-sqlite3"
 import Database from 'npm:better-sqlite3'
-import type { Database as SQLiteDB } from 'npm:@types/better-sqlite3'
+import type { Database as SQLiteDB, Statement } from 'npm:@types/better-sqlite3'
 import { Buffer } from 'node:buffer'
 import { mkdir } from 'node:fs/promises'
 import { basename, dirname, join, resolve } from 'node:path'
 import { SqliteOptionsSchema as ConfigSchema, type SqliteOptions } from './backend-schemas.ts'
 import DatabaseBackend from './DatabaseBackend.ts'
 
+// Shapes of the rows the prepared statements below return. Spelled out so the
+// type checker sees the real driver API: this backend is only ever reached
+// through a dynamic import, so a misspelled method (`iter()` for `iterate()`,
+// say) would otherwise only surface once someone selected the sqlite backend at
+// runtime.
+type DataRow = { value?: Buffer | string }
+type KeyRow = { key: string }
+type CountRow = { count: number }
+
 export default class SqliteBackend extends DatabaseBackend {
   dataFolder: string = 'data'
   db: SQLiteDB | null = null
   filename: string = 'chelonia.db'
-  readStatement: { get: (key: string) => { value?: Buffer | string } | undefined } | null = null
-  writeStatement: { run: (key: string, value: Buffer | string) => unknown } | null = null
-  deleteStatement: { run: (key: string) => unknown } | null = null
-  iterKeysStatement: { iterate: () => Iterable<{key: string}> } | null = null
-  keyCountStatement: { get: () => { count: number } | undefined } | null = null
+  readStatement: Statement<[string], DataRow> | null = null
+  writeStatement: Statement<[string, Buffer | string]> | null = null
+  deleteStatement: Statement<[string]> | null = null
+  iterKeysStatement: Statement<[], KeyRow> | null = null
+  keyCountStatement: Statement<[], CountRow> | null = null
 
   constructor (options: SqliteOptions = {}) {
     super()
@@ -45,11 +54,15 @@ export default class SqliteBackend extends DatabaseBackend {
     // Cast to BLOB so that values are always read back as raw bytes. Without
     // it, values stored as TEXT come back as JS strings, which is lossy for
     // the binary payloads Chelonia stores.
-    this.readStatement = this.db.prepare('SELECT CAST(value AS BLOB) value FROM Data WHERE key = ?')
-    this.writeStatement = this.db.prepare('REPLACE INTO Data(key, value) VALUES(?, ?)')
-    this.deleteStatement = this.db.prepare('DELETE FROM Data WHERE key = ?')
-    this.iterKeysStatement = this.db.prepare('SELECT key FROM Data')
-    this.keyCountStatement = this.db.prepare('SELECT COUNT(*) count FROM Data')
+    this.readStatement = this.db.prepare<[string], DataRow>(
+      'SELECT CAST(value AS BLOB) value FROM Data WHERE key = ?'
+    )
+    this.writeStatement = this.db.prepare<[string, Buffer | string]>(
+      'REPLACE INTO Data(key, value) VALUES(?, ?)'
+    )
+    this.deleteStatement = this.db.prepare<[string]>('DELETE FROM Data WHERE key = ?')
+    this.iterKeysStatement = this.db.prepare<[], KeyRow>('SELECT key FROM Data')
+    this.keyCountStatement = this.db.prepare<[], CountRow>('SELECT COUNT(*) count FROM Data')
   }
 
   // Useful in test hooks.
@@ -62,8 +75,8 @@ export default class SqliteBackend extends DatabaseBackend {
   async readData (key: string): Promise<Buffer | string | void> {
     const row = this.readStatement!.get(key)
     // 'row' will be undefined if the key was not found.
-    // Note: sqlite remembers the type of every stored value, therefore we
-    // can return the value as-is.
+    // Note: the CAST in the statement above makes every hit come back as raw
+    // bytes, whatever type it was stored as.
     const value = row?.value
     if (ArrayBuffer.isView(value) && !Buffer.isBuffer(value)) {
       return Buffer.from(value)

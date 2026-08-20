@@ -10,15 +10,17 @@
 // shared location (`dist/bin/<target>/<binary>`) and skips any target whose
 // binary was already built from the exact same inputs. Freshness is decided by
 // content, not timestamps: a fingerprint of every file the binary embeds (the
-// whole `build/` bundle), plus the Deno version and the compile flags, is
-// recorded next to the artifact and compared on the next run.
+// whole `build/` bundle plus the native-addon paths taken straight out of
+// `node_modules`, see NATIVE_ADDON_PATHS), plus the Deno version and the
+// compile flags, is recorded next to the artifact and compared on the next run.
 //
 // Consequences worth knowing:
 //   - `deno task dist` twice in a row does no compilation the second time
 //   - `deno task dist` followed by `npm publish` compiles once in total, and
 //     the published binary is byte-identical to the one in the tarball
-//   - touching anything under `build/`, upgrading Deno, or changing the
-//     compile flags invalidates the cache automatically
+//   - touching anything under `build/`, reinstalling the native addon,
+//     upgrading Deno, or changing the compile flags invalidates the cache
+//     automatically
 //   - `dist/` is gitignored, so the cache is per-checkout and never shipped
 //
 // Set CHEL_FORCE_COMPILE=1 to ignore the cache and recompile everything.
@@ -140,16 +142,50 @@ async function fileDigests (dir: string, prefix = ''): Promise<string[]> {
   return digests
 }
 
+// Same as fileDigests, for an embedded input that may be either a file or a
+// directory: the native-addon paths mix the two (see NATIVE_ADDON_PATHS). The
+// root is used as the digest prefix, so identically named files under two
+// different roots cannot collide and moving a file from one root to another
+// still invalidates. A missing path contributes nothing, so a checkout without
+// the optional native package fingerprints fine.
+async function pathDigests (path: string): Promise<string[]> {
+  let info: Deno.FileInfo
+  try {
+    // stat, not lstat: `deno compile --include` follows symlinks, and these
+    // paths deliberately go through the version-less `node_modules/<name>`
+    // link, so the fingerprint has to follow it too. (normalizePathMtimes must
+    // not, because Deno.utime has no lutime counterpart.)
+    info = await Deno.stat(path)
+  } catch (e) {
+    if (isNotFound(e)) return []
+    throw e
+  }
+  if (info.isDirectory) return await fileDigests(path, path)
+  return [`${path}\t${await sha256(await Deno.readFile(path))}`]
+}
+
 // Identifies the inputs of a `deno compile` run: the bundle contents, the
-// toolchain, and the flags. Two runs sharing a fingerprint produce the same
-// binaries, so a cached artifact carrying it can be reused as-is.
-export async function computeFingerprint (dir: string = BUILD_DIR): Promise<string> {
+// embedded native-addon files, the toolchain, and the flags. Two runs sharing a
+// fingerprint produce the same binaries, so a cached artifact carrying it can
+// be reused as-is.
+//
+// The addon paths have to be hashed separately from `dir`: they are embedded
+// straight out of `node_modules` and are reached through a version-less
+// symlink, so neither the bundle (which keeps the bare `npm:` specifier) nor
+// the compile flags change when the package is upgraded.
+export async function computeFingerprint (
+  dir: string = BUILD_DIR,
+  addonPaths: readonly string[] = NATIVE_ADDON_PATHS
+): Promise<string> {
   // Using NUL because `fileDigests` could contain
   // most other characters
+  const addons = (await Promise.all(addonPaths.map(pathDigests))).flat()
   const payload = [
     `deno:${Deno.version.deno}`,
     `flags:${COMPILE_FLAGS}`,
-    ...(await fileDigests(dir)).sort()
+    ...(await fileDigests(dir)).sort(),
+    // Prefixed so an addon entry can never collide with a `build/` one.
+    ...addons.map((digest) => `addon:${digest}`).sort()
   ].join('\0')
   return await sha256(new TextEncoder().encode(payload))
 }

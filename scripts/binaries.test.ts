@@ -67,31 +67,34 @@ Deno.test('artifact paths', async (t) => {
   })
 })
 
+// The addon paths default to the real `node_modules` entries, which would make
+// these steps depend on what happens to be installed. Every call below passes
+// an explicit list so the fingerprint stays a function of the temp dirs alone.
 Deno.test('computeFingerprint', async (t) => {
   await t.step('is stable across runs for identical contents', async () => {
     await withTempDir(async (dir) => {
       await Deno.writeTextFile(`${dir}/main.js`, 'console.log(1)')
       await Deno.mkdir(`${dir}/serve`)
       await Deno.writeTextFile(`${dir}/serve/worker.js`, 'worker')
-      assertEquals(await computeFingerprint(dir), await computeFingerprint(dir))
+      assertEquals(await computeFingerprint(dir, []), await computeFingerprint(dir, []))
     })
   })
 
   await t.step('ignores mtimes', async () => {
     await withTempDir(async (dir) => {
       await Deno.writeTextFile(`${dir}/main.js`, 'console.log(1)')
-      const before = await computeFingerprint(dir)
+      const before = await computeFingerprint(dir, [])
       await normalizeMtimes(dir, 0)
-      assertEquals(await computeFingerprint(dir), before)
+      assertEquals(await computeFingerprint(dir, []), before)
     })
   })
 
   await t.step('changes when a bundled file changes', async () => {
     await withTempDir(async (dir) => {
       await Deno.writeTextFile(`${dir}/main.js`, 'console.log(1)')
-      const before = await computeFingerprint(dir)
+      const before = await computeFingerprint(dir, [])
       await Deno.writeTextFile(`${dir}/main.js`, 'console.log(2)')
-      assertEquals(await computeFingerprint(dir) === before, false)
+      assertEquals(await computeFingerprint(dir, []) === before, false)
     })
   })
 
@@ -99,9 +102,9 @@ Deno.test('computeFingerprint', async (t) => {
     await withTempDir(async (dir) => {
       await Deno.mkdir(`${dir}/dist-dashboard`)
       await Deno.writeTextFile(`${dir}/dist-dashboard/index.html`, '<html></html>')
-      const before = await computeFingerprint(dir)
+      const before = await computeFingerprint(dir, [])
       await Deno.writeTextFile(`${dir}/dist-dashboard/app.js`, 'app')
-      assertEquals(await computeFingerprint(dir) === before, false)
+      assertEquals(await computeFingerprint(dir, []) === before, false)
     })
   })
 
@@ -109,9 +112,80 @@ Deno.test('computeFingerprint', async (t) => {
     // Renaming a file changes what the binary embeds, so it must invalidate.
     await withTempDir(async (dir) => {
       await Deno.writeTextFile(`${dir}/a.js`, 'same')
-      const before = await computeFingerprint(dir)
+      const before = await computeFingerprint(dir, [])
       await Deno.rename(`${dir}/a.js`, `${dir}/b.js`)
-      assertEquals(await computeFingerprint(dir) === before, false)
+      assertEquals(await computeFingerprint(dir, []) === before, false)
+    })
+  })
+
+  // The native addon is embedded straight out of node_modules through a
+  // version-less symlink, so neither the bundle nor the compile flags change
+  // when the package is upgraded: hashing its files is the only thing that
+  // stops a release from shipping the previous version's `.node` binaries.
+  await t.step('changes when an embedded addon file changes', async () => {
+    await withTempDir(async (dir) => {
+      await withTempDir(async (addon) => {
+        await Deno.writeTextFile(`${dir}/main.js`, 'console.log(1)')
+        await Deno.mkdir(`${addon}/prebuilds`)
+        await Deno.writeTextFile(`${addon}/prebuilds/linux-x64.node`, 'v1')
+        const before = await computeFingerprint(dir, [addon])
+        await Deno.writeTextFile(`${addon}/prebuilds/linux-x64.node`, 'v2')
+        assertEquals(await computeFingerprint(dir, [addon]) === before, false)
+      })
+    })
+  })
+
+  await t.step('accepts a single file as an addon path', async () => {
+    await withTempDir(async (dir) => {
+      await withTempDir(async (addon) => {
+        const file = `${addon}/package.json`
+        await Deno.writeTextFile(file, '{"version":"1.0.0"}')
+        const before = await computeFingerprint(dir, [file])
+        await Deno.writeTextFile(file, '{"version":"1.0.1"}')
+        assertEquals(await computeFingerprint(dir, [file]) === before, false)
+      })
+    })
+  })
+
+  await t.step('ignores addon paths that do not exist', async () => {
+    // A checkout without the optional native package must still fingerprint.
+    await withTempDir(async (dir) => {
+      await Deno.writeTextFile(`${dir}/main.js`, 'console.log(1)')
+      assertEquals(
+        await computeFingerprint(dir, [`${dir}/never-installed`]),
+        await computeFingerprint(dir, [])
+      )
+    })
+  })
+
+  await t.step('separates addon contents from bundle contents', async () => {
+    // Identical bytes reached through an addon path and through the bundle are
+    // embedded at different places, so they must not fingerprint alike.
+    await withTempDir(async (bundleOnly) => {
+      await withTempDir(async (addonOnly) => {
+        await Deno.writeTextFile(`${bundleOnly}/x.js`, 'same')
+        await Deno.writeTextFile(`${addonOnly}/x.js`, 'same')
+        const asBundle = await computeFingerprint(bundleOnly, [])
+        await withTempDir(async (empty) => {
+          const asAddon = await computeFingerprint(empty, [addonOnly])
+          assertEquals(asBundle === asAddon, false)
+        })
+      })
+    })
+  })
+
+  await t.step('distinguishes the addon root a file lives under', async () => {
+    // Digests are prefixed with their root, so moving a file between two addon
+    // roots invalidates even though the set of bytes is unchanged.
+    await withTempDir(async (dir) => {
+      await withTempDir(async (first) => {
+        await withTempDir(async (second) => {
+          await Deno.writeTextFile(`${first}/binding.js`, 'shared')
+          const before = await computeFingerprint(dir, [first, second])
+          await Deno.rename(`${first}/binding.js`, `${second}/binding.js`)
+          assertEquals(await computeFingerprint(dir, [first, second]) === before, false)
+        })
+      })
     })
   })
 })
