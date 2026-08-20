@@ -8,7 +8,9 @@
     "dist": "deno task lint && deno task build && deno task compile",
     "publish": "deno run --allow-run --allow-read --allow-write=./build,./dist,./node_modules,./package.json --allow-env scripts/publish.ts",
     "sync-versions": "deno run --allow-read=. --allow-write=. --allow-run scripts/sync-versions.ts",
-    "test": "deno task lint && deno task check && deno test --unstable-worker-options --allow-read=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-write=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-env --allow-ffi --allow-net --allow-sys --allow-run=node"
+    "smoke": "deno test --allow-read --allow-write=.,./dist,./node_modules --allow-env --allow-ffi --allow-net --allow-sys --allow-run test/compile-smoke.test.ts",
+    "test:symlinks": "deno test --allow-read --allow-write --allow-env=CI,LIGHTWEIGHT_CLIENT,MAX_EVENTS_AFTER,NODE_ENV,UNSAFE_TRUST_ALL_MANIFEST_SIGNING_KEYS scripts/binaries-symlinks.test.ts src/migrate-symlinks.test.ts",
+    "test": "deno task lint && deno task check && deno test --unstable-worker-options --allow-read=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-write=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-env --allow-ffi --allow-net --allow-sys --allow-run=node,git && deno task test:symlinks"
   },
   "imports": {
     "~/": "./src/",
@@ -27,6 +29,10 @@
     "jsr:@std/streams/": "jsr:@std/streams@1.0.10/",
     "jsr:@std/io/": "jsr:@std/io@0.225.2/",
     "npm:better-sqlite3": "npm:better-sqlite3@13.0.3",
+    // TODO: re-pin once DefinitelyTyped publishes typings for better-sqlite3
+    // v10+. 9.6.0 is currently the newest one there is, so `deno check` only
+    // knows the v9-era API of the v13 driver above; see the header comment in
+    // src/serve/database-sqlite.ts.
     "npm:@types/better-sqlite3": "npm:@types/better-sqlite3@9.6.0",
     "npm:@types/node": "npm:@types/node@24.0.13",
     "npm:@vue/component-compiler": "npm:@vue/component-compiler@4.2.4",

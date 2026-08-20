@@ -106,12 +106,12 @@ export function isCliSubPackage (name: string): boolean {
   return name.startsWith(CLI_SUBPACKAGE_PREFIX)
 }
 
-// Directories holding the runtime files of npm packages that ship a native
-// addon (currently only better-sqlite3, behind the `sqlite` database backend).
-// Such a package cannot be inlined into the JavaScript bundle: its `.node`
-// binary has to remain a real file for the runtime to load, so `deno compile`
-// embeds these directories as data and the bundle keeps importing the package
-// by its bare `npm:` specifier (see scripts/build.ts).
+// Files of the npm packages that ship a native addon (currently only
+// better-sqlite3, behind the `sqlite` database backend) that `target`'s binary
+// has to embed. Such a package cannot be inlined into the JavaScript bundle:
+// its `.node` binary has to remain a real file for the runtime to load, so
+// `deno compile` embeds these paths as data and the bundle keeps importing the
+// package by its bare `npm:` specifier (see scripts/build.ts).
 //
 // Derived from NATIVE_ADDON_PACKAGES so that the bundler's list of external
 // packages and the compiler's list of embedded paths cannot disagree; which
@@ -119,30 +119,25 @@ export function isCliSubPackage (name: string): boolean {
 // there. Paths are given through the `node_modules/<name>` symlink so that no
 // pinned version number is baked in here.
 //
-// All platforms' prebuilt addons end up in every binary, because these paths
-// feed a single flag set shared by all compile targets (see COMPILE_FLAGS).
-// Narrowing them per target would shave a further ~14 MB off each binary, but
-// only once the binary cache's fingerprint accounts for per-target flags.
-//
-// `deno compile` embeds the mtime of every file it includes, so these paths are
-// also what scripts/binaries.ts pins to a fixed timestamp before compiling;
-// without that, a fresh `npm install` would silently change the released
-// binaries even when nothing about their contents changed. The same paths are
-// hashed into the binary cache's fingerprint: upgrading the package changes
-// neither the bundle (it keeps the bare `npm:` specifier) nor these paths (they
-// carry no version number), so their contents are the only thing that can tell
-// the cache a rebuild is due.
-export const NATIVE_ADDON_PATHS: readonly string[] = NATIVE_ADDON_PACKAGES
-  .flatMap(({ name, paths }) => paths.map((p) => `node_modules/${name}/${p}`))
+// Per target, not shared: a binary can only load the addon compiled for the
+// platform it runs on, so it embeds exactly one `.node` file instead of all
+// eight (14.8 MB per binary, ~7.5 MB per compressed tarball).
+export function nativeAddonPaths (target: Target): readonly string[] {
+  return NATIVE_ADDON_PACKAGES.flatMap(({ name, sharedPaths, prebuild }) => [
+    ...sharedPaths.map((p) => `node_modules/${name}/${p}`),
+    `node_modules/${name}/${prebuild(target.os, target.cpu)}`
+  ])
+}
 
-const NATIVE_ADDON_INCLUDES = NATIVE_ADDON_PATHS.map((p) => `--include ./${p}`).join(' ')
+// The union of nativeAddonPaths over every target, de-duplicated: what the
+// mtime pinning in scripts/binaries.ts must cover (so that compiling one target
+// cannot change the bytes another target embeds) and what the tests assert
+// against `node_modules`.
+export const ALL_NATIVE_ADDON_PATHS: readonly string[] =
+  [...new Set(TARGETS.flatMap(nativeAddonPaths))]
 
-// The full `deno compile` permission flag set + static include/exclude paths.
-// Kept here so the two call sites (the release tarballs and the npm
-// sub-packages, both of which go through scripts/binaries.ts) cannot diverge.
-//
-// Exported because the binary cache folds it into its fingerprint: changing a
-// flag changes the resulting binaries, so it must invalidate cached ones.
+// The `deno compile` permission flags plus the target-independent
+// include/exclude paths. Completed per target by compileFlags below.
 //
 // `--allow-read` (unrestricted) instead of `--allow-read=.` because Deno may
 // need to load from its cache at runtime, and the cache path isn't known at
@@ -154,15 +149,51 @@ const NATIVE_ADDON_INCLUDES = NATIVE_ADDON_PATHS.map((p) => `--include ./${p}`).
 // glibc and musl builds apart before picking a prebuilt binary, and Deno gates
 // that report behind those two extra `sys` scopes. Neither exposes anything the
 // unrestricted network access the server already has could not probe.
-export const COMPILE_FLAGS =
+//
+// TODO: narrow this back to `--allow-sys=hostname`. The probe answers a
+// question the release already decided at compile time (only the glibc variant
+// is embedded, see NATIVE_ADDON_PACKAGES), yet every target pays for it,
+// including macOS and Windows and every command that never opens a database.
+// better-sqlite3 ships per-platform entrypoints that skip the probe entirely
+// (`npm:better-sqlite3/<platform>-<arch>`, i.e. lib/linux-x64.js and friends,
+// which bind `require('../prebuilds/linux-x64.node')` directly); importing one
+// loads no addon by itself, so the bundle can import all of them and choose at
+// runtime. That change also requires scripts/build.ts to keep the subpath
+// specifiers external, and must be verified with `CHEL_SMOKE_COMPILE=1 deno
+// task smoke`, since only a real compiled binary proves the addon still
+// resolves. Until then scripts/targets.test.ts pins these scopes, so they
+// cannot widen further without a deliberate edit.
+const BASE_COMPILE_FLAGS =
   '--allow-env --allow-ffi --allow-sys=hostname,cpus,networkInterfaces --allow-read ' +
   '--allow-write=./ --allow-net ' +
-  `--exclude node_modules ${NATIVE_ADDON_INCLUDES} ` +
+  '--exclude node_modules ' +
   `--include ./${SERVE_DIR} --include ./${DASHBOARD_DIR}`
 
-// The entry-point positional argument to `deno compile`. Kept separate from
-// COMPILE_FLAGS so that flags and positionals can't collide: anything appended
-// to COMPILE_FLAGS stays a flag, and the entry point stays last on the command
+// The full flag set for one target. Kept here so the two call sites (the
+// release tarballs and the npm sub-packages, both of which go through
+// scripts/binaries.ts) cannot diverge, and so the binary cache can fold the
+// exact flags a binary was built with into its per-target fingerprint.
+//
+// `--exclude node_modules` has to precede the `--include` paths: `deno compile`
+// applies the exclusion to the npm snapshot it would otherwise embed wholesale,
+// and the later, deeper includes add back only what is listed.
+//
+// `deno compile` embeds the mtime of every file it includes, so the addon paths
+// are also what scripts/binaries.ts pins to a fixed timestamp before compiling;
+// without that, a fresh `npm install` would silently change the released
+// binaries even when nothing about their contents changed. The same paths are
+// hashed into the binary cache's fingerprint: upgrading the package changes
+// neither the bundle (it keeps the bare `npm:` specifier) nor these paths (they
+// carry no version number), so their contents are the only thing that can tell
+// the cache a rebuild is due.
+export function compileFlags (target: Target): string {
+  const includes = nativeAddonPaths(target).map((p) => `--include ./${p}`).join(' ')
+  return `${BASE_COMPILE_FLAGS} ${includes}`
+}
+
+// The entry-point positional argument to `deno compile`. Kept separate from the
+// flags so that flags and positionals can't collide: anything appended to
+// compileFlags() stays a flag, and the entry point stays last on the command
 // line (appending after it would make `deno compile` treat it as a second
 // entry point or silently ignore it).
 const ENTRY_POINT = `./${BUNDLE_PATH}`
@@ -178,7 +209,7 @@ const ENTRY_POINT = `./${BUNDLE_PATH}`
 // executable bit.
 export async function compileBinary (outputPath: string, target: Target): Promise<void> {
   await shell(
-    `deno compile -o ${outputPath} --target ${target.denoTarget} ${COMPILE_FLAGS} ${ENTRY_POINT}`,
+    `deno compile -o ${outputPath} --target ${target.denoTarget} ${compileFlags(target)} ${ENTRY_POINT}`,
     { printOutput: true }
   )
   if (target.os !== 'win32') {

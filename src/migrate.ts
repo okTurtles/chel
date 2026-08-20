@@ -2,7 +2,9 @@
 
 import * as colors from 'jsr:@std/fmt/colors'
 import type { Buffer } from 'node:buffer'
+import { realpathSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
+import { resolve } from 'node:path'
 import process from 'node:process'
 import sbp from 'npm:@sbp/sbp'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
@@ -15,6 +17,45 @@ import nconf from 'npm:nconf'
 import { parse, type TomlTable } from 'npm:smol-toml'
 
 type Params = { from: string; fromConfig?: string; to: string; toConfig?: string }
+
+// Mirrors SqliteBackend's own defaults (dataFolder 'data', filename
+// 'chelonia.db'), so an omitted filepath compares the same way the backend
+// would resolve it.
+const SQLITE_DEFAULT_FILEPATH = 'data/chelonia.db'
+
+// Canonicalizes a filepath for same-file comparison. resolve() alone is
+// lexical, which is not enough on two counts: on case-insensitive
+// filesystems (the macOS and Windows defaults) two spellings can name one
+// file, and a symlink can name the source file from somewhere else.
+// realpathSync.native answers both, returning the path the filesystem itself
+// recognizes (including the on-disk case). A path that does not exist yet has
+// no real path to ask for; it cannot be the already-opened source file in
+// that case, so the lexical form stands in.
+function canonicalFilepath (filepath: string): string {
+  const resolved = resolve(filepath)
+  try {
+    return realpathSync.native(resolved)
+  } catch {
+    return resolved
+  }
+}
+
+// True when a migration would read from and write to one and the same SQLite
+// file. Nothing else rejects that combination, and it cannot work: the source
+// is walked with a cursor that holds a read transaction open for the whole
+// migration, so every write to the target blocks until the busy timeout
+// expires. Split out from migrate() so it can be tested without a database.
+export function isSameSqliteFile (
+  fromBackend: unknown,
+  toBackend: unknown,
+  fromOptions: unknown,
+  toOptions: unknown
+): boolean {
+  if (fromBackend !== 'sqlite' || toBackend !== 'sqlite') return false
+  const filepathOf = (options: unknown) =>
+    canonicalFilepath((options as { filepath?: string })?.filepath || SQLITE_DEFAULT_FILEPATH)
+  return filepathOf(fromOptions) === filepathOf(toOptions)
+}
 
 export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> {
   const { to } = args
@@ -52,6 +93,22 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
       toConfigOpts = ((toConfig?.database as TomlTable)?.backendOptions as TomlTable)?.[to] || {}
     } else {
       toConfigOpts = nconf.get(`database:backendOptions:${to}`) || {}
+    }
+
+    const fromBackend = nconf.get('database:backend')
+    if (
+      isSameSqliteFile(
+        fromBackend,
+        to,
+        nconf.get(`database:backendOptions:${fromBackend}`),
+        toConfigOpts
+      )
+    ) {
+      exit(
+        'Source and target are the same SQLite database file. Migrating a ' +
+        'database onto itself would deadlock against its own read cursor; pass ' +
+        'a different filepath with --to-config.'
+      )
     }
 
     const Ctor = (await import(`./serve/database-${to}.ts`)).default

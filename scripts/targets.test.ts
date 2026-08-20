@@ -1,9 +1,10 @@
-import { assertEquals } from 'jsr:@std/assert'
+import { assertEquals, assertStringIncludes } from 'jsr:@std/assert'
 import {
   TARGETS,
   BINARY_FIELD,
-  COMPILE_FLAGS,
-  NATIVE_ADDON_PATHS,
+  ALL_NATIVE_ADDON_PATHS,
+  compileFlags,
+  nativeAddonPaths,
   subPackageName,
   subPackageDir,
   subPackageManifest,
@@ -183,32 +184,115 @@ Deno.test('isCliSubPackage', async (t) => {
 })
 
 Deno.test('native addon packages', async (t) => {
-  await t.step('every declared subpath is embedded into the binaries', () => {
-    // A package left out here still gets imported by the bundle but is absent
+  await t.step('every target embeds the shared subpaths and its own prebuild', () => {
+    // A path left out here still gets imported by the bundle but is absent
     // from the compiled binary, which only fails at runtime, on the machine of
     // whoever enabled the backend that needs it.
-    for (const { name, paths } of NATIVE_ADDON_PACKAGES) {
-      for (const subpath of paths) {
-        const flag = `--include ./node_modules/${name}/${subpath}`
-        assertEquals(
-          COMPILE_FLAGS.includes(flag),
-          true,
-          `COMPILE_FLAGS is missing '${flag}'`
-        )
-        assertEquals(NATIVE_ADDON_PATHS.includes(`node_modules/${name}/${subpath}`), true)
+    for (const target of TARGETS) {
+      const flags = compileFlags(target)
+      for (const { name, sharedPaths, prebuild } of NATIVE_ADDON_PACKAGES) {
+        for (const subpath of [...sharedPaths, prebuild(target.os, target.cpu)]) {
+          const flag = `--include ./node_modules/${name}/${subpath}`
+          assertEquals(
+            flags.includes(flag),
+            true,
+            `${target.denoTarget} flags are missing '${flag}'`
+          )
+          assertEquals(nativeAddonPaths(target).includes(`node_modules/${name}/${subpath}`), true)
+        }
       }
     }
+  })
+
+  await t.step('no target embeds another platform\'s prebuilt addon', () => {
+    // The point of compiling per target: a binary can only ever load the addon
+    // built for the platform it runs on, so shipping the other seven wastes
+    // ~14 MB per binary.
+    for (const target of TARGETS) {
+      const flags = compileFlags(target)
+      for (const other of TARGETS) {
+        if (other.denoTarget === target.denoTarget) continue
+        for (const { prebuild } of NATIVE_ADDON_PACKAGES) {
+          const foreign = prebuild(other.os, other.cpu)
+          if (foreign === prebuild(target.os, target.cpu)) continue
+          assertEquals(
+            flags.includes(foreign),
+            false,
+            `${target.denoTarget} must not embed ${foreign}`
+          )
+        }
+      }
+    }
+  })
+
+  await t.step('embeds exactly one prebuild, never the directory', () => {
+    // `--include ./node_modules/<name>/prebuilds` would pull the whole
+    // directory back in, silently undoing the narrowing above.
+    for (const target of TARGETS) {
+      const includes = nativeAddonPaths(target).filter((p) => p.includes('/prebuilds'))
+      assertEquals(includes.length, NATIVE_ADDON_PACKAGES.length)
+      for (const path of includes) {
+        assertEquals(path.endsWith('.node'), true, `${path} must be a single addon file`)
+      }
+    }
+  })
+
+  await t.step('ALL_NATIVE_ADDON_PATHS is the de-duplicated union', () => {
+    // What the mtime pinning in scripts/binaries.ts walks: missing an entry
+    // would let a fresh `npm install` change the released bytes.
+    const union = [...new Set(TARGETS.flatMap((t) => nativeAddonPaths(t)))]
+    assertEquals([...ALL_NATIVE_ADDON_PATHS].sort(), union.sort())
+    assertEquals(new Set(ALL_NATIVE_ADDON_PATHS).size, ALL_NATIVE_ADDON_PATHS.length)
   })
 
   await t.step('the node_modules exclusion comes before the includes', () => {
     // `deno compile` applies the exclusion to the npm snapshot it would
     // otherwise embed wholesale, and the later, deeper --include paths add back
     // only what is listed. Reversing the order drops the addons again.
-    const exclude = COMPILE_FLAGS.indexOf('--exclude node_modules')
-    assertEquals(exclude === -1, false, 'COMPILE_FLAGS must exclude node_modules')
-    for (const path of NATIVE_ADDON_PATHS) {
-      const include = COMPILE_FLAGS.indexOf(`--include ./${path}`)
-      assertEquals(include > exclude, true, `--include ./${path} must follow the exclusion`)
+    for (const target of TARGETS) {
+      const flags = compileFlags(target)
+      const exclude = flags.indexOf('--exclude node_modules')
+      assertEquals(exclude === -1, false, `${target.denoTarget} flags must exclude node_modules`)
+      for (const path of nativeAddonPaths(target)) {
+        const include = flags.indexOf(`--include ./${path}`)
+        assertEquals(include > exclude, true, `--include ./${path} must follow the exclusion`)
+      }
+    }
+  })
+
+  await t.step('every embedded path exists in node_modules', () => {
+    // Upstream drift sentinel. The prebuild filenames follow better-sqlite3's
+    // `${process.platform}-${process.arch}.node` convention; if a release ever
+    // renames them, the mapping goes stale and the binary loses its addon with
+    // no build-time error. Catch that here instead of at a user's runtime.
+    //
+    // Detection is per package, not global: with a single shared flag, one
+    // uninstalled package would silently disable the check for the installed
+    // ones too, and the list is explicitly designed to grow.
+    const exists = (path: string): boolean => {
+      try {
+        Deno.statSync(path)
+        return true
+      } catch {
+        return false
+      }
+    }
+    const present = NATIVE_ADDON_PACKAGES.filter(({ name }) => exists(`node_modules/${name}`))
+    // Skipped entirely on a checkout that has not installed anything; but once
+    // node_modules exists, at least one package must have been checked, or a
+    // wholesale rename would turn this sentinel into a silent no-op.
+    if (!exists('node_modules')) return
+    assertEquals(
+      present.length > 0,
+      true,
+      'node_modules exists but no package in NATIVE_ADDON_PACKAGES was found there'
+    )
+    for (const { name } of present) {
+      const paths = ALL_NATIVE_ADDON_PATHS.filter((p) => p.startsWith(`node_modules/${name}/`))
+      assertEquals(paths.length > 0, true, `no embedded paths derived for ${name}`)
+      for (const path of paths) {
+        assertEquals(exists(path), true, `${path} is missing; the upstream layout may have changed`)
+      }
     }
   })
 
@@ -223,6 +307,18 @@ Deno.test('native addon packages', async (t) => {
         true,
         `${BUNDLE_PATH} must import npm:${name} rather than inline it`
       )
+    }
+  })
+
+  await t.step('the baked-in sys permissions stay as narrow as they are', () => {
+    // Permissions compiled into a published binary are hard to walk back, so
+    // any widening has to be a deliberate edit here rather than a side effect
+    // of a dependency's runtime probe. `cpus` and `networkInterfaces` are
+    // currently required by better-sqlite3's glibc-vs-musl detection, which
+    // reads process.report; see the TODO on BASE_COMPILE_FLAGS for how to drop
+    // them again.
+    for (const target of TARGETS) {
+      assertStringIncludes(compileFlags(target), '--allow-sys=hostname,cpus,networkInterfaces')
     }
   })
 })

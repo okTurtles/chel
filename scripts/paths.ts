@@ -28,18 +28,36 @@ export const STAMP_DIR = `${DIST_DIR}/.stamps`
 // release actually needs. Declared here, in the dependency-free module, because
 // two unrelated build steps consume the same list and must not drift: the
 // bundler keeps these packages external (scripts/build.ts) and the compiler
-// embeds the subpaths below as data (NATIVE_ADDON_PATHS in scripts/targets.ts).
+// embeds the subpaths below as data (nativeAddonPaths in scripts/targets.ts).
 // Getting only the first half right yields a bundle that imports an addon the
 // released binary does not contain.
 //
 // The subpaths follow the prebuildify layout better-sqlite3 uses: `lib/` is the
-// JavaScript, `prebuilds/` the per-platform `.node` binaries, and
-// `package.json` is what makes the directory resolvable as a package. Anything
+// JavaScript, `package.json` is what makes the directory resolvable as a
+// package, and `prebuilds/` holds one `.node` binary per platform. Anything
 // else the package ships (for better-sqlite3, ~10 MB of C sources for building
 // from source) is deliberately left out.
+//
+// `prebuilds/` is deliberately NOT embedded wholesale: a binary can only ever
+// load the addon built for the platform it runs on, so each compile target gets
+// exactly one `.node` file (14.8 MB saved per binary). `prebuild(os, cpu)` must
+// mirror the convention better-sqlite3 resolves at runtime,
+// `prebuilds/${process.platform}-${process.arch}.node` (see its
+// `lib/binding.js`); `Target.os`/`Target.cpu` are precisely those two values.
+//
+// Not covered by the mapping: better-sqlite3 also ships `linuxmusl-*.node`
+// variants, selected when the process report exposes no glibc version. Deno
+// does expose it, and `deno compile` has no musl target, so no binary we ship
+// can select them. If that ever changes, adding the variant back must stay a
+// one-line change here.
 export const NATIVE_ADDON_PACKAGES: readonly {
   name: string
-  paths: readonly string[]
+  sharedPaths: readonly string[]
+  prebuild: (os: string, cpu: string) => string
 }[] = [
-  { name: 'better-sqlite3', paths: ['package.json', 'lib', 'prebuilds'] }
+  {
+    name: 'better-sqlite3',
+    sharedPaths: ['package.json', 'lib'],
+    prebuild: (os, cpu) => `prebuilds/${os}-${cpu}.node`
+  }
 ] as const

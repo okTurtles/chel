@@ -1,15 +1,21 @@
-import { assertEquals, assertStringIncludes } from 'jsr:@std/assert'
+import { assertEquals, assertRejects, assertStringIncludes } from 'jsr:@std/assert'
 import {
+  assertNativeAddonsPresent,
   binaryPath,
   computeFingerprint,
   ensureArtifact,
   isFresh,
   normalizeMtimes,
   stampPath,
+  targetFingerprint,
   writeStamp
 } from './binaries.ts'
 import { BIN_DIR, STAMP_DIR } from './paths.ts'
-import type { Target } from './targets.ts'
+import { TARGETS, nativeAddonPaths, type Target } from './targets.ts'
+
+// Stand-in for a real `deno compile` flag set. The steps below only care that
+// the flags participate in the key, not what they say.
+const FLAGS = '--fake-compile-flags'
 
 // Ensure the temp dir exists on a fresh checkout; makeTempDir with dir does
 // not create intermediate directories. recursive: true makes this a no-op when
@@ -76,25 +82,28 @@ Deno.test('computeFingerprint', async (t) => {
       await Deno.writeTextFile(`${dir}/main.js`, 'console.log(1)')
       await Deno.mkdir(`${dir}/serve`)
       await Deno.writeTextFile(`${dir}/serve/worker.js`, 'worker')
-      assertEquals(await computeFingerprint(dir, []), await computeFingerprint(dir, []))
+      assertEquals(
+        await computeFingerprint(dir, [], FLAGS),
+        await computeFingerprint(dir, [], FLAGS)
+      )
     })
   })
 
   await t.step('ignores mtimes', async () => {
     await withTempDir(async (dir) => {
       await Deno.writeTextFile(`${dir}/main.js`, 'console.log(1)')
-      const before = await computeFingerprint(dir, [])
+      const before = await computeFingerprint(dir, [], FLAGS)
       await normalizeMtimes(dir, 0)
-      assertEquals(await computeFingerprint(dir, []), before)
+      assertEquals(await computeFingerprint(dir, [], FLAGS), before)
     })
   })
 
   await t.step('changes when a bundled file changes', async () => {
     await withTempDir(async (dir) => {
       await Deno.writeTextFile(`${dir}/main.js`, 'console.log(1)')
-      const before = await computeFingerprint(dir, [])
+      const before = await computeFingerprint(dir, [], FLAGS)
       await Deno.writeTextFile(`${dir}/main.js`, 'console.log(2)')
-      assertEquals(await computeFingerprint(dir, []) === before, false)
+      assertEquals(await computeFingerprint(dir, [], FLAGS) === before, false)
     })
   })
 
@@ -102,9 +111,9 @@ Deno.test('computeFingerprint', async (t) => {
     await withTempDir(async (dir) => {
       await Deno.mkdir(`${dir}/dist-dashboard`)
       await Deno.writeTextFile(`${dir}/dist-dashboard/index.html`, '<html></html>')
-      const before = await computeFingerprint(dir, [])
+      const before = await computeFingerprint(dir, [], FLAGS)
       await Deno.writeTextFile(`${dir}/dist-dashboard/app.js`, 'app')
-      assertEquals(await computeFingerprint(dir, []) === before, false)
+      assertEquals(await computeFingerprint(dir, [], FLAGS) === before, false)
     })
   })
 
@@ -112,9 +121,9 @@ Deno.test('computeFingerprint', async (t) => {
     // Renaming a file changes what the binary embeds, so it must invalidate.
     await withTempDir(async (dir) => {
       await Deno.writeTextFile(`${dir}/a.js`, 'same')
-      const before = await computeFingerprint(dir, [])
+      const before = await computeFingerprint(dir, [], FLAGS)
       await Deno.rename(`${dir}/a.js`, `${dir}/b.js`)
-      assertEquals(await computeFingerprint(dir, []) === before, false)
+      assertEquals(await computeFingerprint(dir, [], FLAGS) === before, false)
     })
   })
 
@@ -128,9 +137,9 @@ Deno.test('computeFingerprint', async (t) => {
         await Deno.writeTextFile(`${dir}/main.js`, 'console.log(1)')
         await Deno.mkdir(`${addon}/prebuilds`)
         await Deno.writeTextFile(`${addon}/prebuilds/linux-x64.node`, 'v1')
-        const before = await computeFingerprint(dir, [addon])
+        const before = await computeFingerprint(dir, [addon], FLAGS)
         await Deno.writeTextFile(`${addon}/prebuilds/linux-x64.node`, 'v2')
-        assertEquals(await computeFingerprint(dir, [addon]) === before, false)
+        assertEquals(await computeFingerprint(dir, [addon], FLAGS) === before, false)
       })
     })
   })
@@ -140,23 +149,28 @@ Deno.test('computeFingerprint', async (t) => {
       await withTempDir(async (addon) => {
         const file = `${addon}/package.json`
         await Deno.writeTextFile(file, '{"version":"1.0.0"}')
-        const before = await computeFingerprint(dir, [file])
+        const before = await computeFingerprint(dir, [file], FLAGS)
         await Deno.writeTextFile(file, '{"version":"1.0.1"}')
-        assertEquals(await computeFingerprint(dir, [file]) === before, false)
+        assertEquals(await computeFingerprint(dir, [file], FLAGS) === before, false)
       })
     })
   })
 
   await t.step('ignores addon paths that do not exist', async () => {
-    // A checkout without the optional native package must still fingerprint.
+    // Fingerprinting stays usable over arbitrary trees; a genuinely missing
+    // addon is caught by assertNativeAddonsPresent, not here.
     await withTempDir(async (dir) => {
       await Deno.writeTextFile(`${dir}/main.js`, 'console.log(1)')
       assertEquals(
-        await computeFingerprint(dir, [`${dir}/never-installed`]),
-        await computeFingerprint(dir, [])
+        await computeFingerprint(dir, [`${dir}/never-installed`], FLAGS),
+        await computeFingerprint(dir, [], FLAGS)
       )
     })
   })
+
+  // Symlink handling is covered in binaries-symlinks.test.ts: creating a
+  // symlink needs unscoped --allow-write, which this suite deliberately does
+  // not have.
 
   await t.step('separates addon contents from bundle contents', async () => {
     // Identical bytes reached through an addon path and through the bundle are
@@ -165,9 +179,9 @@ Deno.test('computeFingerprint', async (t) => {
       await withTempDir(async (addonOnly) => {
         await Deno.writeTextFile(`${bundleOnly}/x.js`, 'same')
         await Deno.writeTextFile(`${addonOnly}/x.js`, 'same')
-        const asBundle = await computeFingerprint(bundleOnly, [])
+        const asBundle = await computeFingerprint(bundleOnly, [], FLAGS)
         await withTempDir(async (empty) => {
-          const asAddon = await computeFingerprint(empty, [addonOnly])
+          const asAddon = await computeFingerprint(empty, [addonOnly], FLAGS)
           assertEquals(asBundle === asAddon, false)
         })
       })
@@ -181,12 +195,82 @@ Deno.test('computeFingerprint', async (t) => {
       await withTempDir(async (first) => {
         await withTempDir(async (second) => {
           await Deno.writeTextFile(`${first}/binding.js`, 'shared')
-          const before = await computeFingerprint(dir, [first, second])
+          const before = await computeFingerprint(dir, [first, second], FLAGS)
           await Deno.rename(`${first}/binding.js`, `${second}/binding.js`)
-          assertEquals(await computeFingerprint(dir, [first, second]) === before, false)
+          assertEquals(await computeFingerprint(dir, [first, second], FLAGS) === before, false)
         })
       })
     })
+  })
+
+  await t.step('changes when the compile flags change', async () => {
+    // Each target now compiles with its own flag set, so the flags are what
+    // keeps two targets built from the same bundle from sharing a cache entry.
+    await withTempDir(async (dir) => {
+      await Deno.writeTextFile(`${dir}/main.js`, 'console.log(1)')
+      assertEquals(
+        await computeFingerprint(dir, [], '--include ./a.node') ===
+          await computeFingerprint(dir, [], '--include ./b.node'),
+        false
+      )
+    })
+  })
+
+  await t.step('isolates one target\'s addon from another target\'s key', async () => {
+    // The cross-target isolation property that makes per-target embedding
+    // worthwhile: mutating a prebuilt addon no target of ours embeds must not
+    // invalidate anything, while mutating its own must.
+    await withTempDir(async (dir) => {
+      await withTempDir(async (prebuilds) => {
+        await Deno.writeTextFile(`${dir}/main.js`, 'console.log(1)')
+        const mine = `${prebuilds}/linux-x64.node`
+        const theirs = `${prebuilds}/win32-x64.node`
+        await Deno.writeTextFile(mine, 'v1')
+        await Deno.writeTextFile(theirs, 'v1')
+        const before = await computeFingerprint(dir, [mine], FLAGS)
+        await Deno.writeTextFile(theirs, 'v2')
+        assertEquals(await computeFingerprint(dir, [mine], FLAGS), before)
+        await Deno.writeTextFile(mine, 'v2')
+        assertEquals(await computeFingerprint(dir, [mine], FLAGS) === before, false)
+      })
+    })
+  })
+})
+
+Deno.test('targetFingerprint', async (t) => {
+  await t.step('is stable across calls', async () => {
+    // Memoization must not be observable: a second call has to answer exactly
+    // what the first one did.
+    for (const target of TARGETS) {
+      assertEquals(await targetFingerprint(target), await targetFingerprint(target))
+    }
+  })
+
+  await t.step('differs between every pair of targets', async () => {
+    // Binaries are no longer interchangeable (each embeds only its own
+    // platform's addon), so neither are their cache keys. A single shared key
+    // would let one target's binary be reused for another.
+    const fingerprints = await Promise.all(TARGETS.map(targetFingerprint))
+    assertEquals(new Set(fingerprints).size, TARGETS.length)
+  })
+
+  await t.step('hashes only the addon files its own target embeds', async () => {
+    // The inputs behind the isolation property above: no target's path list
+    // may contain another target's prebuilt addon.
+    for (const target of TARGETS) {
+      const paths = nativeAddonPaths(target)
+      for (const other of TARGETS) {
+        if (other.denoTarget === target.denoTarget) continue
+        for (const path of nativeAddonPaths(other)) {
+          if (!path.includes('/prebuilds/')) continue
+          assertEquals(
+            paths.includes(path),
+            false,
+            `${target.denoTarget} must not fingerprint ${path}`
+          )
+        }
+      }
+    }
   })
 })
 
@@ -354,5 +438,30 @@ Deno.test('ensureArtifact', async (t) => {
       assertEquals(await isFresh(stampPath('tar', target), 'fp1', artifact), false)
       assertEquals(await isFresh(stampPath('tar', target), 'fp2', artifact), false)
     }))
+  })
+})
+
+Deno.test('assertNativeAddonsPresent', async (t) => {
+  await t.step('accepts a fully installed set of paths', async () => {
+    await withTempDir(async (dir) => {
+      await Deno.writeTextFile(`${dir}/package.json`, '{}')
+      await Deno.mkdir(`${dir}/lib`)
+      await assertNativeAddonsPresent([`${dir}/package.json`, `${dir}/lib`])
+    })
+  })
+
+  await t.step('names the missing path and how to get it', async () => {
+    // `deno compile` does refuse to include a path that is not there, but its
+    // message ("No such file or directory") gives no hint that the native
+    // package simply was never installed.
+    await withTempDir(async (dir) => {
+      await Deno.writeTextFile(`${dir}/package.json`, '{}')
+      const error = await assertRejects(
+        () => assertNativeAddonsPresent([`${dir}/package.json`, `${dir}/prebuilds/x.node`]),
+        Error
+      )
+      assertStringIncludes(error.message, `${dir}/prebuilds/x.node`)
+      assertStringIncludes(error.message, 'deno task build')
+    })
   })
 })

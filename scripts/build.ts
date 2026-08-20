@@ -66,6 +66,21 @@ const options: esbuild.BuildOptions = {
       }
     },
     {
+      name: 'omit-tests',
+      setup (build) {
+        // The database layer loads its backend with a computed specifier
+        // (`./serve/database-${name}.ts`), which esbuild expands into every
+        // file the pattern can match - the backends' own test suites included.
+        // No runtime path can reach them (backend names are validated against
+        // a fixed list), but bundling them ships the assertion library and the
+        // test bodies inside every released binary, so they are emptied out.
+        build.onLoad({ filter: /\.test\.ts$/, namespace: 'file' }, () => ({
+          contents: '',
+          loader: 'js'
+        }))
+      }
+    },
+    {
       name: 'skip',
       setup (build) {
         build.onResolve({ filter: /^[\w\d]+:/, namespace: 'file' }, () => ({

@@ -484,6 +484,13 @@ When you install `@chelonia/cli`, npm automatically selects the correct
 sub-package for your platform via `optionalDependencies`. Windows arm64 is
 currently **not** supported.
 
+The binaries are linked against glibc, so Linux distributions built on musl
+libc (Alpine, for example) are **not** covered: the SQLite backend's native
+addon each binary carries is the glibc build for its platform. Running `chel`
+from source with Deno works there instead. Only the SQLite backend is affected,
+and selecting it on such a system fails with a message saying so rather than
+with a missing-module error naming a build path that was never there.
+
 The `chel` command itself is always provided by the main `@chelonia/cli`
 package, which ships a small launcher that spawns the native binary from the
 sub-package npm selected. The sub-packages intentionally declare no command of
@@ -590,13 +597,25 @@ gitignored `dist/` directory. `deno task dist` remains usable on its own, at
 any time, to produce the tarballs without publishing anything.
 
 Reuse is decided by content, not timestamps: each artifact is stamped with a
-fingerprint of everything the binary embeds (all of `build/`), plus the Deno
-version and the compile flags. Any change to the bundle, a Deno upgrade, or a
-change to the compile flags therefore recompiles automatically, while
-re-running `deno task dist` with nothing changed does no work at all. An
-interrupted or failed run never leaves a half-built artifact looking current.
-To rebuild everything from scratch anyway, set `CHEL_FORCE_COMPILE=1` or delete
-`dist/`.
+fingerprint of everything the binary embeds (all of `build/`, plus the one
+prebuilt SQLite addon that platform needs), the Deno version, and the compile
+flags. Any change to the bundle, a Deno upgrade, or a change to the compile
+flags therefore recompiles automatically, while re-running `deno task dist`
+with nothing changed does no work at all. An interrupted or failed run never
+leaves a half-built artifact looking current. To rebuild everything from
+scratch anyway, set `CHEL_FORCE_COMPILE=1` or delete `dist/`.
+
+The fingerprint is computed per target rather than once for all of them,
+because the binaries no longer share their inputs: each embeds only its own
+platform's SQLite addon instead of all eight, which is worth 14.8 MB per
+binary (~7.5 MB per compressed tarball). A practical side effect is that
+reinstalling the SQLite package only invalidates the targets whose own addon
+actually changed.
+
+To verify that a freshly compiled binary really can load the addon it embeds,
+run `CHEL_SMOKE_COMPILE=1 deno task smoke`. It compiles the host platform's
+binary and runs a real SQLite migration through it. It is excluded from
+`deno task test` because it costs minutes and ~100 MB.
 
 ## History
 

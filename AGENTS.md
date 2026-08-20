@@ -14,12 +14,20 @@ All commands are run via Deno tasks defined in `deno.json`:
 
 ```bash
 deno task lint            # Lint the codebase
-deno task test            # Run tests
+deno task test            # Run tests (includes test:symlinks)
 deno task build           # Build the project (outputs to build/)
 deno task compile         # Native binaries + release tarballs (outputs to dist/)
 deno task dist            # Full distribution (lint + build + compile)
 deno task chel -- <args>  # Run the CLI locally (lint + build + execute)
+
+CHEL_SMOKE_COMPILE=1 deno task smoke  # Opt-in: compile the host binary and run it
 ```
+
+`test:symlinks` is a separate pass only because creating a symlink needs Deno's
+unscoped `--allow-write`, which the main test run deliberately does not grant.
+It covers the symlink handling that keeps released binaries reproducible and
+the filesystem side of `chel migrate`'s same-file guard, and skips itself when
+the permission is missing.
 
 ### Individual CLI Commands
 
@@ -88,13 +96,38 @@ scripts/
 ├── sync-versions.ts     # Keeps optionalDependencies in sync (version hook)
 ├── dashboard-esbuild.ts # Dashboard UI bundling
 ├── lint.ts              # ESLint wrapper
-└── dist.ts              # Inert placeholder; `deno task dist` is defined in deno.json
+├── dist.ts              # Inert placeholder; `deno task dist` is defined in deno.json
+└── *.test.ts            # Build-script tests (binaries, compile, launcher,
+                         #   sync-versions, targets)
 
 test/
 ├── assets/              # Test fixtures (keys, manifests, contracts)
+├── bin-chel.test.ts     # Published launcher behavior
+├── compile-smoke.test.ts # Opt-in: compiles the host binary and runs it
+├── eventsAfter.test.ts  # Event query command tests
 ├── hash.test.ts         # Hash command tests
-└── signature.test.ts    # Signature verification tests
+├── signature.test.ts    # Signature verification tests
+└── utils.test.ts        # Shared utility tests
 ```
+
+Every `*.test.ts` file has to be committed. An untracked suite disappears on a
+fresh clone, and a `deno.json` task that points at it then fails with a
+module-resolution error instead of a test failure, so the coverage is lost
+silently. `deno task test` enforces this (see `scripts/tracked-tests.test.ts`).
+
+Build-script notes:
+
+- Compilation is parameterised per target, not shared: `compileFlags(target)`
+  and `nativeAddonPaths(target)` in `scripts/targets.ts` replace the former
+  `COMPILE_FLAGS` / `NATIVE_ADDON_PATHS` constants, and each binary embeds only
+  its own platform's prebuilt SQLite addon.
+- Cache keys follow suit: `targetFingerprint(target)` in `scripts/binaries.ts`
+  replaces `bundleFingerprint()`, and `tarFingerprint()` in `scripts/compile.ts`
+  now takes the target too.
+- `ALL_NATIVE_ADDON_PATHS` is the union over all targets; it is what the mtime
+  normalisation (needed for reproducible binaries) has to walk.
+- `CHEL_SMOKE_COMPILE=1 deno task smoke` is the only test that actually
+  compiles a binary and executes it; it is skipped by `deno task test`.
 
 ## Code Conventions
 
