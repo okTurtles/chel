@@ -1,8 +1,9 @@
 // Symlink behavior of the binary cache, kept apart from binaries.test.ts for
-// one reason: creating a symlink requires Deno's *unscoped* `--allow-write`,
-// and the main test task deliberately confines writes to the project. These
-// steps therefore run under their own task (`deno task test:symlinks`, chained
-// into `deno task test`) and skip themselves anywhere the permission is absent.
+// one reason: creating a symlink requires Deno's *unscoped* `--allow-write`
+// (and unscoped `--allow-read`), and the main test task deliberately confines
+// both to the project. These steps therefore run under their own task
+// (`deno task test:symlinks`, chained into `deno task test`) and skip
+// themselves anywhere the permissions are absent.
 //
 // What they protect is the reproducibility of releases. The native addon paths
 // reach `node_modules` through a version-less symlink, and `deno compile
@@ -13,26 +14,18 @@
 import { assertEquals } from 'jsr:@std/assert'
 import { resolve } from 'jsr:@std/path/'
 import { assertNativeAddonsPresent, computeFingerprint, normalizeMtimes } from './binaries.ts'
+import {
+  FAKE_COMPILE_FLAGS as FLAGS,
+  symlinkSupported,
+  withTempDir
+} from '../test/test-helpers.ts'
 
-const FLAGS = '--fake-compile-flags'
-
-// Unscoped write is what Deno.symlink needs; anything narrower fails with
-// NotCapable regardless of where the link is being created.
-const canSymlink = Deno.permissions.querySync({ name: 'write' }).state === 'granted'
-
-await Deno.mkdir('./test/temp', { recursive: true })
-
-const withTempDir = async (fn: (dir: string) => Promise<void>): Promise<void> => {
-  const dir = await Deno.makeTempDir({ dir: './test/temp' })
-  try {
-    await fn(dir)
-  } finally {
-    await Deno.remove(dir, { recursive: true })
-  }
-}
+const canSymlink = await symlinkSupported()
 
 // A relative symlink target is resolved against the link's own directory, so
-// the temp paths below have to be made absolute or every link ends up dangling.
+// the temp paths below have to be made absolute or every link ends up
+// dangling. withTempDir already hands out absolute paths; this covers the
+// targets assembled from elsewhere.
 const linkTo = async (target: string, link: string): Promise<void> => {
   await Deno.symlink(resolve(target), link)
 }
@@ -105,6 +98,29 @@ Deno.test({
         await Deno.writeTextFile(`${dir}/nested/file.js`, 'x')
         await linkTo(dir, `${dir}/nested/loop`)
         assertEquals(typeof await computeFingerprint(dir, [`${dir}/nested`], FLAGS), 'string')
+        await normalizeMtimes(dir, 0)
+      })
+    })
+
+    await t.step('a dangling symlink is skipped instead of aborting the walk', async () => {
+      // The deterministic stand-in for the race the walk has to survive: a
+      // path that is gone by the time it is read. A real one is a concurrent
+      // `npm install` moving files under node_modules mid-fingerprint; a link
+      // whose target no longer exists reaches the same code paths, and the
+      // whole release must not fall over because of either.
+      await withTempDir(async (dir) => {
+        await Deno.writeTextFile(`${dir}/main.js`, 'console.log(1)')
+        const before = await computeFingerprint(dir, [], FLAGS)
+        const gone = `${dir}/vanished`
+        await Deno.writeTextFile(gone, 'v1')
+        await linkTo(gone, `${dir}/dangling`)
+        await Deno.remove(gone)
+        // Same fingerprint as the tree without the link at all: neither the
+        // dangling link nor its missing target contributes a digest line.
+        assertEquals(await computeFingerprint(dir, [], FLAGS), before)
+        // And the same holds when the dangling link is named as an embedded
+        // input directly, plus for the mtime half of the cache.
+        assertEquals(await computeFingerprint(dir, [`${dir}/dangling`], FLAGS), before)
         await normalizeMtimes(dir, 0)
       })
     })

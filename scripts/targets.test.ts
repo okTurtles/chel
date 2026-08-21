@@ -12,6 +12,7 @@ import {
   type Target
 } from './targets.ts'
 import { BUNDLE_PATH, NATIVE_ADDON_PACKAGES } from './paths.ts'
+import { existsSync as exists } from '../test/test-helpers.ts'
 
 const ROOT_PKG = {
   version: '9.9.9',
@@ -269,14 +270,6 @@ Deno.test('native addon packages', async (t) => {
     // Detection is per package, not global: with a single shared flag, one
     // uninstalled package would silently disable the check for the installed
     // ones too, and the list is explicitly designed to grow.
-    const exists = (path: string): boolean => {
-      try {
-        Deno.statSync(path)
-        return true
-      } catch {
-        return false
-      }
-    }
     const present = NATIVE_ADDON_PACKAGES.filter(({ name }) => exists(`node_modules/${name}`))
     // Skipped entirely on a checkout that has not installed anything; but once
     // node_modules exists, at least one package must have been checked, or a

@@ -4,7 +4,11 @@ import type { Database as SQLiteDB, Statement } from 'npm:@types/better-sqlite3'
 import { Buffer } from 'node:buffer'
 import { mkdir } from 'node:fs/promises'
 import { basename, dirname, join, resolve } from 'node:path'
-import { SqliteOptionsSchema as ConfigSchema, type SqliteOptions } from './backend-schemas.ts'
+import {
+  SQLITE_DEFAULT_FILEPATH,
+  SqliteOptionsSchema as ConfigSchema,
+  type SqliteOptions
+} from './backend-schemas.ts'
 import DatabaseBackend from './DatabaseBackend.ts'
 
 // Shapes of the rows the prepared statements below return. Spelled out so the
@@ -44,7 +48,7 @@ type CountRow = { count: number }
 // message, while every shape the addon resolver produces (Node's
 // 'Cannot find module ...better_sqlite3.node', or a prebuilds/ path reported
 // without a standard code) does name it.
-export function addonLoadError (cause: unknown): Error | null {
+export function rewordedAddonLoadError (cause: unknown): Error | null {
   const message = cause instanceof Error ? cause.message : ''
   if (!/better_sqlite3\.node|prebuilds[\\/]/.test(message)) return null
   return new Error(
@@ -57,9 +61,11 @@ export function addonLoadError (cause: unknown): Error | null {
 }
 
 export default class SqliteBackend extends DatabaseBackend {
-  dataFolder: string = 'data'
+  // Derived from the shared default rather than restating it, because
+  // `chel migrate`'s same-file guard compares against the same constant.
+  dataFolder: string = dirname(SQLITE_DEFAULT_FILEPATH)
   db: SQLiteDB | null = null
-  filename: string = 'chelonia.db'
+  filename: string = basename(SQLITE_DEFAULT_FILEPATH)
   readStatement: Statement<[string], DataRow> | null = null
   writeStatement: Statement<[string, Buffer | string]> | null = null
   deleteStatement: Statement<[string]> | null = null
@@ -107,7 +113,7 @@ export default class SqliteBackend extends DatabaseBackend {
     } catch (e) {
       // The addon is resolved lazily by the constructor, so this is where a
       // missing prebuilt binary surfaces. Anything else is rethrown as-is.
-      const addonError = addonLoadError(e)
+      const addonError = rewordedAddonLoadError(e)
       if (addonError) throw addonError
       throw e
     }

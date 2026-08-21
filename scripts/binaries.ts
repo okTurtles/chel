@@ -155,13 +155,26 @@ async function sha256 (bytes: Uint8Array<ArrayBuffer>): Promise<string> {
 // resolves them: `deno compile` embeds what they point at, so that is what has
 // to be hashed. The key stays the logical path, so a file keeps its identity
 // whether or not the route to it went through a link.
+//
+// Every filesystem call in the walk treats a vanished entry as contributing
+// nothing, exactly as normalizeMtimes does: a concurrent `npm install` moving
+// files under `node_modules` mid-walk must not abort a release. What it cannot
+// hide is a genuinely absent addon, which assertNativeAddonsPresent rejects up
+// front, before anything is compiled.
 async function fileDigests (
   dir: string,
   prefix = '',
   seen: Set<string> = new Set()
 ): Promise<string[]> {
+  const entries: Deno.DirEntry[] = []
+  try {
+    for await (const entry of Deno.readDir(dir)) entries.push(entry)
+  } catch (e) {
+    if (isNotFound(e)) return []
+    throw e
+  }
   const digests: string[] = []
-  for await (const entry of Deno.readDir(dir)) {
+  for (const entry of entries) {
     const rel = prefix ? `${prefix}/${entry.name}` : entry.name
     digests.push(...await digestsAt(`${dir}/${entry.name}`, rel, seen))
   }
@@ -170,7 +183,8 @@ async function fileDigests (
 
 // Digest lines for one path, which may be a file or a directory, recorded
 // under `key`. `seen` holds the real paths of directories already walked, so a
-// symlink cycle terminates instead of recursing forever.
+// symlink cycle terminates instead of recursing forever. A path that is gone
+// by the time it is read contributes nothing, including a dangling symlink.
 async function digestsAt (path: string, key: string, seen: Set<string>): Promise<string[]> {
   let info: Deno.FileInfo
   try {
@@ -180,9 +194,20 @@ async function digestsAt (path: string, key: string, seen: Set<string>): Promise
     throw e
   }
   if (!info.isDirectory) {
-    return [`${key}\t${await sha256(await Deno.readFile(path))}`]
+    try {
+      return [`${key}\t${await sha256(await Deno.readFile(path))}`]
+    } catch (e) {
+      if (isNotFound(e)) return []
+      throw e
+    }
   }
-  const real = await Deno.realPath(path)
+  let real: string
+  try {
+    real = await Deno.realPath(path)
+  } catch (e) {
+    if (isNotFound(e)) return []
+    throw e
+  }
   if (seen.has(real)) return []
   seen.add(real)
   return await fileDigests(path, key, seen)
@@ -192,8 +217,8 @@ async function digestsAt (path: string, key: string, seen: Set<string>): Promise
 // directory: the native-addon paths mix the two (see nativeAddonPaths). The
 // root is used as the digest prefix, so identically named files under two
 // different roots cannot collide and moving a file from one root to another
-// still invalidates. A missing path contributes nothing, for the reason given
-// on normalizePathMtimes.
+// still invalidates. A missing path contributes nothing — at the root and at
+// every level below it — for the reason given on normalizePathMtimes.
 async function pathDigests (path: string): Promise<string[]> {
   return await digestsAt(path, path, new Set())
 }

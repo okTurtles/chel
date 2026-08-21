@@ -5,7 +5,8 @@
 import { assert, assertEquals, assertRejects, assertStringIncludes } from 'jsr:@std/assert'
 import * as path from 'jsr:@std/path'
 import { Buffer } from 'node:buffer'
-import SqliteBackend, { addonLoadError } from './database-sqlite.ts'
+import SqliteBackend, { rewordedAddonLoadError } from './database-sqlite.ts'
+import { SQLITE_DEFAULT_FILEPATH } from './backend-schemas.ts'
 
 // Databases are created under `./test/temp/` (the project's scratch space,
 // already covered by `deno task test`'s `--allow-write=.`) rather than the OS
@@ -163,23 +164,34 @@ Deno.test({
         await assertRejects(() => backend.keyCount(), Error, 'is not open')
       })
     })
+
+    await t.step('defaults an omitted filepath to the shared constant', () => {
+      // Drift sentinel for `chel migrate`'s same-file guard, which resolves an
+      // omitted filepath through SQLITE_DEFAULT_FILEPATH to compare paths the
+      // way this backend would. Nothing opens a database here: only the
+      // agreement between the two is under test, and losing it would silently
+      // stop the guard from firing.
+      const backend = new SqliteBackend({})
+      assertEquals(backend.dataFolder, path.dirname(SQLITE_DEFAULT_FILEPATH))
+      assertEquals(backend.filename, path.basename(SQLITE_DEFAULT_FILEPATH))
+    })
   }
 })
 
-Deno.test('addonLoadError', async (t) => {
+Deno.test('rewordedAddonLoadError', async (t) => {
   await t.step('rewords a missing native addon into an actionable message', () => {
     const cause = Object.assign(
       new Error('Cannot find module \'build/Release/better_sqlite3.node\''),
       { code: 'MODULE_NOT_FOUND' }
     )
-    const error = addonLoadError(cause)
+    const error = rewordedAddonLoadError(cause)
     assert(error, 'a missing addon must be recognized')
     assertStringIncludes(error.message, 'musl')
     assertEquals(error.cause, cause)
   })
 
   await t.step('recognizes the failure by message when no code is set', () => {
-    assert(addonLoadError(new Error('No such file: /x/prebuilds/linux-x64.node')))
+    assert(rewordedAddonLoadError(new Error('No such file: /x/prebuilds/linux-x64.node')))
   })
 
   await t.step('does not claim unrelated missing modules', () => {
@@ -187,7 +199,7 @@ Deno.test('addonLoadError', async (t) => {
     // missing; blaming the platform's libc for it would send the user chasing
     // the wrong problem.
     assertEquals(
-      addonLoadError(Object.assign(new Error('Cannot find module left-pad'), {
+      rewordedAddonLoadError(Object.assign(new Error('Cannot find module left-pad'), {
         code: 'MODULE_NOT_FOUND'
       })),
       null
@@ -197,9 +209,9 @@ Deno.test('addonLoadError', async (t) => {
   await t.step('leaves unrelated failures alone', () => {
     // Permission problems, corrupt files and SQLITE_CANTOPEN must keep their
     // own message rather than being blamed on the platform's libc.
-    assertEquals(addonLoadError(new Error('unable to open database file')), null)
+    assertEquals(rewordedAddonLoadError(new Error('unable to open database file')), null)
     assertEquals(
-      addonLoadError(Object.assign(new Error('permission denied'), { code: 'EACCES' })),
+      rewordedAddonLoadError(Object.assign(new Error('permission denied'), { code: 'EACCES' })),
       null
     )
   })

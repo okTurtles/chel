@@ -9,6 +9,7 @@ import process from 'node:process'
 import sbp from 'npm:@sbp/sbp'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import type DatabaseBackend from './serve/DatabaseBackend.ts'
+import { SQLITE_DEFAULT_FILEPATH } from './serve/backend-schemas.ts'
 import { closeDB, initDB } from './serve/database.ts'
 import { exit, isValidKey } from './utils.ts'
 import { validateParsedConfig } from './validateConfig.ts'
@@ -18,10 +19,14 @@ import { parse, type TomlTable } from 'npm:smol-toml'
 
 type Params = { from: string; fromConfig?: string; to: string; toConfig?: string }
 
-// Mirrors SqliteBackend's own defaults (dataFolder 'data', filename
-// 'chelonia.db'), so an omitted filepath compares the same way the backend
-// would resolve it.
-const SQLITE_DEFAULT_FILEPATH = 'data/chelonia.db'
+// Shapes the same-file guard needs out of a backend's options: a sqlite
+// backend's own `filepath`, or a router's map of key prefixes to backend
+// entries. Spelled structurally rather than reusing the schemas' inferred
+// types, because these values arrive from nconf and from a freshly parsed TOML
+// file, neither of which has been narrowed by the time the guard runs.
+type SqliteOptionsLike = { filepath?: string }
+type RouterEntryLike = { name?: string; options?: SqliteOptionsLike }
+type BackendOptionsLike = SqliteOptionsLike | Record<string, RouterEntryLike> | undefined
 
 // Canonicalizes a filepath for same-file comparison. resolve() alone is
 // lexical, which is not enough on two counts: on case-insensitive
@@ -40,21 +45,59 @@ function canonicalFilepath (filepath: string): string {
   }
 }
 
-// True when a migration would read from and write to one and the same SQLite
-// file. Nothing else rejects that combination, and it cannot work: the source
-// is walked with a cursor that holds a read transaction open for the whole
-// migration, so every write to the target blocks until the busy timeout
-// expires. Split out from migrate() so it can be tested without a database.
+// An omitted filepath resolves the way SqliteBackend itself resolves it, via
+// the constant the backend derives its own defaults from.
+function filepathOf (options: SqliteOptionsLike | undefined): string {
+  return canonicalFilepath(options?.filepath || SQLITE_DEFAULT_FILEPATH)
+}
+
+// Every SQLite file `backend` would open, deduplicated. A router counts: it
+// delegates reads and writes (including the `iterKeys` cursor the guard below
+// is about) to whichever nested backend a key's prefix selects, so a `sqlite`
+// entry anywhere in its map is a SQLite file this migration touches. Prefixed
+// entries count as much as the mandatory `*` fallback does.
+//
+// Depth 1 is the whole tree: RouterConfigEntrySchema rejects a nested router,
+// so a router's entries are always leaf backends.
+function sqliteFilepaths (backend: string | undefined, options: BackendOptionsLike): string[] {
+  if (backend === 'sqlite') return [filepathOf(options as SqliteOptionsLike | undefined)]
+  if (backend !== 'router') return []
+  const entries = Object.values((options ?? {}) as Record<string, RouterEntryLike>)
+  return [
+    ...new Set(
+      entries.filter((entry) => entry?.name === 'sqlite').map((entry) => filepathOf(entry.options))
+    )
+  ]
+}
+
+// The first SQLite file a migration would both read from and write to, or null
+// when there is none. Nothing else rejects that combination, and it cannot
+// work: the source is walked with a cursor that holds a read transaction open
+// for the whole migration, and better-sqlite3 refuses a write issued on a
+// connection that is mid-query ('This database connection is busy executing a
+// query'); a second connection to the same file fares no better, blocking
+// until the busy timeout expires and then failing with SQLITE_BUSY.
+//
+// Returns the path rather than a boolean so the error can name the file, which
+// matters once the collision can be buried in a router config. Split out from
+// migrate() so it can be tested without a database.
+export function sharedSqliteFilepath (
+  fromBackend: string | undefined,
+  toBackend: string | undefined,
+  fromOptions: BackendOptionsLike,
+  toOptions: BackendOptionsLike
+): string | null {
+  const targets = new Set(sqliteFilepaths(toBackend, toOptions))
+  return sqliteFilepaths(fromBackend, fromOptions).find((path) => targets.has(path)) ?? null
+}
+
 export function isSameSqliteFile (
-  fromBackend: unknown,
-  toBackend: unknown,
-  fromOptions: unknown,
-  toOptions: unknown
+  fromBackend: string | undefined,
+  toBackend: string | undefined,
+  fromOptions: BackendOptionsLike,
+  toOptions: BackendOptionsLike
 ): boolean {
-  if (fromBackend !== 'sqlite' || toBackend !== 'sqlite') return false
-  const filepathOf = (options: unknown) =>
-    canonicalFilepath((options as { filepath?: string })?.filepath || SQLITE_DEFAULT_FILEPATH)
-  return filepathOf(fromOptions) === filepathOf(toOptions)
+  return sharedSqliteFilepath(fromBackend, toBackend, fromOptions, toOptions) !== null
 }
 
 export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> {
@@ -82,7 +125,7 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
 
   let backendTo: DatabaseBackend | undefined
   try {
-    let toConfigOpts: unknown
+    let toConfigOpts: BackendOptionsLike
     if (args.toConfig) {
       const toConfig = parse(await readFile(args.toConfig, { encoding: 'utf-8', flag: 'r' }))
       validateParsedConfig(toConfig, args.toConfig)
@@ -90,24 +133,29 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
       if (toBackend !== to) {
         console.warn(`--to-config has backend ${toBackend} but --to is ${to}`)
       }
-      toConfigOpts = ((toConfig?.database as TomlTable)?.backendOptions as TomlTable)?.[to] || {}
+      // validateParsedConfig has already rejected anything that is not a valid
+      // option table for the backend, so this only trades smol-toml's generic
+      // TomlTable for the shape the guard below reads.
+      toConfigOpts = (((toConfig?.database as TomlTable)?.backendOptions as TomlTable)?.[to] ||
+        {}) as BackendOptionsLike
     } else {
       toConfigOpts = nconf.get(`database:backendOptions:${to}`) || {}
     }
 
     const fromBackend = nconf.get('database:backend')
-    if (
-      isSameSqliteFile(
-        fromBackend,
-        to,
-        nconf.get(`database:backendOptions:${fromBackend}`),
-        toConfigOpts
-      )
-    ) {
+    const sharedFile = sharedSqliteFilepath(
+      fromBackend,
+      to,
+      nconf.get(`database:backendOptions:${fromBackend}`),
+      toConfigOpts
+    )
+    if (sharedFile) {
       exit(
-        'Source and target are the same SQLite database file. Migrating a ' +
-        'database onto itself would deadlock against its own read cursor; pass ' +
-        'a different filepath with --to-config.'
+        `Source and target both use the SQLite database file ${sharedFile}. ` +
+        'Migrating a database onto itself cannot work: the source is read ' +
+        'through a cursor that keeps its connection busy for the whole run, so ' +
+        'the writes are refused rather than landing. Pass a different filepath ' +
+        'with --to-config.'
       )
     }
 

@@ -1,10 +1,15 @@
 import { assertEquals, assertStringIncludes } from 'jsr:@std/assert'
+import { fromFileUrl } from 'jsr:@std/path/'
 
 // Ensures ./test/temp exists on a fresh checkout (same pattern as
 // sync-versions.test.ts). --allow-write=. in the test task covers it.
 await Deno.mkdir('./test/temp', { recursive: true })
 
-const BIN_CHEL = new URL('../bin/chel.js', import.meta.url).pathname
+// fromFileUrl, not `.pathname`: this value is handed to `node` as an argv
+// path, and `.pathname` percent-encodes special characters (a checkout under
+// `my chel/` would spawn node on a non-existent `my%20chel/…`) besides
+// producing the unusable `/C:/…` form on Windows.
+const BIN_CHEL = fromFileUrl(new URL('../bin/chel.js', import.meta.url))
 
 // The fake sub-package binary is a Node script with a shebang, which only
 // Unix kernels know how to execute. Windows resolves the fallback name to

@@ -22085,6 +22085,7 @@ var init_db_errors = __esm({
     init_utils();
   }
 });
+var SQLITE_DEFAULT_FILEPATH;
 var FsOptionsSchema;
 var SqliteOptionsSchema;
 var RedisOptionsSchema;
@@ -22094,6 +22095,7 @@ var init_backend_schemas = __esm({
   "src/serve/backend-schemas.ts"() {
     "use strict";
     init_zod();
+    SQLITE_DEFAULT_FILEPATH = "data/chelonia.db";
     FsOptionsSchema = strictObject({
       dirname: optional(string2()),
       depth: optional(number2().int().min(0)),
@@ -47819,10 +47821,10 @@ var require_database_sqlite_test = __commonJS({
 });
 var database_sqlite_exports = {};
 __export(database_sqlite_exports, {
-  addonLoadError: () => addonLoadError,
-  default: () => SqliteBackend
+  default: () => SqliteBackend,
+  rewordedAddonLoadError: () => rewordedAddonLoadError
 });
-function addonLoadError(cause) {
+function rewordedAddonLoadError(cause) {
   const message = cause instanceof Error ? cause.message : "";
   if (!/better_sqlite3\.node|prebuilds[\\/]/.test(message)) return null;
   return new Error(
@@ -47837,9 +47839,11 @@ var init_database_sqlite = __esm({
     init_backend_schemas();
     init_DatabaseBackend();
     SqliteBackend = class extends DatabaseBackend {
-      dataFolder = "data";
+      // Derived from the shared default rather than restating it, because
+      // `chel migrate`'s same-file guard compares against the same constant.
+      dataFolder = dirname22(SQLITE_DEFAULT_FILEPATH);
       db = null;
-      filename = "chelonia.db";
+      filename = basename22(SQLITE_DEFAULT_FILEPATH);
       readStatement = null;
       writeStatement = null;
       deleteStatement = null;
@@ -47878,7 +47882,7 @@ var init_database_sqlite = __esm({
         try {
           this.db = new Database(join32(dataFolder, filename));
         } catch (e2) {
-          const addonError = addonLoadError(e2);
+          const addonError = rewordedAddonLoadError(e2);
           if (addonError) throw addonError;
           throw e2;
         }
@@ -70010,6 +70014,7 @@ var module9 = {
   }
 };
 init_esm();
+init_backend_schemas();
 init_utils();
 init_zod();
 init_backend_schemas();
@@ -70221,7 +70226,6 @@ var globImport_serve_database_ts = __glob({
   "./serve/database-sqlite.test.ts": () => Promise.resolve().then(() => __toESM(require_database_sqlite_test())),
   "./serve/database-sqlite.ts": () => Promise.resolve().then(() => (init_database_sqlite(), database_sqlite_exports))
 });
-var SQLITE_DEFAULT_FILEPATH = "data/chelonia.db";
 function canonicalFilepath(filepath) {
   const resolved = resolve5(filepath);
   try {
@@ -70230,10 +70234,22 @@ function canonicalFilepath(filepath) {
     return resolved;
   }
 }
-function isSameSqliteFile(fromBackend, toBackend, fromOptions, toOptions) {
-  if (fromBackend !== "sqlite" || toBackend !== "sqlite") return false;
-  const filepathOf = (options2) => canonicalFilepath(options2?.filepath || SQLITE_DEFAULT_FILEPATH);
-  return filepathOf(fromOptions) === filepathOf(toOptions);
+function filepathOf(options2) {
+  return canonicalFilepath(options2?.filepath || SQLITE_DEFAULT_FILEPATH);
+}
+function sqliteFilepaths(backend, options2) {
+  if (backend === "sqlite") return [filepathOf(options2)];
+  if (backend !== "router") return [];
+  const entries = Object.values(options2 ?? {});
+  return [
+    ...new Set(
+      entries.filter((entry) => entry?.name === "sqlite").map((entry) => filepathOf(entry.options))
+    )
+  ];
+}
+function sharedSqliteFilepath(fromBackend, toBackend, fromOptions, toOptions) {
+  const targets = new Set(sqliteFilepaths(toBackend, toOptions));
+  return sqliteFilepaths(fromBackend, fromOptions).find((path9) => targets.has(path9)) ?? null;
 }
 async function migrate(args) {
   const { to } = args;
@@ -70269,14 +70285,15 @@ async function migrate(args) {
       toConfigOpts = import_npm_nconf3.default.get(`database:backendOptions:${to}`) || {};
     }
     const fromBackend = import_npm_nconf3.default.get("database:backend");
-    if (isSameSqliteFile(
+    const sharedFile = sharedSqliteFilepath(
       fromBackend,
       to,
       import_npm_nconf3.default.get(`database:backendOptions:${fromBackend}`),
       toConfigOpts
-    )) {
+    );
+    if (sharedFile) {
       exit(
-        "Source and target are the same SQLite database file. Migrating a database onto itself would deadlock against its own read cursor; pass a different filepath with --to-config."
+        `Source and target both use the SQLite database file ${sharedFile}. Migrating a database onto itself cannot work: the source is read through a cursor that keeps its connection busy for the whole run, so the writes are refused rather than landing. Pass a different filepath with --to-config.`
       );
     }
     const Ctor = (await globImport_serve_database_ts(`./serve/database-${to}.ts`)).default;

@@ -9,50 +9,23 @@
 // case-insensitive filesystems (the macOS and Windows defaults) two
 // spellings can name one file, and a symlink can name the source database
 // from somewhere else. isSameSqliteFile must recognize both as the same
-// file, or the migration deadlocks against its own read cursor.
+// file, or the migration's writes are refused by the connection its own read
+// cursor is keeping busy.
 //
 // The `test:symlinks` task also grants `--allow-env` scoped to a handful of
 // variables for this file's sake: importing migrate.ts loads @chelonia/lib,
 // which reads those variables at module scope.
 import { assertEquals } from 'jsr:@std/assert'
-import { resolve } from 'node:path'
 import { isSameSqliteFile } from './migrate.ts'
+import { exists, symlinkSupported, withTempDir } from '../test/test-helpers.ts'
 
-const canSymlink = Deno.permissions.querySync({ name: 'write' }).state === 'granted'
-
-// Scratch space under `./test/temp/`, like the other test files (see
-// database-sqlite.test.ts), so the main run's `--allow-write=.` covers it
-// even though this suite only does real work under unscoped write.
-await Deno.mkdir('./test/temp', { recursive: true })
-
-// Resolved to an absolute path: Deno.makeTempDir echoes back the relativity
-// of its `dir` option, and a relative symlink target is resolved against the
-// link's own directory rather than the CWD, so every link below would end up
-// dangling without this (same trap linkTo guards against in
-// scripts/binaries-symlinks.test.ts).
-const withTempDir = async (fn: (dir: string) => Promise<void>): Promise<void> => {
-  const dir = resolve(await Deno.makeTempDir({ dir: './test/temp' }))
-  try {
-    await fn(dir)
-  } finally {
-    await Deno.remove(dir, { recursive: true })
-  }
-}
+const canSymlink = await symlinkSupported()
 
 // Only the paths matter to the guard; the files are never opened as
 // databases, so an empty stand-in is enough.
 const touch = (path: string) => Deno.writeTextFile(path, '')
 
 const opts = (filepath: string) => ({ filepath })
-
-const exists = async (path: string): Promise<boolean> => {
-  try {
-    await Deno.stat(path)
-    return true
-  } catch {
-    return false
-  }
-}
 
 Deno.test({
   name: 'isSameSqliteFile against the real filesystem',

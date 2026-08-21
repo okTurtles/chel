@@ -97,11 +97,14 @@ scripts/
 ├── dashboard-esbuild.ts # Dashboard UI bundling
 ├── lint.ts              # ESLint wrapper
 ├── dist.ts              # Inert placeholder; `deno task dist` is defined in deno.json
-└── *.test.ts            # Build-script tests (binaries, compile, launcher,
-                         #   sync-versions, targets)
+└── *.test.ts            # Build-script tests (binaries, binaries-symlinks,
+                         #   bundle, compile, launcher, sync-versions,
+                         #   targets, tracked-tests)
 
 test/
 ├── assets/              # Test fixtures (keys, manifests, contracts)
+├── test-helpers.ts      # Shared scaffolding; deliberately not a `*.test.ts`
+│                        #   suite (temp dirs, symlink probe, presence checks)
 ├── bin-chel.test.ts     # Published launcher behavior
 ├── compile-smoke.test.ts # Opt-in: compiles the host binary and runs it
 ├── eventsAfter.test.ts  # Event query command tests

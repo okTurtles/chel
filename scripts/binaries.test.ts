@@ -12,25 +12,7 @@ import {
 } from './binaries.ts'
 import { BIN_DIR, STAMP_DIR } from './paths.ts'
 import { TARGETS, nativeAddonPaths, type Target } from './targets.ts'
-
-// Stand-in for a real `deno compile` flag set. The steps below only care that
-// the flags participate in the key, not what they say.
-const FLAGS = '--fake-compile-flags'
-
-// Ensure the temp dir exists on a fresh checkout; makeTempDir with dir does
-// not create intermediate directories. recursive: true makes this a no-op when
-// it already exists.
-await Deno.mkdir('./test/temp', { recursive: true })
-
-// test/temp is inside the project so deno task test's --allow-write=. covers it.
-const withTempDir = async (fn: (dir: string) => Promise<void>): Promise<void> => {
-  const dir = await Deno.makeTempDir({ dir: './test/temp' })
-  try {
-    await fn(dir)
-  } finally {
-    await Deno.remove(dir, { recursive: true })
-  }
-}
+import { FAKE_COMPILE_FLAGS as FLAGS, withTempDir } from '../test/test-helpers.ts'
 
 const TARGET: Target = {
   denoTarget: 'x86_64-unknown-linux-gnu',
@@ -171,6 +153,21 @@ Deno.test('computeFingerprint', async (t) => {
   // Symlink handling is covered in binaries-symlinks.test.ts: creating a
   // symlink needs unscoped --allow-write, which this suite deliberately does
   // not have.
+
+  await t.step('tolerates a directory that is not there', async () => {
+    // The walk has to survive an entry disappearing under it: the release
+    // fingerprints node_modules, where a concurrent install can move files
+    // mid-walk, and aborting the release over that is worse than hashing the
+    // tree as it was found. Missing directories are the deterministic form of
+    // the same condition, and normalizeMtimes has always treated them this way.
+    await withTempDir(async (dir) => {
+      assertEquals(typeof await computeFingerprint(`${dir}/absent`, [], FLAGS), 'string')
+      assertEquals(
+        await computeFingerprint(`${dir}/absent`, [`${dir}/absent-too`], FLAGS),
+        await computeFingerprint(`${dir}/absent`, [], FLAGS)
+      )
+    })
+  })
 
   await t.step('separates addon contents from bundle contents', async () => {
     // Identical bytes reached through an addon path and through the bundle are

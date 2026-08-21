@@ -4,6 +4,7 @@
 // is missing for everybody else, and a `deno.json` task naming the file fails
 // with a module-resolution error rather than a test failure.
 import { assertEquals } from 'jsr:@std/assert'
+import { fromFileUrl } from 'jsr:@std/path/'
 
 // Mirrors deno.json's lint exclusions plus the generated and scratch trees:
 // none of them hold sources of ours.
@@ -41,7 +42,13 @@ async function trackedTestFiles (): Promise<Set<string>> {
 }
 
 Deno.test('every test file is committed', async () => {
-  const root = new URL('..', import.meta.url).pathname
+  // fromFileUrl, not `.pathname`: the latter is not a filesystem path. It
+  // percent-encodes special characters (a checkout under `my chel/` becomes
+  // `my%20chel/`) and on Windows it yields a leading-slash `/C:/…` form, both
+  // of which Deno.readDir rejects. The relative keys below are still built
+  // from `prefix` alone, so they stay forward-slashed and keep matching
+  // `git ls-files` output on every platform.
+  const root = fromFileUrl(new URL('..', import.meta.url))
   const tracked = await trackedTestFiles()
   const untracked = (await testFilesUnder(root)).filter((path) => !tracked.has(path)).sort()
   assertEquals(

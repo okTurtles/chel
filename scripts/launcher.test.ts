@@ -1,5 +1,6 @@
 import { assertEquals, assertStringIncludes } from 'jsr:@std/assert'
 import { BINARY_FIELD } from './targets.ts'
+import { withTempDir } from '../test/test-helpers.ts'
 
 // Behavior tests for the bin/chel.js launcher: the exit codes and messages
 // it promises are documented in README.md ("exit code 127 means no sub-package
@@ -13,19 +14,13 @@ const nodeArch = Deno.build.arch === 'x86_64' ? 'x64' : 'arm64'
 const nodePlatform = Deno.build.os === 'windows' ? 'win32' : Deno.build.os
 const subPkgName = `@chelonia/cli-${nodeArch}-${nodePlatform}`
 
-// Ensure the temp dir exists on a fresh checkout (see binaries.test.ts).
-await Deno.mkdir('./test/temp', { recursive: true })
-
 // The launcher is copied into the temp dir before running so its
 // require.resolve() only sees the fixture node_modules created there.
-const withLauncher = async (fn: (dir: string) => Promise<void>): Promise<void> => {
-  const dir = await Deno.makeTempDir({ dir: './test/temp' })
-  try {
+const withLauncher = (fn: (dir: string) => Promise<void>): Promise<void> => {
+  return withTempDir(async (dir) => {
     await Deno.copyFile(new URL('../bin/chel.js', import.meta.url), `${dir}/chel.js`)
     await fn(dir)
-  } finally {
-    await Deno.remove(dir, { recursive: true })
-  }
+  })
 }
 
 // Runs `node chel.js` inside the fixture dir, where node resolves the
