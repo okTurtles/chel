@@ -227,6 +227,12 @@ async function pathDigests (path: string): Promise<string[]> {
 // computeFingerprint so the memoized path below can reuse digests it has
 // already computed without changing what the key means.
 //
+// Ordering both digest lists is this function's job, not its callers': the
+// digests arrive in `readDir` order, which is filesystem-dependent, so leaving
+// it to a call site to sort would make the cache key nondeterministic the day
+// one of them forgets. Sorted copies rather than in place, because the bundle
+// digests are memoized and shared by every target.
+//
 // Joined with NUL because a digest line can contain most other characters.
 async function fingerprintOf (
   bundleDigests: readonly string[],
@@ -236,7 +242,7 @@ async function fingerprintOf (
   const payload = [
     `deno:${Deno.version.deno}`,
     `flags:${flags}`,
-    ...bundleDigests,
+    ...[...bundleDigests].sort(),
     // Prefixed so an addon entry can never collide with a `build/` one.
     ...addonDigests.map((digest) => `addon:${digest}`).sort()
   ].join('\0')
@@ -262,7 +268,7 @@ export async function computeFingerprint (
   flags: string
 ): Promise<string> {
   const addons = (await Promise.all(addonPaths.map(pathDigests))).flat()
-  return await fingerprintOf((await fileDigests(dir)).sort(), addons, flags)
+  return await fingerprintOf(await fileDigests(dir), addons, flags)
 }
 
 // Memo caches, so that fingerprinting all five targets costs one walk of the
@@ -292,7 +298,7 @@ export function targetFingerprint (target: Target): Promise<string> {
   let cached = targetFingerprints.get(target.denoTarget)
   if (cached === undefined) {
     cached = (async () => {
-      cachedBundleDigests ??= fileDigests(BUILD_DIR).then((digests) => digests.sort())
+      cachedBundleDigests ??= fileDigests(BUILD_DIR)
       const addons = (await Promise.all(
         nativeAddonPaths(target).map(cachedPathDigests)
       )).flat()
@@ -390,9 +396,13 @@ export async function assertNativeAddonsPresent (
 // `dist/bin/`, compiling only the ones that are missing or stale. Returns the
 // number of binaries actually compiled.
 export async function ensureBinaries (targets: readonly Target[] = TARGETS): Promise<number> {
+  // Keyed by deno target rather than recomputed below, so that the value a
+  // stamp is written with is visibly the same one the freshness check rejected.
+  const fingerprints = new Map<string, string>()
   const stale: Target[] = []
   for (const target of targets) {
     const fingerprint = await targetFingerprint(target)
+    fingerprints.set(target.denoTarget, fingerprint)
     if (await isFresh(stampPath('bin', target), fingerprint, binaryPath(target))) {
       console.log(`Reusing ${binaryPath(target)} (unchanged inputs)`)
     } else {
@@ -419,8 +429,10 @@ export async function ensureBinaries (targets: readonly Target[] = TARGETS): Pro
   for (const target of stale) {
     console.log(`\n--- Compiling ${target.denoTarget} ---`)
     await Deno.mkdir(binaryDir(target), { recursive: true })
-    await rebuildWithStamp(stampPath('bin', target), await targetFingerprint(target), () =>
-      compileBinary(binaryPath(target), target)
+    await rebuildWithStamp(
+      stampPath('bin', target),
+      fingerprints.get(target.denoTarget)!,
+      () => compileBinary(binaryPath(target), target)
     )
   }
   return stale.length

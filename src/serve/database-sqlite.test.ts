@@ -7,27 +7,29 @@ import * as path from 'jsr:@std/path'
 import { Buffer } from 'node:buffer'
 import SqliteBackend, { rewordedAddonLoadError } from './database-sqlite.ts'
 import { SQLITE_DEFAULT_FILEPATH } from './backend-schemas.ts'
+import { withTempDir } from '../../test/test-helpers.ts'
 
-// Databases are created under `./test/temp/` (the project's scratch space,
-// already covered by `deno task test`'s `--allow-write=.`) rather than the OS
-// temp dir, which is outside the allowed write scope.
-let tempCounter = 0
+// Databases are created under the shared scratch space (`./test/temp/`, already
+// covered by `deno task test`'s `--allow-write=.`) rather than the OS temp dir,
+// which is outside the allowed write scope.
+//
+// The inner try/finally closes the backend before withTempDir removes the
+// directory: unlinking an open database file is not something to rely on.
 async function withBackend (
   fn: (backend: SqliteBackend, filepath: string) => Promise<void>
 ): Promise<void> {
-  const dir = path.join(path.resolve('test/temp'), `sqlite-backend-${Date.now()}-${tempCounter++}`)
-  await Deno.mkdir(dir, { recursive: true })
-  const filepath = path.join(dir, 'chelonia.db')
-  const backend = new SqliteBackend({ filepath })
-  try {
-    await backend.init()
-    await fn(backend, filepath)
-  } finally {
+  await withTempDir(async (dir) => {
+    const filepath = path.join(dir, 'chelonia.db')
+    const backend = new SqliteBackend({ filepath })
     try {
-      backend.close()
-    } catch { /* already closed, or never opened */ }
-    await Deno.remove(dir, { recursive: true }).catch(() => {})
-  }
+      await backend.init()
+      await fn(backend, filepath)
+    } finally {
+      try {
+        backend.close()
+      } catch { /* already closed, or never opened */ }
+    }
+  })
 }
 
 Deno.test({
@@ -179,15 +181,31 @@ Deno.test({
 })
 
 Deno.test('rewordedAddonLoadError', async (t) => {
-  await t.step('rewords a missing native addon into an actionable message', () => {
+  // The platform is passed explicitly throughout, so that the suite checks both
+  // branches wherever it runs rather than only the one the host happens to be.
+  await t.step('blames glibc on Linux, where the shipped addon is glibc-linked', () => {
     const cause = Object.assign(
       new Error('Cannot find module \'build/Release/better_sqlite3.node\''),
       { code: 'MODULE_NOT_FOUND' }
     )
-    const error = rewordedAddonLoadError(cause)
+    const error = rewordedAddonLoadError(cause, 'linux')
     assert(error, 'a missing addon must be recognized')
     assertStringIncludes(error.message, 'musl')
     assertEquals(error.cause, cause)
+  })
+
+  await t.step('does not blame libc off Linux, where no binary is glibc-linked', () => {
+    // A Windows or macOS binary whose embedded addon has gone missing is a
+    // damaged install, not a libc mismatch: the advice has to be reinstalling.
+    for (const os of ['windows', 'darwin'] as const) {
+      const cause = new Error('Cannot find module \'prebuilds/win32-x64.node\'')
+      const error = rewordedAddonLoadError(cause, os)
+      assert(error, `a missing addon must still be recognized on ${os}`)
+      assertEquals(error.message.includes('musl'), false, `${os} must not mention musl`)
+      assertEquals(error.message.includes('glibc'), false, `${os} must not mention glibc`)
+      assertStringIncludes(error.message, 'reinstall')
+      assertEquals(error.cause, cause)
+    }
   })
 
   await t.step('recognizes the failure by message when no code is set', () => {
@@ -214,5 +232,7 @@ Deno.test('rewordedAddonLoadError', async (t) => {
       rewordedAddonLoadError(Object.assign(new Error('permission denied'), { code: 'EACCES' })),
       null
     )
+    // Unrelated on every platform, not just the host's.
+    assertEquals(rewordedAddonLoadError(new Error('unable to open database file'), 'windows'), null)
   })
 })

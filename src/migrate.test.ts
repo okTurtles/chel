@@ -12,7 +12,7 @@ Deno.test('isSameSqliteFile', async (t) => {
   await t.step('true when both sides resolve to one file', () => {
     // Migrating a SQLite database onto itself cannot work: the source is
     // walked with a cursor that keeps its connection busy for the whole run,
-    // so writes to the "target" are refused rather than landing.
+    // so writes to the "target" are rejected rather than applied.
     assertEquals(
       isSameSqliteFile('sqlite', 'sqlite', { filepath: 'data/db.sqlite' }, {
         filepath: './data/db.sqlite'

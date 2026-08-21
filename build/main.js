@@ -47824,13 +47824,11 @@ __export(database_sqlite_exports, {
   default: () => SqliteBackend,
   rewordedAddonLoadError: () => rewordedAddonLoadError
 });
-function rewordedAddonLoadError(cause) {
+function rewordedAddonLoadError(cause, os = Deno.build.os) {
   const message = cause instanceof Error ? cause.message : "";
   if (!/better_sqlite3\.node|prebuilds[\\/]/.test(message)) return null;
-  return new Error(
-    "Could not load the SQLite native addon. The pre-built binaries chel ships are linked against glibc, so musl-based distributions (Alpine, for example) are not covered; run chel from source with Deno there, or pick a different database backend.",
-    { cause }
-  );
+  const advice = os === "linux" ? "The pre-built binaries chel ships for Linux are linked against glibc, so musl-based distributions (Alpine, for example) are not covered; run chel from source with Deno there, or pick a different database backend." : "The copy embedded in this binary could not be read; reinstall @chelonia/cli, or pick a different database backend.";
+  return new Error(`Could not load the SQLite native addon. ${advice}`, { cause });
 }
 var SqliteBackend;
 var init_database_sqlite = __esm({
@@ -47862,12 +47860,15 @@ var init_database_sqlite = __esm({
       // through these two, so that using the backend after close() reports what
       // actually happened instead of throwing from inside the driver (or, worse,
       // dereferencing null).
+      notOpenError() {
+        return new Error(`The ${this.filename} SQLite database is not open.`);
+      }
       openDb() {
-        if (!this.db) throw new Error(`The ${this.filename} SQLite database is not open.`);
+        if (!this.db) throw this.notOpenError();
         return this.db;
       }
-      stmt(statement) {
-        if (!statement) throw new Error(`The ${this.filename} SQLite database is not open.`);
+      requireStatement(statement) {
+        if (!statement) throw this.notOpenError();
         return statement;
       }
       run(sql) {
@@ -47905,13 +47906,13 @@ var init_database_sqlite = __esm({
       }
       // deno-lint-ignore require-await
       async readData(key) {
-        return this.stmt(this.readStatement).get(key)?.value;
+        return this.requireStatement(this.readStatement).get(key)?.value;
       }
       async writeData(key, value) {
-        await this.stmt(this.writeStatement).run(key, value);
+        await this.requireStatement(this.writeStatement).run(key, value);
       }
       async deleteData(key) {
-        await this.stmt(this.deleteStatement).run(key);
+        await this.requireStatement(this.deleteStatement).run(key);
       }
       // Idempotent, and leaves the instance genuinely closed rather than half
       // open: without clearing the statements too, a later read would throw from
@@ -47932,12 +47933,12 @@ var init_database_sqlite = __esm({
       // Callers must therefore drain this iterator before writing through the same
       // backend; see the note on DatabaseBackend.iterKeys.
       async *iterKeys() {
-        for (const row of this.stmt(this.iterKeysStatement).iterate()) {
+        for (const row of this.requireStatement(this.iterKeysStatement).iterate()) {
           yield row.key;
         }
       }
       async keyCount() {
-        const result = await this.stmt(this.keyCountStatement).get();
+        const result = await this.requireStatement(this.keyCountStatement).get();
         return result?.count ?? 0;
       }
     };
@@ -70293,7 +70294,7 @@ async function migrate(args) {
     );
     if (sharedFile) {
       exit(
-        `Source and target both use the SQLite database file ${sharedFile}. Migrating a database onto itself cannot work: the source is read through a cursor that keeps its connection busy for the whole run, so the writes are refused rather than landing. Pass a different filepath with --to-config.`
+        `Source and target both use the SQLite database file ${sharedFile}. Migrating a database onto itself cannot work: the source is read through a cursor that keeps its connection busy for the whole run, so writes are rejected rather than applied. Point the source or the target at a different file (for example with --from-config or --to-config).`
       );
     }
     const Ctor = (await globImport_serve_database_ts(`./serve/database-${to}.ts`)).default;

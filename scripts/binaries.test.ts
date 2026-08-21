@@ -138,6 +138,28 @@ Deno.test('computeFingerprint', async (t) => {
     })
   })
 
+  await t.step('is independent of the order the addon paths are given in', async () => {
+    // The digests of both the bundle and the addons are sorted before they are
+    // hashed, because they are collected in `readDir` order and that order is
+    // filesystem-dependent. Only the addon side is reachable from out here (a
+    // directory has one read order per run), so this is what pins the
+    // invariant: an unsorted key would recompile every target on any machine
+    // whose order differs from the one the stamp was written on.
+    await withTempDir(async (dir) => {
+      await withTempDir(async (addons) => {
+        await Deno.writeTextFile(`${dir}/main.js`, 'console.log(1)')
+        const first = `${addons}/first.node`
+        const second = `${addons}/second.node`
+        await Deno.writeTextFile(first, 'one')
+        await Deno.writeTextFile(second, 'two')
+        assertEquals(
+          await computeFingerprint(dir, [first, second], FLAGS),
+          await computeFingerprint(dir, [second, first], FLAGS)
+        )
+      })
+    })
+  })
+
   await t.step('ignores addon paths that do not exist', async () => {
     // Fingerprinting stays usable over arbitrary trees; a genuinely missing
     // addon is caught by assertNativeAddonsPresent, not here.

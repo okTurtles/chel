@@ -75,6 +75,15 @@ export function symlinkSupported (): Promise<boolean> {
 
 // Presence checks over a path. Every failure counts as absent, not just
 // NotFound: a path the test process cannot stat is of no use to it either.
+//
+// Deliberately more forgiving than the private `exists` in scripts/binaries.ts,
+// which rethrows anything that is not NotFound: there, a path that cannot be
+// stat'd has to abort the release rather than be quietly read as "needs
+// rebuilding". The two look alike but are not candidates for unification.
+//
+// Both spellings exist because a `Deno.test` step body cannot await: use
+// `existsSync` in synchronous steps, `exists` everywhere else. Importing one
+// under the other's name defeats the distinction.
 export async function exists (path: string): Promise<boolean> {
   try {
     await Deno.stat(path)

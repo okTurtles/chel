@@ -150,12 +150,18 @@ export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> 
       toConfigOpts
     )
     if (sharedFile) {
+      // Both sides are inspected, so either side can be the one that has to
+      // move: naming only --to-config would hide the fix when the collision
+      // comes from a router entry on the source, and "a different filepath"
+      // would understate the case where the target simply inherited the
+      // filepath from chel.toml.
       exit(
         `Source and target both use the SQLite database file ${sharedFile}. ` +
         'Migrating a database onto itself cannot work: the source is read ' +
         'through a cursor that keeps its connection busy for the whole run, so ' +
-        'the writes are refused rather than landing. Pass a different filepath ' +
-        'with --to-config.'
+        'writes are rejected rather than applied. Point the source or the ' +
+        'target at a different file (for example with --from-config or ' +
+        '--to-config).'
       )
     }
 

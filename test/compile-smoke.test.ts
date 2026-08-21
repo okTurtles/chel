@@ -16,6 +16,7 @@
 import { assertEquals, assertStringIncludes } from 'jsr:@std/assert'
 import { binaryPath, ensureBinaries } from '../scripts/binaries.ts'
 import { TARGETS } from '../scripts/targets.ts'
+import { withTempDir } from './test-helpers.ts'
 
 const enabled = (Deno.env.get('CHEL_SMOKE_COMPILE') ?? '').toLowerCase()
 const ignore = !enabled || enabled === '0' || enabled === 'false'
@@ -36,9 +37,7 @@ Deno.test({
 
     // Run in a scratch directory: `migrate` creates `data/chelonia.db`, and
     // opening it is what forces the addon to load.
-    await Deno.mkdir('./test/temp', { recursive: true })
-    const cwd = await Deno.makeTempDir({ dir: './test/temp' })
-    try {
+    await withTempDir(async (cwd) => {
       const { code, stdout, stderr } = await new Deno.Command(
         await Deno.realPath(binaryPath(hostTarget)),
         {
@@ -54,8 +53,6 @@ Deno.test({
       // Printed by src/serve/database-sqlite.ts once the native addon has
       // opened the database; absent when the wrong prebuild was embedded.
       assertStringIncludes(output, 'SQLite database.')
-    } finally {
-      await Deno.remove(cwd, { recursive: true })
-    }
+    })
   }
 })

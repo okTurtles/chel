@@ -484,9 +484,9 @@ When you install `@chelonia/cli`, npm automatically selects the correct
 sub-package for your platform via `optionalDependencies`. Windows arm64 is
 currently **not** supported.
 
-The binaries are linked against glibc, so Linux distributions built on musl
-libc (Alpine, for example) are **not** covered: the SQLite backend's native
-addon each binary carries is the glibc build for its platform. Running `chel`
+The Linux binaries are linked against glibc, so Linux distributions built on
+musl libc (Alpine, for example) are **not** covered: the native SQLite addon
+each Linux binary carries is the glibc build for its platform. Running `chel`
 from source with Deno works there instead. Only the SQLite backend is affected,
 and selecting it on such a system fails with a message saying so rather than
 with a missing-module error naming a build path that was never there.
