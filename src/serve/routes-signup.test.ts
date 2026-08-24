@@ -1,5 +1,7 @@
 import 'jsr:@db/sqlite'
 import { Buffer } from 'node:buffer'
+// @deno-types="npm:@types/nconf"
+import nconf from 'npm:nconf'
 import {
   buildShelterAuthHeader,
   createCID,
@@ -51,6 +53,30 @@ Deno.test({
         }
       })
 
+      await t.step('a realistic registration fits comfortably under the message size cap', async () => {
+        // The other steps use a minimal one-key first message, which says
+        // nothing about whether the default cap is usable in practice. A real
+        // registration carries several keys, each with its encrypted private
+        // half, so this step pins the default against a realistic payload: if
+        // clients grow their key set enough to cross the cap, every signup
+        // starts failing with a 413, and this fails first.
+        const maxFirstMessageBytes = 5 * 1024
+        const { serialized, contractID } = await createTestContractRegistration({
+          name: 'com.example/realistic-identity',
+          keys: 'realistic'
+        })
+        const payloadBytes = Buffer.byteLength(serialized)
+        if (payloadBytes > maxFirstMessageBytes * 0.75) {
+          throw new Error(
+            `A realistic registration is ${payloadBytes} bytes, leaving too little headroom under the ${maxFirstMessageBytes} byte cap`
+          )
+        }
+        const res = await postEvent(serialized)
+        const body = await res.text()
+        if (res.status !== 200) throw new Error(`Expected 200 but got ${res.status}: ${body}`)
+        if (body !== contractID) throw new Error(`Expected ${contractID} but got ${body}`)
+      })
+
       await t.step('unattributed first message over the message size cap returns 413', async () => {
         const maxFirstMessageBytes = 5 * 1024
         const { serialized, contractID } = await createTestContractRegistration({
@@ -93,6 +119,18 @@ Deno.test({
         const res = await postEvent(serialized)
         await res.body?.cancel()
         if (res.status !== 413) throw new Error(`Expected 413 but got ${res.status}`)
+      })
+
+      await t.step('a manifest with an unusable contractSlim entry returns 422', async () => {
+        // Rejected rather than silently skipped: otherwise the slim source
+        // would escape the size check
+        const { serialized } = await createTestContractRegistration({
+          name: 'com.example/bad-slim',
+          malformedContractSlim: true
+        })
+        const res = await postEvent(serialized)
+        await res.body?.cancel()
+        if (res.status !== 422) throw new Error(`Expected 422 but got ${res.status}`)
       })
 
       await t.step('unattributed first message without a deployed manifest returns 422', async () => {
@@ -150,6 +188,25 @@ Deno.test({
         const nameRes = await fetch(`${baseURL}/name/attributedname`)
         await nameRes.body?.cancel()
         if (nameRes.status !== 404) throw new Error(`Expected 404 but got ${nameRes.status}`)
+      })
+
+      await t.step('the signup kill switch is checked before any manifest read', async () => {
+        // Requests that are rejected outright must not be able to trigger the
+        // manifest and contract source reads: a request whose manifest is not
+        // even deployed (which would otherwise be a 422) gets the 403 instead
+        const { serialized } = await createTestContractRegistration({
+          name: 'com.example/disabled-signup'
+        })
+        const head = JSON.parse(JSON.parse(serialized).head)
+        await sbp('chelonia.db/delete', head.manifest)
+        nconf.set('server:signup:disabled', true)
+        try {
+          const res = await postEvent(serialized)
+          await res.body?.cancel()
+          if (res.status !== 403) throw new Error(`Expected 403 but got ${res.status}`)
+        } finally {
+          nconf.clear('server:signup:disabled')
+        }
       })
     } finally {
       await stopTestServer()

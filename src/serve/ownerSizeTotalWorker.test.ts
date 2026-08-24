@@ -3,16 +3,11 @@ import sbp from 'npm:@sbp/sbp'
 import { assertEquals } from 'jsr:@std/assert'
 import createWorker from './createWorker.ts'
 import { appendToIndexFactory, closeDB, initDB, updateSize as updateSize_ } from './database.ts'
+import { randCID } from './worker-test-helpers.ts'
 
 let worker = createWorker(new URL('./ownerSizeTotalWorker.ts', import.meta.url).toString())
 
 const randInt = (upperBound: number) => Math.random() * upperBound | 0
-
-const randCID = () => {
-  const buffer = new Uint8Array(16)
-  crypto.getRandomValues(buffer)
-  return createCID(buffer)
-}
 
 const updateSize = (resourceID: string, sizeKey: string, size: number) => {
   return updateSize_(resourceID, sizeKey, size).then(() => {
@@ -284,8 +279,8 @@ Deno.test({
   name: 'Identity contract and its DM subresources share a single total size',
   async fn () {
     await initDB()
-    const worker = createWorker(new URL('./ownerSizeTotalWorker.ts', import.meta.url).toString())
-    await worker.ready
+    const sizeWorker = createWorker(new URL('./ownerSizeTotalWorker.ts', import.meta.url).toString())
+    await sizeWorker.ready
 
     try {
       // The identity: an unattributed billable entity with no owner of its own
@@ -294,7 +289,7 @@ Deno.test({
       await appendToIndexFactory('_private_billable_entities')(identityID)
       const identityFirstMessageBytes = 700
       await updateSize_(identityID, `_private_size_${identityID}`, identityFirstMessageBytes)
-      await worker.rpcSbp('worker/updateSizeSideEffects', {
+      await sizeWorker.rpcSbp('worker/updateSizeSideEffects', {
         resourceID: identityID,
         size: identityFirstMessageBytes,
         ultimateOwnerID: identityID
@@ -308,18 +303,18 @@ Deno.test({
       await appendToIndexFactory(`_private_resources_${identityID}`)(dmID)
       // ...which later receives a message of its own
       await updateSize_(dmID, `_private_size_${dmID}`, 200)
-      await worker.rpcSbp('worker/updateSizeSideEffects', {
+      await sizeWorker.rpcSbp('worker/updateSizeSideEffects', {
         resourceID: dmID,
         size: 600,
         ultimateOwnerID: identityID
       })
-      await worker.rpcSbp('worker/updateSizeSideEffects', {
+      await sizeWorker.rpcSbp('worker/updateSizeSideEffects', {
         resourceID: dmID,
         size: 200,
         ultimateOwnerID: identityID
       })
 
-      await worker.rpcSbp('backend/server/computeSizeTaskDeltas')
+      await sizeWorker.rpcSbp('backend/server/computeSizeTaskDeltas')
 
       const expectedTotal = identityFirstMessageBytes + 600 + 200
       assertEquals(
@@ -331,7 +326,7 @@ Deno.test({
       if (dmTotal != null) throw new Error(`Expected no total size for the DM subresource but got ${dmTotal}`)
     } finally {
       await closeDB()
-      await worker.terminate()
+      await sizeWorker.terminate()
     }
   }
 })

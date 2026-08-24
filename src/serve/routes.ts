@@ -19,6 +19,7 @@ import { zValidator } from 'npm:@hono/zod-validator'
 import type { Context, Hono, MiddlewareHandler } from 'npm:hono'
 import { bodyLimit } from 'npm:hono/body-limit'
 import { etag } from 'npm:hono/etag'
+import { positiveIntConfig } from './config-utils.ts'
 import { appendToIndexFactory, lookupUltimateOwner } from './database.ts'
 import logger from './logger.ts'
 import { getChallenge, getContractSalt, redeemSaltRegistrationToken, redeemSaltUpdateToken, register, registrationKey, updateContractSalt } from './zkppSalt.ts'
@@ -299,11 +300,16 @@ export function registerRoutes (app: Hono): void {
     clearInterval((limiter as unknown as { interval: ReturnType<typeof setInterval> }).interval)
   }
 
-  const FILE_UPLOAD_MAX_BYTES = nconf.get('server:fileUploadMaxBytes') || 30 * MEGABYTE
-  const SIGNUP_LIMIT_MIN = nconf.get('server:signup:limit:minute') || 2
-  const SIGNUP_LIMIT_HOUR = nconf.get('server:signup:limit:hour') || 10
-  const SIGNUP_LIMIT_DAY = nconf.get('server:signup:limit:day') || 50
+  const FILE_UPLOAD_MAX_BYTES = positiveIntConfig('server:fileUploadMaxBytes')
+  const SIGNUP_LIMIT_MIN = positiveIntConfig('server:signup:limit:minute')
+  const SIGNUP_LIMIT_HOUR = positiveIntConfig('server:signup:limit:hour')
+  const SIGNUP_LIMIT_DAY = positiveIntConfig('server:signup:limit:day')
   const SIGNUP_LIMIT_DISABLED = process.env.NODE_ENV !== 'production' || nconf.get('server:signup:limit:disabled')
+  // Read once here (rather than per request) so that a bad value is reported at
+  // startup and so the caps cannot be compared against a string; see
+  // config-utils.ts
+  const SIGNUP_MAX_FIRST_MESSAGE_BYTES = positiveIntConfig('server:signup:maxFirstMessageBytes')
+  const SIGNUP_MAX_CONTRACT_SIZE_BYTES = positiveIntConfig('server:signup:maxContractSizeBytes')
   const ARCHIVE_MODE = nconf.get('server:archiveMode')
 
   const limiterPerMinute = new Bottleneck.Group({
@@ -370,30 +376,14 @@ export function registerRoutes (app: Hono): void {
           // Unattributed (ownerless) first messages, i.e. identity contract
           // registration, are only allowed within configured size limits
           if (!credentials?.billableContractID && deserializedHEAD.isFirstMessage) {
-            if (Buffer.byteLength(payload) > nconf.get('server:signup:maxFirstMessageBytes')) {
+            // Checks are ordered cheapest first: the payload is already in
+            // memory, while the manifest and contract source checks below read
+            // from the database. Rejected requests must not be able to trigger
+            // those reads at line rate, so the kill switch and the rate limiter
+            // both run before them. This also means that requests failing the
+            // later checks consume a rate limit token.
+            if (Buffer.byteLength(payload) > SIGNUP_MAX_FIRST_MESSAGE_BYTES) {
               throw new HTTPException(413, { message: 'First message exceeds size limit' })
-            }
-            const manifest = await sbp('chelonia.db/get', deserializedHEAD.head.manifest)
-            let contractSourceHashes: string[]
-            try {
-              if (!manifest) throw new Error('empty manifest')
-              const parsedManifest = JSON.parse(manifest)
-              const { contract, contractSlim } = JSON.parse(parsedManifest.body)
-              if (typeof contract?.hash !== 'string') throw new Error('missing contract hash')
-              contractSourceHashes = [contract.hash]
-              if (typeof contractSlim?.hash === 'string') contractSourceHashes.push(contractSlim.hash)
-            } catch (e) {
-              if (e instanceof HTTPException) throw e
-              throw new HTTPException(422, { message: 'Invalid manifest' })
-            }
-            let contractSizeBytes = 0
-            for (const hash of contractSourceHashes) {
-              const source = await sbp('chelonia.db/get', hash)
-              if (typeof source !== 'string') throw new HTTPException(422, { message: 'Missing contract source' })
-              contractSizeBytes += Buffer.byteLength(source)
-            }
-            if (contractSizeBytes > nconf.get('server:signup:maxContractSizeBytes')) {
-              throw new HTTPException(413, { message: 'Contract source exceeds size limit' })
             }
             if (nconf.get('server:signup:disabled')) {
               throw new HTTPException(403, { message: 'Registration disabled' })
@@ -409,6 +399,36 @@ export function registerRoutes (app: Hono): void {
               } catch {
                 console.warn('rate limit hit for IP:', ip)
                 throw new HTTPException(429, { message: 'Rate limit exceeded' })
+              }
+            }
+            const manifest = await sbp('chelonia.db/get', deserializedHEAD.head.manifest)
+            let contractSourceHashes: string[]
+            try {
+              if (!manifest) throw new Error('empty manifest')
+              const parsedManifest = JSON.parse(manifest)
+              const { contract, contractSlim } = JSON.parse(parsedManifest.body)
+              if (typeof contract?.hash !== 'string') throw new Error('missing contract hash')
+              contractSourceHashes = [contract.hash]
+              // A present-but-malformed `contractSlim` is rejected rather than
+              // skipped: silently ignoring it would leave its source out of the
+              // size check while `handleEntry` would refuse the manifest anyway
+              if (contractSlim != null) {
+                if (typeof contractSlim.hash !== 'string') throw new Error('missing contractSlim hash')
+                contractSourceHashes.push(contractSlim.hash)
+              }
+            } catch (e) {
+              if (e instanceof HTTPException) throw e
+              throw new HTTPException(422, { message: 'Invalid manifest' })
+            }
+            // The cap is checked inside the loop so that an over-sized set of
+            // sources is rejected without reading all of them
+            let contractSizeBytes = 0
+            for (const hash of contractSourceHashes) {
+              const source = await sbp('chelonia.db/get', hash)
+              if (typeof source !== 'string') throw new HTTPException(422, { message: 'Missing contract source' })
+              contractSizeBytes += Buffer.byteLength(source)
+              if (contractSizeBytes > SIGNUP_MAX_CONTRACT_SIZE_BYTES) {
+                throw new HTTPException(413, { message: 'Contract source exceeds size limit' })
               }
             }
           }
@@ -428,19 +448,22 @@ export function registerRoutes (app: Hono): void {
           // Store attribution information
             if (credentials?.billableContractID) {
               await sbp('backend/server/saveOwner', credentials.billableContractID, deserializedHEAD.contractID)
-              // A billable entity has been created
+              // A `shelter-namespace-registration` header is deliberately
+              // ignored here: names identify billable entities (the root
+              // contract a user logs into), and this contract belongs to an
+              // existing one. Ignoring rather than rejecting keeps clients that
+              // send the header unconditionally working.
             } else {
+              // A billable entity has been created
               await sbp('backend/server/registerBillableEntity', deserializedHEAD.contractID)
-            }
-            // If this is the first message in a contract and the
-            // `shelter-namespace-registration` header is present, proceed with also
-            // registering a name for the new contract
-            const name = validatedHeaders['shelter-namespace-registration']
-            if (name) {
-              // Name registration is enabled only for contracts that become
-              // billable entities in this request (identity-like root contracts),
-              // regardless of the contract's name
-              if (!credentials?.billableContractID) {
+              // If the `shelter-namespace-registration` header is present,
+              // proceed with also registering a name for the new contract.
+              // Being in this branch is what makes a contract eligible: name
+              // registration no longer depends on the contract's name, so any
+              // ownerless root contract can claim one (see the registration
+              // section in README.md).
+              const name = validatedHeaders['shelter-namespace-registration']
+              if (name) {
                 try {
                   await sbp('backend/db/registerName', name, deserializedHEAD.contractID)
                 } catch (registerErr: unknown) {

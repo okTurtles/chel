@@ -1,8 +1,8 @@
-import { createCID } from 'npm:@chelonia/lib/functions'
 import sbp from 'npm:@sbp/sbp'
 import { assertEquals } from 'jsr:@std/assert'
 import createWorker from './createWorker.ts'
 import { appendToIndexFactory, closeDB, initDB } from './database.ts'
+import { randCID } from './worker-test-helpers.ts'
 
 // Mirrors `PICOCREDITS_PER_BYTESECOND` in creditsWorker.ts, which is not exported
 const PICOCREDITS_PER_BYTESECOND = 10n
@@ -19,12 +19,6 @@ const FREE_ALLOWANCE_BYTES = 1000
 const SMALL_ENTITY_SIZE = 400
 const LARGE_ENTITY_SIZE = 2500
 const LARGE_ENTITY_BILLABLE_SIZE = LARGE_ENTITY_SIZE - FREE_ALLOWANCE_BYTES
-
-const randCID = () => {
-  const buffer = new Uint8Array(16)
-  crypto.getRandomValues(buffer)
-  return createCID(buffer)
-}
 
 const granularHistoryKey = (entity: string) => `_private_ownerBalanceHistoryGranular_${entity}`
 const balanceKey = (entity: string) => `_private_ownerPicocreditBalance_${entity}`

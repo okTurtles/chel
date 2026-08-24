@@ -24,9 +24,10 @@ export const nconfDefaults = {
       }
     },
     // Billing settings. The credits worker has no access to nconf (it runs in
-    // a separate worker process), so `freeAllowanceBytes` is persisted to the
-    // database at startup (see src/serve/server.ts) and re-read each billing
-    // cycle (see src/serve/creditsWorker.ts).
+    // its own Worker thread, with a separate module instance), so
+    // `freeAllowanceBytes` is persisted to the database at startup (see
+    // src/serve/server.ts) and re-read each billing cycle (see
+    // src/serve/creditsWorker.ts).
     billing: {
       // Per-billable-entity storage (identity contract + everything it owns)
       // that is not charged for. 0 disables the free tier.

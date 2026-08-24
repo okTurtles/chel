@@ -12877,29 +12877,29 @@ var require_nconf = __commonJS({
   "node_modules/.deno/nconf@0.13.0/node_modules/nconf/lib/nconf.js"(exports2, module15) {
     var common4 = require_common();
     var Provider = require_provider().Provider;
-    var nconf11 = module15.exports = new Provider();
-    nconf11.version = require_package().version;
-    nconf11.__defineGetter__("Argv", function() {
+    var nconf12 = module15.exports = new Provider();
+    nconf12.version = require_package().version;
+    nconf12.__defineGetter__("Argv", function() {
       return require_argv().Argv;
     });
-    nconf11.__defineGetter__("Env", function() {
+    nconf12.__defineGetter__("Env", function() {
       return require_env().Env;
     });
-    nconf11.__defineGetter__("File", function() {
+    nconf12.__defineGetter__("File", function() {
       return require_file().File;
     });
-    nconf11.__defineGetter__("Literal", function() {
+    nconf12.__defineGetter__("Literal", function() {
       return require_literal().Literal;
     });
-    nconf11.__defineGetter__("Memory", function() {
+    nconf12.__defineGetter__("Memory", function() {
       return require_memory().Memory;
     });
-    nconf11.key = common4.key;
-    nconf11.path = common4.path;
-    nconf11.loadFiles = common4.loadFiles;
-    nconf11.loadFilesSync = common4.loadFilesSync;
-    nconf11.formats = require_formats();
-    nconf11.Provider = Provider;
+    nconf12.key = common4.key;
+    nconf12.path = common4.path;
+    nconf12.loadFiles = common4.loadFiles;
+    nconf12.loadFilesSync = common4.loadFilesSync;
+    nconf12.formats = require_formats();
+    nconf12.Provider = Provider;
   }
 });
 // @__NO_SIDE_EFFECTS__
@@ -61979,7 +61979,7 @@ var require_websocket_server = __commonJS({
     }
   }
 });
-var import_npm_nconf10 = __toESM(require_nconf());
+var import_npm_nconf11 = __toESM(require_nconf());
 function getLineColFromPtr(string3, ptr) {
   let lines = string3.slice(0, ptr).split(/\r\n|\n|\r/g);
   return [lines.length, lines.pop().length + 1];
@@ -72935,12 +72935,21 @@ dashboardPort = ${tomlValue(d.server.dashboardPort)}
 
 [server.signup]
 # disabled = ${tomlValue(d.server.signup.disabled)}
+# Size sanity caps for ownerless (unattributed) first messages, i.e. identity
+# contract registration. They bound how much data can be written 'for free'.
+# maxFirstMessageBytes = ${tomlValue(d.server.signup.maxFirstMessageBytes)}
+# maxContractSizeBytes = ${tomlValue(d.server.signup.maxContractSizeBytes)}
 
 [server.signup.limit]
 # disabled = ${tomlValue(d.server.signup.limit.disabled)}
 # minute = ${tomlValue(d.server.signup.limit.minute)}
 # hour = ${tomlValue(d.server.signup.limit.hour)}
 # day = ${tomlValue(d.server.signup.limit.day)}
+
+[server.billing]
+# Per-billable-entity storage (identity contract + everything it owns) that is
+# not charged for. Set to 0 to charge from the first byte.
+# freeAllowanceBytes = ${tomlValue(d.server.billing.freeAllowanceBytes)}
 
 [server.vapid]
 # email = "you@example.com"
@@ -73168,6 +73177,7 @@ init_zod();
 init_backend_schemas();
 var portSchema = number2().int().min(1, "must be an integer between 1 and 65535").max(65535, "must be an integer between 1 and 65535");
 var positiveInt = number2().int().positive("must be a positive integer");
+var nonNegativeInt = number2().int().nonnegative("must be a non-negative integer");
 var BackendOptionsSchema = strictObject({
   fs: optional(FsOptionsSchema),
   sqlite: optional(SqliteOptionsSchema),
@@ -73201,6 +73211,11 @@ var ConfigSchema = strictObject({
     reclaimForeignSubscriptions: optional(boolean2()),
     signup: optional(strictObject({
       disabled: optional(boolean2()),
+      // Size sanity caps for ownerless (unattributed) first messages; a cap of
+      // 0 is rejected because 'disabled = true' is the supported way to block
+      // signups entirely.
+      maxFirstMessageBytes: optional(positiveInt),
+      maxContractSizeBytes: optional(positiveInt),
       limit: optional(strictObject({
         disabled: optional(boolean2()),
         // Positive (not merely non-negative) to match the runtime, which falls
@@ -73210,6 +73225,12 @@ var ConfigSchema = strictObject({
         hour: optional(positiveInt),
         day: optional(positiveInt)
       }))
+    })),
+    billing: optional(strictObject({
+      // Per-billable-entity storage that is not charged for; 0 disables the
+      // free tier (charging from the first byte), so non-negative values are
+      // accepted (unlike the signup caps above).
+      freeAllowanceBytes: optional(nonNegativeInt)
     })),
     // The VAPID email is read from `server:vapid:email` at runtime
     // (see `src/serve/vapid.ts`).
@@ -73740,7 +73761,7 @@ init_esm3();
 init_esm2();
 init_esm();
 var import_npm_chalk4 = __toESM(require_source());
-var import_npm_nconf8 = __toESM(require_nconf());
+var import_npm_nconf9 = __toESM(require_nconf());
 var SERVER_EXITING = "server-exiting";
 var SERVER_RUNNING = "server-running";
 init_SPMessage();
@@ -77140,6 +77161,77 @@ var etag = (options2) => {
     }
   };
 };
+var import_npm_nconf5 = __toESM(require_nconf());
+var nconfDefaults = {
+  // Unique, stable identity for this server instance. Required at runtime by
+  // `chel serve` (see `src/serve/server.ts`) to scope push subscriptions;
+  // left unset here so that file-only commands and `chel init` work without it.
+  server_id: void 0,
+  server: {
+    appDir: ".",
+    host: "0.0.0.0",
+    port: 8e3,
+    dashboardPort: 8888,
+    fileUploadMaxBytes: 31457280,
+    signup: {
+      disabled: false,
+      // Size sanity caps for unattributed (ownerless) first messages, i.e.
+      // identity contract registration. They bound how much data can be written
+      // 'for free'; see POST /event in src/serve/routes.ts.
+      maxFirstMessageBytes: 5 * 1024,
+      maxContractSizeBytes: 500 * 1024,
+      limit: {
+        disabled: false,
+        minute: 2,
+        hour: 10,
+        day: 50
+      }
+    },
+    // Billing settings. The credits worker has no access to nconf (it runs in
+    // its own Worker thread, with a separate module instance), so
+    // `freeAllowanceBytes` is persisted to the database at startup (see
+    // src/serve/server.ts) and re-read each billing cycle (see
+    // src/serve/creditsWorker.ts).
+    billing: {
+      // Per-billable-entity storage (identity contract + everything it owns)
+      // that is not charged for. 0 disables the free tier.
+      freeAllowanceBytes: 10 * 1024 * 1024
+    },
+    vapid: {
+      email: void 0
+    },
+    messages: [],
+    maxEventsBatchSize: 500,
+    archiveMode: false,
+    reclaimForeignSubscriptions: false
+  },
+  database: {
+    lruNumItems: 1e4,
+    backend: "mem",
+    backendOptions: {}
+  }
+};
+var defaultFor = (key) => {
+  return key.split(":").reduce((acc, part) => {
+    return acc?.[part];
+  }, nconfDefaults);
+};
+var readIntConfig = (key, allowZero) => {
+  const fallback = defaultFor(key);
+  if (typeof fallback !== "number") {
+    throw new Error(`No numeric default defined for configuration key '${key}'`);
+  }
+  const raw2 = import_npm_nconf5.default.get(key);
+  if (raw2 == null) return fallback;
+  const value = typeof raw2 === "number" ? raw2 : Number(raw2);
+  if (!Number.isSafeInteger(value) || value < 0 || value === 0 && !allowZero) {
+    console.warn(`[config] Invalid value for '${key}': ${JSON.stringify(raw2)}. Using ${fallback}.`);
+    return fallback;
+  }
+  return value;
+};
+var positiveIntConfig = (key) => readIntConfig(key, false);
+var nonNegativeIntConfig = (key) => readIntConfig(key, true);
 var import_npm_pino = __toESM(require_pino());
 var verboseByDefault = process6.env.NODE_ENV === "development" || process6.env.CI || process6.env.CYPRESS_RECORD_KEY || process6.env.PRETTY;
 function getLogLevel() {
@@ -77183,7 +77275,7 @@ function initializeLogger() {
   console.error = logger.error.bind(logger);
 }
 var logger_default = logger;
-var import_npm_nconf5 = __toESM(require_nconf());
+var import_npm_nconf6 = __toESM(require_nconf());
 init_zod();
 function extractBearer(c) {
   const authorization = c.req.header("authorization");
@@ -77360,7 +77452,7 @@ function installRateLimiterSelectorsOnce() {
 }
 function getStaticServeConfig() {
   const isCheloniaDashboard = process7.env.IS_CHELONIA_DASHBOARD_DEV;
-  const appDir = import_npm_nconf5.default.get("server:appDir") || ".";
+  const appDir = import_npm_nconf6.default.get("server:appDir") || ".";
   const dashboardDir = import.meta.dirname || "./build/dist-dashboard";
   return {
     distAssets: path6.resolve(path6.join(isCheloniaDashboard ? dashboardDir : appDir, "assets")),
@@ -77428,12 +77520,14 @@ function registerRoutes(app) {
     limiter.disconnect();
     clearInterval(limiter.interval);
   }
-  const FILE_UPLOAD_MAX_BYTES = import_npm_nconf5.default.get("server:fileUploadMaxBytes") || 30 * MEGABYTE;
-  const SIGNUP_LIMIT_MIN = import_npm_nconf5.default.get("server:signup:limit:minute") || 2;
-  const SIGNUP_LIMIT_HOUR = import_npm_nconf5.default.get("server:signup:limit:hour") || 10;
-  const SIGNUP_LIMIT_DAY = import_npm_nconf5.default.get("server:signup:limit:day") || 50;
-  const SIGNUP_LIMIT_DISABLED = process7.env.NODE_ENV !== "production" || import_npm_nconf5.default.get("server:signup:limit:disabled");
-  const ARCHIVE_MODE = import_npm_nconf5.default.get("server:archiveMode");
+  const FILE_UPLOAD_MAX_BYTES = positiveIntConfig("server:fileUploadMaxBytes");
+  const SIGNUP_LIMIT_MIN = positiveIntConfig("server:signup:limit:minute");
+  const SIGNUP_LIMIT_HOUR = positiveIntConfig("server:signup:limit:hour");
+  const SIGNUP_LIMIT_DAY = positiveIntConfig("server:signup:limit:day");
+  const SIGNUP_LIMIT_DISABLED = process7.env.NODE_ENV !== "production" || import_npm_nconf6.default.get("server:signup:limit:disabled");
+  const SIGNUP_MAX_FIRST_MESSAGE_BYTES = positiveIntConfig("server:signup:maxFirstMessageBytes");
+  const SIGNUP_MAX_CONTRACT_SIZE_BYTES = positiveIntConfig("server:signup:maxContractSizeBytes");
+  const ARCHIVE_MODE = import_npm_nconf6.default.get("server:archiveMode");
   const limiterPerMinute = new import_npm_bottleneck.default.Group({
     strategy: import_npm_bottleneck.default.strategy.LEAK,
     highWater: 0,
@@ -77488,20 +77582,10 @@ function registerRoutes(app) {
           }
           const credentials = c.get("credentials");
           if (!credentials?.billableContractID && deserializedHEAD.isFirstMessage) {
-            const manifest2 = await esm_default("chelonia.db/get", deserializedHEAD.head.manifest);
-            let name;
-            try {
-              if (!manifest2) throw new Error("empty manifest");
-              const parsedManifest = JSON.parse(manifest2);
-              ({ name } = JSON.parse(parsedManifest.body));
-            } catch (e2) {
-              if (e2 instanceof HTTPException) throw e2;
-              throw new HTTPException(422, { message: "Invalid manifest" });
+            if (Buffer14.byteLength(payload) > SIGNUP_MAX_FIRST_MESSAGE_BYTES) {
+              throw new HTTPException(413, { message: "First message exceeds size limit" });
             }
-            if (name !== "gi.contracts/identity") {
-              throw new HTTPException(401, { message: "This contract type requires ownership information" });
-            }
-            if (import_npm_nconf5.default.get("server:signup:disabled")) {
+            if (import_npm_nconf6.default.get("server:signup:disabled")) {
               throw new HTTPException(403, { message: "Registration disabled" });
             }
             if (!SIGNUP_LIMIT_DISABLED) {
@@ -77513,6 +77597,31 @@ function registerRoutes(app) {
               } catch {
                 console.warn("rate limit hit for IP:", ip);
                 throw new HTTPException(429, { message: "Rate limit exceeded" });
+              }
+            }
+            const manifest2 = await esm_default("chelonia.db/get", deserializedHEAD.head.manifest);
+            let contractSourceHashes;
+            try {
+              if (!manifest2) throw new Error("empty manifest");
+              const parsedManifest = JSON.parse(manifest2);
+              const { contract, contractSlim } = JSON.parse(parsedManifest.body);
+              if (typeof contract?.hash !== "string") throw new Error("missing contract hash");
+              contractSourceHashes = [contract.hash];
+              if (contractSlim != null) {
+                if (typeof contractSlim.hash !== "string") throw new Error("missing contractSlim hash");
+                contractSourceHashes.push(contractSlim.hash);
+              }
+            } catch (e2) {
+              if (e2 instanceof HTTPException) throw e2;
+              throw new HTTPException(422, { message: "Invalid manifest" });
+            }
+            let contractSizeBytes = 0;
+            for (const hash3 of contractSourceHashes) {
+              const source = await esm_default("chelonia.db/get", hash3);
+              if (typeof source !== "string") throw new HTTPException(422, { message: "Missing contract source" });
+              contractSizeBytes += Buffer14.byteLength(source);
+              if (contractSizeBytes > SIGNUP_MAX_CONTRACT_SIZE_BYTES) {
+                throw new HTTPException(413, { message: "Contract source exceeds size limit" });
               }
             }
           }
@@ -77528,11 +77637,8 @@ function registerRoutes(app) {
               await esm_default("backend/server/saveOwner", credentials.billableContractID, deserializedHEAD.contractID);
             } else {
               await esm_default("backend/server/registerBillableEntity", deserializedHEAD.contractID);
-            }
-            const name = validatedHeaders["shelter-namespace-registration"];
-            if (name) {
-              const cheloniaState = esm_default("chelonia/rootState");
-              if (cheloniaState.contracts[deserializedHEAD.contractID]?.type === "gi.contracts/identity") {
+              const name = validatedHeaders["shelter-namespace-registration"];
+              if (name) {
                 try {
                   await esm_default("backend/db/registerName", name, deserializedHEAD.contractID);
                 } catch (registerErr) {
@@ -78027,7 +78133,7 @@ function registerRoutes(app) {
     }
   );
   app.get("/serverMessages", function(c) {
-    const messages = import_npm_nconf5.default.get("server:messages");
+    const messages = import_npm_nconf6.default.get("server:messages");
     if (!messages) return c.json([]);
     return c.json(messages, 200, { "Cache-Control": "no-store" });
   });
@@ -78169,7 +78275,7 @@ var PUBSUB_INSTANCE = "@instance/pubsub";
 init_esm4();
 init_functions();
 init_esm();
-var import_npm_nconf6 = __toESM(require_nconf());
+var import_npm_nconf7 = __toESM(require_nconf());
 var rfc8291Ikm_default = async (uaPublic, salt) => {
   const [[asPrivateKey, asPublic], uaPublicKey] = await Promise.all([
     crypto.subtle.generateKey(
@@ -78252,7 +78358,7 @@ var saveSubscription = (server, subscriptionId) => {
     // Tag the subscription with the configured `server_id` so that, on load,
     // entries written by a different instance (e.g. a staging DB restored from
     // a prod backup) can be detected and skipped. See `src/serve/server.ts`.
-    import_npm_nconf6.default.get("server_id"),
+    import_npm_nconf7.default.get("server_id"),
     server.pushSubscriptions[subscriptionId].settings,
     server.pushSubscriptions[subscriptionId],
     [...server.pushSubscriptions[subscriptionId].subscriptions]
@@ -78781,7 +78887,7 @@ var publicMethods2 = {
     socket.send(createErrorResponse({ ...request }), () => socket.terminate());
   }
 };
-var import_npm_nconf7 = __toESM(require_nconf());
+var import_npm_nconf8 = __toESM(require_nconf());
 var currentApp = null;
 var currentHttpServer = null;
 var currentOwnerSizeTotalWorker = void 0;
@@ -79042,7 +79148,7 @@ function installServerSelectorsOnce() {
   });
 }
 function assertServerIdConfigured() {
-  if (!import_npm_nconf7.default.get("server_id")) {
+  if (!import_npm_nconf8.default.get("server_id")) {
     throw new Error(
       "Missing required config 'server_id'. Run `chel init` to generate one, or set it in chel.toml / the `server_id` environment variable."
     );
@@ -79050,12 +79156,12 @@ function assertServerIdConfigured() {
 }
 async function startServer() {
   assertServerIdConfigured();
-  const configuredServerId = import_npm_nconf7.default.get("server_id");
-  const reclaimForeignSubscriptions = !!import_npm_nconf7.default.get("server:reclaimForeignSubscriptions");
-  const appManifest = import_npm_nconf7.default.get("appManifest") || join72(import_npm_nconf7.default.get("server:appDir") || process9.cwd(), "chelonia.json");
-  const ARCHIVE_MODE = import_npm_nconf7.default.get("server:archiveMode");
-  const host = import_npm_nconf7.default.get("server:host") || "0.0.0.0";
-  const port = import_npm_nconf7.default.get("server:port") ?? 8e3;
+  const configuredServerId = import_npm_nconf8.default.get("server_id");
+  const reclaimForeignSubscriptions = !!import_npm_nconf8.default.get("server:reclaimForeignSubscriptions");
+  const appManifest = import_npm_nconf8.default.get("appManifest") || join72(import_npm_nconf8.default.get("server:appDir") || process9.cwd(), "chelonia.json");
+  const ARCHIVE_MODE = import_npm_nconf8.default.get("server:archiveMode");
+  const host = import_npm_nconf8.default.get("server:host") || "0.0.0.0";
+  const port = import_npm_nconf8.default.get("server:port") ?? 8e3;
   if (CREDITS_WORKER_TASK_TIME_INTERVAL && OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL > CREDITS_WORKER_TASK_TIME_INTERVAL) {
     console.error("The size calculation worker must run more frequently than the credits worker for accurate billing");
     throw new Error("The size calculation worker must run more frequently than the credits worker for accurate billing");
@@ -79179,6 +79285,9 @@ async function startServer() {
     }
   }));
   await initDB();
+  if (currentCreditsWorker) {
+    await esm_default("chelonia.db/set", "_private_freeAllowanceBytes", String(nonNegativeIntConfig("server:billing:freeAllowanceBytes")));
+  }
   await currentOwnerSizeTotalWorker?.ready;
   await currentCreditsWorker?.ready;
   await esm_default("chelonia/configure", SERVER);
@@ -79393,7 +79502,7 @@ var exit2 = (code2) => {
 async function startServer2(options2 = {}) {
   const { installSignalHandlers: shouldInstallSignalHandlers = true } = options2;
   initializeLogger();
-  if (import_npm_nconf8.default.get("server:logLevel") && !process10.env.LOG_LEVEL) {
+  if (import_npm_nconf9.default.get("server:logLevel") && !process10.env.LOG_LEVEL) {
     console.warn(
       "[chel] Note: the server.logLevel setting has no effect; set the LOG_LEVEL environment variable instead."
     );
@@ -79683,15 +79792,15 @@ var upgradeWebSocket = defineWebSocketHelper(async (c, events, options2) => {
   socket.onerror = (evt) => events.onError?.(evt, wsContext);
   return response;
 });
-var import_npm_nconf9 = __toESM(require_nconf());
+var import_npm_nconf10 = __toESM(require_nconf());
 var getDashboardPath = () => {
   const baseDir = import.meta.dirname || path7.join(process11.cwd(), "build");
   const dashboardPath = path7.resolve(baseDir, "dist-dashboard");
   return dashboardPath;
 };
 async function startDashboard() {
-  const port = import_npm_nconf9.default.get("server:dashboardPort");
-  const host = import_npm_nconf9.default.get("server:host") || "0.0.0.0";
+  const port = import_npm_nconf10.default.get("server:dashboardPort");
+  const host = import_npm_nconf10.default.get("server:host") || "0.0.0.0";
   const dashboardRoot = getDashboardPath();
   const app = new Hono2();
   const staticMiddleware = serveStatic2({ root: dashboardRoot, rewriteRequestPath: (p) => p });
@@ -84127,43 +84236,9 @@ var parseArgs = () => {
   return yargsInstance;
 };
 var parseArgs_default = parseArgs;
-var nconfDefaults = {
-  // Unique, stable identity for this server instance. Required at runtime by
-  // `chel serve` (see `src/serve/server.ts`) to scope push subscriptions;
-  // left unset here so that file-only commands and `chel init` work without it.
-  server_id: void 0,
-  server: {
-    appDir: ".",
-    host: "0.0.0.0",
-    port: 8e3,
-    dashboardPort: 8888,
-    fileUploadMaxBytes: 31457280,
-    signup: {
-      disabled: false,
-      limit: {
-        disabled: false,
-        minute: 2,
-        hour: 10,
-        day: 50
-      }
-    },
-    vapid: {
-      email: void 0
-    },
-    messages: [],
-    maxEventsBatchSize: 500,
-    archiveMode: false,
-    reclaimForeignSubscriptions: false
-  },
-  database: {
-    lruNumItems: 1e4,
-    backend: "mem",
-    backendOptions: {}
-  }
-};
 var SERVER_DEFAULTS = nconfDefaults;
 var parseConfig = async () => {
-  import_npm_nconf10.default.env({
+  import_npm_nconf11.default.env({
     separator: "__",
     parseValues: true
   }).argv(parseArgs_default()).file({ file: "chel.toml", format: { parse: parse8, stringify } }).defaults(nconfDefaults);

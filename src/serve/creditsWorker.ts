@@ -12,6 +12,9 @@ interface GranularHistoryEntryBase {
 
 interface GranularChargeEntry extends GranularHistoryEntryBase {
   type: 'charge';
+  // The size the charge was computed from, i.e. the billable size: total owned
+  // size minus the free allowance. Entries written before the free allowance
+  // existed hold the total owned size instead, since the two were the same.
   sizeTotal: number;
   picocreditAmount: string; // BigInt string
   period: string; // ISO period string
@@ -57,7 +60,10 @@ const startTime = Date.now()
  * @param billableEntity - The identifier of the entity to bill.
  * @param type - The type of update: 'charge' (based on size/time) or 'credit'
  * (direct addition).
- * @param amount - For 'charge', this is the current total size (bytes). For 'credit', the amount to add.
+ * @param amount - For 'charge', the billable size (bytes), i.e. the entity's
+ * total owned size minus its free allowance (so it is 0 for an entity within
+ * its allowance; the entity's actual size lives in `_private_ownerTotalSize_`).
+ * For 'credit', the amount to add.
  */
 const updateCredits = async (billableEntity: string, type: 'credit' | 'charge', amount: number) => {
   const granularHistoryKey = `_private_ownerBalanceHistoryGranular_${billableEntity}`
@@ -199,15 +205,19 @@ sbp('okTurtles.eventQueue/queueEvent', readyQueueName, () => {
 })
 
 // Reads the free storage allowance (per billable entity) from the database.
-// Workers run in a separate process without access to nconf, so the main
-// server persists `server.billing.freeAllowanceBytes` at startup
-// (see server.ts) and it is re-read every billing cycle. A missing or invalid
-// value falls back to 0 (charge the full size), preserving the behavior from
-// before the allowance existed.
+// Workers run in their own Worker thread, with a separate module instance and
+// therefore no access to nconf, so the main server persists
+// `server.billing.freeAllowanceBytes` at startup (see server.ts) and it is
+// re-read every billing cycle. A missing or invalid value falls back to 0
+// (charge the full size), preserving the behavior from before the allowance
+// existed.
 const readFreeAllowanceBytes = async (): Promise<number> => {
   const stored = await sbp('chelonia.db/get', '_private_freeAllowanceBytes', { bypassCache: true })
-  const allowance = parseInt(stored ?? '', 10)
-  if (!(allowance >= 0)) {
+  // `Number` rather than `parseInt`, which stops at the first character it
+  // cannot use: it would read a stored '1e+21' as 1 and '10.5' as 10, silently
+  // charging for storage that should be free.
+  const allowance = stored == null ? NaN : Number(stored)
+  if (!Number.isSafeInteger(allowance) || allowance < 0) {
     console.warn(`[creditsWorker] Invalid free allowance '${stored}', using 0`)
     return 0
   }

@@ -436,8 +436,17 @@ credentials (an *ownerless* first message) creates a new **billable entity** —
 an identity-like root contract. This is name-agnostic: any contract manifest is
 accepted, not just `gi.contracts/identity`, and username registration via the
 `shelter-namespace-registration` header likewise works for any such contract.
-Contract naming therefore no longer affects registration. Ownerless first
-messages are still subject to:
+Contract naming therefore no longer affects registration.
+
+One consequence worth being aware of when operating a server: because the
+contract name is no longer inspected, *any* contract deployed to the server
+(not only identity contracts) can be used to create a billable entity and to
+claim a username. What distinguishes a root contract is that it was created
+without credentials, not what it is called. Sending credentials *and* a
+namespace registration header is accepted, but the name is ignored, since the
+resulting contract belongs to an existing billable entity rather than being one.
+
+Ownerless first messages are still subject to:
 
 - `server.signup.disabled` (default `false`) — reject new registrations with
   `403` when `true`.
@@ -450,14 +459,35 @@ messages are still subject to:
   when the combined size of the contract sources referenced by the manifest
   (including the slim variant, if any) exceeds this size.
 
+Checking the source cap requires the manifest and its sources to be deployed on
+the server already, so registering against an unknown manifest is rejected with
+`422` at this point rather than failing later while the message is processed.
+
+The message size cap is checked first, since the message is already in memory.
+The remaining checks then run in the order listed above, so that a rejected
+request cannot make the server read the manifest and its contract sources from
+the database; a side effect is that rejected requests also count towards the
+per-IP limits.
+
+Both caps are sanity limits on how much can be written before anything is known
+about who is writing it, so they need headroom over what real clients send: a
+registration carrying several keys is a few kilobytes, and the source cap has to
+stay above the combined size of the full and slim builds of the largest contract
+users register with. Raise them rather than leaving signups failing with `413`.
+
 Each billable entity is billed for its total owned storage: the root contract
 plus everything it owns (e.g. direct-message contracts, file attachments, and
 KV data). Storage up to `server.billing.freeAllowanceBytes` (default
 `10485760`, i.e. 10 MiB, shared across all of the entity's owned resources) is
 free; only the excess is charged. Set it to `0` to disable the free tier and
-charge from the first byte. Because the billing worker runs in a separate
-process without access to `chel.toml`, the server persists the allowance to the
-database at startup, so changes take effect on the next server start.
+charge from the first byte. Because the billing worker runs in its own thread
+with no access to `chel.toml`, the server persists the allowance to the database
+at startup, so changes take effect on the next server start.
+
+Note that charges are currently recorded but not enforced: a billable entity
+whose balance goes negative keeps being served. Since each accepted
+registration creates an entity with its own free allowance, the signup limits
+above are what bounds how much unpaid storage a single client can accumulate.
 
 ### `chelonia.json` — App Properties
 

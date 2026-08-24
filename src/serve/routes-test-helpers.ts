@@ -9,8 +9,9 @@ import 'npm:@sbp/okturtles.eventqueue'
 import { blake32Hash, createCID, multicodes } from 'npm:@chelonia/lib/functions'
 import { SPMessage } from 'npm:@chelonia/lib/SPMessage'
 import type { SPOpContract, SPOpValue, SPKey } from 'npm:@chelonia/lib/SPMessage'
+import { encryptedOutgoingDataWithRawKey } from 'npm:@chelonia/lib/encryptedData'
 import { signedOutgoingDataWithRawKey } from 'npm:@chelonia/lib/signedData'
-import { EDWARDS25519SHA512BATCH, keygen, keyId, serializeKey, sign } from 'npm:@chelonia/crypto'
+import { CURVE25519XSALSA20POLY1305, EDWARDS25519SHA512BATCH, keygen, keyId, serializeKey, sign } from 'npm:@chelonia/crypto'
 import { AUTHSALT, CONTRACTSALT, CS, SALT_LENGTH_IN_OCTETS } from 'npm:@chelonia/lib/zkppConstants'
 import tweetnacl from 'npm:tweetnacl'
 import { startServer, stopServer } from './index.ts'
@@ -114,16 +115,22 @@ export function buildShelterAuthHeader (contractID: string, SAK: ReturnType<type
 // `sourceBytes` / `slimSourceBytes` control the byte length of the stored
 // contract sources, and `messagePaddingBytes` inflates the serialized message
 // itself (via a padding key name), for testing the signup size caps.
+// `keys: 'realistic'` builds the kind of key set a real client registration
+// carries (see `realisticKeys` below) instead of a single bare signing key.
 export async function createTestContractRegistration ({
   name = 'gi.contracts/identity',
   sourceBytes = 64,
   slimSourceBytes,
-  messagePaddingBytes = 0
+  messagePaddingBytes = 0,
+  keys = 'minimal',
+  malformedContractSlim = false
 }: {
   name?: string
   sourceBytes?: number
   slimSourceBytes?: number
   messagePaddingBytes?: number
+  keys?: 'minimal' | 'realistic'
+  malformedContractSlim?: boolean
 } = {}): Promise<{ serialized: string, contractID: string }> {
   const manifestSigningKey = keygen(EDWARDS25519SHA512BATCH)
   const paddedSource = (bytes: number, marker: string) => {
@@ -146,6 +153,9 @@ export async function createTestContractRegistration ({
     await sbp('chelonia.db/set', slimHash, slimSource)
     body.contractSlim = { hash: slimHash, file: 'contract-slim.js' }
   }
+  // A `contractSlim` that is present but has no usable hash, i.e. a manifest
+  // whose slim source could not be size-checked
+  if (malformedContractSlim) body.contractSlim = { file: 'contract-slim.js' }
   const serializedBody = JSON.stringify(body)
   const serializedHead = JSON.stringify({ manifestVersion: '1.0.0' })
   const manifest = JSON.stringify({
@@ -160,19 +170,20 @@ export async function createTestContractRegistration ({
   await sbp('chelonia.db/set', manifestHash, manifest)
 
   const CSK = keygen(EDWARDS25519SHA512BATCH)
+  const minimalKeys = [{
+    id: keyId(CSK),
+    name: messagePaddingBytes > 0 ? '#csk' + 'x'.repeat(messagePaddingBytes) : '#csk',
+    purpose: ['sig'],
+    ringLevel: 0,
+    permissions: '*',
+    allowedActions: '*',
+    data: serializeKey(CSK, false),
+    _notBeforeHeight: 0,
+    _notAfterHeight: undefined
+  } as SPKey]
   const payload: SPOpContract = {
     type: name,
-    keys: [{
-      id: keyId(CSK),
-      name: messagePaddingBytes > 0 ? '#csk' + 'x'.repeat(messagePaddingBytes) : '#csk',
-      purpose: ['sig'],
-      ringLevel: 0,
-      permissions: '*',
-      allowedActions: '*',
-      data: serializeKey(CSK, false),
-      _notBeforeHeight: 0,
-      _notAfterHeight: undefined
-    } as SPKey]
+    keys: keys === 'realistic' ? realisticKeys(CSK) : minimalKeys
   }
   const message = SPMessage.createV1_0({
     contractID: null,
@@ -186,6 +197,47 @@ export async function createTestContractRegistration ({
   return { serialized: message.serialize(), contractID: message.hash() }
 }
 
+// The key set a real registration carries, as opposed to the single bare
+// signing key the minimal fixture uses: a contract signing key, a content
+// encryption key, a per-user encryption key and a secret attribute key, each
+// carrying its own private half encrypted for the user (which is what makes a
+// real first message an order of magnitude larger than the minimal fixture).
+// Used to keep `server.signup.maxFirstMessageBytes` honest.
+function realisticKeys (CSK: ReturnType<typeof keygen>): SPKey[] {
+  const CEK = keygen(CURVE25519XSALSA20POLY1305)
+  const PEK = keygen(CURVE25519XSALSA20POLY1305)
+  const SAK = keygen(EDWARDS25519SHA512BATCH)
+  const withPrivateHalf = (key: ReturnType<typeof keygen>, keyName: string, purpose: SPKey['purpose']): SPKey => {
+    // A `#sak` is only accepted with no permissions and an unencrypted private
+    // half (see `keyAdditionProcessor` in @chelonia/lib)
+    const isSAK = keyName === '#sak'
+    return {
+      id: keyId(key),
+      name: keyName,
+      purpose,
+      ringLevel: 0,
+      permissions: isSAK ? [] : '*',
+      ...(isSAK ? {} : { allowedActions: '*' }),
+      meta: {
+        private: {
+          transient: true,
+          shareable: true,
+          content: isSAK ? serializeKey(key, true) : encryptedOutgoingDataWithRawKey(CEK, serializeKey(key, true))
+        }
+      },
+      data: serializeKey(key, false),
+      _notBeforeHeight: 0,
+      _notAfterHeight: undefined
+    } as unknown as SPKey
+  }
+  return [
+    withPrivateHalf(CSK, '#csk', ['sig']),
+    withPrivateHalf(CEK, '#cek', ['enc']),
+    withPrivateHalf(PEK, '#pek', ['enc']),
+    withPrivateHalf(SAK, '#sak', ['sak'])
+  ]
+}
+
 let cachedServerAddress: Promise<string> | undefined
 let serverStartRefCount: number = 0
 export function startTestServer (): Promise<string> {
@@ -197,6 +249,12 @@ export function startTestServer (): Promise<string> {
   const internal = async () => {
     process.env.NODE_ENV = 'development'
     process.env.CI = 'true'
+
+    // A writable store, added ahead of the defaults below so that it takes
+    // precedence. The `defaults` store is read-only, so without this tests
+    // cannot override an option (with `nconf.set`) for settings that the
+    // server reads per request, such as `server:signup:disabled`.
+    nconf.use('memory')
 
     nconf.defaults({
       // Stable, obviously-non-production id so the `server_id` guard in
