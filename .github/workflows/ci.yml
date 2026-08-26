@@ -17,7 +17,7 @@ jobs:
     # denoland/setup-deno v2.3.0
     - uses: denoland/setup-deno@e95548e56dfa95d4e1a28d6f422fafe75c4c26fb
       with:
-        deno-version: v2.5.3
+        deno-version: v2.9.5
     - name: Run tests
       run: deno task test
 
@@ -41,7 +41,7 @@ jobs:
     # denoland/setup-deno v2.3.0
     - uses: denoland/setup-deno@e95548e56dfa95d4e1a28d6f422fafe75c4c26fb
       with:
-        deno-version: v2.5.3
+        deno-version: v2.9.5
     # The compile embeds files straight out of node_modules, so the addon has
     # to be materialised first; the committed bundle in build/ is what gets
     # compiled, so nothing else needs building.

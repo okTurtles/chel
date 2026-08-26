@@ -45,7 +45,7 @@ type CountRow = { count: number }
 // `prebuilds/linuxmusl-*.node` that is not embedded, finds nothing, and falls
 // through to the node-gyp path above. Before that, detection was wrong
 // (denoland/deno#33948), the glibc prebuild was selected, and the dynamic
-// loader refused it. Both shapes name a path the pattern below recognizes.
+// loader refused it. Both shapes are recognized by the pattern below.
 // Returns null when the failure is unrelated, so the original error keeps
 // propagating untouched.
 //
@@ -57,9 +57,9 @@ type CountRow = { count: number }
 //
 // Recognized by message alone, not by error code: a MODULE_NOT_FOUND that does
 // not name the addon's file is some other module missing and must keep its own
-// message, while every shape the addon resolver produces does name it — Node's
-// 'Cannot find module ...better_sqlite3.node', a prebuilds/ path reported
-// without a standard code, or the dynamic loader's own complaint. The last one
+// message, while every shape the addon resolver produces does name it, be it
+// Node's 'Cannot find module ...better_sqlite3.node', a prebuilds/ path
+// reported without a standard code, or the dynamic loader's own complaint. The last one
 // is the reason 'cannot open shared object file' is matched on its own: the
 // loader usually names the addon it was resolving ('... (needed by
 // .../prebuilds/linux-x64.node)'), but when the missing library is a

@@ -52,7 +52,7 @@ export const STAMP_DIR = `${DIST_DIR}/.stamps`
 // is the absent target, not the detection: Deno used to hardcode a glibc
 // version into the process report (denoland/deno#33948, fixed in 2.8.0), so a
 // binary compiled with 2.8.0 or newer does ask for a musl prebuild when run on
-// musl — and gets the "no addon" error from src/serve/database-sqlite.ts
+// musl, and gets the \"no addon\" error from src/serve/database-sqlite.ts
 // rather than a glibc addon the loader cannot use. If a musl target ever
 // appears, adding the variant back must stay a one-line change here.
 export const NATIVE_ADDON_PACKAGES: readonly {
