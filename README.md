@@ -491,6 +491,19 @@ from source with Deno works there instead. Only the SQLite backend is affected,
 and selecting it on such a system fails with a message saying so rather than
 with a missing-module error naming a build path that was never there.
 
+Even from source, musl needs the addon compiled locally, because no prebuild
+matches:
+
+```bash
+cd node_modules/better-sqlite3 && npm run build-release
+```
+
+Deno also reports the wrong libc to the addon's prebuild lookup
+([denoland/deno#33948](https://github.com/denoland/deno/issues/33948)), so the
+freshly built copy may still be skipped. Until that is fixed, patch
+`node_modules/better-sqlite3/lib/binding.js` so that `isLinuxMusl` always
+returns `true`.
+
 The `chel` command itself is always provided by the main `@chelonia/cli`
 package, which ships a small launcher that spawns the native binary from the
 sub-package npm selected. The sub-packages intentionally declare no command of
