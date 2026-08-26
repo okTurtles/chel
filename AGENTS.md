@@ -221,11 +221,12 @@ Key difference from yargs: `handler` is optional, `postHandler` is required. The
 
 ### Database Backends
 
-Three persistence backends available:
+Five persistence backends available (see `src/validateConfig.ts`):
 - `mem` - In-memory (default in development)
 - `fs` - Filesystem
-- `sqlite` - SQLite database
+- `sqlite` - SQLite database (`better-sqlite3`, native addon)
 - `redis` - Redis server
+- `router` - Delegates each key to a nested backend by prefix
 
 Configured via `chel.toml` or environment variables with `__` separator.
 

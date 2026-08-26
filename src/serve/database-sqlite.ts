@@ -38,10 +38,16 @@ type CountRow = { count: number }
 // locations and reports a missing `build/Release/better_sqlite3.node` — a path
 // that means nothing to someone running a released binary.
 //
-// The case that reaches this in practice is musl: the Linux releases embed the
-// glibc prebuild for their platform, so on Alpine and friends the lookup finds
-// nothing. Returns null when the failure is unrelated, so the original error
-// keeps propagating untouched.
+// The case that reaches this in practice is musl: the Linux releases embed only
+// the glibc prebuild for their platform, and which of two failures that
+// produces depends on the Deno the binary was compiled with. Since Deno 2.8.0
+// the driver's musl detection works, so the lookup asks for a
+// `prebuilds/linuxmusl-*.node` that is not embedded, finds nothing, and falls
+// through to the node-gyp path above. Before that, detection was wrong
+// (denoland/deno#33948), the glibc prebuild was selected, and the dynamic
+// loader refused it. Both shapes name a path the pattern below recognizes.
+// Returns null when the failure is unrelated, so the original error keeps
+// propagating untouched.
 //
 // Only the Linux advice mentions libc, because only the Linux binaries are
 // linked against glibc. Elsewhere the same lookup can only fail on an install
@@ -51,19 +57,28 @@ type CountRow = { count: number }
 //
 // Recognized by message alone, not by error code: a MODULE_NOT_FOUND that does
 // not name the addon's file is some other module missing and must keep its own
-// message, while every shape the addon resolver produces (Node's
-// 'Cannot find module ...better_sqlite3.node', or a prebuilds/ path reported
-// without a standard code) does name it.
+// message, while every shape the addon resolver produces does name it — Node's
+// 'Cannot find module ...better_sqlite3.node', a prebuilds/ path reported
+// without a standard code, or the dynamic loader's own complaint. The last one
+// is the reason 'cannot open shared object file' is matched on its own: the
+// loader usually names the addon it was resolving ('... (needed by
+// .../prebuilds/linux-x64.node)'), but when the missing library is a
+// transitive dependency it reports only that library's name. Matching it
+// unconditionally is safe because the sole caller has already narrowed the
+// failure to loading this driver.
+const ADDON_LOAD_FAILURE = /better_sqlite3\.node|prebuilds[\\/]|cannot open shared object file/
+
 export function rewordedAddonLoadError (
   cause: unknown,
   os: typeof Deno.build.os = Deno.build.os
 ): Error | null {
   const message = cause instanceof Error ? cause.message : ''
-  if (!/better_sqlite3\.node|prebuilds[\\/]/.test(message)) return null
+  if (!ADDON_LOAD_FAILURE.test(message)) return null
   const advice = os === 'linux'
     ? 'The pre-built binaries chel ships for Linux are linked against glibc, ' +
-      'so musl-based distributions (Alpine, for example) are not covered; run ' +
-      'chel from source with Deno there, or pick a different database backend.'
+      'so musl-based distributions (Alpine, for example) are not covered. Run ' +
+      'chel from source with Deno 2.8.0 or newer there (see the Supported ' +
+      'Platforms section of the README), or pick a different database backend.'
     : 'The copy embedded in this binary could not be read; reinstall ' +
       '@chelonia/cli, or pick a different database backend.'
   return new Error(`Could not load the SQLite native addon. ${advice}`, { cause })

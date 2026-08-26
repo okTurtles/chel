@@ -119,6 +119,13 @@ export async function normalizeMtimes (
 // A missing path is ignored rather than fatal, so these helpers stay usable
 // over arbitrary trees (the tests drive them over temp dirs). A genuinely
 // missing native addon is caught up front by assertNativeAddonsPresent.
+//
+// Unlike digestsAt below, `seen` records files as well as directories. The two
+// walks want different things from it: stamping a file twice is pointless
+// (`Deno.utime` is idempotent, so it is only wasted work), whereas a file
+// reachable by two routes has to be hashed under each of its logical keys or
+// the cache key would depend on which route the walk happened to take first.
+// Both walks record directories, which is what actually terminates a cycle.
 async function normalizePathMtimes (
   path: string,
   time: number,

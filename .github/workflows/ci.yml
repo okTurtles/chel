@@ -20,3 +20,32 @@ jobs:
         deno-version: v2.5.3
     - name: Run tests
       run: deno task test
+
+  # `deno task test` only compares strings where the native SQLite addon is
+  # concerned: whether a compiled binary can actually load the one addon it
+  # embeds is decided by the interplay of `--exclude node_modules` and the
+  # per-target `--include` paths, and nothing but a real compile exercises it.
+  # A wrong mapping there produces a binary that builds and starts fine and
+  # fails only when someone selects the sqlite backend, so it is worth catching
+  # here rather than at release time.
+  #
+  # Separate from `build` because it costs minutes and ~100 MB of disk, and
+  # non-blocking for now: it is new, and a flake in it must not gate merges.
+  # Drop continue-on-error once it has a track record.
+  smoke:
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+
+    steps:
+    - uses: actions/checkout@v3
+    # denoland/setup-deno v2.3.0
+    - uses: denoland/setup-deno@e95548e56dfa95d4e1a28d6f422fafe75c4c26fb
+      with:
+        deno-version: v2.5.3
+    # The compile embeds files straight out of node_modules, so the addon has
+    # to be materialised first; the committed bundle in build/ is what gets
+    # compiled, so nothing else needs building.
+    - name: Install dependencies
+      run: deno install
+    - name: Compile the host binary and load its SQLite addon
+      run: CHEL_SMOKE_COMPILE=1 deno task smoke

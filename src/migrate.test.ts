@@ -1,7 +1,15 @@
 // The same-file guard in `chel migrate`. Split out from the command itself so
 // it can be checked without standing up two database backends.
 import { assertEquals } from 'jsr:@std/assert'
-import { isSameSqliteFile, sharedSqliteFilepath } from './migrate.ts'
+import { sharedSqliteFilepath } from './migrate.ts'
+
+// The guard returns the colliding path, so that the error can name it; most of
+// what follows only cares whether there was one. Defined here rather than
+// exported from migrate.ts, so that nothing in the production surface exists
+// purely to make these assertions read well.
+const isSameSqliteFile = (
+  ...args: Parameters<typeof sharedSqliteFilepath>
+): boolean => sharedSqliteFilepath(...args) !== null
 
 // A router's options are a map of key prefixes to `{ name, options }` entries,
 // with `*` as the mandatory fallback.

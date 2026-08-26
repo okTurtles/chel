@@ -91,15 +91,6 @@ export function sharedSqliteFilepath (
   return sqliteFilepaths(fromBackend, fromOptions).find((path) => targets.has(path)) ?? null
 }
 
-export function isSameSqliteFile (
-  fromBackend: string | undefined,
-  toBackend: string | undefined,
-  fromOptions: BackendOptionsLike,
-  toOptions: BackendOptionsLike
-): boolean {
-  return sharedSqliteFilepath(fromBackend, toBackend, fromOptions, toOptions) !== null
-}
-
 export async function migrate (args: ArgumentsCamelCase<Params>): Promise<void> {
   const { to } = args
 

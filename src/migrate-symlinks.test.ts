@@ -16,8 +16,14 @@
 // variables for this file's sake: importing migrate.ts loads @chelonia/lib,
 // which reads those variables at module scope.
 import { assertEquals } from 'jsr:@std/assert'
-import { isSameSqliteFile } from './migrate.ts'
+import { sharedSqliteFilepath } from './migrate.ts'
 import { exists, symlinkSupported, withTempDir } from '../test/test-helpers.ts'
+
+// See the note in migrate.test.ts: the guard returns the colliding path, and
+// this suite only asks whether there was one.
+const isSameSqliteFile = (
+  ...args: Parameters<typeof sharedSqliteFilepath>
+): boolean => sharedSqliteFilepath(...args) !== null
 
 const canSymlink = await symlinkSupported()
 

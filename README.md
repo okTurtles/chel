@@ -489,20 +489,21 @@ musl libc (Alpine, for example) are **not** covered: the native SQLite addon
 each Linux binary carries is the glibc build for its platform. Running `chel`
 from source with Deno works there instead. Only the SQLite backend is affected,
 and selecting it on such a system fails with a message saying so rather than
-with a missing-module error naming a build path that was never there.
+with a raw loader or missing-module error.
 
-Even from source, musl needs the addon compiled locally, because no prebuild
-matches:
+From source, nothing has to be compiled locally: the SQLite driver ships musl
+prebuilds (`prebuilds/linuxmusl-<arch>.node`) next to the glibc ones, and its
+resolver chooses between them by asking Node whether the process is running
+against glibc. Deno hardcoded a glibc version into that answer until Deno
+2.8.0 ([denoland/deno#33948](https://github.com/denoland/deno/issues/33948)),
+so older versions pick the glibc prebuild on musl and then fail inside the
+dynamic loader.
 
-```bash
-cd node_modules/better-sqlite3 && npm run build-release
-```
-
-Deno also reports the wrong libc to the addon's prebuild lookup
-([denoland/deno#33948](https://github.com/denoland/deno/issues/33948)), so the
-freshly built copy may still be skipped. Until that is fixed, patch
-`node_modules/better-sqlite3/lib/binding.js` so that `isLinuxMusl` always
-returns `true`.
+On Deno 2.8.0 or newer this works out of the box. On anything older, either
+upgrade Deno or patch `node_modules/better-sqlite3/lib/binding.js` so that
+`isLinuxMusl` always returns `true`. Compiling the addon from its C sources
+(`npm run build-release`) does **not** help: the resolver returns a matching
+prebuild before it ever looks at a locally built copy.
 
 The `chel` command itself is always provided by the main `@chelonia/cli`
 package, which ships a small launcher that spawns the native binary from the

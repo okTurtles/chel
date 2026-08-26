@@ -47826,16 +47826,18 @@ __export(database_sqlite_exports, {
 });
 function rewordedAddonLoadError(cause, os = Deno.build.os) {
   const message = cause instanceof Error ? cause.message : "";
-  if (!/better_sqlite3\.node|prebuilds[\\/]/.test(message)) return null;
-  const advice = os === "linux" ? "The pre-built binaries chel ships for Linux are linked against glibc, so musl-based distributions (Alpine, for example) are not covered; run chel from source with Deno there, or pick a different database backend." : "The copy embedded in this binary could not be read; reinstall @chelonia/cli, or pick a different database backend.";
+  if (!ADDON_LOAD_FAILURE.test(message)) return null;
+  const advice = os === "linux" ? "The pre-built binaries chel ships for Linux are linked against glibc, so musl-based distributions (Alpine, for example) are not covered. Run chel from source with Deno 2.8.0 or newer there (see the Supported Platforms section of the README), or pick a different database backend." : "The copy embedded in this binary could not be read; reinstall @chelonia/cli, or pick a different database backend.";
   return new Error(`Could not load the SQLite native addon. ${advice}`, { cause });
 }
+var ADDON_LOAD_FAILURE;
 var SqliteBackend;
 var init_database_sqlite = __esm({
   "src/serve/database-sqlite.ts"() {
     "use strict";
     init_backend_schemas();
     init_DatabaseBackend();
+    ADDON_LOAD_FAILURE = /better_sqlite3\.node|prebuilds[\\/]|cannot open shared object file/;
     SqliteBackend = class extends DatabaseBackend {
       // Derived from the shared default rather than restating it, because
       // `chel migrate`'s same-file guard compares against the same constant.

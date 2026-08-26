@@ -212,6 +212,33 @@ Deno.test('rewordedAddonLoadError', async (t) => {
     assert(rewordedAddonLoadError(new Error('No such file: /x/prebuilds/linux-x64.node')))
   })
 
+  await t.step('recognizes what the dynamic loader actually reports', () => {
+    // Verbatim shapes, because this branch is the easiest one to get wrong by
+    // reasoning about it instead of observing it: on musl the addon is found
+    // and then rejected by the loader, so the message is neither a
+    // MODULE_NOT_FOUND nor necessarily one that names the addon at all.
+    const loaderErrors = [
+      // musl loading a glibc-linked addon (denoland/deno#33948).
+      'Error loading shared library ld-linux-x86-64.so.2: No such file or directory ' +
+        '(needed by /app/node_modules/better-sqlite3/prebuilds/linux-x64.node)',
+      // The same failure when the loader names only the missing library.
+      'libc.so.6: cannot open shared object file: No such file or directory',
+      // Deno's dlopen wrapper, which prefixes the offending path.
+      '/tmp/deno-compile-chel/better_sqlite3.node: invalid ELF header'
+    ]
+    for (const message of loaderErrors) {
+      assert(rewordedAddonLoadError(new Error(message)), `unrecognized: ${message}`)
+    }
+  })
+
+  await t.step('points musl users at a Deno new enough to work', () => {
+    // Someone already running from source reads this too, so "run from
+    // source" on its own would echo back what they are doing.
+    const error = rewordedAddonLoadError(new Error('prebuilds/linux-x64.node'), 'linux')
+    assert(error)
+    assertStringIncludes(error.message, '2.8.0')
+  })
+
   await t.step('does not claim unrelated missing modules', () => {
     // A MODULE_NOT_FOUND that never names the addon is some other module
     // missing; blaming the platform's libc for it would send the user chasing
