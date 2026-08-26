@@ -49,6 +49,10 @@
     "npm:three": "npm:three@0.151.3",
     "npm:turtledash": "npm:turtledash@1.0.3",
     "npm:vue": "npm:vue@2.7.16",
+    // Bare specifier for src/types/vue-shims.d.ts, whose `declare module`
+    // bodies import 'vue'; resolved from node_modules by editors using
+    // tsconfig.json and by `deno check` via this mapping.
+    "vue": "npm:vue@2.7.16",
     "npm:vue-clickaway": "npm:vue-clickaway@2.2.2",
     "npm:vue-router": "npm:vue-router@3.6.5",
     "npm:vuelidate": "npm:vuelidate@0.7.6",

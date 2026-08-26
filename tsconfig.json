@@ -9,7 +9,6 @@
       "allowImportingTsExtensions": true,
       "noEmit": true,
       "moduleResolution": "NodeNext",
-      "baseUrl": ".",
       "paths": {
         "@/*": ["./src/*"],
         "@components/*": ["./src/serve/dashboard/views/components/*"],
