@@ -33,7 +33,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   // file that has been converted to a CommonJS file using a Babel-
   // compatible transform (i.e. "__esModule" has not been set), then set
   // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  1 ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
   mod
 ));
 var require_err_helpers = __commonJS({
@@ -4877,6 +4877,7 @@ var updateCredits = async (billableEntity, type, amount) => {
       coarseHistory.unshift({
         type: "aggregate",
         date,
+        // Mean billable size over the aggregated period; see `CoarseHistoryEntry`
         sizeTotal: totalPeriodLength > 0 ? Math.floor(periodSize / totalPeriodLength) : 0,
         chargesPicocreditAmount: charges.toString(10),
         creditsPicocreditAmount: credits.toString(10),

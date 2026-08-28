@@ -451,10 +451,18 @@ Ownerless first messages are still subject to:
 - `server.signup.disabled` (default `false`) — reject new registrations with
   `403` when `true`.
 - `server.signup.limit.{minute,hour,day}` (defaults `2`/`10`/`50` per IP) —
-  reject with `429` when an IP exceeds a limit. Disable all rate limiting with
-  `server.signup.limit.disabled = true`.
+  reject with `429` when an IP exceeds a limit. **Enforced only when
+  `NODE_ENV=production`**: on any other server they are inactive no matter what
+  they are set to, and a warning saying so is logged at startup. Set
+  `server.signup.limit.disabled = true` to turn them off in production too.
+  IPv6 clients are counted per `/64` subnet rather than per address, since a
+  single client can usually get a whole `/64`.
 - `server.signup.maxFirstMessageBytes` (default `5120`) — reject with `413`
-  when the serialized first message exceeds this size.
+  when the serialized first message exceeds this size. `POST /event` rejects any
+  request body over 1 MiB (1048576 bytes) outright, before this cap is
+  consulted, so a larger value cannot take effect: it is a validation error in
+  `chel.toml`, and is clamped with a warning when it comes from the environment
+  or the command line.
 - `server.signup.maxContractSizeBytes` (default `512000`) — reject with `413`
   when the combined size of the contract sources referenced by the manifest
   (including the slim variant, if any) exceeds this size.
@@ -462,6 +470,9 @@ Ownerless first messages are still subject to:
 Checking the source cap requires the manifest and its sources to be deployed on
 the server already, so registering against an unknown manifest is rejected with
 `422` at this point rather than failing later while the message is processed.
+The source hashes a manifest names are validated as contract-source CIDs before
+being looked up, so a manifest cannot point the size check at unrelated database
+keys.
 
 The message size cap is checked first, since the message is already in memory.
 The remaining checks then run in the order listed above, so that a rejected
@@ -485,9 +496,24 @@ with no access to `chel.toml`, the server persists the allowance to the database
 at startup, so changes take effect on the next server start.
 
 Note that charges are currently recorded but not enforced: a billable entity
-whose balance goes negative keeps being served. Since each accepted
-registration creates an entity with its own free allowance, the signup limits
-above are what bounds how much unpaid storage a single client can accumulate.
+whose balance goes negative keeps being served. Until enforcement is added, the
+signup limits bound only how many free allowances a client can claim — not how
+much unpaid storage a single registration can accumulate.
+
+It is worth being explicit about what is *not* bounded, since everything above
+applies only to the message that creates a billable entity:
+
+- Further messages to an existing contract are neither size-capped (beyond the
+  1 MiB `POST /event` body limit) nor rate-limited.
+- File uploads are capped per request by `server.fileUploadMaxBytes`, but not in
+  aggregate.
+- Storage beyond the free allowance is charged for and the resulting balance is
+  recorded, but nothing refuses service on account of it.
+
+So a registration that gets through can keep writing. `server.signup.disabled`
+is the only setting that stops new entities from being created at all; bounding
+what existing ones write is, until charge enforcement exists, a job for whatever
+fronts the server (e.g. a reverse proxy).
 
 ### `chelonia.json` — App Properties
 

@@ -2,6 +2,7 @@ import * as colors from 'jsr:@std/fmt/colors'
 import * as path from 'jsr:@std/path'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { SERVER_DEFAULTS } from './parseConfig.ts'
+import { MAX_EVENT_BODY_BYTES } from './serve/constants.ts'
 
 type Params = { force?: boolean }
 
@@ -44,10 +45,14 @@ dashboardPort = ${tomlValue(d.server.dashboardPort)}
 # disabled = ${tomlValue(d.server.signup.disabled)}
 # Size sanity caps for ownerless (unattributed) first messages, i.e. identity
 # contract registration. They bound how much data can be written 'for free'.
+# 'maxFirstMessageBytes' cannot exceed ${tomlValue(MAX_EVENT_BODY_BYTES)}, the request body limit
+# 'POST /event' enforces before these caps are consulted.
 # maxFirstMessageBytes = ${tomlValue(d.server.signup.maxFirstMessageBytes)}
 # maxContractSizeBytes = ${tomlValue(d.server.signup.maxContractSizeBytes)}
 
 [server.signup.limit]
+# Registrations allowed per IP, per window. Enforced only when NODE_ENV is
+# 'production'; other servers log a warning at startup saying so.
 # disabled = ${tomlValue(d.server.signup.limit.disabled)}
 # minute = ${tomlValue(d.server.signup.limit.minute)}
 # hour = ${tomlValue(d.server.signup.limit.hour)}

@@ -11,7 +11,7 @@
 // (see other *.test.ts files in this directory).
 import 'jsr:@db/sqlite'
 import { assertEquals } from 'jsr:@std/assert'
-import { sbp, startTestServer, stopTestServer } from './routes-test-helpers.ts'
+import { nconfDefaults, sbp, startTestServer, stopTestServer } from './routes-test-helpers.ts'
 Deno.test({
   name: 'billing configuration',
   async fn (t: Deno.TestContext) {
@@ -20,8 +20,8 @@ Deno.test({
     try {
       await t.step('server persists the free allowance at startup', async () => {
         const stored = await sbp('chelonia.db/get', '_private_freeAllowanceBytes')
-        // 10 MiB, matching the test-server default in routes-test-helpers.ts
-        assertEquals(stored, String(10 * 1024 * 1024))
+        // The test server runs with the shipped default (see startTestServer)
+        assertEquals(stored, String(nconfDefaults.server.billing.freeAllowanceBytes))
       })
     } finally {
       await stopTestServer()

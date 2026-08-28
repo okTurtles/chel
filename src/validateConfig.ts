@@ -21,6 +21,7 @@ import {
   RouterOptionsSchema,
   RouterConfigEntrySchema
 } from './serve/backend-schemas.ts'
+import { MAX_EVENT_BODY_BYTES } from './serve/constants.ts'
 
 const portSchema = z
   .number()
@@ -67,7 +68,14 @@ export const ConfigSchema = z.strictObject({
       // Size sanity caps for ownerless (unattributed) first messages; a cap of
       // 0 is rejected because 'disabled = true' is the supported way to block
       // signups entirely.
-      maxFirstMessageBytes: z.optional(positiveInt),
+      //
+      // The first-message cap is bounded above as well: `POST /event` rejects
+      // any body larger than `MAX_EVENT_BODY_BYTES` before the handler runs, so
+      // a larger cap would silently have no effect.
+      maxFirstMessageBytes: z.optional(positiveInt.max(
+        MAX_EVENT_BODY_BYTES,
+        `must not exceed the ${MAX_EVENT_BODY_BYTES} byte POST /event body limit`
+      )),
       maxContractSizeBytes: z.optional(positiveInt),
       limit: z.optional(z.strictObject({
         disabled: z.optional(z.boolean()),

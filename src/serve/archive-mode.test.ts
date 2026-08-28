@@ -10,43 +10,27 @@
 // (see other *.test.ts files in this directory).
 import 'jsr:@db/sqlite'
 import { assert, assertEquals } from 'jsr:@std/assert'
-// @deno-types="npm:@types/nconf"
-import nconf from 'npm:nconf'
 import process from 'node:process'
 import sbp from 'npm:@sbp/sbp'
-import { startServer, stopServer } from './index.ts'
+import { startIsolatedServer } from './server-test-helpers.ts'
 
-const FREE_ALLOWANCE_BYTES = 10 * 1024 * 1024
+// Deliberately not the default (10 MiB): finding this value in the database
+// proves it came from the configuration rather than coinciding with the default
+// in `config-defaults.ts`.
+const FREE_ALLOWANCE_BYTES = 2 * 1024 * 1024
 
-// nconf is process-global and its `defaults` store is read-only, so a writable
-// store is used to override settings for this file and the keys are cleared
-// again afterwards.
-const CONFIG_KEYS = [
-  'server_id',
-  'server:host',
-  'server:port',
-  'server:appDir',
-  'server:archiveMode',
-  'server:billing:freeAllowanceBytes',
-  'server:messages',
-  'database:backend',
-  'database:backendOptions',
-  'database:lruNumItems'
-]
-
-const applyConfig = (dirname: string, archiveMode: boolean): void => {
-  nconf.use('memory')
-  nconf.set('server_id', 'archive-mode-test-id')
-  nconf.set('server:host', '127.0.0.1')
-  nconf.set('server:port', 0)
-  nconf.set('server:appDir', '.')
-  nconf.set('server:archiveMode', archiveMode)
-  nconf.set('server:billing:freeAllowanceBytes', FREE_ALLOWANCE_BYTES)
-  nconf.set('server:messages', [])
-  nconf.set('database:backend', 'fs')
-  nconf.set('database:backendOptions', { fs: { dirname } })
-  nconf.set('database:lruNumItems', 100)
-}
+const configFor = (dirname: string, archiveMode: boolean): Record<string, unknown> => ({
+  server_id: 'archive-mode-test-id',
+  'server:host': '127.0.0.1',
+  'server:port': 0,
+  'server:appDir': '.',
+  'server:archiveMode': archiveMode,
+  'server:billing:freeAllowanceBytes': FREE_ALLOWANCE_BYTES,
+  'server:messages': [],
+  'database:backend': 'fs',
+  'database:backendOptions': { fs: { dirname } },
+  'database:lruNumItems': 100
+})
 
 Deno.test({
   name: 'archive mode server startup',
@@ -60,33 +44,30 @@ Deno.test({
 
     try {
       await t.step('a writable server populates the database', async () => {
-        applyConfig(dirname, false)
-        const { uri } = await startServer({ installSignalHandlers: false })
+        const server = await startIsolatedServer(configFor(dirname, false))
         try {
-          assert(uri.startsWith('http://127.0.0.1:'))
+          assert(server.uri.startsWith('http://127.0.0.1:'))
           // The free allowance is persisted for the credits worker to read
           assertEquals(
             await sbp('chelonia.db/get', '_private_freeAllowanceBytes'),
             String(FREE_ALLOWANCE_BYTES)
           )
         } finally {
-          await stopServer()
+          await server.stop()
         }
       })
 
       await t.step('the same database can then be served in archive mode', async () => {
         // Before the startup write was made conditional this threw
         // 'Unable to write in archive mode'
-        applyConfig(dirname, true)
-        const { uri } = await startServer({ installSignalHandlers: false })
+        const server = await startIsolatedServer(configFor(dirname, true))
         try {
-          assert(uri.startsWith('http://127.0.0.1:'))
+          assert(server.uri.startsWith('http://127.0.0.1:'))
         } finally {
-          await stopServer()
+          await server.stop()
         }
       })
     } finally {
-      for (const key of CONFIG_KEYS) nconf.clear(key)
       if (previousNodeEnv === undefined) delete process.env.NODE_ENV
       else process.env.NODE_ENV = previousNodeEnv
       await Deno.remove(dirname, { recursive: true })

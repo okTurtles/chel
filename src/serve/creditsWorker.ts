@@ -2,7 +2,11 @@ import sbp from 'npm:@sbp/sbp'
 import { CREDITS_WORKER_TASK_TIME_INTERVAL as TASK_TIME_INTERVAL } from './constants.ts'
 import { readyQueueName, signalReady, signalInitError } from './genericWorker.ts'
 
-// Type definitions for credit history entries
+// Type definitions for credit history entries.
+//
+// These are the on-disk shapes of `_private_ownerBalanceHistoryGranular_*` and
+// `_private_ownerBalanceHistoryCoarse_*`, so field names are part of the stored
+// format: entries written by older versions of this worker are read back as-is.
 interface GranularHistoryEntryBase {
   type: 'charge' | 'credit';
   date: string; // ISO string
@@ -12,9 +16,14 @@ interface GranularHistoryEntryBase {
 
 interface GranularChargeEntry extends GranularHistoryEntryBase {
   type: 'charge';
-  // The size the charge was computed from, i.e. the billable size: total owned
-  // size minus the free allowance. Entries written before the free allowance
-  // existed hold the total owned size instead, since the two were the same.
+  // Despite the name, the size the charge was computed from, i.e. the *billable*
+  // size: total owned size minus the free allowance, and therefore 0 for an
+  // entity within its allowance. The entity's actual size is stored separately,
+  // under `_private_ownerTotalSize_`.
+  //
+  // Entries written before the free allowance existed hold the total owned size,
+  // which was the billable size at the time, so the two generations mean the
+  // same thing and can be compared and averaged.
   sizeTotal: number;
   picocreditAmount: string; // BigInt string
   period: string; // ISO period string
@@ -30,6 +39,8 @@ type GranularHistoryEntry = GranularChargeEntry | GranularCreditEntry;
 interface CoarseHistoryEntry {
   type: 'aggregate';
   date: string; // ISO string
+  // The time-weighted mean of the billable sizes (see `sizeTotal` above) of the
+  // granular charges this entry aggregates, not a total of any kind.
   sizeTotal: number;
   chargesPicocreditAmount: string; // BigInt string
   creditsPicocreditAmount: string; // BigInt string
@@ -164,6 +175,8 @@ const updateCredits = async (billableEntity: string, type: 'credit' | 'charge', 
           const periodLength = Math.floor(periodEndDate - periodStartDate)
           // Avoid NaN propagation
           if (periodLength >= 0) {
+            // Weighted by how long the size was held, so that the mean written
+            // below is a time average rather than an average of samples
             acc.periodSize += entry.sizeTotal * periodLength
             acc.totalPeriodLength += periodLength
           }
@@ -179,6 +192,7 @@ const updateCredits = async (billableEntity: string, type: 'credit' | 'charge', 
       coarseHistory.unshift({
         type: 'aggregate',
         date,
+        // Mean billable size over the aggregated period; see `CoarseHistoryEntry`
         sizeTotal: totalPeriodLength > 0 ? Math.floor(periodSize / totalPeriodLength) : 0,
         chargesPicocreditAmount: charges.toString(10),
         creditsPicocreditAmount: credits.toString(10),

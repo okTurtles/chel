@@ -8,10 +8,16 @@ import {
   createTestContractRegistration,
   createTestIdentity,
   multicodes,
+  nconfDefaults,
   sbp,
   startTestServer,
   stopTestServer
 } from './routes-test-helpers.ts'
+
+// The test server runs with the shipped defaults for these caps (see
+// `startTestServer`), so the steps below follow whatever they are set to rather
+// than restating the numbers.
+const { maxFirstMessageBytes, maxContractSizeBytes } = nconfDefaults.server.signup
 
 // Tests for unattributed (ownerless) first messages, i.e. identity contract
 // registration. Registration used to require the manifest name to be exactly
@@ -60,7 +66,6 @@ Deno.test({
         // half, so this step pins the default against a realistic payload: if
         // clients grow their key set enough to cross the cap, every signup
         // starts failing with a 413, and this fails first.
-        const maxFirstMessageBytes = 5 * 1024
         const { serialized, contractID } = await createTestContractRegistration({
           name: 'com.example/realistic-identity',
           keys: 'realistic'
@@ -78,7 +83,6 @@ Deno.test({
       })
 
       await t.step('unattributed first message over the message size cap returns 413', async () => {
-        const maxFirstMessageBytes = 5 * 1024
         const { serialized, contractID } = await createTestContractRegistration({
           name: 'com.example/too-large-message',
           messagePaddingBytes: maxFirstMessageBytes
@@ -98,7 +102,6 @@ Deno.test({
       })
 
       await t.step('contract source over the size cap returns 413', async () => {
-        const maxContractSizeBytes = 500 * 1024
         const { serialized } = await createTestContractRegistration({
           name: 'com.example/too-large-source',
           sourceBytes: maxContractSizeBytes + 1
@@ -109,7 +112,6 @@ Deno.test({
       })
 
       await t.step('slim contract source counts toward the size cap', async () => {
-        const maxContractSizeBytes = 500 * 1024
         // Each source is under the cap on its own; only their sum exceeds it
         const { serialized } = await createTestContractRegistration({
           name: 'com.example/too-large-total',
@@ -131,6 +133,22 @@ Deno.test({
         const res = await postEvent(serialized)
         await res.body?.cancel()
         if (res.status !== 422) throw new Error(`Expected 422 but got ${res.status}`)
+      })
+
+      await t.step('a manifest pointing at a non-contract-source key returns 422', async () => {
+        // The hashes in a manifest body are used as database keys, so they are
+        // validated as contract-source CIDs first: without that, a manifest
+        // could aim the size check at any key on the server and learn something
+        // from whether the request was accepted
+        for (const hash of ['_private_freeAllowanceBytes', 'head=zSomething', 'not-a-cid']) {
+          const { serialized } = await createTestContractRegistration({
+            name: 'com.example/foreign-key-' + hash.length,
+            contractHashOverride: hash
+          })
+          const res = await postEvent(serialized)
+          await res.body?.cancel()
+          if (res.status !== 422) throw new Error(`Expected 422 for ${hash} but got ${res.status}`)
+        }
       })
 
       await t.step('unattributed first message without a deployed manifest returns 422', async () => {

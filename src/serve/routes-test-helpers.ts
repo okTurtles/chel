@@ -14,11 +14,15 @@ import { signedOutgoingDataWithRawKey } from 'npm:@chelonia/lib/signedData'
 import { CURVE25519XSALSA20POLY1305, EDWARDS25519SHA512BATCH, keygen, keyId, serializeKey, sign } from 'npm:@chelonia/crypto'
 import { AUTHSALT, CONTRACTSALT, CS, SALT_LENGTH_IN_OCTETS } from 'npm:@chelonia/lib/zkppConstants'
 import tweetnacl from 'npm:tweetnacl'
+import { nconfDefaults } from '../config-defaults.ts'
 import { startServer, stopServer } from './index.ts'
 
 export { blake32Hash, createCID, multicodes } from 'npm:@chelonia/lib/functions'
 export { EDWARDS25519SHA512BATCH, keygen, keyId, serializeKey, sign } from 'npm:@chelonia/crypto'
 export { default as sbp } from 'npm:@sbp/sbp'
+// Re-exported so that tests asserting against the caps the test server runs
+// with do not have to restate the numbers (see `startTestServer` below).
+export { nconfDefaults } from '../config-defaults.ts'
 
 export const nacl = tweetnacl
 
@@ -123,7 +127,8 @@ export async function createTestContractRegistration ({
   slimSourceBytes,
   messagePaddingBytes = 0,
   keys = 'minimal',
-  malformedContractSlim = false
+  malformedContractSlim = false,
+  contractHashOverride
 }: {
   name?: string
   sourceBytes?: number
@@ -131,6 +136,9 @@ export async function createTestContractRegistration ({
   messagePaddingBytes?: number
   keys?: 'minimal' | 'realistic'
   malformedContractSlim?: boolean
+  // Replaces the hash the manifest names for its contract source, for tests
+  // that check what a manifest is allowed to point at
+  contractHashOverride?: string
 } = {}): Promise<{ serialized: string, contractID: string }> {
   const manifestSigningKey = keygen(EDWARDS25519SHA512BATCH)
   const paddedSource = (bytes: number, marker: string) => {
@@ -144,7 +152,7 @@ export async function createTestContractRegistration ({
   const body: { [key: string]: unknown } = {
     name,
     version: '0.0.1',
-    contract: { hash: contractHash, file: 'contract.js' },
+    contract: { hash: contractHashOverride ?? contractHash, file: 'contract.js' },
     signingKeys: [serializeKey(manifestSigningKey, false)]
   }
   if (slimSourceBytes != null) {
@@ -264,18 +272,19 @@ export function startTestServer (): Promise<string> {
         host: '127.0.0.1',
         port: TEST_PORT,
         appDir: '.',
-        fileUploadMaxBytes: 31457280,
+        fileUploadMaxBytes: nconfDefaults.server.fileUploadMaxBytes,
+        // The signup caps and the free allowance come from the shipped defaults
+        // so that tests exercising them cannot drift from the values operators
+        // actually get
         signup: {
-          disabled: false,
-          maxFirstMessageBytes: 5 * 1024,
-          maxContractSizeBytes: 500 * 1024,
+          ...nconfDefaults.server.signup,
+          // Raised well above the defaults so that the suite is not throttled
+          // (they are inactive outside production anyway)
           limit: { disabled: false, minute: 100, hour: 1000, day: 10000 }
         },
-        billing: {
-          freeAllowanceBytes: 10 * 1024 * 1024
-        },
+        billing: { ...nconfDefaults.server.billing },
         messages: [{ type: 'info', text: 'test message' }],
-        maxEventsBatchSize: 500,
+        maxEventsBatchSize: nconfDefaults.server.maxEventsBatchSize,
         archiveMode: false
       },
       database: {

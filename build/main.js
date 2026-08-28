@@ -2775,9 +2775,6 @@ var buf = Deno.UnsafePointerView.getArrayBuffer;
 var readCstr = Deno.UnsafePointerView.getCString;
 
 // deno:https://jsr.io/@db/sqlite/0.13.0/src/statement.ts
-var _computedKey;
-var _computedKey1;
-var _computedKey2;
 var { sqlite3_prepare_v2, sqlite3_reset, sqlite3_clear_bindings, sqlite3_step, sqlite3_column_count, sqlite3_column_type, sqlite3_column_value, sqlite3_value_subtype, sqlite3_column_text, sqlite3_finalize, sqlite3_column_int64, sqlite3_column_double, sqlite3_column_blob, sqlite3_column_bytes, sqlite3_column_name, sqlite3_expanded_sql, sqlite3_bind_parameter_count, sqlite3_bind_int, sqlite3_bind_int64, sqlite3_bind_text, sqlite3_bind_blob, sqlite3_bind_double, sqlite3_bind_parameter_index, sqlite3_sql, sqlite3_stmt_readonly, sqlite3_bind_parameter_name, sqlite3_changes, sqlite3_column_int } = ffi_default;
 var STATEMENTS_TO_DB = /* @__PURE__ */ new Map();
 var emptyStringBuffer = new Uint8Array(1);
@@ -2831,7 +2828,6 @@ function getColumn(handle, i2, int64, parseJson) {
     }
   }
 }
-_computedKey = Symbol.iterator, _computedKey1 = Symbol.dispose, _computedKey2 = Symbol.for("Deno.customInspect");
 var Statement = class {
   db;
   #handle;
@@ -3309,22 +3305,19 @@ var Statement = class {
     }
     sqlite3_reset(this.#handle);
   }
-  [_computedKey]() {
+  [Symbol.iterator]() {
     return this.iter();
   }
-  [_computedKey1]() {
+  [Symbol.dispose]() {
     this.finalize();
   }
-  [_computedKey2]() {
+  [Symbol.for("Deno.customInspect")]() {
     return `Statement { ${this.expandedSql} }`;
   }
 };
 
 // deno:https://jsr.io/@db/sqlite/0.13.0/src/blob.ts
-var _computedKey3;
-var _computedKey12;
 var { sqlite3_blob_open, sqlite3_blob_bytes, sqlite3_blob_close, sqlite3_blob_read, sqlite3_blob_write } = ffi_default;
-_computedKey3 = Symbol.iterator, _computedKey12 = Symbol.for("Deno.customInspect");
 var SQLBlob = class {
   #handle;
   constructor(db2, options2) {
@@ -3399,7 +3392,7 @@ var SQLBlob = class {
       }
     });
   }
-  *[_computedKey3]() {
+  *[Symbol.iterator]() {
     const length2 = this.byteLength;
     let offset = 0;
     while (offset < length2) {
@@ -3410,18 +3403,16 @@ var SQLBlob = class {
       yield buffer;
     }
   }
-  [_computedKey12]() {
+  [Symbol.for("Deno.customInspect")]() {
     return `SQLite3.Blob(0x${this.byteLength.toString(16)})`;
   }
 };
 
 // deno:https://jsr.io/@db/sqlite/0.13.0/src/database.ts
-var _computedKey4;
 var { sqlite3_open_v2, sqlite3_close_v2, sqlite3_changes: sqlite3_changes2, sqlite3_total_changes, sqlite3_last_insert_rowid, sqlite3_get_autocommit, sqlite3_exec, sqlite3_free, sqlite3_libversion, sqlite3_sourceid, sqlite3_complete, sqlite3_finalize: sqlite3_finalize2, sqlite3_result_blob, sqlite3_result_double, sqlite3_result_error, sqlite3_result_int64, sqlite3_result_null, sqlite3_result_text, sqlite3_value_blob, sqlite3_value_bytes, sqlite3_value_double, sqlite3_value_int64, sqlite3_value_text, sqlite3_value_type, sqlite3_create_function, sqlite3_result_int, sqlite3_aggregate_context, sqlite3_enable_load_extension, sqlite3_load_extension, sqlite3_backup_init, sqlite3_backup_step, sqlite3_backup_finish, sqlite3_errcode } = ffi_default;
 var SQLITE_VERSION = readCstr(sqlite3_libversion());
 var SQLITE_SOURCEID = readCstr(sqlite3_sourceid());
 var BIG_MAX2 = BigInt(Number.MAX_SAFE_INTEGER);
-_computedKey4 = Symbol.for("Deno.customInspect");
 var Database = class {
   #path;
   #handle;
@@ -3935,7 +3926,7 @@ var Database = class {
       unwrap(sqlite3_errcode(dest.#handle), dest.#handle);
     }
   }
-  [_computedKey4]() {
+  [Symbol.for("Deno.customInspect")]() {
     return `SQLite3.Database { path: ${this.path} }`;
   }
 };
@@ -4103,7 +4094,7 @@ function assertThrows(fn, errorClassOrMsg, msgIncludesOrMsg, msg) {
 }
 
 // build/main.js-tmp
-import process12 from "node:process";
+import process13 from "node:process";
 import { Buffer as Buffer12 } from "node:buffer";
 import process2 from "node:process";
 import { Readable } from "node:stream";
@@ -4205,7 +4196,7 @@ import { existsSync } from "node:fs";
 import { copyFile, mkdir as mkdir3, readFile as readFile4, writeFile as writeFile2 } from "node:fs/promises";
 import { basename as basename42, dirname as dirname42, join as join62 } from "node:path";
 import process4 from "node:process";
-import process10 from "node:process";
+import process11 from "node:process";
 import { createServer as createServerHTTP } from "node:http";
 import { Http2ServerRequest as Http2ServerRequest2, constants as h2constants } from "node:http2";
 import { Http2ServerRequest } from "node:http2";
@@ -4215,18 +4206,20 @@ import { Buffer as Buffer13 } from "node:buffer";
 import { basename as basename52 } from "node:path";
 import process5 from "node:process";
 import { join as join72 } from "node:path";
-import process9 from "node:process";
-import { Buffer as Buffer14 } from "node:buffer";
-import { isIP } from "node:net";
+import process10 from "node:process";
+import { Buffer as Buffer15 } from "node:buffer";
 import path6 from "node:path";
-import process7 from "node:process";
+import process8 from "node:process";
 import { Readable as Readable3 } from "node:stream";
 import process6 from "node:process";
-import process8 from "node:process";
-import { Buffer as Buffer15 } from "node:buffer";
+import { Buffer as Buffer14 } from "node:buffer";
+import { isIP } from "node:net";
+import process7 from "node:process";
+import process9 from "node:process";
+import { Buffer as Buffer16 } from "node:buffer";
 import { pathToFileURL } from "node:url";
 import path7 from "node:path";
-import process11 from "node:process";
+import process12 from "node:process";
 import { join as join82 } from "node:path";
 import { notStrictEqual, strictEqual } from "node:assert";
 import { dirname as dirname62, resolve as resolve52 } from "node:path";
@@ -4281,7 +4274,7 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   // file that has been converted to a CommonJS file using a Babel-
   // compatible transform (i.e. "__esModule" has not been set), then set
   // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
+  1 ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
   mod
 ));
 var require_async = __commonJS({
@@ -9201,17 +9194,17 @@ var require_ansi_styles = __commonJS({
       styles.bgColor.bgGray = styles.bgColor.bgBlackBright;
       styles.color.grey = styles.color.blackBright;
       styles.bgColor.bgGrey = styles.bgColor.bgBlackBright;
-      for (const [groupName, group] of Object.entries(styles)) {
-        for (const [styleName, style] of Object.entries(group)) {
+      for (const [groupName, group2] of Object.entries(styles)) {
+        for (const [styleName, style] of Object.entries(group2)) {
           styles[styleName] = {
             open: `\x1B[${style[0]}m`,
             close: `\x1B[${style[1]}m`
           };
-          group[styleName] = styles[styleName];
+          group2[styleName] = styles[styleName];
           codes.set(style[0], style[1]);
         }
         Object.defineProperty(styles, groupName, {
-          value: group,
+          value: group2,
           enumerable: false
         });
       }
@@ -10734,8 +10727,8 @@ var require_build4 = __commonJS({
       function addUngroupedKeys(keys, aliases, groups, defaultGroup) {
         let groupedKeys = [];
         let toCheck = null;
-        Object.keys(groups).forEach((group) => {
-          groupedKeys = groupedKeys.concat(groups[group]);
+        Object.keys(groups).forEach((group2) => {
+          groupedKeys = groupedKeys.concat(groups[group2]);
         });
         keys.forEach((key) => {
           toCheck = [key].concat(aliases[key]);
@@ -12003,7 +11996,7 @@ ${customMsgs.join("\n")}` : "";
         self2.group(key, usage$1.getPositionalGroupName());
         return self2.option(key, opts);
       };
-      self2.group = function group(opts, groupName) {
+      self2.group = function group2(opts, groupName) {
         argsert2("<string|array> <string>", [opts, groupName], arguments.length);
         const existing = preservedGroups[groupName] || groups[groupName];
         if (preservedGroups[groupName]) {
@@ -24299,7 +24292,7 @@ var require_lru_cache = __commonJS({
     var deprecatedOption = (opt, instead) => {
       const code2 = `LRU_CACHE_OPTION_${opt}`;
       if (shouldWarn(code2)) {
-        warn(code2, `${opt} option`, `options.${instead}`, LRUCache);
+        warn2(code2, `${opt} option`, `options.${instead}`, LRUCache);
       }
     };
     var deprecatedMethod = (method, instead) => {
@@ -24307,7 +24300,7 @@ var require_lru_cache = __commonJS({
       if (shouldWarn(code2)) {
         const { prototype } = LRUCache;
         const { get: get2 } = Object.getOwnPropertyDescriptor(prototype, method);
-        warn(code2, `${method} method`, `cache.${instead}()`, get2);
+        warn2(code2, `${method} method`, `cache.${instead}()`, get2);
       }
     };
     var deprecatedProperty = (field, instead) => {
@@ -24315,14 +24308,14 @@ var require_lru_cache = __commonJS({
       if (shouldWarn(code2)) {
         const { prototype } = LRUCache;
         const { get: get2 } = Object.getOwnPropertyDescriptor(prototype, field);
-        warn(code2, `${field} property`, `cache.${instead}`, get2);
+        warn2(code2, `${field} property`, `cache.${instead}`, get2);
       }
     };
     var emitWarning = (...a) => {
       typeof process === "object" && process && typeof process.emitWarning === "function" ? process.emitWarning(...a) : console.error(...a);
     };
     var shouldWarn = (code2) => !warned.has(code2);
-    var warn = (code2, what, instead, fn) => {
+    var warn2 = (code2, what, instead, fn) => {
       warned.add(code2);
       const msg = `The ${what} is deprecated. Please use ${instead} instead.`;
       emitWarning(msg, "DeprecationWarning", code2, fn);
@@ -34404,10 +34397,10 @@ var require_XACK = __commonJS({
        * @returns The number of messages successfully acknowledged
        * @see https://redis.io/commands/xack/
        */
-      parseCommand(parser3, key, group, id) {
+      parseCommand(parser3, key, group2, id) {
         parser3.push("XACK");
         parser3.pushKey(key);
-        parser3.push(group);
+        parser3.push(group2);
         parser3.pushVariadic(id);
       },
       transformReply: void 0
@@ -34431,10 +34424,10 @@ var require_XACKDEL = __commonJS({
        * @returns Array of integers: -1 (not found), 1 (acknowledged and deleted), 2 (acknowledged with dangling refs)
        * @see https://redis.io/commands/xackdel/
        */
-      parseCommand(parser3, key, group, id, policy) {
+      parseCommand(parser3, key, group2, id, policy) {
         parser3.push("XACKDEL");
         parser3.pushKey(key);
-        parser3.push(group);
+        parser3.push(group2);
         if (policy) {
           parser3.push(policy);
         }
@@ -34538,10 +34531,10 @@ var require_XAUTOCLAIM = __commonJS({
        * @returns Object containing nextId, claimed messages, and list of deleted message IDs
        * @see https://redis.io/commands/xautoclaim/
        */
-      parseCommand(parser3, key, group, consumer, minIdleTime, start, options2) {
+      parseCommand(parser3, key, group2, consumer, minIdleTime, start, options2) {
         parser3.push("XAUTOCLAIM");
         parser3.pushKey(key);
-        parser3.push(group, consumer, minIdleTime.toString(), start);
+        parser3.push(group2, consumer, minIdleTime.toString(), start);
         if (options2?.COUNT) {
           parser3.push("COUNT", options2.COUNT.toString());
         }
@@ -34622,10 +34615,10 @@ var require_XCLAIM = __commonJS({
        * @returns Array of claimed messages
        * @see https://redis.io/commands/xclaim/
        */
-      parseCommand(parser3, key, group, consumer, minIdleTime, id, options2) {
+      parseCommand(parser3, key, group2, consumer, minIdleTime, id, options2) {
         parser3.push("XCLAIM");
         parser3.pushKey(key);
-        parser3.push(group, consumer, minIdleTime.toString());
+        parser3.push(group2, consumer, minIdleTime.toString());
         parser3.pushVariadic(id);
         if (options2?.IDLE !== void 0) {
           parser3.push("IDLE", options2.IDLE.toString());
@@ -34758,10 +34751,10 @@ var require_XGROUP_CREATE = __commonJS({
        * @returns 'OK' if successful
        * @see https://redis.io/commands/xgroup-create/
        */
-      parseCommand(parser3, key, group, id, options2) {
+      parseCommand(parser3, key, group2, id, options2) {
         parser3.push("XGROUP", "CREATE");
         parser3.pushKey(key);
-        parser3.push(group, id);
+        parser3.push(group2, id);
         if (options2?.MKSTREAM) {
           parser3.push("MKSTREAM");
         }
@@ -34789,10 +34782,10 @@ var require_XGROUP_CREATECONSUMER = __commonJS({
        * @returns 1 if the consumer was created, 0 if it already existed
        * @see https://redis.io/commands/xgroup-createconsumer/
        */
-      parseCommand(parser3, key, group, consumer) {
+      parseCommand(parser3, key, group2, consumer) {
         parser3.push("XGROUP", "CREATECONSUMER");
         parser3.pushKey(key);
-        parser3.push(group, consumer);
+        parser3.push(group2, consumer);
       },
       transformReply: void 0
     };
@@ -34814,10 +34807,10 @@ var require_XGROUP_DELCONSUMER = __commonJS({
        * @returns The number of pending messages owned by the deleted consumer
        * @see https://redis.io/commands/xgroup-delconsumer/
        */
-      parseCommand(parser3, key, group, consumer) {
+      parseCommand(parser3, key, group2, consumer) {
         parser3.push("XGROUP", "DELCONSUMER");
         parser3.pushKey(key);
-        parser3.push(group, consumer);
+        parser3.push(group2, consumer);
       },
       transformReply: void 0
     };
@@ -34838,10 +34831,10 @@ var require_XGROUP_DESTROY = __commonJS({
        * @returns 1 if the group was destroyed, 0 if it did not exist
        * @see https://redis.io/commands/xgroup-destroy/
        */
-      parseCommand(parser3, key, group) {
+      parseCommand(parser3, key, group2) {
         parser3.push("XGROUP", "DESTROY");
         parser3.pushKey(key);
-        parser3.push(group);
+        parser3.push(group2);
       },
       transformReply: void 0
     };
@@ -34864,10 +34857,10 @@ var require_XGROUP_SETID = __commonJS({
        * @returns 'OK' if successful
        * @see https://redis.io/commands/xgroup-setid/
        */
-      parseCommand(parser3, key, group, id, options2) {
+      parseCommand(parser3, key, group2, id, options2) {
         parser3.push("XGROUP", "SETID");
         parser3.pushKey(key);
-        parser3.push(group, id);
+        parser3.push(group2, id);
         if (options2?.ENTRIESREAD) {
           parser3.push("ENTRIESREAD", options2.ENTRIESREAD.toString());
         }
@@ -34891,10 +34884,10 @@ var require_XINFO_CONSUMERS = __commonJS({
        * @returns Array of consumer information objects
        * @see https://redis.io/commands/xinfo-consumers/
        */
-      parseCommand(parser3, key, group) {
+      parseCommand(parser3, key, group2) {
         parser3.push("XINFO", "CONSUMERS");
         parser3.pushKey(key);
-        parser3.push(group);
+        parser3.push(group2);
       },
       transformReply: {
         /**
@@ -34951,8 +34944,8 @@ var require_XINFO_GROUPS = __commonJS({
          *          lag - Number of entries not read by the group (Redis 7.0+)
          */
         2: (reply) => {
-          return reply.map((group) => {
-            const unwrapped = group;
+          return reply.map((group2) => {
+            const unwrapped = group2;
             return {
               name: unwrapped[1],
               consumers: unwrapped[3],
@@ -35073,10 +35066,10 @@ var require_XPENDING_RANGE = __commonJS({
        * @returns Array of pending message details
        * @see https://redis.io/commands/xpending/
        */
-      parseCommand(parser3, key, group, start, end, count, options2) {
+      parseCommand(parser3, key, group2, start, end, count, options2) {
         parser3.push("XPENDING");
         parser3.pushKey(key);
-        parser3.push(group);
+        parser3.push(group2);
         if (options2?.IDLE !== void 0) {
           parser3.push("IDLE", options2.IDLE.toString());
         }
@@ -35121,10 +35114,10 @@ var require_XPENDING = __commonJS({
        * @returns Summary of pending messages including total count, ID range, and per-consumer stats
        * @see https://redis.io/commands/xpending/
        */
-      parseCommand(parser3, key, group) {
+      parseCommand(parser3, key, group2) {
         parser3.push("XPENDING");
         parser3.pushKey(key);
-        parser3.push(group);
+        parser3.push(group2);
       },
       /**
        * Transforms the raw XPENDING reply into a structured object
@@ -35267,8 +35260,8 @@ var require_XREADGROUP = __commonJS({
        * @returns Array of stream entries, each containing the stream name and its messages
        * @see https://redis.io/commands/xreadgroup/
        */
-      parseCommand(parser3, group, consumer, streams, options2) {
-        parser3.push("XREADGROUP", "GROUP", group, consumer);
+      parseCommand(parser3, group2, consumer, streams, options2) {
+        parser3.push("XREADGROUP", "GROUP", group2, consumer);
         if (options2?.COUNT !== void 0) {
           parser3.push("COUNT", options2.COUNT.toString());
         }
@@ -51642,2841 +51635,6 @@ var require_source = __commonJS({
     module15.exports = chalk5;
   }
 });
-var require_parser2 = __commonJS({
-  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/parser.js"(exports2) {
-    "use strict";
-    exports2.load = function(received, defaults, onto = {}) {
-      var k, ref, v2;
-      for (k in defaults) {
-        v2 = defaults[k];
-        onto[k] = (ref = received[k]) != null ? ref : v2;
-      }
-      return onto;
-    };
-    exports2.overwrite = function(received, defaults, onto = {}) {
-      var k, v2;
-      for (k in received) {
-        v2 = received[k];
-        if (defaults[k] !== void 0) {
-          onto[k] = v2;
-        }
-      }
-      return onto;
-    };
-  }
-});
-var require_DLList = __commonJS({
-  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/DLList.js"(exports2, module15) {
-    "use strict";
-    var DLList;
-    DLList = class DLList {
-      constructor(incr, decr) {
-        this.incr = incr;
-        this.decr = decr;
-        this._first = null;
-        this._last = null;
-        this.length = 0;
-      }
-      push(value) {
-        var node;
-        this.length++;
-        if (typeof this.incr === "function") {
-          this.incr();
-        }
-        node = {
-          value,
-          prev: this._last,
-          next: null
-        };
-        if (this._last != null) {
-          this._last.next = node;
-          this._last = node;
-        } else {
-          this._first = this._last = node;
-        }
-        return void 0;
-      }
-      shift() {
-        var value;
-        if (this._first == null) {
-          return;
-        } else {
-          this.length--;
-          if (typeof this.decr === "function") {
-            this.decr();
-          }
-        }
-        value = this._first.value;
-        if ((this._first = this._first.next) != null) {
-          this._first.prev = null;
-        } else {
-          this._last = null;
-        }
-        return value;
-      }
-      first() {
-        if (this._first != null) {
-          return this._first.value;
-        }
-      }
-      getArray() {
-        var node, ref, results;
-        node = this._first;
-        results = [];
-        while (node != null) {
-          results.push((ref = node, node = node.next, ref.value));
-        }
-        return results;
-      }
-      forEachShift(cb) {
-        var node;
-        node = this.shift();
-        while (node != null) {
-          cb(node), node = this.shift();
-        }
-        return void 0;
-      }
-      debug() {
-        var node, ref, ref1, ref2, results;
-        node = this._first;
-        results = [];
-        while (node != null) {
-          results.push((ref = node, node = node.next, {
-            value: ref.value,
-            prev: (ref1 = ref.prev) != null ? ref1.value : void 0,
-            next: (ref2 = ref.next) != null ? ref2.value : void 0
-          }));
-        }
-        return results;
-      }
-    };
-    module15.exports = DLList;
-  }
-});
-var require_Events = __commonJS({
-  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/Events.js"(exports2, module15) {
-    "use strict";
-    function asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, key, arg) {
-      try {
-        var info = gen[key](arg);
-        var value = info.value;
-      } catch (error2) {
-        reject(error2);
-        return;
-      }
-      if (info.done) {
-        resolve9(value);
-      } else {
-        Promise.resolve(value).then(_next, _throw);
-      }
-    }
-    function _asyncToGenerator2(fn) {
-      return function() {
-        var self2 = this, args = arguments;
-        return new Promise(function(resolve9, reject) {
-          var gen = fn.apply(self2, args);
-          function _next(value) {
-            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "next", value);
-          }
-          function _throw(err) {
-            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "throw", err);
-          }
-          _next(void 0);
-        });
-      };
-    }
-    var Events2;
-    Events2 = class Events {
-      constructor(instance) {
-        this.instance = instance;
-        this._events = {};
-        if (this.instance.on != null || this.instance.once != null || this.instance.removeAllListeners != null) {
-          throw new Error("An Emitter already exists for this object");
-        }
-        this.instance.on = (name, cb) => {
-          return this._addListener(name, "many", cb);
-        };
-        this.instance.once = (name, cb) => {
-          return this._addListener(name, "once", cb);
-        };
-        this.instance.removeAllListeners = (name = null) => {
-          if (name != null) {
-            return delete this._events[name];
-          } else {
-            return this._events = {};
-          }
-        };
-      }
-      _addListener(name, status, cb) {
-        var base2;
-        if ((base2 = this._events)[name] == null) {
-          base2[name] = [];
-        }
-        this._events[name].push({
-          cb,
-          status
-        });
-        return this.instance;
-      }
-      listenerCount(name) {
-        if (this._events[name] != null) {
-          return this._events[name].length;
-        } else {
-          return 0;
-        }
-      }
-      trigger(name, ...args) {
-        var _this = this;
-        return _asyncToGenerator2(function* () {
-          var e2, promises;
-          try {
-            if (name !== "debug") {
-              _this.trigger("debug", `Event triggered: ${name}`, args);
-            }
-            if (_this._events[name] == null) {
-              return;
-            }
-            _this._events[name] = _this._events[name].filter(function(listener) {
-              return listener.status !== "none";
-            });
-            promises = _this._events[name].map(
-              /* @__PURE__ */ function() {
-                var _ref = _asyncToGenerator2(function* (listener) {
-                  var e3, returned;
-                  if (listener.status === "none") {
-                    return;
-                  }
-                  if (listener.status === "once") {
-                    listener.status = "none";
-                  }
-                  try {
-                    returned = typeof listener.cb === "function" ? listener.cb(...args) : void 0;
-                    if (typeof (returned != null ? returned.then : void 0) === "function") {
-                      return yield returned;
-                    } else {
-                      return returned;
-                    }
-                  } catch (error2) {
-                    e3 = error2;
-                    if (true) {
-                      _this.trigger("error", e3);
-                    }
-                    return null;
-                  }
-                });
-                return function(_x) {
-                  return _ref.apply(this, arguments);
-                };
-              }()
-            );
-            return (yield Promise.all(promises)).find(function(x3) {
-              return x3 != null;
-            });
-          } catch (error2) {
-            e2 = error2;
-            if (true) {
-              _this.trigger("error", e2);
-            }
-            return null;
-          }
-        })();
-      }
-    };
-    module15.exports = Events2;
-  }
-});
-var require_Queues = __commonJS({
-  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/Queues.js"(exports2, module15) {
-    "use strict";
-    var DLList;
-    var Events2;
-    var Queues;
-    DLList = require_DLList();
-    Events2 = require_Events();
-    Queues = class Queues {
-      constructor(num_priorities) {
-        var i2;
-        this.Events = new Events2(this);
-        this._length = 0;
-        this._lists = function() {
-          var j, ref, results;
-          results = [];
-          for (i2 = j = 1, ref = num_priorities; 1 <= ref ? j <= ref : j >= ref; i2 = 1 <= ref ? ++j : --j) {
-            results.push(new DLList(() => {
-              return this.incr();
-            }, () => {
-              return this.decr();
-            }));
-          }
-          return results;
-        }.call(this);
-      }
-      incr() {
-        if (this._length++ === 0) {
-          return this.Events.trigger("leftzero");
-        }
-      }
-      decr() {
-        if (--this._length === 0) {
-          return this.Events.trigger("zero");
-        }
-      }
-      push(job) {
-        return this._lists[job.options.priority].push(job);
-      }
-      queued(priority) {
-        if (priority != null) {
-          return this._lists[priority].length;
-        } else {
-          return this._length;
-        }
-      }
-      shiftAll(fn) {
-        return this._lists.forEach(function(list) {
-          return list.forEachShift(fn);
-        });
-      }
-      getFirst(arr = this._lists) {
-        var j, len, list;
-        for (j = 0, len = arr.length; j < len; j++) {
-          list = arr[j];
-          if (list.length > 0) {
-            return list;
-          }
-        }
-        return [];
-      }
-      shiftLastFrom(priority) {
-        return this.getFirst(this._lists.slice(priority).reverse()).shift();
-      }
-    };
-    module15.exports = Queues;
-  }
-});
-var require_BottleneckError = __commonJS({
-  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/BottleneckError.js"(exports2, module15) {
-    "use strict";
-    var BottleneckError;
-    BottleneckError = class BottleneckError extends Error {
-    };
-    module15.exports = BottleneckError;
-  }
-});
-var require_Job = __commonJS({
-  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/Job.js"(exports2, module15) {
-    "use strict";
-    function asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, key, arg) {
-      try {
-        var info = gen[key](arg);
-        var value = info.value;
-      } catch (error2) {
-        reject(error2);
-        return;
-      }
-      if (info.done) {
-        resolve9(value);
-      } else {
-        Promise.resolve(value).then(_next, _throw);
-      }
-    }
-    function _asyncToGenerator2(fn) {
-      return function() {
-        var self2 = this, args = arguments;
-        return new Promise(function(resolve9, reject) {
-          var gen = fn.apply(self2, args);
-          function _next(value) {
-            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "next", value);
-          }
-          function _throw(err) {
-            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "throw", err);
-          }
-          _next(void 0);
-        });
-      };
-    }
-    var BottleneckError;
-    var DEFAULT_PRIORITY;
-    var Job;
-    var NUM_PRIORITIES;
-    var parser3;
-    NUM_PRIORITIES = 10;
-    DEFAULT_PRIORITY = 5;
-    parser3 = require_parser2();
-    BottleneckError = require_BottleneckError();
-    Job = class Job {
-      constructor(task, args, options2, jobDefaults, rejectOnDrop, Events2, _states, Promise2) {
-        this.task = task;
-        this.args = args;
-        this.rejectOnDrop = rejectOnDrop;
-        this.Events = Events2;
-        this._states = _states;
-        this.Promise = Promise2;
-        this.options = parser3.load(options2, jobDefaults);
-        this.options.priority = this._sanitizePriority(this.options.priority);
-        if (this.options.id === jobDefaults.id) {
-          this.options.id = `${this.options.id}-${this._randomIndex()}`;
-        }
-        this.promise = new this.Promise((_resolve, _reject) => {
-          this._resolve = _resolve;
-          this._reject = _reject;
-        });
-        this.retryCount = 0;
-      }
-      _sanitizePriority(priority) {
-        var sProperty;
-        sProperty = ~~priority !== priority ? DEFAULT_PRIORITY : priority;
-        if (sProperty < 0) {
-          return 0;
-        } else if (sProperty > NUM_PRIORITIES - 1) {
-          return NUM_PRIORITIES - 1;
-        } else {
-          return sProperty;
-        }
-      }
-      _randomIndex() {
-        return Math.random().toString(36).slice(2);
-      }
-      doDrop({
-        error: error2,
-        message = "This job has been dropped by Bottleneck"
-      } = {}) {
-        if (this._states.remove(this.options.id)) {
-          if (this.rejectOnDrop) {
-            this._reject(error2 != null ? error2 : new BottleneckError(message));
-          }
-          this.Events.trigger("dropped", {
-            args: this.args,
-            options: this.options,
-            task: this.task,
-            promise: this.promise
-          });
-          return true;
-        } else {
-          return false;
-        }
-      }
-      _assertStatus(expected) {
-        var status;
-        status = this._states.jobStatus(this.options.id);
-        if (!(status === expected || expected === "DONE" && status === null)) {
-          throw new BottleneckError(`Invalid job status ${status}, expected ${expected}. Please open an issue at https://github.com/SGrondin/bottleneck/issues`);
-        }
-      }
-      doReceive() {
-        this._states.start(this.options.id);
-        return this.Events.trigger("received", {
-          args: this.args,
-          options: this.options
-        });
-      }
-      doQueue(reachedHWM, blocked) {
-        this._assertStatus("RECEIVED");
-        this._states.next(this.options.id);
-        return this.Events.trigger("queued", {
-          args: this.args,
-          options: this.options,
-          reachedHWM,
-          blocked
-        });
-      }
-      doRun() {
-        if (this.retryCount === 0) {
-          this._assertStatus("QUEUED");
-          this._states.next(this.options.id);
-        } else {
-          this._assertStatus("EXECUTING");
-        }
-        return this.Events.trigger("scheduled", {
-          args: this.args,
-          options: this.options
-        });
-      }
-      doExecute(chained, clearGlobalState, run2, free) {
-        var _this = this;
-        return _asyncToGenerator2(function* () {
-          var error2, eventInfo, passed;
-          if (_this.retryCount === 0) {
-            _this._assertStatus("RUNNING");
-            _this._states.next(_this.options.id);
-          } else {
-            _this._assertStatus("EXECUTING");
-          }
-          eventInfo = {
-            args: _this.args,
-            options: _this.options,
-            retryCount: _this.retryCount
-          };
-          _this.Events.trigger("executing", eventInfo);
-          try {
-            passed = yield chained != null ? chained.schedule(_this.options, _this.task, ..._this.args) : _this.task(..._this.args);
-            if (clearGlobalState()) {
-              _this.doDone(eventInfo);
-              yield free(_this.options, eventInfo);
-              _this._assertStatus("DONE");
-              return _this._resolve(passed);
-            }
-          } catch (error1) {
-            error2 = error1;
-            return _this._onFailure(error2, eventInfo, clearGlobalState, run2, free);
-          }
-        })();
-      }
-      doExpire(clearGlobalState, run2, free) {
-        var error2, eventInfo;
-        if (this._states.jobStatus(this.options.id === "RUNNING")) {
-          this._states.next(this.options.id);
-        }
-        this._assertStatus("EXECUTING");
-        eventInfo = {
-          args: this.args,
-          options: this.options,
-          retryCount: this.retryCount
-        };
-        error2 = new BottleneckError(`This job timed out after ${this.options.expiration} ms.`);
-        return this._onFailure(error2, eventInfo, clearGlobalState, run2, free);
-      }
-      _onFailure(error2, eventInfo, clearGlobalState, run2, free) {
-        var _this2 = this;
-        return _asyncToGenerator2(function* () {
-          var retry, retryAfter;
-          if (clearGlobalState()) {
-            retry = yield _this2.Events.trigger("failed", error2, eventInfo);
-            if (retry != null) {
-              retryAfter = ~~retry;
-              _this2.Events.trigger("retry", `Retrying ${_this2.options.id} after ${retryAfter} ms`, eventInfo);
-              _this2.retryCount++;
-              return run2(retryAfter);
-            } else {
-              _this2.doDone(eventInfo);
-              yield free(_this2.options, eventInfo);
-              _this2._assertStatus("DONE");
-              return _this2._reject(error2);
-            }
-          }
-        })();
-      }
-      doDone(eventInfo) {
-        this._assertStatus("EXECUTING");
-        this._states.next(this.options.id);
-        return this.Events.trigger("done", eventInfo);
-      }
-    };
-    module15.exports = Job;
-  }
-});
-var require_LocalDatastore = __commonJS({
-  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/LocalDatastore.js"(exports2, module15) {
-    "use strict";
-    function asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, key, arg) {
-      try {
-        var info = gen[key](arg);
-        var value = info.value;
-      } catch (error2) {
-        reject(error2);
-        return;
-      }
-      if (info.done) {
-        resolve9(value);
-      } else {
-        Promise.resolve(value).then(_next, _throw);
-      }
-    }
-    function _asyncToGenerator2(fn) {
-      return function() {
-        var self2 = this, args = arguments;
-        return new Promise(function(resolve9, reject) {
-          var gen = fn.apply(self2, args);
-          function _next(value) {
-            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "next", value);
-          }
-          function _throw(err) {
-            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "throw", err);
-          }
-          _next(void 0);
-        });
-      };
-    }
-    var BottleneckError;
-    var LocalDatastore;
-    var parser3;
-    parser3 = require_parser2();
-    BottleneckError = require_BottleneckError();
-    LocalDatastore = class LocalDatastore {
-      constructor(instance, storeOptions, storeInstanceOptions) {
-        this.instance = instance;
-        this.storeOptions = storeOptions;
-        this.clientId = this.instance._randomIndex();
-        parser3.load(storeInstanceOptions, storeInstanceOptions, this);
-        this._nextRequest = this._lastReservoirRefresh = this._lastReservoirIncrease = Date.now();
-        this._running = 0;
-        this._done = 0;
-        this._unblockTime = 0;
-        this.ready = this.Promise.resolve();
-        this.clients = {};
-        this._startHeartbeat();
-      }
-      _startHeartbeat() {
-        var base2;
-        if (this.heartbeat == null && (this.storeOptions.reservoirRefreshInterval != null && this.storeOptions.reservoirRefreshAmount != null || this.storeOptions.reservoirIncreaseInterval != null && this.storeOptions.reservoirIncreaseAmount != null)) {
-          return typeof (base2 = this.heartbeat = setInterval(() => {
-            var amount, incr, maximum, now, reservoir;
-            now = Date.now();
-            if (this.storeOptions.reservoirRefreshInterval != null && now >= this._lastReservoirRefresh + this.storeOptions.reservoirRefreshInterval) {
-              this._lastReservoirRefresh = now;
-              this.storeOptions.reservoir = this.storeOptions.reservoirRefreshAmount;
-              this.instance._drainAll(this.computeCapacity());
-            }
-            if (this.storeOptions.reservoirIncreaseInterval != null && now >= this._lastReservoirIncrease + this.storeOptions.reservoirIncreaseInterval) {
-              var _this$storeOptions = this.storeOptions;
-              amount = _this$storeOptions.reservoirIncreaseAmount;
-              maximum = _this$storeOptions.reservoirIncreaseMaximum;
-              reservoir = _this$storeOptions.reservoir;
-              this._lastReservoirIncrease = now;
-              incr = maximum != null ? Math.min(amount, maximum - reservoir) : amount;
-              if (incr > 0) {
-                this.storeOptions.reservoir += incr;
-                return this.instance._drainAll(this.computeCapacity());
-              }
-            }
-          }, this.heartbeatInterval)).unref === "function" ? base2.unref() : void 0;
-        } else {
-          return clearInterval(this.heartbeat);
-        }
-      }
-      __publish__(message) {
-        var _this = this;
-        return _asyncToGenerator2(function* () {
-          yield _this.yieldLoop();
-          return _this.instance.Events.trigger("message", message.toString());
-        })();
-      }
-      __disconnect__(flush) {
-        var _this2 = this;
-        return _asyncToGenerator2(function* () {
-          yield _this2.yieldLoop();
-          clearInterval(_this2.heartbeat);
-          return _this2.Promise.resolve();
-        })();
-      }
-      yieldLoop(t = 0) {
-        return new this.Promise(function(resolve9, reject) {
-          return setTimeout(resolve9, t);
-        });
-      }
-      computePenalty() {
-        var ref;
-        return (ref = this.storeOptions.penalty) != null ? ref : 15 * this.storeOptions.minTime || 5e3;
-      }
-      __updateSettings__(options2) {
-        var _this3 = this;
-        return _asyncToGenerator2(function* () {
-          yield _this3.yieldLoop();
-          parser3.overwrite(options2, options2, _this3.storeOptions);
-          _this3._startHeartbeat();
-          _this3.instance._drainAll(_this3.computeCapacity());
-          return true;
-        })();
-      }
-      __running__() {
-        var _this4 = this;
-        return _asyncToGenerator2(function* () {
-          yield _this4.yieldLoop();
-          return _this4._running;
-        })();
-      }
-      __queued__() {
-        var _this5 = this;
-        return _asyncToGenerator2(function* () {
-          yield _this5.yieldLoop();
-          return _this5.instance.queued();
-        })();
-      }
-      __done__() {
-        var _this6 = this;
-        return _asyncToGenerator2(function* () {
-          yield _this6.yieldLoop();
-          return _this6._done;
-        })();
-      }
-      __groupCheck__(time3) {
-        var _this7 = this;
-        return _asyncToGenerator2(function* () {
-          yield _this7.yieldLoop();
-          return _this7._nextRequest + _this7.timeout < time3;
-        })();
-      }
-      computeCapacity() {
-        var maxConcurrent, reservoir;
-        var _this$storeOptions2 = this.storeOptions;
-        maxConcurrent = _this$storeOptions2.maxConcurrent;
-        reservoir = _this$storeOptions2.reservoir;
-        if (maxConcurrent != null && reservoir != null) {
-          return Math.min(maxConcurrent - this._running, reservoir);
-        } else if (maxConcurrent != null) {
-          return maxConcurrent - this._running;
-        } else if (reservoir != null) {
-          return reservoir;
-        } else {
-          return null;
-        }
-      }
-      conditionsCheck(weight) {
-        var capacity;
-        capacity = this.computeCapacity();
-        return capacity == null || weight <= capacity;
-      }
-      __incrementReservoir__(incr) {
-        var _this8 = this;
-        return _asyncToGenerator2(function* () {
-          var reservoir;
-          yield _this8.yieldLoop();
-          reservoir = _this8.storeOptions.reservoir += incr;
-          _this8.instance._drainAll(_this8.computeCapacity());
-          return reservoir;
-        })();
-      }
-      __currentReservoir__() {
-        var _this9 = this;
-        return _asyncToGenerator2(function* () {
-          yield _this9.yieldLoop();
-          return _this9.storeOptions.reservoir;
-        })();
-      }
-      isBlocked(now) {
-        return this._unblockTime >= now;
-      }
-      check(weight, now) {
-        return this.conditionsCheck(weight) && this._nextRequest - now <= 0;
-      }
-      __check__(weight) {
-        var _this10 = this;
-        return _asyncToGenerator2(function* () {
-          var now;
-          yield _this10.yieldLoop();
-          now = Date.now();
-          return _this10.check(weight, now);
-        })();
-      }
-      __register__(index, weight, expiration) {
-        var _this11 = this;
-        return _asyncToGenerator2(function* () {
-          var now, wait;
-          yield _this11.yieldLoop();
-          now = Date.now();
-          if (_this11.conditionsCheck(weight)) {
-            _this11._running += weight;
-            if (_this11.storeOptions.reservoir != null) {
-              _this11.storeOptions.reservoir -= weight;
-            }
-            wait = Math.max(_this11._nextRequest - now, 0);
-            _this11._nextRequest = now + wait + _this11.storeOptions.minTime;
-            return {
-              success: true,
-              wait,
-              reservoir: _this11.storeOptions.reservoir
-            };
-          } else {
-            return {
-              success: false
-            };
-          }
-        })();
-      }
-      strategyIsBlock() {
-        return this.storeOptions.strategy === 3;
-      }
-      __submit__(queueLength, weight) {
-        var _this12 = this;
-        return _asyncToGenerator2(function* () {
-          var blocked, now, reachedHWM;
-          yield _this12.yieldLoop();
-          if (_this12.storeOptions.maxConcurrent != null && weight > _this12.storeOptions.maxConcurrent) {
-            throw new BottleneckError(`Impossible to add a job having a weight of ${weight} to a limiter having a maxConcurrent setting of ${_this12.storeOptions.maxConcurrent}`);
-          }
-          now = Date.now();
-          reachedHWM = _this12.storeOptions.highWater != null && queueLength === _this12.storeOptions.highWater && !_this12.check(weight, now);
-          blocked = _this12.strategyIsBlock() && (reachedHWM || _this12.isBlocked(now));
-          if (blocked) {
-            _this12._unblockTime = now + _this12.computePenalty();
-            _this12._nextRequest = _this12._unblockTime + _this12.storeOptions.minTime;
-            _this12.instance._dropAllQueued();
-          }
-          return {
-            reachedHWM,
-            blocked,
-            strategy: _this12.storeOptions.strategy
-          };
-        })();
-      }
-      __free__(index, weight) {
-        var _this13 = this;
-        return _asyncToGenerator2(function* () {
-          yield _this13.yieldLoop();
-          _this13._running -= weight;
-          _this13._done += weight;
-          _this13.instance._drainAll(_this13.computeCapacity());
-          return {
-            running: _this13._running
-          };
-        })();
-      }
-    };
-    module15.exports = LocalDatastore;
-  }
-});
-var require_lua = __commonJS({
-  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/lua.json"(exports2, module15) {
-    module15.exports = {
-      "blacklist_client.lua": "local blacklist = ARGV[num_static_argv + 1]\n\nif redis.call('zscore', client_last_seen_key, blacklist) then\n  redis.call('zadd', client_last_seen_key, 0, blacklist)\nend\n\n\nreturn {}\n",
-      "check.lua": "local weight = tonumber(ARGV[num_static_argv + 1])\n\nlocal capacity = process_tick(now, false)['capacity']\nlocal nextRequest = tonumber(redis.call('hget', settings_key, 'nextRequest'))\n\nreturn conditions_check(capacity, weight) and nextRequest - now <= 0\n",
-      "conditions_check.lua": "local conditions_check = function (capacity, weight)\n  return capacity == nil or weight <= capacity\nend\n",
-      "current_reservoir.lua": "return process_tick(now, false)['reservoir']\n",
-      "done.lua": "process_tick(now, false)\n\nreturn tonumber(redis.call('hget', settings_key, 'done'))\n",
-      "free.lua": "local index = ARGV[num_static_argv + 1]\n\nredis.call('zadd', job_expirations_key, 0, index)\n\nreturn process_tick(now, false)['running']\n",
-      "get_time.lua": "redis.replicate_commands()\n\nlocal get_time = function ()\n  local time = redis.call('time')\n\n  return tonumber(time[1]..string.sub(time[2], 1, 3))\nend\n",
-      "group_check.lua": "return not (redis.call('exists', settings_key) == 1)\n",
-      "heartbeat.lua": "process_tick(now, true)\n",
-      "increment_reservoir.lua": "local incr = tonumber(ARGV[num_static_argv + 1])\n\nredis.call('hincrby', settings_key, 'reservoir', incr)\n\nlocal reservoir = process_tick(now, true)['reservoir']\n\nlocal groupTimeout = tonumber(redis.call('hget', settings_key, 'groupTimeout'))\nrefresh_expiration(0, 0, groupTimeout)\n\nreturn reservoir\n",
-      "init.lua": `local clear = tonumber(ARGV[num_static_argv + 1])
-local limiter_version = ARGV[num_static_argv + 2]
-local num_local_argv = num_static_argv + 2
-
-if clear == 1 then
-  redis.call('del', unpack(KEYS))
-end
-
-if redis.call('exists', settings_key) == 0 then
-  -- Create
-  local args = {'hmset', settings_key}
-
-  for i = num_local_argv + 1, #ARGV do
-    table.insert(args, ARGV[i])
-  end
-
-  redis.call(unpack(args))
-  redis.call('hmset', settings_key,
-    'nextRequest', now,
-    'lastReservoirRefresh', now,
-    'lastReservoirIncrease', now,
-    'running', 0,
-    'done', 0,
-    'unblockTime', 0,
-    'capacityPriorityCounter', 0
-  )
-
-else
-  -- Apply migrations
-  local settings = redis.call('hmget', settings_key,
-    'id',
-    'version'
-  )
-  local id = settings[1]
-  local current_version = settings[2]
-
-  if current_version ~= limiter_version then
-    local version_digits = {}
-    for k, v in string.gmatch(current_version, "([^.]+)") do
-      table.insert(version_digits, tonumber(k))
-    end
-
-    -- 2.10.0
-    if version_digits[2] < 10 then
-      redis.call('hsetnx', settings_key, 'reservoirRefreshInterval', '')
-      redis.call('hsetnx', settings_key, 'reservoirRefreshAmount', '')
-      redis.call('hsetnx', settings_key, 'lastReservoirRefresh', '')
-      redis.call('hsetnx', settings_key, 'done', 0)
-      redis.call('hset', settings_key, 'version', '2.10.0')
-    end
-
-    -- 2.11.1
-    if version_digits[2] < 11 or (version_digits[2] == 11 and version_digits[3] < 1) then
-      if redis.call('hstrlen', settings_key, 'lastReservoirRefresh') == 0 then
-        redis.call('hmset', settings_key,
-          'lastReservoirRefresh', now,
-          'version', '2.11.1'
-        )
-      end
-    end
-
-    -- 2.14.0
-    if version_digits[2] < 14 then
-      local old_running_key = 'b_'..id..'_running'
-      local old_executing_key = 'b_'..id..'_executing'
-
-      if redis.call('exists', old_running_key) == 1 then
-        redis.call('rename', old_running_key, job_weights_key)
-      end
-      if redis.call('exists', old_executing_key) == 1 then
-        redis.call('rename', old_executing_key, job_expirations_key)
-      end
-      redis.call('hset', settings_key, 'version', '2.14.0')
-    end
-
-    -- 2.15.2
-    if version_digits[2] < 15 or (version_digits[2] == 15 and version_digits[3] < 2) then
-      redis.call('hsetnx', settings_key, 'capacityPriorityCounter', 0)
-      redis.call('hset', settings_key, 'version', '2.15.2')
-    end
-
-    -- 2.17.0
-    if version_digits[2] < 17 then
-      redis.call('hsetnx', settings_key, 'clientTimeout', 10000)
-      redis.call('hset', settings_key, 'version', '2.17.0')
-    end
-
-    -- 2.18.0
-    if version_digits[2] < 18 then
-      redis.call('hsetnx', settings_key, 'reservoirIncreaseInterval', '')
-      redis.call('hsetnx', settings_key, 'reservoirIncreaseAmount', '')
-      redis.call('hsetnx', settings_key, 'reservoirIncreaseMaximum', '')
-      redis.call('hsetnx', settings_key, 'lastReservoirIncrease', now)
-      redis.call('hset', settings_key, 'version', '2.18.0')
-    end
-
-  end
-
-  process_tick(now, false)
-end
-
-local groupTimeout = tonumber(redis.call('hget', settings_key, 'groupTimeout'))
-refresh_expiration(0, 0, groupTimeout)
-
-return {}
-`,
-      "process_tick.lua": "local process_tick = function (now, always_publish)\n\n  local compute_capacity = function (maxConcurrent, running, reservoir)\n    if maxConcurrent ~= nil and reservoir ~= nil then\n      return math.min((maxConcurrent - running), reservoir)\n    elseif maxConcurrent ~= nil then\n      return maxConcurrent - running\n    elseif reservoir ~= nil then\n      return reservoir\n    else\n      return nil\n    end\n  end\n\n  local settings = redis.call('hmget', settings_key,\n    'id',\n    'maxConcurrent',\n    'running',\n    'reservoir',\n    'reservoirRefreshInterval',\n    'reservoirRefreshAmount',\n    'lastReservoirRefresh',\n    'reservoirIncreaseInterval',\n    'reservoirIncreaseAmount',\n    'reservoirIncreaseMaximum',\n    'lastReservoirIncrease',\n    'capacityPriorityCounter',\n    'clientTimeout'\n  )\n  local id = settings[1]\n  local maxConcurrent = tonumber(settings[2])\n  local running = tonumber(settings[3])\n  local reservoir = tonumber(settings[4])\n  local reservoirRefreshInterval = tonumber(settings[5])\n  local reservoirRefreshAmount = tonumber(settings[6])\n  local lastReservoirRefresh = tonumber(settings[7])\n  local reservoirIncreaseInterval = tonumber(settings[8])\n  local reservoirIncreaseAmount = tonumber(settings[9])\n  local reservoirIncreaseMaximum = tonumber(settings[10])\n  local lastReservoirIncrease = tonumber(settings[11])\n  local capacityPriorityCounter = tonumber(settings[12])\n  local clientTimeout = tonumber(settings[13])\n\n  local initial_capacity = compute_capacity(maxConcurrent, running, reservoir)\n\n  --\n  -- Process 'running' changes\n  --\n  local expired = redis.call('zrangebyscore', job_expirations_key, '-inf', '('..now)\n\n  if #expired > 0 then\n    redis.call('zremrangebyscore', job_expirations_key, '-inf', '('..now)\n\n    local flush_batch = function (batch, acc)\n      local weights = redis.call('hmget', job_weights_key, unpack(batch))\n                      redis.call('hdel',  job_weights_key, unpack(batch))\n      local clients = redis.call('hmget', job_clients_key, unpack(batch))\n                      redis.call('hdel',  job_clients_key, unpack(batch))\n\n      -- Calculate sum of removed weights\n      for i = 1, #weights do\n        acc['total'] = acc['total'] + (tonumber(weights[i]) or 0)\n      end\n\n      -- Calculate sum of removed weights by client\n      local client_weights = {}\n      for i = 1, #clients do\n        local removed = tonumber(weights[i]) or 0\n        if removed > 0 then\n          acc['client_weights'][clients[i]] = (acc['client_weights'][clients[i]] or 0) + removed\n        end\n      end\n    end\n\n    local acc = {\n      ['total'] = 0,\n      ['client_weights'] = {}\n    }\n    local batch_size = 1000\n\n    -- Compute changes to Zsets and apply changes to Hashes\n    for i = 1, #expired, batch_size do\n      local batch = {}\n      for j = i, math.min(i + batch_size - 1, #expired) do\n        table.insert(batch, expired[j])\n      end\n\n      flush_batch(batch, acc)\n    end\n\n    -- Apply changes to Zsets\n    if acc['total'] > 0 then\n      redis.call('hincrby', settings_key, 'done', acc['total'])\n      running = tonumber(redis.call('hincrby', settings_key, 'running', -acc['total']))\n    end\n\n    for client, weight in pairs(acc['client_weights']) do\n      redis.call('zincrby', client_running_key, -weight, client)\n    end\n  end\n\n  --\n  -- Process 'reservoir' changes\n  --\n  local reservoirRefreshActive = reservoirRefreshInterval ~= nil and reservoirRefreshAmount ~= nil\n  if reservoirRefreshActive and now >= lastReservoirRefresh + reservoirRefreshInterval then\n    reservoir = reservoirRefreshAmount\n    redis.call('hmset', settings_key,\n      'reservoir', reservoir,\n      'lastReservoirRefresh', now\n    )\n  end\n\n  local reservoirIncreaseActive = reservoirIncreaseInterval ~= nil and reservoirIncreaseAmount ~= nil\n  if reservoirIncreaseActive and now >= lastReservoirIncrease + reservoirIncreaseInterval then\n    local num_intervals = math.floor((now - lastReservoirIncrease) / reservoirIncreaseInterval)\n    local incr = reservoirIncreaseAmount * num_intervals\n    if reservoirIncreaseMaximum ~= nil then\n      incr = math.min(incr, reservoirIncreaseMaximum - (reservoir or 0))\n    end\n    if incr > 0 then\n      reservoir = (reservoir or 0) + incr\n    end\n    redis.call('hmset', settings_key,\n      'reservoir', reservoir,\n      'lastReservoirIncrease', lastReservoirIncrease + (num_intervals * reservoirIncreaseInterval)\n    )\n  end\n\n  --\n  -- Clear unresponsive clients\n  --\n  local unresponsive = redis.call('zrangebyscore', client_last_seen_key, '-inf', (now - clientTimeout))\n  local unresponsive_lookup = {}\n  local terminated_clients = {}\n  for i = 1, #unresponsive do\n    unresponsive_lookup[unresponsive[i]] = true\n    if tonumber(redis.call('zscore', client_running_key, unresponsive[i])) == 0 then\n      table.insert(terminated_clients, unresponsive[i])\n    end\n  end\n  if #terminated_clients > 0 then\n    redis.call('zrem', client_running_key,         unpack(terminated_clients))\n    redis.call('hdel', client_num_queued_key,      unpack(terminated_clients))\n    redis.call('zrem', client_last_registered_key, unpack(terminated_clients))\n    redis.call('zrem', client_last_seen_key,       unpack(terminated_clients))\n  end\n\n  --\n  -- Broadcast capacity changes\n  --\n  local final_capacity = compute_capacity(maxConcurrent, running, reservoir)\n\n  if always_publish or (initial_capacity ~= nil and final_capacity == nil) then\n    -- always_publish or was not unlimited, now unlimited\n    redis.call('publish', 'b_'..id, 'capacity:'..(final_capacity or ''))\n\n  elseif initial_capacity ~= nil and final_capacity ~= nil and final_capacity > initial_capacity then\n    -- capacity was increased\n    -- send the capacity message to the limiter having the lowest number of running jobs\n    -- the tiebreaker is the limiter having not registered a job in the longest time\n\n    local lowest_concurrency_value = nil\n    local lowest_concurrency_clients = {}\n    local lowest_concurrency_last_registered = {}\n    local client_concurrencies = redis.call('zrange', client_running_key, 0, -1, 'withscores')\n\n    for i = 1, #client_concurrencies, 2 do\n      local client = client_concurrencies[i]\n      local concurrency = tonumber(client_concurrencies[i+1])\n\n      if (\n        lowest_concurrency_value == nil or lowest_concurrency_value == concurrency\n      ) and (\n        not unresponsive_lookup[client]\n      ) and (\n        tonumber(redis.call('hget', client_num_queued_key, client)) > 0\n      ) then\n        lowest_concurrency_value = concurrency\n        table.insert(lowest_concurrency_clients, client)\n        local last_registered = tonumber(redis.call('zscore', client_last_registered_key, client))\n        table.insert(lowest_concurrency_last_registered, last_registered)\n      end\n    end\n\n    if #lowest_concurrency_clients > 0 then\n      local position = 1\n      local earliest = lowest_concurrency_last_registered[1]\n\n      for i,v in ipairs(lowest_concurrency_last_registered) do\n        if v < earliest then\n          position = i\n          earliest = v\n        end\n      end\n\n      local next_client = lowest_concurrency_clients[position]\n      redis.call('publish', 'b_'..id,\n        'capacity-priority:'..(final_capacity or '')..\n        ':'..next_client..\n        ':'..capacityPriorityCounter\n      )\n      redis.call('hincrby', settings_key, 'capacityPriorityCounter', '1')\n    else\n      redis.call('publish', 'b_'..id, 'capacity:'..(final_capacity or ''))\n    end\n  end\n\n  return {\n    ['capacity'] = final_capacity,\n    ['running'] = running,\n    ['reservoir'] = reservoir\n  }\nend\n",
-      "queued.lua": "local clientTimeout = tonumber(redis.call('hget', settings_key, 'clientTimeout'))\nlocal valid_clients = redis.call('zrangebyscore', client_last_seen_key, (now - clientTimeout), 'inf')\nlocal client_queued = redis.call('hmget', client_num_queued_key, unpack(valid_clients))\n\nlocal sum = 0\nfor i = 1, #client_queued do\n  sum = sum + tonumber(client_queued[i])\nend\n\nreturn sum\n",
-      "refresh_expiration.lua": "local refresh_expiration = function (now, nextRequest, groupTimeout)\n\n  if groupTimeout ~= nil then\n    local ttl = (nextRequest + groupTimeout) - now\n\n    for i = 1, #KEYS do\n      redis.call('pexpire', KEYS[i], ttl)\n    end\n  end\n\nend\n",
-      "refs.lua": "local settings_key = KEYS[1]\nlocal job_weights_key = KEYS[2]\nlocal job_expirations_key = KEYS[3]\nlocal job_clients_key = KEYS[4]\nlocal client_running_key = KEYS[5]\nlocal client_num_queued_key = KEYS[6]\nlocal client_last_registered_key = KEYS[7]\nlocal client_last_seen_key = KEYS[8]\n\nlocal now = tonumber(ARGV[1])\nlocal client = ARGV[2]\n\nlocal num_static_argv = 2\n",
-      "register.lua": "local index = ARGV[num_static_argv + 1]\nlocal weight = tonumber(ARGV[num_static_argv + 2])\nlocal expiration = tonumber(ARGV[num_static_argv + 3])\n\nlocal state = process_tick(now, false)\nlocal capacity = state['capacity']\nlocal reservoir = state['reservoir']\n\nlocal settings = redis.call('hmget', settings_key,\n  'nextRequest',\n  'minTime',\n  'groupTimeout'\n)\nlocal nextRequest = tonumber(settings[1])\nlocal minTime = tonumber(settings[2])\nlocal groupTimeout = tonumber(settings[3])\n\nif conditions_check(capacity, weight) then\n\n  redis.call('hincrby', settings_key, 'running', weight)\n  redis.call('hset', job_weights_key, index, weight)\n  if expiration ~= nil then\n    redis.call('zadd', job_expirations_key, now + expiration, index)\n  end\n  redis.call('hset', job_clients_key, index, client)\n  redis.call('zincrby', client_running_key, weight, client)\n  redis.call('hincrby', client_num_queued_key, client, -1)\n  redis.call('zadd', client_last_registered_key, now, client)\n\n  local wait = math.max(nextRequest - now, 0)\n  local newNextRequest = now + wait + minTime\n\n  if reservoir == nil then\n    redis.call('hset', settings_key,\n      'nextRequest', newNextRequest\n    )\n  else\n    reservoir = reservoir - weight\n    redis.call('hmset', settings_key,\n      'reservoir', reservoir,\n      'nextRequest', newNextRequest\n    )\n  end\n\n  refresh_expiration(now, newNextRequest, groupTimeout)\n\n  return {true, wait, reservoir}\n\nelse\n  return {false}\nend\n",
-      "register_client.lua": "local queued = tonumber(ARGV[num_static_argv + 1])\n\n-- Could have been re-registered concurrently\nif not redis.call('zscore', client_last_seen_key, client) then\n  redis.call('zadd', client_running_key, 0, client)\n  redis.call('hset', client_num_queued_key, client, queued)\n  redis.call('zadd', client_last_registered_key, 0, client)\nend\n\nredis.call('zadd', client_last_seen_key, now, client)\n\nreturn {}\n",
-      "running.lua": "return process_tick(now, false)['running']\n",
-      "submit.lua": "local queueLength = tonumber(ARGV[num_static_argv + 1])\nlocal weight = tonumber(ARGV[num_static_argv + 2])\n\nlocal capacity = process_tick(now, false)['capacity']\n\nlocal settings = redis.call('hmget', settings_key,\n  'id',\n  'maxConcurrent',\n  'highWater',\n  'nextRequest',\n  'strategy',\n  'unblockTime',\n  'penalty',\n  'minTime',\n  'groupTimeout'\n)\nlocal id = settings[1]\nlocal maxConcurrent = tonumber(settings[2])\nlocal highWater = tonumber(settings[3])\nlocal nextRequest = tonumber(settings[4])\nlocal strategy = tonumber(settings[5])\nlocal unblockTime = tonumber(settings[6])\nlocal penalty = tonumber(settings[7])\nlocal minTime = tonumber(settings[8])\nlocal groupTimeout = tonumber(settings[9])\n\nif maxConcurrent ~= nil and weight > maxConcurrent then\n  return redis.error_reply('OVERWEIGHT:'..weight..':'..maxConcurrent)\nend\n\nlocal reachedHWM = (highWater ~= nil and queueLength == highWater\n  and not (\n    conditions_check(capacity, weight)\n    and nextRequest - now <= 0\n  )\n)\n\nlocal blocked = strategy == 3 and (reachedHWM or unblockTime >= now)\n\nif blocked then\n  local computedPenalty = penalty\n  if computedPenalty == nil then\n    if minTime == 0 then\n      computedPenalty = 5000\n    else\n      computedPenalty = 15 * minTime\n    end\n  end\n\n  local newNextRequest = now + computedPenalty + minTime\n\n  redis.call('hmset', settings_key,\n    'unblockTime', now + computedPenalty,\n    'nextRequest', newNextRequest\n  )\n\n  local clients_queued_reset = redis.call('hkeys', client_num_queued_key)\n  local queued_reset = {}\n  for i = 1, #clients_queued_reset do\n    table.insert(queued_reset, clients_queued_reset[i])\n    table.insert(queued_reset, 0)\n  end\n  redis.call('hmset', client_num_queued_key, unpack(queued_reset))\n\n  redis.call('publish', 'b_'..id, 'blocked:')\n\n  refresh_expiration(now, newNextRequest, groupTimeout)\nend\n\nif not blocked and not reachedHWM then\n  redis.call('hincrby', client_num_queued_key, client, 1)\nend\n\nreturn {reachedHWM, blocked, strategy}\n",
-      "update_settings.lua": "local args = {'hmset', settings_key}\n\nfor i = num_static_argv + 1, #ARGV do\n  table.insert(args, ARGV[i])\nend\n\nredis.call(unpack(args))\n\nprocess_tick(now, true)\n\nlocal groupTimeout = tonumber(redis.call('hget', settings_key, 'groupTimeout'))\nrefresh_expiration(0, 0, groupTimeout)\n\nreturn {}\n",
-      "validate_client.lua": "if not redis.call('zscore', client_last_seen_key, client) then\n  return redis.error_reply('UNKNOWN_CLIENT')\nend\n\nredis.call('zadd', client_last_seen_key, now, client)\n",
-      "validate_keys.lua": "if not (redis.call('exists', settings_key) == 1) then\n  return redis.error_reply('SETTINGS_KEY_NOT_FOUND')\nend\n"
-    };
-  }
-});
-var require_Scripts = __commonJS({
-  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/Scripts.js"(exports2) {
-    "use strict";
-    var headers;
-    var lua;
-    var templates;
-    lua = require_lua();
-    headers = {
-      refs: lua["refs.lua"],
-      validate_keys: lua["validate_keys.lua"],
-      validate_client: lua["validate_client.lua"],
-      refresh_expiration: lua["refresh_expiration.lua"],
-      process_tick: lua["process_tick.lua"],
-      conditions_check: lua["conditions_check.lua"],
-      get_time: lua["get_time.lua"]
-    };
-    exports2.allKeys = function(id) {
-      return [
-        /*
-        HASH
-        */
-        `b_${id}_settings`,
-        /*
-        HASH
-        job index -> weight
-        */
-        `b_${id}_job_weights`,
-        /*
-        ZSET
-        job index -> expiration
-        */
-        `b_${id}_job_expirations`,
-        /*
-        HASH
-        job index -> client
-        */
-        `b_${id}_job_clients`,
-        /*
-        ZSET
-        client -> sum running
-        */
-        `b_${id}_client_running`,
-        /*
-        HASH
-        client -> num queued
-        */
-        `b_${id}_client_num_queued`,
-        /*
-        ZSET
-        client -> last job registered
-        */
-        `b_${id}_client_last_registered`,
-        /*
-        ZSET
-        client -> last seen
-        */
-        `b_${id}_client_last_seen`
-      ];
-    };
-    templates = {
-      init: {
-        keys: exports2.allKeys,
-        headers: ["process_tick"],
-        refresh_expiration: true,
-        code: lua["init.lua"]
-      },
-      group_check: {
-        keys: exports2.allKeys,
-        headers: [],
-        refresh_expiration: false,
-        code: lua["group_check.lua"]
-      },
-      register_client: {
-        keys: exports2.allKeys,
-        headers: ["validate_keys"],
-        refresh_expiration: false,
-        code: lua["register_client.lua"]
-      },
-      blacklist_client: {
-        keys: exports2.allKeys,
-        headers: ["validate_keys", "validate_client"],
-        refresh_expiration: false,
-        code: lua["blacklist_client.lua"]
-      },
-      heartbeat: {
-        keys: exports2.allKeys,
-        headers: ["validate_keys", "validate_client", "process_tick"],
-        refresh_expiration: false,
-        code: lua["heartbeat.lua"]
-      },
-      update_settings: {
-        keys: exports2.allKeys,
-        headers: ["validate_keys", "validate_client", "process_tick"],
-        refresh_expiration: true,
-        code: lua["update_settings.lua"]
-      },
-      running: {
-        keys: exports2.allKeys,
-        headers: ["validate_keys", "validate_client", "process_tick"],
-        refresh_expiration: false,
-        code: lua["running.lua"]
-      },
-      queued: {
-        keys: exports2.allKeys,
-        headers: ["validate_keys", "validate_client"],
-        refresh_expiration: false,
-        code: lua["queued.lua"]
-      },
-      done: {
-        keys: exports2.allKeys,
-        headers: ["validate_keys", "validate_client", "process_tick"],
-        refresh_expiration: false,
-        code: lua["done.lua"]
-      },
-      check: {
-        keys: exports2.allKeys,
-        headers: ["validate_keys", "validate_client", "process_tick", "conditions_check"],
-        refresh_expiration: false,
-        code: lua["check.lua"]
-      },
-      submit: {
-        keys: exports2.allKeys,
-        headers: ["validate_keys", "validate_client", "process_tick", "conditions_check"],
-        refresh_expiration: true,
-        code: lua["submit.lua"]
-      },
-      register: {
-        keys: exports2.allKeys,
-        headers: ["validate_keys", "validate_client", "process_tick", "conditions_check"],
-        refresh_expiration: true,
-        code: lua["register.lua"]
-      },
-      free: {
-        keys: exports2.allKeys,
-        headers: ["validate_keys", "validate_client", "process_tick"],
-        refresh_expiration: true,
-        code: lua["free.lua"]
-      },
-      current_reservoir: {
-        keys: exports2.allKeys,
-        headers: ["validate_keys", "validate_client", "process_tick"],
-        refresh_expiration: false,
-        code: lua["current_reservoir.lua"]
-      },
-      increment_reservoir: {
-        keys: exports2.allKeys,
-        headers: ["validate_keys", "validate_client", "process_tick"],
-        refresh_expiration: true,
-        code: lua["increment_reservoir.lua"]
-      }
-    };
-    exports2.names = Object.keys(templates);
-    exports2.keys = function(name, id) {
-      return templates[name].keys(id);
-    };
-    exports2.payload = function(name) {
-      var template;
-      template = templates[name];
-      return Array.prototype.concat(headers.refs, template.headers.map(function(h2) {
-        return headers[h2];
-      }), template.refresh_expiration ? headers.refresh_expiration : "", template.code).join("\n");
-    };
-  }
-});
-var require_RedisConnection = __commonJS({
-  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/RedisConnection.js"(exports, module) {
-    "use strict";
-    function asyncGeneratorStep(gen, resolve9, reject, _next, _throw, key, arg) {
-      try {
-        var info = gen[key](arg);
-        var value = info.value;
-      } catch (error2) {
-        reject(error2);
-        return;
-      }
-      if (info.done) {
-        resolve9(value);
-      } else {
-        Promise.resolve(value).then(_next, _throw);
-      }
-    }
-    function _asyncToGenerator(fn) {
-      return function() {
-        var self2 = this, args = arguments;
-        return new Promise(function(resolve9, reject) {
-          var gen = fn.apply(self2, args);
-          function _next(value) {
-            asyncGeneratorStep(gen, resolve9, reject, _next, _throw, "next", value);
-          }
-          function _throw(err) {
-            asyncGeneratorStep(gen, resolve9, reject, _next, _throw, "throw", err);
-          }
-          _next(void 0);
-        });
-      };
-    }
-    var Events;
-    var RedisConnection;
-    var Scripts;
-    var parser;
-    parser = require_parser2();
-    Events = require_Events();
-    Scripts = require_Scripts();
-    RedisConnection = function() {
-      class RedisConnection {
-        constructor(options = {}) {
-          parser.load(options, this.defaults, this);
-          if (this.Redis == null) {
-            this.Redis = eval("require")("redis");
-          }
-          if (this.Events == null) {
-            this.Events = new Events(this);
-          }
-          this.terminated = false;
-          if (this.client == null) {
-            this.client = this.Redis.createClient(this.clientOptions);
-          }
-          this.subscriber = this.client.duplicate();
-          this.limiters = {};
-          this.shas = {};
-          this.ready = this.Promise.all([this._setup(this.client, false), this._setup(this.subscriber, true)]).then(() => {
-            return this._loadScripts();
-          }).then(() => {
-            return {
-              client: this.client,
-              subscriber: this.subscriber
-            };
-          });
-        }
-        _setup(client, sub) {
-          client.setMaxListeners(0);
-          return new this.Promise((resolve9, reject) => {
-            client.on("error", (e2) => {
-              return this.Events.trigger("error", e2);
-            });
-            if (sub) {
-              client.on("message", (channel, message) => {
-                var ref;
-                return (ref = this.limiters[channel]) != null ? ref._store.onMessage(channel, message) : void 0;
-              });
-            }
-            if (client.ready) {
-              return resolve9();
-            } else {
-              return client.once("ready", resolve9);
-            }
-          });
-        }
-        _loadScript(name) {
-          return new this.Promise((resolve9, reject) => {
-            var payload;
-            payload = Scripts.payload(name);
-            return this.client.multi([["script", "load", payload]]).exec((err, replies) => {
-              if (err != null) {
-                return reject(err);
-              }
-              this.shas[name] = replies[0];
-              return resolve9(replies[0]);
-            });
-          });
-        }
-        _loadScripts() {
-          return this.Promise.all(Scripts.names.map((k) => {
-            return this._loadScript(k);
-          }));
-        }
-        __runCommand__(cmd) {
-          var _this = this;
-          return _asyncToGenerator(function* () {
-            yield _this.ready;
-            return new _this.Promise((resolve9, reject) => {
-              return _this.client.multi([cmd]).exec_atomic(function(err, replies) {
-                if (err != null) {
-                  return reject(err);
-                } else {
-                  return resolve9(replies[0]);
-                }
-              });
-            });
-          })();
-        }
-        __addLimiter__(instance) {
-          return this.Promise.all([instance.channel(), instance.channel_client()].map((channel) => {
-            return new this.Promise((resolve9, reject) => {
-              var handler;
-              handler = (chan) => {
-                if (chan === channel) {
-                  this.subscriber.removeListener("subscribe", handler);
-                  this.limiters[channel] = instance;
-                  return resolve9();
-                }
-              };
-              this.subscriber.on("subscribe", handler);
-              return this.subscriber.subscribe(channel);
-            });
-          }));
-        }
-        __removeLimiter__(instance) {
-          var _this2 = this;
-          return this.Promise.all([instance.channel(), instance.channel_client()].map(
-            /* @__PURE__ */ function() {
-              var _ref = _asyncToGenerator(function* (channel) {
-                if (!_this2.terminated) {
-                  yield new _this2.Promise((resolve9, reject) => {
-                    return _this2.subscriber.unsubscribe(channel, function(err, chan) {
-                      if (err != null) {
-                        return reject(err);
-                      }
-                      if (chan === channel) {
-                        return resolve9();
-                      }
-                    });
-                  });
-                }
-                return delete _this2.limiters[channel];
-              });
-              return function(_x) {
-                return _ref.apply(this, arguments);
-              };
-            }()
-          ));
-        }
-        __scriptArgs__(name, id, args, cb) {
-          var keys;
-          keys = Scripts.keys(name, id);
-          return [this.shas[name], keys.length].concat(keys, args, cb);
-        }
-        __scriptFn__(name) {
-          return this.client.evalsha.bind(this.client);
-        }
-        disconnect(flush = true) {
-          var i2, k, len, ref;
-          ref = Object.keys(this.limiters);
-          for (i2 = 0, len = ref.length; i2 < len; i2++) {
-            k = ref[i2];
-            clearInterval(this.limiters[k]._store.heartbeat);
-          }
-          this.limiters = {};
-          this.terminated = true;
-          this.client.end(flush);
-          this.subscriber.end(flush);
-          return this.Promise.resolve();
-        }
-      }
-      ;
-      RedisConnection.prototype.datastore = "redis";
-      RedisConnection.prototype.defaults = {
-        Redis: null,
-        clientOptions: {},
-        client: null,
-        Promise,
-        Events: null
-      };
-      return RedisConnection;
-    }.call(void 0);
-    module.exports = RedisConnection;
-  }
-});
-var require_IORedisConnection = __commonJS({
-  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/IORedisConnection.js"(exports, module) {
-    "use strict";
-    function _slicedToArray(arr, i2) {
-      return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i2) || _nonIterableRest();
-    }
-    function _nonIterableRest() {
-      throw new TypeError("Invalid attempt to destructure non-iterable instance");
-    }
-    function _iterableToArrayLimit(arr, i2) {
-      var _arr = [];
-      var _n = true;
-      var _d = false;
-      var _e = void 0;
-      try {
-        for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
-          _arr.push(_s.value);
-          if (i2 && _arr.length === i2) break;
-        }
-      } catch (err) {
-        _d = true;
-        _e = err;
-      } finally {
-        try {
-          if (!_n && _i["return"] != null) _i["return"]();
-        } finally {
-          if (_d) throw _e;
-        }
-      }
-      return _arr;
-    }
-    function _arrayWithHoles(arr) {
-      if (Array.isArray(arr)) return arr;
-    }
-    function asyncGeneratorStep(gen, resolve9, reject, _next, _throw, key, arg) {
-      try {
-        var info = gen[key](arg);
-        var value = info.value;
-      } catch (error2) {
-        reject(error2);
-        return;
-      }
-      if (info.done) {
-        resolve9(value);
-      } else {
-        Promise.resolve(value).then(_next, _throw);
-      }
-    }
-    function _asyncToGenerator(fn) {
-      return function() {
-        var self2 = this, args = arguments;
-        return new Promise(function(resolve9, reject) {
-          var gen = fn.apply(self2, args);
-          function _next(value) {
-            asyncGeneratorStep(gen, resolve9, reject, _next, _throw, "next", value);
-          }
-          function _throw(err) {
-            asyncGeneratorStep(gen, resolve9, reject, _next, _throw, "throw", err);
-          }
-          _next(void 0);
-        });
-      };
-    }
-    var Events;
-    var IORedisConnection;
-    var Scripts;
-    var parser;
-    parser = require_parser2();
-    Events = require_Events();
-    Scripts = require_Scripts();
-    IORedisConnection = function() {
-      class IORedisConnection {
-        constructor(options = {}) {
-          parser.load(options, this.defaults, this);
-          if (this.Redis == null) {
-            this.Redis = eval("require")("ioredis");
-          }
-          if (this.Events == null) {
-            this.Events = new Events(this);
-          }
-          this.terminated = false;
-          if (this.clusterNodes != null) {
-            this.client = new this.Redis.Cluster(this.clusterNodes, this.clientOptions);
-            this.subscriber = new this.Redis.Cluster(this.clusterNodes, this.clientOptions);
-          } else if (this.client != null && this.client.duplicate == null) {
-            this.subscriber = new this.Redis.Cluster(this.client.startupNodes, this.client.options);
-          } else {
-            if (this.client == null) {
-              this.client = new this.Redis(this.clientOptions);
-            }
-            this.subscriber = this.client.duplicate();
-          }
-          this.limiters = {};
-          this.ready = this.Promise.all([this._setup(this.client, false), this._setup(this.subscriber, true)]).then(() => {
-            this._loadScripts();
-            return {
-              client: this.client,
-              subscriber: this.subscriber
-            };
-          });
-        }
-        _setup(client, sub) {
-          client.setMaxListeners(0);
-          return new this.Promise((resolve9, reject) => {
-            client.on("error", (e2) => {
-              return this.Events.trigger("error", e2);
-            });
-            if (sub) {
-              client.on("message", (channel, message) => {
-                var ref;
-                return (ref = this.limiters[channel]) != null ? ref._store.onMessage(channel, message) : void 0;
-              });
-            }
-            if (client.status === "ready") {
-              return resolve9();
-            } else {
-              return client.once("ready", resolve9);
-            }
-          });
-        }
-        _loadScripts() {
-          return Scripts.names.forEach((name) => {
-            return this.client.defineCommand(name, {
-              lua: Scripts.payload(name)
-            });
-          });
-        }
-        __runCommand__(cmd) {
-          var _this = this;
-          return _asyncToGenerator(function* () {
-            var _, deleted;
-            yield _this.ready;
-            var _ref = yield _this.client.pipeline([cmd]).exec();
-            var _ref2 = _slicedToArray(_ref, 1);
-            var _ref2$ = _slicedToArray(_ref2[0], 2);
-            _ = _ref2$[0];
-            deleted = _ref2$[1];
-            return deleted;
-          })();
-        }
-        __addLimiter__(instance) {
-          return this.Promise.all([instance.channel(), instance.channel_client()].map((channel) => {
-            return new this.Promise((resolve9, reject) => {
-              return this.subscriber.subscribe(channel, () => {
-                this.limiters[channel] = instance;
-                return resolve9();
-              });
-            });
-          }));
-        }
-        __removeLimiter__(instance) {
-          var _this2 = this;
-          return [instance.channel(), instance.channel_client()].forEach(
-            /* @__PURE__ */ function() {
-              var _ref3 = _asyncToGenerator(function* (channel) {
-                if (!_this2.terminated) {
-                  yield _this2.subscriber.unsubscribe(channel);
-                }
-                return delete _this2.limiters[channel];
-              });
-              return function(_x) {
-                return _ref3.apply(this, arguments);
-              };
-            }()
-          );
-        }
-        __scriptArgs__(name, id, args, cb) {
-          var keys;
-          keys = Scripts.keys(name, id);
-          return [keys.length].concat(keys, args, cb);
-        }
-        __scriptFn__(name) {
-          return this.client[name].bind(this.client);
-        }
-        disconnect(flush = true) {
-          var i2, k, len, ref;
-          ref = Object.keys(this.limiters);
-          for (i2 = 0, len = ref.length; i2 < len; i2++) {
-            k = ref[i2];
-            clearInterval(this.limiters[k]._store.heartbeat);
-          }
-          this.limiters = {};
-          this.terminated = true;
-          if (flush) {
-            return this.Promise.all([this.client.quit(), this.subscriber.quit()]);
-          } else {
-            this.client.disconnect();
-            this.subscriber.disconnect();
-            return this.Promise.resolve();
-          }
-        }
-      }
-      ;
-      IORedisConnection.prototype.datastore = "ioredis";
-      IORedisConnection.prototype.defaults = {
-        Redis: null,
-        clientOptions: {},
-        clusterNodes: null,
-        client: null,
-        Promise,
-        Events: null
-      };
-      return IORedisConnection;
-    }.call(void 0);
-    module.exports = IORedisConnection;
-  }
-});
-var require_RedisDatastore = __commonJS({
-  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/RedisDatastore.js"(exports2, module15) {
-    "use strict";
-    function _slicedToArray2(arr, i2) {
-      return _arrayWithHoles2(arr) || _iterableToArrayLimit2(arr, i2) || _nonIterableRest2();
-    }
-    function _nonIterableRest2() {
-      throw new TypeError("Invalid attempt to destructure non-iterable instance");
-    }
-    function _iterableToArrayLimit2(arr, i2) {
-      var _arr = [];
-      var _n = true;
-      var _d = false;
-      var _e = void 0;
-      try {
-        for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
-          _arr.push(_s.value);
-          if (i2 && _arr.length === i2) break;
-        }
-      } catch (err) {
-        _d = true;
-        _e = err;
-      } finally {
-        try {
-          if (!_n && _i["return"] != null) _i["return"]();
-        } finally {
-          if (_d) throw _e;
-        }
-      }
-      return _arr;
-    }
-    function _arrayWithHoles2(arr) {
-      if (Array.isArray(arr)) return arr;
-    }
-    function asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, key, arg) {
-      try {
-        var info = gen[key](arg);
-        var value = info.value;
-      } catch (error2) {
-        reject(error2);
-        return;
-      }
-      if (info.done) {
-        resolve9(value);
-      } else {
-        Promise.resolve(value).then(_next, _throw);
-      }
-    }
-    function _asyncToGenerator2(fn) {
-      return function() {
-        var self2 = this, args = arguments;
-        return new Promise(function(resolve9, reject) {
-          var gen = fn.apply(self2, args);
-          function _next(value) {
-            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "next", value);
-          }
-          function _throw(err) {
-            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "throw", err);
-          }
-          _next(void 0);
-        });
-      };
-    }
-    var BottleneckError;
-    var IORedisConnection2;
-    var RedisConnection2;
-    var RedisDatastore;
-    var parser3;
-    parser3 = require_parser2();
-    BottleneckError = require_BottleneckError();
-    RedisConnection2 = require_RedisConnection();
-    IORedisConnection2 = require_IORedisConnection();
-    RedisDatastore = class RedisDatastore {
-      constructor(instance, storeOptions, storeInstanceOptions) {
-        this.instance = instance;
-        this.storeOptions = storeOptions;
-        this.originalId = this.instance.id;
-        this.clientId = this.instance._randomIndex();
-        parser3.load(storeInstanceOptions, storeInstanceOptions, this);
-        this.clients = {};
-        this.capacityPriorityCounters = {};
-        this.sharedConnection = this.connection != null;
-        if (this.connection == null) {
-          this.connection = this.instance.datastore === "redis" ? new RedisConnection2({
-            Redis: this.Redis,
-            clientOptions: this.clientOptions,
-            Promise: this.Promise,
-            Events: this.instance.Events
-          }) : this.instance.datastore === "ioredis" ? new IORedisConnection2({
-            Redis: this.Redis,
-            clientOptions: this.clientOptions,
-            clusterNodes: this.clusterNodes,
-            Promise: this.Promise,
-            Events: this.instance.Events
-          }) : void 0;
-        }
-        this.instance.connection = this.connection;
-        this.instance.datastore = this.connection.datastore;
-        this.ready = this.connection.ready.then((clients) => {
-          this.clients = clients;
-          return this.runScript("init", this.prepareInitSettings(this.clearDatastore));
-        }).then(() => {
-          return this.connection.__addLimiter__(this.instance);
-        }).then(() => {
-          return this.runScript("register_client", [this.instance.queued()]);
-        }).then(() => {
-          var base2;
-          if (typeof (base2 = this.heartbeat = setInterval(() => {
-            return this.runScript("heartbeat", []).catch((e2) => {
-              return this.instance.Events.trigger("error", e2);
-            });
-          }, this.heartbeatInterval)).unref === "function") {
-            base2.unref();
-          }
-          return this.clients;
-        });
-      }
-      __publish__(message) {
-        var _this = this;
-        return _asyncToGenerator2(function* () {
-          var client;
-          var _ref = yield _this.ready;
-          client = _ref.client;
-          return client.publish(_this.instance.channel(), `message:${message.toString()}`);
-        })();
-      }
-      onMessage(channel, message) {
-        var _this2 = this;
-        return _asyncToGenerator2(function* () {
-          var capacity, counter, data, drained, e2, newCapacity, pos, priorityClient, rawCapacity, type;
-          try {
-            pos = message.indexOf(":");
-            var _ref2 = [message.slice(0, pos), message.slice(pos + 1)];
-            type = _ref2[0];
-            data = _ref2[1];
-            if (type === "capacity") {
-              return yield _this2.instance._drainAll(data.length > 0 ? ~~data : void 0);
-            } else if (type === "capacity-priority") {
-              var _data$split = data.split(":");
-              var _data$split2 = _slicedToArray2(_data$split, 3);
-              rawCapacity = _data$split2[0];
-              priorityClient = _data$split2[1];
-              counter = _data$split2[2];
-              capacity = rawCapacity.length > 0 ? ~~rawCapacity : void 0;
-              if (priorityClient === _this2.clientId) {
-                drained = yield _this2.instance._drainAll(capacity);
-                newCapacity = capacity != null ? capacity - (drained || 0) : "";
-                return yield _this2.clients.client.publish(_this2.instance.channel(), `capacity-priority:${newCapacity}::${counter}`);
-              } else if (priorityClient === "") {
-                clearTimeout(_this2.capacityPriorityCounters[counter]);
-                delete _this2.capacityPriorityCounters[counter];
-                return _this2.instance._drainAll(capacity);
-              } else {
-                return _this2.capacityPriorityCounters[counter] = setTimeout(
-                  /* @__PURE__ */ _asyncToGenerator2(function* () {
-                    var e3;
-                    try {
-                      delete _this2.capacityPriorityCounters[counter];
-                      yield _this2.runScript("blacklist_client", [priorityClient]);
-                      return yield _this2.instance._drainAll(capacity);
-                    } catch (error2) {
-                      e3 = error2;
-                      return _this2.instance.Events.trigger("error", e3);
-                    }
-                  }),
-                  1e3
-                );
-              }
-            } else if (type === "message") {
-              return _this2.instance.Events.trigger("message", data);
-            } else if (type === "blocked") {
-              return yield _this2.instance._dropAllQueued();
-            }
-          } catch (error2) {
-            e2 = error2;
-            return _this2.instance.Events.trigger("error", e2);
-          }
-        })();
-      }
-      __disconnect__(flush) {
-        clearInterval(this.heartbeat);
-        if (this.sharedConnection) {
-          return this.connection.__removeLimiter__(this.instance);
-        } else {
-          return this.connection.disconnect(flush);
-        }
-      }
-      runScript(name, args) {
-        var _this3 = this;
-        return _asyncToGenerator2(function* () {
-          if (!(name === "init" || name === "register_client")) {
-            yield _this3.ready;
-          }
-          return new _this3.Promise((resolve9, reject) => {
-            var all_args, arr;
-            all_args = [Date.now(), _this3.clientId].concat(args);
-            _this3.instance.Events.trigger("debug", `Calling Redis script: ${name}.lua`, all_args);
-            arr = _this3.connection.__scriptArgs__(name, _this3.originalId, all_args, function(err, replies) {
-              if (err != null) {
-                return reject(err);
-              }
-              return resolve9(replies);
-            });
-            return _this3.connection.__scriptFn__(name)(...arr);
-          }).catch((e2) => {
-            if (e2.message === "SETTINGS_KEY_NOT_FOUND") {
-              if (name === "heartbeat") {
-                return _this3.Promise.resolve();
-              } else {
-                return _this3.runScript("init", _this3.prepareInitSettings(false)).then(() => {
-                  return _this3.runScript(name, args);
-                });
-              }
-            } else if (e2.message === "UNKNOWN_CLIENT") {
-              return _this3.runScript("register_client", [_this3.instance.queued()]).then(() => {
-                return _this3.runScript(name, args);
-              });
-            } else {
-              return _this3.Promise.reject(e2);
-            }
-          });
-        })();
-      }
-      prepareArray(arr) {
-        var i2, len, results, x3;
-        results = [];
-        for (i2 = 0, len = arr.length; i2 < len; i2++) {
-          x3 = arr[i2];
-          results.push(x3 != null ? x3.toString() : "");
-        }
-        return results;
-      }
-      prepareObject(obj) {
-        var arr, k, v2;
-        arr = [];
-        for (k in obj) {
-          v2 = obj[k];
-          arr.push(k, v2 != null ? v2.toString() : "");
-        }
-        return arr;
-      }
-      prepareInitSettings(clear) {
-        var args;
-        args = this.prepareObject(Object.assign({}, this.storeOptions, {
-          id: this.originalId,
-          version: this.instance.version,
-          groupTimeout: this.timeout,
-          clientTimeout: this.clientTimeout
-        }));
-        args.unshift(clear ? 1 : 0, this.instance.version);
-        return args;
-      }
-      convertBool(b) {
-        return !!b;
-      }
-      __updateSettings__(options2) {
-        var _this4 = this;
-        return _asyncToGenerator2(function* () {
-          yield _this4.runScript("update_settings", _this4.prepareObject(options2));
-          return parser3.overwrite(options2, options2, _this4.storeOptions);
-        })();
-      }
-      __running__() {
-        return this.runScript("running", []);
-      }
-      __queued__() {
-        return this.runScript("queued", []);
-      }
-      __done__() {
-        return this.runScript("done", []);
-      }
-      __groupCheck__() {
-        var _this5 = this;
-        return _asyncToGenerator2(function* () {
-          return _this5.convertBool(yield _this5.runScript("group_check", []));
-        })();
-      }
-      __incrementReservoir__(incr) {
-        return this.runScript("increment_reservoir", [incr]);
-      }
-      __currentReservoir__() {
-        return this.runScript("current_reservoir", []);
-      }
-      __check__(weight) {
-        var _this6 = this;
-        return _asyncToGenerator2(function* () {
-          return _this6.convertBool(yield _this6.runScript("check", _this6.prepareArray([weight])));
-        })();
-      }
-      __register__(index, weight, expiration) {
-        var _this7 = this;
-        return _asyncToGenerator2(function* () {
-          var reservoir, success, wait;
-          var _ref4 = yield _this7.runScript("register", _this7.prepareArray([index, weight, expiration]));
-          var _ref5 = _slicedToArray2(_ref4, 3);
-          success = _ref5[0];
-          wait = _ref5[1];
-          reservoir = _ref5[2];
-          return {
-            success: _this7.convertBool(success),
-            wait,
-            reservoir
-          };
-        })();
-      }
-      __submit__(queueLength, weight) {
-        var _this8 = this;
-        return _asyncToGenerator2(function* () {
-          var blocked, e2, maxConcurrent, overweight, reachedHWM, strategy;
-          try {
-            var _ref6 = yield _this8.runScript("submit", _this8.prepareArray([queueLength, weight]));
-            var _ref7 = _slicedToArray2(_ref6, 3);
-            reachedHWM = _ref7[0];
-            blocked = _ref7[1];
-            strategy = _ref7[2];
-            return {
-              reachedHWM: _this8.convertBool(reachedHWM),
-              blocked: _this8.convertBool(blocked),
-              strategy
-            };
-          } catch (error2) {
-            e2 = error2;
-            if (e2.message.indexOf("OVERWEIGHT") === 0) {
-              var _e$message$split = e2.message.split(":");
-              var _e$message$split2 = _slicedToArray2(_e$message$split, 3);
-              overweight = _e$message$split2[0];
-              weight = _e$message$split2[1];
-              maxConcurrent = _e$message$split2[2];
-              throw new BottleneckError(`Impossible to add a job having a weight of ${weight} to a limiter having a maxConcurrent setting of ${maxConcurrent}`);
-            } else {
-              throw e2;
-            }
-          }
-        })();
-      }
-      __free__(index, weight) {
-        var _this9 = this;
-        return _asyncToGenerator2(function* () {
-          var running;
-          running = yield _this9.runScript("free", _this9.prepareArray([index]));
-          return {
-            running
-          };
-        })();
-      }
-    };
-    module15.exports = RedisDatastore;
-  }
-});
-var require_States = __commonJS({
-  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/States.js"(exports2, module15) {
-    "use strict";
-    var BottleneckError;
-    var States;
-    BottleneckError = require_BottleneckError();
-    States = class States {
-      constructor(status1) {
-        this.status = status1;
-        this._jobs = {};
-        this.counts = this.status.map(function() {
-          return 0;
-        });
-      }
-      next(id) {
-        var current, next;
-        current = this._jobs[id];
-        next = current + 1;
-        if (current != null && next < this.status.length) {
-          this.counts[current]--;
-          this.counts[next]++;
-          return this._jobs[id]++;
-        } else if (current != null) {
-          this.counts[current]--;
-          return delete this._jobs[id];
-        }
-      }
-      start(id) {
-        var initial;
-        initial = 0;
-        this._jobs[id] = initial;
-        return this.counts[initial]++;
-      }
-      remove(id) {
-        var current;
-        current = this._jobs[id];
-        if (current != null) {
-          this.counts[current]--;
-          delete this._jobs[id];
-        }
-        return current != null;
-      }
-      jobStatus(id) {
-        var ref;
-        return (ref = this.status[this._jobs[id]]) != null ? ref : null;
-      }
-      statusJobs(status) {
-        var k, pos, ref, results, v2;
-        if (status != null) {
-          pos = this.status.indexOf(status);
-          if (pos < 0) {
-            throw new BottleneckError(`status must be one of ${this.status.join(", ")}`);
-          }
-          ref = this._jobs;
-          results = [];
-          for (k in ref) {
-            v2 = ref[k];
-            if (v2 === pos) {
-              results.push(k);
-            }
-          }
-          return results;
-        } else {
-          return Object.keys(this._jobs);
-        }
-      }
-      statusCounts() {
-        return this.counts.reduce((acc, v2, i2) => {
-          acc[this.status[i2]] = v2;
-          return acc;
-        }, {});
-      }
-    };
-    module15.exports = States;
-  }
-});
-var require_Sync = __commonJS({
-  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/Sync.js"(exports2, module15) {
-    "use strict";
-    function asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, key, arg) {
-      try {
-        var info = gen[key](arg);
-        var value = info.value;
-      } catch (error2) {
-        reject(error2);
-        return;
-      }
-      if (info.done) {
-        resolve9(value);
-      } else {
-        Promise.resolve(value).then(_next, _throw);
-      }
-    }
-    function _asyncToGenerator2(fn) {
-      return function() {
-        var self2 = this, args = arguments;
-        return new Promise(function(resolve9, reject) {
-          var gen = fn.apply(self2, args);
-          function _next(value) {
-            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "next", value);
-          }
-          function _throw(err) {
-            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "throw", err);
-          }
-          _next(void 0);
-        });
-      };
-    }
-    var DLList;
-    var Sync;
-    DLList = require_DLList();
-    Sync = class Sync {
-      constructor(name, Promise2) {
-        this.schedule = this.schedule.bind(this);
-        this.name = name;
-        this.Promise = Promise2;
-        this._running = 0;
-        this._queue = new DLList();
-      }
-      isEmpty() {
-        return this._queue.length === 0;
-      }
-      _tryToRun() {
-        var _this = this;
-        return _asyncToGenerator2(function* () {
-          var args, cb, error2, reject, resolve9, returned, task;
-          if (_this._running < 1 && _this._queue.length > 0) {
-            _this._running++;
-            var _this$_queue$shift = _this._queue.shift();
-            task = _this$_queue$shift.task;
-            args = _this$_queue$shift.args;
-            resolve9 = _this$_queue$shift.resolve;
-            reject = _this$_queue$shift.reject;
-            cb = yield _asyncToGenerator2(function* () {
-              try {
-                returned = yield task(...args);
-                return function() {
-                  return resolve9(returned);
-                };
-              } catch (error1) {
-                error2 = error1;
-                return function() {
-                  return reject(error2);
-                };
-              }
-            })();
-            _this._running--;
-            _this._tryToRun();
-            return cb();
-          }
-        })();
-      }
-      schedule(task, ...args) {
-        var promise, reject, resolve9;
-        resolve9 = reject = null;
-        promise = new this.Promise(function(_resolve, _reject) {
-          resolve9 = _resolve;
-          return reject = _reject;
-        });
-        this._queue.push({
-          task,
-          args,
-          resolve: resolve9,
-          reject
-        });
-        this._tryToRun();
-        return promise;
-      }
-    };
-    module15.exports = Sync;
-  }
-});
-var require_version = __commonJS({
-  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/version.json"(exports2, module15) {
-    module15.exports = { version: "2.19.5" };
-  }
-});
-var require_Group = __commonJS({
-  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/Group.js"(exports2, module15) {
-    "use strict";
-    function _slicedToArray2(arr, i2) {
-      return _arrayWithHoles2(arr) || _iterableToArrayLimit2(arr, i2) || _nonIterableRest2();
-    }
-    function _nonIterableRest2() {
-      throw new TypeError("Invalid attempt to destructure non-iterable instance");
-    }
-    function _iterableToArrayLimit2(arr, i2) {
-      var _arr = [];
-      var _n = true;
-      var _d = false;
-      var _e = void 0;
-      try {
-        for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
-          _arr.push(_s.value);
-          if (i2 && _arr.length === i2) break;
-        }
-      } catch (err) {
-        _d = true;
-        _e = err;
-      } finally {
-        try {
-          if (!_n && _i["return"] != null) _i["return"]();
-        } finally {
-          if (_d) throw _e;
-        }
-      }
-      return _arr;
-    }
-    function _arrayWithHoles2(arr) {
-      if (Array.isArray(arr)) return arr;
-    }
-    function asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, key, arg) {
-      try {
-        var info = gen[key](arg);
-        var value = info.value;
-      } catch (error2) {
-        reject(error2);
-        return;
-      }
-      if (info.done) {
-        resolve9(value);
-      } else {
-        Promise.resolve(value).then(_next, _throw);
-      }
-    }
-    function _asyncToGenerator2(fn) {
-      return function() {
-        var self2 = this, args = arguments;
-        return new Promise(function(resolve9, reject) {
-          var gen = fn.apply(self2, args);
-          function _next(value) {
-            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "next", value);
-          }
-          function _throw(err) {
-            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "throw", err);
-          }
-          _next(void 0);
-        });
-      };
-    }
-    var Events2;
-    var Group;
-    var IORedisConnection2;
-    var RedisConnection2;
-    var Scripts2;
-    var parser3;
-    parser3 = require_parser2();
-    Events2 = require_Events();
-    RedisConnection2 = require_RedisConnection();
-    IORedisConnection2 = require_IORedisConnection();
-    Scripts2 = require_Scripts();
-    Group = function() {
-      class Group2 {
-        constructor(limiterOptions = {}) {
-          this.deleteKey = this.deleteKey.bind(this);
-          this.limiterOptions = limiterOptions;
-          parser3.load(this.limiterOptions, this.defaults, this);
-          this.Events = new Events2(this);
-          this.instances = {};
-          this.Bottleneck = require_Bottleneck();
-          this._startAutoCleanup();
-          this.sharedConnection = this.connection != null;
-          if (this.connection == null) {
-            if (this.limiterOptions.datastore === "redis") {
-              this.connection = new RedisConnection2(Object.assign({}, this.limiterOptions, {
-                Events: this.Events
-              }));
-            } else if (this.limiterOptions.datastore === "ioredis") {
-              this.connection = new IORedisConnection2(Object.assign({}, this.limiterOptions, {
-                Events: this.Events
-              }));
-            }
-          }
-        }
-        key(key = "") {
-          var ref;
-          return (ref = this.instances[key]) != null ? ref : (() => {
-            var limiter;
-            limiter = this.instances[key] = new this.Bottleneck(Object.assign(this.limiterOptions, {
-              id: `${this.id}-${key}`,
-              timeout: this.timeout,
-              connection: this.connection
-            }));
-            this.Events.trigger("created", limiter, key);
-            return limiter;
-          })();
-        }
-        deleteKey(key = "") {
-          var _this = this;
-          return _asyncToGenerator2(function* () {
-            var deleted, instance;
-            instance = _this.instances[key];
-            if (_this.connection) {
-              deleted = yield _this.connection.__runCommand__(["del", ...Scripts2.allKeys(`${_this.id}-${key}`)]);
-            }
-            if (instance != null) {
-              delete _this.instances[key];
-              yield instance.disconnect();
-            }
-            return instance != null || deleted > 0;
-          })();
-        }
-        limiters() {
-          var k, ref, results, v2;
-          ref = this.instances;
-          results = [];
-          for (k in ref) {
-            v2 = ref[k];
-            results.push({
-              key: k,
-              limiter: v2
-            });
-          }
-          return results;
-        }
-        keys() {
-          return Object.keys(this.instances);
-        }
-        clusterKeys() {
-          var _this2 = this;
-          return _asyncToGenerator2(function* () {
-            var cursor, end, found, i2, k, keys, len, next, start;
-            if (_this2.connection == null) {
-              return _this2.Promise.resolve(_this2.keys());
-            }
-            keys = [];
-            cursor = null;
-            start = `b_${_this2.id}-`.length;
-            end = "_settings".length;
-            while (cursor !== 0) {
-              var _ref = yield _this2.connection.__runCommand__(["scan", cursor != null ? cursor : 0, "match", `b_${_this2.id}-*_settings`, "count", 1e4]);
-              var _ref2 = _slicedToArray2(_ref, 2);
-              next = _ref2[0];
-              found = _ref2[1];
-              cursor = ~~next;
-              for (i2 = 0, len = found.length; i2 < len; i2++) {
-                k = found[i2];
-                keys.push(k.slice(start, -end));
-              }
-            }
-            return keys;
-          })();
-        }
-        _startAutoCleanup() {
-          var _this3 = this;
-          var base2;
-          clearInterval(this.interval);
-          return typeof (base2 = this.interval = setInterval(
-            /* @__PURE__ */ _asyncToGenerator2(function* () {
-              var e2, k, ref, results, time3, v2;
-              time3 = Date.now();
-              ref = _this3.instances;
-              results = [];
-              for (k in ref) {
-                v2 = ref[k];
-                try {
-                  if (yield v2._store.__groupCheck__(time3)) {
-                    results.push(_this3.deleteKey(k));
-                  } else {
-                    results.push(void 0);
-                  }
-                } catch (error2) {
-                  e2 = error2;
-                  results.push(v2.Events.trigger("error", e2));
-                }
-              }
-              return results;
-            }),
-            this.timeout / 2
-          )).unref === "function" ? base2.unref() : void 0;
-        }
-        updateSettings(options2 = {}) {
-          parser3.overwrite(options2, this.defaults, this);
-          parser3.overwrite(options2, options2, this.limiterOptions);
-          if (options2.timeout != null) {
-            return this._startAutoCleanup();
-          }
-        }
-        disconnect(flush = true) {
-          var ref;
-          if (!this.sharedConnection) {
-            return (ref = this.connection) != null ? ref.disconnect(flush) : void 0;
-          }
-        }
-      }
-      ;
-      Group2.prototype.defaults = {
-        timeout: 1e3 * 60 * 5,
-        connection: null,
-        Promise,
-        id: "group-key"
-      };
-      return Group2;
-    }.call(void 0);
-    module15.exports = Group;
-  }
-});
-var require_Batcher = __commonJS({
-  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/Batcher.js"(exports2, module15) {
-    "use strict";
-    var Batcher;
-    var Events2;
-    var parser3;
-    parser3 = require_parser2();
-    Events2 = require_Events();
-    Batcher = function() {
-      class Batcher2 {
-        constructor(options2 = {}) {
-          this.options = options2;
-          parser3.load(this.options, this.defaults, this);
-          this.Events = new Events2(this);
-          this._arr = [];
-          this._resetPromise();
-          this._lastFlush = Date.now();
-        }
-        _resetPromise() {
-          return this._promise = new this.Promise((res, rej) => {
-            return this._resolve = res;
-          });
-        }
-        _flush() {
-          clearTimeout(this._timeout);
-          this._lastFlush = Date.now();
-          this._resolve();
-          this.Events.trigger("batch", this._arr);
-          this._arr = [];
-          return this._resetPromise();
-        }
-        add(data) {
-          var ret;
-          this._arr.push(data);
-          ret = this._promise;
-          if (this._arr.length === this.maxSize) {
-            this._flush();
-          } else if (this.maxTime != null && this._arr.length === 1) {
-            this._timeout = setTimeout(() => {
-              return this._flush();
-            }, this.maxTime);
-          }
-          return ret;
-        }
-      }
-      ;
-      Batcher2.prototype.defaults = {
-        maxTime: null,
-        maxSize: null,
-        Promise
-      };
-      return Batcher2;
-    }.call(void 0);
-    module15.exports = Batcher;
-  }
-});
-var require_Bottleneck = __commonJS({
-  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/Bottleneck.js"(exports2, module15) {
-    "use strict";
-    function _slicedToArray2(arr, i2) {
-      return _arrayWithHoles2(arr) || _iterableToArrayLimit2(arr, i2) || _nonIterableRest2();
-    }
-    function _iterableToArrayLimit2(arr, i2) {
-      var _arr = [];
-      var _n = true;
-      var _d = false;
-      var _e = void 0;
-      try {
-        for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
-          _arr.push(_s.value);
-          if (i2 && _arr.length === i2) break;
-        }
-      } catch (err) {
-        _d = true;
-        _e = err;
-      } finally {
-        try {
-          if (!_n && _i["return"] != null) _i["return"]();
-        } finally {
-          if (_d) throw _e;
-        }
-      }
-      return _arr;
-    }
-    function _toArray(arr) {
-      return _arrayWithHoles2(arr) || _iterableToArray(arr) || _nonIterableRest2();
-    }
-    function _nonIterableRest2() {
-      throw new TypeError("Invalid attempt to destructure non-iterable instance");
-    }
-    function _iterableToArray(iter) {
-      if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter);
-    }
-    function _arrayWithHoles2(arr) {
-      if (Array.isArray(arr)) return arr;
-    }
-    function asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, key, arg) {
-      try {
-        var info = gen[key](arg);
-        var value = info.value;
-      } catch (error2) {
-        reject(error2);
-        return;
-      }
-      if (info.done) {
-        resolve9(value);
-      } else {
-        Promise.resolve(value).then(_next, _throw);
-      }
-    }
-    function _asyncToGenerator2(fn) {
-      return function() {
-        var self2 = this, args = arguments;
-        return new Promise(function(resolve9, reject) {
-          var gen = fn.apply(self2, args);
-          function _next(value) {
-            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "next", value);
-          }
-          function _throw(err) {
-            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "throw", err);
-          }
-          _next(void 0);
-        });
-      };
-    }
-    var Bottleneck2;
-    var DEFAULT_PRIORITY;
-    var Events2;
-    var Job;
-    var LocalDatastore;
-    var NUM_PRIORITIES;
-    var Queues;
-    var RedisDatastore;
-    var States;
-    var Sync;
-    var parser3;
-    var splice = [].splice;
-    NUM_PRIORITIES = 10;
-    DEFAULT_PRIORITY = 5;
-    parser3 = require_parser2();
-    Queues = require_Queues();
-    Job = require_Job();
-    LocalDatastore = require_LocalDatastore();
-    RedisDatastore = require_RedisDatastore();
-    Events2 = require_Events();
-    States = require_States();
-    Sync = require_Sync();
-    Bottleneck2 = function() {
-      class Bottleneck3 {
-        constructor(options2 = {}, ...invalid) {
-          var storeInstanceOptions, storeOptions;
-          this._addToQueue = this._addToQueue.bind(this);
-          this._validateOptions(options2, invalid);
-          parser3.load(options2, this.instanceDefaults, this);
-          this._queues = new Queues(NUM_PRIORITIES);
-          this._scheduled = {};
-          this._states = new States(["RECEIVED", "QUEUED", "RUNNING", "EXECUTING"].concat(this.trackDoneStatus ? ["DONE"] : []));
-          this._limiter = null;
-          this.Events = new Events2(this);
-          this._submitLock = new Sync("submit", this.Promise);
-          this._registerLock = new Sync("register", this.Promise);
-          storeOptions = parser3.load(options2, this.storeDefaults, {});
-          this._store = function() {
-            if (this.datastore === "redis" || this.datastore === "ioredis" || this.connection != null) {
-              storeInstanceOptions = parser3.load(options2, this.redisStoreDefaults, {});
-              return new RedisDatastore(this, storeOptions, storeInstanceOptions);
-            } else if (this.datastore === "local") {
-              storeInstanceOptions = parser3.load(options2, this.localStoreDefaults, {});
-              return new LocalDatastore(this, storeOptions, storeInstanceOptions);
-            } else {
-              throw new Bottleneck3.prototype.BottleneckError(`Invalid datastore type: ${this.datastore}`);
-            }
-          }.call(this);
-          this._queues.on("leftzero", () => {
-            var ref;
-            return (ref = this._store.heartbeat) != null ? typeof ref.ref === "function" ? ref.ref() : void 0 : void 0;
-          });
-          this._queues.on("zero", () => {
-            var ref;
-            return (ref = this._store.heartbeat) != null ? typeof ref.unref === "function" ? ref.unref() : void 0 : void 0;
-          });
-        }
-        _validateOptions(options2, invalid) {
-          if (!(options2 != null && typeof options2 === "object" && invalid.length === 0)) {
-            throw new Bottleneck3.prototype.BottleneckError("Bottleneck v2 takes a single object argument. Refer to https://github.com/SGrondin/bottleneck#upgrading-to-v2 if you're upgrading from Bottleneck v1.");
-          }
-        }
-        ready() {
-          return this._store.ready;
-        }
-        clients() {
-          return this._store.clients;
-        }
-        channel() {
-          return `b_${this.id}`;
-        }
-        channel_client() {
-          return `b_${this.id}_${this._store.clientId}`;
-        }
-        publish(message) {
-          return this._store.__publish__(message);
-        }
-        disconnect(flush = true) {
-          return this._store.__disconnect__(flush);
-        }
-        chain(_limiter) {
-          this._limiter = _limiter;
-          return this;
-        }
-        queued(priority) {
-          return this._queues.queued(priority);
-        }
-        clusterQueued() {
-          return this._store.__queued__();
-        }
-        empty() {
-          return this.queued() === 0 && this._submitLock.isEmpty();
-        }
-        running() {
-          return this._store.__running__();
-        }
-        done() {
-          return this._store.__done__();
-        }
-        jobStatus(id) {
-          return this._states.jobStatus(id);
-        }
-        jobs(status) {
-          return this._states.statusJobs(status);
-        }
-        counts() {
-          return this._states.statusCounts();
-        }
-        _randomIndex() {
-          return Math.random().toString(36).slice(2);
-        }
-        check(weight = 1) {
-          return this._store.__check__(weight);
-        }
-        _clearGlobalState(index) {
-          if (this._scheduled[index] != null) {
-            clearTimeout(this._scheduled[index].expiration);
-            delete this._scheduled[index];
-            return true;
-          } else {
-            return false;
-          }
-        }
-        _free(index, job, options2, eventInfo) {
-          var _this = this;
-          return _asyncToGenerator2(function* () {
-            var e2, running;
-            try {
-              var _ref = yield _this._store.__free__(index, options2.weight);
-              running = _ref.running;
-              _this.Events.trigger("debug", `Freed ${options2.id}`, eventInfo);
-              if (running === 0 && _this.empty()) {
-                return _this.Events.trigger("idle");
-              }
-            } catch (error1) {
-              e2 = error1;
-              return _this.Events.trigger("error", e2);
-            }
-          })();
-        }
-        _run(index, job, wait) {
-          var clearGlobalState, free, run2;
-          job.doRun();
-          clearGlobalState = this._clearGlobalState.bind(this, index);
-          run2 = this._run.bind(this, index, job);
-          free = this._free.bind(this, index, job);
-          return this._scheduled[index] = {
-            timeout: setTimeout(() => {
-              return job.doExecute(this._limiter, clearGlobalState, run2, free);
-            }, wait),
-            expiration: job.options.expiration != null ? setTimeout(function() {
-              return job.doExpire(clearGlobalState, run2, free);
-            }, wait + job.options.expiration) : void 0,
-            job
-          };
-        }
-        _drainOne(capacity) {
-          return this._registerLock.schedule(() => {
-            var args, index, next, options2, queue;
-            if (this.queued() === 0) {
-              return this.Promise.resolve(null);
-            }
-            queue = this._queues.getFirst();
-            var _next2 = next = queue.first();
-            options2 = _next2.options;
-            args = _next2.args;
-            if (capacity != null && options2.weight > capacity) {
-              return this.Promise.resolve(null);
-            }
-            this.Events.trigger("debug", `Draining ${options2.id}`, {
-              args,
-              options: options2
-            });
-            index = this._randomIndex();
-            return this._store.__register__(index, options2.weight, options2.expiration).then(({
-              success,
-              wait,
-              reservoir
-            }) => {
-              var empty2;
-              this.Events.trigger("debug", `Drained ${options2.id}`, {
-                success,
-                args,
-                options: options2
-              });
-              if (success) {
-                queue.shift();
-                empty2 = this.empty();
-                if (empty2) {
-                  this.Events.trigger("empty");
-                }
-                if (reservoir === 0) {
-                  this.Events.trigger("depleted", empty2);
-                }
-                this._run(index, next, wait);
-                return this.Promise.resolve(options2.weight);
-              } else {
-                return this.Promise.resolve(null);
-              }
-            });
-          });
-        }
-        _drainAll(capacity, total = 0) {
-          return this._drainOne(capacity).then((drained) => {
-            var newCapacity;
-            if (drained != null) {
-              newCapacity = capacity != null ? capacity - drained : capacity;
-              return this._drainAll(newCapacity, total + drained);
-            } else {
-              return this.Promise.resolve(total);
-            }
-          }).catch((e2) => {
-            return this.Events.trigger("error", e2);
-          });
-        }
-        _dropAllQueued(message) {
-          return this._queues.shiftAll(function(job) {
-            return job.doDrop({
-              message
-            });
-          });
-        }
-        stop(options2 = {}) {
-          var done, waitForExecuting;
-          options2 = parser3.load(options2, this.stopDefaults);
-          waitForExecuting = (at) => {
-            var finished;
-            finished = () => {
-              var counts;
-              counts = this._states.counts;
-              return counts[0] + counts[1] + counts[2] + counts[3] === at;
-            };
-            return new this.Promise((resolve9, reject) => {
-              if (finished()) {
-                return resolve9();
-              } else {
-                return this.on("done", () => {
-                  if (finished()) {
-                    this.removeAllListeners("done");
-                    return resolve9();
-                  }
-                });
-              }
-            });
-          };
-          done = options2.dropWaitingJobs ? (this._run = function(index, next) {
-            return next.doDrop({
-              message: options2.dropErrorMessage
-            });
-          }, this._drainOne = () => {
-            return this.Promise.resolve(null);
-          }, this._registerLock.schedule(() => {
-            return this._submitLock.schedule(() => {
-              var k, ref, v2;
-              ref = this._scheduled;
-              for (k in ref) {
-                v2 = ref[k];
-                if (this.jobStatus(v2.job.options.id) === "RUNNING") {
-                  clearTimeout(v2.timeout);
-                  clearTimeout(v2.expiration);
-                  v2.job.doDrop({
-                    message: options2.dropErrorMessage
-                  });
-                }
-              }
-              this._dropAllQueued(options2.dropErrorMessage);
-              return waitForExecuting(0);
-            });
-          })) : this.schedule({
-            priority: NUM_PRIORITIES - 1,
-            weight: 0
-          }, () => {
-            return waitForExecuting(1);
-          });
-          this._receive = function(job) {
-            return job._reject(new Bottleneck3.prototype.BottleneckError(options2.enqueueErrorMessage));
-          };
-          this.stop = () => {
-            return this.Promise.reject(new Bottleneck3.prototype.BottleneckError("stop() has already been called"));
-          };
-          return done;
-        }
-        _addToQueue(job) {
-          var _this2 = this;
-          return _asyncToGenerator2(function* () {
-            var args, blocked, error2, options2, reachedHWM, shifted, strategy;
-            args = job.args;
-            options2 = job.options;
-            try {
-              var _ref2 = yield _this2._store.__submit__(_this2.queued(), options2.weight);
-              reachedHWM = _ref2.reachedHWM;
-              blocked = _ref2.blocked;
-              strategy = _ref2.strategy;
-            } catch (error1) {
-              error2 = error1;
-              _this2.Events.trigger("debug", `Could not queue ${options2.id}`, {
-                args,
-                options: options2,
-                error: error2
-              });
-              job.doDrop({
-                error: error2
-              });
-              return false;
-            }
-            if (blocked) {
-              job.doDrop();
-              return true;
-            } else if (reachedHWM) {
-              shifted = strategy === Bottleneck3.prototype.strategy.LEAK ? _this2._queues.shiftLastFrom(options2.priority) : strategy === Bottleneck3.prototype.strategy.OVERFLOW_PRIORITY ? _this2._queues.shiftLastFrom(options2.priority + 1) : strategy === Bottleneck3.prototype.strategy.OVERFLOW ? job : void 0;
-              if (shifted != null) {
-                shifted.doDrop();
-              }
-              if (shifted == null || strategy === Bottleneck3.prototype.strategy.OVERFLOW) {
-                if (shifted == null) {
-                  job.doDrop();
-                }
-                return reachedHWM;
-              }
-            }
-            job.doQueue(reachedHWM, blocked);
-            _this2._queues.push(job);
-            yield _this2._drainAll();
-            return reachedHWM;
-          })();
-        }
-        _receive(job) {
-          if (this._states.jobStatus(job.options.id) != null) {
-            job._reject(new Bottleneck3.prototype.BottleneckError(`A job with the same id already exists (id=${job.options.id})`));
-            return false;
-          } else {
-            job.doReceive();
-            return this._submitLock.schedule(this._addToQueue, job);
-          }
-        }
-        submit(...args) {
-          var cb, fn, job, options2, ref, ref1, task;
-          if (typeof args[0] === "function") {
-            var _ref3, _ref4, _splice$call, _splice$call2;
-            ref = args, _ref3 = ref, _ref4 = _toArray(_ref3), fn = _ref4[0], args = _ref4.slice(1), _ref3, _splice$call = splice.call(args, -1), _splice$call2 = _slicedToArray2(_splice$call, 1), cb = _splice$call2[0], _splice$call;
-            options2 = parser3.load({}, this.jobDefaults);
-          } else {
-            var _ref5, _ref6, _splice$call3, _splice$call4;
-            ref1 = args, _ref5 = ref1, _ref6 = _toArray(_ref5), options2 = _ref6[0], fn = _ref6[1], args = _ref6.slice(2), _ref5, _splice$call3 = splice.call(args, -1), _splice$call4 = _slicedToArray2(_splice$call3, 1), cb = _splice$call4[0], _splice$call3;
-            options2 = parser3.load(options2, this.jobDefaults);
-          }
-          task = (...args2) => {
-            return new this.Promise(function(resolve9, reject) {
-              return fn(...args2, function(...args3) {
-                return (args3[0] != null ? reject : resolve9)(args3);
-              });
-            });
-          };
-          job = new Job(task, args, options2, this.jobDefaults, this.rejectOnDrop, this.Events, this._states, this.Promise);
-          job.promise.then(function(args2) {
-            return typeof cb === "function" ? cb(...args2) : void 0;
-          }).catch(function(args2) {
-            if (Array.isArray(args2)) {
-              return typeof cb === "function" ? cb(...args2) : void 0;
-            } else {
-              return typeof cb === "function" ? cb(args2) : void 0;
-            }
-          });
-          return this._receive(job);
-        }
-        schedule(...args) {
-          var job, options2, task;
-          if (typeof args[0] === "function") {
-            var _args = args;
-            var _args2 = _toArray(_args);
-            task = _args2[0];
-            args = _args2.slice(1);
-            options2 = {};
-          } else {
-            var _args3 = args;
-            var _args4 = _toArray(_args3);
-            options2 = _args4[0];
-            task = _args4[1];
-            args = _args4.slice(2);
-          }
-          job = new Job(task, args, options2, this.jobDefaults, this.rejectOnDrop, this.Events, this._states, this.Promise);
-          this._receive(job);
-          return job.promise;
-        }
-        wrap(fn) {
-          var schedule, wrapped;
-          schedule = this.schedule.bind(this);
-          wrapped = function wrapped2(...args) {
-            return schedule(fn.bind(this), ...args);
-          };
-          wrapped.withOptions = function(options2, ...args) {
-            return schedule(options2, fn, ...args);
-          };
-          return wrapped;
-        }
-        updateSettings(options2 = {}) {
-          var _this3 = this;
-          return _asyncToGenerator2(function* () {
-            yield _this3._store.__updateSettings__(parser3.overwrite(options2, _this3.storeDefaults));
-            parser3.overwrite(options2, _this3.instanceDefaults, _this3);
-            return _this3;
-          })();
-        }
-        currentReservoir() {
-          return this._store.__currentReservoir__();
-        }
-        incrementReservoir(incr = 0) {
-          return this._store.__incrementReservoir__(incr);
-        }
-      }
-      ;
-      Bottleneck3.default = Bottleneck3;
-      Bottleneck3.Events = Events2;
-      Bottleneck3.version = Bottleneck3.prototype.version = require_version().version;
-      Bottleneck3.strategy = Bottleneck3.prototype.strategy = {
-        LEAK: 1,
-        OVERFLOW: 2,
-        OVERFLOW_PRIORITY: 4,
-        BLOCK: 3
-      };
-      Bottleneck3.BottleneckError = Bottleneck3.prototype.BottleneckError = require_BottleneckError();
-      Bottleneck3.Group = Bottleneck3.prototype.Group = require_Group();
-      Bottleneck3.RedisConnection = Bottleneck3.prototype.RedisConnection = require_RedisConnection();
-      Bottleneck3.IORedisConnection = Bottleneck3.prototype.IORedisConnection = require_IORedisConnection();
-      Bottleneck3.Batcher = Bottleneck3.prototype.Batcher = require_Batcher();
-      Bottleneck3.prototype.jobDefaults = {
-        priority: DEFAULT_PRIORITY,
-        weight: 1,
-        expiration: null,
-        id: "<no-id>"
-      };
-      Bottleneck3.prototype.storeDefaults = {
-        maxConcurrent: null,
-        minTime: 0,
-        highWater: null,
-        strategy: Bottleneck3.prototype.strategy.LEAK,
-        penalty: null,
-        reservoir: null,
-        reservoirRefreshInterval: null,
-        reservoirRefreshAmount: null,
-        reservoirIncreaseInterval: null,
-        reservoirIncreaseAmount: null,
-        reservoirIncreaseMaximum: null
-      };
-      Bottleneck3.prototype.localStoreDefaults = {
-        Promise,
-        timeout: null,
-        heartbeatInterval: 250
-      };
-      Bottleneck3.prototype.redisStoreDefaults = {
-        Promise,
-        timeout: null,
-        heartbeatInterval: 5e3,
-        clientTimeout: 1e4,
-        Redis: null,
-        clientOptions: {},
-        clusterNodes: null,
-        clearDatastore: false,
-        connection: null
-      };
-      Bottleneck3.prototype.instanceDefaults = {
-        datastore: "local",
-        connection: null,
-        id: "<no-id>",
-        rejectOnDrop: true,
-        trackDoneStatus: false,
-        Promise
-      };
-      Bottleneck3.prototype.stopDefaults = {
-        enqueueErrorMessage: "This limiter has been stopped and cannot accept new jobs.",
-        dropWaitingJobs: true,
-        dropErrorMessage: "This limiter has been stopped."
-      };
-      return Bottleneck3;
-    }.call(void 0);
-    module15.exports = Bottleneck2;
-  }
-});
-var require_lib6 = __commonJS({
-  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/index.js"(exports2, module15) {
-    "use strict";
-    module15.exports = require_Bottleneck();
-  }
-});
 var require_err_helpers = __commonJS({
   "node_modules/.deno/pino-std-serializers@6.2.2/node_modules/pino-std-serializers/lib/err-helpers.js"(exports2, module15) {
     "use strict";
@@ -58682,6 +55840,2841 @@ var require_pino = __commonJS({
     module15.exports.version = version3;
     module15.exports.default = pino2;
     module15.exports.pino = pino2;
+  }
+});
+var require_parser2 = __commonJS({
+  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/parser.js"(exports2) {
+    "use strict";
+    exports2.load = function(received, defaults, onto = {}) {
+      var k, ref, v2;
+      for (k in defaults) {
+        v2 = defaults[k];
+        onto[k] = (ref = received[k]) != null ? ref : v2;
+      }
+      return onto;
+    };
+    exports2.overwrite = function(received, defaults, onto = {}) {
+      var k, v2;
+      for (k in received) {
+        v2 = received[k];
+        if (defaults[k] !== void 0) {
+          onto[k] = v2;
+        }
+      }
+      return onto;
+    };
+  }
+});
+var require_DLList = __commonJS({
+  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/DLList.js"(exports2, module15) {
+    "use strict";
+    var DLList;
+    DLList = class DLList {
+      constructor(incr, decr) {
+        this.incr = incr;
+        this.decr = decr;
+        this._first = null;
+        this._last = null;
+        this.length = 0;
+      }
+      push(value) {
+        var node;
+        this.length++;
+        if (typeof this.incr === "function") {
+          this.incr();
+        }
+        node = {
+          value,
+          prev: this._last,
+          next: null
+        };
+        if (this._last != null) {
+          this._last.next = node;
+          this._last = node;
+        } else {
+          this._first = this._last = node;
+        }
+        return void 0;
+      }
+      shift() {
+        var value;
+        if (this._first == null) {
+          return;
+        } else {
+          this.length--;
+          if (typeof this.decr === "function") {
+            this.decr();
+          }
+        }
+        value = this._first.value;
+        if ((this._first = this._first.next) != null) {
+          this._first.prev = null;
+        } else {
+          this._last = null;
+        }
+        return value;
+      }
+      first() {
+        if (this._first != null) {
+          return this._first.value;
+        }
+      }
+      getArray() {
+        var node, ref, results;
+        node = this._first;
+        results = [];
+        while (node != null) {
+          results.push((ref = node, node = node.next, ref.value));
+        }
+        return results;
+      }
+      forEachShift(cb) {
+        var node;
+        node = this.shift();
+        while (node != null) {
+          cb(node), node = this.shift();
+        }
+        return void 0;
+      }
+      debug() {
+        var node, ref, ref1, ref2, results;
+        node = this._first;
+        results = [];
+        while (node != null) {
+          results.push((ref = node, node = node.next, {
+            value: ref.value,
+            prev: (ref1 = ref.prev) != null ? ref1.value : void 0,
+            next: (ref2 = ref.next) != null ? ref2.value : void 0
+          }));
+        }
+        return results;
+      }
+    };
+    module15.exports = DLList;
+  }
+});
+var require_Events = __commonJS({
+  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/Events.js"(exports2, module15) {
+    "use strict";
+    function asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, key, arg) {
+      try {
+        var info = gen[key](arg);
+        var value = info.value;
+      } catch (error2) {
+        reject(error2);
+        return;
+      }
+      if (info.done) {
+        resolve9(value);
+      } else {
+        Promise.resolve(value).then(_next, _throw);
+      }
+    }
+    function _asyncToGenerator2(fn) {
+      return function() {
+        var self2 = this, args = arguments;
+        return new Promise(function(resolve9, reject) {
+          var gen = fn.apply(self2, args);
+          function _next(value) {
+            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "next", value);
+          }
+          function _throw(err) {
+            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "throw", err);
+          }
+          _next(void 0);
+        });
+      };
+    }
+    var Events2;
+    Events2 = class Events {
+      constructor(instance) {
+        this.instance = instance;
+        this._events = {};
+        if (this.instance.on != null || this.instance.once != null || this.instance.removeAllListeners != null) {
+          throw new Error("An Emitter already exists for this object");
+        }
+        this.instance.on = (name, cb) => {
+          return this._addListener(name, "many", cb);
+        };
+        this.instance.once = (name, cb) => {
+          return this._addListener(name, "once", cb);
+        };
+        this.instance.removeAllListeners = (name = null) => {
+          if (name != null) {
+            return delete this._events[name];
+          } else {
+            return this._events = {};
+          }
+        };
+      }
+      _addListener(name, status, cb) {
+        var base2;
+        if ((base2 = this._events)[name] == null) {
+          base2[name] = [];
+        }
+        this._events[name].push({
+          cb,
+          status
+        });
+        return this.instance;
+      }
+      listenerCount(name) {
+        if (this._events[name] != null) {
+          return this._events[name].length;
+        } else {
+          return 0;
+        }
+      }
+      trigger(name, ...args) {
+        var _this = this;
+        return _asyncToGenerator2(function* () {
+          var e2, promises;
+          try {
+            if (name !== "debug") {
+              _this.trigger("debug", `Event triggered: ${name}`, args);
+            }
+            if (_this._events[name] == null) {
+              return;
+            }
+            _this._events[name] = _this._events[name].filter(function(listener) {
+              return listener.status !== "none";
+            });
+            promises = _this._events[name].map(
+              /* @__PURE__ */ function() {
+                var _ref = _asyncToGenerator2(function* (listener) {
+                  var e3, returned;
+                  if (listener.status === "none") {
+                    return;
+                  }
+                  if (listener.status === "once") {
+                    listener.status = "none";
+                  }
+                  try {
+                    returned = typeof listener.cb === "function" ? listener.cb(...args) : void 0;
+                    if (typeof (returned != null ? returned.then : void 0) === "function") {
+                      return yield returned;
+                    } else {
+                      return returned;
+                    }
+                  } catch (error2) {
+                    e3 = error2;
+                    if (true) {
+                      _this.trigger("error", e3);
+                    }
+                    return null;
+                  }
+                });
+                return function(_x) {
+                  return _ref.apply(this, arguments);
+                };
+              }()
+            );
+            return (yield Promise.all(promises)).find(function(x3) {
+              return x3 != null;
+            });
+          } catch (error2) {
+            e2 = error2;
+            if (true) {
+              _this.trigger("error", e2);
+            }
+            return null;
+          }
+        })();
+      }
+    };
+    module15.exports = Events2;
+  }
+});
+var require_Queues = __commonJS({
+  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/Queues.js"(exports2, module15) {
+    "use strict";
+    var DLList;
+    var Events2;
+    var Queues;
+    DLList = require_DLList();
+    Events2 = require_Events();
+    Queues = class Queues {
+      constructor(num_priorities) {
+        var i2;
+        this.Events = new Events2(this);
+        this._length = 0;
+        this._lists = function() {
+          var j, ref, results;
+          results = [];
+          for (i2 = j = 1, ref = num_priorities; 1 <= ref ? j <= ref : j >= ref; i2 = 1 <= ref ? ++j : --j) {
+            results.push(new DLList(() => {
+              return this.incr();
+            }, () => {
+              return this.decr();
+            }));
+          }
+          return results;
+        }.call(this);
+      }
+      incr() {
+        if (this._length++ === 0) {
+          return this.Events.trigger("leftzero");
+        }
+      }
+      decr() {
+        if (--this._length === 0) {
+          return this.Events.trigger("zero");
+        }
+      }
+      push(job) {
+        return this._lists[job.options.priority].push(job);
+      }
+      queued(priority) {
+        if (priority != null) {
+          return this._lists[priority].length;
+        } else {
+          return this._length;
+        }
+      }
+      shiftAll(fn) {
+        return this._lists.forEach(function(list) {
+          return list.forEachShift(fn);
+        });
+      }
+      getFirst(arr = this._lists) {
+        var j, len, list;
+        for (j = 0, len = arr.length; j < len; j++) {
+          list = arr[j];
+          if (list.length > 0) {
+            return list;
+          }
+        }
+        return [];
+      }
+      shiftLastFrom(priority) {
+        return this.getFirst(this._lists.slice(priority).reverse()).shift();
+      }
+    };
+    module15.exports = Queues;
+  }
+});
+var require_BottleneckError = __commonJS({
+  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/BottleneckError.js"(exports2, module15) {
+    "use strict";
+    var BottleneckError;
+    BottleneckError = class BottleneckError extends Error {
+    };
+    module15.exports = BottleneckError;
+  }
+});
+var require_Job = __commonJS({
+  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/Job.js"(exports2, module15) {
+    "use strict";
+    function asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, key, arg) {
+      try {
+        var info = gen[key](arg);
+        var value = info.value;
+      } catch (error2) {
+        reject(error2);
+        return;
+      }
+      if (info.done) {
+        resolve9(value);
+      } else {
+        Promise.resolve(value).then(_next, _throw);
+      }
+    }
+    function _asyncToGenerator2(fn) {
+      return function() {
+        var self2 = this, args = arguments;
+        return new Promise(function(resolve9, reject) {
+          var gen = fn.apply(self2, args);
+          function _next(value) {
+            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "next", value);
+          }
+          function _throw(err) {
+            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "throw", err);
+          }
+          _next(void 0);
+        });
+      };
+    }
+    var BottleneckError;
+    var DEFAULT_PRIORITY;
+    var Job;
+    var NUM_PRIORITIES;
+    var parser3;
+    NUM_PRIORITIES = 10;
+    DEFAULT_PRIORITY = 5;
+    parser3 = require_parser2();
+    BottleneckError = require_BottleneckError();
+    Job = class Job {
+      constructor(task, args, options2, jobDefaults, rejectOnDrop, Events2, _states, Promise2) {
+        this.task = task;
+        this.args = args;
+        this.rejectOnDrop = rejectOnDrop;
+        this.Events = Events2;
+        this._states = _states;
+        this.Promise = Promise2;
+        this.options = parser3.load(options2, jobDefaults);
+        this.options.priority = this._sanitizePriority(this.options.priority);
+        if (this.options.id === jobDefaults.id) {
+          this.options.id = `${this.options.id}-${this._randomIndex()}`;
+        }
+        this.promise = new this.Promise((_resolve, _reject) => {
+          this._resolve = _resolve;
+          this._reject = _reject;
+        });
+        this.retryCount = 0;
+      }
+      _sanitizePriority(priority) {
+        var sProperty;
+        sProperty = ~~priority !== priority ? DEFAULT_PRIORITY : priority;
+        if (sProperty < 0) {
+          return 0;
+        } else if (sProperty > NUM_PRIORITIES - 1) {
+          return NUM_PRIORITIES - 1;
+        } else {
+          return sProperty;
+        }
+      }
+      _randomIndex() {
+        return Math.random().toString(36).slice(2);
+      }
+      doDrop({
+        error: error2,
+        message = "This job has been dropped by Bottleneck"
+      } = {}) {
+        if (this._states.remove(this.options.id)) {
+          if (this.rejectOnDrop) {
+            this._reject(error2 != null ? error2 : new BottleneckError(message));
+          }
+          this.Events.trigger("dropped", {
+            args: this.args,
+            options: this.options,
+            task: this.task,
+            promise: this.promise
+          });
+          return true;
+        } else {
+          return false;
+        }
+      }
+      _assertStatus(expected) {
+        var status;
+        status = this._states.jobStatus(this.options.id);
+        if (!(status === expected || expected === "DONE" && status === null)) {
+          throw new BottleneckError(`Invalid job status ${status}, expected ${expected}. Please open an issue at https://github.com/SGrondin/bottleneck/issues`);
+        }
+      }
+      doReceive() {
+        this._states.start(this.options.id);
+        return this.Events.trigger("received", {
+          args: this.args,
+          options: this.options
+        });
+      }
+      doQueue(reachedHWM, blocked) {
+        this._assertStatus("RECEIVED");
+        this._states.next(this.options.id);
+        return this.Events.trigger("queued", {
+          args: this.args,
+          options: this.options,
+          reachedHWM,
+          blocked
+        });
+      }
+      doRun() {
+        if (this.retryCount === 0) {
+          this._assertStatus("QUEUED");
+          this._states.next(this.options.id);
+        } else {
+          this._assertStatus("EXECUTING");
+        }
+        return this.Events.trigger("scheduled", {
+          args: this.args,
+          options: this.options
+        });
+      }
+      doExecute(chained, clearGlobalState, run2, free) {
+        var _this = this;
+        return _asyncToGenerator2(function* () {
+          var error2, eventInfo, passed;
+          if (_this.retryCount === 0) {
+            _this._assertStatus("RUNNING");
+            _this._states.next(_this.options.id);
+          } else {
+            _this._assertStatus("EXECUTING");
+          }
+          eventInfo = {
+            args: _this.args,
+            options: _this.options,
+            retryCount: _this.retryCount
+          };
+          _this.Events.trigger("executing", eventInfo);
+          try {
+            passed = yield chained != null ? chained.schedule(_this.options, _this.task, ..._this.args) : _this.task(..._this.args);
+            if (clearGlobalState()) {
+              _this.doDone(eventInfo);
+              yield free(_this.options, eventInfo);
+              _this._assertStatus("DONE");
+              return _this._resolve(passed);
+            }
+          } catch (error1) {
+            error2 = error1;
+            return _this._onFailure(error2, eventInfo, clearGlobalState, run2, free);
+          }
+        })();
+      }
+      doExpire(clearGlobalState, run2, free) {
+        var error2, eventInfo;
+        if (this._states.jobStatus(this.options.id === "RUNNING")) {
+          this._states.next(this.options.id);
+        }
+        this._assertStatus("EXECUTING");
+        eventInfo = {
+          args: this.args,
+          options: this.options,
+          retryCount: this.retryCount
+        };
+        error2 = new BottleneckError(`This job timed out after ${this.options.expiration} ms.`);
+        return this._onFailure(error2, eventInfo, clearGlobalState, run2, free);
+      }
+      _onFailure(error2, eventInfo, clearGlobalState, run2, free) {
+        var _this2 = this;
+        return _asyncToGenerator2(function* () {
+          var retry, retryAfter;
+          if (clearGlobalState()) {
+            retry = yield _this2.Events.trigger("failed", error2, eventInfo);
+            if (retry != null) {
+              retryAfter = ~~retry;
+              _this2.Events.trigger("retry", `Retrying ${_this2.options.id} after ${retryAfter} ms`, eventInfo);
+              _this2.retryCount++;
+              return run2(retryAfter);
+            } else {
+              _this2.doDone(eventInfo);
+              yield free(_this2.options, eventInfo);
+              _this2._assertStatus("DONE");
+              return _this2._reject(error2);
+            }
+          }
+        })();
+      }
+      doDone(eventInfo) {
+        this._assertStatus("EXECUTING");
+        this._states.next(this.options.id);
+        return this.Events.trigger("done", eventInfo);
+      }
+    };
+    module15.exports = Job;
+  }
+});
+var require_LocalDatastore = __commonJS({
+  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/LocalDatastore.js"(exports2, module15) {
+    "use strict";
+    function asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, key, arg) {
+      try {
+        var info = gen[key](arg);
+        var value = info.value;
+      } catch (error2) {
+        reject(error2);
+        return;
+      }
+      if (info.done) {
+        resolve9(value);
+      } else {
+        Promise.resolve(value).then(_next, _throw);
+      }
+    }
+    function _asyncToGenerator2(fn) {
+      return function() {
+        var self2 = this, args = arguments;
+        return new Promise(function(resolve9, reject) {
+          var gen = fn.apply(self2, args);
+          function _next(value) {
+            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "next", value);
+          }
+          function _throw(err) {
+            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "throw", err);
+          }
+          _next(void 0);
+        });
+      };
+    }
+    var BottleneckError;
+    var LocalDatastore;
+    var parser3;
+    parser3 = require_parser2();
+    BottleneckError = require_BottleneckError();
+    LocalDatastore = class LocalDatastore {
+      constructor(instance, storeOptions, storeInstanceOptions) {
+        this.instance = instance;
+        this.storeOptions = storeOptions;
+        this.clientId = this.instance._randomIndex();
+        parser3.load(storeInstanceOptions, storeInstanceOptions, this);
+        this._nextRequest = this._lastReservoirRefresh = this._lastReservoirIncrease = Date.now();
+        this._running = 0;
+        this._done = 0;
+        this._unblockTime = 0;
+        this.ready = this.Promise.resolve();
+        this.clients = {};
+        this._startHeartbeat();
+      }
+      _startHeartbeat() {
+        var base2;
+        if (this.heartbeat == null && (this.storeOptions.reservoirRefreshInterval != null && this.storeOptions.reservoirRefreshAmount != null || this.storeOptions.reservoirIncreaseInterval != null && this.storeOptions.reservoirIncreaseAmount != null)) {
+          return typeof (base2 = this.heartbeat = setInterval(() => {
+            var amount, incr, maximum, now, reservoir;
+            now = Date.now();
+            if (this.storeOptions.reservoirRefreshInterval != null && now >= this._lastReservoirRefresh + this.storeOptions.reservoirRefreshInterval) {
+              this._lastReservoirRefresh = now;
+              this.storeOptions.reservoir = this.storeOptions.reservoirRefreshAmount;
+              this.instance._drainAll(this.computeCapacity());
+            }
+            if (this.storeOptions.reservoirIncreaseInterval != null && now >= this._lastReservoirIncrease + this.storeOptions.reservoirIncreaseInterval) {
+              var _this$storeOptions = this.storeOptions;
+              amount = _this$storeOptions.reservoirIncreaseAmount;
+              maximum = _this$storeOptions.reservoirIncreaseMaximum;
+              reservoir = _this$storeOptions.reservoir;
+              this._lastReservoirIncrease = now;
+              incr = maximum != null ? Math.min(amount, maximum - reservoir) : amount;
+              if (incr > 0) {
+                this.storeOptions.reservoir += incr;
+                return this.instance._drainAll(this.computeCapacity());
+              }
+            }
+          }, this.heartbeatInterval)).unref === "function" ? base2.unref() : void 0;
+        } else {
+          return clearInterval(this.heartbeat);
+        }
+      }
+      __publish__(message) {
+        var _this = this;
+        return _asyncToGenerator2(function* () {
+          yield _this.yieldLoop();
+          return _this.instance.Events.trigger("message", message.toString());
+        })();
+      }
+      __disconnect__(flush) {
+        var _this2 = this;
+        return _asyncToGenerator2(function* () {
+          yield _this2.yieldLoop();
+          clearInterval(_this2.heartbeat);
+          return _this2.Promise.resolve();
+        })();
+      }
+      yieldLoop(t = 0) {
+        return new this.Promise(function(resolve9, reject) {
+          return setTimeout(resolve9, t);
+        });
+      }
+      computePenalty() {
+        var ref;
+        return (ref = this.storeOptions.penalty) != null ? ref : 15 * this.storeOptions.minTime || 5e3;
+      }
+      __updateSettings__(options2) {
+        var _this3 = this;
+        return _asyncToGenerator2(function* () {
+          yield _this3.yieldLoop();
+          parser3.overwrite(options2, options2, _this3.storeOptions);
+          _this3._startHeartbeat();
+          _this3.instance._drainAll(_this3.computeCapacity());
+          return true;
+        })();
+      }
+      __running__() {
+        var _this4 = this;
+        return _asyncToGenerator2(function* () {
+          yield _this4.yieldLoop();
+          return _this4._running;
+        })();
+      }
+      __queued__() {
+        var _this5 = this;
+        return _asyncToGenerator2(function* () {
+          yield _this5.yieldLoop();
+          return _this5.instance.queued();
+        })();
+      }
+      __done__() {
+        var _this6 = this;
+        return _asyncToGenerator2(function* () {
+          yield _this6.yieldLoop();
+          return _this6._done;
+        })();
+      }
+      __groupCheck__(time3) {
+        var _this7 = this;
+        return _asyncToGenerator2(function* () {
+          yield _this7.yieldLoop();
+          return _this7._nextRequest + _this7.timeout < time3;
+        })();
+      }
+      computeCapacity() {
+        var maxConcurrent, reservoir;
+        var _this$storeOptions2 = this.storeOptions;
+        maxConcurrent = _this$storeOptions2.maxConcurrent;
+        reservoir = _this$storeOptions2.reservoir;
+        if (maxConcurrent != null && reservoir != null) {
+          return Math.min(maxConcurrent - this._running, reservoir);
+        } else if (maxConcurrent != null) {
+          return maxConcurrent - this._running;
+        } else if (reservoir != null) {
+          return reservoir;
+        } else {
+          return null;
+        }
+      }
+      conditionsCheck(weight) {
+        var capacity;
+        capacity = this.computeCapacity();
+        return capacity == null || weight <= capacity;
+      }
+      __incrementReservoir__(incr) {
+        var _this8 = this;
+        return _asyncToGenerator2(function* () {
+          var reservoir;
+          yield _this8.yieldLoop();
+          reservoir = _this8.storeOptions.reservoir += incr;
+          _this8.instance._drainAll(_this8.computeCapacity());
+          return reservoir;
+        })();
+      }
+      __currentReservoir__() {
+        var _this9 = this;
+        return _asyncToGenerator2(function* () {
+          yield _this9.yieldLoop();
+          return _this9.storeOptions.reservoir;
+        })();
+      }
+      isBlocked(now) {
+        return this._unblockTime >= now;
+      }
+      check(weight, now) {
+        return this.conditionsCheck(weight) && this._nextRequest - now <= 0;
+      }
+      __check__(weight) {
+        var _this10 = this;
+        return _asyncToGenerator2(function* () {
+          var now;
+          yield _this10.yieldLoop();
+          now = Date.now();
+          return _this10.check(weight, now);
+        })();
+      }
+      __register__(index, weight, expiration) {
+        var _this11 = this;
+        return _asyncToGenerator2(function* () {
+          var now, wait;
+          yield _this11.yieldLoop();
+          now = Date.now();
+          if (_this11.conditionsCheck(weight)) {
+            _this11._running += weight;
+            if (_this11.storeOptions.reservoir != null) {
+              _this11.storeOptions.reservoir -= weight;
+            }
+            wait = Math.max(_this11._nextRequest - now, 0);
+            _this11._nextRequest = now + wait + _this11.storeOptions.minTime;
+            return {
+              success: true,
+              wait,
+              reservoir: _this11.storeOptions.reservoir
+            };
+          } else {
+            return {
+              success: false
+            };
+          }
+        })();
+      }
+      strategyIsBlock() {
+        return this.storeOptions.strategy === 3;
+      }
+      __submit__(queueLength, weight) {
+        var _this12 = this;
+        return _asyncToGenerator2(function* () {
+          var blocked, now, reachedHWM;
+          yield _this12.yieldLoop();
+          if (_this12.storeOptions.maxConcurrent != null && weight > _this12.storeOptions.maxConcurrent) {
+            throw new BottleneckError(`Impossible to add a job having a weight of ${weight} to a limiter having a maxConcurrent setting of ${_this12.storeOptions.maxConcurrent}`);
+          }
+          now = Date.now();
+          reachedHWM = _this12.storeOptions.highWater != null && queueLength === _this12.storeOptions.highWater && !_this12.check(weight, now);
+          blocked = _this12.strategyIsBlock() && (reachedHWM || _this12.isBlocked(now));
+          if (blocked) {
+            _this12._unblockTime = now + _this12.computePenalty();
+            _this12._nextRequest = _this12._unblockTime + _this12.storeOptions.minTime;
+            _this12.instance._dropAllQueued();
+          }
+          return {
+            reachedHWM,
+            blocked,
+            strategy: _this12.storeOptions.strategy
+          };
+        })();
+      }
+      __free__(index, weight) {
+        var _this13 = this;
+        return _asyncToGenerator2(function* () {
+          yield _this13.yieldLoop();
+          _this13._running -= weight;
+          _this13._done += weight;
+          _this13.instance._drainAll(_this13.computeCapacity());
+          return {
+            running: _this13._running
+          };
+        })();
+      }
+    };
+    module15.exports = LocalDatastore;
+  }
+});
+var require_lua = __commonJS({
+  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/lua.json"(exports2, module15) {
+    module15.exports = {
+      "blacklist_client.lua": "local blacklist = ARGV[num_static_argv + 1]\n\nif redis.call('zscore', client_last_seen_key, blacklist) then\n  redis.call('zadd', client_last_seen_key, 0, blacklist)\nend\n\n\nreturn {}\n",
+      "check.lua": "local weight = tonumber(ARGV[num_static_argv + 1])\n\nlocal capacity = process_tick(now, false)['capacity']\nlocal nextRequest = tonumber(redis.call('hget', settings_key, 'nextRequest'))\n\nreturn conditions_check(capacity, weight) and nextRequest - now <= 0\n",
+      "conditions_check.lua": "local conditions_check = function (capacity, weight)\n  return capacity == nil or weight <= capacity\nend\n",
+      "current_reservoir.lua": "return process_tick(now, false)['reservoir']\n",
+      "done.lua": "process_tick(now, false)\n\nreturn tonumber(redis.call('hget', settings_key, 'done'))\n",
+      "free.lua": "local index = ARGV[num_static_argv + 1]\n\nredis.call('zadd', job_expirations_key, 0, index)\n\nreturn process_tick(now, false)['running']\n",
+      "get_time.lua": "redis.replicate_commands()\n\nlocal get_time = function ()\n  local time = redis.call('time')\n\n  return tonumber(time[1]..string.sub(time[2], 1, 3))\nend\n",
+      "group_check.lua": "return not (redis.call('exists', settings_key) == 1)\n",
+      "heartbeat.lua": "process_tick(now, true)\n",
+      "increment_reservoir.lua": "local incr = tonumber(ARGV[num_static_argv + 1])\n\nredis.call('hincrby', settings_key, 'reservoir', incr)\n\nlocal reservoir = process_tick(now, true)['reservoir']\n\nlocal groupTimeout = tonumber(redis.call('hget', settings_key, 'groupTimeout'))\nrefresh_expiration(0, 0, groupTimeout)\n\nreturn reservoir\n",
+      "init.lua": `local clear = tonumber(ARGV[num_static_argv + 1])
+local limiter_version = ARGV[num_static_argv + 2]
+local num_local_argv = num_static_argv + 2
+
+if clear == 1 then
+  redis.call('del', unpack(KEYS))
+end
+
+if redis.call('exists', settings_key) == 0 then
+  -- Create
+  local args = {'hmset', settings_key}
+
+  for i = num_local_argv + 1, #ARGV do
+    table.insert(args, ARGV[i])
+  end
+
+  redis.call(unpack(args))
+  redis.call('hmset', settings_key,
+    'nextRequest', now,
+    'lastReservoirRefresh', now,
+    'lastReservoirIncrease', now,
+    'running', 0,
+    'done', 0,
+    'unblockTime', 0,
+    'capacityPriorityCounter', 0
+  )
+
+else
+  -- Apply migrations
+  local settings = redis.call('hmget', settings_key,
+    'id',
+    'version'
+  )
+  local id = settings[1]
+  local current_version = settings[2]
+
+  if current_version ~= limiter_version then
+    local version_digits = {}
+    for k, v in string.gmatch(current_version, "([^.]+)") do
+      table.insert(version_digits, tonumber(k))
+    end
+
+    -- 2.10.0
+    if version_digits[2] < 10 then
+      redis.call('hsetnx', settings_key, 'reservoirRefreshInterval', '')
+      redis.call('hsetnx', settings_key, 'reservoirRefreshAmount', '')
+      redis.call('hsetnx', settings_key, 'lastReservoirRefresh', '')
+      redis.call('hsetnx', settings_key, 'done', 0)
+      redis.call('hset', settings_key, 'version', '2.10.0')
+    end
+
+    -- 2.11.1
+    if version_digits[2] < 11 or (version_digits[2] == 11 and version_digits[3] < 1) then
+      if redis.call('hstrlen', settings_key, 'lastReservoirRefresh') == 0 then
+        redis.call('hmset', settings_key,
+          'lastReservoirRefresh', now,
+          'version', '2.11.1'
+        )
+      end
+    end
+
+    -- 2.14.0
+    if version_digits[2] < 14 then
+      local old_running_key = 'b_'..id..'_running'
+      local old_executing_key = 'b_'..id..'_executing'
+
+      if redis.call('exists', old_running_key) == 1 then
+        redis.call('rename', old_running_key, job_weights_key)
+      end
+      if redis.call('exists', old_executing_key) == 1 then
+        redis.call('rename', old_executing_key, job_expirations_key)
+      end
+      redis.call('hset', settings_key, 'version', '2.14.0')
+    end
+
+    -- 2.15.2
+    if version_digits[2] < 15 or (version_digits[2] == 15 and version_digits[3] < 2) then
+      redis.call('hsetnx', settings_key, 'capacityPriorityCounter', 0)
+      redis.call('hset', settings_key, 'version', '2.15.2')
+    end
+
+    -- 2.17.0
+    if version_digits[2] < 17 then
+      redis.call('hsetnx', settings_key, 'clientTimeout', 10000)
+      redis.call('hset', settings_key, 'version', '2.17.0')
+    end
+
+    -- 2.18.0
+    if version_digits[2] < 18 then
+      redis.call('hsetnx', settings_key, 'reservoirIncreaseInterval', '')
+      redis.call('hsetnx', settings_key, 'reservoirIncreaseAmount', '')
+      redis.call('hsetnx', settings_key, 'reservoirIncreaseMaximum', '')
+      redis.call('hsetnx', settings_key, 'lastReservoirIncrease', now)
+      redis.call('hset', settings_key, 'version', '2.18.0')
+    end
+
+  end
+
+  process_tick(now, false)
+end
+
+local groupTimeout = tonumber(redis.call('hget', settings_key, 'groupTimeout'))
+refresh_expiration(0, 0, groupTimeout)
+
+return {}
+`,
+      "process_tick.lua": "local process_tick = function (now, always_publish)\n\n  local compute_capacity = function (maxConcurrent, running, reservoir)\n    if maxConcurrent ~= nil and reservoir ~= nil then\n      return math.min((maxConcurrent - running), reservoir)\n    elseif maxConcurrent ~= nil then\n      return maxConcurrent - running\n    elseif reservoir ~= nil then\n      return reservoir\n    else\n      return nil\n    end\n  end\n\n  local settings = redis.call('hmget', settings_key,\n    'id',\n    'maxConcurrent',\n    'running',\n    'reservoir',\n    'reservoirRefreshInterval',\n    'reservoirRefreshAmount',\n    'lastReservoirRefresh',\n    'reservoirIncreaseInterval',\n    'reservoirIncreaseAmount',\n    'reservoirIncreaseMaximum',\n    'lastReservoirIncrease',\n    'capacityPriorityCounter',\n    'clientTimeout'\n  )\n  local id = settings[1]\n  local maxConcurrent = tonumber(settings[2])\n  local running = tonumber(settings[3])\n  local reservoir = tonumber(settings[4])\n  local reservoirRefreshInterval = tonumber(settings[5])\n  local reservoirRefreshAmount = tonumber(settings[6])\n  local lastReservoirRefresh = tonumber(settings[7])\n  local reservoirIncreaseInterval = tonumber(settings[8])\n  local reservoirIncreaseAmount = tonumber(settings[9])\n  local reservoirIncreaseMaximum = tonumber(settings[10])\n  local lastReservoirIncrease = tonumber(settings[11])\n  local capacityPriorityCounter = tonumber(settings[12])\n  local clientTimeout = tonumber(settings[13])\n\n  local initial_capacity = compute_capacity(maxConcurrent, running, reservoir)\n\n  --\n  -- Process 'running' changes\n  --\n  local expired = redis.call('zrangebyscore', job_expirations_key, '-inf', '('..now)\n\n  if #expired > 0 then\n    redis.call('zremrangebyscore', job_expirations_key, '-inf', '('..now)\n\n    local flush_batch = function (batch, acc)\n      local weights = redis.call('hmget', job_weights_key, unpack(batch))\n                      redis.call('hdel',  job_weights_key, unpack(batch))\n      local clients = redis.call('hmget', job_clients_key, unpack(batch))\n                      redis.call('hdel',  job_clients_key, unpack(batch))\n\n      -- Calculate sum of removed weights\n      for i = 1, #weights do\n        acc['total'] = acc['total'] + (tonumber(weights[i]) or 0)\n      end\n\n      -- Calculate sum of removed weights by client\n      local client_weights = {}\n      for i = 1, #clients do\n        local removed = tonumber(weights[i]) or 0\n        if removed > 0 then\n          acc['client_weights'][clients[i]] = (acc['client_weights'][clients[i]] or 0) + removed\n        end\n      end\n    end\n\n    local acc = {\n      ['total'] = 0,\n      ['client_weights'] = {}\n    }\n    local batch_size = 1000\n\n    -- Compute changes to Zsets and apply changes to Hashes\n    for i = 1, #expired, batch_size do\n      local batch = {}\n      for j = i, math.min(i + batch_size - 1, #expired) do\n        table.insert(batch, expired[j])\n      end\n\n      flush_batch(batch, acc)\n    end\n\n    -- Apply changes to Zsets\n    if acc['total'] > 0 then\n      redis.call('hincrby', settings_key, 'done', acc['total'])\n      running = tonumber(redis.call('hincrby', settings_key, 'running', -acc['total']))\n    end\n\n    for client, weight in pairs(acc['client_weights']) do\n      redis.call('zincrby', client_running_key, -weight, client)\n    end\n  end\n\n  --\n  -- Process 'reservoir' changes\n  --\n  local reservoirRefreshActive = reservoirRefreshInterval ~= nil and reservoirRefreshAmount ~= nil\n  if reservoirRefreshActive and now >= lastReservoirRefresh + reservoirRefreshInterval then\n    reservoir = reservoirRefreshAmount\n    redis.call('hmset', settings_key,\n      'reservoir', reservoir,\n      'lastReservoirRefresh', now\n    )\n  end\n\n  local reservoirIncreaseActive = reservoirIncreaseInterval ~= nil and reservoirIncreaseAmount ~= nil\n  if reservoirIncreaseActive and now >= lastReservoirIncrease + reservoirIncreaseInterval then\n    local num_intervals = math.floor((now - lastReservoirIncrease) / reservoirIncreaseInterval)\n    local incr = reservoirIncreaseAmount * num_intervals\n    if reservoirIncreaseMaximum ~= nil then\n      incr = math.min(incr, reservoirIncreaseMaximum - (reservoir or 0))\n    end\n    if incr > 0 then\n      reservoir = (reservoir or 0) + incr\n    end\n    redis.call('hmset', settings_key,\n      'reservoir', reservoir,\n      'lastReservoirIncrease', lastReservoirIncrease + (num_intervals * reservoirIncreaseInterval)\n    )\n  end\n\n  --\n  -- Clear unresponsive clients\n  --\n  local unresponsive = redis.call('zrangebyscore', client_last_seen_key, '-inf', (now - clientTimeout))\n  local unresponsive_lookup = {}\n  local terminated_clients = {}\n  for i = 1, #unresponsive do\n    unresponsive_lookup[unresponsive[i]] = true\n    if tonumber(redis.call('zscore', client_running_key, unresponsive[i])) == 0 then\n      table.insert(terminated_clients, unresponsive[i])\n    end\n  end\n  if #terminated_clients > 0 then\n    redis.call('zrem', client_running_key,         unpack(terminated_clients))\n    redis.call('hdel', client_num_queued_key,      unpack(terminated_clients))\n    redis.call('zrem', client_last_registered_key, unpack(terminated_clients))\n    redis.call('zrem', client_last_seen_key,       unpack(terminated_clients))\n  end\n\n  --\n  -- Broadcast capacity changes\n  --\n  local final_capacity = compute_capacity(maxConcurrent, running, reservoir)\n\n  if always_publish or (initial_capacity ~= nil and final_capacity == nil) then\n    -- always_publish or was not unlimited, now unlimited\n    redis.call('publish', 'b_'..id, 'capacity:'..(final_capacity or ''))\n\n  elseif initial_capacity ~= nil and final_capacity ~= nil and final_capacity > initial_capacity then\n    -- capacity was increased\n    -- send the capacity message to the limiter having the lowest number of running jobs\n    -- the tiebreaker is the limiter having not registered a job in the longest time\n\n    local lowest_concurrency_value = nil\n    local lowest_concurrency_clients = {}\n    local lowest_concurrency_last_registered = {}\n    local client_concurrencies = redis.call('zrange', client_running_key, 0, -1, 'withscores')\n\n    for i = 1, #client_concurrencies, 2 do\n      local client = client_concurrencies[i]\n      local concurrency = tonumber(client_concurrencies[i+1])\n\n      if (\n        lowest_concurrency_value == nil or lowest_concurrency_value == concurrency\n      ) and (\n        not unresponsive_lookup[client]\n      ) and (\n        tonumber(redis.call('hget', client_num_queued_key, client)) > 0\n      ) then\n        lowest_concurrency_value = concurrency\n        table.insert(lowest_concurrency_clients, client)\n        local last_registered = tonumber(redis.call('zscore', client_last_registered_key, client))\n        table.insert(lowest_concurrency_last_registered, last_registered)\n      end\n    end\n\n    if #lowest_concurrency_clients > 0 then\n      local position = 1\n      local earliest = lowest_concurrency_last_registered[1]\n\n      for i,v in ipairs(lowest_concurrency_last_registered) do\n        if v < earliest then\n          position = i\n          earliest = v\n        end\n      end\n\n      local next_client = lowest_concurrency_clients[position]\n      redis.call('publish', 'b_'..id,\n        'capacity-priority:'..(final_capacity or '')..\n        ':'..next_client..\n        ':'..capacityPriorityCounter\n      )\n      redis.call('hincrby', settings_key, 'capacityPriorityCounter', '1')\n    else\n      redis.call('publish', 'b_'..id, 'capacity:'..(final_capacity or ''))\n    end\n  end\n\n  return {\n    ['capacity'] = final_capacity,\n    ['running'] = running,\n    ['reservoir'] = reservoir\n  }\nend\n",
+      "queued.lua": "local clientTimeout = tonumber(redis.call('hget', settings_key, 'clientTimeout'))\nlocal valid_clients = redis.call('zrangebyscore', client_last_seen_key, (now - clientTimeout), 'inf')\nlocal client_queued = redis.call('hmget', client_num_queued_key, unpack(valid_clients))\n\nlocal sum = 0\nfor i = 1, #client_queued do\n  sum = sum + tonumber(client_queued[i])\nend\n\nreturn sum\n",
+      "refresh_expiration.lua": "local refresh_expiration = function (now, nextRequest, groupTimeout)\n\n  if groupTimeout ~= nil then\n    local ttl = (nextRequest + groupTimeout) - now\n\n    for i = 1, #KEYS do\n      redis.call('pexpire', KEYS[i], ttl)\n    end\n  end\n\nend\n",
+      "refs.lua": "local settings_key = KEYS[1]\nlocal job_weights_key = KEYS[2]\nlocal job_expirations_key = KEYS[3]\nlocal job_clients_key = KEYS[4]\nlocal client_running_key = KEYS[5]\nlocal client_num_queued_key = KEYS[6]\nlocal client_last_registered_key = KEYS[7]\nlocal client_last_seen_key = KEYS[8]\n\nlocal now = tonumber(ARGV[1])\nlocal client = ARGV[2]\n\nlocal num_static_argv = 2\n",
+      "register.lua": "local index = ARGV[num_static_argv + 1]\nlocal weight = tonumber(ARGV[num_static_argv + 2])\nlocal expiration = tonumber(ARGV[num_static_argv + 3])\n\nlocal state = process_tick(now, false)\nlocal capacity = state['capacity']\nlocal reservoir = state['reservoir']\n\nlocal settings = redis.call('hmget', settings_key,\n  'nextRequest',\n  'minTime',\n  'groupTimeout'\n)\nlocal nextRequest = tonumber(settings[1])\nlocal minTime = tonumber(settings[2])\nlocal groupTimeout = tonumber(settings[3])\n\nif conditions_check(capacity, weight) then\n\n  redis.call('hincrby', settings_key, 'running', weight)\n  redis.call('hset', job_weights_key, index, weight)\n  if expiration ~= nil then\n    redis.call('zadd', job_expirations_key, now + expiration, index)\n  end\n  redis.call('hset', job_clients_key, index, client)\n  redis.call('zincrby', client_running_key, weight, client)\n  redis.call('hincrby', client_num_queued_key, client, -1)\n  redis.call('zadd', client_last_registered_key, now, client)\n\n  local wait = math.max(nextRequest - now, 0)\n  local newNextRequest = now + wait + minTime\n\n  if reservoir == nil then\n    redis.call('hset', settings_key,\n      'nextRequest', newNextRequest\n    )\n  else\n    reservoir = reservoir - weight\n    redis.call('hmset', settings_key,\n      'reservoir', reservoir,\n      'nextRequest', newNextRequest\n    )\n  end\n\n  refresh_expiration(now, newNextRequest, groupTimeout)\n\n  return {true, wait, reservoir}\n\nelse\n  return {false}\nend\n",
+      "register_client.lua": "local queued = tonumber(ARGV[num_static_argv + 1])\n\n-- Could have been re-registered concurrently\nif not redis.call('zscore', client_last_seen_key, client) then\n  redis.call('zadd', client_running_key, 0, client)\n  redis.call('hset', client_num_queued_key, client, queued)\n  redis.call('zadd', client_last_registered_key, 0, client)\nend\n\nredis.call('zadd', client_last_seen_key, now, client)\n\nreturn {}\n",
+      "running.lua": "return process_tick(now, false)['running']\n",
+      "submit.lua": "local queueLength = tonumber(ARGV[num_static_argv + 1])\nlocal weight = tonumber(ARGV[num_static_argv + 2])\n\nlocal capacity = process_tick(now, false)['capacity']\n\nlocal settings = redis.call('hmget', settings_key,\n  'id',\n  'maxConcurrent',\n  'highWater',\n  'nextRequest',\n  'strategy',\n  'unblockTime',\n  'penalty',\n  'minTime',\n  'groupTimeout'\n)\nlocal id = settings[1]\nlocal maxConcurrent = tonumber(settings[2])\nlocal highWater = tonumber(settings[3])\nlocal nextRequest = tonumber(settings[4])\nlocal strategy = tonumber(settings[5])\nlocal unblockTime = tonumber(settings[6])\nlocal penalty = tonumber(settings[7])\nlocal minTime = tonumber(settings[8])\nlocal groupTimeout = tonumber(settings[9])\n\nif maxConcurrent ~= nil and weight > maxConcurrent then\n  return redis.error_reply('OVERWEIGHT:'..weight..':'..maxConcurrent)\nend\n\nlocal reachedHWM = (highWater ~= nil and queueLength == highWater\n  and not (\n    conditions_check(capacity, weight)\n    and nextRequest - now <= 0\n  )\n)\n\nlocal blocked = strategy == 3 and (reachedHWM or unblockTime >= now)\n\nif blocked then\n  local computedPenalty = penalty\n  if computedPenalty == nil then\n    if minTime == 0 then\n      computedPenalty = 5000\n    else\n      computedPenalty = 15 * minTime\n    end\n  end\n\n  local newNextRequest = now + computedPenalty + minTime\n\n  redis.call('hmset', settings_key,\n    'unblockTime', now + computedPenalty,\n    'nextRequest', newNextRequest\n  )\n\n  local clients_queued_reset = redis.call('hkeys', client_num_queued_key)\n  local queued_reset = {}\n  for i = 1, #clients_queued_reset do\n    table.insert(queued_reset, clients_queued_reset[i])\n    table.insert(queued_reset, 0)\n  end\n  redis.call('hmset', client_num_queued_key, unpack(queued_reset))\n\n  redis.call('publish', 'b_'..id, 'blocked:')\n\n  refresh_expiration(now, newNextRequest, groupTimeout)\nend\n\nif not blocked and not reachedHWM then\n  redis.call('hincrby', client_num_queued_key, client, 1)\nend\n\nreturn {reachedHWM, blocked, strategy}\n",
+      "update_settings.lua": "local args = {'hmset', settings_key}\n\nfor i = num_static_argv + 1, #ARGV do\n  table.insert(args, ARGV[i])\nend\n\nredis.call(unpack(args))\n\nprocess_tick(now, true)\n\nlocal groupTimeout = tonumber(redis.call('hget', settings_key, 'groupTimeout'))\nrefresh_expiration(0, 0, groupTimeout)\n\nreturn {}\n",
+      "validate_client.lua": "if not redis.call('zscore', client_last_seen_key, client) then\n  return redis.error_reply('UNKNOWN_CLIENT')\nend\n\nredis.call('zadd', client_last_seen_key, now, client)\n",
+      "validate_keys.lua": "if not (redis.call('exists', settings_key) == 1) then\n  return redis.error_reply('SETTINGS_KEY_NOT_FOUND')\nend\n"
+    };
+  }
+});
+var require_Scripts = __commonJS({
+  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/Scripts.js"(exports2) {
+    "use strict";
+    var headers;
+    var lua;
+    var templates;
+    lua = require_lua();
+    headers = {
+      refs: lua["refs.lua"],
+      validate_keys: lua["validate_keys.lua"],
+      validate_client: lua["validate_client.lua"],
+      refresh_expiration: lua["refresh_expiration.lua"],
+      process_tick: lua["process_tick.lua"],
+      conditions_check: lua["conditions_check.lua"],
+      get_time: lua["get_time.lua"]
+    };
+    exports2.allKeys = function(id) {
+      return [
+        /*
+        HASH
+        */
+        `b_${id}_settings`,
+        /*
+        HASH
+        job index -> weight
+        */
+        `b_${id}_job_weights`,
+        /*
+        ZSET
+        job index -> expiration
+        */
+        `b_${id}_job_expirations`,
+        /*
+        HASH
+        job index -> client
+        */
+        `b_${id}_job_clients`,
+        /*
+        ZSET
+        client -> sum running
+        */
+        `b_${id}_client_running`,
+        /*
+        HASH
+        client -> num queued
+        */
+        `b_${id}_client_num_queued`,
+        /*
+        ZSET
+        client -> last job registered
+        */
+        `b_${id}_client_last_registered`,
+        /*
+        ZSET
+        client -> last seen
+        */
+        `b_${id}_client_last_seen`
+      ];
+    };
+    templates = {
+      init: {
+        keys: exports2.allKeys,
+        headers: ["process_tick"],
+        refresh_expiration: true,
+        code: lua["init.lua"]
+      },
+      group_check: {
+        keys: exports2.allKeys,
+        headers: [],
+        refresh_expiration: false,
+        code: lua["group_check.lua"]
+      },
+      register_client: {
+        keys: exports2.allKeys,
+        headers: ["validate_keys"],
+        refresh_expiration: false,
+        code: lua["register_client.lua"]
+      },
+      blacklist_client: {
+        keys: exports2.allKeys,
+        headers: ["validate_keys", "validate_client"],
+        refresh_expiration: false,
+        code: lua["blacklist_client.lua"]
+      },
+      heartbeat: {
+        keys: exports2.allKeys,
+        headers: ["validate_keys", "validate_client", "process_tick"],
+        refresh_expiration: false,
+        code: lua["heartbeat.lua"]
+      },
+      update_settings: {
+        keys: exports2.allKeys,
+        headers: ["validate_keys", "validate_client", "process_tick"],
+        refresh_expiration: true,
+        code: lua["update_settings.lua"]
+      },
+      running: {
+        keys: exports2.allKeys,
+        headers: ["validate_keys", "validate_client", "process_tick"],
+        refresh_expiration: false,
+        code: lua["running.lua"]
+      },
+      queued: {
+        keys: exports2.allKeys,
+        headers: ["validate_keys", "validate_client"],
+        refresh_expiration: false,
+        code: lua["queued.lua"]
+      },
+      done: {
+        keys: exports2.allKeys,
+        headers: ["validate_keys", "validate_client", "process_tick"],
+        refresh_expiration: false,
+        code: lua["done.lua"]
+      },
+      check: {
+        keys: exports2.allKeys,
+        headers: ["validate_keys", "validate_client", "process_tick", "conditions_check"],
+        refresh_expiration: false,
+        code: lua["check.lua"]
+      },
+      submit: {
+        keys: exports2.allKeys,
+        headers: ["validate_keys", "validate_client", "process_tick", "conditions_check"],
+        refresh_expiration: true,
+        code: lua["submit.lua"]
+      },
+      register: {
+        keys: exports2.allKeys,
+        headers: ["validate_keys", "validate_client", "process_tick", "conditions_check"],
+        refresh_expiration: true,
+        code: lua["register.lua"]
+      },
+      free: {
+        keys: exports2.allKeys,
+        headers: ["validate_keys", "validate_client", "process_tick"],
+        refresh_expiration: true,
+        code: lua["free.lua"]
+      },
+      current_reservoir: {
+        keys: exports2.allKeys,
+        headers: ["validate_keys", "validate_client", "process_tick"],
+        refresh_expiration: false,
+        code: lua["current_reservoir.lua"]
+      },
+      increment_reservoir: {
+        keys: exports2.allKeys,
+        headers: ["validate_keys", "validate_client", "process_tick"],
+        refresh_expiration: true,
+        code: lua["increment_reservoir.lua"]
+      }
+    };
+    exports2.names = Object.keys(templates);
+    exports2.keys = function(name, id) {
+      return templates[name].keys(id);
+    };
+    exports2.payload = function(name) {
+      var template;
+      template = templates[name];
+      return Array.prototype.concat(headers.refs, template.headers.map(function(h2) {
+        return headers[h2];
+      }), template.refresh_expiration ? headers.refresh_expiration : "", template.code).join("\n");
+    };
+  }
+});
+var require_RedisConnection = __commonJS({
+  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/RedisConnection.js"(exports, module) {
+    "use strict";
+    function asyncGeneratorStep(gen, resolve9, reject, _next, _throw, key, arg) {
+      try {
+        var info = gen[key](arg);
+        var value = info.value;
+      } catch (error2) {
+        reject(error2);
+        return;
+      }
+      if (info.done) {
+        resolve9(value);
+      } else {
+        Promise.resolve(value).then(_next, _throw);
+      }
+    }
+    function _asyncToGenerator(fn) {
+      return function() {
+        var self2 = this, args = arguments;
+        return new Promise(function(resolve9, reject) {
+          var gen = fn.apply(self2, args);
+          function _next(value) {
+            asyncGeneratorStep(gen, resolve9, reject, _next, _throw, "next", value);
+          }
+          function _throw(err) {
+            asyncGeneratorStep(gen, resolve9, reject, _next, _throw, "throw", err);
+          }
+          _next(void 0);
+        });
+      };
+    }
+    var Events;
+    var RedisConnection;
+    var Scripts;
+    var parser;
+    parser = require_parser2();
+    Events = require_Events();
+    Scripts = require_Scripts();
+    RedisConnection = function() {
+      class RedisConnection {
+        constructor(options = {}) {
+          parser.load(options, this.defaults, this);
+          if (this.Redis == null) {
+            this.Redis = eval("require")("redis");
+          }
+          if (this.Events == null) {
+            this.Events = new Events(this);
+          }
+          this.terminated = false;
+          if (this.client == null) {
+            this.client = this.Redis.createClient(this.clientOptions);
+          }
+          this.subscriber = this.client.duplicate();
+          this.limiters = {};
+          this.shas = {};
+          this.ready = this.Promise.all([this._setup(this.client, false), this._setup(this.subscriber, true)]).then(() => {
+            return this._loadScripts();
+          }).then(() => {
+            return {
+              client: this.client,
+              subscriber: this.subscriber
+            };
+          });
+        }
+        _setup(client, sub) {
+          client.setMaxListeners(0);
+          return new this.Promise((resolve9, reject) => {
+            client.on("error", (e2) => {
+              return this.Events.trigger("error", e2);
+            });
+            if (sub) {
+              client.on("message", (channel, message) => {
+                var ref;
+                return (ref = this.limiters[channel]) != null ? ref._store.onMessage(channel, message) : void 0;
+              });
+            }
+            if (client.ready) {
+              return resolve9();
+            } else {
+              return client.once("ready", resolve9);
+            }
+          });
+        }
+        _loadScript(name) {
+          return new this.Promise((resolve9, reject) => {
+            var payload;
+            payload = Scripts.payload(name);
+            return this.client.multi([["script", "load", payload]]).exec((err, replies) => {
+              if (err != null) {
+                return reject(err);
+              }
+              this.shas[name] = replies[0];
+              return resolve9(replies[0]);
+            });
+          });
+        }
+        _loadScripts() {
+          return this.Promise.all(Scripts.names.map((k) => {
+            return this._loadScript(k);
+          }));
+        }
+        __runCommand__(cmd) {
+          var _this = this;
+          return _asyncToGenerator(function* () {
+            yield _this.ready;
+            return new _this.Promise((resolve9, reject) => {
+              return _this.client.multi([cmd]).exec_atomic(function(err, replies) {
+                if (err != null) {
+                  return reject(err);
+                } else {
+                  return resolve9(replies[0]);
+                }
+              });
+            });
+          })();
+        }
+        __addLimiter__(instance) {
+          return this.Promise.all([instance.channel(), instance.channel_client()].map((channel) => {
+            return new this.Promise((resolve9, reject) => {
+              var handler;
+              handler = (chan) => {
+                if (chan === channel) {
+                  this.subscriber.removeListener("subscribe", handler);
+                  this.limiters[channel] = instance;
+                  return resolve9();
+                }
+              };
+              this.subscriber.on("subscribe", handler);
+              return this.subscriber.subscribe(channel);
+            });
+          }));
+        }
+        __removeLimiter__(instance) {
+          var _this2 = this;
+          return this.Promise.all([instance.channel(), instance.channel_client()].map(
+            /* @__PURE__ */ function() {
+              var _ref = _asyncToGenerator(function* (channel) {
+                if (!_this2.terminated) {
+                  yield new _this2.Promise((resolve9, reject) => {
+                    return _this2.subscriber.unsubscribe(channel, function(err, chan) {
+                      if (err != null) {
+                        return reject(err);
+                      }
+                      if (chan === channel) {
+                        return resolve9();
+                      }
+                    });
+                  });
+                }
+                return delete _this2.limiters[channel];
+              });
+              return function(_x) {
+                return _ref.apply(this, arguments);
+              };
+            }()
+          ));
+        }
+        __scriptArgs__(name, id, args, cb) {
+          var keys;
+          keys = Scripts.keys(name, id);
+          return [this.shas[name], keys.length].concat(keys, args, cb);
+        }
+        __scriptFn__(name) {
+          return this.client.evalsha.bind(this.client);
+        }
+        disconnect(flush = true) {
+          var i2, k, len, ref;
+          ref = Object.keys(this.limiters);
+          for (i2 = 0, len = ref.length; i2 < len; i2++) {
+            k = ref[i2];
+            clearInterval(this.limiters[k]._store.heartbeat);
+          }
+          this.limiters = {};
+          this.terminated = true;
+          this.client.end(flush);
+          this.subscriber.end(flush);
+          return this.Promise.resolve();
+        }
+      }
+      ;
+      RedisConnection.prototype.datastore = "redis";
+      RedisConnection.prototype.defaults = {
+        Redis: null,
+        clientOptions: {},
+        client: null,
+        Promise,
+        Events: null
+      };
+      return RedisConnection;
+    }.call(void 0);
+    module.exports = RedisConnection;
+  }
+});
+var require_IORedisConnection = __commonJS({
+  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/IORedisConnection.js"(exports, module) {
+    "use strict";
+    function _slicedToArray(arr, i2) {
+      return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i2) || _nonIterableRest();
+    }
+    function _nonIterableRest() {
+      throw new TypeError("Invalid attempt to destructure non-iterable instance");
+    }
+    function _iterableToArrayLimit(arr, i2) {
+      var _arr = [];
+      var _n = true;
+      var _d = false;
+      var _e = void 0;
+      try {
+        for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
+          _arr.push(_s.value);
+          if (i2 && _arr.length === i2) break;
+        }
+      } catch (err) {
+        _d = true;
+        _e = err;
+      } finally {
+        try {
+          if (!_n && _i["return"] != null) _i["return"]();
+        } finally {
+          if (_d) throw _e;
+        }
+      }
+      return _arr;
+    }
+    function _arrayWithHoles(arr) {
+      if (Array.isArray(arr)) return arr;
+    }
+    function asyncGeneratorStep(gen, resolve9, reject, _next, _throw, key, arg) {
+      try {
+        var info = gen[key](arg);
+        var value = info.value;
+      } catch (error2) {
+        reject(error2);
+        return;
+      }
+      if (info.done) {
+        resolve9(value);
+      } else {
+        Promise.resolve(value).then(_next, _throw);
+      }
+    }
+    function _asyncToGenerator(fn) {
+      return function() {
+        var self2 = this, args = arguments;
+        return new Promise(function(resolve9, reject) {
+          var gen = fn.apply(self2, args);
+          function _next(value) {
+            asyncGeneratorStep(gen, resolve9, reject, _next, _throw, "next", value);
+          }
+          function _throw(err) {
+            asyncGeneratorStep(gen, resolve9, reject, _next, _throw, "throw", err);
+          }
+          _next(void 0);
+        });
+      };
+    }
+    var Events;
+    var IORedisConnection;
+    var Scripts;
+    var parser;
+    parser = require_parser2();
+    Events = require_Events();
+    Scripts = require_Scripts();
+    IORedisConnection = function() {
+      class IORedisConnection {
+        constructor(options = {}) {
+          parser.load(options, this.defaults, this);
+          if (this.Redis == null) {
+            this.Redis = eval("require")("ioredis");
+          }
+          if (this.Events == null) {
+            this.Events = new Events(this);
+          }
+          this.terminated = false;
+          if (this.clusterNodes != null) {
+            this.client = new this.Redis.Cluster(this.clusterNodes, this.clientOptions);
+            this.subscriber = new this.Redis.Cluster(this.clusterNodes, this.clientOptions);
+          } else if (this.client != null && this.client.duplicate == null) {
+            this.subscriber = new this.Redis.Cluster(this.client.startupNodes, this.client.options);
+          } else {
+            if (this.client == null) {
+              this.client = new this.Redis(this.clientOptions);
+            }
+            this.subscriber = this.client.duplicate();
+          }
+          this.limiters = {};
+          this.ready = this.Promise.all([this._setup(this.client, false), this._setup(this.subscriber, true)]).then(() => {
+            this._loadScripts();
+            return {
+              client: this.client,
+              subscriber: this.subscriber
+            };
+          });
+        }
+        _setup(client, sub) {
+          client.setMaxListeners(0);
+          return new this.Promise((resolve9, reject) => {
+            client.on("error", (e2) => {
+              return this.Events.trigger("error", e2);
+            });
+            if (sub) {
+              client.on("message", (channel, message) => {
+                var ref;
+                return (ref = this.limiters[channel]) != null ? ref._store.onMessage(channel, message) : void 0;
+              });
+            }
+            if (client.status === "ready") {
+              return resolve9();
+            } else {
+              return client.once("ready", resolve9);
+            }
+          });
+        }
+        _loadScripts() {
+          return Scripts.names.forEach((name) => {
+            return this.client.defineCommand(name, {
+              lua: Scripts.payload(name)
+            });
+          });
+        }
+        __runCommand__(cmd) {
+          var _this = this;
+          return _asyncToGenerator(function* () {
+            var _, deleted;
+            yield _this.ready;
+            var _ref = yield _this.client.pipeline([cmd]).exec();
+            var _ref2 = _slicedToArray(_ref, 1);
+            var _ref2$ = _slicedToArray(_ref2[0], 2);
+            _ = _ref2$[0];
+            deleted = _ref2$[1];
+            return deleted;
+          })();
+        }
+        __addLimiter__(instance) {
+          return this.Promise.all([instance.channel(), instance.channel_client()].map((channel) => {
+            return new this.Promise((resolve9, reject) => {
+              return this.subscriber.subscribe(channel, () => {
+                this.limiters[channel] = instance;
+                return resolve9();
+              });
+            });
+          }));
+        }
+        __removeLimiter__(instance) {
+          var _this2 = this;
+          return [instance.channel(), instance.channel_client()].forEach(
+            /* @__PURE__ */ function() {
+              var _ref3 = _asyncToGenerator(function* (channel) {
+                if (!_this2.terminated) {
+                  yield _this2.subscriber.unsubscribe(channel);
+                }
+                return delete _this2.limiters[channel];
+              });
+              return function(_x) {
+                return _ref3.apply(this, arguments);
+              };
+            }()
+          );
+        }
+        __scriptArgs__(name, id, args, cb) {
+          var keys;
+          keys = Scripts.keys(name, id);
+          return [keys.length].concat(keys, args, cb);
+        }
+        __scriptFn__(name) {
+          return this.client[name].bind(this.client);
+        }
+        disconnect(flush = true) {
+          var i2, k, len, ref;
+          ref = Object.keys(this.limiters);
+          for (i2 = 0, len = ref.length; i2 < len; i2++) {
+            k = ref[i2];
+            clearInterval(this.limiters[k]._store.heartbeat);
+          }
+          this.limiters = {};
+          this.terminated = true;
+          if (flush) {
+            return this.Promise.all([this.client.quit(), this.subscriber.quit()]);
+          } else {
+            this.client.disconnect();
+            this.subscriber.disconnect();
+            return this.Promise.resolve();
+          }
+        }
+      }
+      ;
+      IORedisConnection.prototype.datastore = "ioredis";
+      IORedisConnection.prototype.defaults = {
+        Redis: null,
+        clientOptions: {},
+        clusterNodes: null,
+        client: null,
+        Promise,
+        Events: null
+      };
+      return IORedisConnection;
+    }.call(void 0);
+    module.exports = IORedisConnection;
+  }
+});
+var require_RedisDatastore = __commonJS({
+  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/RedisDatastore.js"(exports2, module15) {
+    "use strict";
+    function _slicedToArray2(arr, i2) {
+      return _arrayWithHoles2(arr) || _iterableToArrayLimit2(arr, i2) || _nonIterableRest2();
+    }
+    function _nonIterableRest2() {
+      throw new TypeError("Invalid attempt to destructure non-iterable instance");
+    }
+    function _iterableToArrayLimit2(arr, i2) {
+      var _arr = [];
+      var _n = true;
+      var _d = false;
+      var _e = void 0;
+      try {
+        for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
+          _arr.push(_s.value);
+          if (i2 && _arr.length === i2) break;
+        }
+      } catch (err) {
+        _d = true;
+        _e = err;
+      } finally {
+        try {
+          if (!_n && _i["return"] != null) _i["return"]();
+        } finally {
+          if (_d) throw _e;
+        }
+      }
+      return _arr;
+    }
+    function _arrayWithHoles2(arr) {
+      if (Array.isArray(arr)) return arr;
+    }
+    function asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, key, arg) {
+      try {
+        var info = gen[key](arg);
+        var value = info.value;
+      } catch (error2) {
+        reject(error2);
+        return;
+      }
+      if (info.done) {
+        resolve9(value);
+      } else {
+        Promise.resolve(value).then(_next, _throw);
+      }
+    }
+    function _asyncToGenerator2(fn) {
+      return function() {
+        var self2 = this, args = arguments;
+        return new Promise(function(resolve9, reject) {
+          var gen = fn.apply(self2, args);
+          function _next(value) {
+            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "next", value);
+          }
+          function _throw(err) {
+            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "throw", err);
+          }
+          _next(void 0);
+        });
+      };
+    }
+    var BottleneckError;
+    var IORedisConnection2;
+    var RedisConnection2;
+    var RedisDatastore;
+    var parser3;
+    parser3 = require_parser2();
+    BottleneckError = require_BottleneckError();
+    RedisConnection2 = require_RedisConnection();
+    IORedisConnection2 = require_IORedisConnection();
+    RedisDatastore = class RedisDatastore {
+      constructor(instance, storeOptions, storeInstanceOptions) {
+        this.instance = instance;
+        this.storeOptions = storeOptions;
+        this.originalId = this.instance.id;
+        this.clientId = this.instance._randomIndex();
+        parser3.load(storeInstanceOptions, storeInstanceOptions, this);
+        this.clients = {};
+        this.capacityPriorityCounters = {};
+        this.sharedConnection = this.connection != null;
+        if (this.connection == null) {
+          this.connection = this.instance.datastore === "redis" ? new RedisConnection2({
+            Redis: this.Redis,
+            clientOptions: this.clientOptions,
+            Promise: this.Promise,
+            Events: this.instance.Events
+          }) : this.instance.datastore === "ioredis" ? new IORedisConnection2({
+            Redis: this.Redis,
+            clientOptions: this.clientOptions,
+            clusterNodes: this.clusterNodes,
+            Promise: this.Promise,
+            Events: this.instance.Events
+          }) : void 0;
+        }
+        this.instance.connection = this.connection;
+        this.instance.datastore = this.connection.datastore;
+        this.ready = this.connection.ready.then((clients) => {
+          this.clients = clients;
+          return this.runScript("init", this.prepareInitSettings(this.clearDatastore));
+        }).then(() => {
+          return this.connection.__addLimiter__(this.instance);
+        }).then(() => {
+          return this.runScript("register_client", [this.instance.queued()]);
+        }).then(() => {
+          var base2;
+          if (typeof (base2 = this.heartbeat = setInterval(() => {
+            return this.runScript("heartbeat", []).catch((e2) => {
+              return this.instance.Events.trigger("error", e2);
+            });
+          }, this.heartbeatInterval)).unref === "function") {
+            base2.unref();
+          }
+          return this.clients;
+        });
+      }
+      __publish__(message) {
+        var _this = this;
+        return _asyncToGenerator2(function* () {
+          var client;
+          var _ref = yield _this.ready;
+          client = _ref.client;
+          return client.publish(_this.instance.channel(), `message:${message.toString()}`);
+        })();
+      }
+      onMessage(channel, message) {
+        var _this2 = this;
+        return _asyncToGenerator2(function* () {
+          var capacity, counter, data, drained, e2, newCapacity, pos, priorityClient, rawCapacity, type;
+          try {
+            pos = message.indexOf(":");
+            var _ref2 = [message.slice(0, pos), message.slice(pos + 1)];
+            type = _ref2[0];
+            data = _ref2[1];
+            if (type === "capacity") {
+              return yield _this2.instance._drainAll(data.length > 0 ? ~~data : void 0);
+            } else if (type === "capacity-priority") {
+              var _data$split = data.split(":");
+              var _data$split2 = _slicedToArray2(_data$split, 3);
+              rawCapacity = _data$split2[0];
+              priorityClient = _data$split2[1];
+              counter = _data$split2[2];
+              capacity = rawCapacity.length > 0 ? ~~rawCapacity : void 0;
+              if (priorityClient === _this2.clientId) {
+                drained = yield _this2.instance._drainAll(capacity);
+                newCapacity = capacity != null ? capacity - (drained || 0) : "";
+                return yield _this2.clients.client.publish(_this2.instance.channel(), `capacity-priority:${newCapacity}::${counter}`);
+              } else if (priorityClient === "") {
+                clearTimeout(_this2.capacityPriorityCounters[counter]);
+                delete _this2.capacityPriorityCounters[counter];
+                return _this2.instance._drainAll(capacity);
+              } else {
+                return _this2.capacityPriorityCounters[counter] = setTimeout(
+                  /* @__PURE__ */ _asyncToGenerator2(function* () {
+                    var e3;
+                    try {
+                      delete _this2.capacityPriorityCounters[counter];
+                      yield _this2.runScript("blacklist_client", [priorityClient]);
+                      return yield _this2.instance._drainAll(capacity);
+                    } catch (error2) {
+                      e3 = error2;
+                      return _this2.instance.Events.trigger("error", e3);
+                    }
+                  }),
+                  1e3
+                );
+              }
+            } else if (type === "message") {
+              return _this2.instance.Events.trigger("message", data);
+            } else if (type === "blocked") {
+              return yield _this2.instance._dropAllQueued();
+            }
+          } catch (error2) {
+            e2 = error2;
+            return _this2.instance.Events.trigger("error", e2);
+          }
+        })();
+      }
+      __disconnect__(flush) {
+        clearInterval(this.heartbeat);
+        if (this.sharedConnection) {
+          return this.connection.__removeLimiter__(this.instance);
+        } else {
+          return this.connection.disconnect(flush);
+        }
+      }
+      runScript(name, args) {
+        var _this3 = this;
+        return _asyncToGenerator2(function* () {
+          if (!(name === "init" || name === "register_client")) {
+            yield _this3.ready;
+          }
+          return new _this3.Promise((resolve9, reject) => {
+            var all_args, arr;
+            all_args = [Date.now(), _this3.clientId].concat(args);
+            _this3.instance.Events.trigger("debug", `Calling Redis script: ${name}.lua`, all_args);
+            arr = _this3.connection.__scriptArgs__(name, _this3.originalId, all_args, function(err, replies) {
+              if (err != null) {
+                return reject(err);
+              }
+              return resolve9(replies);
+            });
+            return _this3.connection.__scriptFn__(name)(...arr);
+          }).catch((e2) => {
+            if (e2.message === "SETTINGS_KEY_NOT_FOUND") {
+              if (name === "heartbeat") {
+                return _this3.Promise.resolve();
+              } else {
+                return _this3.runScript("init", _this3.prepareInitSettings(false)).then(() => {
+                  return _this3.runScript(name, args);
+                });
+              }
+            } else if (e2.message === "UNKNOWN_CLIENT") {
+              return _this3.runScript("register_client", [_this3.instance.queued()]).then(() => {
+                return _this3.runScript(name, args);
+              });
+            } else {
+              return _this3.Promise.reject(e2);
+            }
+          });
+        })();
+      }
+      prepareArray(arr) {
+        var i2, len, results, x3;
+        results = [];
+        for (i2 = 0, len = arr.length; i2 < len; i2++) {
+          x3 = arr[i2];
+          results.push(x3 != null ? x3.toString() : "");
+        }
+        return results;
+      }
+      prepareObject(obj) {
+        var arr, k, v2;
+        arr = [];
+        for (k in obj) {
+          v2 = obj[k];
+          arr.push(k, v2 != null ? v2.toString() : "");
+        }
+        return arr;
+      }
+      prepareInitSettings(clear) {
+        var args;
+        args = this.prepareObject(Object.assign({}, this.storeOptions, {
+          id: this.originalId,
+          version: this.instance.version,
+          groupTimeout: this.timeout,
+          clientTimeout: this.clientTimeout
+        }));
+        args.unshift(clear ? 1 : 0, this.instance.version);
+        return args;
+      }
+      convertBool(b) {
+        return !!b;
+      }
+      __updateSettings__(options2) {
+        var _this4 = this;
+        return _asyncToGenerator2(function* () {
+          yield _this4.runScript("update_settings", _this4.prepareObject(options2));
+          return parser3.overwrite(options2, options2, _this4.storeOptions);
+        })();
+      }
+      __running__() {
+        return this.runScript("running", []);
+      }
+      __queued__() {
+        return this.runScript("queued", []);
+      }
+      __done__() {
+        return this.runScript("done", []);
+      }
+      __groupCheck__() {
+        var _this5 = this;
+        return _asyncToGenerator2(function* () {
+          return _this5.convertBool(yield _this5.runScript("group_check", []));
+        })();
+      }
+      __incrementReservoir__(incr) {
+        return this.runScript("increment_reservoir", [incr]);
+      }
+      __currentReservoir__() {
+        return this.runScript("current_reservoir", []);
+      }
+      __check__(weight) {
+        var _this6 = this;
+        return _asyncToGenerator2(function* () {
+          return _this6.convertBool(yield _this6.runScript("check", _this6.prepareArray([weight])));
+        })();
+      }
+      __register__(index, weight, expiration) {
+        var _this7 = this;
+        return _asyncToGenerator2(function* () {
+          var reservoir, success, wait;
+          var _ref4 = yield _this7.runScript("register", _this7.prepareArray([index, weight, expiration]));
+          var _ref5 = _slicedToArray2(_ref4, 3);
+          success = _ref5[0];
+          wait = _ref5[1];
+          reservoir = _ref5[2];
+          return {
+            success: _this7.convertBool(success),
+            wait,
+            reservoir
+          };
+        })();
+      }
+      __submit__(queueLength, weight) {
+        var _this8 = this;
+        return _asyncToGenerator2(function* () {
+          var blocked, e2, maxConcurrent, overweight, reachedHWM, strategy;
+          try {
+            var _ref6 = yield _this8.runScript("submit", _this8.prepareArray([queueLength, weight]));
+            var _ref7 = _slicedToArray2(_ref6, 3);
+            reachedHWM = _ref7[0];
+            blocked = _ref7[1];
+            strategy = _ref7[2];
+            return {
+              reachedHWM: _this8.convertBool(reachedHWM),
+              blocked: _this8.convertBool(blocked),
+              strategy
+            };
+          } catch (error2) {
+            e2 = error2;
+            if (e2.message.indexOf("OVERWEIGHT") === 0) {
+              var _e$message$split = e2.message.split(":");
+              var _e$message$split2 = _slicedToArray2(_e$message$split, 3);
+              overweight = _e$message$split2[0];
+              weight = _e$message$split2[1];
+              maxConcurrent = _e$message$split2[2];
+              throw new BottleneckError(`Impossible to add a job having a weight of ${weight} to a limiter having a maxConcurrent setting of ${maxConcurrent}`);
+            } else {
+              throw e2;
+            }
+          }
+        })();
+      }
+      __free__(index, weight) {
+        var _this9 = this;
+        return _asyncToGenerator2(function* () {
+          var running;
+          running = yield _this9.runScript("free", _this9.prepareArray([index]));
+          return {
+            running
+          };
+        })();
+      }
+    };
+    module15.exports = RedisDatastore;
+  }
+});
+var require_States = __commonJS({
+  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/States.js"(exports2, module15) {
+    "use strict";
+    var BottleneckError;
+    var States;
+    BottleneckError = require_BottleneckError();
+    States = class States {
+      constructor(status1) {
+        this.status = status1;
+        this._jobs = {};
+        this.counts = this.status.map(function() {
+          return 0;
+        });
+      }
+      next(id) {
+        var current, next;
+        current = this._jobs[id];
+        next = current + 1;
+        if (current != null && next < this.status.length) {
+          this.counts[current]--;
+          this.counts[next]++;
+          return this._jobs[id]++;
+        } else if (current != null) {
+          this.counts[current]--;
+          return delete this._jobs[id];
+        }
+      }
+      start(id) {
+        var initial;
+        initial = 0;
+        this._jobs[id] = initial;
+        return this.counts[initial]++;
+      }
+      remove(id) {
+        var current;
+        current = this._jobs[id];
+        if (current != null) {
+          this.counts[current]--;
+          delete this._jobs[id];
+        }
+        return current != null;
+      }
+      jobStatus(id) {
+        var ref;
+        return (ref = this.status[this._jobs[id]]) != null ? ref : null;
+      }
+      statusJobs(status) {
+        var k, pos, ref, results, v2;
+        if (status != null) {
+          pos = this.status.indexOf(status);
+          if (pos < 0) {
+            throw new BottleneckError(`status must be one of ${this.status.join(", ")}`);
+          }
+          ref = this._jobs;
+          results = [];
+          for (k in ref) {
+            v2 = ref[k];
+            if (v2 === pos) {
+              results.push(k);
+            }
+          }
+          return results;
+        } else {
+          return Object.keys(this._jobs);
+        }
+      }
+      statusCounts() {
+        return this.counts.reduce((acc, v2, i2) => {
+          acc[this.status[i2]] = v2;
+          return acc;
+        }, {});
+      }
+    };
+    module15.exports = States;
+  }
+});
+var require_Sync = __commonJS({
+  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/Sync.js"(exports2, module15) {
+    "use strict";
+    function asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, key, arg) {
+      try {
+        var info = gen[key](arg);
+        var value = info.value;
+      } catch (error2) {
+        reject(error2);
+        return;
+      }
+      if (info.done) {
+        resolve9(value);
+      } else {
+        Promise.resolve(value).then(_next, _throw);
+      }
+    }
+    function _asyncToGenerator2(fn) {
+      return function() {
+        var self2 = this, args = arguments;
+        return new Promise(function(resolve9, reject) {
+          var gen = fn.apply(self2, args);
+          function _next(value) {
+            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "next", value);
+          }
+          function _throw(err) {
+            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "throw", err);
+          }
+          _next(void 0);
+        });
+      };
+    }
+    var DLList;
+    var Sync;
+    DLList = require_DLList();
+    Sync = class Sync {
+      constructor(name, Promise2) {
+        this.schedule = this.schedule.bind(this);
+        this.name = name;
+        this.Promise = Promise2;
+        this._running = 0;
+        this._queue = new DLList();
+      }
+      isEmpty() {
+        return this._queue.length === 0;
+      }
+      _tryToRun() {
+        var _this = this;
+        return _asyncToGenerator2(function* () {
+          var args, cb, error2, reject, resolve9, returned, task;
+          if (_this._running < 1 && _this._queue.length > 0) {
+            _this._running++;
+            var _this$_queue$shift = _this._queue.shift();
+            task = _this$_queue$shift.task;
+            args = _this$_queue$shift.args;
+            resolve9 = _this$_queue$shift.resolve;
+            reject = _this$_queue$shift.reject;
+            cb = yield _asyncToGenerator2(function* () {
+              try {
+                returned = yield task(...args);
+                return function() {
+                  return resolve9(returned);
+                };
+              } catch (error1) {
+                error2 = error1;
+                return function() {
+                  return reject(error2);
+                };
+              }
+            })();
+            _this._running--;
+            _this._tryToRun();
+            return cb();
+          }
+        })();
+      }
+      schedule(task, ...args) {
+        var promise, reject, resolve9;
+        resolve9 = reject = null;
+        promise = new this.Promise(function(_resolve, _reject) {
+          resolve9 = _resolve;
+          return reject = _reject;
+        });
+        this._queue.push({
+          task,
+          args,
+          resolve: resolve9,
+          reject
+        });
+        this._tryToRun();
+        return promise;
+      }
+    };
+    module15.exports = Sync;
+  }
+});
+var require_version = __commonJS({
+  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/version.json"(exports2, module15) {
+    module15.exports = { version: "2.19.5" };
+  }
+});
+var require_Group = __commonJS({
+  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/Group.js"(exports2, module15) {
+    "use strict";
+    function _slicedToArray2(arr, i2) {
+      return _arrayWithHoles2(arr) || _iterableToArrayLimit2(arr, i2) || _nonIterableRest2();
+    }
+    function _nonIterableRest2() {
+      throw new TypeError("Invalid attempt to destructure non-iterable instance");
+    }
+    function _iterableToArrayLimit2(arr, i2) {
+      var _arr = [];
+      var _n = true;
+      var _d = false;
+      var _e = void 0;
+      try {
+        for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
+          _arr.push(_s.value);
+          if (i2 && _arr.length === i2) break;
+        }
+      } catch (err) {
+        _d = true;
+        _e = err;
+      } finally {
+        try {
+          if (!_n && _i["return"] != null) _i["return"]();
+        } finally {
+          if (_d) throw _e;
+        }
+      }
+      return _arr;
+    }
+    function _arrayWithHoles2(arr) {
+      if (Array.isArray(arr)) return arr;
+    }
+    function asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, key, arg) {
+      try {
+        var info = gen[key](arg);
+        var value = info.value;
+      } catch (error2) {
+        reject(error2);
+        return;
+      }
+      if (info.done) {
+        resolve9(value);
+      } else {
+        Promise.resolve(value).then(_next, _throw);
+      }
+    }
+    function _asyncToGenerator2(fn) {
+      return function() {
+        var self2 = this, args = arguments;
+        return new Promise(function(resolve9, reject) {
+          var gen = fn.apply(self2, args);
+          function _next(value) {
+            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "next", value);
+          }
+          function _throw(err) {
+            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "throw", err);
+          }
+          _next(void 0);
+        });
+      };
+    }
+    var Events2;
+    var Group;
+    var IORedisConnection2;
+    var RedisConnection2;
+    var Scripts2;
+    var parser3;
+    parser3 = require_parser2();
+    Events2 = require_Events();
+    RedisConnection2 = require_RedisConnection();
+    IORedisConnection2 = require_IORedisConnection();
+    Scripts2 = require_Scripts();
+    Group = function() {
+      class Group2 {
+        constructor(limiterOptions = {}) {
+          this.deleteKey = this.deleteKey.bind(this);
+          this.limiterOptions = limiterOptions;
+          parser3.load(this.limiterOptions, this.defaults, this);
+          this.Events = new Events2(this);
+          this.instances = {};
+          this.Bottleneck = require_Bottleneck();
+          this._startAutoCleanup();
+          this.sharedConnection = this.connection != null;
+          if (this.connection == null) {
+            if (this.limiterOptions.datastore === "redis") {
+              this.connection = new RedisConnection2(Object.assign({}, this.limiterOptions, {
+                Events: this.Events
+              }));
+            } else if (this.limiterOptions.datastore === "ioredis") {
+              this.connection = new IORedisConnection2(Object.assign({}, this.limiterOptions, {
+                Events: this.Events
+              }));
+            }
+          }
+        }
+        key(key = "") {
+          var ref;
+          return (ref = this.instances[key]) != null ? ref : (() => {
+            var limiter;
+            limiter = this.instances[key] = new this.Bottleneck(Object.assign(this.limiterOptions, {
+              id: `${this.id}-${key}`,
+              timeout: this.timeout,
+              connection: this.connection
+            }));
+            this.Events.trigger("created", limiter, key);
+            return limiter;
+          })();
+        }
+        deleteKey(key = "") {
+          var _this = this;
+          return _asyncToGenerator2(function* () {
+            var deleted, instance;
+            instance = _this.instances[key];
+            if (_this.connection) {
+              deleted = yield _this.connection.__runCommand__(["del", ...Scripts2.allKeys(`${_this.id}-${key}`)]);
+            }
+            if (instance != null) {
+              delete _this.instances[key];
+              yield instance.disconnect();
+            }
+            return instance != null || deleted > 0;
+          })();
+        }
+        limiters() {
+          var k, ref, results, v2;
+          ref = this.instances;
+          results = [];
+          for (k in ref) {
+            v2 = ref[k];
+            results.push({
+              key: k,
+              limiter: v2
+            });
+          }
+          return results;
+        }
+        keys() {
+          return Object.keys(this.instances);
+        }
+        clusterKeys() {
+          var _this2 = this;
+          return _asyncToGenerator2(function* () {
+            var cursor, end, found, i2, k, keys, len, next, start;
+            if (_this2.connection == null) {
+              return _this2.Promise.resolve(_this2.keys());
+            }
+            keys = [];
+            cursor = null;
+            start = `b_${_this2.id}-`.length;
+            end = "_settings".length;
+            while (cursor !== 0) {
+              var _ref = yield _this2.connection.__runCommand__(["scan", cursor != null ? cursor : 0, "match", `b_${_this2.id}-*_settings`, "count", 1e4]);
+              var _ref2 = _slicedToArray2(_ref, 2);
+              next = _ref2[0];
+              found = _ref2[1];
+              cursor = ~~next;
+              for (i2 = 0, len = found.length; i2 < len; i2++) {
+                k = found[i2];
+                keys.push(k.slice(start, -end));
+              }
+            }
+            return keys;
+          })();
+        }
+        _startAutoCleanup() {
+          var _this3 = this;
+          var base2;
+          clearInterval(this.interval);
+          return typeof (base2 = this.interval = setInterval(
+            /* @__PURE__ */ _asyncToGenerator2(function* () {
+              var e2, k, ref, results, time3, v2;
+              time3 = Date.now();
+              ref = _this3.instances;
+              results = [];
+              for (k in ref) {
+                v2 = ref[k];
+                try {
+                  if (yield v2._store.__groupCheck__(time3)) {
+                    results.push(_this3.deleteKey(k));
+                  } else {
+                    results.push(void 0);
+                  }
+                } catch (error2) {
+                  e2 = error2;
+                  results.push(v2.Events.trigger("error", e2));
+                }
+              }
+              return results;
+            }),
+            this.timeout / 2
+          )).unref === "function" ? base2.unref() : void 0;
+        }
+        updateSettings(options2 = {}) {
+          parser3.overwrite(options2, this.defaults, this);
+          parser3.overwrite(options2, options2, this.limiterOptions);
+          if (options2.timeout != null) {
+            return this._startAutoCleanup();
+          }
+        }
+        disconnect(flush = true) {
+          var ref;
+          if (!this.sharedConnection) {
+            return (ref = this.connection) != null ? ref.disconnect(flush) : void 0;
+          }
+        }
+      }
+      ;
+      Group2.prototype.defaults = {
+        timeout: 1e3 * 60 * 5,
+        connection: null,
+        Promise,
+        id: "group-key"
+      };
+      return Group2;
+    }.call(void 0);
+    module15.exports = Group;
+  }
+});
+var require_Batcher = __commonJS({
+  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/Batcher.js"(exports2, module15) {
+    "use strict";
+    var Batcher;
+    var Events2;
+    var parser3;
+    parser3 = require_parser2();
+    Events2 = require_Events();
+    Batcher = function() {
+      class Batcher2 {
+        constructor(options2 = {}) {
+          this.options = options2;
+          parser3.load(this.options, this.defaults, this);
+          this.Events = new Events2(this);
+          this._arr = [];
+          this._resetPromise();
+          this._lastFlush = Date.now();
+        }
+        _resetPromise() {
+          return this._promise = new this.Promise((res, rej) => {
+            return this._resolve = res;
+          });
+        }
+        _flush() {
+          clearTimeout(this._timeout);
+          this._lastFlush = Date.now();
+          this._resolve();
+          this.Events.trigger("batch", this._arr);
+          this._arr = [];
+          return this._resetPromise();
+        }
+        add(data) {
+          var ret;
+          this._arr.push(data);
+          ret = this._promise;
+          if (this._arr.length === this.maxSize) {
+            this._flush();
+          } else if (this.maxTime != null && this._arr.length === 1) {
+            this._timeout = setTimeout(() => {
+              return this._flush();
+            }, this.maxTime);
+          }
+          return ret;
+        }
+      }
+      ;
+      Batcher2.prototype.defaults = {
+        maxTime: null,
+        maxSize: null,
+        Promise
+      };
+      return Batcher2;
+    }.call(void 0);
+    module15.exports = Batcher;
+  }
+});
+var require_Bottleneck = __commonJS({
+  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/Bottleneck.js"(exports2, module15) {
+    "use strict";
+    function _slicedToArray2(arr, i2) {
+      return _arrayWithHoles2(arr) || _iterableToArrayLimit2(arr, i2) || _nonIterableRest2();
+    }
+    function _iterableToArrayLimit2(arr, i2) {
+      var _arr = [];
+      var _n = true;
+      var _d = false;
+      var _e = void 0;
+      try {
+        for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) {
+          _arr.push(_s.value);
+          if (i2 && _arr.length === i2) break;
+        }
+      } catch (err) {
+        _d = true;
+        _e = err;
+      } finally {
+        try {
+          if (!_n && _i["return"] != null) _i["return"]();
+        } finally {
+          if (_d) throw _e;
+        }
+      }
+      return _arr;
+    }
+    function _toArray(arr) {
+      return _arrayWithHoles2(arr) || _iterableToArray(arr) || _nonIterableRest2();
+    }
+    function _nonIterableRest2() {
+      throw new TypeError("Invalid attempt to destructure non-iterable instance");
+    }
+    function _iterableToArray(iter) {
+      if (Symbol.iterator in Object(iter) || Object.prototype.toString.call(iter) === "[object Arguments]") return Array.from(iter);
+    }
+    function _arrayWithHoles2(arr) {
+      if (Array.isArray(arr)) return arr;
+    }
+    function asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, key, arg) {
+      try {
+        var info = gen[key](arg);
+        var value = info.value;
+      } catch (error2) {
+        reject(error2);
+        return;
+      }
+      if (info.done) {
+        resolve9(value);
+      } else {
+        Promise.resolve(value).then(_next, _throw);
+      }
+    }
+    function _asyncToGenerator2(fn) {
+      return function() {
+        var self2 = this, args = arguments;
+        return new Promise(function(resolve9, reject) {
+          var gen = fn.apply(self2, args);
+          function _next(value) {
+            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "next", value);
+          }
+          function _throw(err) {
+            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "throw", err);
+          }
+          _next(void 0);
+        });
+      };
+    }
+    var Bottleneck2;
+    var DEFAULT_PRIORITY;
+    var Events2;
+    var Job;
+    var LocalDatastore;
+    var NUM_PRIORITIES;
+    var Queues;
+    var RedisDatastore;
+    var States;
+    var Sync;
+    var parser3;
+    var splice = [].splice;
+    NUM_PRIORITIES = 10;
+    DEFAULT_PRIORITY = 5;
+    parser3 = require_parser2();
+    Queues = require_Queues();
+    Job = require_Job();
+    LocalDatastore = require_LocalDatastore();
+    RedisDatastore = require_RedisDatastore();
+    Events2 = require_Events();
+    States = require_States();
+    Sync = require_Sync();
+    Bottleneck2 = function() {
+      class Bottleneck3 {
+        constructor(options2 = {}, ...invalid) {
+          var storeInstanceOptions, storeOptions;
+          this._addToQueue = this._addToQueue.bind(this);
+          this._validateOptions(options2, invalid);
+          parser3.load(options2, this.instanceDefaults, this);
+          this._queues = new Queues(NUM_PRIORITIES);
+          this._scheduled = {};
+          this._states = new States(["RECEIVED", "QUEUED", "RUNNING", "EXECUTING"].concat(this.trackDoneStatus ? ["DONE"] : []));
+          this._limiter = null;
+          this.Events = new Events2(this);
+          this._submitLock = new Sync("submit", this.Promise);
+          this._registerLock = new Sync("register", this.Promise);
+          storeOptions = parser3.load(options2, this.storeDefaults, {});
+          this._store = function() {
+            if (this.datastore === "redis" || this.datastore === "ioredis" || this.connection != null) {
+              storeInstanceOptions = parser3.load(options2, this.redisStoreDefaults, {});
+              return new RedisDatastore(this, storeOptions, storeInstanceOptions);
+            } else if (this.datastore === "local") {
+              storeInstanceOptions = parser3.load(options2, this.localStoreDefaults, {});
+              return new LocalDatastore(this, storeOptions, storeInstanceOptions);
+            } else {
+              throw new Bottleneck3.prototype.BottleneckError(`Invalid datastore type: ${this.datastore}`);
+            }
+          }.call(this);
+          this._queues.on("leftzero", () => {
+            var ref;
+            return (ref = this._store.heartbeat) != null ? typeof ref.ref === "function" ? ref.ref() : void 0 : void 0;
+          });
+          this._queues.on("zero", () => {
+            var ref;
+            return (ref = this._store.heartbeat) != null ? typeof ref.unref === "function" ? ref.unref() : void 0 : void 0;
+          });
+        }
+        _validateOptions(options2, invalid) {
+          if (!(options2 != null && typeof options2 === "object" && invalid.length === 0)) {
+            throw new Bottleneck3.prototype.BottleneckError("Bottleneck v2 takes a single object argument. Refer to https://github.com/SGrondin/bottleneck#upgrading-to-v2 if you're upgrading from Bottleneck v1.");
+          }
+        }
+        ready() {
+          return this._store.ready;
+        }
+        clients() {
+          return this._store.clients;
+        }
+        channel() {
+          return `b_${this.id}`;
+        }
+        channel_client() {
+          return `b_${this.id}_${this._store.clientId}`;
+        }
+        publish(message) {
+          return this._store.__publish__(message);
+        }
+        disconnect(flush = true) {
+          return this._store.__disconnect__(flush);
+        }
+        chain(_limiter) {
+          this._limiter = _limiter;
+          return this;
+        }
+        queued(priority) {
+          return this._queues.queued(priority);
+        }
+        clusterQueued() {
+          return this._store.__queued__();
+        }
+        empty() {
+          return this.queued() === 0 && this._submitLock.isEmpty();
+        }
+        running() {
+          return this._store.__running__();
+        }
+        done() {
+          return this._store.__done__();
+        }
+        jobStatus(id) {
+          return this._states.jobStatus(id);
+        }
+        jobs(status) {
+          return this._states.statusJobs(status);
+        }
+        counts() {
+          return this._states.statusCounts();
+        }
+        _randomIndex() {
+          return Math.random().toString(36).slice(2);
+        }
+        check(weight = 1) {
+          return this._store.__check__(weight);
+        }
+        _clearGlobalState(index) {
+          if (this._scheduled[index] != null) {
+            clearTimeout(this._scheduled[index].expiration);
+            delete this._scheduled[index];
+            return true;
+          } else {
+            return false;
+          }
+        }
+        _free(index, job, options2, eventInfo) {
+          var _this = this;
+          return _asyncToGenerator2(function* () {
+            var e2, running;
+            try {
+              var _ref = yield _this._store.__free__(index, options2.weight);
+              running = _ref.running;
+              _this.Events.trigger("debug", `Freed ${options2.id}`, eventInfo);
+              if (running === 0 && _this.empty()) {
+                return _this.Events.trigger("idle");
+              }
+            } catch (error1) {
+              e2 = error1;
+              return _this.Events.trigger("error", e2);
+            }
+          })();
+        }
+        _run(index, job, wait) {
+          var clearGlobalState, free, run2;
+          job.doRun();
+          clearGlobalState = this._clearGlobalState.bind(this, index);
+          run2 = this._run.bind(this, index, job);
+          free = this._free.bind(this, index, job);
+          return this._scheduled[index] = {
+            timeout: setTimeout(() => {
+              return job.doExecute(this._limiter, clearGlobalState, run2, free);
+            }, wait),
+            expiration: job.options.expiration != null ? setTimeout(function() {
+              return job.doExpire(clearGlobalState, run2, free);
+            }, wait + job.options.expiration) : void 0,
+            job
+          };
+        }
+        _drainOne(capacity) {
+          return this._registerLock.schedule(() => {
+            var args, index, next, options2, queue;
+            if (this.queued() === 0) {
+              return this.Promise.resolve(null);
+            }
+            queue = this._queues.getFirst();
+            var _next2 = next = queue.first();
+            options2 = _next2.options;
+            args = _next2.args;
+            if (capacity != null && options2.weight > capacity) {
+              return this.Promise.resolve(null);
+            }
+            this.Events.trigger("debug", `Draining ${options2.id}`, {
+              args,
+              options: options2
+            });
+            index = this._randomIndex();
+            return this._store.__register__(index, options2.weight, options2.expiration).then(({
+              success,
+              wait,
+              reservoir
+            }) => {
+              var empty2;
+              this.Events.trigger("debug", `Drained ${options2.id}`, {
+                success,
+                args,
+                options: options2
+              });
+              if (success) {
+                queue.shift();
+                empty2 = this.empty();
+                if (empty2) {
+                  this.Events.trigger("empty");
+                }
+                if (reservoir === 0) {
+                  this.Events.trigger("depleted", empty2);
+                }
+                this._run(index, next, wait);
+                return this.Promise.resolve(options2.weight);
+              } else {
+                return this.Promise.resolve(null);
+              }
+            });
+          });
+        }
+        _drainAll(capacity, total = 0) {
+          return this._drainOne(capacity).then((drained) => {
+            var newCapacity;
+            if (drained != null) {
+              newCapacity = capacity != null ? capacity - drained : capacity;
+              return this._drainAll(newCapacity, total + drained);
+            } else {
+              return this.Promise.resolve(total);
+            }
+          }).catch((e2) => {
+            return this.Events.trigger("error", e2);
+          });
+        }
+        _dropAllQueued(message) {
+          return this._queues.shiftAll(function(job) {
+            return job.doDrop({
+              message
+            });
+          });
+        }
+        stop(options2 = {}) {
+          var done, waitForExecuting;
+          options2 = parser3.load(options2, this.stopDefaults);
+          waitForExecuting = (at) => {
+            var finished;
+            finished = () => {
+              var counts;
+              counts = this._states.counts;
+              return counts[0] + counts[1] + counts[2] + counts[3] === at;
+            };
+            return new this.Promise((resolve9, reject) => {
+              if (finished()) {
+                return resolve9();
+              } else {
+                return this.on("done", () => {
+                  if (finished()) {
+                    this.removeAllListeners("done");
+                    return resolve9();
+                  }
+                });
+              }
+            });
+          };
+          done = options2.dropWaitingJobs ? (this._run = function(index, next) {
+            return next.doDrop({
+              message: options2.dropErrorMessage
+            });
+          }, this._drainOne = () => {
+            return this.Promise.resolve(null);
+          }, this._registerLock.schedule(() => {
+            return this._submitLock.schedule(() => {
+              var k, ref, v2;
+              ref = this._scheduled;
+              for (k in ref) {
+                v2 = ref[k];
+                if (this.jobStatus(v2.job.options.id) === "RUNNING") {
+                  clearTimeout(v2.timeout);
+                  clearTimeout(v2.expiration);
+                  v2.job.doDrop({
+                    message: options2.dropErrorMessage
+                  });
+                }
+              }
+              this._dropAllQueued(options2.dropErrorMessage);
+              return waitForExecuting(0);
+            });
+          })) : this.schedule({
+            priority: NUM_PRIORITIES - 1,
+            weight: 0
+          }, () => {
+            return waitForExecuting(1);
+          });
+          this._receive = function(job) {
+            return job._reject(new Bottleneck3.prototype.BottleneckError(options2.enqueueErrorMessage));
+          };
+          this.stop = () => {
+            return this.Promise.reject(new Bottleneck3.prototype.BottleneckError("stop() has already been called"));
+          };
+          return done;
+        }
+        _addToQueue(job) {
+          var _this2 = this;
+          return _asyncToGenerator2(function* () {
+            var args, blocked, error2, options2, reachedHWM, shifted, strategy;
+            args = job.args;
+            options2 = job.options;
+            try {
+              var _ref2 = yield _this2._store.__submit__(_this2.queued(), options2.weight);
+              reachedHWM = _ref2.reachedHWM;
+              blocked = _ref2.blocked;
+              strategy = _ref2.strategy;
+            } catch (error1) {
+              error2 = error1;
+              _this2.Events.trigger("debug", `Could not queue ${options2.id}`, {
+                args,
+                options: options2,
+                error: error2
+              });
+              job.doDrop({
+                error: error2
+              });
+              return false;
+            }
+            if (blocked) {
+              job.doDrop();
+              return true;
+            } else if (reachedHWM) {
+              shifted = strategy === Bottleneck3.prototype.strategy.LEAK ? _this2._queues.shiftLastFrom(options2.priority) : strategy === Bottleneck3.prototype.strategy.OVERFLOW_PRIORITY ? _this2._queues.shiftLastFrom(options2.priority + 1) : strategy === Bottleneck3.prototype.strategy.OVERFLOW ? job : void 0;
+              if (shifted != null) {
+                shifted.doDrop();
+              }
+              if (shifted == null || strategy === Bottleneck3.prototype.strategy.OVERFLOW) {
+                if (shifted == null) {
+                  job.doDrop();
+                }
+                return reachedHWM;
+              }
+            }
+            job.doQueue(reachedHWM, blocked);
+            _this2._queues.push(job);
+            yield _this2._drainAll();
+            return reachedHWM;
+          })();
+        }
+        _receive(job) {
+          if (this._states.jobStatus(job.options.id) != null) {
+            job._reject(new Bottleneck3.prototype.BottleneckError(`A job with the same id already exists (id=${job.options.id})`));
+            return false;
+          } else {
+            job.doReceive();
+            return this._submitLock.schedule(this._addToQueue, job);
+          }
+        }
+        submit(...args) {
+          var cb, fn, job, options2, ref, ref1, task;
+          if (typeof args[0] === "function") {
+            var _ref3, _ref4, _splice$call, _splice$call2;
+            ref = args, _ref3 = ref, _ref4 = _toArray(_ref3), fn = _ref4[0], args = _ref4.slice(1), _ref3, _splice$call = splice.call(args, -1), _splice$call2 = _slicedToArray2(_splice$call, 1), cb = _splice$call2[0], _splice$call;
+            options2 = parser3.load({}, this.jobDefaults);
+          } else {
+            var _ref5, _ref6, _splice$call3, _splice$call4;
+            ref1 = args, _ref5 = ref1, _ref6 = _toArray(_ref5), options2 = _ref6[0], fn = _ref6[1], args = _ref6.slice(2), _ref5, _splice$call3 = splice.call(args, -1), _splice$call4 = _slicedToArray2(_splice$call3, 1), cb = _splice$call4[0], _splice$call3;
+            options2 = parser3.load(options2, this.jobDefaults);
+          }
+          task = (...args2) => {
+            return new this.Promise(function(resolve9, reject) {
+              return fn(...args2, function(...args3) {
+                return (args3[0] != null ? reject : resolve9)(args3);
+              });
+            });
+          };
+          job = new Job(task, args, options2, this.jobDefaults, this.rejectOnDrop, this.Events, this._states, this.Promise);
+          job.promise.then(function(args2) {
+            return typeof cb === "function" ? cb(...args2) : void 0;
+          }).catch(function(args2) {
+            if (Array.isArray(args2)) {
+              return typeof cb === "function" ? cb(...args2) : void 0;
+            } else {
+              return typeof cb === "function" ? cb(args2) : void 0;
+            }
+          });
+          return this._receive(job);
+        }
+        schedule(...args) {
+          var job, options2, task;
+          if (typeof args[0] === "function") {
+            var _args = args;
+            var _args2 = _toArray(_args);
+            task = _args2[0];
+            args = _args2.slice(1);
+            options2 = {};
+          } else {
+            var _args3 = args;
+            var _args4 = _toArray(_args3);
+            options2 = _args4[0];
+            task = _args4[1];
+            args = _args4.slice(2);
+          }
+          job = new Job(task, args, options2, this.jobDefaults, this.rejectOnDrop, this.Events, this._states, this.Promise);
+          this._receive(job);
+          return job.promise;
+        }
+        wrap(fn) {
+          var schedule, wrapped;
+          schedule = this.schedule.bind(this);
+          wrapped = function wrapped2(...args) {
+            return schedule(fn.bind(this), ...args);
+          };
+          wrapped.withOptions = function(options2, ...args) {
+            return schedule(options2, fn, ...args);
+          };
+          return wrapped;
+        }
+        updateSettings(options2 = {}) {
+          var _this3 = this;
+          return _asyncToGenerator2(function* () {
+            yield _this3._store.__updateSettings__(parser3.overwrite(options2, _this3.storeDefaults));
+            parser3.overwrite(options2, _this3.instanceDefaults, _this3);
+            return _this3;
+          })();
+        }
+        currentReservoir() {
+          return this._store.__currentReservoir__();
+        }
+        incrementReservoir(incr = 0) {
+          return this._store.__incrementReservoir__(incr);
+        }
+      }
+      ;
+      Bottleneck3.default = Bottleneck3;
+      Bottleneck3.Events = Events2;
+      Bottleneck3.version = Bottleneck3.prototype.version = require_version().version;
+      Bottleneck3.strategy = Bottleneck3.prototype.strategy = {
+        LEAK: 1,
+        OVERFLOW: 2,
+        OVERFLOW_PRIORITY: 4,
+        BLOCK: 3
+      };
+      Bottleneck3.BottleneckError = Bottleneck3.prototype.BottleneckError = require_BottleneckError();
+      Bottleneck3.Group = Bottleneck3.prototype.Group = require_Group();
+      Bottleneck3.RedisConnection = Bottleneck3.prototype.RedisConnection = require_RedisConnection();
+      Bottleneck3.IORedisConnection = Bottleneck3.prototype.IORedisConnection = require_IORedisConnection();
+      Bottleneck3.Batcher = Bottleneck3.prototype.Batcher = require_Batcher();
+      Bottleneck3.prototype.jobDefaults = {
+        priority: DEFAULT_PRIORITY,
+        weight: 1,
+        expiration: null,
+        id: "<no-id>"
+      };
+      Bottleneck3.prototype.storeDefaults = {
+        maxConcurrent: null,
+        minTime: 0,
+        highWater: null,
+        strategy: Bottleneck3.prototype.strategy.LEAK,
+        penalty: null,
+        reservoir: null,
+        reservoirRefreshInterval: null,
+        reservoirRefreshAmount: null,
+        reservoirIncreaseInterval: null,
+        reservoirIncreaseAmount: null,
+        reservoirIncreaseMaximum: null
+      };
+      Bottleneck3.prototype.localStoreDefaults = {
+        Promise,
+        timeout: null,
+        heartbeatInterval: 250
+      };
+      Bottleneck3.prototype.redisStoreDefaults = {
+        Promise,
+        timeout: null,
+        heartbeatInterval: 5e3,
+        clientTimeout: 1e4,
+        Redis: null,
+        clientOptions: {},
+        clusterNodes: null,
+        clearDatastore: false,
+        connection: null
+      };
+      Bottleneck3.prototype.instanceDefaults = {
+        datastore: "local",
+        connection: null,
+        id: "<no-id>",
+        rejectOnDrop: true,
+        trackDoneStatus: false,
+        Promise
+      };
+      Bottleneck3.prototype.stopDefaults = {
+        enqueueErrorMessage: "This limiter has been stopped and cannot accept new jobs.",
+        dropWaitingJobs: true,
+        dropErrorMessage: "This limiter has been stopped."
+      };
+      return Bottleneck3;
+    }.call(void 0);
+    module15.exports = Bottleneck2;
+  }
+});
+var require_lib6 = __commonJS({
+  "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/index.js"(exports2, module15) {
+    "use strict";
+    module15.exports = require_Bottleneck();
   }
 });
 var require_stream = __commonJS({
@@ -72903,6 +72896,9 @@ var module6 = {
     return void hash22(argv);
   }
 };
+var CREDITS_WORKER_TASK_TIME_INTERVAL = 3e5;
+var OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL = 3e4;
+var MAX_EVENT_BODY_BYTES = 1048576;
 var DEFAULT_CONFIG_PATH = "chel.toml";
 var tomlValue = (v2) => {
   if (typeof v2 === "string") return `"${v2}"`;
@@ -72937,10 +72933,14 @@ dashboardPort = ${tomlValue(d.server.dashboardPort)}
 # disabled = ${tomlValue(d.server.signup.disabled)}
 # Size sanity caps for ownerless (unattributed) first messages, i.e. identity
 # contract registration. They bound how much data can be written 'for free'.
+# 'maxFirstMessageBytes' cannot exceed ${tomlValue(MAX_EVENT_BODY_BYTES)}, the request body limit
+# 'POST /event' enforces before these caps are consulted.
 # maxFirstMessageBytes = ${tomlValue(d.server.signup.maxFirstMessageBytes)}
 # maxContractSizeBytes = ${tomlValue(d.server.signup.maxContractSizeBytes)}
 
 [server.signup.limit]
+# Registrations allowed per IP, per window. Enforced only when NODE_ENV is
+# 'production'; other servers log a warning at startup saying so.
 # disabled = ${tomlValue(d.server.signup.limit.disabled)}
 # minute = ${tomlValue(d.server.signup.limit.minute)}
 # hour = ${tomlValue(d.server.signup.limit.hour)}
@@ -73214,7 +73214,14 @@ var ConfigSchema = strictObject({
       // Size sanity caps for ownerless (unattributed) first messages; a cap of
       // 0 is rejected because 'disabled = true' is the supported way to block
       // signups entirely.
-      maxFirstMessageBytes: optional(positiveInt),
+      //
+      // The first-message cap is bounded above as well: `POST /event` rejects
+      // any body larger than `MAX_EVENT_BODY_BYTES` before the handler runs, so
+      // a larger cap would silently have no effect.
+      maxFirstMessageBytes: optional(positiveInt.max(
+        MAX_EVENT_BODY_BYTES,
+        `must not exceed the ${MAX_EVENT_BODY_BYTES} byte POST /event body limit`
+      )),
       maxContractSizeBytes: optional(positiveInt),
       limit: optional(strictObject({
         disabled: optional(boolean2()),
@@ -76825,7 +76832,6 @@ var getConnInfo = (c) => {
   };
 };
 init_esm();
-var import_npm_bottleneck = __toESM(require_lib6());
 var import_npm_chalk = __toESM(require_source());
 var validCookieNameRegEx = /^[\w!#$%&'*.^`|~+-]+$/;
 var validCookieValueRegEx = /^[ !#-:<-[\]-~]*$/;
@@ -77216,22 +77222,62 @@ var defaultFor = (key) => {
     return acc?.[part];
   }, nconfDefaults);
 };
-var readIntConfig = (key, allowZero) => {
+var requireDefault = (key, type) => {
   const fallback = defaultFor(key);
-  if (typeof fallback !== "number") {
-    throw new Error(`No numeric default defined for configuration key '${key}'`);
+  if (typeof fallback !== type) {
+    throw new Error(`No ${type} default defined for configuration key '${key}'`);
   }
+  return fallback;
+};
+var warn = (key, raw2, reason, using) => {
+  console.warn(`[config] Ignoring '${key}' (${JSON.stringify(raw2)}): ${reason}. Using ${using}.`);
+};
+var toNumber = (raw2) => {
+  if (typeof raw2 === "number") return raw2;
+  if (typeof raw2 === "string" && raw2.trim() !== "") return Number(raw2);
+  return NaN;
+};
+var readIntConfig = (key, { allowZero = false, max }) => {
+  const fallback = requireDefault(key, "number");
   const raw2 = import_npm_nconf5.default.get(key);
   if (raw2 == null) return fallback;
-  const value = typeof raw2 === "number" ? raw2 : Number(raw2);
-  if (!Number.isSafeInteger(value) || value < 0 || value === 0 && !allowZero) {
-    console.warn(`[config] Invalid value for '${key}': ${JSON.stringify(raw2)}. Using ${fallback}.`);
+  const value = toNumber(raw2);
+  if (!Number.isSafeInteger(value) || value < 0) {
+    warn(key, raw2, "not a non-negative integer", fallback);
     return fallback;
+  }
+  if (value === 0 && !allowZero) {
+    warn(key, raw2, "zero is not supported for this setting", fallback);
+    return fallback;
+  }
+  if (max != null && value > max) {
+    warn(key, raw2, `above the maximum of ${max}`, max);
+    return max;
   }
   return value;
 };
-var positiveIntConfig = (key) => readIntConfig(key, false);
-var nonNegativeIntConfig = (key) => readIntConfig(key, true);
+var positiveIntConfig = (key, max) => {
+  return readIntConfig(key, { max });
+};
+var nonNegativeIntConfig = (key, max) => {
+  return readIntConfig(key, { allowZero: true, max });
+};
+var TRUE_STRINGS = /* @__PURE__ */ new Set(["true", "1", "yes", "on"]);
+var FALSE_STRINGS = /* @__PURE__ */ new Set(["false", "0", "no", "off", ""]);
+var booleanConfig = (key) => {
+  const fallback = requireDefault(key, "boolean");
+  const raw2 = import_npm_nconf5.default.get(key);
+  if (raw2 == null) return fallback;
+  if (typeof raw2 === "boolean") return raw2;
+  if (raw2 === 0 || raw2 === 1) return raw2 === 1;
+  if (typeof raw2 === "string") {
+    const normalized = raw2.trim().toLowerCase();
+    if (TRUE_STRINGS.has(normalized)) return true;
+    if (FALSE_STRINGS.has(normalized)) return false;
+  }
+  warn(key, raw2, "not a boolean", fallback);
+  return fallback;
+};
 var import_npm_pino = __toESM(require_pino());
 var verboseByDefault = process6.env.NODE_ENV === "development" || process6.env.CI || process6.env.CYPRESS_RECORD_KEY || process6.env.PRETTY;
 function getLogLevel() {
@@ -77275,6 +77321,124 @@ function initializeLogger() {
   console.error = logger.error.bind(logger);
 }
 var logger_default = logger;
+init_functions();
+init_esm();
+var requireContractTextCID = (hash3, field) => {
+  if (typeof hash3 !== "string") throw new Error(`missing ${field} hash`);
+  if (maybeParseCID(hash3)?.code !== multicodes.SHELTER_CONTRACT_TEXT) {
+    throw new Error(`invalid ${field} hash`);
+  }
+  return hash3;
+};
+var parseContractSourceHashes = (manifest2) => {
+  try {
+    if (typeof manifest2 !== "string" || !manifest2) throw new Error("empty manifest");
+    const { contract, contractSlim } = JSON.parse(JSON.parse(manifest2).body);
+    const hashes = [requireContractTextCID(contract?.hash, "contract")];
+    if (contractSlim != null) {
+      hashes.push(requireContractTextCID(contractSlim.hash, "contractSlim"));
+    }
+    return hashes;
+  } catch {
+    throw new HTTPException(422, { message: "Invalid manifest" });
+  }
+};
+var assertContractSourcesWithinCap = async (hashes, maxBytes) => {
+  let contractSizeBytes = 0;
+  for (const hash3 of hashes) {
+    const source = await esm_default("chelonia.db/get", hash3);
+    if (typeof source !== "string") {
+      throw new HTTPException(422, { message: "Missing contract source" });
+    }
+    contractSizeBytes += Buffer14.byteLength(source);
+    if (contractSizeBytes > maxBytes) {
+      throw new HTTPException(413, { message: "Contract source exceeds size limit" });
+    }
+  }
+  return contractSizeBytes;
+};
+var import_npm_bottleneck = __toESM(require_lib6());
+var SECOND = 1e3;
+var normalizeHextet = (segment) => segment.replace(/^0+(?=[0-9a-fA-F])/, "");
+var limiterKey = (ip) => {
+  const ipVersion = isIP(ip);
+  if (ipVersion === 4) {
+    return ip;
+  } else if (ipVersion === 6) {
+    const [address, zoneIdx] = ip.split("%");
+    const segments = address.split(":");
+    let isCompressed = false;
+    for (let i2 = 0; i2 < segments.length - 1; i2++) {
+      if (!isCompressed && segments[i2] === "") {
+        const requiredSegments = 8 - (segments.length - 1);
+        if (requiredSegments < 0) {
+          throw new Error("Invalid IPv6 address: too many segments");
+        }
+        if ((i2 === 0 || i2 === segments.length - 2) && segments[i2 + 1] === "") {
+          segments[i2 + 1] = "0";
+        }
+        if (i2 === 0 && segments.length === 3 && segments[i2 + 2] === "") {
+          segments[i2 + 2] = "0";
+        }
+        segments.splice(i2, 1, ...new Array(requiredSegments).fill("0"));
+        isCompressed = true;
+        continue;
+      }
+      segments[i2] = normalizeHextet(segments[i2]);
+    }
+    if (segments.length === 8 && isIP(segments[7]) === 4) {
+      return segments[7];
+    } else if (segments.length === 8) {
+      if (zoneIdx) {
+        segments[7] = normalizeHextet(segments[7]);
+        return segments.join(":").toLowerCase() + "%" + zoneIdx;
+      } else {
+        return segments.slice(0, 4).join(":").toLowerCase() + "::";
+      }
+    } else {
+      throw new Error("Invalid IPv6 address");
+    }
+  }
+  throw new Error("Invalid address format");
+};
+var group = (reservoir, intervalMs) => {
+  return new import_npm_bottleneck.default.Group({
+    strategy: import_npm_bottleneck.default.strategy.LEAK,
+    highWater: 0,
+    reservoir,
+    reservoirRefreshInterval: intervalMs,
+    reservoirRefreshAmount: reservoir
+  });
+};
+var createSignupLimiters = ({ minute, hour, day }) => {
+  return {
+    perMinute: group(minute, 60 * SECOND),
+    perHour: group(hour, 60 * 60 * SECOND),
+    perDay: group(day, 24 * 60 * 60 * SECOND)
+  };
+};
+var consumeSignupToken = async (limiters, ip) => {
+  try {
+    const keyedIp = limiterKey(ip);
+    await limiters.perMinute.key(keyedIp).schedule(() => Promise.resolve());
+    await limiters.perHour.key(keyedIp).schedule(() => Promise.resolve());
+    await limiters.perDay.key(keyedIp).schedule(() => Promise.resolve());
+    return true;
+  } catch {
+    return false;
+  }
+};
+var disposeSignupLimiters = async (limiters) => {
+  if (!limiters) return;
+  const groups = [limiters.perMinute, limiters.perHour, limiters.perDay];
+  await Promise.allSettled(groups.map((g2) => g2.disconnect()));
+  for (const g2 of groups) {
+    clearInterval(g2.interval);
+  }
+};
+var signupRateLimitDisabled = () => {
+  return process7.env.NODE_ENV !== "production" || booleanConfig("server:signup:limit:disabled");
+};
 var import_npm_nconf6 = __toESM(require_nconf());
 init_zod();
 function extractBearer(c) {
@@ -77323,7 +77487,6 @@ function authMiddleware(strategies, mode = "required") {
   };
 }
 var MEGABYTE = 1048576;
-var SECOND = 1e3;
 var CID_REGEX = /^z[1-9A-HJ-NP-Za-km-z]{8,72}$/;
 var KV_KEY_REGEX = /^(?!_private)[^\x00]{1,256}$/;
 var NAME_REGEX = /^(?![_-])((?!([_-])\2)[a-z\d_-]){1,80}(?<![_-])$/;
@@ -77387,47 +77550,6 @@ var cidLookupTable = {
   [multicodes.SHELTER_FILE_MANIFEST]: "application/vnd.shelter.filemanifest+json",
   [multicodes.SHELTER_FILE_CHUNK]: "application/vnd.shelter.filechunk+octet-stream"
 };
-var limiterKey = (ip) => {
-  const ipVersion = isIP(ip);
-  if (ipVersion === 4) {
-    return ip;
-  } else if (ipVersion === 6) {
-    const [address, zoneIdx] = ip.split("%");
-    const segments = address.split(":");
-    let isCompressed = false;
-    for (let i2 = 0; i2 < segments.length - 1; i2++) {
-      if (!isCompressed && segments[i2] === "") {
-        const requiredSegments = 8 - (segments.length - 1);
-        if (requiredSegments < 0) {
-          throw new Error("Invalid IPv6 address: too many segments");
-        }
-        if ((i2 === 0 || i2 === segments.length - 2) && segments[i2 + 1] === "") {
-          segments[i2 + 1] = "0";
-        }
-        if (i2 === 0 && segments.length === 3 && segments[i2 + 2] === "") {
-          segments[i2 + 2] = "0";
-        }
-        segments.splice(i2, 1, ...new Array(requiredSegments).fill("0"));
-        isCompressed = true;
-        continue;
-      }
-      segments[i2] = segments[i2].replace(/^0+/, "0");
-    }
-    if (segments.length === 8 && isIP(segments[7]) === 4) {
-      return segments[7];
-    } else if (segments.length === 8) {
-      if (zoneIdx) {
-        segments[7] = segments[7].replace(/^0+/, "0");
-        return segments.join(":").toLowerCase() + "%" + zoneIdx;
-      } else {
-        return segments.slice(0, 4).join(":").toLowerCase() + "::";
-      }
-    } else {
-      throw new Error("Invalid IPv6 address");
-    }
-  }
-  throw new Error("Invalid address format");
-};
 var ctEq = (expected, actual) => {
   let r = actual.length ^ expected.length;
   for (let i2 = 0; i2 < actual.length; i2++) {
@@ -77435,23 +77557,19 @@ var ctEq = (expected, actual) => {
   }
   return r === 0;
 };
-var currentLimiters = [];
+var currentLimiters;
 var rateLimitersInstalled = false;
 function installRateLimiterSelectorsOnce() {
   if (rateLimitersInstalled) return;
   rateLimitersInstalled = true;
   esm_default("sbp/selectors/register", {
     "backend/server/stopRateLimiters": async function() {
-      const limiters = currentLimiters;
-      await Promise.allSettled(limiters.map((l) => l.disconnect()));
-      for (const limiter of limiters) {
-        clearInterval(limiter.interval);
-      }
+      await disposeSignupLimiters(currentLimiters);
     }
   });
 }
 function getStaticServeConfig() {
-  const isCheloniaDashboard = process7.env.IS_CHELONIA_DASHBOARD_DEV;
+  const isCheloniaDashboard = process8.env.IS_CHELONIA_DASHBOARD_DEV;
   const appDir = import_npm_nconf6.default.get("server:appDir") || ".";
   const dashboardDir = import.meta.dirname || "./build/dist-dashboard";
   return {
@@ -77516,42 +77634,25 @@ function serveAsset(c, subpath, assetsDir) {
   }).catch(() => notFoundNoCache(c));
 }
 function registerRoutes(app) {
-  for (const limiter of currentLimiters) {
-    limiter.disconnect();
-    clearInterval(limiter.interval);
-  }
+  disposeSignupLimiters(currentLimiters);
   const FILE_UPLOAD_MAX_BYTES = positiveIntConfig("server:fileUploadMaxBytes");
-  const SIGNUP_LIMIT_MIN = positiveIntConfig("server:signup:limit:minute");
-  const SIGNUP_LIMIT_HOUR = positiveIntConfig("server:signup:limit:hour");
-  const SIGNUP_LIMIT_DAY = positiveIntConfig("server:signup:limit:day");
-  const SIGNUP_LIMIT_DISABLED = process7.env.NODE_ENV !== "production" || import_npm_nconf6.default.get("server:signup:limit:disabled");
-  const SIGNUP_MAX_FIRST_MESSAGE_BYTES = positiveIntConfig("server:signup:maxFirstMessageBytes");
+  const SIGNUP_LIMIT_DISABLED = signupRateLimitDisabled();
+  const SIGNUP_MAX_FIRST_MESSAGE_BYTES = positiveIntConfig("server:signup:maxFirstMessageBytes", MAX_EVENT_BODY_BYTES);
   const SIGNUP_MAX_CONTRACT_SIZE_BYTES = positiveIntConfig("server:signup:maxContractSizeBytes");
-  const ARCHIVE_MODE = import_npm_nconf6.default.get("server:archiveMode");
-  const limiterPerMinute = new import_npm_bottleneck.default.Group({
-    strategy: import_npm_bottleneck.default.strategy.LEAK,
-    highWater: 0,
-    reservoir: SIGNUP_LIMIT_MIN,
-    reservoirRefreshInterval: 60 * SECOND,
-    reservoirRefreshAmount: SIGNUP_LIMIT_MIN
+  const ARCHIVE_MODE = booleanConfig("server:archiveMode");
+  currentLimiters = createSignupLimiters({
+    minute: positiveIntConfig("server:signup:limit:minute"),
+    hour: positiveIntConfig("server:signup:limit:hour"),
+    day: positiveIntConfig("server:signup:limit:day")
   });
-  const limiterPerHour = new import_npm_bottleneck.default.Group({
-    strategy: import_npm_bottleneck.default.strategy.LEAK,
-    highWater: 0,
-    reservoir: SIGNUP_LIMIT_HOUR,
-    reservoirRefreshInterval: 60 * 60 * SECOND,
-    reservoirRefreshAmount: SIGNUP_LIMIT_HOUR
-  });
-  const limiterPerDay = new import_npm_bottleneck.default.Group({
-    strategy: import_npm_bottleneck.default.strategy.LEAK,
-    highWater: 0,
-    reservoir: SIGNUP_LIMIT_DAY,
-    reservoirRefreshInterval: 24 * 60 * 60 * SECOND,
-    reservoirRefreshAmount: SIGNUP_LIMIT_DAY
-  });
-  currentLimiters = [limiterPerMinute, limiterPerHour, limiterPerDay];
+  const limiters = currentLimiters;
   installRateLimiterSelectorsOnce();
-  const isCheloniaDashboard = process7.env.IS_CHELONIA_DASHBOARD_DEV;
+  if (SIGNUP_LIMIT_DISABLED) {
+    console.warn(
+      "[signup] per-IP registration rate limits are disabled " + (process8.env.NODE_ENV !== "production" ? '(NODE_ENV is not "production")' : "(server.signup.limit.disabled)")
+    );
+  }
+  const isCheloniaDashboard = process8.env.IS_CHELONIA_DASHBOARD_DEV;
   const staticServeConfig = getStaticServeConfig();
   app.post(
     "/event",
@@ -77561,7 +77662,7 @@ function registerRoutes(app) {
       "shelter-salt-registration-token": string2().optional(),
       "shelter-deletion-token-digest": string2().optional()
     })),
-    bodyLimit({ maxSize: MEGABYTE }),
+    bodyLimit({ maxSize: MAX_EVENT_BODY_BYTES }),
     authMiddleware("chel-shelter", "optional"),
     async function(c) {
       if (ARCHIVE_MODE) throw new HTTPException(501, { message: "Server in archive mode" });
@@ -77582,48 +77683,19 @@ function registerRoutes(app) {
           }
           const credentials = c.get("credentials");
           if (!credentials?.billableContractID && deserializedHEAD.isFirstMessage) {
-            if (Buffer14.byteLength(payload) > SIGNUP_MAX_FIRST_MESSAGE_BYTES) {
+            if (Buffer15.byteLength(payload) > SIGNUP_MAX_FIRST_MESSAGE_BYTES) {
               throw new HTTPException(413, { message: "First message exceeds size limit" });
             }
-            if (import_npm_nconf6.default.get("server:signup:disabled")) {
+            if (booleanConfig("server:signup:disabled")) {
               throw new HTTPException(403, { message: "Registration disabled" });
             }
-            if (!SIGNUP_LIMIT_DISABLED) {
-              try {
-                const keyedIp = limiterKey(ip);
-                await limiterPerMinute.key(keyedIp).schedule(() => Promise.resolve());
-                await limiterPerHour.key(keyedIp).schedule(() => Promise.resolve());
-                await limiterPerDay.key(keyedIp).schedule(() => Promise.resolve());
-              } catch {
-                console.warn("rate limit hit for IP:", ip);
-                throw new HTTPException(429, { message: "Rate limit exceeded" });
-              }
+            if (!SIGNUP_LIMIT_DISABLED && !await consumeSignupToken(limiters, ip)) {
+              console.warn("rate limit hit for IP:", ip);
+              throw new HTTPException(429, { message: "Rate limit exceeded" });
             }
             const manifest2 = await esm_default("chelonia.db/get", deserializedHEAD.head.manifest);
-            let contractSourceHashes;
-            try {
-              if (!manifest2) throw new Error("empty manifest");
-              const parsedManifest = JSON.parse(manifest2);
-              const { contract, contractSlim } = JSON.parse(parsedManifest.body);
-              if (typeof contract?.hash !== "string") throw new Error("missing contract hash");
-              contractSourceHashes = [contract.hash];
-              if (contractSlim != null) {
-                if (typeof contractSlim.hash !== "string") throw new Error("missing contractSlim hash");
-                contractSourceHashes.push(contractSlim.hash);
-              }
-            } catch (e2) {
-              if (e2 instanceof HTTPException) throw e2;
-              throw new HTTPException(422, { message: "Invalid manifest" });
-            }
-            let contractSizeBytes = 0;
-            for (const hash3 of contractSourceHashes) {
-              const source = await esm_default("chelonia.db/get", hash3);
-              if (typeof source !== "string") throw new HTTPException(422, { message: "Missing contract source" });
-              contractSizeBytes += Buffer14.byteLength(source);
-              if (contractSizeBytes > SIGNUP_MAX_CONTRACT_SIZE_BYTES) {
-                throw new HTTPException(413, { message: "Contract source exceeds size limit" });
-              }
-            }
+            const contractSourceHashes = parseContractSourceHashes(manifest2);
+            await assertContractSourcesWithinCap(contractSourceHashes, SIGNUP_MAX_CONTRACT_SIZE_BYTES);
           }
           const saltUpdateToken = validatedHeaders["shelter-salt-update-token"];
           let updateSalts;
@@ -77659,7 +77731,7 @@ function registerRoutes(app) {
               await esm_default("chelonia.db/set", `_private_deletionTokenDgst_${deserializedHEAD.contractID}`, deletionTokenDgst);
             }
           }
-          await esm_default("backend/server/updateSize", deserializedHEAD.contractID, Buffer14.byteLength(payload), deserializedHEAD.isFirstMessage && !credentials?.billableContractID ? deserializedHEAD.contractID : void 0);
+          await esm_default("backend/server/updateSize", deserializedHEAD.contractID, Buffer15.byteLength(payload), deserializedHEAD.isFirstMessage && !credentials?.billableContractID ? deserializedHEAD.contractID : void 0);
         } catch (err) {
           if (err instanceof HTTPException) throw err;
           console.error(err, import_npm_chalk.default.bold.yellow(err.name));
@@ -77729,7 +77801,7 @@ function registerRoutes(app) {
       return c.json(resources || []);
     }
   );
-  if (process7.env.NODE_ENV === "development") {
+  if (process8.env.NODE_ENV === "development") {
     const levelToColor = {
       error: import_npm_chalk.default.bold.red,
       warn: import_npm_chalk.default.yellow,
@@ -77792,14 +77864,14 @@ function registerRoutes(app) {
   });
   app.post("/streams-test", async function(c) {
     const raw2 = await c.req.arrayBuffer();
-    const buf2 = Buffer14.from(raw2);
+    const buf2 = Buffer15.from(raw2);
     if (buf2.byteLength === 2 && buf2.toString() === "ok") {
       return c.body(null, 204);
     } else {
       throw new HTTPException(400);
     }
   });
-  if (process7.env.NODE_ENV === "development") {
+  if (process8.env.NODE_ENV === "development") {
     app.post("/dev-file", bodyLimit({ maxSize: 6 * MEGABYTE }), async function(c) {
       if (ARCHIVE_MODE) throw new HTTPException(501, { message: "Server in archive mode" });
       try {
@@ -77811,7 +77883,7 @@ function registerRoutes(app) {
         if (!data || Array.isArray(data)) throw new HTTPException(400, { message: "missing data" });
         const parsed = maybeParseCID(hash3);
         if (!parsed) throw new HTTPException(400, { message: "invalid hash" });
-        const dataStringOrBytes = typeof data === "string" ? data : Buffer14.from(await data.bytes()).toString();
+        const dataStringOrBytes = typeof data === "string" ? data : Buffer15.from(await data.bytes()).toString();
         const ourHash = createCID(dataStringOrBytes, parsed.code);
         if (ourHash !== hash3) {
           console.error(`hash(${hash3}) != ourHash(${ourHash})`);
@@ -77847,7 +77919,7 @@ function registerRoutes(app) {
         if (!manifestFile) throw new HTTPException(400, { message: "missing manifest" });
         if (manifestFile.name !== "manifest.json") throw new HTTPException(400, { message: "wrong manifest filename" });
         const manifestPayload = new Uint8Array(await manifestFile.arrayBuffer());
-        const manifestText = Buffer14.from(manifestPayload).toString();
+        const manifestText = Buffer15.from(manifestPayload).toString();
         const manifest2 = (() => {
           try {
             return JSON.parse(manifestText);
@@ -77895,8 +77967,8 @@ function registerRoutes(app) {
             throw new Error(`Chunk ${cid} already exists`);
           }
         }));
-        await Promise.all(chunks.map(([cid, data]) => esm_default("chelonia.db/set", cid, Buffer14.from(data))));
-        await esm_default("chelonia.db/set", manifestHash, Buffer14.from(manifestPayload));
+        await Promise.all(chunks.map(([cid, data]) => esm_default("chelonia.db/set", cid, Buffer15.from(data))));
+        await esm_default("chelonia.db/set", manifestHash, Buffer15.from(manifestPayload));
         await esm_default("backend/server/saveOwner", credentials.billableContractID, manifestHash);
         const size = manifest2.size + manifestPayload.byteLength;
         await esm_default("backend/server/updateSize", manifestHash, size);
@@ -78054,10 +78126,10 @@ function registerRoutes(app) {
       if (!ctEq(credentials.billableContractID, contractID)) {
         throw new HTTPException(401);
       }
-      const payloadBuffer = Buffer14.from(await c.req.arrayBuffer());
+      const payloadBuffer = Buffer15.from(await c.req.arrayBuffer());
       return esm_default("chelonia/queueInvocation", contractID, async () => {
         const existingRaw = await esm_default("chelonia.db/get", `any:_private_kv_${contractID}_${key}`);
-        const existing = existingRaw != null && !Buffer14.isBuffer(existingRaw) ? Buffer14.from(existingRaw) : existingRaw;
+        const existing = existingRaw != null && !Buffer15.isBuffer(existingRaw) ? Buffer15.from(existingRaw) : existingRaw;
         const expectedEtag = c.req.header("if-match");
         if (!expectedEtag) {
           throw new HTTPException(400, { message: "if-match is required" });
@@ -78120,7 +78192,7 @@ function registerRoutes(app) {
         throw new HTTPException(401);
       }
       const resultRaw = await esm_default("chelonia.db/get", `any:_private_kv_${contractID}_${key}`);
-      const result = resultRaw != null && !Buffer14.isBuffer(resultRaw) ? Buffer14.from(resultRaw) : resultRaw;
+      const result = resultRaw != null && !Buffer15.isBuffer(resultRaw) ? Buffer15.from(resultRaw) : resultRaw;
       if (!result) {
         return notFoundNoCache(c);
       }
@@ -78268,8 +78340,6 @@ function registerRoutes(app) {
     }
   );
 }
-var CREDITS_WORKER_TASK_TIME_INTERVAL = 3e5;
-var OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL = 3e4;
 var SERVER_INSTANCE = "@instance/server";
 var PUBSUB_INSTANCE = "@instance/pubsub";
 init_esm4();
@@ -78413,10 +78483,10 @@ var subscriptionInfoWrapper = (subscriptionId, subscriptionInfo, extra) => {
         return function() {
           if ((count | 0) === 0) {
             if (!salt) {
-              salt = Buffer15.from(this.keys.auth, "base64url");
+              salt = Buffer16.from(this.keys.auth, "base64url");
             }
             if (!uaPublic) {
-              uaPublic = Buffer15.from(this.keys.p256dh, "base64url");
+              uaPublic = Buffer16.from(this.keys.p256dh, "base64url");
             }
             resultPromise = rfc8291Ikm_default(uaPublic, salt);
             count = 1;
@@ -78452,7 +78522,7 @@ var encryptPayload = async (subscription, data) => {
       if (done) break;
       chunks.push(new Uint8Array(value));
     }
-    return Buffer15.concat(chunks);
+    return Buffer16.concat(chunks);
   });
 };
 var postEvent = async (subscription, event) => {
@@ -78500,7 +78570,7 @@ var pushServerActionhandlers = {
     const { applicationServerKey, settings, subscriptionInfo } = payload;
     if (applicationServerKey) {
       const ourVapidPublicKey = getVapidPublicKey();
-      const theirVapidPublicKey = Buffer15.from(applicationServerKey, "base64").toString("base64url");
+      const theirVapidPublicKey = Buffer16.from(applicationServerKey, "base64").toString("base64url");
       if (ourVapidPublicKey !== theirVapidPublicKey) {
         socket.send(createMessage(REQUEST_TYPE.PUSH_ACTION, { type: PUSH_SERVER_ACTION_TYPE.SEND_PUBLIC_KEY, data: getVapidPublicKey() }));
         console.warn({ ourVapidPublicKey, theirVapidPublicKey }, "Refusing to store subscription because the associated public VAPID key does not match ours");
@@ -78571,7 +78641,7 @@ var { bold: bold2 } = import_npm_chalk2.default;
 var { PING, PONG, PUB, SUB, UNSUB, KV_FILTER } = NOTIFICATION_TYPE;
 var { ERROR, OK } = RESPONSE_TYPE;
 var defaultOptions3 = {
-  logPingRounds: process8.env.NODE_ENV !== "production" && !process8.env.CI,
+  logPingRounds: process9.env.NODE_ENV !== "production" && !process9.env.CI,
   logPongMessages: false,
   maxPayload: 6 * 1024 * 1024,
   pingInterval: 3e4
@@ -79158,7 +79228,7 @@ async function startServer() {
   assertServerIdConfigured();
   const configuredServerId = import_npm_nconf8.default.get("server_id");
   const reclaimForeignSubscriptions = !!import_npm_nconf8.default.get("server:reclaimForeignSubscriptions");
-  const appManifest = import_npm_nconf8.default.get("appManifest") || join72(import_npm_nconf8.default.get("server:appDir") || process9.cwd(), "chelonia.json");
+  const appManifest = import_npm_nconf8.default.get("appManifest") || join72(import_npm_nconf8.default.get("server:appDir") || process10.cwd(), "chelonia.json");
   const ARCHIVE_MODE = import_npm_nconf8.default.get("server:archiveMode");
   const host = import_npm_nconf8.default.get("server:host") || "0.0.0.0";
   const port = import_npm_nconf8.default.get("server:port") ?? 8e3;
@@ -79189,7 +79259,7 @@ async function startServer() {
     response.headers.set("X-Frame-Options", "DENY");
     return response;
   });
-  if (process9.env.NODE_ENV === "development" && !process9.env.CI) {
+  if (process10.env.NODE_ENV === "development" && !process10.env.CI) {
     currentApp.use("*", async (c, next) => {
       await next();
       const ip = getClientIP(c) || "unknown";
@@ -79461,13 +79531,13 @@ var globalExceptionHandlersInstalled = false;
 function installGlobalExceptionHandlers() {
   if (globalExceptionHandlersInstalled) return;
   globalExceptionHandlersInstalled = true;
-  process10.on("uncaughtException", (err) => {
+  process11.on("uncaughtException", (err) => {
     console.error(err, "[server] Unhandled exception");
-    process10.exit(1);
+    process11.exit(1);
   });
-  process10.on("unhandledRejection", (reason) => {
+  process11.on("unhandledRejection", (reason) => {
     console.error(reason, "[server] Unhandled promise rejection:", reason);
-    process10.exit(1);
+    process11.exit(1);
   });
 }
 function installSignalHandlers() {
@@ -79479,7 +79549,7 @@ function installSignalHandlers() {
       exit2(128 + code2);
     };
     signalHandlers.push([signal, handler]);
-    process10.on(signal, handler);
+    process11.on(signal, handler);
   };
   [
     ["SIGHUP", 1],
@@ -79494,7 +79564,7 @@ var exit2 = (code2) => {
   esm_default("okTurtles.events/once", SERVER_EXITING, () => {
     esm_default("okTurtles.eventQueue/queueEvent", SERVER_EXITING, async () => {
       await stopServer();
-      process10.nextTick(() => process10.exit(code2));
+      process11.nextTick(() => process11.exit(code2));
     });
   });
   esm_default("okTurtles.events/emit", SERVER_EXITING);
@@ -79502,13 +79572,13 @@ var exit2 = (code2) => {
 async function startServer2(options2 = {}) {
   const { installSignalHandlers: shouldInstallSignalHandlers = true } = options2;
   initializeLogger();
-  if (import_npm_nconf9.default.get("server:logLevel") && !process10.env.LOG_LEVEL) {
+  if (import_npm_nconf9.default.get("server:logLevel") && !process11.env.LOG_LEVEL) {
     console.warn(
       "[chel] Note: the server.logLevel setting has no effect; set the LOG_LEVEL environment variable instead."
     );
   }
   console.info(import_npm_chalk4.default.bold(
-    `Running in ${process10.env.NODE_ENV === "production" ? "production" : "development"} mode.`
+    `Running in ${process11.env.NODE_ENV === "production" ? "production" : "development"} mode.`
   ));
   if (shouldInstallSignalHandlers) {
     installGlobalExceptionHandlers();
@@ -79794,7 +79864,7 @@ var upgradeWebSocket = defineWebSocketHelper(async (c, events, options2) => {
 });
 var import_npm_nconf10 = __toESM(require_nconf());
 var getDashboardPath = () => {
-  const baseDir = import.meta.dirname || path7.join(process11.cwd(), "build");
+  const baseDir = import.meta.dirname || path7.join(process12.cwd(), "build");
   const dashboardPath = path7.resolve(baseDir, "dist-dashboard");
   return dashboardPath;
 };
@@ -82489,8 +82559,8 @@ function usage(yargs, y18n3, shim4) {
   function addUngroupedKeys(keys, aliases, groups, defaultGroup) {
     let groupedKeys = [];
     let toCheck = null;
-    Object.keys(groups).forEach((group) => {
-      groupedKeys = groupedKeys.concat(groups[group]);
+    Object.keys(groups).forEach((group2) => {
+      groupedKeys = groupedKeys.concat(groups[group2]);
     });
     keys.forEach((key) => {
       toCheck = [key].concat(aliases[key]);
@@ -83809,7 +83879,7 @@ function Yargs(processArgs = [], cwd = shim3.process.cwd(), parentRequire) {
     self2.group(key, usage2.getPositionalGroupName());
     return self2.option(key, opts);
   };
-  self2.group = function group(opts, groupName) {
+  self2.group = function group2(opts, groupName) {
     argsert("<string|array> <string>", [opts, groupName], arguments.length);
     const existing = preservedGroups[groupName] || groups[groupName];
     if (preservedGroups[groupName]) {
@@ -84232,7 +84302,7 @@ var parseArgs = () => {
   const commandModules = Object.values(commands_exports).map(
     (c) => handlerWrapper(c)
   );
-  const yargsInstance = yargs_default(hideBin(process12.argv)).version("3.4.0").strict().command(commandModules).demandCommand().help();
+  const yargsInstance = yargs_default(hideBin(process13.argv)).version("3.4.0").strict().command(commandModules).demandCommand().help();
   return yargsInstance;
 };
 var parseArgs_default = parseArgs;

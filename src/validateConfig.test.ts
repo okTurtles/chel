@@ -4,6 +4,7 @@ import {
   validateTomlConfig, ConfigSchema, knownKeysFor, validateConfigFile
 } from './validateConfig.ts'
 import { RouterConfigEntrySchema } from './serve/backend-schemas.ts'
+import { MAX_EVENT_BODY_BYTES } from './serve/constants.ts'
 import { nconfDefaults } from './config-defaults.ts'
 
 Deno.test({
@@ -128,6 +129,24 @@ Deno.test({
         assertEquals(result.warnings, [], `expected no warnings for ${key}`)
         assertEquals(result.errors, [`${`server.signup.${key}`}: must be a positive integer`])
       }
+    })
+
+    await t.step('errors on a first-message cap above the /event body limit', () => {
+      // `POST /event` rejects larger bodies before the handler runs, so such a
+      // cap would silently have no effect at all
+      const atLimit = validateTomlConfig({
+        server: { signup: { maxFirstMessageBytes: MAX_EVENT_BODY_BYTES } }
+      })
+      assertEquals(atLimit.warnings, [])
+      assertEquals(atLimit.errors, [])
+
+      const overLimit = validateTomlConfig({
+        server: { signup: { maxFirstMessageBytes: MAX_EVENT_BODY_BYTES + 1 } }
+      })
+      assertEquals(overLimit.warnings, [])
+      assertEquals(overLimit.errors, [
+        `server.signup.maxFirstMessageBytes: must not exceed the ${MAX_EVENT_BODY_BYTES} byte POST /event body limit`
+      ])
     })
 
     await t.step('errors on negative or fractional byte-size settings', () => {

@@ -73,9 +73,13 @@ src/
     ├── database.ts      # Database layer (SBP selectors)
     ├── database-*.ts    # Database backend implementations (fs, sqlite, redis)
     ├── routes.ts        # HTTP route definitions
+    ├── signup-guard.ts  # Size/manifest checks for ownerless first messages
+    ├── signup-rate-limit.ts # Per-IP registration limits (production only)
+    ├── config-utils.ts  # Coerced, range-checked nconf readers
     ├── pubsub.ts        # WebSocket pub/sub
     ├── auth.ts          # Authentication logic
     ├── dashboard/       # Vue.js dashboard UI (separate workspace)
+    ├── *-test-helpers.ts # Shared test scaffolding (not test suites)
     └── *.test.ts        # Inline test files
 
 scripts/
@@ -93,6 +97,7 @@ scripts/
 test/
 ├── assets/              # Test fixtures (keys, manifests, contracts)
 ├── hash.test.ts         # Hash command tests
+├── readme-config.test.ts # Guards README against config-default drift
 └── signature.test.ts    # Signature verification tests
 ```
 
