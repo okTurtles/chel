@@ -114,23 +114,19 @@ test/
 ```
 
 Every `*.test.ts` file has to be committed. An untracked suite disappears on a
-fresh clone, and a `deno.json` task that points at it then fails with a
-module-resolution error instead of a test failure, so the coverage is lost
-silently. `deno task test` enforces this (see `scripts/tracked-tests.test.ts`).
+fresh clone. A `deno.json` task that points at it then fails with a
+module-resolution error, not a test failure. `deno task test` enforces this
+rule (see `scripts/tracked-tests.test.ts`).
 
 Build-script notes:
 
-- Compilation is parameterised per target, not shared: `compileFlags(target)`
-  and `nativeAddonPaths(target)` in `scripts/targets.ts` replace the former
-  `COMPILE_FLAGS` / `NATIVE_ADDON_PATHS` constants, and each binary embeds only
+- Compilation is parameterised per target: `compileFlags(target)` and
+  `nativeAddonPaths(target)` in `scripts/targets.ts`. Each binary embeds only
   its own platform's prebuilt SQLite addon.
-- Cache keys follow suit: `targetFingerprint(target)` in `scripts/binaries.ts`
-  replaces `bundleFingerprint()`, and `tarFingerprint()` in `scripts/compile.ts`
-  now takes the target too.
-- `ALL_NATIVE_ADDON_PATHS` is the union over all targets; it is what the mtime
-  normalisation (needed for reproducible binaries) has to walk.
-- `CHEL_SMOKE_COMPILE=1 deno task smoke` is the only test that actually
-  compiles a binary and executes it; it is skipped by `deno task test`.
+- Cache keys are per target: `targetFingerprint(target)` in
+  `scripts/binaries.ts` and `tarFingerprint()` in `scripts/compile.ts`.
+- `ALL_NATIVE_ADDON_PATHS` is the union over all targets; the mtime
+  normalisation (needed for reproducible binaries) walks it.
 
 ## Code Conventions
 

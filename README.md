@@ -610,26 +610,14 @@ the tarballs and the npm sub-packages share one set of them, kept under the
 gitignored `dist/` directory. `deno task dist` remains usable on its own, at
 any time, to produce the tarballs without publishing anything.
 
-Reuse is decided by content, not timestamps: each artifact is stamped with a
-fingerprint of everything the binary embeds (all of `build/`, plus the one
-prebuilt SQLite addon that platform needs), the Deno version, and the compile
-flags. Any change to the bundle, a Deno upgrade, or a change to the compile
-flags therefore recompiles automatically, while re-running `deno task dist`
-with nothing changed does no work at all. An interrupted or failed run never
-leaves a half-built artifact looking current. To rebuild everything from
-scratch anyway, set `CHEL_FORCE_COMPILE=1` or delete `dist/`.
+The cache operates on content, not on timestamps. When the bundle, the Deno
+version, or a compile flag changes, `deno task dist` compiles the binaries
+again. When nothing changes, it does no compile work. To compile all binaries
+again, set `CHEL_FORCE_COMPILE=1` or delete `dist/`.
 
-The fingerprint is computed per target rather than once for all of them,
-because the binaries no longer share their inputs: each embeds only its own
-platform's SQLite addon instead of all eight, which is worth 14.8 MB per
-binary (~7.5 MB per compressed tarball). A practical side effect is that
-reinstalling the SQLite package only invalidates the targets whose own addon
-actually changed.
-
-To verify that a freshly compiled binary really can load the addon it embeds,
-run `CHEL_SMOKE_COMPILE=1 deno task smoke`. It compiles the host platform's
-binary and runs a real SQLite migration through it. It is excluded from
-`deno task test` because it costs minutes and ~100 MB.
+To check that a compiled binary loads its SQLite addon, run
+`CHEL_SMOKE_COMPILE=1 deno task smoke`. This test compiles a binary and is
+therefore not part of `deno task test`.
 
 ## History
 

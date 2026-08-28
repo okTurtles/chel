@@ -21,17 +21,11 @@ jobs:
     - name: Run tests
       run: deno task test
 
-  # `deno task test` only compares strings where the native SQLite addon is
-  # concerned: whether a compiled binary can actually load the one addon it
-  # embeds is decided by the interplay of `--exclude node_modules` and the
-  # per-target `--include` paths, and nothing but a real compile exercises it.
-  # A wrong mapping there produces a binary that builds and starts fine and
-  # fails only when someone selects the sqlite backend, so it is worth catching
-  # here rather than at release time.
-  #
-  # Separate from `build` because it costs minutes and ~100 MB of disk, and
-  # non-blocking for now: it is new, and a flake in it must not gate merges.
-  # Drop continue-on-error once it has a track record.
+  # `deno task test` is insufficient to test whether the native SQLite addon works
+  # This can only be tested using a real compile and using the SQLite backend
+  # This 'smoke' test does precisely that: an E2E test running
+  # a dummy migration that uses the SQLite backend
+  # This test is separate from `build` and the regular tests because it takes up about 100 MiB of space
   smoke:
     runs-on: ubuntu-24.04
     continue-on-error: true

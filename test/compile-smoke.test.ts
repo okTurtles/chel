@@ -1,12 +1,17 @@
 // Opt-in end-to-end check that a compiled binary can actually load the single
 // SQLite addon it embeds.
 //
-// This is the only test that exercises the prebuild mapping in
-// scripts/paths.ts for real: everything else compares strings. A wrong mapping
-// produces a binary that compiles and starts fine and only fails the moment
-// the sqlite backend is used, so it is worth having, but a compile costs
-// minutes and ~100 MB of disk. It therefore stays out of `deno task test` and
-// runs on request:
+// `prebuild(os, cpu)` in scripts/paths.ts decides which addon file a compiled
+// binary embeds. Only this test operates a real binary. All the other tests
+// compare strings.
+//
+// An incorrect mapping gives a binary that compiles and starts without an
+// error. The error occurs only when the sqlite backend loads the embedded
+// addon. For this reason, this test is necessary.
+//
+// However, a compile needs approximately 100 MB of disk space. Thus,
+// `deno task test` does not include this test. Start it manually with this
+// command:
 //
 //   CHEL_SMOKE_COMPILE=1 deno task smoke
 //
