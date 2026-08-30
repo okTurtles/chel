@@ -29,8 +29,8 @@
     "jsr:@std/streams/": "jsr:@std/streams@1.0.10/",
     "jsr:@std/io/": "jsr:@std/io@0.225.2/",
     "npm:better-sqlite3": "npm:better-sqlite3@13.0.3",
-    // TODO: re-pin once DefinitelyTyped publishes typings for better-sqlite3
-    // v10+. 9.6.0 is currently the newest one there is, so `deno check` only
+    // TODO: update pinned version once newer typings for better-sqlite3 are available
+    // v9.6.0 is currently the newest one there is, so `deno check` only
     // knows the v9-era API of the v13 driver above; see the header comment in
     // src/serve/database-sqlite.ts.
     "npm:@types/better-sqlite3": "npm:@types/better-sqlite3@9.6.0",
@@ -49,9 +49,7 @@
     "npm:three": "npm:three@0.151.3",
     "npm:turtledash": "npm:turtledash@1.0.3",
     "npm:vue": "npm:vue@2.7.16",
-    // Bare specifier for src/types/vue-shims.d.ts, whose `declare module`
-    // bodies import 'vue'; resolved from node_modules by editors using
-    // tsconfig.json and by `deno check` via this mapping.
+    // Unprefixed 'vue' used in src/types/vue-shims.d.ts
     "vue": "npm:vue@2.7.16",
     "npm:vue-clickaway": "npm:vue-clickaway@2.2.2",
     "npm:vue-router": "npm:vue-router@3.6.5",
