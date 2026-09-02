@@ -6,10 +6,6 @@
 //      subscriptions whose `serverId` doesn't match the configured one,
 //      including legacy entries written before `server_id` existed.
 //   3. `serve()` in `serve.ts` refuses to start when `server_id` is missing.
-//
-// `jsr:@db/sqlite` is loaded purely to keep the Deno memory-leak checker
-// happy (see other *.test.ts files in this directory).
-import 'jsr:@db/sqlite'
 import { assert, assertEquals, assertRejects } from 'jsr:@std/assert'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'

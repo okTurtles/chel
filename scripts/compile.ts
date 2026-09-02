@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-env --allow-run --allow-read=. --allow-write=./build,./dist
+#!/usr/bin/env -S deno run --allow-env --allow-run --allow-read=. --allow-write=./build,./dist,./node_modules
 
 // When: `deno task compile`, and as the last step of `deno task dist`.
 //
@@ -15,13 +15,13 @@
 // nor re-archived.
 
 import { encodeHex } from 'jsr:@std/encoding/hex'
-import { TARGETS } from './targets.ts'
+import { TARGETS, type Target } from './targets.ts'
 import { BIN_DIR, DIST_DIR } from './paths.ts'
 import {
-  bundleFingerprint,
   ensureArtifact,
   ensureBinaries,
-  normalizeMtimes
+  normalizeMtimes,
+  targetFingerprint
 } from './binaries.ts'
 
 // Static import for TS JSON-import-attribute type inference. The path also
@@ -48,8 +48,13 @@ const { default: { version } } = await import('../package.json', { with: { type:
 const TAR_FORMAT_VERSION = '1'
 
 // Cache key for a tarball: the inputs it holds, plus how it was packed.
-export function tarFingerprint (bundleFp: string): string {
-  return `${bundleFp}:tar${TAR_FORMAT_VERSION}`
+//
+// `target.binary` is folded in because it shapes the archive without appearing
+// anywhere else in the key: renaming a platform's binary leaves both the
+// archive path and the binary fingerprint untouched, so without it a rename
+// would silently ship the previously packed archive.
+export function tarFingerprint (targetFp: string, target: Target): string {
+  return `${targetFp}:tar${TAR_FORMAT_VERSION}:${target.binary}`
 }
 
 // Detect whether the system `tar` is GNU tar. bsdtar (macOS default) rejects
@@ -167,9 +172,9 @@ async function printSha256Sums (dir: string, prefix: string): Promise<void> {
 
 export async function compile (): Promise<void> {
   await ensureBinaries()
-  const fingerprint = tarFingerprint(await bundleFingerprint())
   for (const target of TARGETS) {
     const { denoTarget } = target
+    const fingerprint = tarFingerprint(await targetFingerprint(target), target)
     const archivePath = `${DIST_DIR}/chel-v${version}-${denoTarget}.tar.gz`
     // The archive holds `<target>/<binary>`, so it can be created straight out
     // of the shared binary cache: BIN_DIR is already laid out that way.

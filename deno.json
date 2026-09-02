@@ -2,16 +2,17 @@
   "tasks": {
     "chel": "deno task lint && deno task build && deno run --allow-net --allow-read=.,../locales,../../../locales,$HOME/.cache/deno,$HOME/Library/Caches/deno --allow-ffi --allow-write=. --allow-sys --allow-env build/main.js",
     "lint": "deno run --allow-env --allow-read --allow-sys='cpus' npm:eslint@9.31.0 ./src ./scripts",
-    "check": "deno check scripts/",
-    "compile": "deno run --allow-env --allow-ffi --allow-sys='hostname' --allow-run --allow-read --allow-write=./build,./dist scripts/compile.ts",
+    "check": "deno check scripts/ src/",
+    "compile": "deno run --allow-env --allow-ffi --allow-sys='hostname' --allow-run --allow-read --allow-write=./build,./dist,./node_modules scripts/compile.ts",
     "build": "deno run --node-modules-dir --allow-ffi --allow-run --allow-read --allow-env --allow-write=./build --allow-sys='cpus,homedir' scripts/dashboard-esbuild.ts && deno run --node-modules-dir --allow-ffi --allow-run --allow-read --allow-env --allow-write=./build --allow-sys='cpus,homedir,hostname' scripts/build.ts",
     "dist": "deno task lint && deno task build && deno task compile",
-    "publish": "deno run --allow-run --allow-read --allow-write=./build,./dist,./package.json --allow-env scripts/publish.ts",
+    "publish": "deno run --allow-run --allow-read --allow-write=./build,./dist,./node_modules,./package.json --allow-env scripts/publish.ts",
     "sync-versions": "deno run --allow-read=. --allow-write=. --allow-run scripts/sync-versions.ts",
-    "test": "deno task lint && deno task check && deno test --unstable-worker-options --allow-read=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-write=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-env --allow-ffi --allow-net --allow-sys --allow-run=node"
+    "smoke": "deno test --allow-read --allow-write=.,./dist,./node_modules --allow-env --allow-ffi --allow-net --allow-sys --allow-run test/compile-smoke.test.ts",
+    "test:symlinks": "deno test --allow-read --allow-write --allow-env=CI,LIGHTWEIGHT_CLIENT,MAX_EVENTS_AFTER,NODE_ENV,UNSAFE_TRUST_ALL_MANIFEST_SIGNING_KEYS scripts/binaries-symlinks.test.ts src/migrate-symlinks.test.ts",
+    "test": "deno task lint && deno task check && deno test --unstable-worker-options --allow-read=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-write=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-env --allow-ffi --allow-net --allow-sys --allow-run=node,git && deno task test:symlinks"
   },
   "imports": {
-    "@db/sqlite": "jsr:@db/sqlite@0.13.0",
     "~/": "./src/",
     "assert": "node:assert",
     "buffer": "node:buffer",
@@ -27,7 +28,12 @@
     "jsr:@std/path/": "jsr:@std/path@1.1.1/",
     "jsr:@std/streams/": "jsr:@std/streams@1.0.10/",
     "jsr:@std/io/": "jsr:@std/io@0.225.2/",
-    "jsr:@db/sqlite": "jsr:@db/sqlite@0.13.0",
+    "npm:better-sqlite3": "npm:better-sqlite3@13.0.3",
+    // TODO: update pinned version once newer typings for better-sqlite3 are available
+    // v9.6.0 is currently the newest one there is, so `deno check` only
+    // knows the v9-era API of the v13 driver above; see the header comment in
+    // src/serve/database-sqlite.ts.
+    "npm:@types/better-sqlite3": "npm:@types/better-sqlite3@9.6.0",
     "npm:@types/node": "npm:@types/node@24.0.13",
     "npm:@vue/component-compiler": "npm:@vue/component-compiler@4.2.4",
     "npm:@sbp/sbp": "npm:@sbp/sbp@2.4.1",
@@ -43,6 +49,8 @@
     "npm:three": "npm:three@0.151.3",
     "npm:turtledash": "npm:turtledash@1.0.3",
     "npm:vue": "npm:vue@2.7.16",
+    // Unprefixed 'vue' used in src/types/vue-shims.d.ts
+    "vue": "npm:vue@2.7.16",
     "npm:vue-clickaway": "npm:vue-clickaway@2.2.2",
     "npm:vue-router": "npm:vue-router@3.6.5",
     "npm:vuelidate": "npm:vuelidate@0.7.6",

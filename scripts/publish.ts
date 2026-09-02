@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-run --allow-read --allow-write=./build,./dist,./package.json --allow-env
+#!/usr/bin/env -S deno run --allow-run --allow-read --allow-write=./build,./dist,./node_modules,./package.json --allow-env
 
 // When: Automatically invoked by `npm publish` via the "prepublishOnly"
 //       script in package.json. Runs just before the main package is

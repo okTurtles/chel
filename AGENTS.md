@@ -4,9 +4,7 @@ Guide for AI agents working in the Chelonia CLI (`chel`) codebase.
 
 ## Project Overview
 
-**Chelonia CLI** (`@chelonia/cli`) is a Deno-based TypeScript command-line tool for Chelonia contract development, deployment, and server management. It provides commands for generating cryptographic keys, creating contract manifests, deploying contracts, running development servers, and managing contract versions.
-
-Chelonia is a system for building arbitrary federated, end-to-end encrypted apps. `chel` contains both the server and various utility functions for interacting with it, as well as generating manifests and pinning contracts during development.
+**Chelonia CLI** (`@chelonia/cli`) is a Deno-based TypeScript command-line tool for Chelonia contract development, deployment, and server management. Chelonia is a system for building arbitrary federated, end-to-end encrypted apps; `chel` contains the server plus utilities for generating manifests and pinning contracts during development.
 
 ## Essential Commands
 
@@ -14,23 +12,18 @@ All commands are run via Deno tasks defined in `deno.json`:
 
 ```bash
 deno task lint            # Lint the codebase
-deno task test            # Run tests
+deno task test            # Run tests (includes test:symlinks)
 deno task build           # Build the project (outputs to build/)
 deno task compile         # Native binaries + release tarballs (outputs to dist/)
 deno task dist            # Full distribution (lint + build + compile)
 deno task chel -- <args>  # Run the CLI locally (lint + build + execute)
 ```
 
-### Individual CLI Commands
-
-After building, run the CLI directly:
+To run the CLI directly:
 
 ```bash
-# Development (via Deno)
-deno run --allow-net --allow-read=. --allow-write=. --allow-sys --allow-env src/main.ts <command>
-
-# Or after building
-./build/main.js <command>
+deno run --allow-net --allow-read=. --allow-write=. --allow-sys --allow-env --allow-ffi src/main.ts <command>
+./build/main.js <command>  # after building
 ```
 
 Available CLI commands:
@@ -53,47 +46,14 @@ src/
 ├── commands.ts          # Command module type definitions and exports
 ├── parseArgs.ts         # Yargs CLI argument parsing
 ├── parseConfig.ts       # Configuration (nconf + chel.toml)
-├── utils.ts             # Shared utilities (file ops, validation, etc.)
-├── deploy.ts            # Contract deployment command
-├── manifest.ts          # Manifest generation command
-├── serve.ts             # Development server command
-├── pin.ts               # Contract versioning command
-├── upload.ts            # File upload command
-├── hash.ts              # File hashing command
-├── migrate.ts           # Database migration command
-├── keygen.ts            # Key generation command
-├── verifySignature.ts   # Signature verification command
-├── version.ts           # Version display command
-├── get.ts               # Data retrieval command
-├── eventsAfter.ts       # Event query commands
+├── utils.ts             # Shared utilities
+├── <command>.ts         # One file per CLI command (deploy, manifest, serve, pin, ...)
 ├── types/               # TypeScript type definitions
-└── serve/               # Server implementation
-    ├── index.ts         # Main server entry
-    ├── server.ts        # Hapi server setup
-    ├── database.ts      # Database layer (SBP selectors)
-    ├── database-*.ts    # Database backend implementations (fs, sqlite, redis)
-    ├── routes.ts        # HTTP route definitions
-    ├── pubsub.ts        # WebSocket pub/sub
-    ├── auth.ts          # Authentication logic
-    ├── dashboard/       # Vue.js dashboard UI (separate workspace)
+└── serve/               # Server implementation (routes, database backends, pubsub, dashboard)
     └── *.test.ts        # Inline test files
 
-scripts/
-├── build.ts             # esbuild bundling
-├── binaries.ts          # Shared, content-addressed native binary cache
-├── compile.ts           # Release tarballs (reproducible .tar.gz + checksums)
-├── publish.ts           # npm platform sub-packages (prepublishOnly hook)
-├── targets.ts           # Supported platforms + `deno compile` invocation
-├── paths.ts             # Shared build/release artifact paths
-├── sync-versions.ts     # Keeps optionalDependencies in sync (version hook)
-├── dashboard-esbuild.ts # Dashboard UI bundling
-├── lint.ts              # ESLint wrapper
-└── dist.ts              # Inert placeholder; `deno task dist` is defined in deno.json
-
-test/
-├── assets/              # Test fixtures (keys, manifests, contracts)
-├── hash.test.ts         # Hash command tests
-└── signature.test.ts    # Signature verification tests
+scripts/                 # Build, lint, and release tooling (plus their tests)
+test/                    # Test suites; fixtures live in test/assets/
 ```
 
 ## Code Conventions
@@ -144,100 +104,12 @@ import { exit, readJsonFile } from '~/utils.ts'
 import type { CommandModule } from './commands.ts'
 ```
 
-## Architecture Patterns
+## Guidelines
 
-### SBP (Selector-Based Programming)
-
-The codebase uses `@sbp/sbp` for dependency injection, event handling, code organization, RPC, and more:
-
-```typescript
-// Register selectors
-sbp('sbp/selectors/register', {
-  'backend/db/streamEntriesAfter': async function (...) { ... },
-  'backend/db/lookupName': async function (...) { ... }
-})
-
-// Call selectors
-await sbp('chelonia.db/get', key)
-await sbp('okTurtles.events/emit', EVENT_NAME, data)
-```
-
-### Command Module Pattern
-
-Each CLI command exports a `module` object conforming to `CommandModule`:
-
-```typescript
-export const module = {
-  command: 'deploy <manifests..>',
-  describe: 'Deploy contracts',
-  builder: (yargs) => {
-    return yargs
-      .option('url', { string: true, describe: 'Server URL' })
-      .positional('manifests', { array: true, type: 'string' })
-  },
-  postHandler: (argv) => {
-    return deploy(argv)
-  }
-} as CommandModule<object, Params>
-```
-
-Key difference from yargs: `handler` is optional, `postHandler` is required. The `postHandler` is set by `parseArgs` and executed in `main.ts` after config parsing.
-
-### Database Backends
-
-Three persistence backends available:
-- `mem` - In-memory (default in development)
-- `fs` - Filesystem
-- `sqlite` - SQLite database
-- `redis` - Redis server
-
-Configured via `chel.toml` or environment variables with `__` separator.
-
-### Configuration
-
-Uses `nconf` with priority: CLI args > Environment > chel.toml > Defaults
-
-```toml
-# chel.toml example
-[server]
-host = "0.0.0.0"
-port = 8000
-dashboardPort = 8888
-
-[database]
-backend = "sqlite"
-```
-
-## Testing
-
-### Running Tests
-
-```bash
-deno task test
-```
-
-### Test Structure
-
-Tests use Deno's built-in test framework:
-
-```typescript
-import { assertEquals, assertRejects } from 'jsr:@std/assert'
-
-Deno.test({
-  name: "Test name",
-  async fn (t) {
-    await t.step('subtest description', async () => {
-      const result = await functionUnderTest()
-      assertEquals(result, expected)
-    })
-  }
-})
-```
-
-Test fixtures are in `test/assets/` including:
-- Key files (`.json`)
-- Contract manifests (`.manifest.json`)
-- Sample contracts (`.js`)
+- **Tests**: Use Deno's built-in test framework. New tests go next to the code (`src/**/*.test.ts`) or in `test/`; shared fixtures go in `test/assets/`. Every `*.test.ts` file must be committed (enforced by `scripts/tracked-tests.test.ts`).
+- **Server code**: Organized around SBP selectors (`@sbp/sbp`) with several database backends; see `src/serve/` and `src/validateConfig.ts`.
+- **Tests**: Use Deno's built-in test framework. New tests go next to the code (`src/**/*.test.ts`) or in `test/`; shared fixtures go in `test/assets/`. Every `*.test.ts` file must be committed (enforced by `scripts/tracked-tests.test.ts`).
+- **Server code**: Organized around SBP selectors (`@sbp/sbp`) with several database backends; see `src/serve/` and `src/validateConfig.ts`.
 
 ## Important Patterns & Gotchas
 
@@ -246,8 +118,11 @@ Test fixtures are in `test/assets/` including:
 Deno requires explicit permissions. Scripts include shebangs with required flags:
 
 ```typescript
-#!/usr/bin/env -S deno run --allow-net --allow-read=. --allow-write=. --allow-sys --allow-env
+#!/usr/bin/env -S deno run --allow-net --allow-read=. --allow-write=. --allow-sys --allow-env --allow-ffi
 ```
+
+`--allow-ffi` is what lets the `sqlite` database backend load its native addon;
+without it, selecting that backend fails at startup.
 
 ### 2. Deno Bundle Deprecation
 
@@ -299,34 +174,19 @@ Manifests are JSON with signed body:
 }
 ```
 
-## Key Dependencies
-
-- `@sbp/sbp` - Selector-based programming / dependency injection
-- `@chelonia/lib` - Core Chelonia library
-- `@chelonia/crypto` - Cryptographic operations (Ed25519)
-- `yargs` - CLI argument parsing
-- `zod` - Schema validation
-- `@hapi/hapi` - HTTP server framework
-- `@db/sqlite` - SQLite bindings for Deno
-- `multiformats` - CID / multihash support
-- `esbuild` - Bundling
-
 ## Development Workflow
 
-1. **Make changes** to TypeScript files in `src/`
-2. **Run lint**: `deno task lint`
-3. **Run tests**: `deno task test`
-4. **Build**: `deno task build`
-5. **Test CLI**: `./build/main.js <command>`
+1. Make changes in `src/`
+2. `deno task lint`
+3. `deno task test`
+4. `deno task build`
+5. Try the CLI: `./build/main.js <command>`
 
 ## Release Process
 
 1. `npm version <patch|minor|major>` (rebuilds and commits the bundle)
 2. `deno task dist` to compile the binaries and pack the release tarballs
-   (`dist/chel-v<version>-<target>.tar.gz`, SHA256 checksums printed)
 3. `git diff --exit-code -- build` to confirm the rebuild is reproducible
-4. `npm publish --access public`, which reuses the binaries from step 2
-   instead of compiling its own copies
+4. `npm publish --access public`
 
-See the Packaging section of README.md for the full procedure and for how the
-binary cache decides what can be reused.
+See the Packaging section of README.md for the full procedure.
