@@ -4,6 +4,7 @@ import {
   validateTomlConfig, ConfigSchema, knownKeysFor, validateConfigFile
 } from './validateConfig.ts'
 import { RouterConfigEntrySchema } from './serve/backend-schemas.ts'
+import { MAX_EVENT_BODY_BYTES } from './serve/constants.ts'
 import { nconfDefaults } from './config-defaults.ts'
 
 Deno.test({
@@ -24,8 +25,11 @@ Deno.test({
           archiveMode: false,
           signup: {
             disabled: false,
+            maxFirstMessageBytes: 5120,
+            maxContractSizeBytes: 512000,
             limit: { disabled: false, minute: 2, hour: 10, day: 50 }
           },
+          billing: { freeAllowanceBytes: 10485760 },
           vapid: { email: 'a@b.c' }
         },
         database: {
@@ -110,6 +114,69 @@ Deno.test({
       assertEquals(
         result.errors[0],
         'server.signup.limit.minute: must be a positive integer'
+      )
+    })
+
+    await t.step('accepts a zero free allowance (disables the free tier)', () => {
+      const result = validateTomlConfig({ server: { billing: { freeAllowanceBytes: 0 } } })
+      assertEquals(result.warnings, [])
+      assertEquals(result.errors, [])
+    })
+
+    await t.step('errors on a zero signup size cap (use signup.disabled instead)', () => {
+      for (const key of ['maxFirstMessageBytes', 'maxContractSizeBytes'] as const) {
+        const result = validateTomlConfig({ server: { signup: { [key]: 0 } } })
+        assertEquals(result.warnings, [], `expected no warnings for ${key}`)
+        assertEquals(result.errors, [`${`server.signup.${key}`}: must be a positive integer`])
+      }
+    })
+
+    await t.step('errors on a first-message cap above the /event body limit', () => {
+      // `POST /event` rejects larger bodies before the handler runs, so such a
+      // cap would silently have no effect at all
+      const atLimit = validateTomlConfig({
+        server: { signup: { maxFirstMessageBytes: MAX_EVENT_BODY_BYTES } }
+      })
+      assertEquals(atLimit.warnings, [])
+      assertEquals(atLimit.errors, [])
+
+      const overLimit = validateTomlConfig({
+        server: { signup: { maxFirstMessageBytes: MAX_EVENT_BODY_BYTES + 1 } }
+      })
+      assertEquals(overLimit.warnings, [])
+      assertEquals(overLimit.errors, [
+        `server.signup.maxFirstMessageBytes: must not exceed the ${MAX_EVENT_BODY_BYTES} byte POST /event body limit`
+      ])
+    })
+
+    await t.step('errors on negative or fractional byte-size settings', () => {
+      const cases: Array<{ path: string, value: number }> = [
+        { path: 'server.signup.maxFirstMessageBytes', value: -1 },
+        { path: 'server.signup.maxContractSizeBytes', value: 1.5 },
+        { path: 'server.billing.freeAllowanceBytes', value: -1024 }
+      ]
+      for (const { path, value } of cases) {
+        const [, group, key] = path.split('.')
+        const result = validateTomlConfig({
+          server: { [group]: { [key]: value } }
+        })
+        assertEquals(result.warnings, [], `expected no warnings for ${path}`)
+        assertEquals(result.errors.length, 1, `expected one error for ${path}`)
+        if (!result.errors[0].startsWith(`${path}:`)) {
+          throw new Error(`Unexpected error for ${path}: ${result.errors[0]}`)
+        }
+      }
+    })
+
+    await t.step('suggests the intended key for a typo inside server.billing', () => {
+      const result = validateTomlConfig({
+        server: { billing: { freeAlowanceBytes: 1024 } }
+      })
+      assertEquals(result.errors, [])
+      assertEquals(result.warnings.length, 1)
+      assertEquals(
+        result.warnings[0],
+        'unknown key server.billing.freeAlowanceBytes (did you mean freeAllowanceBytes?)'
       )
     })
 
@@ -351,6 +418,7 @@ Deno.test({
         'server',
         'server.signup',
         'server.signup.limit',
+        'server.billing',
         'server.vapid',
         'database',
         'database.backendOptions',

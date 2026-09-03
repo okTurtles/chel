@@ -124,10 +124,13 @@ Deno.test({
           `# archiveMode = ${d.server.archiveMode}`,
           `# reclaimForeignSubscriptions = ${d.server.reclaimForeignSubscriptions}`,
           `# disabled = ${d.server.signup.disabled}`,
+          `# maxFirstMessageBytes = ${d.server.signup.maxFirstMessageBytes}`,
+          `# maxContractSizeBytes = ${d.server.signup.maxContractSizeBytes}`,
           `# disabled = ${d.server.signup.limit.disabled}`,
           `# minute = ${d.server.signup.limit.minute}`,
           `# hour = ${d.server.signup.limit.hour}`,
           `# day = ${d.server.signup.limit.day}`,
+          `# freeAllowanceBytes = ${d.server.billing.freeAllowanceBytes}`,
           `# lruNumItems = ${d.database.lruNumItems}`
         ]
         for (const line of expectedCommented) {

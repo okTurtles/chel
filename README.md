@@ -418,7 +418,102 @@ email = "admin@example.com"
 
 [database]
 backend = "sqlite"
+
+# Signup size caps and the billing free tier; see
+# "Signup, registration, and billing" below.
+# [server.signup]
+# maxFirstMessageBytes = 5120
+# maxContractSizeBytes = 512000
+#
+# [server.billing]
+# freeAllowanceBytes = 10485760
 ```
+
+#### Signup, registration, and billing
+
+The first message of a contract posted to `POST /event` without shelter
+credentials (an *ownerless* first message) creates a new **billable entity** —
+an identity-like root contract. This is name-agnostic: any contract manifest is
+accepted, not just `gi.contracts/identity`, and username registration via the
+`shelter-namespace-registration` header likewise works for any such contract.
+Contract naming therefore no longer affects registration.
+
+One consequence worth being aware of when operating a server: because the
+contract name is no longer inspected, *any* contract deployed to the server
+(not only identity contracts) can be used to create a billable entity and to
+claim a username. What distinguishes a root contract is that it was created
+without credentials, not what it is called. Sending credentials *and* a
+namespace registration header is accepted, but the name is ignored, since the
+resulting contract belongs to an existing billable entity rather than being one.
+
+Ownerless first messages are still subject to:
+
+- `server.signup.disabled` (default `false`) — reject new registrations with
+  `403` when `true`.
+- `server.signup.limit.{minute,hour,day}` (defaults `2`/`10`/`50` per IP) —
+  reject with `429` when an IP exceeds a limit. **Enforced only when
+  `NODE_ENV=production`**: on any other server they are inactive no matter what
+  they are set to, and a warning saying so is logged at startup. Set
+  `server.signup.limit.disabled = true` to turn them off in production too.
+  IPv6 clients are counted per `/64` subnet rather than per address, since a
+  single client can usually get a whole `/64`.
+- `server.signup.maxFirstMessageBytes` (default `5120`) — reject with `413`
+  when the serialized first message exceeds this size. `POST /event` rejects any
+  request body over 1 MiB (1048576 bytes) outright, before this cap is
+  consulted, so a larger value cannot take effect: it is a validation error in
+  `chel.toml`, and is clamped with a warning when it comes from the environment
+  or the command line.
+- `server.signup.maxContractSizeBytes` (default `512000`) — reject with `413`
+  when the combined size of the contract sources referenced by the manifest
+  (including the slim variant, if any) exceeds this size.
+
+Checking the source cap requires the manifest and its sources to be deployed on
+the server already, so registering against an unknown manifest is rejected with
+`422` at this point rather than failing later while the message is processed.
+The source hashes a manifest names are validated as contract-source CIDs before
+being looked up, so a manifest cannot point the size check at unrelated database
+keys.
+
+The message size cap is checked first, since the message is already in memory.
+The remaining checks then run in the order listed above, so that a rejected
+request cannot make the server read the manifest and its contract sources from
+the database; a side effect is that rejected requests also count towards the
+per-IP limits.
+
+Both caps are sanity limits on how much can be written before anything is known
+about who is writing it, so they need headroom over what real clients send: a
+registration carrying several keys is a few kilobytes, and the source cap has to
+stay above the combined size of the full and slim builds of the largest contract
+users register with. Raise them rather than leaving signups failing with `413`.
+
+Each billable entity is billed for its total owned storage: the root contract
+plus everything it owns (e.g. direct-message contracts, file attachments, and
+KV data). Storage up to `server.billing.freeAllowanceBytes` (default
+`10485760`, i.e. 10 MiB, shared across all of the entity's owned resources) is
+free; only the excess is charged. Set it to `0` to disable the free tier and
+charge from the first byte. Because the billing worker runs in its own thread
+with no access to `chel.toml`, the server persists the allowance to the database
+at startup, so changes take effect on the next server start.
+
+Note that charges are currently recorded but not enforced: a billable entity
+whose balance goes negative keeps being served. Until enforcement is added, the
+signup limits bound only how many free allowances a client can claim — not how
+much unpaid storage a single registration can accumulate.
+
+It is worth being explicit about what is *not* bounded, since everything above
+applies only to the message that creates a billable entity:
+
+- Further messages to an existing contract are neither size-capped (beyond the
+  1 MiB `POST /event` body limit) nor rate-limited.
+- File uploads are capped per request by `server.fileUploadMaxBytes`, but not in
+  aggregate.
+- Storage beyond the free allowance is charged for and the resulting balance is
+  recorded, but nothing refuses service on account of it.
+
+So a registration that gets through can keep writing. `server.signup.disabled`
+is the only setting that stops new entities from being created at all; bounding
+what existing ones write is, until charge enforcement exists, a job for whatever
+fronts the server (e.g. a reverse proxy).
 
 ### `chelonia.json` — App Properties
 

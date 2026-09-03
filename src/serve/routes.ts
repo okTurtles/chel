@@ -7,11 +7,9 @@ import { blake32Hash, createCID, maybeParseCID, multicodes } from 'npm:@chelonia
 import 'npm:@chelonia/lib/persistent-actions'
 import { getConnInfo } from 'npm:@hono/node-server/conninfo'
 import sbp from 'npm:@sbp/sbp'
-import Bottleneck from 'npm:bottleneck'
 import chalk from 'npm:chalk'
 import { HTTPException } from 'npm:hono/http-exception'
 // TODO: Use logger for debugging route handlers
-import { isIP } from 'node:net'
 import path from 'node:path'
 import process from 'node:process'
 import { Readable } from 'node:stream'
@@ -19,8 +17,18 @@ import { zValidator } from 'npm:@hono/zod-validator'
 import type { Context, Hono, MiddlewareHandler } from 'npm:hono'
 import { bodyLimit } from 'npm:hono/body-limit'
 import { etag } from 'npm:hono/etag'
+import { booleanConfig, positiveIntConfig } from './config-utils.ts'
+import { MAX_EVENT_BODY_BYTES } from './constants.ts'
 import { appendToIndexFactory, lookupUltimateOwner } from './database.ts'
 import logger from './logger.ts'
+import { assertContractSourcesWithinCap, parseContractSourceHashes } from './signup-guard.ts'
+import {
+  consumeSignupToken,
+  createSignupLimiters,
+  disposeSignupLimiters,
+  signupRateLimitDisabled,
+  type SignupLimiters
+} from './signup-rate-limit.ts'
 import { getChallenge, getContractSalt, redeemSaltRegistrationToken, redeemSaltUpdateToken, register, registrationKey, updateContractSalt } from './zkppSalt.ts'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
@@ -28,7 +36,6 @@ import * as z from 'npm:zod'
 import { authMiddleware, type AuthCredentials } from './auth.ts'
 
 const MEGABYTE = 1048576 // TODO: add settings for these
-const SECOND = 1000
 
 // Regexes validated as safe with <https://devina.io/redos-checker>
 const CID_REGEX = /^z[1-9A-HJ-NP-Za-km-z]{8,72}$/
@@ -114,69 +121,6 @@ const cidLookupTable = {
   [multicodes.SHELTER_FILE_CHUNK]: 'application/vnd.shelter.filechunk+octet-stream'
 }
 
-// Given an IPv4 or IPv6, extract a suitable key to be used for rate limiting.
-// For IPv4 addresses (including IPv4 addresses embedded in IPv6 addresses),
-// just use the full IPv4 address as is.
-// For IPv6 addresses, discard the least significant 64 bits. This makes DoS
-// harder and because of subnetting the discarded bits likely all represent
-// addresses belonging to the same individual.
-// Note: link-local IPv6 addresses aren't transformed and used in full.
-// See: <https://github.com/okTurtles/group-income/issues/2832>
-const limiterKey = (ip: string) => {
-  const ipVersion = isIP(ip)
-  if (ipVersion === 4) {
-    return ip
-  } else if (ipVersion === 6) {
-    // Likely IPv6
-    const [address, zoneIdx] = ip.split('%')
-    const segments = address.split(':')
-
-    // Is this a compressed form IPv6 address?
-    let isCompressed = false
-    for (let i = 0; i < segments.length - 1; i++) {
-      // Compressed form address
-      if (!isCompressed && segments[i] === '') {
-        const requiredSegments = 8 - (segments.length - 1)
-        if (requiredSegments < 0) {
-          throw new Error('Invalid IPv6 address: too many segments')
-        }
-        if ((i === 0 || i === segments.length - 2) && segments[i + 1] === '') {
-          segments[i + 1] = '0'
-        }
-        if (i === 0 && segments.length === 3 && segments[i + 2] === '') {
-          segments[i + 2] = '0'
-        }
-        segments.splice(i, 1, ...new Array(requiredSegments).fill('0'))
-        isCompressed = true
-        continue
-      }
-      // Remove leading zeroes
-      segments[i] = segments[i].replace(/^0+/, '0')
-    }
-
-    if (segments.length === 8 && isIP(segments[7]) === 4) {
-      // IPv4-embedded, IPv4-mapped and IPv4-translated addresses are returned
-      // as IPv4
-      return segments[7]
-    } else if (segments.length === 8) {
-      if (zoneIdx) {
-        segments[7] = segments[7].replace(/^0+/, '0')
-        // Use tagged (link-local) addresses in full
-        return segments.join(':').toLowerCase() + '%' + zoneIdx
-      } else {
-        // If an IPv6 address, return the first 64 bits. This is because that's
-        // the smallest possible subnet, and spammers can easily get an entire
-        // /64
-        return segments.slice(0, 4).join(':').toLowerCase() + '::'
-      }
-    } else {
-      throw new Error('Invalid IPv6 address')
-    }
-  }
-
-  throw new Error('Invalid address format')
-}
-
 // Constant-time equal
 const ctEq = (expected: string, actual: string): boolean => {
   let r = actual.length ^ expected.length
@@ -186,7 +130,7 @@ const ctEq = (expected: string, actual: string): boolean => {
   return r === 0
 }
 
-let currentLimiters: Bottleneck.Group[] = []
+let currentLimiters: SignupLimiters | undefined
 let rateLimitersInstalled = false
 
 function installRateLimiterSelectorsOnce (): void {
@@ -194,14 +138,7 @@ function installRateLimiterSelectorsOnce (): void {
   rateLimitersInstalled = true
   sbp('sbp/selectors/register', {
     'backend/server/stopRateLimiters': async function () {
-      const limiters = currentLimiters
-      await Promise.allSettled(limiters.map(l => l.disconnect()))
-      // Bottleneck v2 Group.disconnect() only disconnects the Redis connection (if any).
-      // The internal `setInterval` from `_startAutoCleanup()` is not cleaned up, causing
-      // async leaks on shutdown. We must clear it via the private `interval` property.
-      for (const limiter of limiters) {
-        clearInterval((limiter as unknown as { interval: ReturnType<typeof setInterval> }).interval)
-      }
+      await disposeSignupLimiters(currentLimiters)
     }
   })
 }
@@ -294,41 +231,36 @@ function serveAsset (c: Context, subpath: string, assetsDir: string): Promise<Re
 export function registerRoutes (app: Hono): void {
   // Clean up any previous rate limiters (their intervals leak if stopRateLimiters
   // wasn't called, e.g. when the SERVER_EXITING handler was consumed already)
-  for (const limiter of currentLimiters) {
-    limiter.disconnect()
-    clearInterval((limiter as unknown as { interval: ReturnType<typeof setInterval> }).interval)
-  }
+  disposeSignupLimiters(currentLimiters)
 
-  const FILE_UPLOAD_MAX_BYTES = nconf.get('server:fileUploadMaxBytes') || 30 * MEGABYTE
-  const SIGNUP_LIMIT_MIN = nconf.get('server:signup:limit:minute') || 2
-  const SIGNUP_LIMIT_HOUR = nconf.get('server:signup:limit:hour') || 10
-  const SIGNUP_LIMIT_DAY = nconf.get('server:signup:limit:day') || 50
-  const SIGNUP_LIMIT_DISABLED = process.env.NODE_ENV !== 'production' || nconf.get('server:signup:limit:disabled')
-  const ARCHIVE_MODE = nconf.get('server:archiveMode')
+  const FILE_UPLOAD_MAX_BYTES = positiveIntConfig('server:fileUploadMaxBytes')
+  const SIGNUP_LIMIT_DISABLED = signupRateLimitDisabled()
+  // Read once here (rather than per request) so that a bad value is reported at
+  // startup and so the caps cannot be compared against a string; see
+  // config-utils.ts. The first-message cap is bounded by the body limit the
+  // `/event` route enforces below, since anything above it is unreachable.
+  const SIGNUP_MAX_FIRST_MESSAGE_BYTES = positiveIntConfig('server:signup:maxFirstMessageBytes', MAX_EVENT_BODY_BYTES)
+  const SIGNUP_MAX_CONTRACT_SIZE_BYTES = positiveIntConfig('server:signup:maxContractSizeBytes')
+  const ARCHIVE_MODE = booleanConfig('server:archiveMode')
 
-  const limiterPerMinute = new Bottleneck.Group({
-    strategy: Bottleneck.strategy.LEAK,
-    highWater: 0,
-    reservoir: SIGNUP_LIMIT_MIN,
-    reservoirRefreshInterval: 60 * SECOND,
-    reservoirRefreshAmount: SIGNUP_LIMIT_MIN
+  currentLimiters = createSignupLimiters({
+    minute: positiveIntConfig('server:signup:limit:minute'),
+    hour: positiveIntConfig('server:signup:limit:hour'),
+    day: positiveIntConfig('server:signup:limit:day')
   })
-  const limiterPerHour = new Bottleneck.Group({
-    strategy: Bottleneck.strategy.LEAK,
-    highWater: 0,
-    reservoir: SIGNUP_LIMIT_HOUR,
-    reservoirRefreshInterval: 60 * 60 * SECOND,
-    reservoirRefreshAmount: SIGNUP_LIMIT_HOUR
-  })
-  const limiterPerDay = new Bottleneck.Group({
-    strategy: Bottleneck.strategy.LEAK,
-    highWater: 0,
-    reservoir: SIGNUP_LIMIT_DAY,
-    reservoirRefreshInterval: 24 * 60 * 60 * SECOND,
-    reservoirRefreshAmount: SIGNUP_LIMIT_DAY
-  })
-  currentLimiters = [limiterPerMinute, limiterPerHour, limiterPerDay]
+  const limiters = currentLimiters
   installRateLimiterSelectorsOnce()
+
+  if (SIGNUP_LIMIT_DISABLED) {
+    // Configuring the limits is not enough to make them active, which is easy
+    // to miss when testing registration against a non-production server
+    console.warn(
+      '[signup] per-IP registration rate limits are disabled ' +
+      (process.env.NODE_ENV !== 'production'
+        ? '(NODE_ENV is not "production")'
+        : '(server.signup.limit.disabled)')
+    )
+  }
 
   const isCheloniaDashboard = process.env.IS_CHELONIA_DASHBOARD_DEV
   const staticServeConfig = getStaticServeConfig()
@@ -345,7 +277,7 @@ export function registerRoutes (app: Hono): void {
       'shelter-salt-registration-token': z.string().optional(),
       'shelter-deletion-token-digest': z.string().optional()
     })),
-    bodyLimit({ maxSize: MEGABYTE }),
+    bodyLimit({ maxSize: MAX_EVENT_BODY_BYTES }),
     authMiddleware('chel-shelter', 'optional'),
     async function (c) {
       if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
@@ -367,37 +299,29 @@ export function registerRoutes (app: Hono): void {
             throw new HTTPException(422, { message: 'Invalid manifest' })
           }
           const credentials = c.get('credentials') as AuthCredentials | undefined
-          // Only allow identity contracts to be created without attribution
+          // Unattributed (ownerless) first messages, i.e. identity contract
+          // registration, are only allowed within configured size limits
           if (!credentials?.billableContractID && deserializedHEAD.isFirstMessage) {
-            const manifest = await sbp('chelonia.db/get', deserializedHEAD.head.manifest)
-            let name: string
-            try {
-              if (!manifest) throw new Error('empty manifest')
-              const parsedManifest = JSON.parse(manifest)
-              ;({ name } = JSON.parse(parsedManifest.body))
-            } catch (e) {
-              if (e instanceof HTTPException) throw e
-              throw new HTTPException(422, { message: 'Invalid manifest' })
+            // Checks are ordered cheapest first: the payload is already in
+            // memory, while the manifest and contract source checks below read
+            // from the database. Rejected requests must not be able to trigger
+            // those reads at line rate, so the kill switch and the rate limiter
+            // both run before them. This also means that requests failing the
+            // later checks consume a rate limit token.
+            if (Buffer.byteLength(payload) > SIGNUP_MAX_FIRST_MESSAGE_BYTES) {
+              throw new HTTPException(413, { message: 'First message exceeds size limit' })
             }
-            if (name !== 'gi.contracts/identity') {
-              throw new HTTPException(401, { message: 'This contract type requires ownership information' })
-            }
-            if (nconf.get('server:signup:disabled')) {
+            if (booleanConfig('server:signup:disabled')) {
               throw new HTTPException(403, { message: 'Registration disabled' })
             }
             // rate limit signups in production
-            if (!SIGNUP_LIMIT_DISABLED) {
-              try {
-              // See discussion: https://github.com/okTurtles/group-income/pull/2280#pullrequestreview-2219347378
-                const keyedIp = limiterKey(ip)
-                await limiterPerMinute.key(keyedIp).schedule(() => Promise.resolve())
-                await limiterPerHour.key(keyedIp).schedule(() => Promise.resolve())
-                await limiterPerDay.key(keyedIp).schedule(() => Promise.resolve())
-              } catch {
-                console.warn('rate limit hit for IP:', ip)
-                throw new HTTPException(429, { message: 'Rate limit exceeded' })
-              }
+            if (!SIGNUP_LIMIT_DISABLED && !await consumeSignupToken(limiters, ip)) {
+              console.warn('rate limit hit for IP:', ip)
+              throw new HTTPException(429, { message: 'Rate limit exceeded' })
             }
+            const manifest = await sbp('chelonia.db/get', deserializedHEAD.head.manifest)
+            const contractSourceHashes = parseContractSourceHashes(manifest)
+            await assertContractSourcesWithinCap(contractSourceHashes, SIGNUP_MAX_CONTRACT_SIZE_BYTES)
           }
           const saltUpdateToken = validatedHeaders['shelter-salt-update-token']
           let updateSalts
@@ -415,18 +339,22 @@ export function registerRoutes (app: Hono): void {
           // Store attribution information
             if (credentials?.billableContractID) {
               await sbp('backend/server/saveOwner', credentials.billableContractID, deserializedHEAD.contractID)
-              // A billable entity has been created
+              // A `shelter-namespace-registration` header is deliberately
+              // ignored here: names identify billable entities (the root
+              // contract a user logs into), and this contract belongs to an
+              // existing one. Ignoring rather than rejecting keeps clients that
+              // send the header unconditionally working.
             } else {
+              // A billable entity has been created
               await sbp('backend/server/registerBillableEntity', deserializedHEAD.contractID)
-            }
-            // If this is the first message in a contract and the
-            // `shelter-namespace-registration` header is present, proceed with also
-            // registering a name for the new contract
-            const name = validatedHeaders['shelter-namespace-registration']
-            if (name) {
-              // Name registation is enabled only for identity contracts
-              const cheloniaState = sbp('chelonia/rootState')
-              if (cheloniaState.contracts[deserializedHEAD.contractID]?.type === 'gi.contracts/identity') {
+              // If the `shelter-namespace-registration` header is present,
+              // proceed with also registering a name for the new contract.
+              // Being in this branch is what makes a contract eligible: name
+              // registration no longer depends on the contract's name, so any
+              // ownerless root contract can claim one (see the registration
+              // section in README.md).
+              const name = validatedHeaders['shelter-namespace-registration']
+              if (name) {
                 try {
                   await sbp('backend/db/registerName', name, deserializedHEAD.contractID)
                 } catch (registerErr: unknown) {
