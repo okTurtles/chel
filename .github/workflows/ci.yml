@@ -17,6 +17,29 @@ jobs:
     # denoland/setup-deno v2.3.0
     - uses: denoland/setup-deno@e95548e56dfa95d4e1a28d6f422fafe75c4c26fb
       with:
-        deno-version: v2.5.3
+        deno-version: v2.9.5
     - name: Run tests
       run: deno task test
+
+  # `deno task test` is insufficient to test whether the native SQLite addon works
+  # This can only be tested using a real compile and using the SQLite backend
+  # This 'smoke' test does precisely that: an E2E test running
+  # a dummy migration that uses the SQLite backend
+  # This test is separate from `build` and the regular tests because it takes up about 100 MiB of space
+  smoke:
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+
+    steps:
+    - uses: actions/checkout@v3
+    # denoland/setup-deno v2.3.0
+    - uses: denoland/setup-deno@e95548e56dfa95d4e1a28d6f422fafe75c4c26fb
+      with:
+        deno-version: v2.9.5
+    # The compile embeds files straight out of node_modules, so the addon has
+    # to be materialised first; the committed bundle in build/ is what gets
+    # compiled, so nothing else needs building.
+    - name: Install dependencies
+      run: deno install
+    - name: Compile the host binary and load its SQLite addon
+      run: CHEL_SMOKE_COMPILE=1 deno task smoke

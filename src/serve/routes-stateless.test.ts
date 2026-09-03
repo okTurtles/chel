@@ -1,4 +1,3 @@
-import 'jsr:@db/sqlite'
 import { startTestServer, stopTestServer } from './routes-test-helpers.ts'
 
 Deno.test({

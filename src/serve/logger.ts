@@ -39,6 +39,11 @@ type Logger = {
 // module is the test file (e.g. `…/server-id.test.ts`); under the real server
 // it is `main.ts` or the compiled binary, never a `*.test.*` file. We use this
 // to make logging synchronous only under the test runner — see below.
+//
+// `.pathname` is deliberate here and must not be "fixed" into fromFileUrl:
+// nothing touches the filesystem, the URL is only matched against a suffix
+// pattern, and neither percent-encoding nor Windows' `/C:/…` form affects
+// whether that suffix matches.
 const isTestRun = (() => {
   try {
     return /\.test\.[mc]?[tj]sx?(?:$|\?)/.test(new URL(Deno.mainModule).pathname)

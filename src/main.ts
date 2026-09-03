@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-net --allow-read=. --allow-write=. --allow-sys --allow-env
+#!/usr/bin/env -S deno run --allow-net --allow-read=. --allow-write=. --allow-sys --allow-env --allow-ffi
 
 // Deno APIs:
 // https://docs.deno.com/api/deno/

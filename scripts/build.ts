@@ -3,11 +3,22 @@
 import * as esbuild from 'npm:esbuild@0.25.6'
 import * as colors from 'jsr:@std/fmt/colors'
 import { builtinModules } from 'node:module'
-import { VERSION_STAMP_PATH } from './paths.ts'
+import { dirname } from 'jsr:@std/path/'
+import { NATIVE_ADDON_PACKAGES, VERSION_STAMP_PATH } from './paths.ts'
 
 const { default: { version } } = await import('../package.json', { with: { type: 'json' } })
 
 const nodeBuiltins = new Set(builtinModules.filter((m: string) => !m.startsWith('_')))
+
+// Specifiers of the packages that ship a native addon, and therefore cannot be
+// inlined into a JavaScript bundle: the `.node` binary has to stay a real file
+// that the runtime loads at startup. They are left as bare `npm:` specifiers in
+// the bundle, so `deno run` resolves them from the npm cache and `deno compile`
+// embeds the package (prebuilt binaries included) into the executable.
+//
+// Derived from the shared list so this cannot disagree with the paths the
+// compiler embeds (see NATIVE_ADDON_PACKAGES).
+const nativeAddonSpecifiers = new Set(NATIVE_ADDON_PACKAGES.map(({ name }) => `npm:${name}`))
 
 const options: esbuild.BuildOptions = {
   entryPoints: [
@@ -30,6 +41,14 @@ const options: esbuild.BuildOptions = {
   write: false,
   plugins: [
     {
+      name: 'native-addons',
+      setup (build) {
+        build.onResolve({ filter: /^npm:/, namespace: 'file' }, ({ path }) => {
+          return nativeAddonSpecifiers.has(path) ? { path, external: true } : null
+        })
+      }
+    },
+    {
       name: 'npm',
       setup (build) {
         build.onResolve({ filter: /^npm:/, namespace: 'file' }, ({ path, ...args }) => build.resolve(path.slice(4), args))
@@ -44,6 +63,21 @@ const options: esbuild.BuildOptions = {
           }
           return null
         })
+      }
+    },
+    {
+      name: 'omit-tests',
+      setup (build) {
+        // The database layer loads its backend with a computed specifier
+        // (`./serve/database-${name}.ts`), which esbuild expands into every
+        // file the pattern can match - the backends' own test suites included.
+        // No runtime path can reach them (backend names are validated against
+        // a fixed list), but bundling them ships the assertion library and the
+        // test bodies inside every released binary, so they are emptied out.
+        build.onLoad({ filter: /\.test\.ts$/, namespace: 'file' }, () => ({
+          contents: '',
+          loader: 'js'
+        }))
       }
     },
     {
@@ -69,6 +103,9 @@ console.log(colors.green('built:'), options.outdir)
 for (const outfile of result.outputFiles!) {
   const tmpFile = outfile.path + '-tmp'
   try {
+    // esbuild runs with `write: false`, so output directories are never
+    // created; without this the build fails on a tree with no `build/` yet.
+    await Deno.mkdir(dirname(outfile.path), { recursive: true })
     Deno.writeFileSync(tmpFile, outfile.contents)
     try {
       Deno.removeSync(outfile.path)
@@ -76,7 +113,12 @@ for (const outfile of result.outputFiles!) {
       if (e instanceof Error && e.name !== 'NotFound') throw e
     }
     const output = await new Deno.Command(Deno.execPath(), {
-      args: ['bundle', '-o', outfile.path, tmpFile]
+      args: [
+        'bundle',
+        ...[...nativeAddonSpecifiers].flatMap((pkg) => ['--external', pkg]),
+        '-o', outfile.path,
+        tmpFile
+      ]
     }).output()
     if (!output.success) {
       Deno.stdout.writeSync(output.stdout)
@@ -84,7 +126,11 @@ for (const outfile of result.outputFiles!) {
       throw new Error('Failed to call \'deno bundle\'')
     }
   } finally {
-    Deno.removeSync(tmpFile)
+    // Best-effort: the tmp file may legitimately be gone (e.g. the write above
+    // failed), and in that case the original error must not be masked.
+    try {
+      Deno.removeSync(tmpFile)
+    } catch { /* already gone */ }
   }
 }
 

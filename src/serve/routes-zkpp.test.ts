@@ -1,4 +1,3 @@
-import 'jsr:@db/sqlite'
 import { Buffer } from 'node:buffer'
 import {
   createCID,

@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-net --allow-read=. --allow-write=. --allow-sys --allow-env
+#!/usr/bin/env -S deno run --allow-net --allow-read=. --allow-write=. --allow-sys --allow-env --allow-ffi
 import { createRequire as __deno_internal_createRequire } from "node:module";
 var __require = __deno_internal_createRequire(import.meta.url);
 
@@ -324,7 +324,7 @@ function assertArg4(path) {
 }
 
 // deno:https://jsr.io/@std/path/1.1.1/_common/normalize_string.ts
-function normalizeString(path, allowAboveRoot, separator, isPathSeparator4) {
+function normalizeString(path, allowAboveRoot, separator, isPathSeparator2) {
   let res = "";
   let lastSegmentLength = 0;
   let lastSlash = -1;
@@ -332,9 +332,9 @@ function normalizeString(path, allowAboveRoot, separator, isPathSeparator4) {
   let code2;
   for (let i2 = 0; i2 <= path.length; ++i2) {
     if (i2 < path.length) code2 = path.charCodeAt(i2);
-    else if (isPathSeparator4(code2)) break;
+    else if (isPathSeparator2(code2)) break;
     else code2 = CHAR_FORWARD_SLASH;
-    if (isPathSeparator4(code2)) {
+    if (isPathSeparator2(code2)) {
       if (lastSlash === i2 - 1 || dots === 1) {
       } else if (lastSlash !== i2 - 1 && dots === 2) {
         if (res.length < 2 || lastSegmentLength !== 2 || res.charCodeAt(res.length - 1) !== CHAR_DOT || res.charCodeAt(res.length - 2) !== CHAR_DOT) {
@@ -385,12 +385,12 @@ function normalize(path) {
     path = fromFileUrl(path);
   }
   assertArg4(path);
-  const isAbsolute8 = isPosixPathSeparator(path.charCodeAt(0));
+  const isAbsolute3 = isPosixPathSeparator(path.charCodeAt(0));
   const trailingSeparator = isPosixPathSeparator(path.charCodeAt(path.length - 1));
-  path = normalizeString(path, !isAbsolute8, "/", isPosixPathSeparator);
-  if (path.length === 0 && !isAbsolute8) path = ".";
+  path = normalizeString(path, !isAbsolute3, "/", isPosixPathSeparator);
+  if (path.length === 0 && !isAbsolute3) path = ".";
   if (path.length > 0 && trailingSeparator) path += "/";
-  if (isAbsolute8) return `/${path}`;
+  if (isAbsolute3) return `/${path}`;
   return path;
 }
 
@@ -418,11 +418,11 @@ function normalize2(path) {
   const len = path.length;
   let rootEnd = 0;
   let device;
-  let isAbsolute8 = false;
+  let isAbsolute3 = false;
   const code2 = path.charCodeAt(0);
   if (len > 1) {
     if (isPathSeparator(code2)) {
-      isAbsolute8 = true;
+      isAbsolute3 = true;
       if (isPathSeparator(path.charCodeAt(1))) {
         let j = 2;
         let last = j;
@@ -457,7 +457,7 @@ function normalize2(path) {
         rootEnd = 2;
         if (len > 2) {
           if (isPathSeparator(path.charCodeAt(2))) {
-            isAbsolute8 = true;
+            isAbsolute3 = true;
             rootEnd = 3;
           }
         }
@@ -468,21 +468,21 @@ function normalize2(path) {
   }
   let tail;
   if (rootEnd < len) {
-    tail = normalizeString(path.slice(rootEnd), !isAbsolute8, "\\", isPathSeparator);
+    tail = normalizeString(path.slice(rootEnd), !isAbsolute3, "\\", isPathSeparator);
   } else {
     tail = "";
   }
-  if (tail.length === 0 && !isAbsolute8) tail = ".";
+  if (tail.length === 0 && !isAbsolute3) tail = ".";
   if (tail.length > 0 && isPathSeparator(path.charCodeAt(len - 1))) {
     tail += "\\";
   }
   if (device === void 0) {
-    if (isAbsolute8) {
+    if (isAbsolute3) {
       if (tail.length > 0) return `\\${tail}`;
       else return "\\";
     }
     return tail;
-  } else if (isAbsolute8) {
+  } else if (isAbsolute3) {
     if (tail.length > 0) return `${device}\\${tail}`;
     else return `${device}\\`;
   }
@@ -545,9 +545,9 @@ function parse(path) {
     name: ""
   };
   if (path.length === 0) return ret;
-  const isAbsolute8 = isPosixPathSeparator(path.charCodeAt(0));
+  const isAbsolute3 = isPosixPathSeparator(path.charCodeAt(0));
   let start;
-  if (isAbsolute8) {
+  if (isAbsolute3) {
     ret.root = "/";
     start = 1;
   } else {
@@ -583,7 +583,7 @@ function parse(path) {
   preDotState === 0 || // The (right-most) trimmed path component is exactly '..'
   preDotState === 1 && startDot === end - 1 && startDot === startPart + 1) {
     if (end !== -1) {
-      if (startPart === 0 && isAbsolute8) {
+      if (startPart === 0 && isAbsolute3) {
         ret.base = ret.name = path.slice(1, end);
       } else {
         ret.base = ret.name = path.slice(startPart, end);
@@ -591,7 +591,7 @@ function parse(path) {
     }
     ret.base = ret.base || "/";
   } else {
-    if (startPart === 0 && isAbsolute8) {
+    if (startPart === 0 && isAbsolute3) {
       ret.name = path.slice(1, startDot);
       ret.base = path.slice(1, end);
     } else {
@@ -602,7 +602,7 @@ function parse(path) {
   }
   if (startPart > 0) {
     ret.dir = stripTrailingSeparators(path.slice(0, startPart - 1), isPosixPathSeparator);
-  } else if (isAbsolute8) ret.dir = "/";
+  } else if (isAbsolute3) ret.dir = "/";
   return ret;
 }
 
@@ -728,11 +728,11 @@ function resolve(...pathSegments) {
     let path;
     if (i2 >= 0) path = pathSegments[i2];
     else {
-      const { Deno: Deno4 } = globalThis;
-      if (typeof Deno4?.cwd !== "function") {
+      const { Deno: Deno3 } = globalThis;
+      if (typeof Deno3?.cwd !== "function") {
         throw new TypeError("Resolved a relative path without a current working directory (CWD)");
       }
-      path = Deno4.cwd();
+      path = Deno3.cwd();
     }
     assertPath(path);
     if (path.length === 0) {
@@ -821,19 +821,19 @@ function resolve2(...pathSegments) {
   let resolvedAbsolute = false;
   for (let i2 = pathSegments.length - 1; i2 >= -1; i2--) {
     let path;
-    const { Deno: Deno4 } = globalThis;
+    const { Deno: Deno3 } = globalThis;
     if (i2 >= 0) {
       path = pathSegments[i2];
     } else if (!resolvedDevice) {
-      if (typeof Deno4?.cwd !== "function") {
+      if (typeof Deno3?.cwd !== "function") {
         throw new TypeError("Resolved a drive-letter-less path without a current working directory (CWD)");
       }
-      path = Deno4.cwd();
+      path = Deno3.cwd();
     } else {
-      if (typeof Deno4?.env?.get !== "function" || typeof Deno4?.cwd !== "function") {
+      if (typeof Deno3?.env?.get !== "function" || typeof Deno3?.cwd !== "function") {
         throw new TypeError("Resolved a relative path without a current working directory (CWD)");
       }
-      path = Deno4.cwd();
+      path = Deno3.cwd();
       if (path === void 0 || path.slice(0, 3).toLowerCase() !== `${resolvedDevice.toLowerCase()}\\`) {
         path = `${resolvedDevice}\\`;
       }
@@ -843,11 +843,11 @@ function resolve2(...pathSegments) {
     if (len === 0) continue;
     let rootEnd = 0;
     let device = "";
-    let isAbsolute8 = false;
+    let isAbsolute3 = false;
     const code2 = path.charCodeAt(0);
     if (len > 1) {
       if (isPathSeparator(code2)) {
-        isAbsolute8 = true;
+        isAbsolute3 = true;
         if (isPathSeparator(path.charCodeAt(1))) {
           let j = 2;
           let last = j;
@@ -883,7 +883,7 @@ function resolve2(...pathSegments) {
           rootEnd = 2;
           if (len > 2) {
             if (isPathSeparator(path.charCodeAt(2))) {
-              isAbsolute8 = true;
+              isAbsolute3 = true;
               rootEnd = 3;
             }
           }
@@ -891,7 +891,7 @@ function resolve2(...pathSegments) {
       }
     } else if (isPathSeparator(code2)) {
       rootEnd = 1;
-      isAbsolute8 = true;
+      isAbsolute3 = true;
     }
     if (device.length > 0 && resolvedDevice.length > 0 && device.toLowerCase() !== resolvedDevice.toLowerCase()) {
       continue;
@@ -901,7 +901,7 @@ function resolve2(...pathSegments) {
     }
     if (!resolvedAbsolute) {
       resolvedTail = `${path.slice(rootEnd)}\\${resolvedTail}`;
-      resolvedAbsolute = isAbsolute8;
+      resolvedAbsolute = isAbsolute3;
     }
     if (resolvedAbsolute && resolvedDevice.length > 0) break;
   }
@@ -993,3109 +993,15 @@ function resolve3(...pathSegments) {
 }
 
 // build/main.js-tmp
-import { join as join9 } from "node:path";
+import { join as join4 } from "node:path";
 import { mkdir, readdir, readFile, rm, unlink, writeFile } from "node:fs/promises";
-import { basename as basename9, dirname as dirname9, join as join22, normalize as normalize8, resolve as resolve22 } from "node:path";
+import { basename as basename4, dirname as dirname4, join as join22, normalize as normalize3, resolve as resolve22 } from "node:path";
 import { Buffer as Buffer10 } from "node:buffer";
-
-// deno:https://jsr.io/@db/sqlite/0.13.0/deno.json
-var deno_default = {
-  name: "@db/sqlite",
-  version: "0.13.0",
-  github: "https://github.com/denodrivers/sqlite3",
-  exports: "./mod.ts",
-  exclude: [
-    "sqlite",
-    "scripts"
-  ],
-  tasks: {
-    test: "deno test -A test/test.ts",
-    build: "deno run -A scripts/build.ts",
-    "bench-deno": "deno run -A bench/bench_deno.js 50 1000000",
-    "bench-deno-builtin": "deno run -A bench/bench_node_sqlite.mjs 50 1000000",
-    "bench-deno-ffi": "deno run -A bench/bench_deno_ffi.js 50 1000000",
-    "bench-deno-wasm": "deno run -A bench/bench_deno_wasm.js 50 1000000",
-    "bench-node": "node bench/bench_node.js 50 1000000",
-    "bench-node-builtin": "node bench/bench_node_sqlite.mjs 50 1000000",
-    "bench-bun": "bun run bench/bench_bun.js 50 1000000",
-    "bench-bun-ffi": "bun run bench/bench_bun_ffi.js 50 1000000",
-    "bench-c": "./bench/bench 50 1000000",
-    "bench-python": "python ./bench/bench_python.py",
-    "bench:northwind": "deno bench -A bench/northwind/deno.js",
-    "bench-wasm:northwind": "deno run -A bench/northwind/deno_wasm.js",
-    "bench-node:northwind": "node bench/northwind/node.mjs",
-    "bench-bun:northwind": "bun run bench/northwind/bun.js",
-    "bench-charts": "deno run -A bench/bench.js"
-  },
-  lint: {
-    exclude: ["bench"],
-    rules: {
-      exclude: [
-        "camelcase",
-        "no-explicit-any"
-      ],
-      include: [
-        "explicit-function-return-type",
-        "eqeqeq",
-        "explicit-module-boundary-types"
-      ]
-    }
-  },
-  compilerOptions: {
-    types: [
-      "./node_modules/bun-types/index.d.ts"
-    ]
-  }
-};
-
-// deno:https://jsr.io/@std/path/1.0.9/_os.ts
-var isWindows2 = globalThis.Deno?.build.os === "windows" || globalThis.navigator?.platform?.startsWith("Win") || globalThis.process?.platform?.startsWith("win") || false;
-
-// deno:https://jsr.io/@std/path/1.0.9/_common/from_file_url.ts
-function assertArg7(url2) {
-  url2 = url2 instanceof URL ? url2 : new URL(url2);
-  if (url2.protocol !== "file:") {
-    throw new TypeError(`URL must be a file URL: received "${url2.protocol}"`);
-  }
-  return url2;
-}
-
-// deno:https://jsr.io/@std/path/1.0.9/posix/from_file_url.ts
-function fromFileUrl3(url2) {
-  url2 = assertArg7(url2);
-  return decodeURIComponent(url2.pathname.replace(/%(?![0-9A-Fa-f]{2})/g, "%25"));
-}
-
-// deno:https://jsr.io/@std/path/1.0.9/windows/from_file_url.ts
-function fromFileUrl4(url2) {
-  url2 = assertArg7(url2);
-  let path = decodeURIComponent(url2.pathname.replace(/\//g, "\\").replace(/%(?![0-9A-Fa-f]{2})/g, "%25")).replace(/^\\*([A-Za-z]:)(\\|$)/, "$1\\");
-  if (url2.hostname !== "") {
-    path = `\\\\${url2.hostname}${path}`;
-  }
-  return path;
-}
-
-// deno:https://jsr.io/@std/path/1.0.9/from_file_url.ts
-function fromFileUrl5(url2) {
-  return isWindows2 ? fromFileUrl4(url2) : fromFileUrl3(url2);
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/_common/assert_path.ts
-function assertPath3(path) {
-  if (typeof path !== "string") {
-    throw new TypeError(`Path must be a string, received "${JSON.stringify(path)}"`);
-  }
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/_common/from_file_url.ts
-function assertArg9(url2) {
-  url2 = url2 instanceof URL ? url2 : new URL(url2);
-  if (url2.protocol !== "file:") {
-    throw new TypeError(`URL must be a file URL: received "${url2.protocol}"`);
-  }
-  return url2;
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/posix/from_file_url.ts
-function fromFileUrl6(url2) {
-  url2 = assertArg9(url2);
-  return decodeURIComponent(url2.pathname.replace(/%(?![0-9A-Fa-f]{2})/g, "%25"));
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/_common/strip_trailing_separators.ts
-function stripTrailingSeparators3(segment, isSep) {
-  if (segment.length <= 1) {
-    return segment;
-  }
-  let end = segment.length;
-  for (let i2 = segment.length - 1; i2 > 0; i2--) {
-    if (isSep(segment.charCodeAt(i2))) {
-      end = i2;
-    } else {
-      break;
-    }
-  }
-  return segment.slice(0, end);
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/_common/constants.ts
-var CHAR_UPPERCASE_A3 = 65;
-var CHAR_LOWERCASE_A3 = 97;
-var CHAR_UPPERCASE_Z3 = 90;
-var CHAR_LOWERCASE_Z3 = 122;
-var CHAR_DOT3 = 46;
-var CHAR_FORWARD_SLASH3 = 47;
-var CHAR_BACKWARD_SLASH3 = 92;
-var CHAR_COLON3 = 58;
-
-// deno:https://jsr.io/@std/path/1.1.3/posix/_util.ts
-function isPosixPathSeparator5(code2) {
-  return code2 === CHAR_FORWARD_SLASH3;
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/windows/_util.ts
-function isPosixPathSeparator6(code2) {
-  return code2 === CHAR_FORWARD_SLASH3;
-}
-function isPathSeparator3(code2) {
-  return code2 === CHAR_FORWARD_SLASH3 || code2 === CHAR_BACKWARD_SLASH3;
-}
-function isWindowsDeviceRoot3(code2) {
-  return code2 >= CHAR_LOWERCASE_A3 && code2 <= CHAR_LOWERCASE_Z3 || code2 >= CHAR_UPPERCASE_A3 && code2 <= CHAR_UPPERCASE_Z3;
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/windows/from_file_url.ts
-function fromFileUrl7(url2) {
-  url2 = assertArg9(url2);
-  let path = decodeURIComponent(url2.pathname.replace(/\//g, "\\").replace(/%(?![0-9A-Fa-f]{2})/g, "%25")).replace(/^\\*([A-Za-z]:)(\\|$)/, "$1\\");
-  if (url2.hostname !== "") {
-    path = `\\\\${url2.hostname}${path}`;
-  }
-  return path;
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/_common/dirname.ts
-function assertArg10(path) {
-  assertPath3(path);
-  if (path.length === 0) return ".";
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/posix/dirname.ts
-function dirname6(path) {
-  if (path instanceof URL) {
-    path = fromFileUrl6(path);
-  }
-  assertArg10(path);
-  let end = -1;
-  let matchedNonSeparator = false;
-  for (let i2 = path.length - 1; i2 >= 1; --i2) {
-    if (isPosixPathSeparator5(path.charCodeAt(i2))) {
-      if (matchedNonSeparator) {
-        end = i2;
-        break;
-      }
-    } else {
-      matchedNonSeparator = true;
-    }
-  }
-  if (end === -1) {
-    return isPosixPathSeparator5(path.charCodeAt(0)) ? "/" : ".";
-  }
-  return stripTrailingSeparators3(path.slice(0, end), isPosixPathSeparator5);
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/windows/dirname.ts
-function dirname7(path) {
-  if (path instanceof URL) {
-    path = fromFileUrl7(path);
-  }
-  assertArg10(path);
-  const len = path.length;
-  let rootEnd = -1;
-  let end = -1;
-  let matchedSlash = true;
-  let offset = 0;
-  const code2 = path.charCodeAt(0);
-  if (len > 1) {
-    if (isPathSeparator3(code2)) {
-      rootEnd = offset = 1;
-      if (isPathSeparator3(path.charCodeAt(1))) {
-        let j = 2;
-        let last = j;
-        for (; j < len; ++j) {
-          if (isPathSeparator3(path.charCodeAt(j))) break;
-        }
-        if (j < len && j !== last) {
-          last = j;
-          for (; j < len; ++j) {
-            if (!isPathSeparator3(path.charCodeAt(j))) break;
-          }
-          if (j < len && j !== last) {
-            last = j;
-            for (; j < len; ++j) {
-              if (isPathSeparator3(path.charCodeAt(j))) break;
-            }
-            if (j === len) {
-              return path;
-            }
-            if (j !== last) {
-              rootEnd = offset = j + 1;
-            }
-          }
-        }
-      }
-    } else if (isWindowsDeviceRoot3(code2)) {
-      if (path.charCodeAt(1) === CHAR_COLON3) {
-        rootEnd = offset = 2;
-        if (len > 2) {
-          if (isPathSeparator3(path.charCodeAt(2))) rootEnd = offset = 3;
-        }
-      }
-    }
-  } else if (isPathSeparator3(code2)) {
-    return path;
-  }
-  for (let i2 = len - 1; i2 >= offset; --i2) {
-    if (isPathSeparator3(path.charCodeAt(i2))) {
-      if (!matchedSlash) {
-        end = i2;
-        break;
-      }
-    } else {
-      matchedSlash = false;
-    }
-  }
-  if (end === -1) {
-    if (rootEnd === -1) return ".";
-    else end = rootEnd;
-  }
-  return stripTrailingSeparators3(path.slice(0, end), isPosixPathSeparator6);
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/dirname.ts
-function dirname8(path) {
-  return isWindows ? dirname7(path) : dirname6(path);
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/posix/extname.ts
-function extname5(path) {
-  if (path instanceof URL) {
-    path = fromFileUrl6(path);
-  }
-  assertPath3(path);
-  let startDot = -1;
-  let startPart = 0;
-  let end = -1;
-  let matchedSlash = true;
-  let preDotState = 0;
-  for (let i2 = path.length - 1; i2 >= 0; --i2) {
-    const code2 = path.charCodeAt(i2);
-    if (isPosixPathSeparator5(code2)) {
-      if (!matchedSlash) {
-        startPart = i2 + 1;
-        break;
-      }
-      continue;
-    }
-    if (end === -1) {
-      matchedSlash = false;
-      end = i2 + 1;
-    }
-    if (code2 === CHAR_DOT3) {
-      if (startDot === -1) startDot = i2;
-      else if (preDotState !== 1) preDotState = 1;
-    } else if (startDot !== -1) {
-      preDotState = -1;
-    }
-  }
-  if (startDot === -1 || end === -1 || // We saw a non-dot character immediately before the dot
-  preDotState === 0 || // The (right-most) trimmed path component is exactly '..'
-  preDotState === 1 && startDot === end - 1 && startDot === startPart + 1) {
-    return "";
-  }
-  return path.slice(startDot, end);
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/windows/extname.ts
-function extname6(path) {
-  if (path instanceof URL) {
-    path = fromFileUrl7(path);
-  }
-  assertPath3(path);
-  let start = 0;
-  let startDot = -1;
-  let startPart = 0;
-  let end = -1;
-  let matchedSlash = true;
-  let preDotState = 0;
-  if (path.length >= 2 && path.charCodeAt(1) === CHAR_COLON3 && isWindowsDeviceRoot3(path.charCodeAt(0))) {
-    start = startPart = 2;
-  }
-  for (let i2 = path.length - 1; i2 >= start; --i2) {
-    const code2 = path.charCodeAt(i2);
-    if (isPathSeparator3(code2)) {
-      if (!matchedSlash) {
-        startPart = i2 + 1;
-        break;
-      }
-      continue;
-    }
-    if (end === -1) {
-      matchedSlash = false;
-      end = i2 + 1;
-    }
-    if (code2 === CHAR_DOT3) {
-      if (startDot === -1) startDot = i2;
-      else if (preDotState !== 1) preDotState = 1;
-    } else if (startDot !== -1) {
-      preDotState = -1;
-    }
-  }
-  if (startDot === -1 || end === -1 || // We saw a non-dot character immediately before the dot
-  preDotState === 0 || // The (right-most) trimmed path component is exactly '..'
-  preDotState === 1 && startDot === end - 1 && startDot === startPart + 1) {
-    return "";
-  }
-  return path.slice(startDot, end);
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/extname.ts
-function extname7(path) {
-  return isWindows ? extname6(path) : extname5(path);
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/from_file_url.ts
-function fromFileUrl8(url2) {
-  return isWindows ? fromFileUrl7(url2) : fromFileUrl6(url2);
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/posix/is_absolute.ts
-function isAbsolute5(path) {
-  assertPath3(path);
-  return path.length > 0 && isPosixPathSeparator5(path.charCodeAt(0));
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/windows/is_absolute.ts
-function isAbsolute6(path) {
-  assertPath3(path);
-  const len = path.length;
-  if (len === 0) return false;
-  const code2 = path.charCodeAt(0);
-  if (isPathSeparator3(code2)) {
-    return true;
-  } else if (isWindowsDeviceRoot3(code2)) {
-    if (len > 2 && path.charCodeAt(1) === CHAR_COLON3) {
-      if (isPathSeparator3(path.charCodeAt(2))) return true;
-    }
-  }
-  return false;
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/is_absolute.ts
-function isAbsolute7(path) {
-  return isWindows ? isAbsolute6(path) : isAbsolute5(path);
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/_common/normalize.ts
-function assertArg12(path) {
-  assertPath3(path);
-  if (path.length === 0) return ".";
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/_common/normalize_string.ts
-function normalizeString3(path, allowAboveRoot, separator, isPathSeparator4) {
-  let res = "";
-  let lastSegmentLength = 0;
-  let lastSlash = -1;
-  let dots = 0;
-  let code2;
-  for (let i2 = 0; i2 <= path.length; ++i2) {
-    if (i2 < path.length) code2 = path.charCodeAt(i2);
-    else if (isPathSeparator4(code2)) break;
-    else code2 = CHAR_FORWARD_SLASH3;
-    if (isPathSeparator4(code2)) {
-      if (lastSlash === i2 - 1 || dots === 1) {
-      } else if (lastSlash !== i2 - 1 && dots === 2) {
-        if (res.length < 2 || lastSegmentLength !== 2 || res.charCodeAt(res.length - 1) !== CHAR_DOT3 || res.charCodeAt(res.length - 2) !== CHAR_DOT3) {
-          if (res.length > 2) {
-            const lastSlashIndex = res.lastIndexOf(separator);
-            if (lastSlashIndex === -1) {
-              res = "";
-              lastSegmentLength = 0;
-            } else {
-              res = res.slice(0, lastSlashIndex);
-              lastSegmentLength = res.length - 1 - res.lastIndexOf(separator);
-            }
-            lastSlash = i2;
-            dots = 0;
-            continue;
-          } else if (res.length === 2 || res.length === 1) {
-            res = "";
-            lastSegmentLength = 0;
-            lastSlash = i2;
-            dots = 0;
-            continue;
-          }
-        }
-        if (allowAboveRoot) {
-          if (res.length > 0) res += `${separator}..`;
-          else res = "..";
-          lastSegmentLength = 2;
-        }
-      } else {
-        if (res.length > 0) res += separator + path.slice(lastSlash + 1, i2);
-        else res = path.slice(lastSlash + 1, i2);
-        lastSegmentLength = i2 - lastSlash - 1;
-      }
-      lastSlash = i2;
-      dots = 0;
-    } else if (code2 === CHAR_DOT3 && dots !== -1) {
-      ++dots;
-    } else {
-      dots = -1;
-    }
-  }
-  return res;
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/posix/normalize.ts
-function normalize5(path) {
-  if (path instanceof URL) {
-    path = fromFileUrl6(path);
-  }
-  assertArg12(path);
-  const isAbsolute8 = isPosixPathSeparator5(path.charCodeAt(0));
-  const trailingSeparator = isPosixPathSeparator5(path.charCodeAt(path.length - 1));
-  path = normalizeString3(path, !isAbsolute8, "/", isPosixPathSeparator5);
-  if (path.length === 0 && !isAbsolute8) path = ".";
-  if (path.length > 0 && trailingSeparator) path += "/";
-  if (isAbsolute8) return `/${path}`;
-  return path;
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/posix/join.ts
-function join6(path, ...paths) {
-  if (path === void 0) return ".";
-  if (path instanceof URL) {
-    path = fromFileUrl6(path);
-  }
-  paths = path ? [
-    path,
-    ...paths
-  ] : paths;
-  paths.forEach((path2) => assertPath3(path2));
-  const joined = paths.filter((path2) => path2.length > 0).join("/");
-  return joined === "" ? "." : normalize5(joined);
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/windows/normalize.ts
-function normalize6(path) {
-  if (path instanceof URL) {
-    path = fromFileUrl7(path);
-  }
-  assertArg12(path);
-  const len = path.length;
-  let rootEnd = 0;
-  let device;
-  let isAbsolute8 = false;
-  const code2 = path.charCodeAt(0);
-  if (len > 1) {
-    if (isPathSeparator3(code2)) {
-      isAbsolute8 = true;
-      if (isPathSeparator3(path.charCodeAt(1))) {
-        let j = 2;
-        let last = j;
-        for (; j < len; ++j) {
-          if (isPathSeparator3(path.charCodeAt(j))) break;
-        }
-        if (j < len && j !== last) {
-          const firstPart = path.slice(last, j);
-          last = j;
-          for (; j < len; ++j) {
-            if (!isPathSeparator3(path.charCodeAt(j))) break;
-          }
-          if (j < len && j !== last) {
-            last = j;
-            for (; j < len; ++j) {
-              if (isPathSeparator3(path.charCodeAt(j))) break;
-            }
-            if (j === len) {
-              return `\\\\${firstPart}\\${path.slice(last)}\\`;
-            } else if (j !== last) {
-              device = `\\\\${firstPart}\\${path.slice(last, j)}`;
-              rootEnd = j;
-            }
-          }
-        }
-      } else {
-        rootEnd = 1;
-      }
-    } else if (isWindowsDeviceRoot3(code2)) {
-      if (path.charCodeAt(1) === CHAR_COLON3) {
-        device = path.slice(0, 2);
-        rootEnd = 2;
-        if (len > 2) {
-          if (isPathSeparator3(path.charCodeAt(2))) {
-            isAbsolute8 = true;
-            rootEnd = 3;
-          }
-        }
-      }
-    }
-  } else if (isPathSeparator3(code2)) {
-    return "\\";
-  }
-  let tail;
-  if (rootEnd < len) {
-    tail = normalizeString3(path.slice(rootEnd), !isAbsolute8, "\\", isPathSeparator3);
-  } else {
-    tail = "";
-  }
-  if (tail.length === 0 && !isAbsolute8) tail = ".";
-  if (tail.length > 0 && isPathSeparator3(path.charCodeAt(len - 1))) {
-    tail += "\\";
-  }
-  if (device === void 0) {
-    if (isAbsolute8) {
-      if (tail.length > 0) return `\\${tail}`;
-      else return "\\";
-    }
-    return tail;
-  } else if (isAbsolute8) {
-    if (tail.length > 0) return `${device}\\${tail}`;
-    else return `${device}\\`;
-  }
-  return device + tail;
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/windows/join.ts
-function join7(path, ...paths) {
-  if (path instanceof URL) {
-    path = fromFileUrl7(path);
-  }
-  paths = path ? [
-    path,
-    ...paths
-  ] : paths;
-  paths.forEach((path2) => assertPath3(path2));
-  paths = paths.filter((path2) => path2.length > 0);
-  if (paths.length === 0) return ".";
-  let needsReplace = true;
-  let slashCount = 0;
-  const firstPart = paths[0];
-  if (isPathSeparator3(firstPart.charCodeAt(0))) {
-    ++slashCount;
-    const firstLen = firstPart.length;
-    if (firstLen > 1) {
-      if (isPathSeparator3(firstPart.charCodeAt(1))) {
-        ++slashCount;
-        if (firstLen > 2) {
-          if (isPathSeparator3(firstPart.charCodeAt(2))) ++slashCount;
-          else {
-            needsReplace = false;
-          }
-        }
-      }
-    }
-  }
-  let joined = paths.join("\\");
-  if (needsReplace) {
-    for (; slashCount < joined.length; ++slashCount) {
-      if (!isPathSeparator3(joined.charCodeAt(slashCount))) break;
-    }
-    if (slashCount >= 2) joined = `\\${joined.slice(slashCount)}`;
-  }
-  return normalize6(joined);
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/join.ts
-function join8(path, ...paths) {
-  return isWindows ? join7(path, ...paths) : join6(path, ...paths);
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/normalize.ts
-function normalize7(path) {
-  return isWindows ? normalize6(path) : normalize5(path);
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/posix/resolve.ts
-function resolve6(...pathSegments) {
-  let resolvedPath = "";
-  let resolvedAbsolute = false;
-  for (let i2 = pathSegments.length - 1; i2 >= -1 && !resolvedAbsolute; i2--) {
-    let path;
-    if (i2 >= 0) path = pathSegments[i2];
-    else {
-      const { Deno: Deno4 } = globalThis;
-      if (typeof Deno4?.cwd !== "function") {
-        throw new TypeError("Resolved a relative path without a current working directory (CWD)");
-      }
-      path = Deno4.cwd();
-    }
-    assertPath3(path);
-    if (path.length === 0) {
-      continue;
-    }
-    resolvedPath = `${path}/${resolvedPath}`;
-    resolvedAbsolute = isPosixPathSeparator5(path.charCodeAt(0));
-  }
-  resolvedPath = normalizeString3(resolvedPath, !resolvedAbsolute, "/", isPosixPathSeparator5);
-  if (resolvedAbsolute) {
-    if (resolvedPath.length > 0) return `/${resolvedPath}`;
-    else return "/";
-  } else if (resolvedPath.length > 0) return resolvedPath;
-  else return ".";
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/windows/resolve.ts
-function resolve7(...pathSegments) {
-  let resolvedDevice = "";
-  let resolvedTail = "";
-  let resolvedAbsolute = false;
-  for (let i2 = pathSegments.length - 1; i2 >= -1; i2--) {
-    let path;
-    const { Deno: Deno4 } = globalThis;
-    if (i2 >= 0) {
-      path = pathSegments[i2];
-    } else if (!resolvedDevice) {
-      if (typeof Deno4?.cwd !== "function") {
-        throw new TypeError("Resolved a drive-letter-less path without a current working directory (CWD)");
-      }
-      path = Deno4.cwd();
-    } else {
-      if (typeof Deno4?.env?.get !== "function" || typeof Deno4?.cwd !== "function") {
-        throw new TypeError("Resolved a relative path without a current working directory (CWD)");
-      }
-      path = Deno4.cwd();
-      if (path === void 0 || path.slice(0, 3).toLowerCase() !== `${resolvedDevice.toLowerCase()}\\`) {
-        path = `${resolvedDevice}\\`;
-      }
-    }
-    assertPath3(path);
-    const len = path.length;
-    if (len === 0) continue;
-    let rootEnd = 0;
-    let device = "";
-    let isAbsolute8 = false;
-    const code2 = path.charCodeAt(0);
-    if (len > 1) {
-      if (isPathSeparator3(code2)) {
-        isAbsolute8 = true;
-        if (isPathSeparator3(path.charCodeAt(1))) {
-          let j = 2;
-          let last = j;
-          for (; j < len; ++j) {
-            if (isPathSeparator3(path.charCodeAt(j))) break;
-          }
-          if (j < len && j !== last) {
-            const firstPart = path.slice(last, j);
-            last = j;
-            for (; j < len; ++j) {
-              if (!isPathSeparator3(path.charCodeAt(j))) break;
-            }
-            if (j < len && j !== last) {
-              last = j;
-              for (; j < len; ++j) {
-                if (isPathSeparator3(path.charCodeAt(j))) break;
-              }
-              if (j === len) {
-                device = `\\\\${firstPart}\\${path.slice(last)}`;
-                rootEnd = j;
-              } else if (j !== last) {
-                device = `\\\\${firstPart}\\${path.slice(last, j)}`;
-                rootEnd = j;
-              }
-            }
-          }
-        } else {
-          rootEnd = 1;
-        }
-      } else if (isWindowsDeviceRoot3(code2)) {
-        if (path.charCodeAt(1) === CHAR_COLON3) {
-          device = path.slice(0, 2);
-          rootEnd = 2;
-          if (len > 2) {
-            if (isPathSeparator3(path.charCodeAt(2))) {
-              isAbsolute8 = true;
-              rootEnd = 3;
-            }
-          }
-        }
-      }
-    } else if (isPathSeparator3(code2)) {
-      rootEnd = 1;
-      isAbsolute8 = true;
-    }
-    if (device.length > 0 && resolvedDevice.length > 0 && device.toLowerCase() !== resolvedDevice.toLowerCase()) {
-      continue;
-    }
-    if (resolvedDevice.length === 0 && device.length > 0) {
-      resolvedDevice = device;
-    }
-    if (!resolvedAbsolute) {
-      resolvedTail = `${path.slice(rootEnd)}\\${resolvedTail}`;
-      resolvedAbsolute = isAbsolute8;
-    }
-    if (resolvedAbsolute && resolvedDevice.length > 0) break;
-  }
-  resolvedTail = normalizeString3(resolvedTail, !resolvedAbsolute, "\\", isPathSeparator3);
-  return resolvedDevice + (resolvedAbsolute ? "\\" : "") + resolvedTail || ".";
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/resolve.ts
-function resolve8(...pathSegments) {
-  return isWindows ? resolve7(...pathSegments) : resolve6(...pathSegments);
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/_common/to_file_url.ts
-var WHITESPACE_ENCODINGS = {
-  "	": "%09",
-  "\n": "%0A",
-  "\v": "%0B",
-  "\f": "%0C",
-  "\r": "%0D",
-  " ": "%20"
-};
-function encodeWhitespace3(string3) {
-  return string3.replaceAll(/[\s]/g, (c) => {
-    return WHITESPACE_ENCODINGS[c] ?? c;
-  });
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/posix/to_file_url.ts
-function toFileUrl5(path) {
-  if (!isAbsolute5(path)) {
-    throw new TypeError(`Path must be absolute: received "${path}"`);
-  }
-  const url2 = new URL("file:///");
-  url2.pathname = encodeWhitespace3(path.replace(/%/g, "%25").replace(/\\/g, "%5C"));
-  return url2;
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/windows/to_file_url.ts
-function toFileUrl6(path) {
-  if (!isAbsolute6(path)) {
-    throw new TypeError(`Path must be absolute: received "${path}"`);
-  }
-  const [, hostname2, pathname] = path.match(/^(?:[/\\]{2}([^/\\]+)(?=[/\\](?:[^/\\]|$)))?(.*)/);
-  const url2 = new URL("file:///");
-  url2.pathname = encodeWhitespace3(pathname.replace(/%/g, "%25"));
-  if (hostname2 !== void 0 && hostname2 !== "localhost") {
-    url2.hostname = hostname2;
-    if (!url2.hostname) {
-      throw new TypeError(`Invalid hostname: "${url2.hostname}"`);
-    }
-  }
-  return url2;
-}
-
-// deno:https://jsr.io/@std/path/1.1.3/to_file_url.ts
-function toFileUrl7(path) {
-  return isWindows ? toFileUrl6(path) : toFileUrl5(path);
-}
-
-// deno:https://jsr.io/@std/fs/1.0.20/_get_file_info_type.ts
-function getFileInfoType(fileInfo) {
-  return fileInfo.isFile ? "file" : fileInfo.isDirectory ? "dir" : fileInfo.isSymlink ? "symlink" : void 0;
-}
-
-// deno:https://jsr.io/@std/fs/1.0.20/ensure_dir.ts
-async function ensureDir(dir) {
-  try {
-    const fileInfo = await Deno.stat(dir);
-    throwIfNotDirectory(fileInfo);
-    return;
-  } catch (err) {
-    if (!(err instanceof Deno.errors.NotFound)) {
-      throw err;
-    }
-  }
-  try {
-    await Deno.mkdir(dir, {
-      recursive: true
-    });
-  } catch (err) {
-    if (!(err instanceof Deno.errors.AlreadyExists)) {
-      throw err;
-    }
-    const fileInfo = await Deno.stat(dir);
-    throwIfNotDirectory(fileInfo);
-  }
-}
-function throwIfNotDirectory(fileInfo) {
-  if (!fileInfo.isDirectory) {
-    throw new Error(`Failed to ensure directory exists: expected 'dir', got '${getFileInfoType(fileInfo)}'`);
-  }
-}
-
-// deno:https://jsr.io/@std/fs/1.0.20/expand_glob.ts
-var globEscapeChar = Deno.build.os === "windows" ? "`" : `\\`;
-
-// deno:https://jsr.io/@std/fs/1.0.20/eol.ts
-var LF = "\n";
-var CRLF = "\r\n";
-var EOL = globalThis.Deno?.build.os === "windows" ? CRLF : LF;
-
-// deno:https://jsr.io/@std/encoding/1.0.10/_common16.ts
-var alphabet = new TextEncoder().encode("0123456789abcdef");
-var rAlphabet = new Uint8Array(128).fill(16);
-alphabet.forEach((byte, i2) => rAlphabet[byte] = i2);
-new TextEncoder().encode("ABCDEF").forEach((byte, i2) => rAlphabet[byte] = i2 + 10);
-function calcSizeHex(originalSize) {
-  return originalSize * 2;
-}
-function encode(buffer, i2, o2, alphabet5) {
-  for (; i2 < buffer.length; ++i2) {
-    const x3 = buffer[i2];
-    buffer[o2++] = alphabet5[x3 >> 4];
-    buffer[o2++] = alphabet5[x3 & 15];
-  }
-  return o2;
-}
-
-// deno:https://jsr.io/@std/encoding/1.0.10/_common_detach.ts
-function detach(buffer, maxSize) {
-  const originalSize = buffer.length;
-  if (buffer.byteOffset) {
-    const b = new Uint8Array(buffer.buffer);
-    b.set(buffer);
-    buffer = b.subarray(0, originalSize);
-  }
-  buffer = new Uint8Array(buffer.buffer.transfer(maxSize));
-  buffer.set(buffer.subarray(0, originalSize), maxSize - originalSize);
-  return [
-    buffer,
-    maxSize - originalSize
-  ];
-}
-
-// deno:https://jsr.io/@std/encoding/1.0.10/hex.ts
-var alphabet2 = new TextEncoder().encode("0123456789abcdef");
-var rAlphabet2 = new Uint8Array(128).fill(16);
-alphabet2.forEach((byte, i2) => rAlphabet2[byte] = i2);
-new TextEncoder().encode("ABCDEF").forEach((byte, i2) => rAlphabet2[byte] = i2 + 10);
-function encodeHex(src2) {
-  if (typeof src2 === "string") {
-    src2 = new TextEncoder().encode(src2);
-  } else if (src2 instanceof ArrayBuffer) src2 = new Uint8Array(src2).slice();
-  else src2 = src2.slice();
-  const [output, i2] = detach(src2, calcSizeHex(src2.length));
-  encode(output, i2, 0, alphabet2);
-  return new TextDecoder().decode(output);
-}
-
-// deno:https://jsr.io/@denosaurs/plug/1.1.0/util.ts
-var encoder = new TextEncoder();
-function baseUrlToFilename(url2) {
-  const out = [];
-  const protocol = url2.protocol.replace(":", "");
-  out.push(protocol);
-  switch (protocol) {
-    case "http":
-    case "https": {
-      const host = url2.hostname;
-      const hostPort = url2.port;
-      out.push(hostPort ? `${host}_PORT${hostPort}` : host);
-      break;
-    }
-    case "file":
-    case "data":
-    case "blob":
-      break;
-    default:
-      throw new TypeError(`Don't know how to create cache name for protocol: ${protocol}`);
-  }
-  return join8(...out);
-}
-function stringToURL(url2) {
-  return url2.startsWith("file://") || url2.startsWith("http://") || url2.startsWith("https://") ? new URL(url2) : toFileUrl7(resolve8(url2));
-}
-async function hash(value) {
-  return encodeHex(new Uint8Array(await crypto.subtle.digest("SHA-256", encoder.encode(value))));
-}
-async function urlToFilename(url2) {
-  const cacheFilename = baseUrlToFilename(url2);
-  const hashedFilename = await hash(url2.pathname + url2.search);
-  return join8(cacheFilename, hashedFilename);
-}
-async function isFile(filePath) {
-  try {
-    const stats = await Deno.lstat(filePath);
-    return stats.isFile;
-  } catch (err) {
-    if (err instanceof Deno.errors.NotFound) {
-      return false;
-    }
-    throw err;
-  }
-}
-function homeDir() {
-  switch (Deno.build.os) {
-    case "windows":
-      return Deno.env.get("USERPROFILE");
-    case "linux":
-    case "darwin":
-    case "freebsd":
-    case "netbsd":
-    case "aix":
-    case "solaris":
-    case "illumos":
-    case "android":
-      return Deno.env.get("HOME");
-    default:
-      throw Error("unreachable");
-  }
-}
-function cacheDir() {
-  if (Deno.build.os === "darwin") {
-    const home = homeDir();
-    if (home) {
-      return join8(home, "Library/Caches");
-    }
-  } else if (Deno.build.os === "windows") {
-    return Deno.env.get("LOCALAPPDATA");
-  } else {
-    const cacheHome = Deno.env.get("XDG_CACHE_HOME");
-    if (cacheHome) {
-      return cacheHome;
-    } else {
-      const home = homeDir();
-      if (home) {
-        return join8(home, ".cache");
-      }
-    }
-  }
-}
-function denoCacheDir() {
-  const dd = Deno.env.get("DENO_DIR");
-  let root;
-  if (dd) {
-    root = normalize7(isAbsolute7(dd) ? dd : join8(Deno.cwd(), dd));
-  } else {
-    const cd = cacheDir();
-    if (cd) {
-      root = join8(cd, "deno");
-    } else {
-      const hd = homeDir();
-      if (hd) {
-        root = join8(hd, ".deno");
-      }
-    }
-  }
-  return root;
-}
-
-// deno:https://jsr.io/@denosaurs/plug/1.1.0/download.ts
-var ALL_ARCHS = [
-  "x86_64",
-  "aarch64"
-];
-var ALL_OSS = [
-  "darwin",
-  "linux",
-  "android",
-  "windows",
-  "freebsd",
-  "netbsd",
-  "aix",
-  "solaris",
-  "illumos"
-];
-var defaultExtensions = {
-  darwin: "dylib",
-  linux: "so",
-  windows: "dll",
-  freebsd: "so",
-  netbsd: "so",
-  aix: "so",
-  solaris: "so",
-  illumos: "so",
-  android: "so"
-};
-var defaultPrefixes = {
-  darwin: "lib",
-  linux: "lib",
-  netbsd: "lib",
-  freebsd: "lib",
-  aix: "lib",
-  solaris: "lib",
-  illumos: "lib",
-  windows: "",
-  android: "lib"
-};
-function getCrossOption(record2) {
-  if (record2 === void 0) {
-    return;
-  }
-  if (ALL_OSS.some((os) => os in record2)) {
-    const subrecord = record2[Deno.build.os];
-    if (subrecord && typeof subrecord === "object" && ALL_ARCHS.some((arch) => arch in subrecord)) {
-      return subrecord[Deno.build.arch];
-    } else {
-      return subrecord;
-    }
-  }
-  if (ALL_ARCHS.some((arch) => arch in record2)) {
-    const subrecord = record2[Deno.build.arch];
-    if (subrecord && typeof subrecord === "object" && ALL_OSS.some((os) => os in subrecord)) {
-      return subrecord[Deno.build.os];
-    } else {
-      return subrecord;
-    }
-  }
-}
-function createDownloadURL(options2) {
-  if (typeof options2 === "string" || options2 instanceof URL) {
-    options2 = {
-      url: options2
-    };
-  }
-  options2.extensions ??= defaultExtensions;
-  options2.prefixes ??= defaultPrefixes;
-  for (const key in options2.extensions) {
-    const os = key;
-    if (options2.extensions[os] !== void 0) {
-      options2.extensions[os] = options2.extensions[os].replace(/\.?(.+)/, "$1");
-    }
-  }
-  let url2;
-  if (options2.url instanceof URL) {
-    url2 = options2.url;
-  } else if (typeof options2.url === "string") {
-    url2 = stringToURL(options2.url);
-  } else {
-    const tmpUrl = getCrossOption(options2.url);
-    if (tmpUrl === void 0) {
-      throw new TypeError(`An URL for the "${Deno.build.os}-${Deno.build.arch}" target was not provided.`);
-    }
-    if (typeof tmpUrl === "string") {
-      url2 = stringToURL(tmpUrl);
-    } else {
-      url2 = tmpUrl;
-    }
-  }
-  if ("name" in options2 && !Object.values(options2.extensions).includes(extname7(url2.pathname))) {
-    if (!url2.pathname.endsWith("/")) {
-      url2.pathname = `${url2.pathname}/`;
-    }
-    const prefix = getCrossOption(options2.prefixes) ?? "";
-    const suffix = getCrossOption(options2.suffixes) ?? "";
-    const extension = options2.extensions[Deno.build.os];
-    if (options2.name === void 0) {
-      throw new TypeError(`Expected the "name" property for an automatically assembled URL.`);
-    }
-    const filename = `${prefix}${options2.name}${suffix}.${extension}`;
-    url2 = new URL(filename, url2);
-  }
-  return url2;
-}
-async function ensureCacheLocation(location = "deno") {
-  if (location === "deno") {
-    const dir = denoCacheDir();
-    if (dir === void 0) {
-      throw new Error("Could not get the deno cache directory, try using another CacheLocation in the plug options.");
-    }
-    location = join8(dir, "plug");
-  } else if (location === "cache") {
-    const dir = cacheDir();
-    if (dir === void 0) {
-      throw new Error("Could not get the cache directory, try using another CacheLocation in the plug options.");
-    }
-    location = join8(dir, "plug");
-  } else if (location === "cwd") {
-    location = join8(Deno.cwd(), "plug");
-  } else if (location === "tmp") {
-    location = await Deno.makeTempDir({
-      prefix: "plug"
-    });
-  } else if (typeof location === "string" && location.startsWith("file://")) {
-    location = fromFileUrl8(location);
-  } else if (location instanceof URL) {
-    if (location?.protocol !== "file:") {
-      throw new TypeError("Cannot use any other protocol than file:// for an URL cache location.");
-    }
-    location = fromFileUrl8(location);
-  }
-  location = resolve8(normalize7(location));
-  await ensureDir(location);
-  return location;
-}
-async function download(options2) {
-  const location = (typeof options2 === "object" && "location" in options2 ? options2.location : void 0) ?? "deno";
-  const setting = (typeof options2 === "object" && "cache" in options2 ? options2.cache : void 0) ?? "use";
-  const url2 = createDownloadURL(options2);
-  const directory = await ensureCacheLocation(location);
-  const cacheBasePath = join8(directory, await urlToFilename(url2));
-  const cacheFilePath = `${cacheBasePath}${extname7(url2.pathname)}`;
-  const cacheMetaPath = `${cacheBasePath}.metadata.json`;
-  const cached2 = setting === "use" ? await isFile(cacheFilePath) : setting === "only" || setting !== "reloadAll";
-  await ensureDir(dirname8(cacheBasePath));
-  if (!cached2) {
-    const meta = {
-      url: url2
-    };
-    switch (url2.protocol) {
-      case "http:":
-      case "https:": {
-        console.log(`${green("Downloading")} ${url2}`);
-        const response = await fetch(url2.toString());
-        if (!response.ok) {
-          if (response.status === 404) {
-            throw new Error(`Could not find ${url2}`);
-          } else {
-            throw new Deno.errors.Http(`${response.status} ${response.statusText}`);
-          }
-        }
-        await Deno.writeFile(cacheFilePath, new Uint8Array(await response.arrayBuffer()));
-        break;
-      }
-      case "file:": {
-        console.log(`${green("Copying")} ${url2}`);
-        await Deno.copyFile(fromFileUrl8(url2), cacheFilePath);
-        if (Deno.build.os !== "windows") {
-          await Deno.chmod(cacheFilePath, 420);
-        }
-        break;
-      }
-      default: {
-        throw new TypeError(`Cannot fetch to cache using the "${url2.protocol}" protocol`);
-      }
-    }
-    await Deno.writeTextFile(cacheMetaPath, JSON.stringify(meta));
-  }
-  if (!await isFile(cacheFilePath)) {
-    throw new Error(`Could not find "${url2}" in cache.`);
-  }
-  return cacheFilePath;
-}
-
-// deno:https://jsr.io/@denosaurs/plug/1.1.0/mod.ts
-async function dlopen(options2, symbols2) {
-  if (Deno.dlopen === void 0) {
-    throw new Error("`--unstable-ffi` is required");
-  }
-  return Deno.dlopen(await download(options2), symbols2);
-}
-
-// deno:https://jsr.io/@db/sqlite/0.13.0/src/ffi.ts
-var symbols = {
-  sqlite3_open_v2: {
-    parameters: [
-      "buffer",
-      "buffer",
-      "i32",
-      "pointer"
-    ],
-    result: "i32"
-  },
-  sqlite3_close_v2: {
-    parameters: [
-      "pointer"
-    ],
-    result: "i32"
-  },
-  sqlite3_changes: {
-    parameters: [
-      "pointer"
-    ],
-    result: "i32"
-  },
-  sqlite3_total_changes: {
-    parameters: [
-      "pointer"
-    ],
-    result: "i32"
-  },
-  sqlite3_last_insert_rowid: {
-    parameters: [
-      "pointer"
-    ],
-    result: "i32"
-  },
-  sqlite3_get_autocommit: {
-    parameters: [
-      "pointer"
-    ],
-    result: "i32"
-  },
-  sqlite3_prepare_v2: {
-    parameters: [
-      "pointer",
-      "buffer",
-      "i32",
-      "buffer",
-      "pointer"
-    ],
-    result: "i32"
-  },
-  sqlite3_reset: {
-    parameters: [
-      "pointer"
-    ],
-    result: "i32"
-  },
-  sqlite3_clear_bindings: {
-    parameters: [
-      "pointer"
-    ],
-    result: "i32"
-  },
-  sqlite3_step: {
-    parameters: [
-      "pointer"
-    ],
-    result: "i32"
-  },
-  sqlite3_column_count: {
-    parameters: [
-      "pointer"
-    ],
-    result: "i32"
-  },
-  sqlite3_column_type: {
-    parameters: [
-      "pointer",
-      "i32"
-    ],
-    result: "i32"
-  },
-  sqlite3_column_text: {
-    parameters: [
-      "pointer",
-      "i32"
-    ],
-    result: "pointer"
-  },
-  sqlite3_column_value: {
-    parameters: [
-      "pointer",
-      "i32"
-    ],
-    result: "pointer"
-  },
-  sqlite3_finalize: {
-    parameters: [
-      "pointer"
-    ],
-    result: "i32"
-  },
-  sqlite3_exec: {
-    parameters: [
-      "pointer",
-      "buffer",
-      "pointer",
-      "pointer",
-      "buffer"
-    ],
-    result: "i32"
-  },
-  sqlite3_free: {
-    parameters: [
-      "pointer"
-    ],
-    result: "void"
-  },
-  sqlite3_column_int: {
-    parameters: [
-      "pointer",
-      "i32"
-    ],
-    result: "i32"
-  },
-  sqlite3_column_double: {
-    parameters: [
-      "pointer",
-      "i32"
-    ],
-    result: "f64"
-  },
-  sqlite3_column_blob: {
-    parameters: [
-      "pointer",
-      "i32"
-    ],
-    result: "pointer"
-  },
-  sqlite3_column_bytes: {
-    parameters: [
-      "pointer",
-      "i32"
-    ],
-    result: "i32"
-  },
-  sqlite3_column_name: {
-    parameters: [
-      "pointer",
-      "i32"
-    ],
-    result: "pointer"
-  },
-  sqlite3_column_decltype: {
-    parameters: [
-      "pointer",
-      "i32"
-    ],
-    result: "u64"
-  },
-  sqlite3_bind_parameter_index: {
-    parameters: [
-      "pointer",
-      "buffer"
-    ],
-    result: "i32"
-  },
-  sqlite3_bind_text: {
-    parameters: [
-      "pointer",
-      "i32",
-      "buffer",
-      "i32",
-      "pointer"
-    ],
-    result: "i32"
-  },
-  sqlite3_bind_blob: {
-    parameters: [
-      "pointer",
-      "i32",
-      "buffer",
-      "i32",
-      "pointer"
-    ],
-    result: "i32"
-  },
-  sqlite3_bind_double: {
-    parameters: [
-      "pointer",
-      "i32",
-      "f64"
-    ],
-    result: "i32"
-  },
-  sqlite3_bind_int: {
-    parameters: [
-      "pointer",
-      "i32",
-      "i32"
-    ],
-    result: "i32"
-  },
-  sqlite3_bind_int64: {
-    parameters: [
-      "pointer",
-      "i32",
-      "i64"
-    ],
-    result: "i32"
-  },
-  sqlite3_bind_null: {
-    parameters: [
-      "pointer",
-      "i32"
-    ],
-    result: "i32"
-  },
-  sqlite3_expanded_sql: {
-    parameters: [
-      "pointer"
-    ],
-    result: "pointer"
-  },
-  sqlite3_bind_parameter_count: {
-    parameters: [
-      "pointer"
-    ],
-    result: "i32"
-  },
-  sqlite3_complete: {
-    parameters: [
-      "buffer"
-    ],
-    result: "i32"
-  },
-  sqlite3_sourceid: {
-    parameters: [],
-    result: "pointer"
-  },
-  sqlite3_libversion: {
-    parameters: [],
-    result: "pointer"
-  },
-  sqlite3_blob_open: {
-    parameters: [
-      "pointer",
-      /* sqlite3 *db */
-      "buffer",
-      /* const char *zDb */
-      "buffer",
-      /* const char *zTable */
-      "buffer",
-      /* const char *zColumn */
-      "i64",
-      /* sqlite3_int64 iRow */
-      "i32",
-      /* int flags */
-      "buffer"
-    ],
-    result: "i32"
-  },
-  sqlite3_blob_read: {
-    parameters: [
-      "pointer",
-      /* sqlite3_blob *blob */
-      "buffer",
-      /* void *Z */
-      "i32",
-      /* int N */
-      "i32"
-    ],
-    result: "i32"
-  },
-  sqlite3_blob_write: {
-    parameters: [
-      "pointer",
-      /* sqlite3_blob *blob */
-      "buffer",
-      /* const void *z */
-      "i32",
-      /* int n */
-      "i32"
-    ],
-    result: "i32"
-  },
-  sqlite3_blob_bytes: {
-    parameters: [
-      "pointer"
-      /* sqlite3_blob *blob */
-    ],
-    result: "i32"
-  },
-  sqlite3_blob_close: {
-    parameters: [
-      "pointer"
-      /* sqlite3_blob *blob */
-    ],
-    result: "i32"
-  },
-  sqlite3_sql: {
-    parameters: [
-      "pointer"
-    ],
-    result: "pointer"
-  },
-  sqlite3_stmt_readonly: {
-    parameters: [
-      "pointer"
-    ],
-    result: "i32"
-  },
-  sqlite3_bind_parameter_name: {
-    parameters: [
-      "pointer",
-      "i32"
-    ],
-    result: "pointer"
-  },
-  sqlite3_errcode: {
-    parameters: [
-      "pointer"
-    ],
-    result: "i32"
-  },
-  sqlite3_errmsg: {
-    parameters: [
-      "pointer"
-    ],
-    result: "pointer"
-  },
-  sqlite3_errstr: {
-    parameters: [
-      "i32"
-    ],
-    result: "pointer"
-  },
-  sqlite3_column_int64: {
-    parameters: [
-      "pointer",
-      "i32"
-    ],
-    result: "i64"
-  },
-  sqlite3_backup_init: {
-    parameters: [
-      "pointer",
-      "buffer",
-      "pointer",
-      "buffer"
-    ],
-    result: "pointer"
-  },
-  sqlite3_backup_step: {
-    parameters: [
-      "pointer",
-      "i32"
-    ],
-    result: "i32"
-  },
-  sqlite3_backup_finish: {
-    parameters: [
-      "pointer"
-    ],
-    result: "i32"
-  },
-  sqlite3_backup_remaining: {
-    parameters: [
-      "pointer"
-    ],
-    result: "i32"
-  },
-  sqlite3_backup_pagecount: {
-    parameters: [
-      "pointer"
-    ],
-    result: "i32"
-  },
-  sqlite3_create_function: {
-    parameters: [
-      "pointer",
-      "buffer",
-      "i32",
-      "i32",
-      "pointer",
-      "pointer",
-      "pointer",
-      "pointer"
-    ],
-    result: "i32",
-    optional: true
-  },
-  sqlite3_result_blob: {
-    parameters: [
-      "pointer",
-      "buffer",
-      "i32",
-      "isize"
-    ],
-    result: "void"
-  },
-  sqlite3_result_double: {
-    parameters: [
-      "pointer",
-      "f64"
-    ],
-    result: "void"
-  },
-  sqlite3_result_error: {
-    parameters: [
-      "pointer",
-      "buffer",
-      "i32"
-    ],
-    result: "void"
-  },
-  sqlite3_result_int: {
-    parameters: [
-      "pointer",
-      "i32"
-    ],
-    result: "void"
-  },
-  sqlite3_result_int64: {
-    parameters: [
-      "pointer",
-      "i64"
-    ],
-    result: "void"
-  },
-  sqlite3_result_null: {
-    parameters: [
-      "pointer"
-    ],
-    result: "void"
-  },
-  sqlite3_result_text: {
-    parameters: [
-      "pointer",
-      "buffer",
-      "i32",
-      "isize"
-    ],
-    result: "void"
-  },
-  sqlite3_value_type: {
-    parameters: [
-      "pointer"
-    ],
-    result: "i32"
-  },
-  sqlite3_value_subtype: {
-    parameters: [
-      "pointer"
-    ],
-    result: "i32"
-  },
-  sqlite3_value_blob: {
-    parameters: [
-      "pointer"
-    ],
-    result: "pointer"
-  },
-  sqlite3_value_double: {
-    parameters: [
-      "pointer"
-    ],
-    result: "f64"
-  },
-  sqlite3_value_int: {
-    parameters: [
-      "pointer"
-    ],
-    result: "i32"
-  },
-  sqlite3_value_int64: {
-    parameters: [
-      "pointer"
-    ],
-    result: "i64"
-  },
-  sqlite3_value_text: {
-    parameters: [
-      "pointer"
-    ],
-    result: "pointer"
-  },
-  sqlite3_value_bytes: {
-    parameters: [
-      "pointer"
-    ],
-    result: "i32"
-  },
-  sqlite3_aggregate_context: {
-    parameters: [
-      "pointer",
-      "i32"
-    ],
-    result: "pointer",
-    optional: true
-  },
-  sqlite3_enable_load_extension: {
-    parameters: [
-      "pointer",
-      "i32"
-    ],
-    result: "i32",
-    optional: true
-  },
-  sqlite3_load_extension: {
-    parameters: [
-      "pointer",
-      "buffer",
-      "buffer",
-      "buffer"
-    ],
-    result: "i32",
-    optional: true
-  },
-  sqlite3_initialize: {
-    parameters: [],
-    result: "i32"
-  },
-  sqlite3_update_hook: {
-    parameters: [
-      "pointer",
-      "pointer",
-      "pointer"
-    ],
-    result: "pointer"
-  }
-};
-var lib;
-function tryGetEnv(key) {
-  try {
-    return Deno.env.get(key);
-  } catch (e2) {
-    if (e2 instanceof Deno.errors.PermissionDenied) {
-      return void 0;
-    }
-    throw e2;
-  }
-}
-try {
-  const customPath = tryGetEnv("DENO_SQLITE_PATH");
-  const sqliteLocal = tryGetEnv("DENO_SQLITE_LOCAL");
-  if (sqliteLocal === "1") {
-    lib = Deno.dlopen(new URL(`../build/${Deno.build.os === "windows" ? "" : "lib"}sqlite3${Deno.build.arch !== "x86_64" ? `_${Deno.build.arch}` : ""}.${Deno.build.os === "windows" ? "dll" : Deno.build.os === "darwin" ? "dylib" : "so"}`, import.meta.url), symbols).symbols;
-  } else if (customPath) {
-    lib = Deno.dlopen(customPath, symbols).symbols;
-  } else {
-    lib = (await dlopen({
-      name: "sqlite3",
-      url: `${deno_default.github}/releases/download/${deno_default.version}/`,
-      suffixes: {
-        aarch64: "_aarch64"
-      }
-    }, symbols)).symbols;
-  }
-} catch (e2) {
-  if (e2 instanceof Deno.errors.PermissionDenied) {
-    throw e2;
-  }
-  throw new Error("Failed to load SQLite3 Dynamic Library", {
-    cause: e2
-  });
-}
-var init = lib.sqlite3_initialize();
-if (init !== 0) {
-  throw new Error(`Failed to initialize SQLite3: ${init}`);
-}
-var ffi_default = lib;
-
-// deno:https://jsr.io/@db/sqlite/0.13.0/src/constants.ts
-var SQLITE3_OK = 0;
-var SQLITE3_MISUSE = 21;
-var SQLITE3_ROW = 100;
-var SQLITE3_DONE = 101;
-var SQLITE3_OPEN_READONLY = 1;
-var SQLITE3_OPEN_READWRITE = 2;
-var SQLITE3_OPEN_CREATE = 4;
-var SQLITE3_OPEN_MEMORY = 128;
-var SQLITE_INTEGER = 1;
-var SQLITE_FLOAT = 2;
-var SQLITE_TEXT = 3;
-var SQLITE_BLOB = 4;
-var SQLITE_NULL = 5;
-
-// deno:https://jsr.io/@db/sqlite/0.13.0/src/util.ts
-var { sqlite3_errmsg, sqlite3_errstr } = ffi_default;
-var encoder2 = new TextEncoder();
-function toCString(str) {
-  return encoder2.encode(str + "\0");
-}
-var SqliteError = class extends Error {
-  code;
-  name;
-  constructor(code2 = 1, message = "Unknown Error") {
-    super(`${code2}: ${message}`), this.code = code2, this.name = "SqliteError";
-  }
-};
-function unwrap(code2, db2) {
-  if (code2 === SQLITE3_OK || code2 === SQLITE3_DONE) return;
-  if (code2 === SQLITE3_MISUSE) {
-    throw new SqliteError(code2, "SQLite3 API misuse");
-  } else if (db2 !== void 0) {
-    const errmsg = sqlite3_errmsg(db2);
-    if (errmsg === null) throw new SqliteError(code2);
-    throw new Error(Deno.UnsafePointerView.getCString(errmsg));
-  } else {
-    throw new SqliteError(code2, Deno.UnsafePointerView.getCString(sqlite3_errstr(code2)));
-  }
-}
-var buf = Deno.UnsafePointerView.getArrayBuffer;
-var readCstr = Deno.UnsafePointerView.getCString;
-
-// deno:https://jsr.io/@db/sqlite/0.13.0/src/statement.ts
-var { sqlite3_prepare_v2, sqlite3_reset, sqlite3_clear_bindings, sqlite3_step, sqlite3_column_count, sqlite3_column_type, sqlite3_column_value, sqlite3_value_subtype, sqlite3_column_text, sqlite3_finalize, sqlite3_column_int64, sqlite3_column_double, sqlite3_column_blob, sqlite3_column_bytes, sqlite3_column_name, sqlite3_expanded_sql, sqlite3_bind_parameter_count, sqlite3_bind_int, sqlite3_bind_int64, sqlite3_bind_text, sqlite3_bind_blob, sqlite3_bind_double, sqlite3_bind_parameter_index, sqlite3_sql, sqlite3_stmt_readonly, sqlite3_bind_parameter_name, sqlite3_changes, sqlite3_column_int } = ffi_default;
-var STATEMENTS_TO_DB = /* @__PURE__ */ new Map();
-var emptyStringBuffer = new Uint8Array(1);
-var statementFinalizer = new FinalizationRegistry((ptr) => {
-  if (STATEMENTS_TO_DB.has(ptr)) {
-    sqlite3_finalize(ptr);
-    STATEMENTS_TO_DB.delete(ptr);
-  }
-});
-var JSON_SUBTYPE = 74;
-var BIG_MAX = BigInt(Number.MAX_SAFE_INTEGER);
-function getColumn(handle, i2, int64, parseJson) {
-  const ty = sqlite3_column_type(handle, i2);
-  if (ty === SQLITE_INTEGER && !int64) return sqlite3_column_int(handle, i2);
-  switch (ty) {
-    case SQLITE_TEXT: {
-      const ptr = sqlite3_column_text(handle, i2);
-      if (ptr === null) return null;
-      const text = readCstr(ptr, 0);
-      const value = sqlite3_column_value(handle, i2);
-      const subtype = sqlite3_value_subtype(value);
-      if (subtype === JSON_SUBTYPE && parseJson) {
-        try {
-          return JSON.parse(text);
-        } catch (_error) {
-          return text;
-        }
-      }
-      return text;
-    }
-    case SQLITE_INTEGER: {
-      const val = sqlite3_column_int64(handle, i2);
-      if (val < -BIG_MAX || val > BIG_MAX) {
-        return val;
-      }
-      return Number(val);
-    }
-    case SQLITE_FLOAT: {
-      return sqlite3_column_double(handle, i2);
-    }
-    case SQLITE_BLOB: {
-      const ptr = sqlite3_column_blob(handle, i2);
-      if (ptr === null) {
-        return new Uint8Array();
-      }
-      const bytes = sqlite3_column_bytes(handle, i2);
-      return new Uint8Array(Deno.UnsafePointerView.getArrayBuffer(ptr, bytes).slice(0));
-    }
-    default: {
-      return null;
-    }
-  }
-}
-var Statement = class {
-  db;
-  #handle;
-  #finalizerToken;
-  #bound;
-  #hasNoArgs;
-  #unsafeConcurrency;
-  /** Unsafe Raw (pointer) to the sqlite object */
-  get unsafeHandle() {
-    return this.#handle;
-  }
-  /** SQL string including bindings */
-  get expandedSql() {
-    return readCstr(sqlite3_expanded_sql(this.#handle));
-  }
-  /** The SQL string that we passed when creating statement */
-  get sql() {
-    return readCstr(sqlite3_sql(this.#handle));
-  }
-  /** Whether this statement doesn't make any direct changes to the DB */
-  get readonly() {
-    return sqlite3_stmt_readonly(this.#handle) !== 0;
-  }
-  /** Simply run the query without retrieving any output there may be. */
-  run(...args) {
-    return this.#runWithArgs(...args);
-  }
-  /**
-   * Run the query and return the resulting rows where rows are array of columns.
-   */
-  values(...args) {
-    return this.#valuesWithArgs(...args);
-  }
-  /**
-   * Run the query and return the resulting rows where rows are objects
-   * mapping column name to their corresponding values.
-   */
-  all(...args) {
-    return this.#allWithArgs(...args);
-  }
-  #bindParameterCount;
-  /** Number of parameters (to be) bound */
-  get bindParameterCount() {
-    return this.#bindParameterCount;
-  }
-  int64;
-  parseJson;
-  enableInt64() {
-    this.int64 = true;
-    return this;
-  }
-  enableParseJson() {
-    this.parseJson = true;
-    return this;
-  }
-  disableInt64() {
-    this.int64 = false;
-    return this;
-  }
-  disableParseJson() {
-    this.parseJson = false;
-    return this;
-  }
-  defaultInt64() {
-    this.int64 = void 0;
-    return this;
-  }
-  defaultParseJson() {
-    this.parseJson = void 0;
-    return this;
-  }
-  constructor(db2, sql) {
-    this.db = db2;
-    this.#bound = false;
-    this.#hasNoArgs = false;
-    this.#bindRefs = /* @__PURE__ */ new Set();
-    this.#rowObject = {};
-    const pHandle = new BigUint64Array(1);
-    const cString = toCString(sql);
-    unwrap(sqlite3_prepare_v2(db2.unsafeHandle, cString, cString.byteLength, pHandle, null), db2.unsafeHandle);
-    this.#handle = Deno.UnsafePointer.create(pHandle[0]);
-    STATEMENTS_TO_DB.set(this.#handle, db2.unsafeHandle);
-    this.#unsafeConcurrency = db2.unsafeConcurrency;
-    this.#finalizerToken = {
-      handle: this.#handle
-    };
-    statementFinalizer.register(this, this.#handle, this.#finalizerToken);
-    if ((this.#bindParameterCount = sqlite3_bind_parameter_count(this.#handle)) === 0) {
-      this.#hasNoArgs = true;
-      this.all = this.#allNoArgs;
-      this.values = this.#valuesNoArgs;
-      this.run = this.#runNoArgs;
-      this.value = this.#valueNoArgs;
-      this.get = this.#getNoArgs;
-    }
-  }
-  /** Get bind parameter name by index */
-  bindParameterName(i2) {
-    return readCstr(sqlite3_bind_parameter_name(this.#handle, i2));
-  }
-  /** Get bind parameter index by name */
-  bindParameterIndex(name) {
-    if (name[0] !== ":" && name[0] !== "@" && name[0] !== "$") {
-      name = ":" + name;
-    }
-    return sqlite3_bind_parameter_index(this.#handle, toCString(name));
-  }
-  #begin() {
-    sqlite3_reset(this.#handle);
-    if (!this.#bound && !this.#hasNoArgs) {
-      sqlite3_clear_bindings(this.#handle);
-      this.#bindRefs.clear();
-    }
-  }
-  #bindRefs;
-  #bind(i2, param) {
-    switch (typeof param) {
-      case "number": {
-        if (Number.isInteger(param)) {
-          if (Number.isSafeInteger(param) && param >= -(2 ** 31) && param < 2 ** 31) {
-            unwrap(sqlite3_bind_int(this.#handle, i2 + 1, param));
-          } else {
-            unwrap(sqlite3_bind_int64(this.#handle, i2 + 1, BigInt(param)));
-          }
-        } else {
-          unwrap(sqlite3_bind_double(this.#handle, i2 + 1, param));
-        }
-        break;
-      }
-      case "string": {
-        if (param === "") {
-          unwrap(sqlite3_bind_text(this.#handle, i2 + 1, emptyStringBuffer, 0, null));
-        } else {
-          const str = new TextEncoder().encode(param);
-          this.#bindRefs.add(str);
-          unwrap(sqlite3_bind_text(this.#handle, i2 + 1, str, str.byteLength, null));
-        }
-        break;
-      }
-      case "object": {
-        if (param === null) {
-        } else if (param instanceof Uint8Array) {
-          this.#bindRefs.add(param);
-          unwrap(sqlite3_bind_blob(this.#handle, i2 + 1, param.byteLength === 0 ? emptyStringBuffer : param, param.byteLength, null));
-        } else if (param instanceof Date) {
-          const cstring = toCString(param.toISOString());
-          this.#bindRefs.add(cstring);
-          unwrap(sqlite3_bind_text(this.#handle, i2 + 1, cstring, -1, null));
-        } else {
-          const cstring = toCString(JSON.stringify(param));
-          this.#bindRefs.add(cstring);
-          unwrap(sqlite3_bind_text(this.#handle, i2 + 1, cstring, -1, null));
-        }
-        break;
-      }
-      case "bigint": {
-        unwrap(sqlite3_bind_int64(this.#handle, i2 + 1, param));
-        break;
-      }
-      case "boolean":
-        unwrap(sqlite3_bind_int(this.#handle, i2 + 1, param ? 1 : 0));
-        break;
-      case "undefined":
-        break;
-      default: {
-        throw new Error(`Value of unsupported type: ${Deno.inspect(param)}`);
-      }
-    }
-  }
-  /**
-   * Bind parameters to the statement. This method can only be called once
-   * to set the parameters to be same throughout the statement. You cannot
-   * change the parameters after this method is called.
-   *
-   * This method is merely just for optimization to avoid binding parameters
-   * each time in prepared statement.
-   */
-  bind(...params) {
-    this.#bindAll(params);
-    this.#bound = true;
-    return this;
-  }
-  #bindAll(params) {
-    if (this.#bound) throw new Error("Statement already bound to values");
-    if (typeof params[0] === "object" && params[0] !== null && !(params[0] instanceof Uint8Array) && !(params[0] instanceof Date)) {
-      params = params[0];
-    }
-    if (Array.isArray(params)) {
-      for (let i2 = 0; i2 < params.length; i2++) {
-        this.#bind(i2, params[i2]);
-      }
-    } else {
-      for (const [name, param] of Object.entries(params)) {
-        const i2 = this.bindParameterIndex(name);
-        if (i2 === 0) {
-          throw new Error(`No such parameter "${name}"`);
-        }
-        this.#bind(i2 - 1, param);
-      }
-    }
-  }
-  #runNoArgs() {
-    const handle = this.#handle;
-    this.#begin();
-    const status = sqlite3_step(handle);
-    if (status !== SQLITE3_ROW && status !== SQLITE3_DONE) {
-      unwrap(status, this.db.unsafeHandle);
-    }
-    sqlite3_reset(handle);
-    return sqlite3_changes(this.db.unsafeHandle);
-  }
-  #runWithArgs(...params) {
-    const handle = this.#handle;
-    this.#begin();
-    this.#bindAll(params);
-    const status = sqlite3_step(handle);
-    if (!this.#hasNoArgs && !this.#bound && params.length) {
-      this.#bindRefs.clear();
-    }
-    if (status !== SQLITE3_ROW && status !== SQLITE3_DONE) {
-      unwrap(status, this.db.unsafeHandle);
-    }
-    sqlite3_reset(handle);
-    return sqlite3_changes(this.db.unsafeHandle);
-  }
-  #valuesNoArgs() {
-    const handle = this.#handle;
-    this.#begin();
-    const columnCount = sqlite3_column_count(handle);
-    const result = [];
-    const getRowArray = new Function("getColumn", `
-      return function(h, int64, parseJson) {
-        return [${Array.from({
-      length: columnCount
-    }).map((_, i2) => `getColumn(h, ${i2}, int64, parseJson)`).join(", ")}];
-      };
-      `)(getColumn);
-    let status = sqlite3_step(handle);
-    while (status === SQLITE3_ROW) {
-      result.push(getRowArray(handle, this.int64 ?? this.db.int64, this.parseJson ?? this.db.parseJson));
-      status = sqlite3_step(handle);
-    }
-    if (status !== SQLITE3_DONE) {
-      unwrap(status, this.db.unsafeHandle);
-    }
-    sqlite3_reset(handle);
-    return result;
-  }
-  #valuesWithArgs(...params) {
-    const handle = this.#handle;
-    this.#begin();
-    this.#bindAll(params);
-    const columnCount = sqlite3_column_count(handle);
-    const result = [];
-    const getRowArray = new Function("getColumn", `
-      return function(h, int64, parseJson) {
-        return [${Array.from({
-      length: columnCount
-    }).map((_, i2) => `getColumn(h, ${i2}, int64, parseJson)`).join(", ")}];
-      };
-      `)(getColumn);
-    let status = sqlite3_step(handle);
-    while (status === SQLITE3_ROW) {
-      result.push(getRowArray(handle, this.int64 ?? this.db.int64, this.parseJson ?? this.db.parseJson));
-      status = sqlite3_step(handle);
-    }
-    if (!this.#hasNoArgs && !this.#bound && params.length) {
-      this.#bindRefs.clear();
-    }
-    if (status !== SQLITE3_DONE) {
-      unwrap(status, this.db.unsafeHandle);
-    }
-    sqlite3_reset(handle);
-    return result;
-  }
-  #rowObjectFn;
-  getRowObject() {
-    if (!this.#rowObjectFn || !this.#unsafeConcurrency) {
-      const columnNames = this.columnNames();
-      const getRowObject = new Function("getColumn", `
-        return function(h, int64, parseJson) {
-          return {
-            ${columnNames.map((name, i2) => `"${name}": getColumn(h, ${i2}, int64, parseJson)`).join(",\n")}
-          };
-        };
-        `)(getColumn);
-      this.#rowObjectFn = getRowObject;
-    }
-    return this.#rowObjectFn;
-  }
-  #allNoArgs() {
-    const handle = this.#handle;
-    const int64 = this.int64 ?? this.db.int64;
-    const parseJson = this.parseJson ?? this.db.parseJson;
-    this.#begin();
-    const getRowObject = this.getRowObject();
-    const result = [];
-    let status = sqlite3_step(handle);
-    while (status === SQLITE3_ROW) {
-      result.push(getRowObject(handle, int64, parseJson));
-      status = sqlite3_step(handle);
-    }
-    if (status !== SQLITE3_DONE) {
-      unwrap(status, this.db.unsafeHandle);
-    }
-    sqlite3_reset(handle);
-    return result;
-  }
-  #allWithArgs(...params) {
-    const handle = this.#handle;
-    const int64 = this.int64 ?? this.db.int64;
-    const parseJson = this.parseJson ?? this.db.parseJson;
-    this.#begin();
-    this.#bindAll(params);
-    const getRowObject = this.getRowObject();
-    const result = [];
-    let status = sqlite3_step(handle);
-    while (status === SQLITE3_ROW) {
-      result.push(getRowObject(handle, int64, parseJson));
-      status = sqlite3_step(handle);
-    }
-    if (!this.#hasNoArgs && !this.#bound && params.length) {
-      this.#bindRefs.clear();
-    }
-    if (status !== SQLITE3_DONE) {
-      unwrap(status, this.db.unsafeHandle);
-    }
-    sqlite3_reset(handle);
-    return result;
-  }
-  /** Fetch only first row as an array, if any. */
-  value(...params) {
-    const handle = this.#handle;
-    const int64 = this.int64 ?? this.db.int64;
-    const parseJson = this.parseJson ?? this.db.parseJson;
-    const arr = new Array(sqlite3_column_count(handle));
-    sqlite3_reset(handle);
-    if (!this.#hasNoArgs && !this.#bound) {
-      sqlite3_clear_bindings(handle);
-      this.#bindRefs.clear();
-      if (params.length) {
-        this.#bindAll(params);
-      }
-    }
-    const status = sqlite3_step(handle);
-    if (!this.#hasNoArgs && !this.#bound && params.length) {
-      this.#bindRefs.clear();
-    }
-    if (status === SQLITE3_ROW) {
-      for (let i2 = 0; i2 < arr.length; i2++) {
-        arr[i2] = getColumn(handle, i2, int64, parseJson);
-      }
-      sqlite3_reset(this.#handle);
-      return arr;
-    } else if (status === SQLITE3_DONE) {
-      return;
-    } else {
-      unwrap(status, this.db.unsafeHandle);
-    }
-  }
-  #valueNoArgs() {
-    const handle = this.#handle;
-    const int64 = this.int64 ?? this.db.int64;
-    const parseJson = this.parseJson ?? this.db.parseJson;
-    const cc = sqlite3_column_count(handle);
-    const arr = new Array(cc);
-    sqlite3_reset(handle);
-    const status = sqlite3_step(handle);
-    if (status === SQLITE3_ROW) {
-      for (let i2 = 0; i2 < cc; i2++) {
-        arr[i2] = getColumn(handle, i2, int64, parseJson);
-      }
-      sqlite3_reset(this.#handle);
-      return arr;
-    } else if (status === SQLITE3_DONE) {
-      return;
-    } else {
-      unwrap(status, this.db.unsafeHandle);
-    }
-  }
-  #columnNames;
-  #rowObject;
-  columnNames() {
-    if (!this.#columnNames || !this.#unsafeConcurrency) {
-      const columnCount = sqlite3_column_count(this.#handle);
-      const columnNames = new Array(columnCount);
-      for (let i2 = 0; i2 < columnCount; i2++) {
-        columnNames[i2] = readCstr(sqlite3_column_name(this.#handle, i2));
-      }
-      this.#columnNames = columnNames;
-      this.#rowObject = {};
-      for (const name of columnNames) {
-        this.#rowObject[name] = void 0;
-      }
-    }
-    return this.#columnNames;
-  }
-  /** Fetch only first row as an object, if any. */
-  get(...params) {
-    const handle = this.#handle;
-    const int64 = this.int64 ?? this.db.int64;
-    const parseJson = this.parseJson ?? this.db.parseJson;
-    const columnNames = this.columnNames();
-    const row = {};
-    sqlite3_reset(handle);
-    if (!this.#hasNoArgs && !this.#bound) {
-      sqlite3_clear_bindings(handle);
-      this.#bindRefs.clear();
-      if (params.length) {
-        this.#bindAll(params);
-      }
-    }
-    const status = sqlite3_step(handle);
-    if (!this.#hasNoArgs && !this.#bound && params.length) {
-      this.#bindRefs.clear();
-    }
-    if (status === SQLITE3_ROW) {
-      for (let i2 = 0; i2 < columnNames.length; i2++) {
-        row[columnNames[i2]] = getColumn(handle, i2, int64, parseJson);
-      }
-      sqlite3_reset(this.#handle);
-      return row;
-    } else if (status === SQLITE3_DONE) {
-      return;
-    } else {
-      unwrap(status, this.db.unsafeHandle);
-    }
-  }
-  #getNoArgs() {
-    const handle = this.#handle;
-    const int64 = this.int64 ?? this.db.int64;
-    const parseJson = this.parseJson ?? this.db.parseJson;
-    const columnNames = this.columnNames();
-    const row = this.#rowObject;
-    sqlite3_reset(handle);
-    const status = sqlite3_step(handle);
-    if (status === SQLITE3_ROW) {
-      for (let i2 = 0; i2 < columnNames?.length; i2++) {
-        row[columnNames[i2]] = getColumn(handle, i2, int64, parseJson);
-      }
-      sqlite3_reset(handle);
-      return row;
-    } else if (status === SQLITE3_DONE) {
-      return;
-    } else {
-      unwrap(status, this.db.unsafeHandle);
-    }
-  }
-  /** Free up the statement object. */
-  finalize() {
-    if (!STATEMENTS_TO_DB.has(this.#handle)) return;
-    this.#bindRefs.clear();
-    statementFinalizer.unregister(this.#finalizerToken);
-    STATEMENTS_TO_DB.delete(this.#handle);
-    unwrap(sqlite3_finalize(this.#handle));
-  }
-  /** Coerces the statement to a string, which in this case is expanded SQL. */
-  toString() {
-    return readCstr(sqlite3_expanded_sql(this.#handle));
-  }
-  /** Iterate over resultant rows from query. */
-  *iter(...params) {
-    this.#begin();
-    this.#bindAll(params);
-    const getRowObject = this.getRowObject();
-    const int64 = this.int64 ?? this.db.int64;
-    const parseJson = this.parseJson ?? this.db.parseJson;
-    let status = sqlite3_step(this.#handle);
-    while (status === SQLITE3_ROW) {
-      yield getRowObject(this.#handle, int64, parseJson);
-      status = sqlite3_step(this.#handle);
-    }
-    if (status !== SQLITE3_DONE) {
-      unwrap(status, this.db.unsafeHandle);
-    }
-    sqlite3_reset(this.#handle);
-  }
-  [Symbol.iterator]() {
-    return this.iter();
-  }
-  [Symbol.dispose]() {
-    this.finalize();
-  }
-  [Symbol.for("Deno.customInspect")]() {
-    return `Statement { ${this.expandedSql} }`;
-  }
-};
-
-// deno:https://jsr.io/@db/sqlite/0.13.0/src/blob.ts
-var { sqlite3_blob_open, sqlite3_blob_bytes, sqlite3_blob_close, sqlite3_blob_read, sqlite3_blob_write } = ffi_default;
-var SQLBlob = class {
-  #handle;
-  constructor(db2, options2) {
-    options2 = Object.assign({
-      readonly: true,
-      db: "main"
-    }, options2);
-    const pHandle = new BigUint64Array(1);
-    unwrap(sqlite3_blob_open(db2.unsafeHandle, toCString(options2.db ?? "main"), toCString(options2.table), toCString(options2.column), BigInt(options2.row), options2.readonly === false ? 1 : 0, pHandle));
-    this.#handle = Deno.UnsafePointer.create(pHandle[0]);
-  }
-  /** Byte size of the Blob */
-  get byteLength() {
-    return sqlite3_blob_bytes(this.#handle);
-  }
-  /** Read from the Blob at given offset into a buffer (Uint8Array) */
-  readSync(offset, p) {
-    unwrap(sqlite3_blob_read(this.#handle, p, p.byteLength, offset));
-  }
-  /** Write a buffer (Uint8Array) at given offset in the Blob */
-  writeSync(offset, p) {
-    unwrap(sqlite3_blob_write(this.#handle, p, p.byteLength, offset));
-  }
-  /** Close the Blob. It **must** be called to prevent leaks. */
-  close() {
-    unwrap(sqlite3_blob_close(this.#handle));
-  }
-  /** Obtains Web Stream for reading the Blob */
-  get readable() {
-    const length2 = this.byteLength;
-    let offset = 0;
-    return new ReadableStream({
-      type: "bytes",
-      pull: (ctx) => {
-        try {
-          const byob = ctx.byobRequest;
-          if (byob) {
-            const toRead = Math.min(length2 - offset, byob.view.byteLength);
-            this.readSync(offset, byob.view.subarray(0, toRead));
-            offset += toRead;
-            byob.respond(toRead);
-          } else {
-            const toRead = Math.min(length2 - offset, ctx.desiredSize || 1024 * 16);
-            if (toRead === 0) {
-              ctx.close();
-              return;
-            }
-            const buffer = new Uint8Array(toRead);
-            this.readSync(offset, buffer);
-            offset += toRead;
-            ctx.enqueue(buffer);
-          }
-        } catch (e2) {
-          ctx.error(e2);
-          ctx.byobRequest?.respond(0);
-        }
-      }
-    });
-  }
-  /** Obtains Web Stream for writing to the Blob */
-  get writable() {
-    const length2 = this.byteLength;
-    let offset = 0;
-    return new WritableStream({
-      write: (chunk, ctx) => {
-        if (offset + chunk.byteLength > length2) {
-          ctx.error(new Error("Write exceeds blob length"));
-          return;
-        }
-        this.writeSync(offset, chunk);
-        offset += chunk.byteLength;
-      }
-    });
-  }
-  *[Symbol.iterator]() {
-    const length2 = this.byteLength;
-    let offset = 0;
-    while (offset < length2) {
-      const toRead = Math.min(length2 - offset, 1024 * 16);
-      const buffer = new Uint8Array(toRead);
-      this.readSync(offset, buffer);
-      offset += toRead;
-      yield buffer;
-    }
-  }
-  [Symbol.for("Deno.customInspect")]() {
-    return `SQLite3.Blob(0x${this.byteLength.toString(16)})`;
-  }
-};
-
-// deno:https://jsr.io/@db/sqlite/0.13.0/src/database.ts
-var { sqlite3_open_v2, sqlite3_close_v2, sqlite3_changes: sqlite3_changes2, sqlite3_total_changes, sqlite3_last_insert_rowid, sqlite3_get_autocommit, sqlite3_exec, sqlite3_free, sqlite3_libversion, sqlite3_sourceid, sqlite3_complete, sqlite3_finalize: sqlite3_finalize2, sqlite3_result_blob, sqlite3_result_double, sqlite3_result_error, sqlite3_result_int64, sqlite3_result_null, sqlite3_result_text, sqlite3_value_blob, sqlite3_value_bytes, sqlite3_value_double, sqlite3_value_int64, sqlite3_value_text, sqlite3_value_type, sqlite3_create_function, sqlite3_result_int, sqlite3_aggregate_context, sqlite3_enable_load_extension, sqlite3_load_extension, sqlite3_backup_init, sqlite3_backup_step, sqlite3_backup_finish, sqlite3_errcode } = ffi_default;
-var SQLITE_VERSION = readCstr(sqlite3_libversion());
-var SQLITE_SOURCEID = readCstr(sqlite3_sourceid());
-var BIG_MAX2 = BigInt(Number.MAX_SAFE_INTEGER);
-var Database = class {
-  #path;
-  #handle;
-  #open = true;
-  #enableLoadExtension = false;
-  /** Whether to support BigInt columns. False by default, integers larger than 32 bit will be inaccurate. */
-  int64;
-  /** Whether to parse JSON columns as JS objects. True by default. */
-  parseJson;
-  unsafeConcurrency;
-  /** Whether DB connection is open */
-  get open() {
-    return this.#open;
-  }
-  /** Unsafe Raw (pointer) to the sqlite object */
-  get unsafeHandle() {
-    return this.#handle;
-  }
-  /** Path of the database file. */
-  get path() {
-    return this.#path;
-  }
-  /** Number of rows changed by the last executed statement. */
-  get changes() {
-    return sqlite3_changes2(this.#handle);
-  }
-  /** Number of rows changed since the database connection was opened. */
-  get totalChanges() {
-    return sqlite3_total_changes(this.#handle);
-  }
-  /** Gets last inserted Row ID */
-  get lastInsertRowId() {
-    return Number(sqlite3_last_insert_rowid(this.#handle));
-  }
-  /** Whether autocommit is enabled. Enabled by default, can be disabled using BEGIN statement. */
-  get autocommit() {
-    return sqlite3_get_autocommit(this.#handle) === 1;
-  }
-  /** Whether DB is in mid of a transaction */
-  get inTransaction() {
-    return this.#open && !this.autocommit;
-  }
-  get enableLoadExtension() {
-    return this.#enableLoadExtension;
-  }
-  set enableLoadExtension(enabled2) {
-    if (sqlite3_enable_load_extension === null) {
-      throw new Error("Extension loading is not supported by the shared library that was used.");
-    }
-    const result = sqlite3_enable_load_extension(this.#handle, Number(enabled2));
-    unwrap(result, this.#handle);
-    this.#enableLoadExtension = enabled2;
-  }
-  constructor(path, options2 = {}) {
-    this.#path = path instanceof URL ? fromFileUrl5(path) : path;
-    let flags = 0;
-    this.int64 = options2.int64 ?? false;
-    this.parseJson = options2.parseJson ?? true;
-    this.unsafeConcurrency = options2.unsafeConcurrency ?? false;
-    if (options2.flags !== void 0) {
-      flags = options2.flags;
-    } else {
-      if (options2.memory) {
-        flags |= SQLITE3_OPEN_MEMORY;
-      }
-      if (options2.readonly ?? false) {
-        flags |= SQLITE3_OPEN_READONLY;
-      } else {
-        flags |= SQLITE3_OPEN_READWRITE;
-      }
-      if ((options2.create ?? true) && !options2.readonly) {
-        flags |= SQLITE3_OPEN_CREATE;
-      }
-    }
-    const pHandle = new BigUint64Array(1);
-    const result = sqlite3_open_v2(toCString(this.#path), pHandle, flags, null);
-    this.#handle = Deno.UnsafePointer.create(pHandle[0]);
-    if (result !== 0) sqlite3_close_v2(this.#handle);
-    unwrap(result);
-    if (options2.enableLoadExtension) {
-      this.enableLoadExtension = options2.enableLoadExtension;
-    }
-  }
-  /**
-   * Creates a new Prepared Statement from the given SQL statement.
-   *
-   * Example:
-   * ```ts
-   * const stmt = db.prepare("SELECT * FROM mytable WHERE id = ?");
-   *
-   * for (const row of stmt.all(1)) {
-   *   console.log(row);
-   * }
-   * ```
-   *
-   * Bind parameters can be either provided as an array of values, or as an object
-   * mapping the parameter name to the value.
-   *
-   * Example:
-   * ```ts
-   * const stmt = db.prepare("SELECT * FROM mytable WHERE id = ?");
-   * const row = stmt.get(1);
-   *
-   * // or
-   *
-   * const stmt = db.prepare("SELECT * FROM mytable WHERE id = :id");
-   * const row = stmt.get({ id: 1 });
-   * ```
-   *
-   * Statements are automatically freed once GC catches them, however
-   * you can also manually free using `finalize` method.
-   *
-   * @param sql SQL statement string
-   * @returns Statement object
-   */
-  prepare(sql) {
-    return new Statement(this, sql);
-  }
-  /**
-   * Open a Blob for incremental I/O.
-   *
-   * Make sure to close the blob after you are done with it,
-   * otherwise you will have memory leaks.
-   */
-  openBlob(options2) {
-    return new SQLBlob(this, options2);
-  }
-  /**
-   * Simply executes the SQL statement (supports multiple statements separated by semicolon).
-   * Returns the number of changes made by last statement.
-   *
-   * Example:
-   * ```ts
-   * // Create table
-   * db.exec("create table users (id integer not null, username varchar(20) not null)");
-   *
-   * // Inserts
-   * db.exec("insert into users (id, username) values(?, ?)", id, username);
-   *
-   * // Insert with named parameters
-   * db.exec("insert into users (id, username) values(:id, :username)", { id, username });
-   *
-   * // Pragma statements
-   * db.exec("pragma journal_mode = WAL");
-   * db.exec("pragma synchronous = normal");
-   * db.exec("pragma temp_store = memory");
-   * ```
-   *
-   * Under the hood, it uses `sqlite3_exec` if no parameters are given to bind
-   * with the SQL statement, a prepared statement otherwise.
-   */
-  exec(sql, ...params) {
-    if (params.length === 0) {
-      const pErr = new BigUint64Array(1);
-      sqlite3_exec(this.#handle, toCString(sql), null, null, new Uint8Array(pErr.buffer));
-      const errPtr = Deno.UnsafePointer.create(pErr[0]);
-      if (errPtr !== null) {
-        const err = readCstr(errPtr);
-        sqlite3_free(errPtr);
-        throw new Error(err);
-      }
-      return sqlite3_changes2(this.#handle);
-    }
-    const stmt = this.prepare(sql);
-    stmt.run(...params);
-    return sqlite3_changes2(this.#handle);
-  }
-  /** Alias for `exec`. */
-  run(sql, ...params) {
-    return this.exec(sql, ...params);
-  }
-  /** Safely execute SQL with parameters using a tagged template */
-  sql(strings, ...parameters) {
-    const sql = strings.join("?");
-    const stmt = this.prepare(sql);
-    return stmt.all(...parameters);
-  }
-  /**
-   * Wraps a callback function in a transaction.
-   *
-   * - When function is called, the transaction is started.
-   * - When function returns, the transaction is committed.
-   * - When function throws an error, the transaction is rolled back.
-   *
-   * Example:
-   * ```ts
-   * const stmt = db.prepare("insert into users (id, username) values(?, ?)");
-   *
-   * interface User {
-   *   id: number;
-   *   username: string;
-   * }
-   *
-   * const insertUsers = db.transaction((data: User[]) => {
-   *   for (const user of data) {
-   *     stmt.run(user);
-   *   }
-   * });
-   *
-   * insertUsers([
-   *   { id: 1, username: "alice" },
-   *   { id: 2, username: "bob" },
-   * ]);
-   *
-   * // May also use `insertUsers.deferred`, `immediate`, or `exclusive`.
-   * // They corresspond to using `BEGIN DEFERRED`, `BEGIN IMMEDIATE`, and `BEGIN EXCLUSIVE`.
-   * // For eg.
-   *
-   * insertUsers.deferred([
-   *   { id: 1, username: "alice" },
-   *   { id: 2, username: "bob" },
-   * ]);
-   * ```
-   */
-  transaction(fn) {
-    const controller = getController(this);
-    const properties = {
-      default: {
-        value: wrapTransaction(fn, this, controller.default)
-      },
-      deferred: {
-        value: wrapTransaction(fn, this, controller.deferred)
-      },
-      immediate: {
-        value: wrapTransaction(fn, this, controller.immediate)
-      },
-      exclusive: {
-        value: wrapTransaction(fn, this, controller.exclusive)
-      },
-      database: {
-        value: this,
-        enumerable: true
-      }
-    };
-    Object.defineProperties(properties.default.value, properties);
-    Object.defineProperties(properties.deferred.value, properties);
-    Object.defineProperties(properties.immediate.value, properties);
-    Object.defineProperties(properties.exclusive.value, properties);
-    return properties.default.value;
-  }
-  #callbacks = /* @__PURE__ */ new Set();
-  /**
-   * Creates a new user-defined function.
-   *
-   * Example:
-   * ```ts
-   * db.function("add", (a: number, b: number) => a + b);
-   * db.prepare("select add(1, 2)").value<[number]>()!; // [3]
-   * ```
-   */
-  function(name, fn, options2) {
-    if (sqlite3_create_function === null) {
-      throw new Error("User-defined functions are not supported by the shared library that was used.");
-    }
-    const cb = new Deno.UnsafeCallback({
-      parameters: [
-        "pointer",
-        "i32",
-        "pointer"
-      ],
-      result: "void"
-    }, (ctx, nArgs, pArgs) => {
-      const argptr = new Deno.UnsafePointerView(pArgs);
-      const args = [];
-      for (let i2 = 0; i2 < nArgs; i2++) {
-        const arg = Deno.UnsafePointer.create(argptr.getBigUint64(i2 * 8));
-        const type = sqlite3_value_type(arg);
-        switch (type) {
-          case SQLITE_INTEGER: {
-            const value = sqlite3_value_int64(arg);
-            if (value < -BIG_MAX2 || value > BIG_MAX2) {
-              args.push(value);
-            } else {
-              args.push(Number(value));
-            }
-            break;
-          }
-          case SQLITE_FLOAT:
-            args.push(sqlite3_value_double(arg));
-            break;
-          case SQLITE_TEXT:
-            args.push(new TextDecoder().decode(new Uint8Array(Deno.UnsafePointerView.getArrayBuffer(sqlite3_value_text(arg), sqlite3_value_bytes(arg)))));
-            break;
-          case SQLITE_BLOB:
-            args.push(new Uint8Array(Deno.UnsafePointerView.getArrayBuffer(sqlite3_value_blob(arg), sqlite3_value_bytes(arg))));
-            break;
-          case SQLITE_NULL:
-            args.push(null);
-            break;
-          default:
-            throw new Error(`Unknown type: ${type}`);
-        }
-      }
-      let result;
-      try {
-        result = fn(...args);
-      } catch (err2) {
-        const buf2 = new TextEncoder().encode(err2 instanceof Error ? err2.message : String(err2));
-        sqlite3_result_error(ctx, buf2, buf2.byteLength);
-        return;
-      }
-      if (result === void 0 || result === null) {
-        sqlite3_result_null(ctx);
-      } else if (typeof result === "boolean") {
-        sqlite3_result_int(ctx, result ? 1 : 0);
-      } else if (typeof result === "number") {
-        if (Number.isSafeInteger(result)) {
-          sqlite3_result_int64(ctx, BigInt(result));
-        } else sqlite3_result_double(ctx, result);
-      } else if (typeof result === "bigint") {
-        sqlite3_result_int64(ctx, result);
-      } else if (typeof result === "string") {
-        const buffer = new TextEncoder().encode(result);
-        sqlite3_result_text(ctx, buffer, buffer.byteLength, 0n);
-      } else if (result instanceof Uint8Array) {
-        sqlite3_result_blob(ctx, result, result.length, -1n);
-      } else {
-        const buffer = new TextEncoder().encode(`Invalid return value: ${Deno.inspect(result)}`);
-        sqlite3_result_error(ctx, buffer, buffer.byteLength);
-      }
-    });
-    let flags = 1;
-    if (options2?.deterministic) {
-      flags |= 2048;
-    }
-    if (options2?.directOnly) {
-      flags |= 524288;
-    }
-    if (options2?.subtype) {
-      flags |= 1048576;
-    }
-    if (options2?.directOnly) {
-      flags |= 2097152;
-    }
-    const err = sqlite3_create_function(this.#handle, toCString(name), options2?.varargs ? -1 : fn.length, flags, null, cb.pointer, null, null);
-    unwrap(err, this.#handle);
-    this.#callbacks.add(cb);
-  }
-  /**
-   * Creates a new user-defined aggregate function.
-   */
-  aggregate(name, options2) {
-    if (sqlite3_aggregate_context === null || sqlite3_create_function === null) {
-      throw new Error("User-defined functions are not supported by the shared library that was used.");
-    }
-    const contexts = /* @__PURE__ */ new Map();
-    const cb = new Deno.UnsafeCallback({
-      parameters: [
-        "pointer",
-        "i32",
-        "pointer"
-      ],
-      result: "void"
-    }, (ctx, nArgs, pArgs) => {
-      const aggrCtx = sqlite3_aggregate_context(ctx, 8);
-      const aggrPtr = Deno.UnsafePointer.value(aggrCtx);
-      let aggregate;
-      if (contexts.has(aggrPtr)) {
-        aggregate = contexts.get(aggrPtr);
-      } else {
-        aggregate = typeof options2.start === "function" ? options2.start() : options2.start;
-        contexts.set(aggrPtr, aggregate);
-      }
-      const argptr = new Deno.UnsafePointerView(pArgs);
-      const args = [];
-      for (let i2 = 0; i2 < nArgs; i2++) {
-        const arg = Deno.UnsafePointer.create(argptr.getBigUint64(i2 * 8));
-        const type = sqlite3_value_type(arg);
-        switch (type) {
-          case SQLITE_INTEGER: {
-            const value = sqlite3_value_int64(arg);
-            if (value < -BIG_MAX2 || value > BIG_MAX2) {
-              args.push(value);
-            } else {
-              args.push(Number(value));
-            }
-            break;
-          }
-          case SQLITE_FLOAT:
-            args.push(sqlite3_value_double(arg));
-            break;
-          case SQLITE_TEXT:
-            args.push(new TextDecoder().decode(new Uint8Array(Deno.UnsafePointerView.getArrayBuffer(sqlite3_value_text(arg), sqlite3_value_bytes(arg)))));
-            break;
-          case SQLITE_BLOB:
-            args.push(new Uint8Array(Deno.UnsafePointerView.getArrayBuffer(sqlite3_value_blob(arg), sqlite3_value_bytes(arg))));
-            break;
-          case SQLITE_NULL:
-            args.push(null);
-            break;
-          default:
-            throw new Error(`Unknown type: ${type}`);
-        }
-      }
-      let result;
-      try {
-        result = options2.step(aggregate, ...args);
-      } catch (err2) {
-        const buf2 = new TextEncoder().encode(err2 instanceof Error ? err2.message : String(err2));
-        sqlite3_result_error(ctx, buf2, buf2.byteLength);
-        return;
-      }
-      contexts.set(aggrPtr, result);
-    });
-    const cbFinal = new Deno.UnsafeCallback({
-      parameters: [
-        "pointer"
-      ],
-      result: "void"
-    }, (ctx) => {
-      const aggrCtx = sqlite3_aggregate_context(ctx, 0);
-      const aggrPtr = Deno.UnsafePointer.value(aggrCtx);
-      const aggregate = contexts.get(aggrPtr);
-      contexts.delete(aggrPtr);
-      let result;
-      try {
-        result = options2.final ? options2.final(aggregate) : aggregate;
-      } catch (err2) {
-        const buf2 = new TextEncoder().encode(err2 instanceof Error ? err2.message : String(err2));
-        sqlite3_result_error(ctx, buf2, buf2.byteLength);
-        return;
-      }
-      if (result === void 0 || result === null) {
-        sqlite3_result_null(ctx);
-      } else if (typeof result === "boolean") {
-        sqlite3_result_int(ctx, result ? 1 : 0);
-      } else if (typeof result === "number") {
-        if (Number.isSafeInteger(result)) {
-          sqlite3_result_int64(ctx, BigInt(result));
-        } else sqlite3_result_double(ctx, result);
-      } else if (typeof result === "bigint") {
-        sqlite3_result_int64(ctx, result);
-      } else if (typeof result === "string") {
-        const buffer = new TextEncoder().encode(result);
-        sqlite3_result_text(ctx, buffer, buffer.byteLength, 0n);
-      } else if (result instanceof Uint8Array) {
-        sqlite3_result_blob(ctx, result, result.length, -1n);
-      } else {
-        const buffer = new TextEncoder().encode(`Invalid return value: ${Deno.inspect(result)}`);
-        sqlite3_result_error(ctx, buffer, buffer.byteLength);
-      }
-    });
-    let flags = 1;
-    if (options2?.deterministic) {
-      flags |= 2048;
-    }
-    if (options2?.directOnly) {
-      flags |= 524288;
-    }
-    if (options2?.subtype) {
-      flags |= 1048576;
-    }
-    if (options2?.directOnly) {
-      flags |= 2097152;
-    }
-    const err = sqlite3_create_function(this.#handle, toCString(name), options2?.varargs ? -1 : options2.step.length - 1, flags, null, null, cb.pointer, cbFinal.pointer);
-    unwrap(err, this.#handle);
-    this.#callbacks.add(cb);
-    this.#callbacks.add(cbFinal);
-  }
-  /**
-   * Loads an SQLite extension library from the named file.
-   */
-  loadExtension(file, entryPoint) {
-    if (sqlite3_load_extension === null) {
-      throw new Error("Extension loading is not supported by the shared library that was used.");
-    }
-    if (!this.enableLoadExtension) {
-      throw new Error("Extension loading is not enabled");
-    }
-    const pzErrMsg = new BigUint64Array(1);
-    const result = sqlite3_load_extension(this.#handle, toCString(file), entryPoint ? toCString(entryPoint) : null, pzErrMsg);
-    const pzErrPtr = Deno.UnsafePointer.create(pzErrMsg[0]);
-    if (pzErrPtr !== null) {
-      const pzErr = readCstr(pzErrPtr);
-      sqlite3_free(pzErrPtr);
-      throw new Error(pzErr);
-    }
-    unwrap(result, this.#handle);
-  }
-  /**
-   * Closes the database connection.
-   *
-   * Calling this method more than once is no-op.
-   */
-  close() {
-    if (!this.#open) return;
-    for (const [stmt, db2] of STATEMENTS_TO_DB) {
-      if (db2 === this.#handle) {
-        sqlite3_finalize2(stmt);
-        STATEMENTS_TO_DB.delete(stmt);
-      }
-    }
-    for (const cb of this.#callbacks) {
-      cb.close();
-    }
-    unwrap(sqlite3_close_v2(this.#handle));
-    this.#open = false;
-  }
-  /**
-   * @param dest The destination database connection.
-   * @param name Destination database name. "main" for main database, "temp" for temporary database, or the name specified after the AS keyword in an ATTACH statement for an attached database.
-   * @param pages The number of pages to copy. If it is negative, all remaining pages are copied (default).
-   */
-  backup(dest, name = "main", pages = -1) {
-    const backup = sqlite3_backup_init(dest.#handle, toCString(name), this.#handle, toCString("main"));
-    if (backup) {
-      unwrap(sqlite3_backup_step(backup, pages));
-      unwrap(sqlite3_backup_finish(backup));
-    } else {
-      unwrap(sqlite3_errcode(dest.#handle), dest.#handle);
-    }
-  }
-  [Symbol.for("Deno.customInspect")]() {
-    return `SQLite3.Database { path: ${this.path} }`;
-  }
-};
-var controllers = /* @__PURE__ */ new WeakMap();
-var getController = (db2) => {
-  let controller = controllers.get(db2);
-  if (!controller) {
-    const shared = {
-      commit: db2.prepare("COMMIT"),
-      rollback: db2.prepare("ROLLBACK"),
-      savepoint: db2.prepare("SAVEPOINT `	_bs3.	`"),
-      release: db2.prepare("RELEASE `	_bs3.	`"),
-      rollbackTo: db2.prepare("ROLLBACK TO `	_bs3.	`")
-    };
-    controllers.set(db2, controller = {
-      default: Object.assign({
-        begin: db2.prepare("BEGIN")
-      }, shared),
-      deferred: Object.assign({
-        begin: db2.prepare("BEGIN DEFERRED")
-      }, shared),
-      immediate: Object.assign({
-        begin: db2.prepare("BEGIN IMMEDIATE")
-      }, shared),
-      exclusive: Object.assign({
-        begin: db2.prepare("BEGIN EXCLUSIVE")
-      }, shared)
-    });
-  }
-  return controller;
-};
-var wrapTransaction = (fn, db2, { begin, commit, rollback, savepoint, release, rollbackTo }) => function sqliteTransaction(...args) {
-  const { apply } = Function.prototype;
-  let before, after, undo;
-  if (db2.inTransaction) {
-    before = savepoint;
-    after = release;
-    undo = rollbackTo;
-  } else {
-    before = begin;
-    after = commit;
-    undo = rollback;
-  }
-  before.run();
-  try {
-    const result = apply.call(fn, this, args);
-    after.run();
-    return result;
-  } catch (ex) {
-    if (!db2.autocommit) {
-      undo.run();
-      if (undo !== rollback) after.run();
-    }
-    throw ex;
-  }
-};
-
-// build/main.js-tmp
-import { Buffer as Buffer11 } from "node:buffer";
+import Database from "npm:better-sqlite3";
 import { mkdir as mkdir2 } from "node:fs/promises";
 import { basename as basename22, dirname as dirname22, join as join32, resolve as resolve32 } from "node:path";
-
-// deno:https://jsr.io/@std/assert/1.0.13/assertion_error.ts
-var AssertionError = class extends Error {
-  /** Constructs a new instance.
-   *
-   * @param message The error message.
-   * @param options Additional options. This argument is still unstable. It may change in the future release.
-   */
-  constructor(message, options2) {
-    super(message, options2);
-    this.name = "AssertionError";
-  }
-};
-
-// deno:https://jsr.io/@std/assert/1.0.13/equal.ts
-var Temporal = globalThis.Temporal ?? new Proxy({}, {
-  get: () => {
-  }
-});
-var stringComparablePrototypes = new Set([
-  Intl.Locale,
-  RegExp,
-  Temporal.Duration,
-  Temporal.Instant,
-  Temporal.PlainDate,
-  Temporal.PlainDateTime,
-  Temporal.PlainTime,
-  Temporal.PlainYearMonth,
-  Temporal.PlainMonthDay,
-  Temporal.ZonedDateTime,
-  URL,
-  URLSearchParams
-].filter((x3) => x3 != null).map((x3) => x3.prototype));
-var TypedArray = Object.getPrototypeOf(Uint8Array);
-
-// deno:https://jsr.io/@std/internal/1.0.12/styles.ts
-var { Deno: Deno3 } = globalThis;
-var noColor2 = typeof Deno3?.noColor === "boolean" ? Deno3.noColor : false;
-var ANSI_PATTERN2 = new RegExp([
-  "[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)",
-  "(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TXZcf-nq-uy=><~]))"
-].join("|"), "g");
-function stripAnsiCode(string3) {
-  return string3.replace(ANSI_PATTERN2, "");
-}
-
-// deno:https://jsr.io/@std/assert/1.0.13/is_error.ts
-function assertIsError(error2, ErrorClass, msgMatches, msg) {
-  const msgSuffix = msg ? `: ${msg}` : ".";
-  if (!(error2 instanceof Error)) {
-    throw new AssertionError(`Expected "error" to be an Error object${msgSuffix}`);
-  }
-  if (ErrorClass && !(error2 instanceof ErrorClass)) {
-    msg = `Expected error to be instance of "${ErrorClass.name}", but was "${error2?.constructor?.name}"${msgSuffix}`;
-    throw new AssertionError(msg);
-  }
-  let msgCheck;
-  if (typeof msgMatches === "string") {
-    msgCheck = stripAnsiCode(error2.message).includes(stripAnsiCode(msgMatches));
-  }
-  if (msgMatches instanceof RegExp) {
-    msgCheck = msgMatches.test(stripAnsiCode(error2.message));
-  }
-  if (msgMatches && !msgCheck) {
-    msg = `Expected error message to include ${msgMatches instanceof RegExp ? msgMatches.toString() : JSON.stringify(msgMatches)}, but got ${JSON.stringify(error2?.message)}${msgSuffix}`;
-    throw new AssertionError(msg);
-  }
-}
-
-// deno:https://jsr.io/@std/assert/1.0.13/throws.ts
-function assertThrows(fn, errorClassOrMsg, msgIncludesOrMsg, msg) {
-  let ErrorClass;
-  let msgIncludes;
-  let err;
-  if (typeof errorClassOrMsg !== "string") {
-    if (errorClassOrMsg === void 0 || errorClassOrMsg?.prototype instanceof Error || errorClassOrMsg?.prototype === Error.prototype) {
-      ErrorClass = errorClassOrMsg;
-      msgIncludes = msgIncludesOrMsg;
-    } else {
-      msg = msgIncludesOrMsg;
-    }
-  } else {
-    msg = errorClassOrMsg;
-  }
-  let doesThrow = false;
-  const msgSuffix = msg ? `: ${msg}` : ".";
-  try {
-    fn();
-  } catch (error2) {
-    if (ErrorClass) {
-      if (error2 instanceof Error === false) {
-        throw new AssertionError(`A non-Error object was thrown${msgSuffix}`);
-      }
-      assertIsError(error2, ErrorClass, msgIncludes, msg);
-    }
-    err = error2;
-    doesThrow = true;
-  }
-  if (!doesThrow) {
-    msg = `Expected function to throw${msgSuffix}`;
-    throw new AssertionError(msg);
-  }
-  return err;
-}
-
-// build/main.js-tmp
 import process13 from "node:process";
-import { Buffer as Buffer12 } from "node:buffer";
+import { Buffer as Buffer11 } from "node:buffer";
 import process2 from "node:process";
 import { Readable } from "node:stream";
 import { Buffer as Buffer6 } from "node:buffer";
@@ -4108,17 +1014,17 @@ import { Buffer as Buffer8 } from "node:buffer";
 
 // deno:https://jsr.io/@std/encoding/1.0.10/_common64.ts
 var padding = "=".charCodeAt(0);
-var alphabet3 = {
+var alphabet = {
   base64: new TextEncoder().encode("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"),
   base64url: new TextEncoder().encode("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_")
 };
-var rAlphabet3 = {
+var rAlphabet = {
   base64: new Uint8Array(128).fill(64),
   base64url: new Uint8Array(128).fill(64)
 };
-alphabet3.base64.forEach((byte, i2) => rAlphabet3.base64[byte] = i2);
-alphabet3.base64url.forEach((byte, i2) => rAlphabet3.base64url[byte] = i2);
-function decode2(buffer, i2, o2, alphabet5, padding3) {
+alphabet.base64.forEach((byte, i2) => rAlphabet.base64[byte] = i2);
+alphabet.base64url.forEach((byte, i2) => rAlphabet.base64url[byte] = i2);
+function decode(buffer, i2, o2, alphabet3, padding3) {
   for (let x3 = buffer.length - 2; x3 < buffer.length; ++x3) {
     if (buffer[x3] === padding3) {
       for (let y = x3 + 1; y < buffer.length; ++y) {
@@ -4135,19 +1041,19 @@ function decode2(buffer, i2, o2, alphabet5, padding3) {
   }
   i2 += 3;
   for (; i2 < buffer.length; i2 += 4) {
-    const x3 = getByte(buffer[i2 - 3], alphabet5) << 18 | getByte(buffer[i2 - 2], alphabet5) << 12 | getByte(buffer[i2 - 1], alphabet5) << 6 | getByte(buffer[i2], alphabet5);
+    const x3 = getByte(buffer[i2 - 3], alphabet3) << 18 | getByte(buffer[i2 - 2], alphabet3) << 12 | getByte(buffer[i2 - 1], alphabet3) << 6 | getByte(buffer[i2], alphabet3);
     buffer[o2++] = x3 >> 16;
     buffer[o2++] = x3 >> 8 & 255;
     buffer[o2++] = x3 & 255;
   }
   switch (i2) {
     case buffer.length + 1: {
-      const x3 = getByte(buffer[i2 - 3], alphabet5) << 18 | getByte(buffer[i2 - 2], alphabet5) << 12;
+      const x3 = getByte(buffer[i2 - 3], alphabet3) << 18 | getByte(buffer[i2 - 2], alphabet3) << 12;
       buffer[o2++] = x3 >> 16;
       break;
     }
     case buffer.length: {
-      const x3 = getByte(buffer[i2 - 3], alphabet5) << 18 | getByte(buffer[i2 - 2], alphabet5) << 12 | getByte(buffer[i2 - 1], alphabet5) << 6;
+      const x3 = getByte(buffer[i2 - 3], alphabet3) << 18 | getByte(buffer[i2 - 2], alphabet3) << 12 | getByte(buffer[i2 - 1], alphabet3) << 6;
       buffer[o2++] = x3 >> 16;
       buffer[o2++] = x3 >> 8 & 255;
       break;
@@ -4155,8 +1061,8 @@ function decode2(buffer, i2, o2, alphabet5, padding3) {
   }
   return o2;
 }
-function getByte(char, alphabet5) {
-  const byte = alphabet5[char] ?? 64;
+function getByte(char, alphabet3) {
+  const byte = alphabet3[char] ?? 64;
   if (byte === 64) {
     throw new TypeError(`Cannot decode input as base64: Invalid character (${String.fromCharCode(char)})`);
   }
@@ -4165,12 +1071,12 @@ function getByte(char, alphabet5) {
 
 // deno:https://jsr.io/@std/encoding/1.0.10/base64.ts
 var padding2 = "=".charCodeAt(0);
-var alphabet4 = new TextEncoder().encode("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
-var rAlphabet4 = new Uint8Array(128).fill(64);
-alphabet4.forEach((byte, i2) => rAlphabet4[byte] = i2);
+var alphabet2 = new TextEncoder().encode("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/");
+var rAlphabet2 = new Uint8Array(128).fill(64);
+alphabet2.forEach((byte, i2) => rAlphabet2[byte] = i2);
 function decodeBase64(b64) {
   const output = new TextEncoder().encode(b64);
-  return new Uint8Array(output.buffer.transfer(decode2(output, 0, 0, rAlphabet4, padding2)));
+  return new Uint8Array(output.buffer.transfer(decode(output, 0, 0, rAlphabet2, padding2)));
 }
 
 // deno:https://jsr.io/@std/io/0.225.2/buffer.ts
@@ -4189,12 +1095,14 @@ async function writeAll(writer, data) {
 }
 
 // build/main.js-tmp
+import { realpathSync } from "node:fs";
 import { readFile as readFile3 } from "node:fs/promises";
+import { resolve as resolve5 } from "node:path";
 import process3 from "node:process";
 import { readFile as readFile2 } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { copyFile, mkdir as mkdir3, readFile as readFile4, writeFile as writeFile2 } from "node:fs/promises";
-import { basename as basename42, dirname as dirname42, join as join62 } from "node:path";
+import { basename as basename42, dirname as dirname42, join as join6 } from "node:path";
 import process4 from "node:process";
 import process11 from "node:process";
 import { createServer as createServerHTTP } from "node:http";
@@ -4202,38 +1110,38 @@ import { Http2ServerRequest as Http2ServerRequest2, constants as h2constants } f
 import { Http2ServerRequest } from "node:http2";
 import { Readable as Readable2 } from "node:stream";
 import crypto2 from "node:crypto";
-import { Buffer as Buffer13 } from "node:buffer";
-import { basename as basename52 } from "node:path";
+import { Buffer as Buffer12 } from "node:buffer";
+import { basename as basename5 } from "node:path";
 import process5 from "node:process";
-import { join as join72 } from "node:path";
+import { join as join7 } from "node:path";
 import process10 from "node:process";
-import { Buffer as Buffer15 } from "node:buffer";
+import { Buffer as Buffer14 } from "node:buffer";
 import path6 from "node:path";
 import process8 from "node:process";
 import { Readable as Readable3 } from "node:stream";
 import process6 from "node:process";
-import { Buffer as Buffer14 } from "node:buffer";
+import { Buffer as Buffer13 } from "node:buffer";
 import { isIP } from "node:net";
 import process7 from "node:process";
 import process9 from "node:process";
-import { Buffer as Buffer16 } from "node:buffer";
+import { Buffer as Buffer15 } from "node:buffer";
 import { pathToFileURL } from "node:url";
 import path7 from "node:path";
 import process12 from "node:process";
-import { join as join82 } from "node:path";
+import { join as join8 } from "node:path";
 import { notStrictEqual, strictEqual } from "node:assert";
-import { dirname as dirname62, resolve as resolve52 } from "node:path";
+import { dirname as dirname6, resolve as resolve6 } from "node:path";
 import { readdirSync, statSync } from "node:fs";
-import { format as format42, inspect } from "node:util";
+import { format as format4, inspect } from "node:util";
 import { readFileSync as readFileSync3 } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { format as format22 } from "node:util";
 import { readFileSync } from "node:fs";
-import { normalize as normalize22, resolve as resolve62 } from "node:path";
-import { basename as basename62, dirname as dirname72, extname as extname8, relative as relative22, resolve as resolve82 } from "node:path";
+import { normalize as normalize22, resolve as resolve7 } from "node:path";
+import { basename as basename6, dirname as dirname7, extname as extname3, relative as relative22, resolve as resolve9 } from "node:path";
 import { readFileSync as readFileSync2, statSync as statSync2, writeFile as writeFile3 } from "node:fs";
-import { format as format32 } from "node:util";
-import { resolve as resolve72 } from "node:path";
+import { format as format3 } from "node:util";
+import { resolve as resolve8 } from "node:path";
 var __create = Object.create;
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -4370,10 +1278,10 @@ var require_async = __commonJS({
           if (typeof args[arity - 1] === "function") {
             return asyncFn.apply(this, args);
           }
-          return new Promise((resolve9, reject2) => {
+          return new Promise((resolve10, reject2) => {
             args[arity - 1] = (err, ...cbArgs) => {
               if (err) return reject2(err);
-              resolve9(cbArgs.length > 1 ? cbArgs : cbArgs[0]);
+              resolve10(cbArgs.length > 1 ? cbArgs : cbArgs[0]);
             };
             asyncFn.apply(this, args);
           });
@@ -4619,13 +1527,13 @@ var require_async = __commonJS({
       var applyEachSeries = applyEach$1(mapSeries$1);
       const PROMISE_SYMBOL = Symbol("promiseCallback");
       function promiseCallback() {
-        let resolve9, reject2;
+        let resolve10, reject2;
         function callback(err, ...args) {
           if (err) return reject2(err);
-          resolve9(args.length > 1 ? args : args[0]);
+          resolve10(args.length > 1 ? args : args[0]);
         }
         callback[PROMISE_SYMBOL] = new Promise((res, rej) => {
-          resolve9 = res, reject2 = rej;
+          resolve10 = res, reject2 = rej;
         });
         return callback;
       }
@@ -4972,8 +1880,8 @@ var require_async = __commonJS({
             });
           }
           if (rejectOnError || !callback) {
-            return new Promise((resolve9, reject2) => {
-              res = resolve9;
+            return new Promise((resolve10, reject2) => {
+              res = resolve10;
               rej = reject2;
             });
           }
@@ -5012,10 +1920,10 @@ var require_async = __commonJS({
         }
         const eventMethod = (name) => (handler) => {
           if (!handler) {
-            return new Promise((resolve9, reject2) => {
+            return new Promise((resolve10, reject2) => {
               once2(name, (err, data) => {
                 if (err) return reject2(err);
-                resolve9(data);
+                resolve10(data);
               });
             });
           }
@@ -6139,7 +3047,7 @@ var require_ini = __commonJS({
   "node_modules/.deno/ini@2.0.0/node_modules/ini/ini.js"(exports2, module15) {
     var { hasOwnProperty } = Object.prototype;
     var eol = typeof process !== "undefined" && process.platform === "win32" ? "\r\n" : "\n";
-    var encode32 = (obj, opt) => {
+    var encode3 = (obj, opt) => {
       const children = [];
       let out = "";
       if (typeof opt === "string") {
@@ -6168,7 +3076,7 @@ var require_ini = __commonJS({
         const nk = dotSplit(k).join("\\.");
         const section = (opt.section ? opt.section + "." : "") + nk;
         const { whitespace } = opt;
-        const child = encode32(obj[k], {
+        const child = encode3(obj[k], {
           section,
           whitespace
         });
@@ -6280,8 +3188,8 @@ var require_ini = __commonJS({
     module15.exports = {
       parse: decode5,
       decode: decode5,
-      stringify: encode32,
-      encode: encode32,
+      stringify: encode3,
+      encode: encode3,
       safe,
       unsafe
     };
@@ -6302,7 +3210,7 @@ var require_formats = __commonJS({
 });
 var require_memory = __commonJS({
   "node_modules/.deno/nconf@0.13.0/node_modules/nconf/lib/nconf/stores/memory.js"(exports2) {
-    var common4 = require_common();
+    var common2 = require_common();
     var Memory = exports2.Memory = function(options2) {
       options2 = options2 || {};
       this.type = "memory";
@@ -6313,11 +3221,11 @@ var require_memory = __commonJS({
       this.logicalSeparator = options2.logicalSeparator || ":";
       this.parseValues = options2.parseValues || false;
       if (this.loadFrom) {
-        this.store = common4.loadFilesSync(this.loadFrom);
+        this.store = common2.loadFilesSync(this.loadFrom);
       }
     };
     Memory.prototype.get = function(key) {
-      var target = this.store, path9 = common4.path(key, this.logicalSeparator);
+      var target = this.store, path9 = common2.path(key, this.logicalSeparator);
       while (path9.length > 0) {
         key = path9.shift();
         if (target && typeof target !== "string" && Object.hasOwnProperty.call(target, key)) {
@@ -6332,7 +3240,7 @@ var require_memory = __commonJS({
       if (this.readOnly) {
         return false;
       }
-      var target = this.store, path9 = common4.path(key, this.logicalSeparator);
+      var target = this.store, path9 = common2.path(key, this.logicalSeparator);
       if (path9.length === 0) {
         if (!value || typeof value !== "object") {
           return false;
@@ -6352,7 +3260,7 @@ var require_memory = __commonJS({
       }
       key = path9.shift();
       if (this.parseValues) {
-        value = common4.parseValues.call(common4, value);
+        value = common2.parseValues.call(common2, value);
       }
       target[key] = value;
       return true;
@@ -6361,7 +3269,7 @@ var require_memory = __commonJS({
       if (this.readOnly) {
         return false;
       }
-      var target = this.store, value = target, path9 = common4.path(key, this.logicalSeparator);
+      var target = this.store, value = target, path9 = common2.path(key, this.logicalSeparator);
       delete this.mtimes[key];
       for (var i2 = 0; i2 < path9.length - 1; i2++) {
         key = path9[i2];
@@ -6382,7 +3290,7 @@ var require_memory = __commonJS({
       if (typeof value !== "object" || Array.isArray(value) || value === null) {
         return this.set(key, value);
       }
-      var self2 = this, target = this.store, path9 = common4.path(key, this.logicalSeparator), fullKey = key;
+      var self2 = this, target = this.store, path9 = common2.path(key, this.logicalSeparator), fullKey = key;
       this.mtimes[key] = Date.now();
       while (path9.length > 1) {
         key = path9.shift();
@@ -6397,7 +3305,7 @@ var require_memory = __commonJS({
         return true;
       }
       return Object.keys(value).every(function(nested) {
-        return self2.merge(common4.keyed(self2.logicalSeparator, fullKey, nested), value[nested]);
+        return self2.merge(common2.keyed(self2.logicalSeparator, fullKey, nested), value[nested]);
       });
     };
     Memory.prototype.reset = function() {
@@ -6419,18 +3327,18 @@ var require_common = __commonJS({
     var async = require_async();
     var formats = require_formats();
     var Memory = require_memory().Memory;
-    var common4 = exports2;
-    common4.path = function(key, separator) {
+    var common2 = exports2;
+    common2.path = function(key, separator) {
       separator = separator || ":";
       return key == null ? [] : key.split(separator);
     };
-    common4.key = function() {
+    common2.key = function() {
       return Array.prototype.slice.call(arguments).join(":");
     };
-    common4.keyed = function() {
+    common2.keyed = function() {
       return Array.prototype.slice.call(arguments, 1).join(arguments[0]);
     };
-    common4.loadFiles = function(files, callback) {
+    common2.loadFiles = function(files, callback) {
       if (!files) {
         return callback(null, {});
       }
@@ -6442,20 +3350,20 @@ var require_common = __commonJS({
         });
       }
       async.map(options2.files, parseFile, function(err, objs) {
-        return err ? callback(err) : callback(null, common4.merge(objs));
+        return err ? callback(err) : callback(null, common2.merge(objs));
       });
     };
-    common4.loadFilesSync = function(files) {
+    common2.loadFilesSync = function(files) {
       if (!files) {
         return;
       }
       var options2 = Array.isArray(files) ? { files } : files;
       options2.format = options2.format || formats.json;
-      return common4.merge(options2.files.map(function(file) {
+      return common2.merge(options2.files.map(function(file) {
         return options2.format.parse(fs.readFileSync(file, "utf8"));
       }));
     };
-    common4.merge = function(objs) {
+    common2.merge = function(objs) {
       var store = new Memory();
       objs.forEach(function(obj) {
         Object.keys(obj).forEach(function(key) {
@@ -6464,10 +3372,10 @@ var require_common = __commonJS({
       });
       return store.store;
     };
-    common4.capitalize = function(str) {
+    common2.capitalize = function(str) {
       return str && str[0].toUpperCase() + str.slice(1);
     };
-    common4.parseValues = function(value) {
+    common2.parseValues = function(value) {
       var val = value;
       try {
         val = JSON.parse(value);
@@ -6478,7 +3386,7 @@ var require_common = __commonJS({
       }
       return val;
     };
-    common4.transform = function(map, fn) {
+    common2.transform = function(map, fn) {
       var pairs = Object.keys(map).map(function(key) {
         var obj = { key, value: map[key] };
         var result = fn.call(null, obj);
@@ -6503,7 +3411,7 @@ var require_common = __commonJS({
 var require_provider = __commonJS({
   "node_modules/.deno/nconf@0.13.0/node_modules/nconf/lib/nconf/provider.js"(exports2) {
     var async = require_async();
-    var common4 = require_common();
+    var common2 = require_common();
     var Provider = exports2.Provider = function(options2) {
       options2 = options2 || {};
       this.stores = {};
@@ -6554,7 +3462,7 @@ var require_provider = __commonJS({
     Provider.prototype.add = function(name, options2, usage2) {
       options2 = options2 || {};
       var type = options2.type || name;
-      if (!require_nconf()[common4.capitalize(type)]) {
+      if (!require_nconf()[common2.capitalize(type)]) {
         throw new Error("Cannot add store with unknown type: " + type);
       }
       this.stores[name] = this.create(type, options2, usage2);
@@ -6568,7 +3476,7 @@ var require_provider = __commonJS({
       return this;
     };
     Provider.prototype.create = function(type, options2, usage2) {
-      return new (require_nconf())[common4.capitalize(type.toLowerCase())](options2, usage2);
+      return new (require_nconf())[common2.capitalize(type.toLowerCase())](options2, usage2);
     };
     Provider.prototype.init = function(options2) {
       var self2 = this;
@@ -6626,7 +3534,7 @@ var require_provider = __commonJS({
         next();
       }, function(err) {
         if (!err && mergeObjs.length) {
-          response = common4.merge(mergeObjs.reverse());
+          response = common2.merge(mergeObjs.reverse());
         }
         return err ? callback(err) : callback(null, response);
       });
@@ -6730,10 +3638,10 @@ var require_provider = __commonJS({
       }
       function loadBatch(targets, done) {
         if (!done) {
-          return common4.merge(targets.map(loadStoreSync));
+          return common2.merge(targets.map(loadStoreSync));
         }
         async.map(targets, loadStore, function(err, objs) {
-          return err ? done(err) : done(null, common4.merge(objs));
+          return err ? done(err) : done(null, common2.merge(objs));
         });
       }
       function mergeSources(data) {
@@ -6795,10 +3703,10 @@ var require_provider = __commonJS({
         next(null, memo);
       }
       if (!callback) {
-        return common4.merge(names.reduce(saveStoreSync, []));
+        return common2.merge(names.reduce(saveStoreSync, []));
       }
       async.reduce(names, [], saveStore, function(err, objs) {
-        return err ? callback(err) : callback(null, common4.merge(objs));
+        return err ? callback(err) : callback(null, common2.merge(objs));
       });
     };
     Provider.prototype._execute = function(action, syncLength) {
@@ -6829,7 +3737,7 @@ var require_provider = __commonJS({
         }
       });
       if (mergeObjs.length) {
-        response = common4.merge(mergeObjs.reverse());
+        response = common2.merge(mergeObjs.reverse());
       }
       return response;
     };
@@ -8375,15 +5283,15 @@ var require_conversions = __commonJS({
       const g2 = rgb[1] / 255;
       const b = rgb[2] / 255;
       const v2 = Math.max(r, g2, b);
-      const diff2 = v2 - Math.min(r, g2, b);
+      const diff = v2 - Math.min(r, g2, b);
       const diffc = function(c) {
-        return (v2 - c) / 6 / diff2 + 1 / 2;
+        return (v2 - c) / 6 / diff + 1 / 2;
       };
-      if (diff2 === 0) {
+      if (diff === 0) {
         h2 = 0;
         s = 0;
       } else {
-        s = diff2 / v2;
+        s = diff / v2;
         rdif = diffc(r);
         gdif = diffc(g2);
         bdif = diffc(b);
@@ -8940,17 +5848,17 @@ var require_conversions = __commonJS({
       return [0, 0, args[0]];
     };
     convert.gray.hsv = convert.gray.hsl;
-    convert.gray.hwb = function(gray22) {
-      return [0, 100, gray22[0]];
+    convert.gray.hwb = function(gray2) {
+      return [0, 100, gray2[0]];
     };
-    convert.gray.cmyk = function(gray22) {
-      return [0, 0, 0, gray22[0]];
+    convert.gray.cmyk = function(gray2) {
+      return [0, 0, 0, gray2[0]];
     };
-    convert.gray.lab = function(gray22) {
-      return [gray22[0], 0, 0];
+    convert.gray.lab = function(gray2) {
+      return [gray2[0], 0, 0];
     };
-    convert.gray.hex = function(gray22) {
-      const val = Math.round(gray22[0] / 100 * 255) & 255;
+    convert.gray.hex = function(gray2) {
+      const val = Math.round(gray2[0] / 100 * 255) & 255;
       const integer2 = (val << 16) + (val << 8) + val;
       const string3 = integer2.toString(16).toUpperCase();
       return "000000".substring(string3.length) + string3;
@@ -9657,18 +6565,18 @@ var require_build3 = __commonJS({
 });
 var require_sync = __commonJS({
   "node_modules/.deno/escalade@3.2.0/node_modules/escalade/sync/index.js"(exports2, module15) {
-    var { dirname: dirname82, resolve: resolve9 } = __require2("node:path");
+    var { dirname: dirname8, resolve: resolve10 } = __require2("node:path");
     var { readdirSync: readdirSync2, statSync: statSync3 } = __require2("node:fs");
     module15.exports = function(start, callback) {
-      let dir = resolve9(".", start);
+      let dir = resolve10(".", start);
       let tmp, stats = statSync3(dir);
       if (!stats.isDirectory()) {
-        dir = dirname82(dir);
+        dir = dirname8(dir);
       }
       while (true) {
         tmp = callback(dir, readdirSync2(dir));
-        if (tmp) return resolve9(dir, tmp);
-        dir = dirname82(tmp = dir);
+        if (tmp) return resolve10(dir, tmp);
+        dir = dirname8(tmp = dir);
         if (tmp === dir) break;
       }
     };
@@ -9701,8 +6609,8 @@ var require_require_directory = __commonJS({
     "use strict";
     var fs = __require2("node:fs");
     var join10 = __require2("node:path").join;
-    var resolve9 = __require2("node:path").resolve;
-    var dirname82 = __require2("node:path").dirname;
+    var resolve10 = __require2("node:path").resolve;
+    var dirname8 = __require2("node:path").dirname;
     var defaultOptions4 = {
       extensions: ["js", "json", "coffee"],
       recurse: true,
@@ -9735,7 +6643,7 @@ var require_require_directory = __commonJS({
           options2[prop] = defaultOptions4[prop];
         }
       }
-      path9 = !path9 ? dirname82(m3.filename) : resolve9(dirname82(m3.filename), path9);
+      path9 = !path9 ? dirname8(m3.filename) : resolve10(dirname8(m3.filename), path9);
       fs.readdirSync(path9).forEach(function(filename) {
         var joined = join10(path9, filename), files, key, obj;
         if (fs.statSync(joined).isDirectory() && options2.recurse) {
@@ -11825,7 +8733,7 @@ ${customMsgs.join("\n")}` : "";
       }
       let parseFn = null;
       let parseContext = null;
-      self2.parse = function parse62(args, shortCircuit, _parseFn) {
+      self2.parse = function parse6(args, shortCircuit, _parseFn) {
         argsert2("[string|array] [function|boolean|object] [function]", [args, shortCircuit, _parseFn], arguments.length);
         freeze();
         if (typeof args === "undefined") {
@@ -12400,7 +9308,7 @@ ${customMsgs.join("\n")}` : "";
     var _b;
     var { readFileSync: readFileSync4 } = __require2("node:fs");
     var { inspect: inspect2 } = __require2("node:util");
-    var { resolve: resolve9 } = __require2("node:path");
+    var { resolve: resolve10 } = __require2("node:path");
     var y18n3 = require_build();
     var Parser2 = require_build2();
     var cjsPlatformShim = {
@@ -12434,7 +9342,7 @@ ${customMsgs.join("\n")}` : "";
       requireDirectory: require_require_directory(),
       stringWidth: require_string_width(),
       y18n: y18n3({
-        directory: resolve9(__dirname, "../locales"),
+        directory: resolve10(__dirname, "../locales"),
         updateFiles: false
       })
     };
@@ -12496,7 +9404,7 @@ var require_yargs = __commonJS({
 var require_argv = __commonJS({
   "node_modules/.deno/nconf@0.13.0/node_modules/nconf/lib/nconf/stores/argv.js"(exports2) {
     var util = __require2("node:util");
-    var common4 = require_common();
+    var common2 = require_common();
     var Memory = require_memory().Memory;
     var Argv = exports2.Argv = function(options2, usage2) {
       Memory.call(this, options2);
@@ -12540,17 +9448,17 @@ var require_argv = __commonJS({
         return;
       }
       if (this.transform) {
-        argv = common4.transform(argv, this.transform);
+        argv = common2.transform(argv, this.transform);
       }
       this.readOnly = false;
       Object.keys(argv).forEach(function(key) {
         var val = argv[key];
         if (typeof val !== "undefined") {
           if (self2.parseValues) {
-            val = common4.parseValues(val);
+            val = common2.parseValues(val);
           }
           if (self2.separator) {
-            self2.set(common4.key.apply(common4, key.split(self2.separator)), val);
+            self2.set(common2.key.apply(common2, key.split(self2.separator)), val);
           } else {
             self2.set(key, val);
           }
@@ -12569,7 +9477,7 @@ var require_argv = __commonJS({
 var require_env = __commonJS({
   "node_modules/.deno/nconf@0.13.0/node_modules/nconf/lib/nconf/stores/env.js"(exports2) {
     var util = __require2("node:util");
-    var common4 = require_common();
+    var common2 = require_common();
     var Memory = require_memory().Memory;
     var Env = exports2.Env = function(options2) {
       Memory.call(this, options2);
@@ -12614,7 +9522,7 @@ var require_env = __commonJS({
         });
       }
       if (this.transform) {
-        env2 = common4.transform(env2, this.transform);
+        env2 = common2.transform(env2, this.transform);
       }
       this.readOnly = false;
       Object.keys(env2).filter(function(key) {
@@ -12628,10 +9536,10 @@ var require_env = __commonJS({
       }).forEach(function(key) {
         var val = env2[key];
         if (self2.parseValues) {
-          val = common4.parseValues(val);
+          val = common2.parseValues(val);
         }
         if (self2.separator) {
-          self2.set(common4.key.apply(common4, key.split(self2.separator)), val);
+          self2.set(common2.key.apply(common2, key.split(self2.separator)), val);
         } else {
           self2.set(key, val);
         }
@@ -12868,7 +9776,7 @@ var require_literal = __commonJS({
 });
 var require_nconf = __commonJS({
   "node_modules/.deno/nconf@0.13.0/node_modules/nconf/lib/nconf.js"(exports2, module15) {
-    var common4 = require_common();
+    var common2 = require_common();
     var Provider = require_provider().Provider;
     var nconf12 = module15.exports = new Provider();
     nconf12.version = require_package().version;
@@ -12887,17 +9795,17 @@ var require_nconf = __commonJS({
     nconf12.__defineGetter__("Memory", function() {
       return require_memory().Memory;
     });
-    nconf12.key = common4.key;
-    nconf12.path = common4.path;
-    nconf12.loadFiles = common4.loadFiles;
-    nconf12.loadFilesSync = common4.loadFilesSync;
+    nconf12.key = common2.key;
+    nconf12.path = common2.path;
+    nconf12.loadFiles = common2.loadFiles;
+    nconf12.loadFilesSync = common2.loadFilesSync;
     nconf12.formats = require_formats();
     nconf12.Provider = Provider;
   }
 });
 // @__NO_SIDE_EFFECTS__
 function $constructor(name, initializer3, params) {
-  function init22(inst, def) {
+  function init2(inst, def) {
     var _a2;
     Object.defineProperty(inst, "_zod", {
       value: inst._zod ?? {},
@@ -12920,14 +9828,14 @@ function $constructor(name, initializer3, params) {
   function _(def) {
     var _a2;
     const inst = params?.Parent ? new Definition() : this;
-    init22(inst, def);
+    init2(inst, def);
     (_a2 = inst._zod).deferred ?? (_a2.deferred = []);
     for (const fn of inst._zod.deferred) {
       fn();
     }
     return inst;
   }
-  Object.defineProperty(_, "init", { value: init22 });
+  Object.defineProperty(_, "init", { value: init2 });
   Object.defineProperty(_, Symbol.hasInstance, {
     value: (inst) => {
       if (params?.Parent && inst instanceof params.Parent)
@@ -16996,7 +13904,7 @@ function base(ALPHABET, name) {
   var LEADER = ALPHABET.charAt(0);
   var FACTOR = Math.log(BASE) / Math.log(256);
   var iFACTOR = Math.log(256) / Math.log(BASE);
-  function encode32(source) {
+  function encode3(source) {
     if (source instanceof Uint8Array) {
     } else if (ArrayBuffer.isView(source)) {
       source = new Uint8Array(source.buffer, source.byteOffset, source.byteLength);
@@ -17101,7 +14009,7 @@ function base(ALPHABET, name) {
     throw new Error(`Non-${name} character`);
   }
   return {
-    encode: encode32,
+    encode: encode3,
     decodeUnsafe,
     decode: decode5
   };
@@ -17120,22 +14028,22 @@ function or(left2, right2) {
   var _a2, _b;
   return new ComposedDecoder(Object.assign(Object.assign({}, (_a2 = left2.decoders) !== null && _a2 !== void 0 ? _a2 : { [left2.prefix]: left2 }), (_b = right2.decoders) !== null && _b !== void 0 ? _b : { [right2.prefix]: right2 }));
 }
-function from({ name, prefix, encode: encode32, decode: decode5 }) {
-  return new Codec(name, prefix, encode32, decode5);
+function from({ name, prefix, encode: encode3, decode: decode5 }) {
+  return new Codec(name, prefix, encode3, decode5);
 }
-function baseX({ name, prefix, alphabet: alphabet5 }) {
-  const { encode: encode32, decode: decode5 } = base_x_default(alphabet5, name);
+function baseX({ name, prefix, alphabet: alphabet3 }) {
+  const { encode: encode3, decode: decode5 } = base_x_default(alphabet3, name);
   return from({
     prefix,
     name,
-    encode: encode32,
+    encode: encode3,
     decode: (text) => coerce(decode5(text))
   });
 }
-function decode3(string3, alphabet5, bitsPerChar, name) {
+function decode2(string3, alphabet3, bitsPerChar, name) {
   const codes = {};
-  for (let i2 = 0; i2 < alphabet5.length; ++i2) {
-    codes[alphabet5[i2]] = i2;
+  for (let i2 = 0; i2 < alphabet3.length; ++i2) {
+    codes[alphabet3[i2]] = i2;
   }
   let end = string3.length;
   while (string3[end - 1] === "=") {
@@ -17162,8 +14070,8 @@ function decode3(string3, alphabet5, bitsPerChar, name) {
   }
   return out;
 }
-function encode3(data, alphabet5, bitsPerChar) {
-  const pad = alphabet5[alphabet5.length - 1] === "=";
+function encode2(data, alphabet3, bitsPerChar) {
+  const pad = alphabet3[alphabet3.length - 1] === "=";
   const mask = (1 << bitsPerChar) - 1;
   let out = "";
   let bits = 0;
@@ -17173,11 +14081,11 @@ function encode3(data, alphabet5, bitsPerChar) {
     bits += 8;
     while (bits > bitsPerChar) {
       bits -= bitsPerChar;
-      out += alphabet5[mask & buffer >> bits];
+      out += alphabet3[mask & buffer >> bits];
     }
   }
   if (bits !== 0) {
-    out += alphabet5[mask & buffer << bitsPerChar - bits];
+    out += alphabet3[mask & buffer << bitsPerChar - bits];
   }
   if (pad) {
     while ((out.length * bitsPerChar & 7) !== 0) {
@@ -17186,15 +14094,15 @@ function encode3(data, alphabet5, bitsPerChar) {
   }
   return out;
 }
-function rfc4648({ name, prefix, bitsPerChar, alphabet: alphabet5 }) {
+function rfc4648({ name, prefix, bitsPerChar, alphabet: alphabet3 }) {
   return from({
     prefix,
     name,
     encode(input) {
-      return encode3(input, alphabet5, bitsPerChar);
+      return encode2(input, alphabet3, bitsPerChar);
     },
     decode(input) {
-      return decode3(input, alphabet5, bitsPerChar, name);
+      return decode2(input, alphabet3, bitsPerChar, name);
     }
   });
 }
@@ -17304,8 +14212,8 @@ var require_util = __commonJS({
       if (input instanceof Uint8Array) {
         ret = input;
       } else if (typeof input === "string") {
-        const encoder3 = new TextEncoder();
-        ret = encoder3.encode(input);
+        const encoder = new TextEncoder();
+        ret = encoder.encode(input);
       } else {
         throw new Error(ERROR_MSG_INPUT);
       }
@@ -18162,14 +15070,14 @@ function encode22(num, out, offset) {
   encode22.bytes = offset - oldOffset + 1;
   return out;
 }
-function read(buf2, offset) {
-  var res = 0, offset = offset || 0, shift = 0, counter = offset, b, l = buf2.length;
+function read(buf, offset) {
+  var res = 0, offset = offset || 0, shift = 0, counter = offset, b, l = buf.length;
   do {
     if (counter >= l) {
       read.bytes = 0;
       throw new RangeError("Could not decode varint");
     }
-    b = buf2[counter++];
+    b = buf[counter++];
     res += shift < 28 ? (b & REST$1) << shift : (b & REST$1) * Math.pow(2, shift);
     shift += 7;
   } while (b >= MSB$1);
@@ -18228,7 +15136,7 @@ var init_varint = __esm({
     varint_default = _brrp_varint;
   }
 });
-function decode32(data, offset = 0) {
+function decode3(data, offset = 0) {
   const code2 = varint_default.decode(data, offset);
   return [code2, varint_default.decode.bytes];
 }
@@ -18256,8 +15164,8 @@ function create(code2, digest) {
 }
 function decode4(multihash) {
   const bytes = coerce(multihash);
-  const [code2, sizeOffset] = decode32(bytes);
-  const [size, digestOffset] = decode32(bytes.subarray(sizeOffset));
+  const [code2, sizeOffset] = decode3(bytes);
+  const [size, digestOffset] = decode3(bytes.subarray(sizeOffset));
   const digest = bytes.subarray(sizeOffset + digestOffset);
   if (digest.byteLength !== size) {
     throw new Error("Incorrect length");
@@ -18290,18 +15198,18 @@ var init_digest = __esm({
     };
   }
 });
-function from2({ name, code: code2, encode: encode32 }) {
-  return new Hasher(name, code2, encode32);
+function from2({ name, code: code2, encode: encode3 }) {
+  return new Hasher(name, code2, encode3);
 }
 var Hasher;
 var init_hasher = __esm({
   "node_modules/.deno/@chelonia+multiformats@1.0.0/node_modules/@chelonia/multiformats/dist/esm/hasher.mjs"() {
     init_digest();
     Hasher = class {
-      constructor(name, code2, encode32) {
+      constructor(name, code2, encode3) {
         this.name = name;
         this.code = code2;
-        this.encode = encode32;
+        this.encode = encode3;
       }
       digest(input) {
         if (input instanceof Uint8Array || input instanceof ReadableStream) {
@@ -18722,11 +15630,11 @@ var init_blake2bstream = __esm({
     init_hasher();
     __awaiter = function(thisArg, _arguments, P, generator) {
       function adopt(value) {
-        return value instanceof P ? value : new P(function(resolve9) {
-          resolve9(value);
+        return value instanceof P ? value : new P(function(resolve10) {
+          resolve10(value);
         });
       }
-      return new (P || (P = Promise))(function(resolve9, reject) {
+      return new (P || (P = Promise))(function(resolve10, reject) {
         function fulfilled(value) {
           try {
             step(generator.next(value));
@@ -18742,7 +15650,7 @@ var init_blake2bstream = __esm({
           }
         }
         function step(result) {
-          result.done ? resolve9(result.value) : adopt(result.value).then(fulfilled, rejected);
+          result.done ? resolve10(result.value) : adopt(result.value).then(fulfilled, rejected);
         }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
       });
@@ -18841,7 +15749,7 @@ var init_interface = __esm({
   "node_modules/.deno/@chelonia+multiformats@1.0.0/node_modules/@chelonia/multiformats/dist/esm/link/interface.mjs"() {
   }
 });
-function format8(link, base2) {
+function format5(link, base2) {
   const { bytes, version: version3 } = link;
   switch (version3) {
     case 0:
@@ -19008,10 +15916,10 @@ var init_cid = __esm({
         return unknown2 != null && self2.code === unknown2.code && self2.version === unknown2.version && equals2(self2.multihash, unknown2.multihash);
       }
       toString(base2) {
-        return format8(this, base2);
+        return format5(this, base2);
       }
       toJSON() {
-        return { "/": format8(this) };
+        return { "/": format5(this) };
       }
       link() {
         return this;
@@ -19139,7 +16047,7 @@ var init_cid = __esm({
       static inspectBytes(initialBytes) {
         let offset = 0;
         const next = () => {
-          const [i2, length2] = decode32(initialBytes.subarray(offset));
+          const [i2, length2] = decode3(initialBytes.subarray(offset));
           offset += length2;
           return i2;
         };
@@ -19449,8 +16357,8 @@ var init_esm2 = __esm({
         }
         const events = this.eventQueues[name];
         let accept;
-        const promise = new Promise((resolve9) => {
-          accept = resolve9;
+        const promise = new Promise((resolve10) => {
+          accept = resolve10;
         });
         const thisEvent = typeof invocation === "function" ? {
           fn: invocation,
@@ -19562,8 +16470,8 @@ function merge2(obj, src2) {
   return res;
 }
 function delay(msec) {
-  return new Promise((resolve9) => {
-    setTimeout(resolve9, msec);
+  return new Promise((resolve10) => {
+    setTimeout(resolve10, msec);
   });
 }
 function randomBytes(length2) {
@@ -20237,9 +17145,9 @@ var require_nacl_fast = __commonJS({
   "node_modules/.deno/tweetnacl@1.0.3/node_modules/tweetnacl/nacl-fast.js"(exports2, module15) {
     (function(nacl4) {
       "use strict";
-      var gf = function(init22) {
+      var gf = function(init2) {
         var i2, r = new Float64Array(16);
-        if (init22) for (i2 = 0; i2 < init22.length; i2++) r[i2] = init22[i2];
+        if (init2) for (i2 = 0; i2 < init2.length; i2++) r[i2] = init2[i2];
         return r;
       };
       var randombytes = function() {
@@ -22484,8 +19392,8 @@ var init_esm6 = __esm({
     import_tweetnacl = __toESM(require_nacl_fast(), 1);
     bufToStr = (() => {
       const textDecoder = new TextDecoder();
-      return (buf2) => {
-        return textDecoder.decode(buf2);
+      return (buf) => {
+        return textDecoder.decode(buf);
       };
     })();
     strToBuf2 = (() => {
@@ -23025,7 +19933,7 @@ var init_esm7 = __esm({
             case "_fn": {
               const mp = value[2];
               const fn = (...args) => {
-                return new Promise((resolve9, reject) => {
+                return new Promise((resolve10, reject) => {
                   const mc = new MessageChannel();
                   const { data: data2, transferables, revokables } = serializer(args);
                   const rcvPort = mc.port1;
@@ -23033,7 +19941,7 @@ var init_esm7 = __esm({
                   rcvPort.onmessage = (ev) => {
                     try {
                       if (ev.data[0]) {
-                        resolve9(deserializer(ev.data[1]));
+                        resolve10(deserializer(ev.data[1]));
                       } else {
                         reject(ev.data.length > 1 ? deserializer(ev.data[1]) : new Error("Message error"));
                       }
@@ -25139,7 +22047,7 @@ var init_utils = __esm({
         const entries = Deno.readDir(path10);
         const manifests = /* @__PURE__ */ new Set();
         for await (const entry of entries) {
-          const realPath2 = await Deno.realPath(join9(path10, entry.name));
+          const realPath2 = await Deno.realPath(join4(path10, entry.name));
           const info = await Deno.lstat(realPath2);
           if (info.isDirectory) {
             const subitems = await internal(realPath2);
@@ -25147,7 +22055,7 @@ var init_utils = __esm({
               manifests.add(item);
             }
           } else if (entry.name.toLowerCase().endsWith(".manifest.json")) {
-            manifests.add(join9(path10, entry.name));
+            manifests.add(join4(path10, entry.name));
           }
         }
         return manifests;
@@ -25179,6 +22087,7 @@ var init_db_errors = __esm({
     init_utils();
   }
 });
+var SQLITE_DEFAULT_FILEPATH;
 var FsOptionsSchema;
 var SqliteOptionsSchema;
 var RedisOptionsSchema;
@@ -25188,6 +22097,7 @@ var init_backend_schemas = __esm({
   "src/serve/backend-schemas.ts"() {
     "use strict";
     init_zod();
+    SQLITE_DEFAULT_FILEPATH = "data/chelonia.db";
     FsOptionsSchema = strictObject({
       dirname: optional(string2()),
       depth: optional(number2().int().min(0)),
@@ -25292,7 +22202,7 @@ var init_database_fs = __esm({
       }
       // Maps a given key to a real path on the filesystem.
       mapKey(key) {
-        if (basename9(normalize8(key)) !== key) throw new TypeError("Invalid key");
+        if (basename4(normalize3(key)) !== key) throw new TypeError("Invalid key");
         if (!this.depth) return join22(this.dataFolder, key);
         const keyChunks = splitAndGroup(key, this.keyChunkLength, this.depth);
         return join22(this.dataFolder, ...keyChunks, key);
@@ -25318,7 +22228,7 @@ var init_database_fs = __esm({
       }
       async writeData(key, value) {
         const path9 = this.mapKey(key);
-        if (this.depth) await mkdir(dirname9(path9), { mode: 488, recursive: true });
+        if (this.depth) await mkdir(dirname4(path9), { mode: 488, recursive: true });
         await writeFile(path9, value);
       }
       async deleteData(key) {
@@ -32461,10 +29371,10 @@ var require_MOVE = __commonJS({
        * @param db - The destination database index
        * @see https://redis.io/commands/move/
        */
-      parseCommand(parser3, key, db2) {
+      parseCommand(parser3, key, db) {
         parser3.push("MOVE");
         parser3.pushKey(key);
-        parser3.push(db2.toString());
+        parser3.push(db.toString());
       },
       transformReply: void 0
     };
@@ -39019,17 +35929,17 @@ var require_encoder = __commonJS({
   "node_modules/.deno/@redis+client@5.9.0/node_modules/@redis/client/dist/lib/RESP/encoder.js"(exports2) {
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
-    var CRLF2 = "\r\n";
+    var CRLF = "\r\n";
     function encodeCommand(args) {
       const toWrite = [];
-      let strings = "*" + args.length + CRLF2;
+      let strings = "*" + args.length + CRLF;
       for (let i2 = 0; i2 < args.length; i2++) {
         const arg = args[i2];
         if (typeof arg === "string") {
-          strings += "$" + Buffer.byteLength(arg) + CRLF2 + arg + CRLF2;
+          strings += "$" + Buffer.byteLength(arg) + CRLF + arg + CRLF;
         } else if (arg instanceof Buffer) {
-          toWrite.push(strings + "$" + arg.length.toString() + CRLF2, arg);
-          strings = CRLF2;
+          toWrite.push(strings + "$" + arg.length.toString() + CRLF, arg);
+          strings = CRLF;
         } else {
           throw new TypeError(`"arguments[${i2}]" must be of type "string | Buffer", got ${typeof arg} instead.`);
         }
@@ -39472,8 +36382,8 @@ var require_commands_queue = __commonJS({
           return;
         }
         ;
-        return new Promise((resolve9) => {
-          this.#waitingForReply.events.on("empty", resolve9);
+        return new Promise((resolve10) => {
+          this.#waitingForReply.events.on("empty", resolve10);
         });
       }
       addCommand(args, options2) {
@@ -39482,14 +36392,14 @@ var require_commands_queue = __commonJS({
         } else if (options2?.abortSignal?.aborted) {
           return Promise.reject(new errors_1.AbortError());
         }
-        return new Promise((resolve9, reject) => {
+        return new Promise((resolve10, reject) => {
           let node;
           const value = {
             args,
             chainId: options2?.chainId,
             abort: void 0,
             timeout: void 0,
-            resolve: resolve9,
+            resolve: resolve10,
             reject,
             channelsCounter: void 0,
             typeMapping: options2?.typeMapping
@@ -39523,7 +36433,7 @@ var require_commands_queue = __commonJS({
         });
       }
       #addPubSubCommand(command2, asap = false, chainId) {
-        return new Promise((resolve9, reject) => {
+        return new Promise((resolve10, reject) => {
           this.#toWrite.add({
             args: command2.args,
             chainId,
@@ -39531,7 +36441,7 @@ var require_commands_queue = __commonJS({
             timeout: void 0,
             resolve() {
               command2.resolve();
-              resolve9();
+              resolve10();
             },
             reject(err) {
               command2.reject?.();
@@ -39550,8 +36460,8 @@ var require_commands_queue = __commonJS({
             if (this.#onPush(reply))
               return;
             if (PONG2.equals(reply[0])) {
-              const { resolve: resolve9, typeMapping } = this.#waitingForReply.shift(), buffer = reply[1].length === 0 ? reply[0] : reply[1];
-              resolve9(typeMapping?.[decoder_1.RESP_TYPES.SIMPLE_STRING] === Buffer ? buffer : buffer.toString());
+              const { resolve: resolve10, typeMapping } = this.#waitingForReply.shift(), buffer = reply[1].length === 0 ? reply[0] : reply[1];
+              resolve10(typeMapping?.[decoder_1.RESP_TYPES.SIMPLE_STRING] === Buffer ? buffer : buffer.toString());
               return;
             }
           }
@@ -39575,12 +36485,12 @@ var require_commands_queue = __commonJS({
         if (!command2)
           return;
         if (command2 && this.#respVersion === 2) {
-          const { resolve: resolve9 } = command2;
+          const { resolve: resolve10 } = command2;
           command2.resolve = () => {
             if (!this.#pubSub.isActive) {
               this.#resetDecoderCallbacks();
             }
-            resolve9();
+            resolve10();
           };
         }
         return this.#addPubSubCommand(command2);
@@ -39613,7 +36523,7 @@ var require_commands_queue = __commonJS({
         return this.#pubSub.listeners[type];
       }
       monitor(callback, options2) {
-        return new Promise((resolve9, reject) => {
+        return new Promise((resolve10, reject) => {
           const typeMapping = options2?.typeMapping ?? {};
           this.#toWrite.add({
             args: ["MONITOR"],
@@ -39628,7 +36538,7 @@ var require_commands_queue = __commonJS({
                 this.decoder.onReply = callback;
               }
               this.decoder.getTypeMapping = () => typeMapping;
-              resolve9();
+              resolve10();
             },
             reject,
             channelsCounter: void 0,
@@ -39642,7 +36552,7 @@ var require_commands_queue = __commonJS({
       }
       #resetFallbackOnReply;
       async reset(chainId, typeMapping) {
-        return new Promise((resolve9, reject) => {
+        return new Promise((resolve10, reject) => {
           this.#resetFallbackOnReply = this.decoder.onReply;
           this.decoder.onReply = (reply) => {
             if (typeof reply === "string" && reply === "RESET" || reply instanceof Buffer && RESET.equals(reply)) {
@@ -39659,7 +36569,7 @@ var require_commands_queue = __commonJS({
             chainId,
             abort: void 0,
             timeout: void 0,
-            resolve: resolve9,
+            resolve: resolve10,
             reject,
             channelsCounter: void 0,
             typeMapping
@@ -39959,9 +36869,9 @@ var require_multi_command2 = __commonJS({
         this.#executeMulti = executeMulti;
         this.#executePipeline = executePipeline;
       }
-      SELECT(db2, transformReply) {
-        this.#selectedDB = db2;
-        this.#multi.addCommand(["SELECT", db2.toString()], transformReply);
+      SELECT(db, transformReply) {
+        this.#selectedDB = db;
+        this.#multi.addCommand(["SELECT", db.toString()], transformReply);
         return this;
       }
       select = this.SELECT;
@@ -40920,7 +37830,7 @@ var require_pool = __commonJS({
         this._self.#returnClient(node);
       }
       execute(fn) {
-        return new Promise((resolve9, reject) => {
+        return new Promise((resolve10, reject) => {
           const client = this._self.#idleClients.shift(), { tail } = this._self.#tasksQueue;
           if (!client) {
             let timeout;
@@ -40933,7 +37843,7 @@ var require_pool = __commonJS({
             const task = this._self.#tasksQueue.push({
               timeout,
               // @ts-ignore
-              resolve: resolve9,
+              resolve: resolve10,
               reject,
               fn
             });
@@ -40943,15 +37853,15 @@ var require_pool = __commonJS({
             return;
           }
           const node = this._self.#clientsInUse.push(client);
-          this._self.#executeTask(node, resolve9, reject, fn);
+          this._self.#executeTask(node, resolve10, reject, fn);
         });
       }
-      #executeTask(node, resolve9, reject, fn) {
+      #executeTask(node, resolve10, reject, fn) {
         const result = fn(node.value);
         if (result instanceof Promise) {
-          result.then(resolve9, reject).finally(() => this.#returnClient(node));
+          result.then(resolve10, reject).finally(() => this.#returnClient(node));
         } else {
-          resolve9(result);
+          resolve10(result);
           this.#returnClient(node);
         }
       }
@@ -41685,9 +38595,9 @@ var require_client = __commonJS({
         this._self.#scheduleWrite();
         return promise;
       }
-      async SELECT(db2) {
-        await this.sendCommand(["SELECT", db2.toString()]);
-        this._self.#selectedDB = db2;
+      async SELECT(db) {
+        await this.sendCommand(["SELECT", db.toString()]);
+        this._self.#selectedDB = db;
       }
       select = this.SELECT;
       #pubSubCommand(promise) {
@@ -41945,20 +38855,20 @@ var require_client = __commonJS({
        * Close the client. Wait for pending commands.
        */
       close() {
-        return new Promise((resolve9) => {
+        return new Promise((resolve10) => {
           clearTimeout(this._self.#pingTimer);
           this._self.#socket.close();
           this._self.#clientSideCache?.onClose();
           if (this._self.#queue.isEmpty()) {
             this._self.#socket.destroySocket();
-            return resolve9();
+            return resolve10();
           }
           const maybeClose = () => {
             if (!this._self.#queue.isEmpty())
               return;
             this._self.#socket.off("data", maybeClose);
             this._self.#socket.destroySocket();
-            resolve9();
+            resolve10();
           };
           this._self.#socket.on("data", maybeClose);
           this._self.#credentialsSubscription?.dispose();
@@ -43693,9 +40603,9 @@ var require_wait_queue = __commonJS({
       #list = new linked_list_1.SinglyLinkedList();
       #queue = new linked_list_1.SinglyLinkedList();
       push(value) {
-        const resolve9 = this.#queue.shift();
-        if (resolve9 !== void 0) {
-          resolve9(value);
+        const resolve10 = this.#queue.shift();
+        if (resolve10 !== void 0) {
+          resolve10(value);
           return;
         }
         this.#list.push(value);
@@ -43704,7 +40614,7 @@ var require_wait_queue = __commonJS({
         return this.#list.shift();
       }
       wait() {
-        return new Promise((resolve9) => this.#queue.push(resolve9));
+        return new Promise((resolve10) => this.#queue.push(resolve10));
       }
     };
     exports2.WaitQueue = WaitQueue;
@@ -50864,14 +47774,14 @@ var init_database_redis = __esm({
         this.url = options2.url;
       }
       async init() {
-        const db2 = (0, import_npm_redis.createClient)({
+        const db = (0, import_npm_redis.createClient)({
           RESP: 3,
           url: this.url
         }).withTypeMapping({
           [import_npm_redis.RESP_TYPES.BLOB_STRING]: Buffer10
         });
-        await db2.connect();
-        this.db = db2;
+        await db.connect();
+        this.db = db;
       }
       // Useful in test hooks.
       async clear() {
@@ -50901,20 +47811,41 @@ var init_database_redis = __esm({
     };
   }
 });
+var require_database_router_test = __commonJS({
+  "src/serve/database-router.test.ts"() {
+    "use strict";
+  }
+});
+var require_database_sqlite_test = __commonJS({
+  "src/serve/database-sqlite.test.ts"() {
+    "use strict";
+  }
+});
 var database_sqlite_exports = {};
 __export(database_sqlite_exports, {
-  default: () => SqliteBackend
+  default: () => SqliteBackend,
+  rewordedAddonLoadError: () => rewordedAddonLoadError
 });
+function rewordedAddonLoadError(cause, os = Deno.build.os) {
+  const message = cause instanceof Error ? cause.message : "";
+  if (!ADDON_LOAD_FAILURE.test(message)) return null;
+  const advice = os === "linux" ? "The pre-built binaries chel ships for Linux are linked against glibc, so musl-based distributions (Alpine, for example) are not covered. Run chel from source with Deno 2.8.0 or newer there (see the Supported Platforms section of the README), or pick a different database backend." : "The copy embedded in this binary could not be read; reinstall @chelonia/cli, or pick a different database backend.";
+  return new Error(`Could not load the SQLite native addon. ${advice}`, { cause });
+}
+var ADDON_LOAD_FAILURE;
 var SqliteBackend;
 var init_database_sqlite = __esm({
   "src/serve/database-sqlite.ts"() {
     "use strict";
     init_backend_schemas();
     init_DatabaseBackend();
+    ADDON_LOAD_FAILURE = /better_sqlite3\.node|prebuilds[\\/]|cannot open shared object file/;
     SqliteBackend = class extends DatabaseBackend {
-      dataFolder = "data";
+      // Derived from the shared default rather than restating it, because
+      // `chel migrate`'s same-file guard compares against the same constant.
+      dataFolder = dirname22(SQLITE_DEFAULT_FILEPATH);
       db = null;
-      filename = "chelonia.db";
+      filename = basename22(SQLITE_DEFAULT_FILEPATH);
       readStatement = null;
       writeStatement = null;
       deleteStatement = null;
@@ -50929,8 +47860,23 @@ var init_database_sqlite = __esm({
         this.dataFolder = dirname22(resolvedPath);
         this.filename = basename22(resolvedPath);
       }
+      // Every method below reaches the connection and the prepared statements
+      // through these two, so that using the backend after close() reports what
+      // actually happened instead of throwing from inside the driver (or, worse,
+      // dereferencing null).
+      notOpenError() {
+        return new Error(`The ${this.filename} SQLite database is not open.`);
+      }
+      openDb() {
+        if (!this.db) throw this.notOpenError();
+        return this.db;
+      }
+      requireStatement(statement) {
+        if (!statement) throw this.notOpenError();
+        return statement;
+      }
       run(sql) {
-        this.db.prepare(sql).run();
+        this.openDb().prepare(sql).run();
       }
       async init() {
         const { dataFolder, filename } = this;
@@ -50938,11 +47884,21 @@ var init_database_sqlite = __esm({
         if (this.db) {
           throw new Error(`The ${filename} SQLite database is already open.`);
         }
-        this.db = new Database(join32(dataFolder, filename));
+        try {
+          this.db = new Database(join32(dataFolder, filename));
+        } catch (e2) {
+          const addonError = rewordedAddonLoadError(e2);
+          if (addonError) throw addonError;
+          throw e2;
+        }
         this.run("CREATE TABLE IF NOT EXISTS Data(key TEXT NOT NULL PRIMARY KEY, value TEXT NOT NULL)");
         console.info(`Connected to the ${filename} SQLite database.`);
-        this.readStatement = this.db.prepare("SELECT CAST(value AS BLOB) value FROM Data WHERE key = ?");
-        this.writeStatement = this.db.prepare("REPLACE INTO Data(key, value) VALUES(?, ?)");
+        this.readStatement = this.db.prepare(
+          "SELECT CAST(value AS BLOB) value FROM Data WHERE key = ?"
+        );
+        this.writeStatement = this.db.prepare(
+          "REPLACE INTO Data(key, value) VALUES(?, ?)"
+        );
         this.deleteStatement = this.db.prepare("DELETE FROM Data WHERE key = ?");
         this.iterKeysStatement = this.db.prepare("SELECT key FROM Data");
         this.keyCountStatement = this.db.prepare("SELECT COUNT(*) count FROM Data");
@@ -50954,30 +47910,39 @@ var init_database_sqlite = __esm({
       }
       // deno-lint-ignore require-await
       async readData(key) {
-        const row = this.readStatement.get(key);
-        const value = row?.value;
-        if (ArrayBuffer.isView(value) && !Buffer11.isBuffer(value)) {
-          return Buffer11.from(value);
-        } else {
-          return value;
-        }
+        return this.requireStatement(this.readStatement).get(key)?.value;
       }
       async writeData(key, value) {
-        await this.writeStatement.run(key, value);
+        await this.requireStatement(this.writeStatement).run(key, value);
       }
       async deleteData(key) {
-        await this.deleteStatement.run(key);
+        await this.requireStatement(this.deleteStatement).run(key);
       }
+      // Idempotent, and leaves the instance genuinely closed rather than half
+      // open: without clearing the statements too, a later read would throw from
+      // inside the driver, and init() would refuse to reopen with 'already open'.
       close() {
+        if (!this.db) return;
         this.db.close();
+        this.db = null;
+        this.readStatement = null;
+        this.writeStatement = null;
+        this.deleteStatement = null;
+        this.iterKeysStatement = null;
+        this.keyCountStatement = null;
       }
+      // The cursor holds a read transaction open on this connection for as long as
+      // it is alive, and better-sqlite3 rejects any write issued on a connection
+      // that is mid-query ('This database connection is busy executing a query').
+      // Callers must therefore drain this iterator before writing through the same
+      // backend; see the note on DatabaseBackend.iterKeys.
       async *iterKeys() {
-        for (const row of this.iterKeysStatement.iter()) {
+        for (const row of this.requireStatement(this.iterKeysStatement).iterate()) {
           yield row.key;
         }
       }
       async keyCount() {
-        const result = await this.keyCountStatement.get();
+        const result = await this.requireStatement(this.keyCountStatement).get();
         return result?.count ?? 0;
       }
     };
@@ -50989,8 +47954,9 @@ var init_ = __esm({
     globImport_database_ts = __glob({
       "./database-fs.ts": () => Promise.resolve().then(() => (init_database_fs(), database_fs_exports)),
       "./database-redis.ts": () => Promise.resolve().then(() => (init_database_redis(), database_redis_exports)),
-      "./database-router.test.ts": () => Promise.resolve().then(() => (init_database_router_test(), database_router_test_exports)),
+      "./database-router.test.ts": () => Promise.resolve().then(() => __toESM(require_database_router_test())),
       "./database-router.ts": () => Promise.resolve().then(() => (init_database_router(), database_router_exports)),
+      "./database-sqlite.test.ts": () => Promise.resolve().then(() => __toESM(require_database_sqlite_test())),
       "./database-sqlite.ts": () => Promise.resolve().then(() => (init_database_sqlite(), database_sqlite_exports))
     });
   }
@@ -51089,114 +48055,6 @@ var init_database_router = __esm({
         return count;
       }
     };
-  }
-});
-var database_router_test_exports = {};
-var CID2;
-var randomKeyWithPrefix;
-var validConfig;
-var db;
-var init_database_router_test = __esm({
-  "src/serve/database-router.test.ts"() {
-    "use strict";
-    init_esm4();
-    init_database_router();
-    init_backend_schemas();
-    CID2 = "Q";
-    randomKeyWithPrefix = (prefix) => `${prefix}${globalThis.crypto.randomUUID().replaceAll("-", "")}`;
-    validConfig = {
-      [CID2]: {
-        name: "sqlite",
-        options: {
-          filepath: "./test/temp/sqlite.db"
-        }
-      },
-      "*": {
-        name: "fs",
-        options: {
-          dirname: "./test/temp",
-          skipFsCaseSensitivityCheck: true
-        }
-      }
-    };
-    db = new RouterBackend(validConfig);
-    Deno.test({
-      name: "RouterOptionsSchema validation",
-      async fn(t) {
-        await t.step("should accept a valid config", () => {
-          const result = RouterOptionsSchema.safeParse(validConfig);
-          if (!result.success) throw new Error(`Expected success but got ${result.error.issues.length} errors`);
-        });
-        await t.step("should reject configs missing a * key", () => {
-          const config2 = omit2(validConfig, ["*"]);
-          const result = RouterOptionsSchema.safeParse(config2);
-          if (result.success || result.error.issues.length !== 1) throw new Error(`Expected 1 error but got ${result.success ? 0 : result.error.issues.length}`);
-        });
-        await t.step("should reject config entries missing a name", () => {
-          const config2 = cloneDeep(validConfig);
-          delete config2["*"].name;
-          const result = RouterOptionsSchema.safeParse(config2);
-          if (result.success || result.error.issues.length !== 1) throw new Error(`Expected 1 error but got ${result.success ? 0 : result.error.issues.length}`);
-        });
-      }
-    });
-    Deno.test({
-      name: "RouterBackend::constructor",
-      async fn(t) {
-        await t.step('rejects a config missing the "*" fallback', () => {
-          assertThrows(
-            () => new RouterBackend({ "gi.contracts/": { name: "fs", options: {} } }),
-            Error
-          );
-        });
-        await t.step("rejects a config whose entry options are not an object", () => {
-          assertThrows(
-            // @ts-expect-error: intentionally invalid, options must be an object
-            () => new RouterBackend({ "*": { name: "fs", options: "not-an-object" } }),
-            Error
-          );
-        });
-        await t.step("rejects a config with an unknown backend name", () => {
-          assertThrows(
-            () => new RouterBackend({ "*": { name: "mongodb", options: {} } }),
-            Error
-          );
-        });
-      }
-    });
-    Deno.test({
-      name: "RouterBackend::lookupBackend",
-      async fn(t) {
-        await db.init();
-        try {
-          await t.step("should find the right backend for keys starting with configured prefixes", () => {
-            for (const keyPrefix of Object.keys(db.config)) {
-              if (keyPrefix === "*") continue;
-              const key = randomKeyWithPrefix(keyPrefix);
-              const actual = db.lookupBackend(key);
-              const expected = db.backends[keyPrefix];
-              if (actual !== expected) throw new Error(`Expected ${expected} but got ${actual}`);
-            }
-          });
-          await t.step("should find the right backend for keys equal to configured prefixes", () => {
-            for (const keyPrefix of Object.keys(db.config)) {
-              const key = keyPrefix;
-              const actual = db.lookupBackend(key);
-              const expected = db.backends[keyPrefix];
-              if (actual !== expected) throw new Error(`Expected ${expected} but got ${actual}`);
-            }
-          });
-          await t.step("should return the fallback backend for keys not matching any configured prefix", () => {
-            const key = "foo";
-            const actual = db.lookupBackend(key);
-            const expected = db.backends["*"];
-            if (actual !== expected) throw new Error(`Expected ${expected} but got ${actual}`);
-          });
-        } finally {
-          await db.clear();
-        }
-      }
-    });
   }
 });
 var require_has_flag = __commonJS({
@@ -52062,8 +48920,8 @@ var require_parse = __commonJS({
   "node_modules/.deno/fast-redact@3.5.0/node_modules/fast-redact/lib/parse.js"(exports2, module15) {
     "use strict";
     var rx = require_rx();
-    module15.exports = parse62;
-    function parse62({ paths }) {
+    module15.exports = parse6;
+    function parse6({ paths }) {
       const wildcards = [];
       var wcLen = 0;
       const secret = paths.reduce(function(o2, strPath, ix) {
@@ -52500,7 +49358,7 @@ var require_fast_redact = __commonJS({
   "node_modules/.deno/fast-redact@3.5.0/node_modules/fast-redact/index.js"(exports2, module15) {
     "use strict";
     var validator2 = require_validator();
-    var parse62 = require_parse();
+    var parse6 = require_parse();
     var redactor = require_redactor();
     var restorer = require_restorer();
     var { groupRedact, nestedRedact } = require_modifiers();
@@ -52525,7 +49383,7 @@ var require_fast_redact = __commonJS({
       const censorFctTakesPath = isCensorFct && censor.length > 1;
       if (paths.length === 0) return serialize2 || noop;
       validate({ paths, serialize: serialize2, censor });
-      const { wildcards, wcLen, secret } = parse62({ paths, censor });
+      const { wildcards, wcLen, secret } = parse6({ paths, censor });
       const compileRestore = restorer();
       const strict = "strict" in opts ? opts.strict : true;
       return redactor({ secret, wcLen, serialize: serialize2, strict, isCensorFct, censorFctTakesPath }, state({
@@ -53278,22 +50136,22 @@ var require_sonic_boom = __commonJS({
         this._bufs.unshift(this._writingBuf);
         this._writingBuf = "";
       }
-      let buf2 = "";
-      while (this._bufs.length || buf2) {
-        if (buf2.length <= 0) {
-          buf2 = this._bufs[0];
+      let buf = "";
+      while (this._bufs.length || buf) {
+        if (buf.length <= 0) {
+          buf = this._bufs[0];
         }
         try {
-          const n = fs.writeSync(this.fd, buf2, "utf8");
-          const releasedBufObj = releaseWritingBuf(buf2, this._len, n);
-          buf2 = releasedBufObj.writingBuf;
+          const n = fs.writeSync(this.fd, buf, "utf8");
+          const releasedBufObj = releaseWritingBuf(buf, this._len, n);
+          buf = releasedBufObj.writingBuf;
           this._len = releasedBufObj.len;
-          if (buf2.length <= 0) {
+          if (buf.length <= 0) {
             this._bufs.shift();
           }
         } catch (err) {
           const shouldRetry = err.code === "EAGAIN" || err.code === "EBUSY";
-          if (shouldRetry && !this.retryEAGAIN(err, buf2.length, this._len - buf2.length)) {
+          if (shouldRetry && !this.retryEAGAIN(err, buf.length, this._len - buf.length)) {
             throw err;
           }
           sleep(BUSY_WRITE_TIMEOUT);
@@ -53315,22 +50173,22 @@ var require_sonic_boom = __commonJS({
         this._bufs.unshift([this._writingBuf]);
         this._writingBuf = kEmptyBuffer;
       }
-      let buf2 = kEmptyBuffer;
-      while (this._bufs.length || buf2.length) {
-        if (buf2.length <= 0) {
-          buf2 = mergeBuf(this._bufs[0], this._lens[0]);
+      let buf = kEmptyBuffer;
+      while (this._bufs.length || buf.length) {
+        if (buf.length <= 0) {
+          buf = mergeBuf(this._bufs[0], this._lens[0]);
         }
         try {
-          const n = fs.writeSync(this.fd, buf2);
-          buf2 = buf2.subarray(n);
+          const n = fs.writeSync(this.fd, buf);
+          buf = buf.subarray(n);
           this._len = Math.max(this._len - n, 0);
-          if (buf2.length <= 0) {
+          if (buf.length <= 0) {
             this._bufs.shift();
             this._lens.shift();
           }
         } catch (err) {
           const shouldRetry = err.code === "EAGAIN" || err.code === "EBUSY";
-          if (shouldRetry && !this.retryEAGAIN(err, buf2.length, this._len - buf2.length)) {
+          if (shouldRetry && !this.retryEAGAIN(err, buf.length, this._len - buf.length)) {
             throw err;
           }
           sleep(BUSY_WRITE_TIMEOUT);
@@ -54049,7 +50907,7 @@ var require_transport = __commonJS({
     "use strict";
     var { createRequire } = __require2("node:module");
     var getCallers = require_caller();
-    var { join: join10, isAbsolute: isAbsolute8, sep } = __require2("node:path");
+    var { join: join10, isAbsolute: isAbsolute3, sep } = __require2("node:path");
     var sleep = require_atomic_sleep();
     var onExit = require_on_exit_leak_free();
     var ThreadStream = require_thread_stream();
@@ -54133,7 +50991,7 @@ var require_transport = __commonJS({
       return buildStream(fixTarget(target), options2, worker);
       function fixTarget(origin) {
         origin = bundlerOverrides[origin] || origin;
-        if (isAbsolute8(origin) || origin.indexOf("file://") === 0) {
+        if (isAbsolute3(origin) || origin.indexOf("file://") === 0) {
           return origin;
         }
         if (origin === "pino/file") {
@@ -55648,7 +52506,7 @@ var require_pino = __commonJS({
     var redaction = require_redaction();
     var time3 = require_time();
     var proto3 = require_proto();
-    var symbols2 = require_symbols();
+    var symbols = require_symbols();
     var { configure } = require_safe_stable_stringify();
     var { assertDefaultLevelFound, mappings, genLsCache, genLevelComparison, assertLevelComparison } = require_levels();
     var { DEFAULT_LEVELS, SORTING_ORDER } = require_constants();
@@ -55686,7 +52544,7 @@ var require_pino = __commonJS({
       nestedKeyStrSym,
       mixinMergeStrategySym,
       msgPrefixSym
-    } = symbols2;
+    } = symbols;
     var { epochTime, nullTime } = time3;
     var { pid } = process;
     var hostname2 = os.hostname();
@@ -55836,7 +52694,7 @@ var require_pino = __commonJS({
     module15.exports.levels = mappings();
     module15.exports.stdSerializers = serializers;
     module15.exports.stdTimeFunctions = Object.assign({}, time3);
-    module15.exports.symbols = symbols2;
+    module15.exports.symbols = symbols;
     module15.exports.version = version3;
     module15.exports.default = pino2;
     module15.exports.pino = pino2;
@@ -55956,7 +52814,7 @@ var require_DLList = __commonJS({
 var require_Events = __commonJS({
   "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/Events.js"(exports2, module15) {
     "use strict";
-    function asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, key, arg) {
+    function asyncGeneratorStep2(gen, resolve10, reject, _next, _throw, key, arg) {
       try {
         var info = gen[key](arg);
         var value = info.value;
@@ -55965,7 +52823,7 @@ var require_Events = __commonJS({
         return;
       }
       if (info.done) {
-        resolve9(value);
+        resolve10(value);
       } else {
         Promise.resolve(value).then(_next, _throw);
       }
@@ -55973,13 +52831,13 @@ var require_Events = __commonJS({
     function _asyncToGenerator2(fn) {
       return function() {
         var self2 = this, args = arguments;
-        return new Promise(function(resolve9, reject) {
+        return new Promise(function(resolve10, reject) {
           var gen = fn.apply(self2, args);
           function _next(value) {
-            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "next", value);
+            asyncGeneratorStep2(gen, resolve10, reject, _next, _throw, "next", value);
           }
           function _throw(err) {
-            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "throw", err);
+            asyncGeneratorStep2(gen, resolve10, reject, _next, _throw, "throw", err);
           }
           _next(void 0);
         });
@@ -56165,7 +53023,7 @@ var require_BottleneckError = __commonJS({
 var require_Job = __commonJS({
   "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/Job.js"(exports2, module15) {
     "use strict";
-    function asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, key, arg) {
+    function asyncGeneratorStep2(gen, resolve10, reject, _next, _throw, key, arg) {
       try {
         var info = gen[key](arg);
         var value = info.value;
@@ -56174,7 +53032,7 @@ var require_Job = __commonJS({
         return;
       }
       if (info.done) {
-        resolve9(value);
+        resolve10(value);
       } else {
         Promise.resolve(value).then(_next, _throw);
       }
@@ -56182,13 +53040,13 @@ var require_Job = __commonJS({
     function _asyncToGenerator2(fn) {
       return function() {
         var self2 = this, args = arguments;
-        return new Promise(function(resolve9, reject) {
+        return new Promise(function(resolve10, reject) {
           var gen = fn.apply(self2, args);
           function _next(value) {
-            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "next", value);
+            asyncGeneratorStep2(gen, resolve10, reject, _next, _throw, "next", value);
           }
           function _throw(err) {
-            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "throw", err);
+            asyncGeneratorStep2(gen, resolve10, reject, _next, _throw, "throw", err);
           }
           _next(void 0);
         });
@@ -56367,7 +53225,7 @@ var require_Job = __commonJS({
 var require_LocalDatastore = __commonJS({
   "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/LocalDatastore.js"(exports2, module15) {
     "use strict";
-    function asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, key, arg) {
+    function asyncGeneratorStep2(gen, resolve10, reject, _next, _throw, key, arg) {
       try {
         var info = gen[key](arg);
         var value = info.value;
@@ -56376,7 +53234,7 @@ var require_LocalDatastore = __commonJS({
         return;
       }
       if (info.done) {
-        resolve9(value);
+        resolve10(value);
       } else {
         Promise.resolve(value).then(_next, _throw);
       }
@@ -56384,13 +53242,13 @@ var require_LocalDatastore = __commonJS({
     function _asyncToGenerator2(fn) {
       return function() {
         var self2 = this, args = arguments;
-        return new Promise(function(resolve9, reject) {
+        return new Promise(function(resolve10, reject) {
           var gen = fn.apply(self2, args);
           function _next(value) {
-            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "next", value);
+            asyncGeneratorStep2(gen, resolve10, reject, _next, _throw, "next", value);
           }
           function _throw(err) {
-            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "throw", err);
+            asyncGeneratorStep2(gen, resolve10, reject, _next, _throw, "throw", err);
           }
           _next(void 0);
         });
@@ -56459,8 +53317,8 @@ var require_LocalDatastore = __commonJS({
         })();
       }
       yieldLoop(t = 0) {
-        return new this.Promise(function(resolve9, reject) {
-          return setTimeout(resolve9, t);
+        return new this.Promise(function(resolve10, reject) {
+          return setTimeout(resolve10, t);
         });
       }
       computePenalty() {
@@ -56924,7 +53782,7 @@ var require_Scripts = __commonJS({
 var require_RedisConnection = __commonJS({
   "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/RedisConnection.js"(exports, module) {
     "use strict";
-    function asyncGeneratorStep(gen, resolve9, reject, _next, _throw, key, arg) {
+    function asyncGeneratorStep(gen, resolve10, reject, _next, _throw, key, arg) {
       try {
         var info = gen[key](arg);
         var value = info.value;
@@ -56933,7 +53791,7 @@ var require_RedisConnection = __commonJS({
         return;
       }
       if (info.done) {
-        resolve9(value);
+        resolve10(value);
       } else {
         Promise.resolve(value).then(_next, _throw);
       }
@@ -56941,13 +53799,13 @@ var require_RedisConnection = __commonJS({
     function _asyncToGenerator(fn) {
       return function() {
         var self2 = this, args = arguments;
-        return new Promise(function(resolve9, reject) {
+        return new Promise(function(resolve10, reject) {
           var gen = fn.apply(self2, args);
           function _next(value) {
-            asyncGeneratorStep(gen, resolve9, reject, _next, _throw, "next", value);
+            asyncGeneratorStep(gen, resolve10, reject, _next, _throw, "next", value);
           }
           function _throw(err) {
-            asyncGeneratorStep(gen, resolve9, reject, _next, _throw, "throw", err);
+            asyncGeneratorStep(gen, resolve10, reject, _next, _throw, "throw", err);
           }
           _next(void 0);
         });
@@ -56988,7 +53846,7 @@ var require_RedisConnection = __commonJS({
         }
         _setup(client, sub) {
           client.setMaxListeners(0);
-          return new this.Promise((resolve9, reject) => {
+          return new this.Promise((resolve10, reject) => {
             client.on("error", (e2) => {
               return this.Events.trigger("error", e2);
             });
@@ -56999,14 +53857,14 @@ var require_RedisConnection = __commonJS({
               });
             }
             if (client.ready) {
-              return resolve9();
+              return resolve10();
             } else {
-              return client.once("ready", resolve9);
+              return client.once("ready", resolve10);
             }
           });
         }
         _loadScript(name) {
-          return new this.Promise((resolve9, reject) => {
+          return new this.Promise((resolve10, reject) => {
             var payload;
             payload = Scripts.payload(name);
             return this.client.multi([["script", "load", payload]]).exec((err, replies) => {
@@ -57014,7 +53872,7 @@ var require_RedisConnection = __commonJS({
                 return reject(err);
               }
               this.shas[name] = replies[0];
-              return resolve9(replies[0]);
+              return resolve10(replies[0]);
             });
           });
         }
@@ -57027,12 +53885,12 @@ var require_RedisConnection = __commonJS({
           var _this = this;
           return _asyncToGenerator(function* () {
             yield _this.ready;
-            return new _this.Promise((resolve9, reject) => {
+            return new _this.Promise((resolve10, reject) => {
               return _this.client.multi([cmd]).exec_atomic(function(err, replies) {
                 if (err != null) {
                   return reject(err);
                 } else {
-                  return resolve9(replies[0]);
+                  return resolve10(replies[0]);
                 }
               });
             });
@@ -57040,13 +53898,13 @@ var require_RedisConnection = __commonJS({
         }
         __addLimiter__(instance) {
           return this.Promise.all([instance.channel(), instance.channel_client()].map((channel) => {
-            return new this.Promise((resolve9, reject) => {
+            return new this.Promise((resolve10, reject) => {
               var handler;
               handler = (chan) => {
                 if (chan === channel) {
                   this.subscriber.removeListener("subscribe", handler);
                   this.limiters[channel] = instance;
-                  return resolve9();
+                  return resolve10();
                 }
               };
               this.subscriber.on("subscribe", handler);
@@ -57060,13 +53918,13 @@ var require_RedisConnection = __commonJS({
             /* @__PURE__ */ function() {
               var _ref = _asyncToGenerator(function* (channel) {
                 if (!_this2.terminated) {
-                  yield new _this2.Promise((resolve9, reject) => {
+                  yield new _this2.Promise((resolve10, reject) => {
                     return _this2.subscriber.unsubscribe(channel, function(err, chan) {
                       if (err != null) {
                         return reject(err);
                       }
                       if (chan === channel) {
-                        return resolve9();
+                        return resolve10();
                       }
                     });
                   });
@@ -57149,7 +54007,7 @@ var require_IORedisConnection = __commonJS({
     function _arrayWithHoles(arr) {
       if (Array.isArray(arr)) return arr;
     }
-    function asyncGeneratorStep(gen, resolve9, reject, _next, _throw, key, arg) {
+    function asyncGeneratorStep(gen, resolve10, reject, _next, _throw, key, arg) {
       try {
         var info = gen[key](arg);
         var value = info.value;
@@ -57158,7 +54016,7 @@ var require_IORedisConnection = __commonJS({
         return;
       }
       if (info.done) {
-        resolve9(value);
+        resolve10(value);
       } else {
         Promise.resolve(value).then(_next, _throw);
       }
@@ -57166,13 +54024,13 @@ var require_IORedisConnection = __commonJS({
     function _asyncToGenerator(fn) {
       return function() {
         var self2 = this, args = arguments;
-        return new Promise(function(resolve9, reject) {
+        return new Promise(function(resolve10, reject) {
           var gen = fn.apply(self2, args);
           function _next(value) {
-            asyncGeneratorStep(gen, resolve9, reject, _next, _throw, "next", value);
+            asyncGeneratorStep(gen, resolve10, reject, _next, _throw, "next", value);
           }
           function _throw(err) {
-            asyncGeneratorStep(gen, resolve9, reject, _next, _throw, "throw", err);
+            asyncGeneratorStep(gen, resolve10, reject, _next, _throw, "throw", err);
           }
           _next(void 0);
         });
@@ -57218,7 +54076,7 @@ var require_IORedisConnection = __commonJS({
         }
         _setup(client, sub) {
           client.setMaxListeners(0);
-          return new this.Promise((resolve9, reject) => {
+          return new this.Promise((resolve10, reject) => {
             client.on("error", (e2) => {
               return this.Events.trigger("error", e2);
             });
@@ -57229,9 +54087,9 @@ var require_IORedisConnection = __commonJS({
               });
             }
             if (client.status === "ready") {
-              return resolve9();
+              return resolve10();
             } else {
-              return client.once("ready", resolve9);
+              return client.once("ready", resolve10);
             }
           });
         }
@@ -57257,10 +54115,10 @@ var require_IORedisConnection = __commonJS({
         }
         __addLimiter__(instance) {
           return this.Promise.all([instance.channel(), instance.channel_client()].map((channel) => {
-            return new this.Promise((resolve9, reject) => {
+            return new this.Promise((resolve10, reject) => {
               return this.subscriber.subscribe(channel, () => {
                 this.limiters[channel] = instance;
-                return resolve9();
+                return resolve10();
               });
             });
           }));
@@ -57356,7 +54214,7 @@ var require_RedisDatastore = __commonJS({
     function _arrayWithHoles2(arr) {
       if (Array.isArray(arr)) return arr;
     }
-    function asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, key, arg) {
+    function asyncGeneratorStep2(gen, resolve10, reject, _next, _throw, key, arg) {
       try {
         var info = gen[key](arg);
         var value = info.value;
@@ -57365,7 +54223,7 @@ var require_RedisDatastore = __commonJS({
         return;
       }
       if (info.done) {
-        resolve9(value);
+        resolve10(value);
       } else {
         Promise.resolve(value).then(_next, _throw);
       }
@@ -57373,13 +54231,13 @@ var require_RedisDatastore = __commonJS({
     function _asyncToGenerator2(fn) {
       return function() {
         var self2 = this, args = arguments;
-        return new Promise(function(resolve9, reject) {
+        return new Promise(function(resolve10, reject) {
           var gen = fn.apply(self2, args);
           function _next(value) {
-            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "next", value);
+            asyncGeneratorStep2(gen, resolve10, reject, _next, _throw, "next", value);
           }
           function _throw(err) {
-            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "throw", err);
+            asyncGeneratorStep2(gen, resolve10, reject, _next, _throw, "throw", err);
           }
           _next(void 0);
         });
@@ -57515,7 +54373,7 @@ var require_RedisDatastore = __commonJS({
           if (!(name === "init" || name === "register_client")) {
             yield _this3.ready;
           }
-          return new _this3.Promise((resolve9, reject) => {
+          return new _this3.Promise((resolve10, reject) => {
             var all_args, arr;
             all_args = [Date.now(), _this3.clientId].concat(args);
             _this3.instance.Events.trigger("debug", `Calling Redis script: ${name}.lua`, all_args);
@@ -57523,7 +54381,7 @@ var require_RedisDatastore = __commonJS({
               if (err != null) {
                 return reject(err);
               }
-              return resolve9(replies);
+              return resolve10(replies);
             });
             return _this3.connection.__scriptFn__(name)(...arr);
           }).catch((e2) => {
@@ -57750,7 +54608,7 @@ var require_States = __commonJS({
 var require_Sync = __commonJS({
   "node_modules/.deno/bottleneck@2.19.5/node_modules/bottleneck/lib/Sync.js"(exports2, module15) {
     "use strict";
-    function asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, key, arg) {
+    function asyncGeneratorStep2(gen, resolve10, reject, _next, _throw, key, arg) {
       try {
         var info = gen[key](arg);
         var value = info.value;
@@ -57759,7 +54617,7 @@ var require_Sync = __commonJS({
         return;
       }
       if (info.done) {
-        resolve9(value);
+        resolve10(value);
       } else {
         Promise.resolve(value).then(_next, _throw);
       }
@@ -57767,13 +54625,13 @@ var require_Sync = __commonJS({
     function _asyncToGenerator2(fn) {
       return function() {
         var self2 = this, args = arguments;
-        return new Promise(function(resolve9, reject) {
+        return new Promise(function(resolve10, reject) {
           var gen = fn.apply(self2, args);
           function _next(value) {
-            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "next", value);
+            asyncGeneratorStep2(gen, resolve10, reject, _next, _throw, "next", value);
           }
           function _throw(err) {
-            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "throw", err);
+            asyncGeneratorStep2(gen, resolve10, reject, _next, _throw, "throw", err);
           }
           _next(void 0);
         });
@@ -57796,19 +54654,19 @@ var require_Sync = __commonJS({
       _tryToRun() {
         var _this = this;
         return _asyncToGenerator2(function* () {
-          var args, cb, error2, reject, resolve9, returned, task;
+          var args, cb, error2, reject, resolve10, returned, task;
           if (_this._running < 1 && _this._queue.length > 0) {
             _this._running++;
             var _this$_queue$shift = _this._queue.shift();
             task = _this$_queue$shift.task;
             args = _this$_queue$shift.args;
-            resolve9 = _this$_queue$shift.resolve;
+            resolve10 = _this$_queue$shift.resolve;
             reject = _this$_queue$shift.reject;
             cb = yield _asyncToGenerator2(function* () {
               try {
                 returned = yield task(...args);
                 return function() {
-                  return resolve9(returned);
+                  return resolve10(returned);
                 };
               } catch (error1) {
                 error2 = error1;
@@ -57824,16 +54682,16 @@ var require_Sync = __commonJS({
         })();
       }
       schedule(task, ...args) {
-        var promise, reject, resolve9;
-        resolve9 = reject = null;
+        var promise, reject, resolve10;
+        resolve10 = reject = null;
         promise = new this.Promise(function(_resolve, _reject) {
-          resolve9 = _resolve;
+          resolve10 = _resolve;
           return reject = _reject;
         });
         this._queue.push({
           task,
           args,
-          resolve: resolve9,
+          resolve: resolve10,
           reject
         });
         this._tryToRun();
@@ -57882,7 +54740,7 @@ var require_Group = __commonJS({
     function _arrayWithHoles2(arr) {
       if (Array.isArray(arr)) return arr;
     }
-    function asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, key, arg) {
+    function asyncGeneratorStep2(gen, resolve10, reject, _next, _throw, key, arg) {
       try {
         var info = gen[key](arg);
         var value = info.value;
@@ -57891,7 +54749,7 @@ var require_Group = __commonJS({
         return;
       }
       if (info.done) {
-        resolve9(value);
+        resolve10(value);
       } else {
         Promise.resolve(value).then(_next, _throw);
       }
@@ -57899,13 +54757,13 @@ var require_Group = __commonJS({
     function _asyncToGenerator2(fn) {
       return function() {
         var self2 = this, args = arguments;
-        return new Promise(function(resolve9, reject) {
+        return new Promise(function(resolve10, reject) {
           var gen = fn.apply(self2, args);
           function _next(value) {
-            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "next", value);
+            asyncGeneratorStep2(gen, resolve10, reject, _next, _throw, "next", value);
           }
           function _throw(err) {
-            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "throw", err);
+            asyncGeneratorStep2(gen, resolve10, reject, _next, _throw, "throw", err);
           }
           _next(void 0);
         });
@@ -58164,7 +55022,7 @@ var require_Bottleneck = __commonJS({
     function _arrayWithHoles2(arr) {
       if (Array.isArray(arr)) return arr;
     }
-    function asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, key, arg) {
+    function asyncGeneratorStep2(gen, resolve10, reject, _next, _throw, key, arg) {
       try {
         var info = gen[key](arg);
         var value = info.value;
@@ -58173,7 +55031,7 @@ var require_Bottleneck = __commonJS({
         return;
       }
       if (info.done) {
-        resolve9(value);
+        resolve10(value);
       } else {
         Promise.resolve(value).then(_next, _throw);
       }
@@ -58181,13 +55039,13 @@ var require_Bottleneck = __commonJS({
     function _asyncToGenerator2(fn) {
       return function() {
         var self2 = this, args = arguments;
-        return new Promise(function(resolve9, reject) {
+        return new Promise(function(resolve10, reject) {
           var gen = fn.apply(self2, args);
           function _next(value) {
-            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "next", value);
+            asyncGeneratorStep2(gen, resolve10, reject, _next, _throw, "next", value);
           }
           function _throw(err) {
-            asyncGeneratorStep2(gen, resolve9, reject, _next, _throw, "throw", err);
+            asyncGeneratorStep2(gen, resolve10, reject, _next, _throw, "throw", err);
           }
           _next(void 0);
         });
@@ -58425,14 +55283,14 @@ var require_Bottleneck = __commonJS({
               counts = this._states.counts;
               return counts[0] + counts[1] + counts[2] + counts[3] === at;
             };
-            return new this.Promise((resolve9, reject) => {
+            return new this.Promise((resolve10, reject) => {
               if (finished()) {
-                return resolve9();
+                return resolve10();
               } else {
                 return this.on("done", () => {
                   if (finished()) {
                     this.removeAllListeners("done");
-                    return resolve9();
+                    return resolve10();
                   }
                 });
               }
@@ -58540,9 +55398,9 @@ var require_Bottleneck = __commonJS({
             options2 = parser3.load(options2, this.jobDefaults);
           }
           task = (...args2) => {
-            return new this.Promise(function(resolve9, reject) {
+            return new this.Promise(function(resolve10, reject) {
               return fn(...args2, function(...args3) {
-                return (args3[0] != null ? reject : resolve9)(args3);
+                return (args3[0] != null ? reject : resolve10)(args3);
               });
             });
           };
@@ -58798,9 +55656,9 @@ var require_buffer_util = __commonJS({
       const target = Buffer.allocUnsafe(totalLength);
       let offset = 0;
       for (let i2 = 0; i2 < list.length; i2++) {
-        const buf2 = list[i2];
-        target.set(buf2, offset);
-        offset += buf2.length;
+        const buf = list[i2];
+        target.set(buf, offset);
+        offset += buf.length;
       }
       if (offset < totalLength) return target.slice(0, offset);
       return target;
@@ -58815,25 +55673,25 @@ var require_buffer_util = __commonJS({
         buffer[i2] ^= mask[i2 & 3];
       }
     }
-    function toArrayBuffer(buf2) {
-      if (buf2.byteLength === buf2.buffer.byteLength) {
-        return buf2.buffer;
+    function toArrayBuffer(buf) {
+      if (buf.byteLength === buf.buffer.byteLength) {
+        return buf.buffer;
       }
-      return buf2.buffer.slice(buf2.byteOffset, buf2.byteOffset + buf2.byteLength);
+      return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
     }
     function toBuffer(data) {
       toBuffer.readOnly = true;
       if (Buffer.isBuffer(data)) return data;
-      let buf2;
+      let buf;
       if (data instanceof ArrayBuffer) {
-        buf2 = Buffer.from(data);
+        buf = Buffer.from(data);
       } else if (ArrayBuffer.isView(data)) {
-        buf2 = Buffer.from(data.buffer, data.byteOffset, data.byteLength);
+        buf = Buffer.from(data.buffer, data.byteOffset, data.byteLength);
       } else {
-        buf2 = Buffer.from(data);
+        buf = Buffer.from(data);
         toBuffer.readOnly = false;
       }
-      return buf2;
+      return buf;
     }
     try {
       const bufferUtil = __require2("bufferutil");
@@ -59427,26 +56285,26 @@ var require_validation = __commonJS({
     function isValidStatusCode(code2) {
       return code2 >= 1e3 && code2 <= 1014 && code2 !== 1004 && code2 !== 1005 && code2 !== 1006 || code2 >= 3e3 && code2 <= 4999;
     }
-    function _isValidUTF8(buf2) {
-      const len = buf2.length;
+    function _isValidUTF8(buf) {
+      const len = buf.length;
       let i2 = 0;
       while (i2 < len) {
-        if ((buf2[i2] & 128) === 0) {
+        if ((buf[i2] & 128) === 0) {
           i2++;
-        } else if ((buf2[i2] & 224) === 192) {
-          if (i2 + 1 === len || (buf2[i2 + 1] & 192) !== 128 || (buf2[i2] & 254) === 192) {
+        } else if ((buf[i2] & 224) === 192) {
+          if (i2 + 1 === len || (buf[i2 + 1] & 192) !== 128 || (buf[i2] & 254) === 192) {
             return false;
           }
           i2 += 2;
-        } else if ((buf2[i2] & 240) === 224) {
-          if (i2 + 2 >= len || (buf2[i2 + 1] & 192) !== 128 || (buf2[i2 + 2] & 192) !== 128 || buf2[i2] === 224 && (buf2[i2 + 1] & 224) === 128 || // Overlong
-          buf2[i2] === 237 && (buf2[i2 + 1] & 224) === 160) {
+        } else if ((buf[i2] & 240) === 224) {
+          if (i2 + 2 >= len || (buf[i2 + 1] & 192) !== 128 || (buf[i2 + 2] & 192) !== 128 || buf[i2] === 224 && (buf[i2 + 1] & 224) === 128 || // Overlong
+          buf[i2] === 237 && (buf[i2 + 1] & 224) === 160) {
             return false;
           }
           i2 += 3;
-        } else if ((buf2[i2] & 248) === 240) {
-          if (i2 + 3 >= len || (buf2[i2 + 1] & 192) !== 128 || (buf2[i2 + 2] & 192) !== 128 || (buf2[i2 + 3] & 192) !== 128 || buf2[i2] === 240 && (buf2[i2 + 1] & 240) === 128 || // Overlong
-          buf2[i2] === 244 && buf2[i2 + 1] > 143 || buf2[i2] > 244) {
+        } else if ((buf[i2] & 248) === 240) {
+          if (i2 + 3 >= len || (buf[i2 + 1] & 192) !== 128 || (buf[i2 + 2] & 192) !== 128 || (buf[i2 + 3] & 192) !== 128 || buf[i2] === 240 && (buf[i2 + 1] & 240) === 128 || // Overlong
+          buf[i2] === 244 && buf[i2 + 1] > 143 || buf[i2] > 244) {
             return false;
           }
           i2 += 4;
@@ -59460,8 +56318,8 @@ var require_validation = __commonJS({
       const isValidUTF8 = __require2("utf-8-validate");
       module15.exports = {
         isValidStatusCode,
-        isValidUTF8(buf2) {
-          return buf2.length < 150 ? _isValidUTF8(buf2) : isValidUTF8(buf2);
+        isValidUTF8(buf) {
+          return buf.length < 150 ? _isValidUTF8(buf) : isValidUTF8(buf);
         },
         tokenChars
       };
@@ -59555,21 +56413,21 @@ var require_receiver = __commonJS({
         this._bufferedBytes -= n;
         if (n === this._buffers[0].length) return this._buffers.shift();
         if (n < this._buffers[0].length) {
-          const buf2 = this._buffers[0];
-          this._buffers[0] = buf2.slice(n);
-          return buf2.slice(0, n);
+          const buf = this._buffers[0];
+          this._buffers[0] = buf.slice(n);
+          return buf.slice(0, n);
         }
         const dst = Buffer.allocUnsafe(n);
         do {
-          const buf2 = this._buffers[0];
+          const buf = this._buffers[0];
           const offset = dst.length - n;
-          if (n >= buf2.length) {
+          if (n >= buf.length) {
             dst.set(this._buffers.shift(), offset);
           } else {
-            dst.set(new Uint8Array(buf2.buffer, buf2.byteOffset, n), offset);
-            this._buffers[0] = buf2.slice(n);
+            dst.set(new Uint8Array(buf.buffer, buf.byteOffset, n), offset);
+            this._buffers[0] = buf.slice(n);
           }
-          n -= buf2.length;
+          n -= buf.length;
         } while (n > 0);
         return dst;
       }
@@ -59617,8 +56475,8 @@ var require_receiver = __commonJS({
           this._loop = false;
           return;
         }
-        const buf2 = this.consume(2);
-        if ((buf2[0] & 48) !== 0) {
+        const buf = this.consume(2);
+        if ((buf[0] & 48) !== 0) {
           this._loop = false;
           return error2(
             RangeError,
@@ -59628,7 +56486,7 @@ var require_receiver = __commonJS({
             "WS_ERR_UNEXPECTED_RSV_2_3"
           );
         }
-        const compressed = (buf2[0] & 64) === 64;
+        const compressed = (buf[0] & 64) === 64;
         if (compressed && !this._extensions[PerMessageDeflate.extensionName]) {
           this._loop = false;
           return error2(
@@ -59639,9 +56497,9 @@ var require_receiver = __commonJS({
             "WS_ERR_UNEXPECTED_RSV_1"
           );
         }
-        this._fin = (buf2[0] & 128) === 128;
-        this._opcode = buf2[0] & 15;
-        this._payloadLength = buf2[1] & 127;
+        this._fin = (buf[0] & 128) === 128;
+        this._opcode = buf[0] & 15;
+        this._payloadLength = buf[1] & 127;
         if (this._opcode === 0) {
           if (compressed) {
             this._loop = false;
@@ -59718,7 +56576,7 @@ var require_receiver = __commonJS({
           );
         }
         if (!this._fin && !this._fragmented) this._fragmented = this._opcode;
-        this._masked = (buf2[1] & 128) === 128;
+        this._masked = (buf[1] & 128) === 128;
         if (this._isServer) {
           if (!this._masked) {
             this._loop = false;
@@ -59769,8 +56627,8 @@ var require_receiver = __commonJS({
           this._loop = false;
           return;
         }
-        const buf2 = this.consume(8);
-        const num = buf2.readUInt32BE(0);
+        const buf = this.consume(8);
+        const num = buf.readUInt32BE(0);
         if (num > Math.pow(2, 53 - 32) - 1) {
           this._loop = false;
           return error2(
@@ -59781,7 +56639,7 @@ var require_receiver = __commonJS({
             "WS_ERR_UNSUPPORTED_DATA_PAYLOAD_LENGTH"
           );
         }
-        this._payloadLength = num * Math.pow(2, 32) + buf2.readUInt32BE(4);
+        this._payloadLength = num * Math.pow(2, 32) + buf.readUInt32BE(4);
         return this.haveLength();
       }
       /**
@@ -59860,10 +56718,10 @@ var require_receiver = __commonJS({
        */
       decompress(data, cb) {
         const perMessageDeflate = this._extensions[PerMessageDeflate.extensionName];
-        perMessageDeflate.decompress(data, this._fin, (err, buf2) => {
+        perMessageDeflate.decompress(data, this._fin, (err, buf) => {
           if (err) return cb(err);
-          if (buf2.length) {
-            this._messageLength += buf2.length;
+          if (buf.length) {
+            this._messageLength += buf.length;
             if (this._messageLength > this._maxPayload && this._maxPayload > 0) {
               return cb(
                 error2(
@@ -59875,7 +56733,7 @@ var require_receiver = __commonJS({
                 )
               );
             }
-            this._fragments.push(buf2);
+            this._fragments.push(buf);
           }
           const er = this.dataMessage();
           if (er) return cb(er);
@@ -59907,8 +56765,8 @@ var require_receiver = __commonJS({
             }
             this.emit("message", data, true);
           } else {
-            const buf2 = concat2(fragments, messageLength);
-            if (!this._skipUTF8Validation && !isValidUTF8(buf2)) {
+            const buf = concat2(fragments, messageLength);
+            if (!this._skipUTF8Validation && !isValidUTF8(buf)) {
               this._loop = false;
               return error2(
                 Error,
@@ -59918,7 +56776,7 @@ var require_receiver = __commonJS({
                 "WS_ERR_INVALID_UTF8"
               );
             }
-            this.emit("message", buf2, false);
+            this.emit("message", buf, false);
           }
         }
         this._state = GET_INFO;
@@ -59955,8 +56813,8 @@ var require_receiver = __commonJS({
                 "WS_ERR_INVALID_CLOSE_CODE"
               );
             }
-            const buf2 = data.slice(2);
-            if (!this._skipUTF8Validation && !isValidUTF8(buf2)) {
+            const buf = data.slice(2);
+            if (!this._skipUTF8Validation && !isValidUTF8(buf)) {
               return error2(
                 Error,
                 "invalid UTF-8 sequence",
@@ -59965,7 +56823,7 @@ var require_receiver = __commonJS({
                 "WS_ERR_INVALID_UTF8"
               );
             }
-            this.emit("conclude", code2, buf2);
+            this.emit("conclude", code2, buf);
             this.end();
           }
         } else if (this._opcode === 9) {
@@ -60112,29 +56970,29 @@ var require_sender = __commonJS({
        * @public
        */
       close(code2, data, mask, cb) {
-        let buf2;
+        let buf;
         if (code2 === void 0) {
-          buf2 = EMPTY_BUFFER;
+          buf = EMPTY_BUFFER;
         } else if (typeof code2 !== "number" || !isValidStatusCode(code2)) {
           throw new TypeError("First argument must be a valid error code number");
         } else if (data === void 0 || !data.length) {
-          buf2 = Buffer.allocUnsafe(2);
-          buf2.writeUInt16BE(code2, 0);
+          buf = Buffer.allocUnsafe(2);
+          buf.writeUInt16BE(code2, 0);
         } else {
           const length2 = Buffer.byteLength(data);
           if (length2 > 123) {
             throw new RangeError("The message must not be greater than 123 bytes");
           }
-          buf2 = Buffer.allocUnsafe(2 + length2);
-          buf2.writeUInt16BE(code2, 0);
+          buf = Buffer.allocUnsafe(2 + length2);
+          buf.writeUInt16BE(code2, 0);
           if (typeof data === "string") {
-            buf2.write(data, 2);
+            buf.write(data, 2);
           } else {
-            buf2.set(data, 2);
+            buf.set(data, 2);
           }
         }
         const options2 = {
-          [kByteLength]: buf2.length,
+          [kByteLength]: buf.length,
           fin: true,
           generateMask: this._generateMask,
           mask,
@@ -60144,9 +57002,9 @@ var require_sender = __commonJS({
           rsv1: false
         };
         if (this._deflating) {
-          this.enqueue([this.dispatch, buf2, false, options2, cb]);
+          this.enqueue([this.dispatch, buf, false, options2, cb]);
         } else {
-          this.sendFrame(_Sender.frame(buf2, options2), cb);
+          this.sendFrame(_Sender.frame(buf, options2), cb);
         }
       }
       /**
@@ -60329,7 +57187,7 @@ var require_sender = __commonJS({
         const perMessageDeflate = this._extensions[PerMessageDeflate.extensionName];
         this._bufferedBytes += options2[kByteLength];
         this._deflating = true;
-        perMessageDeflate.compress(data, options2.fin, (_, buf2) => {
+        perMessageDeflate.compress(data, options2.fin, (_, buf) => {
           if (this._socket.destroyed) {
             const err = new Error(
               "The socket was closed while data was being compressed"
@@ -60345,7 +57203,7 @@ var require_sender = __commonJS({
           this._bufferedBytes -= options2[kByteLength];
           this._deflating = false;
           options2.readOnly = false;
-          this.sendFrame(_Sender.frame(buf2, options2), cb);
+          this.sendFrame(_Sender.frame(buf, options2), cb);
           this.dequeue();
         });
       }
@@ -60615,7 +57473,7 @@ var require_extension = __commonJS({
       if (dest[name] === void 0) dest[name] = [elem];
       else dest[name].push(elem);
     }
-    function parse62(header) {
+    function parse6(header) {
       const offers = /* @__PURE__ */ Object.create(null);
       let params = /* @__PURE__ */ Object.create(null);
       let mustUnescape = false;
@@ -60755,7 +57613,7 @@ var require_extension = __commonJS({
         }).join(", ");
       }).join(", ");
     }
-    module15.exports = { format: format52, parse: parse62 };
+    module15.exports = { format: format52, parse: parse6 };
   }
 });
 var require_websocket = __commonJS({
@@ -60785,7 +57643,7 @@ var require_websocket = __commonJS({
     var {
       EventTarget: { addEventListener: addEventListener2, removeEventListener }
     } = require_event_target();
-    var { format: format52, parse: parse62 } = require_extension();
+    var { format: format52, parse: parse6 } = require_extension();
     var { toBuffer } = require_buffer_util();
     var readyStates = ["CONNECTING", "OPEN", "CLOSING", "CLOSED"];
     var subprotocolRegex = /^[!#$%&'*+\-.0-9A-Z^_`|a-z~]+$/;
@@ -61423,7 +58281,7 @@ var require_websocket = __commonJS({
           }
           let extensions;
           try {
-            extensions = parse62(secWebSocketExtensions);
+            extensions = parse6(secWebSocketExtensions);
           } catch (err) {
             const message = "Invalid Sec-WebSocket-Extensions header";
             abortHandshake(websocket, socket, message);
@@ -61584,7 +58442,7 @@ var require_subprotocol = __commonJS({
   "node_modules/.deno/ws@8.5.0/node_modules/ws/lib/subprotocol.js"(exports2, module15) {
     "use strict";
     var { tokenChars } = require_validation();
-    function parse62(header) {
+    function parse6(header) {
       const protocols = /* @__PURE__ */ new Set();
       let start = -1;
       let end = -1;
@@ -61620,7 +58478,7 @@ var require_subprotocol = __commonJS({
       protocols.add(protocol);
       return protocols;
     }
-    module15.exports = { parse: parse62 };
+    module15.exports = { parse: parse6 };
   }
 });
 var require_websocket_server = __commonJS({
@@ -62596,7 +59454,7 @@ function peekTable(key, table, meta, type) {
   }
   return [k, t, state.c];
 }
-function parse8(toml, { maxDepth = 1e3, integersAsBigInt } = {}) {
+function parse4(toml, { maxDepth = 1e3, integersAsBigInt } = {}) {
   let res = {};
   let meta = {};
   let tbl = res;
@@ -63894,9 +60752,9 @@ function resolveJournalConfig(cfg) {
   const snapshotInterval = typeof cfg?.snapshotInterval === "number" ? cfg.snapshotInterval : DEFAULT_SNAPSHOT_INTERVAL;
   const contractIDs = cfg?.contractIDs && cfg.contractIDs.length > 0 ? new Set(cfg.contractIDs) : null;
   const redactions = cfg?.redactions ?? [];
-  const diff2 = cfg?.diff ?? defaultDiff;
+  const diff = cfg?.diff ?? defaultDiff;
   const applyPatch = cfg?.applyPatch ?? defaultApplyPatch;
-  return { enabled: enabled2, snapshotInterval, contractIDs, redactions, diff: diff2, applyPatch };
+  return { enabled: enabled2, snapshotInterval, contractIDs, redactions, diff, applyPatch };
 }
 function indexOfLastSnapshot(entries) {
   for (let i2 = entries.length - 1; i2 >= 0; i2--) {
@@ -65212,13 +62070,13 @@ var ArrayBufferToUint8ArrayStream = async function(connectionURL, s) {
 var computeChunkDescriptors = (inStream) => {
   let length2 = 0;
   const [lengthStream, cidStream] = inStream.tee();
-  const lengthPromise = new Promise((resolve9, reject) => {
+  const lengthPromise = new Promise((resolve10, reject) => {
     lengthStream.pipeTo(new WritableStream({
       write(chunk) {
         length2 += chunk.byteLength;
       },
       close() {
-        resolve9(length2);
+        resolve10(length2);
       },
       abort(reason) {
         reject(reason);
@@ -71492,7 +68350,7 @@ function parseEncryptedOrUnencryptedMessage(ctx, { contractID, serializedData, m
   });
   let encryptionKeyId;
   let innerSigningKeyId;
-  const unwrap2 = /* @__PURE__ */ (() => {
+  const unwrap = /* @__PURE__ */ (() => {
     let result2;
     return () => {
       if (!result2) {
@@ -71530,7 +68388,7 @@ function parseEncryptedOrUnencryptedMessage(ctx, { contractID, serializedData, m
     get innerSigningKeyId() {
       if (innerSigningKeyId === void 0) {
         try {
-          unwrap2();
+          unwrap();
         } catch {
         }
       }
@@ -71539,7 +68397,7 @@ function parseEncryptedOrUnencryptedMessage(ctx, { contractID, serializedData, m
     get encryptionKeyId() {
       if (encryptionKeyId === void 0) {
         try {
-          unwrap2();
+          unwrap();
         } catch {
         }
       }
@@ -71549,7 +68407,7 @@ function parseEncryptedOrUnencryptedMessage(ctx, { contractID, serializedData, m
       return v2.signingKeyId;
     },
     get data() {
-      return unwrap2();
+      return unwrap();
     },
     get signingContractID() {
       return getContractIDfromKeyId(contractID, result.signingKeyId, state);
@@ -71717,7 +68575,7 @@ var hashRawStringArray = (...args) => {
 var randomNonce = () => {
   return base64ToBase64url(Buffer8.from(import_tweetnacl2.default.randomBytes(12)).toString("base64"));
 };
-var hash2 = (v2) => {
+var hash = (v2) => {
   return base64ToBase64url(Buffer8.from(import_tweetnacl2.default.hash(Buffer8.from(v2))).toString("base64"));
 };
 var computeCAndHc = (r, s, h2) => {
@@ -71805,7 +68663,7 @@ var computeZkppSaltRecordId = async (contractID) => {
     return null;
   }
   const recordBuf = Buffer9.concat([Buffer9.from(contractID), Buffer9.from(record2)]);
-  return hash2(recordBuf);
+  return hash(recordBuf);
 };
 var getZkppSaltRecord = async (contractID) => {
   const recordId = `_private_rid_${contractID}`;
@@ -71876,7 +68734,7 @@ var verifyChallenge = (contractID, r, s, userSig) => {
   if (!(iThen <= now) || !(iThen >= now - maxAge)) {
     return false;
   }
-  const b = hash2(r);
+  const b = hash(r);
   const sig = hashStringArray(contractID, b, s, then, challengeSecret);
   const macBuf = Buffer9.from(base64urlToBase64(mac), "base64");
   return sig.byteLength === macBuf.byteLength && timingSafeEqual(sig, macBuf);
@@ -72115,8 +68973,9 @@ init_db_errors();
 var globImport_database_ts2 = __glob({
   "./database-fs.ts": () => Promise.resolve().then(() => (init_database_fs(), database_fs_exports)),
   "./database-redis.ts": () => Promise.resolve().then(() => (init_database_redis(), database_redis_exports)),
-  "./database-router.test.ts": () => Promise.resolve().then(() => (init_database_router_test(), database_router_test_exports)),
+  "./database-router.test.ts": () => Promise.resolve().then(() => __toESM(require_database_router_test())),
   "./database-router.ts": () => Promise.resolve().then(() => (init_database_router(), database_router_exports)),
+  "./database-sqlite.test.ts": () => Promise.resolve().then(() => __toESM(require_database_sqlite_test())),
   "./database-sqlite.ts": () => Promise.resolve().then(() => (init_database_sqlite(), database_sqlite_exports))
 });
 var production = process2.env.NODE_ENV === "production";
@@ -72317,6 +69176,10 @@ var initDB = async ({ skipDbPreloading } = {}) => {
                 cache2.delete(prefix + key);
               });
             },
+            // Callers must finish iterating before issuing any write: some
+            // backends keep a cursor open for the lifetime of the generator,
+            // and the sqlite one refuses writes on a connection that is
+            // mid-query. See DatabaseBackend.iterKeys.
             "chelonia.db/iterKeys": () => {
               return currentBackend.iterKeys();
             },
@@ -72436,7 +69299,7 @@ async function uploadEntryToURL([cid, buffer], url2) {
   });
 }
 function uploadEntryToDB([cid, buffer]) {
-  return esm_default("chelonia.db/set", cid, Buffer12.from(buffer)).then(() => cid);
+  return esm_default("chelonia.db/set", cid, Buffer11.from(buffer)).then(() => cid);
 }
 function handleFetchResult2(type) {
   return async function(r) {
@@ -72496,10 +69359,10 @@ async function deploy(args) {
     const manifestText = await Deno.readTextFile(manifestPath);
     const json = JSON.parse(manifestText);
     const body = ContractBodySchema.parse(JSON.parse(json.body));
-    const dirname82 = dirname3(manifestPath);
-    toUpload.push(CONTRACT_TEXT_PREFIX + join3(dirname82, body.contract.file));
+    const dirname8 = dirname3(manifestPath);
+    toUpload.push(CONTRACT_TEXT_PREFIX + join3(dirname8, body.contract.file));
     if (body.contractSlim) {
-      toUpload.push(CONTRACT_TEXT_PREFIX + join3(dirname82, body.contractSlim.file));
+      toUpload.push(CONTRACT_TEXT_PREFIX + join3(dirname8, body.contractSlim.file));
     }
     toUpload.push(CONTRACT_MANIFEST_PREFIX + manifestPath);
   }
@@ -72766,7 +69629,7 @@ async function eventsAfter2({
 }
 async function getMessagesSince(contractID, sinceHeight, limit) {
   const readable = await esm_default("backend/db/streamEntriesAfter", contractID, sinceHeight, limit);
-  return new Promise((resolve9, reject) => {
+  return new Promise((resolve10, reject) => {
     const data = [];
     readable.on("data", (chunk) => {
       data.push(chunk);
@@ -72776,7 +69639,7 @@ async function getMessagesSince(contractID, sinceHeight, limit) {
       const events = JSON.parse(data.join("")).map((s) => {
         return JSON.parse(new TextDecoder().decode(decodeBase64(s)));
       });
-      resolve9(events);
+      resolve10(events);
     });
   });
 }
@@ -72875,7 +69738,7 @@ var module5 = {
 };
 init_functions();
 init_utils();
-async function hash22({ filename }, multicode = multicodes.RAW, internal = false) {
+async function hash2({ filename }, multicode = multicodes.RAW, internal = false) {
   const [cid] = await createEntryFromFile(filename, multicode);
   if (!internal) {
     console.log(`CID(${filename}):`, cid);
@@ -72893,7 +69756,7 @@ var module6 = {
   command: "hash <filename>",
   describe: "Computes and logs the content identifier (CID) for the given file.\nFile contents will be interpreted as raw binary data, unless the file extension is '.json'.",
   postHandler: (argv) => {
-    return void hash22(argv);
+    return void hash2(argv);
   }
 };
 var CREDITS_WORKER_TASK_TIME_INTERVAL = 3e5;
@@ -72969,8 +69832,8 @@ backend = ${tomlValue(d.database.backend)}
 # url = "redis://localhost:6379"
 `;
 };
-var init2 = async (args) => {
-  const configPath = resolve8(DEFAULT_CONFIG_PATH);
+var init = async (args) => {
+  const configPath = resolve3(DEFAULT_CONFIG_PATH);
   const serverId = crypto.randomUUID();
   const contents = buildTemplate(serverId);
   if (args.force) {
@@ -73007,7 +69870,7 @@ var module7 = {
   command: "init",
   describe: "generate a template chel.toml (including a fresh server_id)",
   postHandler: (argv) => {
-    return init2(argv);
+    return init(argv);
   }
 };
 init_esm6();
@@ -73103,7 +69966,7 @@ async function manifest(args) {
     name,
     version: version3,
     contract: {
-      hash: await hash22({ ...args, filename: contractFile }, multicodes.SHELTER_CONTRACT_TEXT, true),
+      hash: await hash2({ ...args, filename: contractFile }, multicodes.SHELTER_CONTRACT_TEXT, true),
       file: contractBasename
     },
     signingKeys: publicKeys
@@ -73111,7 +69974,7 @@ async function manifest(args) {
   if (typeof slim === "string" && slim !== "") {
     body.contractSlim = {
       file: basename3(slim),
-      hash: await hash22({ ...args, filename: slim }, multicodes.SHELTER_CONTRACT_TEXT, true)
+      hash: await hash2({ ...args, filename: slim }, multicodes.SHELTER_CONTRACT_TEXT, true)
     };
   }
   const serializedBody = JSON.stringify(body);
@@ -73172,6 +70035,7 @@ var module9 = {
   }
 };
 init_esm();
+init_backend_schemas();
 init_utils();
 init_zod();
 init_backend_schemas();
@@ -73328,19 +70192,19 @@ function validateTomlConfig(parsed) {
 }
 function collectKnownKeys(schema) {
   const map = /* @__PURE__ */ new Map();
-  const walk2 = (node, segments) => {
+  const walk = (node, segments) => {
     if (node instanceof ZodOptional) {
-      walk2(node.unwrap(), segments);
+      walk(node.unwrap(), segments);
       return;
     }
     if (!(node instanceof ZodObject)) return;
     const shape = node.shape;
     map.set(segments.join("."), Object.keys(shape));
     for (const [key, child] of Object.entries(shape)) {
-      walk2(child, [...segments, key]);
+      walk(child, [...segments, key]);
     }
   };
-  walk2(schema, []);
+  walk(schema, []);
   return map;
 }
 var knownKeysMap = collectKnownKeys(ConfigSchema);
@@ -73387,7 +70251,7 @@ async function validateConfigFile(filePath) {
   }
   let parsed;
   try {
-    parsed = parse8(raw2);
+    parsed = parse4(raw2);
   } catch (e2) {
     throw new Error(`Could not parse ${filePath}: ${e2.message}`);
   }
@@ -73397,14 +70261,40 @@ var import_npm_nconf3 = __toESM(require_nconf());
 var globImport_serve_database_ts = __glob({
   "./serve/database-fs.ts": () => Promise.resolve().then(() => (init_database_fs(), database_fs_exports)),
   "./serve/database-redis.ts": () => Promise.resolve().then(() => (init_database_redis(), database_redis_exports)),
-  "./serve/database-router.test.ts": () => Promise.resolve().then(() => (init_database_router_test(), database_router_test_exports)),
+  "./serve/database-router.test.ts": () => Promise.resolve().then(() => __toESM(require_database_router_test())),
   "./serve/database-router.ts": () => Promise.resolve().then(() => (init_database_router(), database_router_exports)),
+  "./serve/database-sqlite.test.ts": () => Promise.resolve().then(() => __toESM(require_database_sqlite_test())),
   "./serve/database-sqlite.ts": () => Promise.resolve().then(() => (init_database_sqlite(), database_sqlite_exports))
 });
+function canonicalFilepath(filepath) {
+  const resolved = resolve5(filepath);
+  try {
+    return realpathSync.native(resolved);
+  } catch {
+    return resolved;
+  }
+}
+function filepathOf(options2) {
+  return canonicalFilepath(options2?.filepath || SQLITE_DEFAULT_FILEPATH);
+}
+function sqliteFilepaths(backend, options2) {
+  if (backend === "sqlite") return [filepathOf(options2)];
+  if (backend !== "router") return [];
+  const entries = Object.values(options2 ?? {});
+  return [
+    ...new Set(
+      entries.filter((entry) => entry?.name === "sqlite").map((entry) => filepathOf(entry.options))
+    )
+  ];
+}
+function sharedSqliteFilepath(fromBackend, toBackend, fromOptions, toOptions) {
+  const targets = new Set(sqliteFilepaths(toBackend, toOptions));
+  return sqliteFilepaths(fromBackend, fromOptions).find((path9) => targets.has(path9)) ?? null;
+}
 async function migrate(args) {
   const { to } = args;
   if (args.fromConfig) {
-    const fromConfig = parse8(await readFile3(args.fromConfig, { encoding: "utf-8", flag: "r" }));
+    const fromConfig = parse4(await readFile3(args.fromConfig, { encoding: "utf-8", flag: "r" }));
     validateParsedConfig(fromConfig, args.fromConfig);
     const backend = import_npm_nconf3.default.get("database:backend");
     const fromBackend = fromConfig?.database?.backend;
@@ -73424,7 +70314,7 @@ async function migrate(args) {
   try {
     let toConfigOpts;
     if (args.toConfig) {
-      const toConfig = parse8(await readFile3(args.toConfig, { encoding: "utf-8", flag: "r" }));
+      const toConfig = parse4(await readFile3(args.toConfig, { encoding: "utf-8", flag: "r" }));
       validateParsedConfig(toConfig, args.toConfig);
       const toBackend = toConfig?.database?.backend;
       if (toBackend !== to) {
@@ -73433,6 +70323,18 @@ async function migrate(args) {
       toConfigOpts = toConfig?.database?.backendOptions?.[to] || {};
     } else {
       toConfigOpts = import_npm_nconf3.default.get(`database:backendOptions:${to}`) || {};
+    }
+    const fromBackend = import_npm_nconf3.default.get("database:backend");
+    const sharedFile = sharedSqliteFilepath(
+      fromBackend,
+      to,
+      import_npm_nconf3.default.get(`database:backendOptions:${fromBackend}`),
+      toConfigOpts
+    );
+    if (sharedFile) {
+      exit(
+        `Source and target both use the SQLite database file ${sharedFile}. Migrating a database onto itself cannot work: the source is read through a cursor that keeps its connection busy for the whole run, so writes are rejected rather than applied. Point the source or the target at a different file (for example with --from-config or --to-config).`
+      );
     }
     const Ctor = (await globImport_serve_database_ts(`./serve/database-${to}.ts`)).default;
     backendTo = new Ctor(toConfigOpts);
@@ -73564,7 +70466,7 @@ async function pin(args) {
   console.log(cyan(`\u{1F4CC} Requesting pin to version: ${version3}`));
   console.log(gray(`Manifest: ${manifestPath}`));
   await loadCheloniaConfig();
-  const fullManifestPath = join62(projectRoot, manifestPath);
+  const fullManifestPath = join6(projectRoot, manifestPath);
   if (!existsSync(fullManifestPath)) {
     exit(`Manifest file not found: ${manifestPath}`);
   }
@@ -73608,7 +70510,7 @@ async function pin(args) {
       cyan(`\u{1F4CC} Pinning ${fullContractName} to version ${manifestVersion} (first time)`)
     );
   }
-  const contractVersionDir = join62(projectRoot, "contracts", contractName, manifestVersion);
+  const contractVersionDir = join6(projectRoot, "contracts", contractName, manifestVersion);
   if (existsSync(contractVersionDir)) {
     if (!args.overwrite) {
       exit(
@@ -73654,24 +70556,24 @@ async function parseManifest(manifestPath) {
   };
 }
 async function createVersionDirectory(contractName, version3) {
-  const versionDir = join62(projectRoot, "contracts", contractName, version3);
+  const versionDir = join6(projectRoot, "contracts", contractName, version3);
   console.log(blue(`\u{1F4C1} Creating directory: contracts/${contractName}/${version3}/`));
   await mkdir3(versionDir, { recursive: true });
 }
 async function copyContractFiles(contractFiles, manifestPath, contractName, version3, args) {
-  const sourceDir = dirname42(join62(projectRoot, manifestPath));
-  const targetDir = join62(projectRoot, "contracts", contractName, version3);
+  const sourceDir = dirname42(join6(projectRoot, manifestPath));
+  const targetDir = join6(projectRoot, "contracts", contractName, version3);
   console.log(
     gray(
       `\u{1F4CB} Copying files from manifest: ${contractFiles.main}${contractFiles.slim ? `, ${contractFiles.slim}` : ""}, manifest`
     )
   );
-  const mainSource = join62(sourceDir, contractFiles.main);
-  const mainTarget = join62(targetDir, contractFiles.main);
+  const mainSource = join6(sourceDir, contractFiles.main);
+  const mainTarget = join6(targetDir, contractFiles.main);
   await copyFileIfNeeded(mainSource, mainTarget, contractFiles.main, args);
   if (contractFiles.slim) {
-    const slimSource = join62(sourceDir, contractFiles.slim);
-    const slimTarget = join62(targetDir, contractFiles.slim);
+    const slimSource = join6(sourceDir, contractFiles.slim);
+    const slimTarget = join6(targetDir, contractFiles.slim);
     try {
       await copyFileIfNeeded(slimSource, slimTarget, contractFiles.slim, args);
     } catch (error2) {
@@ -73679,8 +70581,8 @@ async function copyContractFiles(contractFiles, manifestPath, contractName, vers
       console.error(yellow(`\u26A0\uFE0F  Could not copy slim file: ${errorMessage2}`));
     }
   }
-  const manifestSource = join62(projectRoot, manifestPath);
-  const manifestTarget = join62(targetDir, basename42(manifestPath));
+  const manifestSource = join6(projectRoot, manifestPath);
+  const manifestTarget = join6(targetDir, basename42(manifestPath));
   await copyFileIfNeeded(manifestSource, manifestTarget, basename42(manifestPath), args);
 }
 async function copyFileIfNeeded(sourcePath, targetPath, fileName, args) {
@@ -73700,7 +70602,7 @@ async function copyFileIfNeeded(sourcePath, targetPath, fileName, args) {
   await copyFile(sourcePath, targetPath);
 }
 async function loadCheloniaConfig() {
-  const configPath = import_npm_nconf4.default.get("appManifest") || join62(projectRoot, "chelonia.json");
+  const configPath = import_npm_nconf4.default.get("appManifest") || join6(projectRoot, "chelonia.json");
   cheloniaConfig = { contracts: {} };
   if (existsSync(configPath)) {
     try {
@@ -73724,7 +70626,7 @@ async function updateCheloniaConfig(fullContractName, contractName, version3, ma
     version: version3,
     path: pinnedManifestPath
   };
-  const configPath = import_npm_nconf4.default.get("appManifest") || join62(projectRoot, "chelonia.json");
+  const configPath = import_npm_nconf4.default.get("appManifest") || join6(projectRoot, "chelonia.json");
   const configContent = JSON.stringify(cheloniaConfig, null, 2) + "\n";
   await writeFile2(configPath, configContent, "utf8");
   console.log(green("\u2705 Saved chelonia.json"));
@@ -74624,7 +71526,7 @@ var setDefaultContentType = (contentType, headers) => {
     ...headers
   };
 };
-var createResponseInstance = (body, init22) => new Response(body, init22);
+var createResponseInstance = (body, init2) => new Response(body, init2);
 var Context = class {
   #rawRequest;
   #req;
@@ -75758,8 +72660,8 @@ var SmartRouter = class {
   name = "SmartRouter";
   #routers = [];
   #routes = [];
-  constructor(init22) {
-    this.#routers = init22.routers;
+  constructor(init2) {
+    this.#routers = init2.routers;
   }
   add(method, path9, handler) {
     if (!this.#routes) {
@@ -76138,14 +73040,14 @@ var newHeadersFromIncoming = (incoming) => {
 };
 var wrapBodyStream = Symbol("wrapBodyStream");
 var newRequestFromIncoming = (method, url2, headers, incoming, abortController) => {
-  const init22 = {
+  const init2 = {
     method,
     headers,
     signal: abortController.signal
   };
   if (method === "TRACE") {
-    init22.method = "GET";
-    const req = new Request2(url2, init22);
+    init2.method = "GET";
+    const req = new Request2(url2, init2);
     Object.defineProperty(req, "method", {
       get() {
         return "TRACE";
@@ -76155,7 +73057,7 @@ var newRequestFromIncoming = (method, url2, headers, incoming, abortController) 
   }
   if (!(method === "GET" || method === "HEAD")) {
     if ("rawBody" in incoming && incoming.rawBody instanceof Buffer) {
-      init22.body = new ReadableStream({
+      init2.body = new ReadableStream({
         start(controller) {
           controller.enqueue(incoming.rawBody);
           controller.close();
@@ -76163,7 +73065,7 @@ var newRequestFromIncoming = (method, url2, headers, incoming, abortController) 
       });
     } else if (incoming[wrapBodyStream]) {
       let reader;
-      init22.body = new ReadableStream({
+      init2.body = new ReadableStream({
         async pull(controller) {
           try {
             reader ||= Readable2.toWeb(incoming).getReader();
@@ -76179,10 +73081,10 @@ var newRequestFromIncoming = (method, url2, headers, incoming, abortController) 
         }
       });
     } else {
-      init22.body = Readable2.toWeb(incoming);
+      init2.body = Readable2.toWeb(incoming);
     }
   }
-  return new Request2(url2, init22);
+  return new Request2(url2, init2);
 };
 var getRequestCache = Symbol("getRequestCache");
 var requestCache = Symbol("requestCache");
@@ -76303,25 +73205,25 @@ var Response2 = class _Response {
     delete this[cacheKey];
     return this[responseCache] ||= new GlobalResponse(this.#body, this.#init);
   }
-  constructor(body, init22) {
+  constructor(body, init2) {
     let headers;
     this.#body = body;
-    if (init22 instanceof _Response) {
-      const cachedGlobalResponse = init22[responseCache];
+    if (init2 instanceof _Response) {
+      const cachedGlobalResponse = init2[responseCache];
       if (cachedGlobalResponse) {
         this.#init = cachedGlobalResponse;
         this[getResponseCache]();
         return;
       } else {
-        this.#init = init22.#init;
-        headers = new Headers(init22.#init.headers);
+        this.#init = init2.#init;
+        headers = new Headers(init2.#init.headers);
       }
     } else {
-      this.#init = init22;
+      this.#init = init2;
     }
     if (typeof body === "string" || typeof body?.getReader !== "undefined" || body instanceof Blob || body instanceof Uint8Array) {
       ;
-      this[cacheKey] = [init22?.status || 200, body, headers || init22?.headers];
+      this[cacheKey] = [init2?.status || 200, body, headers || init2?.headers];
     }
   }
   get headers() {
@@ -76587,7 +73489,7 @@ var responseViaResponseObject = async (res, outgoing, options2 = {}) => {
         });
         if (!chunk) {
           if (i2 === 1) {
-            await new Promise((resolve9) => setTimeout(resolve9));
+            await new Promise((resolve10) => setTimeout(resolve10));
             maxReadCount = 3;
             continue;
           }
@@ -76727,47 +73629,47 @@ var createAdaptorServer = (options2) => {
 };
 init_esm7();
 init_esm();
-Object.defineProperties(Buffer13, {
+Object.defineProperties(Buffer12, {
   [serdesDeserializeSymbol]: {
-    value(buf2) {
-      return Buffer13.from(buf2);
+    value(buf) {
+      return Buffer12.from(buf);
     }
   },
   [serdesSerializeSymbol]: {
-    value(buf2) {
-      return new Uint8Array(buf2.buffer, buf2.byteOffset, buf2.byteLength);
+    value(buf) {
+      return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
     }
   },
   [serdesTagSymbol]: {
     value: "node:buffer"
   }
 });
-deserializer.register(Buffer13);
+deserializer.register(Buffer12);
 var createWorker = (path9) => {
   let worker;
   let ready;
   const launchWorker = () => {
     worker = new Worker(new URL(path9, import.meta.url), { type: "module" });
-    return new Promise((resolve9, reject) => {
+    return new Promise((resolve10, reject) => {
       const msgHandler = (event) => {
         const msg = event.data;
         if (msg === "ready") {
           worker.removeEventListener("error", reject, { capture: false });
           worker.addEventListener("error", (ev) => {
             const e2 = ev.error;
-            console.error(e2, `Running worker ${basename52(path9)} terminated. Attempting relaunch...`);
+            console.error(e2, `Running worker ${basename5(path9)} terminated. Attempting relaunch...`);
             worker.removeEventListener("message", msgHandler, false);
             ready = launchWorker().catch((e3) => {
-              console.error(e3, `Error on worker ${basename52(path9)} relaunch`);
+              console.error(e3, `Error on worker ${basename5(path9)} relaunch`);
               process5.exit(1);
             });
           }, false);
-          resolve9();
+          resolve10();
         } else if (msg && typeof msg === "object" && msg.type === "init-error") {
           worker.removeEventListener("message", msgHandler, false);
           worker.removeEventListener("error", reject, { capture: false });
           worker.terminate();
-          reject(new Error(`Worker ${basename52(path9)} failed to initialize: ${String(msg.error)}`));
+          reject(new Error(`Worker ${basename5(path9)} failed to initialize: ${String(msg.error)}`));
         } else if (msg && typeof msg === "object" && msg.type === "sbp" && Array.isArray(msg.data) && String(msg.data[0]).startsWith("chelonia.db/")) {
           const port = msg.port;
           Promise.try(() => esm_default(...deserializer(msg.data))).then((r) => {
@@ -76787,7 +73689,7 @@ var createWorker = (path9) => {
   };
   ready = launchWorker();
   const rpcSbp = (...args) => {
-    return ready.then(() => new Promise((resolve9, reject) => {
+    return ready.then(() => new Promise((resolve10, reject) => {
       const mc = new MessageChannel();
       const cleanup = /* @__PURE__ */ ((worker2) => () => {
         worker2.removeEventListener("error", reject, { capture: true });
@@ -76798,7 +73700,7 @@ var createWorker = (path9) => {
       mc.port2.onmessage = (event) => {
         cleanup();
         const [success, result] = event.data;
-        if (success) return resolve9(result);
+        if (success) return resolve10(result);
         reject(result);
       };
       mc.port2.onmessageerror = () => {
@@ -77350,7 +74252,7 @@ var assertContractSourcesWithinCap = async (hashes, maxBytes) => {
     if (typeof source !== "string") {
       throw new HTTPException(422, { message: "Missing contract source" });
     }
-    contractSizeBytes += Buffer14.byteLength(source);
+    contractSizeBytes += Buffer13.byteLength(source);
     if (contractSizeBytes > maxBytes) {
       throw new HTTPException(413, { message: "Contract source exceeds size limit" });
     }
@@ -77616,12 +74518,12 @@ function safePathWithin(base2, subpath) {
   return resolved;
 }
 function serveAsset(c, subpath, assetsDir) {
-  const basename72 = path6.basename(subpath);
+  const basename7 = path6.basename(subpath);
   const filePath = safePathWithin(assetsDir, subpath);
   if (!filePath) return Promise.resolve(notFoundNoCache(c));
   return Deno.readFile(filePath).then((file) => {
     const headers = {};
-    if (basename72.includes("-cached")) {
+    if (basename7.includes("-cached")) {
       headers["Cache-Control"] = "public,max-age=31536000,immutable";
     }
     if (subpath.includes("js/sw-")) {
@@ -77683,7 +74585,7 @@ function registerRoutes(app) {
           }
           const credentials = c.get("credentials");
           if (!credentials?.billableContractID && deserializedHEAD.isFirstMessage) {
-            if (Buffer15.byteLength(payload) > SIGNUP_MAX_FIRST_MESSAGE_BYTES) {
+            if (Buffer14.byteLength(payload) > SIGNUP_MAX_FIRST_MESSAGE_BYTES) {
               throw new HTTPException(413, { message: "First message exceeds size limit" });
             }
             if (booleanConfig("server:signup:disabled")) {
@@ -77731,7 +74633,7 @@ function registerRoutes(app) {
               await esm_default("chelonia.db/set", `_private_deletionTokenDgst_${deserializedHEAD.contractID}`, deletionTokenDgst);
             }
           }
-          await esm_default("backend/server/updateSize", deserializedHEAD.contractID, Buffer15.byteLength(payload), deserializedHEAD.isFirstMessage && !credentials?.billableContractID ? deserializedHEAD.contractID : void 0);
+          await esm_default("backend/server/updateSize", deserializedHEAD.contractID, Buffer14.byteLength(payload), deserializedHEAD.isFirstMessage && !credentials?.billableContractID ? deserializedHEAD.contractID : void 0);
         } catch (err) {
           if (err instanceof HTTPException) throw err;
           console.error(err, import_npm_chalk.default.bold.yellow(err.name));
@@ -77864,8 +74766,8 @@ function registerRoutes(app) {
   });
   app.post("/streams-test", async function(c) {
     const raw2 = await c.req.arrayBuffer();
-    const buf2 = Buffer15.from(raw2);
-    if (buf2.byteLength === 2 && buf2.toString() === "ok") {
+    const buf = Buffer14.from(raw2);
+    if (buf.byteLength === 2 && buf.toString() === "ok") {
       return c.body(null, 204);
     } else {
       throw new HTTPException(400);
@@ -77883,7 +74785,7 @@ function registerRoutes(app) {
         if (!data || Array.isArray(data)) throw new HTTPException(400, { message: "missing data" });
         const parsed = maybeParseCID(hash3);
         if (!parsed) throw new HTTPException(400, { message: "invalid hash" });
-        const dataStringOrBytes = typeof data === "string" ? data : Buffer15.from(await data.bytes()).toString();
+        const dataStringOrBytes = typeof data === "string" ? data : Buffer14.from(await data.bytes()).toString();
         const ourHash = createCID(dataStringOrBytes, parsed.code);
         if (ourHash !== hash3) {
           console.error(`hash(${hash3}) != ourHash(${ourHash})`);
@@ -77919,7 +74821,7 @@ function registerRoutes(app) {
         if (!manifestFile) throw new HTTPException(400, { message: "missing manifest" });
         if (manifestFile.name !== "manifest.json") throw new HTTPException(400, { message: "wrong manifest filename" });
         const manifestPayload = new Uint8Array(await manifestFile.arrayBuffer());
-        const manifestText = Buffer15.from(manifestPayload).toString();
+        const manifestText = Buffer14.from(manifestPayload).toString();
         const manifest2 = (() => {
           try {
             return JSON.parse(manifestText);
@@ -77967,8 +74869,8 @@ function registerRoutes(app) {
             throw new Error(`Chunk ${cid} already exists`);
           }
         }));
-        await Promise.all(chunks.map(([cid, data]) => esm_default("chelonia.db/set", cid, Buffer15.from(data))));
-        await esm_default("chelonia.db/set", manifestHash, Buffer15.from(manifestPayload));
+        await Promise.all(chunks.map(([cid, data]) => esm_default("chelonia.db/set", cid, Buffer14.from(data))));
+        await esm_default("chelonia.db/set", manifestHash, Buffer14.from(manifestPayload));
         await esm_default("backend/server/saveOwner", credentials.billableContractID, manifestHash);
         const size = manifest2.size + manifestPayload.byteLength;
         await esm_default("backend/server/updateSize", manifestHash, size);
@@ -78126,10 +75028,10 @@ function registerRoutes(app) {
       if (!ctEq(credentials.billableContractID, contractID)) {
         throw new HTTPException(401);
       }
-      const payloadBuffer = Buffer15.from(await c.req.arrayBuffer());
+      const payloadBuffer = Buffer14.from(await c.req.arrayBuffer());
       return esm_default("chelonia/queueInvocation", contractID, async () => {
         const existingRaw = await esm_default("chelonia.db/get", `any:_private_kv_${contractID}_${key}`);
-        const existing = existingRaw != null && !Buffer15.isBuffer(existingRaw) ? Buffer15.from(existingRaw) : existingRaw;
+        const existing = existingRaw != null && !Buffer14.isBuffer(existingRaw) ? Buffer14.from(existingRaw) : existingRaw;
         const expectedEtag = c.req.header("if-match");
         if (!expectedEtag) {
           throw new HTTPException(400, { message: "if-match is required" });
@@ -78192,7 +75094,7 @@ function registerRoutes(app) {
         throw new HTTPException(401);
       }
       const resultRaw = await esm_default("chelonia.db/get", `any:_private_kv_${contractID}_${key}`);
-      const result = resultRaw != null && !Buffer15.isBuffer(resultRaw) ? Buffer15.from(resultRaw) : resultRaw;
+      const result = resultRaw != null && !Buffer14.isBuffer(resultRaw) ? Buffer14.from(resultRaw) : resultRaw;
       if (!result) {
         return notFoundNoCache(c);
       }
@@ -78483,10 +75385,10 @@ var subscriptionInfoWrapper = (subscriptionId, subscriptionInfo, extra) => {
         return function() {
           if ((count | 0) === 0) {
             if (!salt) {
-              salt = Buffer16.from(this.keys.auth, "base64url");
+              salt = Buffer15.from(this.keys.auth, "base64url");
             }
             if (!uaPublic) {
-              uaPublic = Buffer16.from(this.keys.p256dh, "base64url");
+              uaPublic = Buffer15.from(this.keys.p256dh, "base64url");
             }
             resultPromise = rfc8291Ikm_default(uaPublic, salt);
             count = 1;
@@ -78522,7 +75424,7 @@ var encryptPayload = async (subscription, data) => {
       if (done) break;
       chunks.push(new Uint8Array(value));
     }
-    return Buffer16.concat(chunks);
+    return Buffer15.concat(chunks);
   });
 };
 var postEvent = async (subscription, event) => {
@@ -78570,7 +75472,7 @@ var pushServerActionhandlers = {
     const { applicationServerKey, settings, subscriptionInfo } = payload;
     if (applicationServerKey) {
       const ourVapidPublicKey = getVapidPublicKey();
-      const theirVapidPublicKey = Buffer16.from(applicationServerKey, "base64").toString("base64url");
+      const theirVapidPublicKey = Buffer15.from(applicationServerKey, "base64").toString("base64url");
       if (ourVapidPublicKey !== theirVapidPublicKey) {
         socket.send(createMessage(REQUEST_TYPE.PUSH_ACTION, { type: PUSH_SERVER_ACTION_TYPE.SEND_PUBLIC_KEY, data: getVapidPublicKey() }));
         console.warn({ ourVapidPublicKey, theirVapidPublicKey }, "Refusing to store subscription because the associated public VAPID key does not match ours");
@@ -78637,7 +75539,7 @@ var wrapper_default = import_websocket.default;
 var isPushSubscriptionInfo = (x3) => {
   return has(x3, "endpoint");
 };
-var { bold: bold2 } = import_npm_chalk2.default;
+var { bold } = import_npm_chalk2.default;
 var { PING, PONG, PUB, SUB, UNSUB, KV_FILTER } = NOTIFICATION_TYPE;
 var { ERROR, OK } = RESPONSE_TYPE;
 var defaultOptions3 = {
@@ -78652,9 +75554,9 @@ var generateSocketID = /* @__PURE__ */ (() => {
   return (debugID) => String(counter++) + (debugID ? "-" + debugID : "");
 })();
 var log = logger_default.info.bind(logger_default, tag2);
-log.bold = (...args) => logger_default.debug(bold2(tag2, ...args));
+log.bold = (...args) => logger_default.debug(bold(tag2, ...args));
 log.debug = logger_default.debug.bind(logger_default, tag2);
-log.error = (error2, ...args) => logger_default.error(error2, bold2.red(tag2, ...args));
+log.error = (error2, ...args) => logger_default.error(error2, bold.red(tag2, ...args));
 function createErrorResponse(data) {
   return JSON.stringify({ type: ERROR, data });
 }
@@ -79228,7 +76130,7 @@ async function startServer() {
   assertServerIdConfigured();
   const configuredServerId = import_npm_nconf8.default.get("server_id");
   const reclaimForeignSubscriptions = !!import_npm_nconf8.default.get("server:reclaimForeignSubscriptions");
-  const appManifest = import_npm_nconf8.default.get("appManifest") || join72(import_npm_nconf8.default.get("server:appDir") || process10.cwd(), "chelonia.json");
+  const appManifest = import_npm_nconf8.default.get("appManifest") || join7(import_npm_nconf8.default.get("server:appDir") || process10.cwd(), "chelonia.json");
   const ARCHIVE_MODE = import_npm_nconf8.default.get("server:archiveMode");
   const host = import_npm_nconf8.default.get("server:host") || "0.0.0.0";
   const port = import_npm_nconf8.default.get("server:port") ?? 8e3;
@@ -79455,13 +76357,13 @@ async function startServer() {
       });
     });
   }, 1 * 60 * 60 * 1e3);
-  const uri = await new Promise((resolve9, reject) => {
+  const uri = await new Promise((resolve10, reject) => {
     currentHttpServer.listen(port, host, () => {
       const addr = currentHttpServer.address();
       const uri2 = `http://${addr.address}:${addr.port}`;
       console.info("Backend server running at:", uri2);
       esm_default("okTurtles.events/emit", SERVER_RUNNING, { info: { uri: uri2 } });
-      resolve9(uri2);
+      resolve10(uri2);
     }).once("error", reject);
   });
   return { uri };
@@ -79484,12 +76386,12 @@ async function stopServer() {
       esm_default("okTurtles.data/delete", PUBSUB_INSTANCE);
     }
     if (currentHttpServer) {
-      await new Promise((resolve9, reject) => {
+      await new Promise((resolve10, reject) => {
         currentHttpServer.close((err) => {
           if (err) {
             reject(err);
           } else {
-            resolve9();
+            resolve10();
           }
         });
       });
@@ -79584,11 +76486,11 @@ async function startServer2(options2 = {}) {
     installGlobalExceptionHandlers();
     installSignalHandlers();
   }
-  return await new Promise((resolve9, reject) => {
+  return await new Promise((resolve10, reject) => {
     esm_default("okTurtles.events/on", SERVER_RUNNING, function onRunning(info) {
       esm_default("okTurtles.events/off", SERVER_RUNNING, onRunning);
       console.info(import_npm_chalk4.default.bold("backend startup sequence complete."));
-      resolve9({ uri: info.info.uri });
+      resolve10({ uri: info.info.uri });
     });
     startServer().catch(reject);
   });
@@ -79777,7 +76679,7 @@ var serveStatic2 = (options2) => {
     return serveStatic({
       ...options2,
       getContent,
-      join: join82,
+      join: join8,
       isDir
     })(c, next);
   };
@@ -79795,11 +76697,11 @@ var SSG_DISABLED_RESPONSE = (() => {
 })();
 var WSContext = class {
   #init;
-  constructor(init22) {
-    this.#init = init22;
-    this.raw = init22.raw;
-    this.url = init22.url ? new URL(init22.url) : null;
-    this.protocol = init22.protocol ?? null;
+  constructor(init2) {
+    this.#init = init2;
+    this.raw = init2.raw;
+    this.url = init2.url ? new URL(init2.url) : null;
+    this.protocol = init2.protocol ?? null;
   }
   send(source, options2) {
     this.#init.send(source, options2 ?? {});
@@ -79889,12 +76791,12 @@ async function startDashboard() {
     return indexResponse || c.text("Not Found", 404);
   });
   const server = createAdaptorServer({ fetch: app.fetch });
-  await new Promise((resolve9, reject) => {
+  await new Promise((resolve10, reject) => {
     server.listen(port, host, () => {
       const addr = server.address();
       const uri = `http://${addr.address}:${addr.port}`;
       console.info("Dashboard server running at:", uri);
-      resolve9(uri);
+      resolve10(uri);
     }).once("error", reject);
   });
   return server;
@@ -80109,7 +77011,7 @@ var verifySignature2 = async (args, internal = false) => {
   if (!body.contract?.file) {
     exit("Invalid manifest: no contract file", internal);
   }
-  const computedHash = await hash22(
+  const computedHash = await hash2(
     { ...args, filename: join3(parsedFilepath.dir, body.contract.file) },
     multicodes.SHELTER_CONTRACT_TEXT,
     true
@@ -80121,7 +77023,7 @@ var verifySignature2 = async (args, internal = false) => {
     );
   }
   if (body.contractSlim) {
-    const computedHash2 = await hash22(
+    const computedHash2 = await hash2(
       { ...args, filename: join3(parsedFilepath.dir, body.contractSlim.file) },
       multicodes.SHELTER_CONTRACT_TEXT,
       true
@@ -80446,15 +77348,15 @@ function ui(opts) {
   });
 }
 function sync_default(start, callback) {
-  let dir = resolve52(".", start);
+  let dir = resolve6(".", start);
   let tmp, stats = statSync(dir);
   if (!stats.isDirectory()) {
-    dir = dirname62(dir);
+    dir = dirname6(dir);
   }
   while (true) {
     tmp = callback(dir, readdirSync(dir));
-    if (tmp) return resolve52(dir, tmp);
-    dir = dirname62(tmp = dir);
+    if (tmp) return resolve6(dir, tmp);
+    dir = dirname6(tmp = dir);
     if (tmp === dir) break;
   }
 }
@@ -81396,7 +78298,7 @@ var parser2 = new YargsParser({
   },
   format: format22,
   normalize: normalize22,
-  resolve: resolve62,
+  resolve: resolve7,
   // TODO: figure  out a  way to combine ESM and CJS coverage, such  that
   // we can exercise all the lines below:
   require: (path9) => {
@@ -81449,8 +78351,8 @@ var node_default = {
     readFileSync: readFileSync2,
     writeFile: writeFile3
   },
-  format: format32,
-  resolve: resolve72,
+  format: format3,
+  resolve: resolve8,
   exists: (file) => {
     try {
       return statSync2(file).isFile();
@@ -81644,11 +78546,11 @@ var esm_default5 = {
   mainFilename: mainFilename || process.cwd(),
   Parser: lib_default,
   path: {
-    basename: basename62,
-    dirname: dirname72,
-    extname: extname8,
+    basename: basename6,
+    dirname: dirname7,
+    extname: extname3,
     relative: relative22,
-    resolve: resolve82
+    resolve: resolve9
   },
   process: {
     argv: () => process.argv,
@@ -81669,7 +78571,7 @@ var esm_default5 = {
     return [...str].length;
   },
   y18n: y18n_default({
-    directory: resolve82(__dirname2, "../../../locales"),
+    directory: resolve9(__dirname2, "../../../locales"),
     updateFiles: false
   })
 };
@@ -83708,7 +80610,7 @@ function Yargs(processArgs = [], cwd = shim3.process.cwd(), parentRequire) {
   }
   let parseFn = null;
   let parseContext = null;
-  self2.parse = function parse62(args, shortCircuit, _parseFn) {
+  self2.parse = function parse6(args, shortCircuit, _parseFn) {
     argsert("[string|array] [function|boolean|object] [function]", [args, shortCircuit, _parseFn], arguments.length);
     freeze();
     if (typeof args === "undefined") {
@@ -84311,7 +81213,7 @@ var parseConfig = async () => {
   import_npm_nconf11.default.env({
     separator: "__",
     parseValues: true
-  }).argv(parseArgs_default()).file({ file: "chel.toml", format: { parse: parse8, stringify } }).defaults(nconfDefaults);
+  }).argv(parseArgs_default()).file({ file: "chel.toml", format: { parse: parse4, stringify } }).defaults(nconfDefaults);
   if (handlerState.validatesConfig) {
     await validateConfigFile("chel.toml");
   }

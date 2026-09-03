@@ -285,6 +285,10 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
                 cache.delete(prefix + key)
               })
             },
+            // Callers must finish iterating before issuing any write: some
+            // backends keep a cursor open for the lifetime of the generator,
+            // and the sqlite one refuses writes on a connection that is
+            // mid-query. See DatabaseBackend.iterKeys.
             'chelonia.db/iterKeys': () => {
               return currentBackend!.iterKeys()
             },

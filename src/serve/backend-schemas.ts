@@ -8,6 +8,14 @@
 
 import * as z from 'npm:zod'
 
+// Where the sqlite backend puts its database when no `filepath` is configured.
+// Lives here rather than in the backend so the two places that need it cannot
+// drift apart: `SqliteBackend`'s `dataFolder`/`filename` field defaults derive
+// from it, and `chel migrate`'s same-file guard resolves an omitted `filepath`
+// through it to compare paths the way the backend would. A guard comparing
+// against a stale copy of this string would silently stop firing.
+export const SQLITE_DEFAULT_FILEPATH = 'data/chelonia.db'
+
 export const FsOptionsSchema = z.strictObject({
   dirname: z.optional(z.string()),
   depth: z.optional(z.number().int().min(0)),

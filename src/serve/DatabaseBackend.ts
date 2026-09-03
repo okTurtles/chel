@@ -9,6 +9,11 @@ export default abstract class DatabaseBackend {
   abstract writeData (key: string, value: Buffer | string): Promise<void>
   abstract deleteData (key: string): Promise<void>
   abstract close (): Promise<void> | void
+  // Walks every key currently stored. Implementations may hold a live cursor
+  // for the lifetime of the generator, so callers must not write through the
+  // same backend while iterating: the sqlite backend rejects such a write
+  // outright, and the others give no ordering guarantee for keys added or
+  // removed mid-walk. Drain the iterator (or collect the keys) first.
   abstract iterKeys (): AsyncGenerator<string>
   abstract keyCount (): Promise<number>
 
