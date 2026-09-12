@@ -75059,6 +75059,7 @@ var CREDITS_WORKER_TASK_TIME_INTERVAL = 3e5;
 var OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL = 3e4;
 var SERVER_INSTANCE = "@instance/server";
 var PUBSUB_INSTANCE = "@instance/pubsub";
+init_esm();
 init_esm4();
 init_functions();
 init_esm();
@@ -75357,6 +75358,7 @@ var isPushSubscriptionInfo = (x3) => {
 var { bold } = import_npm_chalk2.default;
 var { PING, PONG, PUB, SUB, UNSUB, KV_FILTER } = NOTIFICATION_TYPE;
 var { ERROR, OK } = RESPONSE_TYPE;
+var RSI = "rsi";
 var defaultOptions3 = {
   logPingRounds: process8.env.NODE_ENV !== "production" && !process8.env.CI,
   logPongMessages: false,
@@ -75547,6 +75549,22 @@ var defaultMessageHandlers2 = {
     const subscribers = server.subscribersByChannelID[msg.channelID];
     server.broadcast(msg, { to: subscribers ?? [] });
   },
+  async [RSI]({ id, data }) {
+    const socket = this;
+    if (!Array.isArray(data)) {
+      return socket.send(JSON.stringify(
+        { type: "error", to: id, data: 'Field "payload" must be a [selector, ...args] array.' }
+      ));
+    }
+    const [selector, ...args] = data;
+    try {
+      const rv = await esm_default("pubsub/" + selector, ...args);
+      const response = rv === void 0 ? { type: "ok", to: id } : { type: "ok", to: id, data: rv };
+      socket.send(JSON.stringify(response));
+    } catch (err) {
+      socket.send(JSON.stringify({ type: "error", to: id, data: err?.message ?? "" }));
+    }
+  },
   [SUB]({ channelID, kvFilter }) {
     const socket = this;
     const { server } = this;
@@ -75675,6 +75693,19 @@ var publicMethods2 = {
   }
 };
 var import_npm_nconf7 = __toESM(require_nconf());
+init_esm();
+esm_default("sbp/selectors/register", {
+  "pubsub/*"(selector, ...args) {
+    console.log(`Unknown selector '${selector}' called with parameters:`, args);
+  },
+  "pubsub/test/addNumbers"(...args) {
+    console.log("[pubsub] Adding numbers:", ...args);
+    return args.reduce((acc, arg) => acc + Number(arg), 0);
+  },
+  "pubsub/test/say"(...args) {
+    console.log("[pubsub] Saying:", ...args);
+  }
+});
 var currentApp = null;
 var currentHttpServer = null;
 var currentOwnerSizeTotalWorker = void 0;

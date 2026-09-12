@@ -4,6 +4,7 @@
 
 import { Buffer } from 'node:buffer'
 import process from 'node:process'
+import sbp from 'npm:@sbp/sbp'
 import { has } from 'npm:turtledash'
 
 /*
@@ -12,7 +13,6 @@ import { has } from 'npm:turtledash'
  */
 
 import {
-  createClient,
   createKvMessage,
   createMessage,
   messageParser,
@@ -46,6 +46,8 @@ const { bold } = chalk
 
 const { PING, PONG, PUB, SUB, UNSUB, KV_FILTER } = NOTIFICATION_TYPE
 const { ERROR, OK } = RESPONSE_TYPE
+// For 'remote SBP invocation'.
+const RSI = 'rsi'
 
 const defaultOptions = {
   logPingRounds: process.env.NODE_ENV !== 'production' && !process.env.CI,
@@ -76,7 +78,7 @@ log.error = (error: unknown, ...args: unknown[]) => logger.error(error, bold.red
 // ====== API ====== //
 
 // Re-export some useful things from the shared module.
-export { createClient, createKvMessage, createMessage, NOTIFICATION_TYPE, REQUEST_TYPE, RESPONSE_TYPE }
+export { createKvMessage, createMessage, NOTIFICATION_TYPE, REQUEST_TYPE, RESPONSE_TYPE }
 
 export function createErrorResponse (data: JSONType): string {
   return JSON.stringify({ type: ERROR, data })
@@ -169,6 +171,7 @@ interface PushActionMessage {
 interface MessageHandlers {
   [PONG]: (this: WS) => void;
   [PUB]: (this: WS, msg: PubMessage) => void;
+  [RSI]: (this: WS, msg: Message) => Promise<void>;
   [SUB]: (this: WS, msg: SubMessage) => void;
   [KV_FILTER]: (this: WS, msg: SubMessage) => void;
   [UNSUB]: (this: WS, msg: UnsubMessage) => void;
@@ -402,6 +405,23 @@ const defaultMessageHandlers: Partial<MessageHandlers> = {
     const { server } = this
     const subscribers = server.subscribersByChannelID[msg.channelID]
     server.broadcast(msg, { to: subscribers ?? [] })
+  },
+
+  async [RSI] ({ id, data }) {
+    const socket = this
+    if (!Array.isArray(data)) {
+      return socket.send(JSON.stringify(
+        { type: 'error', to: id, data: 'Field "payload" must be a [selector, ...args] array.' }
+      ))
+    }
+    const [selector, ...args] = data
+    try {
+      const rv = await sbp('pubsub/' + selector, ...args)
+      const response = rv === undefined ? { type: 'ok', to: id } : { type: 'ok', to: id, data: rv }
+      socket.send(JSON.stringify(response))
+    } catch (err) {
+      socket.send(JSON.stringify({ type: 'error', to: id, data: (err as Error)?.message ?? '' }))
+    }
   },
 
   [SUB] ({ channelID, kvFilter }: SubMessage) {
