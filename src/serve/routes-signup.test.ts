@@ -17,7 +17,7 @@ import {
 // The test server runs with the shipped defaults for these caps (see
 // `startTestServer`), so the steps below follow whatever they are set to rather
 // than restating the numbers.
-const { maxFirstMessageBytes, maxContractSizeBytes } = nconfDefaults.server.signup
+const { maxFirstMessageBytes } = nconfDefaults.server.signup
 
 // Tests for unattributed (ownerless) first messages, i.e. identity contract
 // registration. Registration used to require the manifest name to be exactly
@@ -99,28 +99,6 @@ Deno.test({
         if ((billableEntities as string | null)?.split('\x00').includes(contractID)) {
           throw new Error('Expected over-sized message to not be registered')
         }
-      })
-
-      await t.step('contract source over the size cap returns 413', async () => {
-        const { serialized } = await createTestContractRegistration({
-          name: 'com.example/too-large-source',
-          sourceBytes: maxContractSizeBytes + 1
-        })
-        const res = await postEvent(serialized)
-        await res.body?.cancel()
-        if (res.status !== 413) throw new Error(`Expected 413 but got ${res.status}`)
-      })
-
-      await t.step('slim contract source counts toward the size cap', async () => {
-        // Each source is under the cap on its own; only their sum exceeds it
-        const { serialized } = await createTestContractRegistration({
-          name: 'com.example/too-large-total',
-          sourceBytes: maxContractSizeBytes / 2 + 1,
-          slimSourceBytes: maxContractSizeBytes / 2 + 1
-        })
-        const res = await postEvent(serialized)
-        await res.body?.cancel()
-        if (res.status !== 413) throw new Error(`Expected 413 but got ${res.status}`)
       })
 
       await t.step('a manifest with an unusable contractSlim entry returns 422', async () => {

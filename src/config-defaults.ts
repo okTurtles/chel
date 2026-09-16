@@ -15,7 +15,6 @@ export const nconfDefaults = {
       // identity contract registration. They bound how much data can be written
       // 'for free'; see POST /event in src/serve/routes.ts.
       maxFirstMessageBytes: 5 * 1024,
-      maxContractSizeBytes: 500 * 1024,
       limit: {
         disabled: false,
         minute: 2,

@@ -48,7 +48,6 @@ dashboardPort = ${tomlValue(d.server.dashboardPort)}
 # 'maxFirstMessageBytes' cannot exceed ${tomlValue(MAX_EVENT_BODY_BYTES)}, the request body limit
 # 'POST /event' enforces before these caps are consulted.
 # maxFirstMessageBytes = ${tomlValue(d.server.signup.maxFirstMessageBytes)}
-# maxContractSizeBytes = ${tomlValue(d.server.signup.maxContractSizeBytes)}
 
 [server.signup.limit]
 # Registrations allowed per IP, per window. Enforced only when NODE_ENV is

@@ -26,7 +26,6 @@ Deno.test({
           signup: {
             disabled: false,
             maxFirstMessageBytes: 5120,
-            maxContractSizeBytes: 512000,
             limit: { disabled: false, minute: 2, hour: 10, day: 50 }
           },
           billing: { freeAllowanceBytes: 10485760 },
@@ -124,7 +123,7 @@ Deno.test({
     })
 
     await t.step('errors on a zero signup size cap (use signup.disabled instead)', () => {
-      for (const key of ['maxFirstMessageBytes', 'maxContractSizeBytes'] as const) {
+      for (const key of ['maxFirstMessageBytes'] as const) {
         const result = validateTomlConfig({ server: { signup: { [key]: 0 } } })
         assertEquals(result.warnings, [], `expected no warnings for ${key}`)
         assertEquals(result.errors, [`${`server.signup.${key}`}: must be a positive integer`])
@@ -152,7 +151,6 @@ Deno.test({
     await t.step('errors on negative or fractional byte-size settings', () => {
       const cases: Array<{ path: string, value: number }> = [
         { path: 'server.signup.maxFirstMessageBytes', value: -1 },
-        { path: 'server.signup.maxContractSizeBytes', value: 1.5 },
         { path: 'server.billing.freeAllowanceBytes', value: -1024 }
       ]
       for (const { path, value } of cases) {

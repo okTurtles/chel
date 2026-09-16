@@ -1,3 +1,4 @@
+// NOTE: File kept for future reference only (see comment for the `/file` endpoint in `routes.ts`). This file is _not_ currently in use.
 // Guards for ownerless (unattributed) first messages, i.e. the registration of
 // a new billable entity via `POST /event`. Kept out of `routes.ts` so that the
 // manifest parsing and the size accounting can be tested directly, without an

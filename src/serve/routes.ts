@@ -21,7 +21,6 @@ import { booleanConfig, positiveIntConfig } from './config-utils.ts'
 import { MAX_EVENT_BODY_BYTES } from './constants.ts'
 import { appendToIndexFactory, lookupUltimateOwner } from './database.ts'
 import logger from './logger.ts'
-import { assertContractSourcesWithinCap, parseContractSourceHashes } from './signup-guard.ts'
 import {
   consumeSignupToken,
   createSignupLimiters,
@@ -240,7 +239,6 @@ export function registerRoutes (app: Hono): void {
   // config-utils.ts. The first-message cap is bounded by the body limit the
   // `/event` route enforces below, since anything above it is unreachable.
   const SIGNUP_MAX_FIRST_MESSAGE_BYTES = positiveIntConfig('server:signup:maxFirstMessageBytes', MAX_EVENT_BODY_BYTES)
-  const SIGNUP_MAX_CONTRACT_SIZE_BYTES = positiveIntConfig('server:signup:maxContractSizeBytes')
   const ARCHIVE_MODE = booleanConfig('server:archiveMode')
 
   currentLimiters = createSignupLimiters({
@@ -319,9 +317,6 @@ export function registerRoutes (app: Hono): void {
               console.warn('rate limit hit for IP:', ip)
               throw new HTTPException(429, { message: 'Rate limit exceeded' })
             }
-            const manifest = await sbp('chelonia.db/get', deserializedHEAD.head.manifest)
-            const contractSourceHashes = parseContractSourceHashes(manifest)
-            await assertContractSourcesWithinCap(contractSourceHashes, SIGNUP_MAX_CONTRACT_SIZE_BYTES)
           }
           const saltUpdateToken = validatedHeaders['shelter-salt-update-token']
           let updateSalts
@@ -596,6 +591,18 @@ export function registerRoutes (app: Hono): void {
     authMiddleware('chel-shelter', 'required'),
     bodyLimit({ maxSize: FILE_UPLOAD_MAX_BYTES }),
     async function (c) {
+      /*
+      We don't currently support uploading contracts to production, but if we
+      did, we might do it using this endpoint (or we could use a dedicated
+      endpoint.) When we do implement contract uploads, we'll need to implement
+      a size limit. For this, these lines could be useful, as well as the
+      corresponding helper functions in `signup-guard.ts`.
+      ```
+        const manifest = await sbp('chelonia.db/get', deserializedHEAD.head.manifest)
+        const contractSourceHashes = parseContractSourceHashes(manifest)
+        await assertContractSourcesWithinCap(contractSourceHashes, SIGNUP_MAX_CONTRACT_SIZE_BYTES)
+      ```
+      */
       if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
       try {
         console.info('FILE UPLOAD!')

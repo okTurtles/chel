@@ -125,7 +125,6 @@ Deno.test({
           `# reclaimForeignSubscriptions = ${d.server.reclaimForeignSubscriptions}`,
           `# disabled = ${d.server.signup.disabled}`,
           `# maxFirstMessageBytes = ${d.server.signup.maxFirstMessageBytes}`,
-          `# maxContractSizeBytes = ${d.server.signup.maxContractSizeBytes}`,
           `# disabled = ${d.server.signup.limit.disabled}`,
           `# minute = ${d.server.signup.limit.minute}`,
           `# hour = ${d.server.signup.limit.hour}`,

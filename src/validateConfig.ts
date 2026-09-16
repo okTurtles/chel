@@ -76,7 +76,6 @@ export const ConfigSchema = z.strictObject({
         MAX_EVENT_BODY_BYTES,
         `must not exceed the ${MAX_EVENT_BODY_BYTES} byte POST /event body limit`
       )),
-      maxContractSizeBytes: z.optional(positiveInt),
       limit: z.optional(z.strictObject({
         disabled: z.optional(z.boolean()),
         // Positive (not merely non-negative) to match the runtime, which falls
