@@ -101,47 +101,6 @@ Deno.test({
         }
       })
 
-      await t.step('a manifest with an unusable contractSlim entry returns 422', async () => {
-        // Rejected rather than silently skipped: otherwise the slim source
-        // would escape the size check
-        const { serialized } = await createTestContractRegistration({
-          name: 'com.example/bad-slim',
-          malformedContractSlim: true
-        })
-        const res = await postEvent(serialized)
-        await res.body?.cancel()
-        if (res.status !== 422) throw new Error(`Expected 422 but got ${res.status}`)
-      })
-
-      await t.step('a manifest pointing at a non-contract-source key returns 422', async () => {
-        // The hashes in a manifest body are used as database keys, so they are
-        // validated as contract-source CIDs first: without that, a manifest
-        // could aim the size check at any key on the server and learn something
-        // from whether the request was accepted
-        for (const hash of ['_private_freeAllowanceBytes', 'head=zSomething', 'not-a-cid']) {
-          const { serialized } = await createTestContractRegistration({
-            name: 'com.example/foreign-key-' + hash.length,
-            contractHashOverride: hash
-          })
-          const res = await postEvent(serialized)
-          await res.body?.cancel()
-          if (res.status !== 422) throw new Error(`Expected 422 for ${hash} but got ${res.status}`)
-        }
-      })
-
-      await t.step('unattributed first message without a deployed manifest returns 422', async () => {
-        // The size-cap branch requires the manifest (and its sources) to
-        // already be deployed on the server; a missing one is bad data
-        const { serialized } = await createTestContractRegistration({
-          name: 'com.example/undeployed'
-        })
-        const head = JSON.parse(JSON.parse(serialized).head)
-        await sbp('chelonia.db/delete', head.manifest)
-        const res = await postEvent(serialized)
-        await res.body?.cancel()
-        if (res.status !== 422) throw new Error(`Expected 422 but got ${res.status}`)
-      })
-
       await t.step('namespace registration works for a differently named identity contract', async () => {
         const { serialized, contractID } = await createTestContractRegistration({
           name: 'com.example/custom-identity-ns'

@@ -1115,16 +1115,15 @@ import { basename as basename5 } from "node:path";
 import process5 from "node:process";
 import { join as join7 } from "node:path";
 import process10 from "node:process";
-import { Buffer as Buffer14 } from "node:buffer";
+import { Buffer as Buffer13 } from "node:buffer";
 import path6 from "node:path";
 import process8 from "node:process";
 import { Readable as Readable3 } from "node:stream";
 import process6 from "node:process";
-import { Buffer as Buffer13 } from "node:buffer";
 import { isIP } from "node:net";
 import process7 from "node:process";
 import process9 from "node:process";
-import { Buffer as Buffer15 } from "node:buffer";
+import { Buffer as Buffer14 } from "node:buffer";
 import { pathToFileURL } from "node:url";
 import path7 from "node:path";
 import process12 from "node:process";
@@ -69799,7 +69798,6 @@ dashboardPort = ${tomlValue(d.server.dashboardPort)}
 # 'maxFirstMessageBytes' cannot exceed ${tomlValue(MAX_EVENT_BODY_BYTES)}, the request body limit
 # 'POST /event' enforces before these caps are consulted.
 # maxFirstMessageBytes = ${tomlValue(d.server.signup.maxFirstMessageBytes)}
-# maxContractSizeBytes = ${tomlValue(d.server.signup.maxContractSizeBytes)}
 
 [server.signup.limit]
 # Registrations allowed per IP, per window. Enforced only when NODE_ENV is
@@ -70086,7 +70084,6 @@ var ConfigSchema = strictObject({
         MAX_EVENT_BODY_BYTES,
         `must not exceed the ${MAX_EVENT_BODY_BYTES} byte POST /event body limit`
       )),
-      maxContractSizeBytes: optional(positiveInt),
       limit: optional(strictObject({
         disabled: optional(boolean2()),
         // Positive (not merely non-negative) to match the runtime, which falls
@@ -74087,7 +74084,6 @@ var nconfDefaults = {
       // identity contract registration. They bound how much data can be written
       // 'for free'; see POST /event in src/serve/routes.ts.
       maxFirstMessageBytes: 5 * 1024,
-      maxContractSizeBytes: 500 * 1024,
       limit: {
         disabled: false,
         minute: 2,
@@ -74223,42 +74219,6 @@ function initializeLogger() {
   console.error = logger.error.bind(logger);
 }
 var logger_default = logger;
-init_functions();
-init_esm();
-var requireContractTextCID = (hash3, field) => {
-  if (typeof hash3 !== "string") throw new Error(`missing ${field} hash`);
-  if (maybeParseCID(hash3)?.code !== multicodes.SHELTER_CONTRACT_TEXT) {
-    throw new Error(`invalid ${field} hash`);
-  }
-  return hash3;
-};
-var parseContractSourceHashes = (manifest2) => {
-  try {
-    if (typeof manifest2 !== "string" || !manifest2) throw new Error("empty manifest");
-    const { contract, contractSlim } = JSON.parse(JSON.parse(manifest2).body);
-    const hashes = [requireContractTextCID(contract?.hash, "contract")];
-    if (contractSlim != null) {
-      hashes.push(requireContractTextCID(contractSlim.hash, "contractSlim"));
-    }
-    return hashes;
-  } catch {
-    throw new HTTPException(422, { message: "Invalid manifest" });
-  }
-};
-var assertContractSourcesWithinCap = async (hashes, maxBytes) => {
-  let contractSizeBytes = 0;
-  for (const hash3 of hashes) {
-    const source = await esm_default("chelonia.db/get", hash3);
-    if (typeof source !== "string") {
-      throw new HTTPException(422, { message: "Missing contract source" });
-    }
-    contractSizeBytes += Buffer13.byteLength(source);
-    if (contractSizeBytes > maxBytes) {
-      throw new HTTPException(413, { message: "Contract source exceeds size limit" });
-    }
-  }
-  return contractSizeBytes;
-};
 var import_npm_bottleneck = __toESM(require_lib6());
 var SECOND = 1e3;
 var normalizeHextet = (segment) => segment.replace(/^0+(?=[0-9a-fA-F])/, "");
@@ -74540,7 +74500,6 @@ function registerRoutes(app) {
   const FILE_UPLOAD_MAX_BYTES = positiveIntConfig("server:fileUploadMaxBytes");
   const SIGNUP_LIMIT_DISABLED = signupRateLimitDisabled();
   const SIGNUP_MAX_FIRST_MESSAGE_BYTES = positiveIntConfig("server:signup:maxFirstMessageBytes", MAX_EVENT_BODY_BYTES);
-  const SIGNUP_MAX_CONTRACT_SIZE_BYTES = positiveIntConfig("server:signup:maxContractSizeBytes");
   const ARCHIVE_MODE = booleanConfig("server:archiveMode");
   currentLimiters = createSignupLimiters({
     minute: positiveIntConfig("server:signup:limit:minute"),
@@ -74585,7 +74544,7 @@ function registerRoutes(app) {
           }
           const credentials = c.get("credentials");
           if (!credentials?.billableContractID && deserializedHEAD.isFirstMessage) {
-            if (Buffer14.byteLength(payload) > SIGNUP_MAX_FIRST_MESSAGE_BYTES) {
+            if (Buffer13.byteLength(payload) > SIGNUP_MAX_FIRST_MESSAGE_BYTES) {
               throw new HTTPException(413, { message: "First message exceeds size limit" });
             }
             if (booleanConfig("server:signup:disabled")) {
@@ -74595,9 +74554,6 @@ function registerRoutes(app) {
               console.warn("rate limit hit for IP:", ip);
               throw new HTTPException(429, { message: "Rate limit exceeded" });
             }
-            const manifest2 = await esm_default("chelonia.db/get", deserializedHEAD.head.manifest);
-            const contractSourceHashes = parseContractSourceHashes(manifest2);
-            await assertContractSourcesWithinCap(contractSourceHashes, SIGNUP_MAX_CONTRACT_SIZE_BYTES);
           }
           const saltUpdateToken = validatedHeaders["shelter-salt-update-token"];
           let updateSalts;
@@ -74633,7 +74589,7 @@ function registerRoutes(app) {
               await esm_default("chelonia.db/set", `_private_deletionTokenDgst_${deserializedHEAD.contractID}`, deletionTokenDgst);
             }
           }
-          await esm_default("backend/server/updateSize", deserializedHEAD.contractID, Buffer14.byteLength(payload), deserializedHEAD.isFirstMessage && !credentials?.billableContractID ? deserializedHEAD.contractID : void 0);
+          await esm_default("backend/server/updateSize", deserializedHEAD.contractID, Buffer13.byteLength(payload), deserializedHEAD.isFirstMessage && !credentials?.billableContractID ? deserializedHEAD.contractID : void 0);
         } catch (err) {
           if (err instanceof HTTPException) throw err;
           console.error(err, import_npm_chalk.default.bold.yellow(err.name));
@@ -74766,7 +74722,7 @@ function registerRoutes(app) {
   });
   app.post("/streams-test", async function(c) {
     const raw2 = await c.req.arrayBuffer();
-    const buf = Buffer14.from(raw2);
+    const buf = Buffer13.from(raw2);
     if (buf.byteLength === 2 && buf.toString() === "ok") {
       return c.body(null, 204);
     } else {
@@ -74785,7 +74741,7 @@ function registerRoutes(app) {
         if (!data || Array.isArray(data)) throw new HTTPException(400, { message: "missing data" });
         const parsed = maybeParseCID(hash3);
         if (!parsed) throw new HTTPException(400, { message: "invalid hash" });
-        const dataStringOrBytes = typeof data === "string" ? data : Buffer14.from(await data.bytes()).toString();
+        const dataStringOrBytes = typeof data === "string" ? data : Buffer13.from(await data.bytes()).toString();
         const ourHash = createCID(dataStringOrBytes, parsed.code);
         if (ourHash !== hash3) {
           console.error(`hash(${hash3}) != ourHash(${ourHash})`);
@@ -74821,7 +74777,7 @@ function registerRoutes(app) {
         if (!manifestFile) throw new HTTPException(400, { message: "missing manifest" });
         if (manifestFile.name !== "manifest.json") throw new HTTPException(400, { message: "wrong manifest filename" });
         const manifestPayload = new Uint8Array(await manifestFile.arrayBuffer());
-        const manifestText = Buffer14.from(manifestPayload).toString();
+        const manifestText = Buffer13.from(manifestPayload).toString();
         const manifest2 = (() => {
           try {
             return JSON.parse(manifestText);
@@ -74869,8 +74825,8 @@ function registerRoutes(app) {
             throw new Error(`Chunk ${cid} already exists`);
           }
         }));
-        await Promise.all(chunks.map(([cid, data]) => esm_default("chelonia.db/set", cid, Buffer14.from(data))));
-        await esm_default("chelonia.db/set", manifestHash, Buffer14.from(manifestPayload));
+        await Promise.all(chunks.map(([cid, data]) => esm_default("chelonia.db/set", cid, Buffer13.from(data))));
+        await esm_default("chelonia.db/set", manifestHash, Buffer13.from(manifestPayload));
         await esm_default("backend/server/saveOwner", credentials.billableContractID, manifestHash);
         const size = manifest2.size + manifestPayload.byteLength;
         await esm_default("backend/server/updateSize", manifestHash, size);
@@ -75028,10 +74984,10 @@ function registerRoutes(app) {
       if (!ctEq(credentials.billableContractID, contractID)) {
         throw new HTTPException(401);
       }
-      const payloadBuffer = Buffer14.from(await c.req.arrayBuffer());
+      const payloadBuffer = Buffer13.from(await c.req.arrayBuffer());
       return esm_default("chelonia/queueInvocation", contractID, async () => {
         const existingRaw = await esm_default("chelonia.db/get", `any:_private_kv_${contractID}_${key}`);
-        const existing = existingRaw != null && !Buffer14.isBuffer(existingRaw) ? Buffer14.from(existingRaw) : existingRaw;
+        const existing = existingRaw != null && !Buffer13.isBuffer(existingRaw) ? Buffer13.from(existingRaw) : existingRaw;
         const expectedEtag = c.req.header("if-match");
         if (!expectedEtag) {
           throw new HTTPException(400, { message: "if-match is required" });
@@ -75094,7 +75050,7 @@ function registerRoutes(app) {
         throw new HTTPException(401);
       }
       const resultRaw = await esm_default("chelonia.db/get", `any:_private_kv_${contractID}_${key}`);
-      const result = resultRaw != null && !Buffer14.isBuffer(resultRaw) ? Buffer14.from(resultRaw) : resultRaw;
+      const result = resultRaw != null && !Buffer13.isBuffer(resultRaw) ? Buffer13.from(resultRaw) : resultRaw;
       if (!result) {
         return notFoundNoCache(c);
       }
@@ -75385,10 +75341,10 @@ var subscriptionInfoWrapper = (subscriptionId, subscriptionInfo, extra) => {
         return function() {
           if ((count | 0) === 0) {
             if (!salt) {
-              salt = Buffer15.from(this.keys.auth, "base64url");
+              salt = Buffer14.from(this.keys.auth, "base64url");
             }
             if (!uaPublic) {
-              uaPublic = Buffer15.from(this.keys.p256dh, "base64url");
+              uaPublic = Buffer14.from(this.keys.p256dh, "base64url");
             }
             resultPromise = rfc8291Ikm_default(uaPublic, salt);
             count = 1;
@@ -75424,7 +75380,7 @@ var encryptPayload = async (subscription, data) => {
       if (done) break;
       chunks.push(new Uint8Array(value));
     }
-    return Buffer15.concat(chunks);
+    return Buffer14.concat(chunks);
   });
 };
 var postEvent = async (subscription, event) => {
@@ -75472,7 +75428,7 @@ var pushServerActionhandlers = {
     const { applicationServerKey, settings, subscriptionInfo } = payload;
     if (applicationServerKey) {
       const ourVapidPublicKey = getVapidPublicKey();
-      const theirVapidPublicKey = Buffer15.from(applicationServerKey, "base64").toString("base64url");
+      const theirVapidPublicKey = Buffer14.from(applicationServerKey, "base64").toString("base64url");
       if (ourVapidPublicKey !== theirVapidPublicKey) {
         socket.send(createMessage(REQUEST_TYPE.PUSH_ACTION, { type: PUSH_SERVER_ACTION_TYPE.SEND_PUBLIC_KEY, data: getVapidPublicKey() }));
         console.warn({ ourVapidPublicKey, theirVapidPublicKey }, "Refusing to store subscription because the associated public VAPID key does not match ours");
