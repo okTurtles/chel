@@ -4,8 +4,7 @@
 // manifest parsing and the size accounting can be tested directly, without an
 // HTTP server and without having to reach the branch through a signed message.
 //
-// See the "Signup, registration, and billing" section of README.md for what
-// these caps are for.
+// See docs/signup-and-billing.md for what these caps are for.
 
 import { Buffer } from 'node:buffer'
 import { maybeParseCID, multicodes } from 'npm:@chelonia/lib/functions'
