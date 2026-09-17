@@ -2,7 +2,11 @@ import sbp from 'npm:@sbp/sbp'
 import { CREDITS_WORKER_TASK_TIME_INTERVAL as TASK_TIME_INTERVAL } from './constants.ts'
 import { readyQueueName, signalReady, signalInitError } from './genericWorker.ts'
 
-// Type definitions for credit history entries
+// Type definitions for credit history entries.
+//
+// These are the on-disk shapes of `_private_ownerBalanceHistoryGranular_*` and
+// `_private_ownerBalanceHistoryCoarse_*`, so field names are part of the stored
+// format: entries written by older versions of this worker are read back as-is.
 interface GranularHistoryEntryBase {
   type: 'charge' | 'credit';
   date: string; // ISO string
@@ -12,6 +16,14 @@ interface GranularHistoryEntryBase {
 
 interface GranularChargeEntry extends GranularHistoryEntryBase {
   type: 'charge';
+  // Despite the name, the size the charge was computed from, i.e. the *billable*
+  // size: total owned size minus the free allowance, and therefore 0 for an
+  // entity within its allowance. The entity's actual size is stored separately,
+  // under `_private_ownerTotalSize_`.
+  //
+  // Entries written before the free allowance existed hold the total owned size,
+  // which was the billable size at the time, so the two generations mean the
+  // same thing and can be compared and averaged.
   sizeTotal: number;
   picocreditAmount: string; // BigInt string
   period: string; // ISO period string
@@ -27,6 +39,8 @@ type GranularHistoryEntry = GranularChargeEntry | GranularCreditEntry;
 interface CoarseHistoryEntry {
   type: 'aggregate';
   date: string; // ISO string
+  // The time-weighted mean of the billable sizes (see `sizeTotal` above) of the
+  // granular charges this entry aggregates, not a total of any kind.
   sizeTotal: number;
   chargesPicocreditAmount: string; // BigInt string
   creditsPicocreditAmount: string; // BigInt string
@@ -57,7 +71,10 @@ const startTime = Date.now()
  * @param billableEntity - The identifier of the entity to bill.
  * @param type - The type of update: 'charge' (based on size/time) or 'credit'
  * (direct addition).
- * @param amount - For 'charge', this is the current total size (bytes). For 'credit', the amount to add.
+ * @param amount - For 'charge', the billable size (bytes), i.e. the entity's
+ * total owned size minus its free allowance (so it is 0 for an entity within
+ * its allowance; the entity's actual size lives in `_private_ownerTotalSize_`).
+ * For 'credit', the amount to add.
  */
 const updateCredits = async (billableEntity: string, type: 'credit' | 'charge', amount: number) => {
   const granularHistoryKey = `_private_ownerBalanceHistoryGranular_${billableEntity}`
@@ -158,6 +175,8 @@ const updateCredits = async (billableEntity: string, type: 'credit' | 'charge', 
           const periodLength = Math.floor(periodEndDate - periodStartDate)
           // Avoid NaN propagation
           if (periodLength >= 0) {
+            // Weighted by how long the size was held, so that the mean written
+            // below is a time average rather than an average of samples
             acc.periodSize += entry.sizeTotal * periodLength
             acc.totalPeriodLength += periodLength
           }
@@ -173,6 +192,7 @@ const updateCredits = async (billableEntity: string, type: 'credit' | 'charge', 
       coarseHistory.unshift({
         type: 'aggregate',
         date,
+        // Mean billable size over the aggregated period; see `CoarseHistoryEntry`
         sizeTotal: totalPeriodLength > 0 ? Math.floor(periodSize / totalPeriodLength) : 0,
         chargesPicocreditAmount: charges.toString(10),
         creditsPicocreditAmount: credits.toString(10),
@@ -198,9 +218,31 @@ sbp('okTurtles.eventQueue/queueEvent', readyQueueName, () => {
   }
 })
 
+// Reads the free storage allowance (per billable entity) from the database.
+// Workers run in their own Worker thread, with a separate module instance and
+// therefore no access to nconf, so the main server persists
+// `server.billing.freeAllowanceBytes` at startup (see server.ts) and it is
+// re-read every billing cycle. A missing or invalid value falls back to 0
+// (charge the full size), preserving the behavior from before the allowance
+// existed.
+const readFreeAllowanceBytes = async (): Promise<number> => {
+  const stored = await sbp('chelonia.db/get', '_private_freeAllowanceBytes', { bypassCache: true })
+  // `Number` rather than `parseInt`, which stops at the first character it
+  // cannot use: it would read a stored '1e+21' as 1 and '10.5' as 10, silently
+  // charging for storage that should be free.
+  const allowance = stored == null ? NaN : Number(stored)
+  if (!Number.isSafeInteger(allowance) || allowance < 0) {
+    console.warn(`[creditsWorker] Invalid free allowance '${stored}', using 0`)
+    return 0
+  }
+  return allowance
+}
+
 sbp('sbp/selectors/register', {
   'worker/computeCredits': async () => {
     const billableEntities: string | null = await sbp('chelonia.db/get', '_private_billable_entities', { bypassCache: true })
+
+    const freeAllowanceBytes = await readFreeAllowanceBytes()
 
     // Fetch the list of all entities that should be billed.
     // Using bypassCache here ensures we don't miss newly added entities at the
@@ -225,9 +267,13 @@ sbp('sbp/selectors/register', {
       // }
 
       // Call updateCredits to calculate and record the charge based on current size and time elapsed.
+      // Only storage in excess of the free allowance is charged; entities within
+      // their allowance still get a zero-charge history entry, which anchors the
+      // next charge to when the excess started existing (rather than billing
+      // the excess retroactively over the free period).
       // Not using await to queue the call and immediately proceed with the next
       // billable entity
-      updateCredits(billableEntity, 'charge', size).catch((e) => {
+      updateCredits(billableEntity, 'charge', Math.max(0, size - freeAllowanceBytes)).catch((e) => {
         console.error(e, '[creditsWorker] Error computing balance', billableEntity)
       })
     }))

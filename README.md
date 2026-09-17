@@ -418,6 +418,14 @@ email = "admin@example.com"
 
 [database]
 backend = "sqlite"
+
+# Signup size caps and the billing free tier; see
+# docs/signup-and-billing.md.
+# [server.signup]
+# maxFirstMessageBytes = 5120
+#
+# [server.billing]
+# freeAllowanceBytes = 10485760
 ```
 
 ### `chelonia.json` — App Properties
