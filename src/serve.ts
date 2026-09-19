@@ -9,8 +9,8 @@ import { startDashboard } from './serve/dashboard-server.ts'
 import { closeDB, initDB } from '~/serve/database.ts'
 
 type Params = {
-  port: number
-  'dashboard-port': number
+  port?: number
+  'dashboard-port'?: number
   directory: string
   dev: boolean
   'manifests-dir': string
@@ -144,8 +144,9 @@ export const module = {
   validatesConfig: true,
   builder: (yargs) => {
     return yargs
+      // Do not add yargs defaults here: the argv store outranks chel.toml in
+      // nconf, so an injected default would mask a configured port.
       .option('port', {
-        default: 8000,
         describe: 'Port to listen on (app)',
         requiresArg: true,
         number: true
@@ -153,7 +154,6 @@ export const module = {
       .alias('p', 'port')
       .alias('server:port', 'port')
       .option('dashboard-port', {
-        default: 8888,
         describe: 'Port to listen on (dashboard)',
         requiresArg: true,
         number: true
