@@ -8,9 +8,15 @@ import { withTempDir } from '../test/test-helpers.ts'
 // The settings below are reachable three ways, and the one that used to be
 // broken is `chel.toml`: the `serve` command declared yargs defaults for them,
 // yargs put those into argv, and nconf reads argv before the file.
-//
-// nconf and the working directory are both global, so each case builds its own
-// directory and puts everything back afterwards.
+
+// The stores `parseConfig` sets up. Dropping them is what gives each case a
+// clean read, and what keeps one case out of the next.
+const STORES = ['env', 'argv', 'file', 'defaults']
+const dropStores = () => STORES.forEach((store) => nconf.remove(store))
+
+// nconf, the working directory and process.argv are all process-global, so
+// each case sets them up and puts them back. Leaving a store in place would
+// point a later suite at a temp directory that no longer exists.
 async function resolveConfig (toml: string | null, args: string[]) {
   let resolved = {}
   await withTempDir(async (dir) => {
@@ -20,7 +26,7 @@ async function resolveConfig (toml: string | null, args: string[]) {
     try {
       Deno.chdir(dir)
       process.argv = ['deno', 'chel', ...args]
-      for (const store of ['env', 'argv', 'file', 'defaults']) nconf.remove(store)
+      dropStores()
       await parseConfig()
       resolved = {
         port: nconf.get('server:port'),
@@ -28,6 +34,7 @@ async function resolveConfig (toml: string | null, args: string[]) {
         appDir: nconf.get('server:appDir')
       }
     } finally {
+      dropStores()
       process.argv = originalArgv
       Deno.chdir(originalCwd)
     }
