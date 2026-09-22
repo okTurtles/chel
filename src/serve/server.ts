@@ -425,7 +425,7 @@ export async function startServer (): Promise<{ uri: string }> {
   const appManifest = nconf.get('appManifest') || join(nconf.get('server:appDir') || process.cwd(), 'chelonia.json')
   const ARCHIVE_MODE = nconf.get('server:archiveMode')
   const host = nconf.get('server:host') || '0.0.0.0'
-  const port = nconf.get('server:port') ?? 8000
+  const port = nconf.get('server:port')
 
   // Validate worker intervals
   if (CREDITS_WORKER_TASK_TIME_INTERVAL && OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL > CREDITS_WORKER_TASK_TIME_INTERVAL) {
