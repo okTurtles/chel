@@ -144,8 +144,12 @@ export const module = {
   validatesConfig: true,
   builder: (yargs) => {
     return yargs
+      // No `default` on the three options that `chel.toml` can also set. yargs
+      // puts its defaults into argv, and nconf reads argv before the file, so
+      // a default here shadows the file and the setting never takes effect.
+      // Unset is covered by `config-defaults.ts`, which is also what `chel
+      // init` writes into the generated file.
       .option('port', {
-        default: 8000,
         describe: 'Port to listen on (app)',
         requiresArg: true,
         number: true
@@ -153,7 +157,6 @@ export const module = {
       .alias('p', 'port')
       .alias('server:port', 'port')
       .option('dashboard-port', {
-        default: 8888,
         describe: 'Port to listen on (dashboard)',
         requiresArg: true,
         number: true
@@ -182,7 +185,7 @@ export const module = {
       .alias('i', 'app-manifest')
       .alias('appManifest', 'app-manifest')
       .positional('directory', {
-        default: '.',
+        defaultDescription: '.',
         describe: 'Directory',
         type: 'string'
       })
