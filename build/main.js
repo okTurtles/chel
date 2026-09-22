@@ -70607,7 +70607,6 @@ var module11 = {
       requiresArg: false,
       string: true
     }).alias("d", "dir").option("app-manifest", {
-      default: "",
       describe: "Location of chelonia.json",
       string: true
     }).alias("i", "app-manifest").alias("appManifest", "app-manifest").positional("manifest", {
@@ -76712,12 +76711,10 @@ var module12 = {
   validatesConfig: true,
   builder: (yargs) => {
     return yargs.option("port", {
-      default: 8e3,
       describe: "Port to listen on (app)",
       requiresArg: true,
       number: true
     }).alias("p", "port").alias("server:port", "port").option("dashboard-port", {
-      default: 8888,
       describe: "Port to listen on (dashboard)",
       requiresArg: true,
       number: true
@@ -76732,11 +76729,10 @@ var module12 = {
       requiresArg: true,
       string: true
     }).alias("m", "manifests-dir").option("app-manifest", {
-      default: "",
       describe: "Location of chelonia.json",
       string: true
     }).alias("i", "app-manifest").alias("appManifest", "app-manifest").positional("directory", {
-      default: ".",
+      defaultDescription: ".",
       describe: "Directory",
       type: "string"
     }).alias("server:appDir", "directory");

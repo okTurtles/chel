@@ -425,6 +425,8 @@ export async function startServer (): Promise<{ uri: string }> {
   const appManifest = nconf.get('appManifest') || join(nconf.get('server:appDir') || process.cwd(), 'chelonia.json')
   const ARCHIVE_MODE = nconf.get('server:archiveMode')
   const host = nconf.get('server:host') || '0.0.0.0'
+  // Kept for callers of the exported `startServer()` that never ran
+  // `parseConfig()`, so the defaults store is not there to supply it.
   const port = nconf.get('server:port') ?? 8000
 
   // Validate worker intervals
