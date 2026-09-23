@@ -272,8 +272,9 @@ export const module = {
         string: true
       })
       .alias('d', 'dir')
+      // No `default` here either, or it would shadow `appManifest` in
+      // chel.toml. Same reason as in src/serve.ts.
       .option('app-manifest', {
-        default: '',
         describe: 'Location of chelonia.json',
         string: true
       })

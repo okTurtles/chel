@@ -8,13 +8,16 @@ import { assertServerIdConfigured, startServer } from './serve/index.ts'
 import { startDashboard } from './serve/dashboard-server.ts'
 import { closeDB, initDB } from '~/serve/database.ts'
 
+// The optional ones are the ones `chel.toml` can also set, so they carry no
+// yargs default and are absent from argv unless a flag was given. Read them
+// through nconf, not off `args`.
 type Params = {
-  port: number
-  'dashboard-port': number
-  directory: string
+  port?: number
+  'dashboard-port'?: number
+  directory?: string
   dev: boolean
   'manifests-dir': string
-  'app-manifest': string
+  'app-manifest'?: string
 }
 
 async function deployManifests (args: ArgumentsCamelCase<Params>): Promise<string | null> {
@@ -144,8 +147,13 @@ export const module = {
   validatesConfig: true,
   builder: (yargs) => {
     return yargs
+      // No `default` on the four options that `chel.toml` can also set:
+      // `port`, `dashboard-port`, `app-manifest` and the `directory`
+      // positional. yargs puts its defaults into argv, and nconf reads argv
+      // before the file, so a default here shadows the file and the setting
+      // never takes effect. Unset is covered by `config-defaults.ts`, which is
+      // also what `chel init` writes into the generated file.
       .option('port', {
-        default: 8000,
         describe: 'Port to listen on (app)',
         requiresArg: true,
         number: true
@@ -153,7 +161,6 @@ export const module = {
       .alias('p', 'port')
       .alias('server:port', 'port')
       .option('dashboard-port', {
-        default: 8888,
         describe: 'Port to listen on (dashboard)',
         requiresArg: true,
         number: true
@@ -175,14 +182,13 @@ export const module = {
       })
       .alias('m', 'manifests-dir')
       .option('app-manifest', {
-        default: '',
         describe: 'Location of chelonia.json',
         string: true
       })
       .alias('i', 'app-manifest')
       .alias('appManifest', 'app-manifest')
       .positional('directory', {
-        default: '.',
+        defaultDescription: '.',
         describe: 'Directory',
         type: 'string'
       })

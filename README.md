@@ -404,7 +404,7 @@ The project uses two separate configuration files for different purposes:
 
 ### `chel.toml` — Runtime CLI Configuration
 
-`chel.toml` configures the `chel` command itself at runtime. It is read by `nconf` with priority: CLI arguments > environment variables > `chel.toml` > defaults. It controls things like server host/port, database backend selection, and other operational settings.
+`chel.toml` configures the `chel` command itself at runtime. It is read by `nconf` with priority: environment variables > CLI arguments > `chel.toml` > defaults. It controls things like server host/port, database backend selection, and other operational settings.
 
 ```toml
 # Example chel.toml
