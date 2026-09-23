@@ -17,6 +17,7 @@ import { join } from 'node:path'
 import process from 'node:process'
 import { getClientIP, registerRoutes } from './routes.ts'
 import { CREDITS_WORKER_TASK_TIME_INTERVAL, OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL } from './constants.ts'
+import { booleanConfig, nonNegativeIntConfig } from './config-utils.ts'
 import { KEYOP_SEGMENT_LENGTH, appendToIndexFactory, closeDB, initDB, lookupUltimateOwner, removeFromIndexFactory, updateSize } from './database.ts'
 import { BackendErrorBadData, BackendErrorGone, BackendErrorNotFound } from './errors.ts'
 import { SERVER_RUNNING } from './events.ts'
@@ -423,7 +424,7 @@ export async function startServer (): Promise<{ uri: string }> {
   const reclaimForeignSubscriptions = !!nconf.get('server:reclaimForeignSubscriptions')
   // Read configuration from nconf
   const appManifest = nconf.get('appManifest') || join(nconf.get('server:appDir') || process.cwd(), 'chelonia.json')
-  const ARCHIVE_MODE = nconf.get('server:archiveMode')
+  const ARCHIVE_MODE = booleanConfig('server:archiveMode')
   const host = nconf.get('server:host') || '0.0.0.0'
   // Kept for callers of the exported `startServer()` that never ran
   // `parseConfig()`, so the defaults store is not there to supply it.
@@ -589,6 +590,17 @@ export async function startServer (): Promise<{ uri: string }> {
 
   // Initialize database
   await initDB()
+
+  // Persist the configured free allowance so the credits worker (which runs in
+  // its own Worker thread, with a separate module instance and therefore no
+  // access to nconf) can read it from the database.
+  // Written on every startup so configuration changes are picked up, and it
+  // also survives worker relaunches (see createWorker.ts).
+  // Skipped when there is no credits worker: nothing would read the value, and
+  // in archive mode the database rejects writes altogether.
+  if (currentCreditsWorker) {
+    await sbp('chelonia.db/set', '_private_freeAllowanceBytes', String(nonNegativeIntConfig('server:billing:freeAllowanceBytes')))
+  }
 
   // Wait for workers to be ready
   await currentOwnerSizeTotalWorker?.ready
