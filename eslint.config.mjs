@@ -32,6 +32,12 @@ export default tseslint.config(
       'no-multiple-empty-lines': ['error', { max: 1 }],
       "@typescript-eslint/no-unused-expressions": "off",
       "no-control-regex": "off",
+      'no-restricted-imports': ['error', {
+        patterns: [{
+          regex: '^jsr:@db/sqlite(?:[@/]|$)',
+          message: '@db/sqlite was replaced by better-sqlite3 (#162) and must not be reintroduced, not even in tests.'
+        }]
+      }],
     },
   },
   {

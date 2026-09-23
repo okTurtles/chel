@@ -20,8 +20,8 @@ import { startServer, stopServer } from './index.ts'
 export { blake32Hash, createCID, multicodes } from 'npm:@chelonia/lib/functions'
 export { EDWARDS25519SHA512BATCH, keygen, keyId, serializeKey, sign } from 'npm:@chelonia/crypto'
 export { default as sbp } from 'npm:@sbp/sbp'
-// Re-exported so that tests asserting against the caps the test server runs
-// with do not have to restate the numbers (see `startTestServer` below).
+// Re-exported so that tests asserting against the settings the test server
+// runs with do not have to restate the numbers (see `startTestServer` below).
 export { nconfDefaults } from '../config-defaults.ts'
 
 export const nacl = tweetnacl
@@ -118,7 +118,7 @@ export function buildShelterAuthHeader (contractID: string, SAK: ReturnType<type
 // shape `chelonia/out/registerContract` in @chelonia/lib produces).
 // `sourceBytes` / `slimSourceBytes` control the byte length of the stored
 // contract sources, and `messagePaddingBytes` inflates the serialized message
-// itself (via a padding key name), for testing the signup size caps.
+// itself (via a padding key name), for testing the signup size cap.
 // `keys: 'realistic'` builds the kind of key set a real client registration
 // carries (see `realisticKeys` below) instead of a single bare signing key.
 export async function createTestContractRegistration ({
@@ -273,7 +273,7 @@ export function startTestServer (): Promise<string> {
         port: TEST_PORT,
         appDir: '.',
         fileUploadMaxBytes: nconfDefaults.server.fileUploadMaxBytes,
-        // The signup caps and the free allowance come from the shipped defaults
+        // The signup size cap and the free allowance come from the shipped defaults
         // so that tests exercising them cannot drift from the values operators
         // actually get
         signup: {

@@ -11,8 +11,8 @@ export const nconfDefaults = {
     fileUploadMaxBytes: 31457280,
     signup: {
       disabled: false,
-      // Size sanity caps for unattributed (ownerless) first messages, i.e.
-      // identity contract registration. They bound how much data can be written
+      // Size sanity cap for unattributed (ownerless) first messages, i.e.
+      // identity contract registration. It bounds how much data can be written
       // 'for free'; see POST /event in src/serve/routes.ts.
       maxFirstMessageBytes: 5 * 1024,
       limit: {

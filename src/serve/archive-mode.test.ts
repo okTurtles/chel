@@ -5,10 +5,6 @@
 // database.ts), so any unconditional write during startup makes an archive
 // server fail to boot. A persistent backend is required to reproduce this: the
 // in-memory backend never installs the archive-mode guards.
-//
-// `jsr:@db/sqlite` is loaded purely to keep the Deno memory-leak checker happy
-// (see other *.test.ts files in this directory).
-import 'jsr:@db/sqlite'
 import { assert, assertEquals } from 'jsr:@std/assert'
 import process from 'node:process'
 import sbp from 'npm:@sbp/sbp'
@@ -19,13 +15,17 @@ import { startIsolatedServer } from './server-test-helpers.ts'
 // in `config-defaults.ts`.
 const FREE_ALLOWANCE_BYTES = 2 * 1024 * 1024
 
-const configFor = (dirname: string, archiveMode: boolean): Record<string, unknown> => ({
+const configFor = (
+  dirname: string,
+  archiveMode: unknown,
+  freeAllowanceBytes = FREE_ALLOWANCE_BYTES
+): Record<string, unknown> => ({
   server_id: 'archive-mode-test-id',
   'server:host': '127.0.0.1',
   'server:port': 0,
   'server:appDir': '.',
   'server:archiveMode': archiveMode,
-  'server:billing:freeAllowanceBytes': FREE_ALLOWANCE_BYTES,
+  'server:billing:freeAllowanceBytes': freeAllowanceBytes,
   'server:messages': [],
   'database:backend': 'fs',
   'database:backendOptions': { fs: { dirname } },
@@ -63,6 +63,26 @@ Deno.test({
         const server = await startIsolatedServer(configFor(dirname, true))
         try {
           assert(server.uri.startsWith('http://127.0.0.1:'))
+        } finally {
+          await server.stop()
+        }
+      })
+
+      await t.step('a string that spells false (e.g. from the environment) is not archive mode', async () => {
+        // nconf leaves `server__archiveMode=off` as the string 'off', which is
+        // truthy. Every reader must agree that it means writable: the server
+        // used to boot read-only (no workers, write guards installed) while
+        // the routes accepted writes that then failed in the database.
+        const otherAllowance = FREE_ALLOWANCE_BYTES + 1
+        const server = await startIsolatedServer(configFor(dirname, 'off', otherAllowance))
+        try {
+          // Written by `startServer()` only when it considers itself writable
+          assertEquals(
+            await sbp('chelonia.db/get', '_private_freeAllowanceBytes', { bypassCache: true }),
+            String(otherAllowance)
+          )
+          // ...and accepted by the database's own archive-mode guard
+          await sbp('chelonia.db/set', 'archive-mode-test-key', 'writable')
         } finally {
           await server.stop()
         }

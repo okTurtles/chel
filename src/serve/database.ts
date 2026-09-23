@@ -7,6 +7,7 @@ import { checkKey, parsePrefixableKey, prefixHandlers } from 'npm:@chelonia/lib/
 import { strToB64 } from 'npm:@chelonia/lib/functions'
 import sbp from 'npm:@sbp/sbp'
 import LRU from 'npm:lru-cache'
+import { booleanConfig } from './config-utils.ts'
 import { BackendErrorConflict, BackendErrorGone, BackendErrorNotFound } from './errors.ts'
 import { initVapid } from './vapid.ts'
 import { initZkpp } from './zkppSalt.ts'
@@ -218,7 +219,7 @@ export const initDB = async ({ skipDbPreloading }: { skipDbPreloading?: boolean 
       const backend = nconf.get('database:backend')
       const persistence = backend || (production ? 'fs' : undefined)
       const options = nconf.get('database:backendOptions')
-      const ARCHIVE_MODE = nconf.get('server:archiveMode')
+      const ARCHIVE_MODE = booleanConfig('server:archiveMode')
 
       if (persistence && persistence !== 'mem') {
         let Ctor

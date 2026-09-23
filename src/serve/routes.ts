@@ -137,7 +137,11 @@ function installRateLimiterSelectorsOnce (): void {
   rateLimitersInstalled = true
   sbp('sbp/selectors/register', {
     'backend/server/stopRateLimiters': async function () {
-      await disposeSignupLimiters(currentLimiters)
+      // Cleared first so that a later `registerRoutes` does not dispose the
+      // same limiters a second time
+      const limiters = currentLimiters
+      currentLimiters = undefined
+      await disposeSignupLimiters(limiters)
     }
   })
 }
@@ -229,8 +233,10 @@ function serveAsset (c: Context, subpath: string, assetsDir: string): Promise<Re
 
 export function registerRoutes (app: Hono): void {
   // Clean up any previous rate limiters (their intervals leak if stopRateLimiters
-  // wasn't called, e.g. when the SERVER_EXITING handler was consumed already)
-  disposeSignupLimiters(currentLimiters)
+  // wasn't called, e.g. when the SERVER_EXITING handler was consumed already).
+  // Not awaited: `registerRoutes` is synchronous, and the old limiters are
+  // replaced below regardless.
+  void disposeSignupLimiters(currentLimiters)
 
   const FILE_UPLOAD_MAX_BYTES = positiveIntConfig('server:fileUploadMaxBytes')
   const SIGNUP_LIMIT_DISABLED = signupRateLimitDisabled()
@@ -300,12 +306,11 @@ export function registerRoutes (app: Hono): void {
           // Unattributed (ownerless) first messages, i.e. identity contract
           // registration, are only allowed within configured size limits
           if (!credentials?.billableContractID && deserializedHEAD.isFirstMessage) {
-            // Checks are ordered cheapest first: the payload is already in
-            // memory, while the manifest and contract source checks below read
+            // Checks are ordered cheapest first, and all of them run before
+            // `handleEntry`, which reads the manifest and the contract source
             // from the database. Rejected requests must not be able to trigger
-            // those reads at line rate, so the kill switch and the rate limiter
-            // both run before them. This also means that requests failing the
-            // later checks consume a rate limit token.
+            // those reads at line rate. This also means that requests failing
+            // later, in `handleEntry`, have already consumed a rate limit token.
             if (Buffer.byteLength(payload) > SIGNUP_MAX_FIRST_MESSAGE_BYTES) {
               throw new HTTPException(413, { message: 'First message exceeds size limit' })
             }

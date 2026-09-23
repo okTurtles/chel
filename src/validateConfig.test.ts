@@ -123,11 +123,9 @@ Deno.test({
     })
 
     await t.step('errors on a zero signup size cap (use signup.disabled instead)', () => {
-      for (const key of ['maxFirstMessageBytes'] as const) {
-        const result = validateTomlConfig({ server: { signup: { [key]: 0 } } })
-        assertEquals(result.warnings, [], `expected no warnings for ${key}`)
-        assertEquals(result.errors, [`${`server.signup.${key}`}: must be a positive integer`])
-      }
+      const result = validateTomlConfig({ server: { signup: { maxFirstMessageBytes: 0 } } })
+      assertEquals(result.warnings, [])
+      assertEquals(result.errors, ['server.signup.maxFirstMessageBytes: must be a positive integer'])
     })
 
     await t.step('errors on a first-message cap above the /event body limit', () => {

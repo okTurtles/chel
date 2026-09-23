@@ -419,7 +419,7 @@ email = "admin@example.com"
 [database]
 backend = "sqlite"
 
-# Signup size caps and the billing free tier; see
+# Signup size cap and the billing free tier; see
 # docs/signup-and-billing.md.
 # [server.signup]
 # maxFirstMessageBytes = 5120

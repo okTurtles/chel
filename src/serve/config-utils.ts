@@ -26,8 +26,23 @@ const requireDefault = <T>(key: string, type: 'number' | 'boolean'): T => {
   return fallback as T
 }
 
+// The last rejected value reported for each key. Some settings are read per
+// request (e.g. `server:signup:disabled`), so warning on every read would let
+// unauthenticated requests flood the log with the same message. Instead a bad
+// value is reported when it first appears, and again only once it has changed
+// or a valid value has been read in between.
+const lastReported = new Map<string, string>()
+
 const warn = (key: string, raw: unknown, reason: string, using: unknown): void => {
-  console.warn(`[config] Ignoring '${key}' (${JSON.stringify(raw)}): ${reason}. Using ${using}.`)
+  const message = `[config] Ignoring '${key}' (${JSON.stringify(raw)}): ${reason}. Using ${using}.`
+  if (lastReported.get(key) === message) return
+  lastReported.set(key, message)
+  console.warn(message)
+}
+
+const accept = <T>(key: string, value: T): T => {
+  lastReported.delete(key)
+  return value
 }
 
 // `Number()` maps several non-numeric values onto valid-looking integers, and
@@ -47,7 +62,7 @@ type IntBounds = { allowZero?: boolean, max?: number }
 const readIntConfig = (key: string, { allowZero = false, max }: IntBounds): number => {
   const fallback = requireDefault<number>(key, 'number')
   const raw = nconf.get(key)
-  if (raw == null) return fallback
+  if (raw == null) return accept(key, fallback)
   const value = toNumber(raw)
   if (!Number.isSafeInteger(value) || value < 0) {
     warn(key, raw, 'not a non-negative integer', fallback)
@@ -64,7 +79,7 @@ const readIntConfig = (key: string, { allowZero = false, max }: IntBounds): numb
     warn(key, raw, `above the maximum of ${max}`, max)
     return max
   }
-  return value
+  return accept(key, value)
 }
 
 // Reads a setting that must be a positive integer (e.g. a size cap, where 0
@@ -92,13 +107,13 @@ const FALSE_STRINGS = new Set(['false', '0', 'no', 'off', ''])
 export const booleanConfig = (key: string): boolean => {
   const fallback = requireDefault<boolean>(key, 'boolean')
   const raw = nconf.get(key)
-  if (raw == null) return fallback
-  if (typeof raw === 'boolean') return raw
-  if (raw === 0 || raw === 1) return raw === 1
+  if (raw == null) return accept(key, fallback)
+  if (typeof raw === 'boolean') return accept(key, raw)
+  if (raw === 0 || raw === 1) return accept(key, raw === 1)
   if (typeof raw === 'string') {
     const normalized = raw.trim().toLowerCase()
-    if (TRUE_STRINGS.has(normalized)) return true
-    if (FALSE_STRINGS.has(normalized)) return false
+    if (TRUE_STRINGS.has(normalized)) return accept(key, true)
+    if (FALSE_STRINGS.has(normalized)) return accept(key, false)
   }
   warn(key, raw, 'not a boolean', fallback)
   return fallback

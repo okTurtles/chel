@@ -65,22 +65,23 @@ export const ConfigSchema = z.strictObject({
     reclaimForeignSubscriptions: z.optional(z.boolean()),
     signup: z.optional(z.strictObject({
       disabled: z.optional(z.boolean()),
-      // Size sanity caps for ownerless (unattributed) first messages; a cap of
+      // Size sanity cap for ownerless (unattributed) first messages; a cap of
       // 0 is rejected because 'disabled = true' is the supported way to block
       // signups entirely.
       //
-      // The first-message cap is bounded above as well: `POST /event` rejects
-      // any body larger than `MAX_EVENT_BODY_BYTES` before the handler runs, so
-      // a larger cap would silently have no effect.
+      // It is bounded above as well: `POST /event` rejects any body larger
+      // than `MAX_EVENT_BODY_BYTES` before the handler runs, so a larger cap
+      // would silently have no effect.
       maxFirstMessageBytes: z.optional(positiveInt.max(
         MAX_EVENT_BODY_BYTES,
         `must not exceed the ${MAX_EVENT_BODY_BYTES} byte POST /event body limit`
       )),
       limit: z.optional(z.strictObject({
         disabled: z.optional(z.boolean()),
-        // Positive (not merely non-negative) to match the runtime, which falls
-        // back to a default when these are falsy (see `routes.ts`), so `0`
-        // would be silently ignored rather than meaning "no signups".
+        // Positive (not merely non-negative) to match the runtime, which
+        // rejects `0` with a warning and falls back to the default (see
+        // `positiveIntConfig` in `src/serve/config-utils.ts`), so `0` would be
+        // ignored rather than meaning "no signups".
         minute: z.optional(positiveInt),
         hour: z.optional(positiveInt),
         day: z.optional(positiveInt)
@@ -89,7 +90,7 @@ export const ConfigSchema = z.strictObject({
     billing: z.optional(z.strictObject({
       // Per-billable-entity storage that is not charged for; 0 disables the
       // free tier (charging from the first byte), so non-negative values are
-      // accepted (unlike the signup caps above).
+      // accepted (unlike the signup size cap above).
       freeAllowanceBytes: z.optional(nonNegativeInt)
     })),
     // The VAPID email is read from `server:vapid:email` at runtime

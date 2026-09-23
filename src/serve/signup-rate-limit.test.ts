@@ -5,10 +5,6 @@
 // flipping `NODE_ENV` for a request would also change how the database and the
 // development-only routes are set up, which other test files depend on. These
 // tests therefore exercise the limiters directly.
-//
-// `jsr:@db/sqlite` is loaded purely to keep the Deno memory-leak checker happy
-// (see other *.test.ts files in this directory).
-import 'jsr:@db/sqlite'
 import { assert, assertEquals, assertThrows } from 'jsr:@std/assert'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'

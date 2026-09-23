@@ -173,3 +173,57 @@ Deno.test({
     })
   }
 })
+
+Deno.test({
+  name: 'repeated configuration warnings',
+  async fn (t: Deno.TestContext) {
+    // Some settings are read on every request (e.g. `server:signup:disabled`),
+    // so a bad value must not produce a warning per request
+    const read = (key: string, raw: unknown) => {
+      return withValue(key, raw, () => key === FLAG_KEY ? booleanConfig(key) : positiveIntConfig(key))
+    }
+    // Reading a valid value first makes each step independent of the last
+    // value the steps before it left reported
+    const reset = (key: string) => read(key, key === FLAG_KEY ? true : 1234)
+
+    for (const key of [FLAG_KEY, KEY]) {
+      await t.step(`${key}: the same rejected value is reported only once`, () => {
+        reset(key)
+        const warnings = warningsFrom(() => {
+          for (let i = 0; i < 5; i++) read(key, 'maybe')
+        })
+        assertEquals(warnings.length, 1)
+      })
+
+      await t.step(`${key}: a different rejected value is reported again`, () => {
+        reset(key)
+        const warnings = warningsFrom(() => {
+          read(key, 'maybe')
+          read(key, 'perhaps')
+        })
+        assertEquals(warnings.length, 2)
+      })
+
+      await t.step(`${key}: a rejected value is reported again after a valid one`, () => {
+        reset(key)
+        const warnings = warningsFrom(() => {
+          read(key, 'maybe')
+          reset(key)
+          read(key, 'maybe')
+        })
+        assertEquals(warnings.length, 2)
+      })
+    }
+
+    await t.step('each setting is tracked separately', () => {
+      reset(FLAG_KEY)
+      reset(KEY)
+      const warnings = warningsFrom(() => {
+        read(FLAG_KEY, 'maybe')
+        read(KEY, 'maybe')
+        read(FLAG_KEY, 'maybe')
+      })
+      assertEquals(warnings.length, 2)
+    })
+  }
+})

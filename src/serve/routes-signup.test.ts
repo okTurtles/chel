@@ -1,4 +1,3 @@
-import 'jsr:@db/sqlite'
 import { Buffer } from 'node:buffer'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
@@ -14,15 +13,15 @@ import {
   stopTestServer
 } from './routes-test-helpers.ts'
 
-// The test server runs with the shipped defaults for these caps (see
-// `startTestServer`), so the steps below follow whatever they are set to rather
-// than restating the numbers.
+// The test server runs with the shipped default for this cap (see
+// `startTestServer`), so the steps below follow whatever it is set to rather
+// than restating the number.
 const { maxFirstMessageBytes } = nconfDefaults.server.signup
 
 // Tests for unattributed (ownerless) first messages, i.e. identity contract
 // registration. Registration used to require the manifest name to be exactly
 // 'gi.contracts/identity'; it is now name-agnostic and guarded only by the
-// signup size caps (see POST /event in src/serve/routes.ts).
+// signup size cap (see POST /event in src/serve/routes.ts).
 Deno.test({
   name: 'routes: signup (unattributed contract registration)',
   async fn (t: Deno.TestContext) {
@@ -145,10 +144,11 @@ Deno.test({
         if (nameRes.status !== 404) throw new Error(`Expected 404 but got ${nameRes.status}`)
       })
 
-      await t.step('the signup kill switch is checked before any manifest read', async () => {
+      await t.step('the signup kill switch is checked before the message is processed', async () => {
         // Requests that are rejected outright must not be able to trigger the
-        // manifest and contract source reads: a request whose manifest is not
-        // even deployed (which would otherwise be a 422) gets the 403 instead
+        // manifest and contract source reads in `handleEntry`: a request whose
+        // manifest is not even deployed (which would otherwise fail while being
+        // processed) gets the 403 instead
         const { serialized } = await createTestContractRegistration({
           name: 'com.example/disabled-signup'
         })

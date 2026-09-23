@@ -8878,10 +8878,10 @@ ${customMsgs.join("\n")}` : "";
           "alias"
         ];
         opts = objFilter2(opts, (k, v2) => {
-          let accept = supportedOpts.indexOf(k) !== -1;
+          let accept2 = supportedOpts.indexOf(k) !== -1;
           if (k === "type" && ["string", "number", "boolean"].indexOf(v2) === -1)
-            accept = false;
-          return accept;
+            accept2 = false;
+          return accept2;
         });
         const fullCommand = context.fullCommands[context.fullCommands.length - 1];
         const parseOptions = fullCommand ? command$1.cmdToParseOptions(fullCommand) : {
@@ -16355,9 +16355,9 @@ var init_esm2 = __esm({
           this.eventQueues[name] = [];
         }
         const events = this.eventQueues[name];
-        let accept;
+        let accept2;
         const promise = new Promise((resolve10) => {
-          accept = resolve10;
+          accept2 = resolve10;
         });
         const thisEvent = typeof invocation === "function" ? {
           fn: invocation,
@@ -16377,7 +16377,7 @@ var init_esm2 = __esm({
                 return await esm_default(...invocation);
               }
             } finally {
-              accept();
+              accept2();
               events.shift();
             }
           } else {
@@ -68462,18 +68462,136 @@ init_db();
 init_functions();
 init_esm();
 var import_npm_lru_cache = __toESM(require_lru_cache());
+var import_npm_nconf = __toESM(require_nconf());
+var nconfDefaults = {
+  // Unique, stable identity for this server instance. Required at runtime by
+  // `chel serve` (see `src/serve/server.ts`) to scope push subscriptions;
+  // left unset here so that file-only commands and `chel init` work without it.
+  server_id: void 0,
+  server: {
+    appDir: ".",
+    host: "0.0.0.0",
+    port: 8e3,
+    dashboardPort: 8888,
+    fileUploadMaxBytes: 31457280,
+    signup: {
+      disabled: false,
+      // Size sanity cap for unattributed (ownerless) first messages, i.e.
+      // identity contract registration. It bounds how much data can be written
+      // 'for free'; see POST /event in src/serve/routes.ts.
+      maxFirstMessageBytes: 5 * 1024,
+      limit: {
+        disabled: false,
+        minute: 2,
+        hour: 10,
+        day: 50
+      }
+    },
+    // Billing settings. The credits worker has no access to nconf (it runs in
+    // its own Worker thread, with a separate module instance), so
+    // `freeAllowanceBytes` is persisted to the database at startup (see
+    // src/serve/server.ts) and re-read each billing cycle (see
+    // src/serve/creditsWorker.ts).
+    billing: {
+      // Per-billable-entity storage (identity contract + everything it owns)
+      // that is not charged for. 0 disables the free tier.
+      freeAllowanceBytes: 10 * 1024 * 1024
+    },
+    vapid: {
+      email: void 0
+    },
+    messages: [],
+    maxEventsBatchSize: 500,
+    archiveMode: false,
+    reclaimForeignSubscriptions: false
+  },
+  database: {
+    lruNumItems: 1e4,
+    backend: "mem",
+    backendOptions: {}
+  }
+};
+var defaultFor = (key) => {
+  return key.split(":").reduce((acc, part) => {
+    return acc?.[part];
+  }, nconfDefaults);
+};
+var requireDefault = (key, type) => {
+  const fallback = defaultFor(key);
+  if (typeof fallback !== type) {
+    throw new Error(`No ${type} default defined for configuration key '${key}'`);
+  }
+  return fallback;
+};
+var lastReported = /* @__PURE__ */ new Map();
+var warn = (key, raw2, reason, using) => {
+  const message = `[config] Ignoring '${key}' (${JSON.stringify(raw2)}): ${reason}. Using ${using}.`;
+  if (lastReported.get(key) === message) return;
+  lastReported.set(key, message);
+  console.warn(message);
+};
+var accept = (key, value) => {
+  lastReported.delete(key);
+  return value;
+};
+var toNumber = (raw2) => {
+  if (typeof raw2 === "number") return raw2;
+  if (typeof raw2 === "string" && raw2.trim() !== "") return Number(raw2);
+  return NaN;
+};
+var readIntConfig = (key, { allowZero = false, max }) => {
+  const fallback = requireDefault(key, "number");
+  const raw2 = import_npm_nconf.default.get(key);
+  if (raw2 == null) return accept(key, fallback);
+  const value = toNumber(raw2);
+  if (!Number.isSafeInteger(value) || value < 0) {
+    warn(key, raw2, "not a non-negative integer", fallback);
+    return fallback;
+  }
+  if (value === 0 && !allowZero) {
+    warn(key, raw2, "zero is not supported for this setting", fallback);
+    return fallback;
+  }
+  if (max != null && value > max) {
+    warn(key, raw2, `above the maximum of ${max}`, max);
+    return max;
+  }
+  return accept(key, value);
+};
+var positiveIntConfig = (key, max) => {
+  return readIntConfig(key, { max });
+};
+var nonNegativeIntConfig = (key, max) => {
+  return readIntConfig(key, { allowZero: true, max });
+};
+var TRUE_STRINGS = /* @__PURE__ */ new Set(["true", "1", "yes", "on"]);
+var FALSE_STRINGS = /* @__PURE__ */ new Set(["false", "0", "no", "off", ""]);
+var booleanConfig = (key) => {
+  const fallback = requireDefault(key, "boolean");
+  const raw2 = import_npm_nconf.default.get(key);
+  if (raw2 == null) return accept(key, fallback);
+  if (typeof raw2 === "boolean") return accept(key, raw2);
+  if (raw2 === 0 || raw2 === 1) return accept(key, raw2 === 1);
+  if (typeof raw2 === "string") {
+    const normalized = raw2.trim().toLowerCase();
+    if (TRUE_STRINGS.has(normalized)) return accept(key, true);
+    if (FALSE_STRINGS.has(normalized)) return accept(key, false);
+  }
+  warn(key, raw2, "not a boolean", fallback);
+  return fallback;
+};
 init_errors3();
 var BackendErrorNotFound = ChelErrorGenerator("BackendErrorNotFound");
 var BackendErrorGone = ChelErrorGenerator("BackendErrorGone");
 var BackendErrorBadData = ChelErrorGenerator("BackendErrorBadData");
 var BackendErrorConflict = ChelErrorGenerator("BackendErrorConflict");
 init_esm();
-var import_npm_nconf = __toESM(require_nconf());
+var import_npm_nconf2 = __toESM(require_nconf());
 var vapidPublicKey;
 var vapidPrivateKey;
 var vapid;
 var initVapid = async () => {
-  const vapidEmail = import_npm_nconf.default.get("server:vapid:email");
+  const vapidEmail = import_npm_nconf2.default.get("server:vapid:email");
   if (!vapidEmail) {
     console.warn('Missing VAPID identification. Please set `server:vapid:email` to a value like "some@domain.example".');
   }
@@ -68877,7 +68995,7 @@ var redeemSaltUpdateToken = async (contract, token) => {
     return setZkppSaltRecord(contract, hashedPassword, authSalt, contractSalt, cid);
   };
 };
-var import_npm_nconf2 = __toESM(require_nconf());
+var import_npm_nconf3 = __toESM(require_nconf());
 init_esm();
 var KEYOP_SEGMENT_LENGTH = 1e4;
 var updateSize = async (resourceID, sizeKey, size, skipIfDeleted) => {
@@ -68987,7 +69105,7 @@ function installBaseSelectorsOnce() {
   baseSelectorsInstalled = true;
   esm_default("sbp/selectors/register", {
     "backend/db/streamEntriesAfter": async function(contractID, height, requestedLimit, options2 = {}) {
-      const batchMaxSize = import_npm_nconf2.default.get("server:maxEventsBatchSize") ?? 500;
+      const batchMaxSize = import_npm_nconf3.default.get("server:maxEventsBatchSize") ?? 500;
       const limit = Math.min(requestedLimit ?? Number.POSITIVE_INFINITY, batchMaxSize);
       const latestHEADinfo = await esm_default("chelonia/db/latestHEADinfo", contractID);
       if (latestHEADinfo === "") {
@@ -69108,10 +69226,10 @@ var initDB = async ({ skipDbPreloading } = {}) => {
   const thisInitPromise = initPromise ?? (async () => {
     installBaseSelectorsOnce();
     if (isFirstRef) {
-      const backend = import_npm_nconf2.default.get("database:backend");
+      const backend = import_npm_nconf3.default.get("database:backend");
       const persistence = backend || (production ? "fs" : void 0);
-      const options2 = import_npm_nconf2.default.get("database:backendOptions");
-      const ARCHIVE_MODE = import_npm_nconf2.default.get("server:archiveMode");
+      const options2 = import_npm_nconf3.default.get("database:backendOptions");
+      const ARCHIVE_MODE = booleanConfig("server:archiveMode");
       if (persistence && persistence !== "mem") {
         let Ctor;
         try {
@@ -69127,7 +69245,7 @@ var initDB = async ({ skipDbPreloading } = {}) => {
         }
         currentBackend = instance;
         const cache2 = new import_npm_lru_cache.default({
-          max: import_npm_nconf2.default.get("database:lruNumItems") ?? 1e4
+          max: import_npm_nconf3.default.get("database:lruNumItems") ?? 1e4
         });
         currentCache = cache2;
         if (!setSelectors || false) {
@@ -69793,10 +69911,10 @@ dashboardPort = ${tomlValue(d.server.dashboardPort)}
 
 [server.signup]
 # disabled = ${tomlValue(d.server.signup.disabled)}
-# Size sanity caps for ownerless (unattributed) first messages, i.e. identity
-# contract registration. They bound how much data can be written 'for free'.
+# Size sanity cap for ownerless (unattributed) first messages, i.e. identity
+# contract registration. It bounds how much data can be written 'for free'.
 # 'maxFirstMessageBytes' cannot exceed ${tomlValue(MAX_EVENT_BODY_BYTES)}, the request body limit
-# 'POST /event' enforces before these caps are consulted.
+# 'POST /event' enforces before this cap is consulted.
 # maxFirstMessageBytes = ${tomlValue(d.server.signup.maxFirstMessageBytes)}
 
 [server.signup.limit]
@@ -70073,22 +70191,23 @@ var ConfigSchema = strictObject({
     reclaimForeignSubscriptions: optional(boolean2()),
     signup: optional(strictObject({
       disabled: optional(boolean2()),
-      // Size sanity caps for ownerless (unattributed) first messages; a cap of
+      // Size sanity cap for ownerless (unattributed) first messages; a cap of
       // 0 is rejected because 'disabled = true' is the supported way to block
       // signups entirely.
       //
-      // The first-message cap is bounded above as well: `POST /event` rejects
-      // any body larger than `MAX_EVENT_BODY_BYTES` before the handler runs, so
-      // a larger cap would silently have no effect.
+      // It is bounded above as well: `POST /event` rejects any body larger
+      // than `MAX_EVENT_BODY_BYTES` before the handler runs, so a larger cap
+      // would silently have no effect.
       maxFirstMessageBytes: optional(positiveInt.max(
         MAX_EVENT_BODY_BYTES,
         `must not exceed the ${MAX_EVENT_BODY_BYTES} byte POST /event body limit`
       )),
       limit: optional(strictObject({
         disabled: optional(boolean2()),
-        // Positive (not merely non-negative) to match the runtime, which falls
-        // back to a default when these are falsy (see `routes.ts`), so `0`
-        // would be silently ignored rather than meaning "no signups".
+        // Positive (not merely non-negative) to match the runtime, which
+        // rejects `0` with a warning and falls back to the default (see
+        // `positiveIntConfig` in `src/serve/config-utils.ts`), so `0` would be
+        // ignored rather than meaning "no signups".
         minute: optional(positiveInt),
         hour: optional(positiveInt),
         day: optional(positiveInt)
@@ -70097,7 +70216,7 @@ var ConfigSchema = strictObject({
     billing: optional(strictObject({
       // Per-billable-entity storage that is not charged for; 0 disables the
       // free tier (charging from the first byte), so non-negative values are
-      // accepted (unlike the signup caps above).
+      // accepted (unlike the signup size cap above).
       freeAllowanceBytes: optional(nonNegativeInt)
     })),
     // The VAPID email is read from `server:vapid:email` at runtime
@@ -70254,7 +70373,7 @@ async function validateConfigFile(filePath) {
   }
   validateParsedConfig(parsed, filePath);
 }
-var import_npm_nconf3 = __toESM(require_nconf());
+var import_npm_nconf4 = __toESM(require_nconf());
 var globImport_serve_database_ts = __glob({
   "./serve/database-fs.ts": () => Promise.resolve().then(() => (init_database_fs(), database_fs_exports)),
   "./serve/database-redis.ts": () => Promise.resolve().then(() => (init_database_redis(), database_redis_exports)),
@@ -70293,13 +70412,13 @@ async function migrate(args) {
   if (args.fromConfig) {
     const fromConfig = parse4(await readFile3(args.fromConfig, { encoding: "utf-8", flag: "r" }));
     validateParsedConfig(fromConfig, args.fromConfig);
-    const backend = import_npm_nconf3.default.get("database:backend");
+    const backend = import_npm_nconf4.default.get("database:backend");
     const fromBackend = fromConfig?.database?.backend;
     if (fromBackend !== backend) {
       console.warn(`--from-config has backend ${fromBackend} but --from is ${backend}`);
     }
     const fromConfigOpts = fromConfig?.database?.backendOptions?.[backend] || {};
-    import_npm_nconf3.default.set(`database:backendOptions:${backend}`, fromConfigOpts);
+    import_npm_nconf4.default.set(`database:backendOptions:${backend}`, fromConfigOpts);
   }
   try {
     await initDB({ skipDbPreloading: true });
@@ -70319,13 +70438,13 @@ async function migrate(args) {
       }
       toConfigOpts = toConfig?.database?.backendOptions?.[to] || {};
     } else {
-      toConfigOpts = import_npm_nconf3.default.get(`database:backendOptions:${to}`) || {};
+      toConfigOpts = import_npm_nconf4.default.get(`database:backendOptions:${to}`) || {};
     }
-    const fromBackend = import_npm_nconf3.default.get("database:backend");
+    const fromBackend = import_npm_nconf4.default.get("database:backend");
     const sharedFile = sharedSqliteFilepath(
       fromBackend,
       to,
-      import_npm_nconf3.default.get(`database:backendOptions:${fromBackend}`),
+      import_npm_nconf4.default.get(`database:backendOptions:${fromBackend}`),
       toConfigOpts
     );
     if (sharedFile) {
@@ -70444,7 +70563,7 @@ var module10 = {
   }
 };
 init_utils();
-var import_npm_nconf4 = __toESM(require_nconf());
+var import_npm_nconf5 = __toESM(require_nconf());
 var VALID_VERSION = /^[a-zA-Z0-9_+-][a-zA-Z0-9._+-]*[a-zA-Z0-9_+-]?$/;
 var RESERVED_FILE_CHARS_REPLACE = /[\x00/\\:*?"<>|]/g;
 var projectRoot;
@@ -70599,7 +70718,7 @@ async function copyFileIfNeeded(sourcePath, targetPath, fileName, args) {
   await copyFile(sourcePath, targetPath);
 }
 async function loadCheloniaConfig() {
-  const configPath = import_npm_nconf4.default.get("appManifest") || join6(projectRoot, "chelonia.json");
+  const configPath = import_npm_nconf5.default.get("appManifest") || join6(projectRoot, "chelonia.json");
   cheloniaConfig = { contracts: {} };
   if (existsSync(configPath)) {
     try {
@@ -70623,7 +70742,7 @@ async function updateCheloniaConfig(fullContractName, contractName, version3, ma
     version: version3,
     path: pinnedManifestPath
   };
-  const configPath = import_npm_nconf4.default.get("appManifest") || join6(projectRoot, "chelonia.json");
+  const configPath = import_npm_nconf5.default.get("appManifest") || join6(projectRoot, "chelonia.json");
   const configContent = JSON.stringify(cheloniaConfig, null, 2) + "\n";
   await writeFile2(configPath, configContent, "utf8");
   console.log(green("\u2705 Saved chelonia.json"));
@@ -74065,116 +74184,6 @@ var etag = (options2) => {
     }
   };
 };
-var import_npm_nconf5 = __toESM(require_nconf());
-var nconfDefaults = {
-  // Unique, stable identity for this server instance. Required at runtime by
-  // `chel serve` (see `src/serve/server.ts`) to scope push subscriptions;
-  // left unset here so that file-only commands and `chel init` work without it.
-  server_id: void 0,
-  server: {
-    appDir: ".",
-    host: "0.0.0.0",
-    port: 8e3,
-    dashboardPort: 8888,
-    fileUploadMaxBytes: 31457280,
-    signup: {
-      disabled: false,
-      // Size sanity caps for unattributed (ownerless) first messages, i.e.
-      // identity contract registration. They bound how much data can be written
-      // 'for free'; see POST /event in src/serve/routes.ts.
-      maxFirstMessageBytes: 5 * 1024,
-      limit: {
-        disabled: false,
-        minute: 2,
-        hour: 10,
-        day: 50
-      }
-    },
-    // Billing settings. The credits worker has no access to nconf (it runs in
-    // its own Worker thread, with a separate module instance), so
-    // `freeAllowanceBytes` is persisted to the database at startup (see
-    // src/serve/server.ts) and re-read each billing cycle (see
-    // src/serve/creditsWorker.ts).
-    billing: {
-      // Per-billable-entity storage (identity contract + everything it owns)
-      // that is not charged for. 0 disables the free tier.
-      freeAllowanceBytes: 10 * 1024 * 1024
-    },
-    vapid: {
-      email: void 0
-    },
-    messages: [],
-    maxEventsBatchSize: 500,
-    archiveMode: false,
-    reclaimForeignSubscriptions: false
-  },
-  database: {
-    lruNumItems: 1e4,
-    backend: "mem",
-    backendOptions: {}
-  }
-};
-var defaultFor = (key) => {
-  return key.split(":").reduce((acc, part) => {
-    return acc?.[part];
-  }, nconfDefaults);
-};
-var requireDefault = (key, type) => {
-  const fallback = defaultFor(key);
-  if (typeof fallback !== type) {
-    throw new Error(`No ${type} default defined for configuration key '${key}'`);
-  }
-  return fallback;
-};
-var warn = (key, raw2, reason, using) => {
-  console.warn(`[config] Ignoring '${key}' (${JSON.stringify(raw2)}): ${reason}. Using ${using}.`);
-};
-var toNumber = (raw2) => {
-  if (typeof raw2 === "number") return raw2;
-  if (typeof raw2 === "string" && raw2.trim() !== "") return Number(raw2);
-  return NaN;
-};
-var readIntConfig = (key, { allowZero = false, max }) => {
-  const fallback = requireDefault(key, "number");
-  const raw2 = import_npm_nconf5.default.get(key);
-  if (raw2 == null) return fallback;
-  const value = toNumber(raw2);
-  if (!Number.isSafeInteger(value) || value < 0) {
-    warn(key, raw2, "not a non-negative integer", fallback);
-    return fallback;
-  }
-  if (value === 0 && !allowZero) {
-    warn(key, raw2, "zero is not supported for this setting", fallback);
-    return fallback;
-  }
-  if (max != null && value > max) {
-    warn(key, raw2, `above the maximum of ${max}`, max);
-    return max;
-  }
-  return value;
-};
-var positiveIntConfig = (key, max) => {
-  return readIntConfig(key, { max });
-};
-var nonNegativeIntConfig = (key, max) => {
-  return readIntConfig(key, { allowZero: true, max });
-};
-var TRUE_STRINGS = /* @__PURE__ */ new Set(["true", "1", "yes", "on"]);
-var FALSE_STRINGS = /* @__PURE__ */ new Set(["false", "0", "no", "off", ""]);
-var booleanConfig = (key) => {
-  const fallback = requireDefault(key, "boolean");
-  const raw2 = import_npm_nconf5.default.get(key);
-  if (raw2 == null) return fallback;
-  if (typeof raw2 === "boolean") return raw2;
-  if (raw2 === 0 || raw2 === 1) return raw2 === 1;
-  if (typeof raw2 === "string") {
-    const normalized = raw2.trim().toLowerCase();
-    if (TRUE_STRINGS.has(normalized)) return true;
-    if (FALSE_STRINGS.has(normalized)) return false;
-  }
-  warn(key, raw2, "not a boolean", fallback);
-  return fallback;
-};
 var import_npm_pino = __toESM(require_pino());
 var verboseByDefault = process6.env.NODE_ENV === "development" || process6.env.CI || process6.env.CYPRESS_RECORD_KEY || process6.env.PRETTY;
 function getLogLevel() {
@@ -74425,7 +74434,9 @@ function installRateLimiterSelectorsOnce() {
   rateLimitersInstalled = true;
   esm_default("sbp/selectors/register", {
     "backend/server/stopRateLimiters": async function() {
-      await disposeSignupLimiters(currentLimiters);
+      const limiters = currentLimiters;
+      currentLimiters = void 0;
+      await disposeSignupLimiters(limiters);
     }
   });
 }
@@ -74495,7 +74506,7 @@ function serveAsset(c, subpath, assetsDir) {
   }).catch(() => notFoundNoCache(c));
 }
 function registerRoutes(app) {
-  disposeSignupLimiters(currentLimiters);
+  void disposeSignupLimiters(currentLimiters);
   const FILE_UPLOAD_MAX_BYTES = positiveIntConfig("server:fileUploadMaxBytes");
   const SIGNUP_LIMIT_DISABLED = signupRateLimitDisabled();
   const SIGNUP_MAX_FIRST_MESSAGE_BYTES = positiveIntConfig("server:signup:maxFirstMessageBytes", MAX_EVENT_BODY_BYTES);
@@ -76086,7 +76097,7 @@ async function startServer() {
   const configuredServerId = import_npm_nconf8.default.get("server_id");
   const reclaimForeignSubscriptions = !!import_npm_nconf8.default.get("server:reclaimForeignSubscriptions");
   const appManifest = import_npm_nconf8.default.get("appManifest") || join7(import_npm_nconf8.default.get("server:appDir") || process10.cwd(), "chelonia.json");
-  const ARCHIVE_MODE = import_npm_nconf8.default.get("server:archiveMode");
+  const ARCHIVE_MODE = booleanConfig("server:archiveMode");
   const host = import_npm_nconf8.default.get("server:host") || "0.0.0.0";
   const port = import_npm_nconf8.default.get("server:port") ?? 8e3;
   if (CREDITS_WORKER_TASK_TIME_INTERVAL && OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL > CREDITS_WORKER_TASK_TIME_INTERVAL) {
@@ -80708,10 +80719,10 @@ function Yargs(processArgs = [], cwd = shim3.process.cwd(), parentRequire) {
       "alias"
     ];
     opts = objFilter(opts, (k, v2) => {
-      let accept = supportedOpts.indexOf(k) !== -1;
+      let accept2 = supportedOpts.indexOf(k) !== -1;
       if (k === "type" && ["string", "number", "boolean"].indexOf(v2) === -1)
-        accept = false;
-      return accept;
+        accept2 = false;
+      return accept2;
     });
     const fullCommand = context.fullCommands[context.fullCommands.length - 1];
     const parseOptions = fullCommand ? command2.cmdToParseOptions(fullCommand) : {

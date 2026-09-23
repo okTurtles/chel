@@ -51,9 +51,9 @@ src/
 ├── types/               # TypeScript type definitions
 └── serve/               # Server implementation
     ├── index.ts         # Main server entry
-    ├── server.ts        # Hapi server setup
+    ├── server.ts        # Hono server setup
     ├── database.ts      # Database layer (SBP selectors)
-    ├── database-*.ts    # Database backend implementations (fs, sqlite, redis)
+    ├── database-*.ts    # Database backend implementations (fs, sqlite, redis, router)
     ├── routes.ts        # HTTP route definitions
     ├── signup-guard.ts  # Size/manifest checks for ownerless first messages
     ├── signup-rate-limit.ts # Per-IP registration limits (production only)

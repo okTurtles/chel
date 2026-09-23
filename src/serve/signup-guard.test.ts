@@ -4,10 +4,6 @@
 // a fully signed registration message, so the malformed-manifest cases could
 // not be covered directly. In particular, the hashes a manifest names are used
 // as database keys, and an unvalidated hash could name any key at all.
-//
-// `jsr:@db/sqlite` is loaded purely to keep the Deno memory-leak checker happy
-// (see other *.test.ts files in this directory).
-import 'jsr:@db/sqlite'
 import { assertEquals, assertRejects } from 'jsr:@std/assert'
 import { createCID, multicodes } from 'npm:@chelonia/lib/functions'
 import sbp from 'npm:@sbp/sbp'

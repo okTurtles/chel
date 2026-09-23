@@ -6,10 +6,6 @@
 // hold the configured value as a decimal string once the server has started.
 // (creditsWorker.ts cannot be imported directly here because registering its
 // `chelonia.db/*` RPC selector would shadow the real database selectors.)
-//
-// `jsr:@db/sqlite` is loaded purely to keep the Deno memory-leak checker happy
-// (see other *.test.ts files in this directory).
-import 'jsr:@db/sqlite'
 import { assertEquals } from 'jsr:@std/assert'
 import { nconfDefaults, sbp, startTestServer, stopTestServer } from './routes-test-helpers.ts'
 Deno.test({

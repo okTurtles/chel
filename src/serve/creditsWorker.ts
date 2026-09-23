@@ -271,6 +271,9 @@ sbp('sbp/selectors/register', {
       // their allowance still get a zero-charge history entry, which anchors the
       // next charge to when the excess started existing (rather than billing
       // the excess retroactively over the free period).
+      // The allowance is granted per billable entity, and any ownerless root
+      // contract becomes one regardless of its name, so each gets its own
+      // allowance; the per-IP signup rate limits bound how many can be created.
       // Not using await to queue the call and immediately proceed with the next
       // billable entity
       updateCredits(billableEntity, 'charge', Math.max(0, size - freeAllowanceBytes)).catch((e) => {
