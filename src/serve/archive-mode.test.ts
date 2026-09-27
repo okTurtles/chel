@@ -28,7 +28,7 @@ const configFor = (
   'server:billing:freeAllowanceBytes': freeAllowanceBytes,
   'server:messages': [],
   'database:backend': 'fs',
-  'database:backendOptions': { fs: { dirname } },
+  'database:backendOptions': { fs: { dirname, skipFsCaseSensitivityCheck: true } },
   'database:lruNumItems': 100
 })
 
