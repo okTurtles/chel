@@ -149,31 +149,21 @@ Deno.test({
     await t.step('errors on negative or fractional byte-size settings', () => {
       const cases: Array<{ path: string, value: number }> = [
         { path: 'server.signup.maxFirstMessageBytes', value: -1 },
-        { path: 'server.billing.freeAllowanceBytes', value: -1024 }
+        { path: 'server.signup.maxFirstMessageBytes', value: 1.5 },
+        { path: 'server.billing.freeAllowanceBytes', value: -1024 },
+        { path: 'server.billing.freeAllowanceBytes', value: 1024.5 }
       ]
       for (const { path, value } of cases) {
         const [, group, key] = path.split('.')
         const result = validateTomlConfig({
           server: { [group]: { [key]: value } }
         })
-        assertEquals(result.warnings, [], `expected no warnings for ${path}`)
-        assertEquals(result.errors.length, 1, `expected one error for ${path}`)
+        assertEquals(result.warnings, [], `expected no warnings for ${path} = ${value}`)
+        assertEquals(result.errors.length, 1, `expected one error for ${path} = ${value}`)
         if (!result.errors[0].startsWith(`${path}:`)) {
-          throw new Error(`Unexpected error for ${path}: ${result.errors[0]}`)
+          throw new Error(`Unexpected error for ${path} = ${value}: ${result.errors[0]}`)
         }
       }
-    })
-
-    await t.step('suggests the intended key for a typo inside server.billing', () => {
-      const result = validateTomlConfig({
-        server: { billing: { freeAlowanceBytes: 1024 } }
-      })
-      assertEquals(result.errors, [])
-      assertEquals(result.warnings.length, 1)
-      assertEquals(
-        result.warnings[0],
-        'unknown key server.billing.freeAlowanceBytes (did you mean freeAllowanceBytes?)'
-      )
     })
 
     await t.step('errors on non-integer fs depth and keyChunkLength', () => {

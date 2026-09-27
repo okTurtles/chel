@@ -1,10 +1,13 @@
-// NOTE: File kept for future reference only (see comment for the `/file` endpoint in `routes.ts`). This file is _not_ currently in use.
-// Guards for ownerless (unattributed) first messages, i.e. the registration of
-// a new billable entity via `POST /event`. Kept out of `routes.ts` so that the
-// manifest parsing and the size accounting can be tested directly, without an
-// HTTP server and without having to reach the branch through a signed message.
+// NOTE: Not currently in use; kept as a reference implementation for a future
+// size cap on contract uploads (see the comment at the top of the `POST /file`
+// handler in `routes.ts`).
 //
-// See docs/signup-and-billing.md for what these caps are for.
+// Parses the contract source hashes a manifest names and checks the sources'
+// combined size against a cap. These helpers used to guard ownerless first
+// messages in `POST /event`, which no longer checks contract sources: signup
+// is bounded by the first message size instead (see docs/signup-and-billing.md).
+// They are kept separate from `routes.ts` so that the manifest parsing and the
+// size accounting can be tested directly, without an HTTP server.
 
 import { Buffer } from 'node:buffer'
 import { maybeParseCID, multicodes } from 'npm:@chelonia/lib/functions'
@@ -15,8 +18,8 @@ import { HTTPException } from 'npm:hono/http-exception'
 // manifest wrote them) and are about to be used as database keys, so an
 // unvalidated string could name any key, including a `_private_` one. Checking
 // the multicode as well as the CID syntax keeps the reachable key space to
-// contract sources, matching the check `POST /event` already does on the
-// manifest CID itself.
+// contract sources, matching the check `POST /event` does on the manifest CID
+// itself.
 const requireContractTextCID = (hash: unknown, field: string): string => {
   if (typeof hash !== 'string') throw new Error(`missing ${field} hash`)
   if (maybeParseCID(hash)?.code !== multicodes.SHELTER_CONTRACT_TEXT) {

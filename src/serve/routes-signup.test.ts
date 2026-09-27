@@ -18,6 +18,10 @@ import {
 // than restating the number.
 const { maxFirstMessageBytes } = nconfDefaults.server.signup
 
+// Size of the identity first message the current Group Income client sends,
+// measured from a development database (2026-09). Older clients sent 3661.
+const RECORDED_REGISTRATION_BYTES = 4344
+
 // Tests for unattributed (ownerless) first messages, i.e. identity contract
 // registration. Registration used to require the manifest name to be exactly
 // 'gi.contracts/identity'; it is now name-agnostic and guarded only by the
@@ -65,15 +69,23 @@ Deno.test({
         // half, so this step pins the default against a realistic payload: if
         // clients grow their key set enough to cross the cap, every signup
         // starts failing with a 413, and this fails first.
+        // A made-up contract name, so that this also checks that a real-sized
+        // registration does not depend on being called 'gi.contracts/identity'.
+        // It has the same length as that name, which keeps the first message
+        // the same size as the client's.
         const { serialized, contractID } = await createTestContractRegistration({
-          name: 'com.example/realistic-identity',
+          name: 'com.example/realistic',
           keys: 'realistic'
         })
         const payloadBytes = Buffer.byteLength(serialized)
-        if (payloadBytes > maxFirstMessageBytes * 0.75) {
-          throw new Error(
-            `A realistic registration is ${payloadBytes} bytes, leaving too little headroom under the ${maxFirstMessageBytes} byte cap`
-          )
+        // The fixture is generated, so it is also checked against the size of
+        // registrations recorded from an actual client, in case the two drift
+        for (const [what, bytes] of [['the realistic fixture', payloadBytes], ['a recorded Group Income registration', RECORDED_REGISTRATION_BYTES]] as const) {
+          if (bytes > maxFirstMessageBytes * 0.75) {
+            throw new Error(
+              `${what} is ${bytes} bytes, leaving too little headroom under the ${maxFirstMessageBytes} byte cap`
+            )
+          }
         }
         const res = await postEvent(serialized)
         const body = await res.text()

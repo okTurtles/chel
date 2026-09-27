@@ -5,7 +5,7 @@
 // database.ts), so any unconditional write during startup makes an archive
 // server fail to boot. A persistent backend is required to reproduce this: the
 // in-memory backend never installs the archive-mode guards.
-import { assert, assertEquals } from 'jsr:@std/assert'
+import { assert, assertEquals, assertRejects } from 'jsr:@std/assert'
 import process from 'node:process'
 import sbp from 'npm:@sbp/sbp'
 import { startIsolatedServer } from './server-test-helpers.ts'
@@ -83,6 +83,33 @@ Deno.test({
           )
           // ...and accepted by the database's own archive-mode guard
           await sbp('chelonia.db/set', 'archive-mode-test-key', 'writable')
+        } finally {
+          await server.stop()
+        }
+      })
+
+      await t.step('an unrecognized value (e.g. from the environment) is archive mode', async () => {
+        // Falling back to the default (`false`) would make an archive writable
+        // because of a misspelling such as `server__archiveMode=readonly`
+        const server = await startIsolatedServer(
+          configFor(dirname, 'readonly', FREE_ALLOWANCE_BYTES + 2)
+        )
+        try {
+          // Not overwritten: `startServer()` considered itself read-only...
+          assertEquals(
+            await sbp('chelonia.db/get', '_private_freeAllowanceBytes', { bypassCache: true }),
+            String(FREE_ALLOWANCE_BYTES + 1)
+          )
+          // ...and so did the database
+          await assertRejects(
+            () => sbp('chelonia.db/set', 'archive-mode-test-key', 'not writable'),
+            Error,
+            'archive mode'
+          )
+          // ...and the routes
+          const res = await fetch(`${server.uri}/event`, { method: 'POST', body: '{}' })
+          await res.body?.cancel()
+          assertEquals(res.status, 501)
         } finally {
           await server.stop()
         }

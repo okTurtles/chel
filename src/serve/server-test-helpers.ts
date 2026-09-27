@@ -36,8 +36,11 @@ export const startIsolatedServer = async (
     return {
       uri,
       stop: async () => {
-        await stopServer()
-        for (const key of Object.keys(config)) nconf.clear(key)
+        try {
+          await stopServer()
+        } finally {
+          for (const key of Object.keys(config)) nconf.clear(key)
+        }
       }
     }
   } catch (e) {

@@ -35,7 +35,7 @@ export default tseslint.config(
       'no-restricted-imports': ['error', {
         patterns: [{
           regex: '^jsr:@db/sqlite(?:[@/]|$)',
-          message: '@db/sqlite was replaced by better-sqlite3 (#162) and must not be reintroduced, not even in tests.'
+          message: '@db/sqlite was replaced by better-sqlite3 (#162) and must not be reintroduced.'
         }]
       }],
     },

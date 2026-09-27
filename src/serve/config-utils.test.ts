@@ -15,7 +15,7 @@ const FLAG_KEY = 'server:signup:limit:disabled'
 // Deliberately hardcoded rather than imported from `config-defaults.ts`: these
 // readers fall back to that module themselves, so importing it here would make
 // the assertions tautological. Update them when the documented defaults change.
-const DEFAULT_MAX_FIRST_MESSAGE_BYTES = 5 * 1024
+const DEFAULT_MAX_FIRST_MESSAGE_BYTES = 8 * 1024
 const DEFAULT_FREE_ALLOWANCE_BYTES = 10 * 1024 * 1024
 
 const withValue = <T>(key: string, value: unknown, fn: () => T): T => {
@@ -102,6 +102,9 @@ Deno.test({
     })
 
     await t.step('every rejected value is reported', () => {
+      // Start from an accepted value, so that the first case is not swallowed
+      // by the dedupe of whatever the previous step left reported
+      withValue(KEY, 1234, () => positiveIntConfig(KEY))
       for (const raw of ['', true, 'abc', -1, 0, 10.5]) {
         const warnings = withValue(KEY, raw, () => warningsFrom(() => positiveIntConfig(KEY)))
         assertEquals(warnings.length, 1, `expected one warning for ${JSON.stringify(raw)}`)
@@ -166,6 +169,33 @@ Deno.test({
           assert(warnings[0].includes(FLAG_KEY), `warning should name the setting: ${warnings[0]}`)
         })
       }
+    })
+
+    await t.step('an unrecognized value turns on switches whose default is the unsafe side', () => {
+      // `server__signup__disabled=Y` must not leave registration open, and
+      // `server__archiveMode=readonly` must not make an archive writable
+      for (const key of ['server:signup:disabled', 'server:archiveMode']) {
+        for (const raw of ['Y', 'readonly', 2]) {
+          withValue(key, raw, () => {
+            const warnings = warningsFrom(() => assertEquals(booleanConfig(key), true))
+            assertEquals(warnings.length, 1, `expected one warning for ${key}=${JSON.stringify(raw)}`)
+            assert(warnings[0].includes('Using true'), `warning should say what is used: ${warnings[0]}`)
+          })
+        }
+        // Recognized spellings still mean what they say
+        withValue(key, 'off', () => assertEquals(booleanConfig(key), false))
+        withValue(key, undefined, () => assertEquals(booleanConfig(key), false))
+      }
+    })
+
+    await t.step('an unrecognized value leaves destructive switches off', () => {
+      // `server:reclaimForeignSubscriptions` deletes push subscriptions, so
+      // `server__reclaimForeignSubscriptions=off` must not be read as truthy
+      const key = 'server:reclaimForeignSubscriptions'
+      withValue(key, 'off', () => assertEquals(booleanConfig(key), false))
+      withValue(key, 'maybe', () => {
+        warningsFrom(() => assertEquals(booleanConfig(key), false))
+      })
     })
 
     await t.step('a key with no boolean default is a programming error', () => {

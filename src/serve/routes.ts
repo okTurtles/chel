@@ -18,14 +18,14 @@ import type { Context, Hono, MiddlewareHandler } from 'npm:hono'
 import { bodyLimit } from 'npm:hono/body-limit'
 import { etag } from 'npm:hono/etag'
 import { booleanConfig, positiveIntConfig } from './config-utils.ts'
-import { MAX_EVENT_BODY_BYTES } from './constants.ts'
+import { MAX_EVENT_BODY_BYTES, MEGABYTE } from './constants.ts'
 import { appendToIndexFactory, lookupUltimateOwner } from './database.ts'
 import logger from './logger.ts'
 import {
   consumeSignupToken,
   createSignupLimiters,
   disposeSignupLimiters,
-  signupRateLimitDisabled,
+  signupRateLimitDisabledReason,
   type SignupLimiters
 } from './signup-rate-limit.ts'
 import { getChallenge, getContractSalt, redeemSaltRegistrationToken, redeemSaltUpdateToken, register, registrationKey, updateContractSalt } from './zkppSalt.ts'
@@ -33,8 +33,6 @@ import { getChallenge, getContractSalt, redeemSaltRegistrationToken, redeemSaltU
 import nconf from 'npm:nconf'
 import * as z from 'npm:zod'
 import { authMiddleware, type AuthCredentials } from './auth.ts'
-
-const MEGABYTE = 1048576 // TODO: add settings for these
 
 // Regexes validated as safe with <https://devina.io/redos-checker>
 const CID_REGEX = /^z[1-9A-HJ-NP-Za-km-z]{8,72}$/
@@ -239,7 +237,8 @@ export function registerRoutes (app: Hono): void {
   void disposeSignupLimiters(currentLimiters)
 
   const FILE_UPLOAD_MAX_BYTES = positiveIntConfig('server:fileUploadMaxBytes')
-  const SIGNUP_LIMIT_DISABLED = signupRateLimitDisabled()
+  const SIGNUP_LIMIT_DISABLED_REASON = signupRateLimitDisabledReason()
+  const SIGNUP_LIMIT_DISABLED = SIGNUP_LIMIT_DISABLED_REASON !== undefined
   // Read once here (rather than per request) so that a bad value is reported at
   // startup and so the caps cannot be compared against a string; see
   // config-utils.ts. The first-message cap is bounded by the body limit the
@@ -258,12 +257,7 @@ export function registerRoutes (app: Hono): void {
   if (SIGNUP_LIMIT_DISABLED) {
     // Configuring the limits is not enough to make them active, which is easy
     // to miss when testing registration against a non-production server
-    console.warn(
-      '[signup] per-IP registration rate limits are disabled ' +
-      (process.env.NODE_ENV !== 'production'
-        ? '(NODE_ENV is not "production")'
-        : '(server.signup.limit.disabled)')
-    )
+    console.warn(`[signup] per-IP registration rate limits are disabled (${SIGNUP_LIMIT_DISABLED_REASON})`)
   }
 
   const isCheloniaDashboard = process.env.IS_CHELONIA_DASHBOARD_DEV
@@ -351,8 +345,8 @@ export function registerRoutes (app: Hono): void {
               // proceed with also registering a name for the new contract.
               // Being in this branch is what makes a contract eligible: name
               // registration no longer depends on the contract's name, so any
-              // ownerless root contract can claim one (see the registration
-              // section in README.md).
+              // ownerless root contract can claim one (see
+              // docs/signup-and-billing.md).
               const name = validatedHeaders['shelter-namespace-registration']
               if (name) {
                 try {
@@ -561,6 +555,7 @@ export function registerRoutes (app: Hono): void {
   // doesn't set or read accounting information.
   // If accepted, the file will be stored in Chelonia DB.
   if (process.env.NODE_ENV === 'development') {
+    // TODO: add settings for the 6 MiB body limits of this route and POST /kv
     app.post('/dev-file', bodyLimit({ maxSize: 6 * MEGABYTE }), async function (c) {
       if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
       try {
@@ -596,18 +591,17 @@ export function registerRoutes (app: Hono): void {
     authMiddleware('chel-shelter', 'required'),
     bodyLimit({ maxSize: FILE_UPLOAD_MAX_BYTES }),
     async function (c) {
-      /*
-      We don't currently support uploading contracts to production, but if we
-      did, we might do it using this endpoint (or we could use a dedicated
-      endpoint.) When we do implement contract uploads, we'll need to implement
-      a size limit. For this, these lines could be useful, as well as the
-      corresponding helper functions in `signup-guard.ts`.
-      ```
-        const manifest = await sbp('chelonia.db/get', deserializedHEAD.head.manifest)
-        const contractSourceHashes = parseContractSourceHashes(manifest)
-        await assertContractSourcesWithinCap(contractSourceHashes, SIGNUP_MAX_CONTRACT_SIZE_BYTES)
-      ```
-      */
+      // We don't currently support uploading contracts to production, but if we
+      // did, we might do it using this endpoint (or a dedicated one), and would
+      // need a size limit for the contract sources. The helpers in
+      // `signup-guard.ts` implement one: given the uploaded contract manifest
+      // (a string) and a new setting for the cap, something like
+      //
+      //   const hashes = parseContractSourceHashes(manifest)
+      //   await assertContractSourcesWithinCap(hashes, maxContractSourceBytes)
+      //
+      // rejects a manifest naming unusable sources with a 422, and sources
+      // larger than the cap in total with a 413.
       if (ARCHIVE_MODE) throw new HTTPException(501, { message: 'Server in archive mode' })
       try {
         console.info('FILE UPLOAD!')

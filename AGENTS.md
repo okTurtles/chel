@@ -49,38 +49,11 @@ src/
 ├── utils.ts             # Shared utilities
 ├── <command>.ts         # One file per CLI command (deploy, manifest, serve, pin, ...)
 ├── types/               # TypeScript type definitions
-└── serve/               # Server implementation
-    ├── index.ts         # Main server entry
-    ├── server.ts        # Hono server setup
-    ├── database.ts      # Database layer (SBP selectors)
-    ├── database-*.ts    # Database backend implementations (fs, sqlite, redis, router)
-    ├── routes.ts        # HTTP route definitions
-    ├── signup-guard.ts  # Size/manifest checks for ownerless first messages
-    ├── signup-rate-limit.ts # Per-IP registration limits (production only)
-    ├── config-utils.ts  # Coerced, range-checked nconf readers
-    ├── pubsub.ts        # WebSocket pub/sub
-    ├── auth.ts          # Authentication logic
-    ├── dashboard/       # Vue.js dashboard UI (separate workspace)
-    ├── *-test-helpers.ts # Shared test scaffolding (not test suites)
+└── serve/               # Server implementation (routes, DB backends, pubsub, dashboard, signup limits, billing workers)
     └── *.test.ts        # Inline test files
 
 scripts/                 # Build, lint, and release tooling (plus their tests)
-├── build.ts             # esbuild bundling
-├── binaries.ts          # Shared, content-addressed native binary cache
-├── compile.ts           # Release tarballs (reproducible .tar.gz + checksums)
-├── publish.ts           # npm platform sub-packages (prepublishOnly hook)
-├── targets.ts           # Supported platforms + `deno compile` invocation
-├── paths.ts             # Shared build/release artifact paths
-├── sync-versions.ts     # Keeps optionalDependencies in sync (version hook)
-├── dashboard-esbuild.ts # Dashboard UI bundling
-├── lint.ts              # ESLint wrapper
-└── dist.ts              # Inert placeholder; `deno task dist` is defined in deno.json
-
-test/
-├── assets/              # Test fixtures (keys, manifests, contracts)
-├── hash.test.ts         # Hash command tests
-├── readme-config.test.ts # Guards README against config-default drift
-└── signature.test.ts    # Signature verification tests
+test/                    # Test suites; fixtures live in test/assets/
 ```
 
 ## Code Conventions

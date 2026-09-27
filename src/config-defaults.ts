@@ -12,9 +12,10 @@ export const nconfDefaults = {
     signup: {
       disabled: false,
       // Size sanity cap for unattributed (ownerless) first messages, i.e.
-      // identity contract registration. It bounds how much data can be written
-      // 'for free'; see POST /event in src/serve/routes.ts.
-      maxFirstMessageBytes: 5 * 1024,
+      // identity contract registration: the one write an unauthenticated
+      // client can make. See POST /event in src/serve/routes.ts. A current
+      // Group Income registration is about 4.3 KiB.
+      maxFirstMessageBytes: 8 * 1024,
       limit: {
         disabled: false,
         minute: 2,

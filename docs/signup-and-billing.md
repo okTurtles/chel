@@ -11,9 +11,10 @@ existing billable entity, skip them.
 - **Request body limit.** Every `POST /event` body over 1 MiB (1048576 bytes)
   is rejected before any of the settings below are consulted, so they cannot
   be raised beyond it.
-- **First-message size cap.** `server.signup.maxFirstMessageBytes` (default `5120`)
-  bounds how much data a registration may write 'for free'; larger first
-  messages are rejected with a `413`.
+- **First-message size cap.** `server.signup.maxFirstMessageBytes` (default `8192`)
+  bounds the one write an unauthenticated client can make: the first message
+  that creates the entity. Larger first messages are rejected with a `413`.
+  (Storage the entity uses afterwards is covered by the free allowance below.)
 - **Kill switch.** `server.signup.disabled` (default `false`) rejects all new
   registrations with a `403` while existing users are unaffected.
 - **Per-IP rate limits.** New registrations per IP address are limited by
@@ -24,11 +25,23 @@ existing billable entity, skip them.
   enforced only when the server runs with `NODE_ENV=production`.
   `server.signup.limit.disabled` can turn them off there too (the server
   logs a warning at startup when the limits are inactive). IPv6 addresses
-  are limited per `/64` subnet, their smallest possible allocation.
+  are limited per `/64` subnet, their smallest possible allocation. An
+  address's windows start with its first registration and follow each other
+  back to back, so an exhausted allowance is only restored when its window
+  ends, however long the address stays idle in the meantime. A request
+  rejected by a longer window still uses up a token of the shorter ones.
+
+Any ownerless root contract can be registered this way, whatever its
+contract name, and can claim a name at the same time by sending the
+`shelter-namespace-registration` header with its first message. Names
+identify billable entities, so the header is ignored (not rejected) on the
+first message of a contract that is attributed to an existing entity.
 
 Once registered, storage is metered per billable entity: the identity
 contract plus everything it owns. `server.billing.freeAllowanceBytes`
 (default `10485760`, i.e. 10 MiB) of storage is free; `0` disables the free
 tier. Storage beyond the allowance is charged by the credits worker, which
 runs a billing cycle in the background and debits the entity's balance for
-the bytes it keeps stored.
+the bytes it keeps stored. Balances are recorded but not yet enforced: an
+entity whose balance drops below zero is not frozen and can keep writing
+(see okTurtles/chel#160).

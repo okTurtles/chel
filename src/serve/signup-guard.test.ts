@@ -1,9 +1,7 @@
-// Tests for the ownerless-first-message guards in `signup-guard.ts`.
-//
-// These used to be inline in the `POST /event` handler, reachable only through
-// a fully signed registration message, so the malformed-manifest cases could
-// not be covered directly. In particular, the hashes a manifest names are used
-// as database keys, and an unvalidated hash could name any key at all.
+// Tests for the contract source helpers in `signup-guard.ts`, which are not
+// currently wired into any route but are kept for a future contract-upload
+// size cap (see that file's header). In particular, the hashes a manifest names
+// are used as database keys, and an unvalidated hash could name any key at all.
 import { assertEquals, assertRejects } from 'jsr:@std/assert'
 import { createCID, multicodes } from 'npm:@chelonia/lib/functions'
 import sbp from 'npm:@sbp/sbp'

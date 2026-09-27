@@ -101,6 +101,15 @@ export const nonNegativeIntConfig = (key: string, max?: number): number => {
 const TRUE_STRINGS = new Set(['true', '1', 'yes', 'on'])
 const FALSE_STRINGS = new Set(['false', '0', 'no', 'off', ''])
 
+// An unrecognized value normally falls back to the default, because for most
+// switches `false` is also the safe side (e.g. `limit:disabled` keeps the
+// rate limits on). These are the exceptions: their default is the unsafe side
+// (registration open, archive writable), and a value such as `readonly` or `Y`
+// was most likely meant to turn them on. Kept here, rather than passed in by
+// each caller, so that every reader of a setting agrees on what it means
+// (`archiveMode` is read by the server, the routes and the database).
+const ON_WHEN_UNRECOGNIZED = new Set(['server:archiveMode', 'server:signup:disabled'])
+
 // Reads a boolean setting, accepting the spellings an operator is likely to
 // write in the environment (`on`/`off`, `yes`/`no`, `1`/`0`) and warning on
 // anything else rather than interpreting it as `true`.
@@ -115,6 +124,7 @@ export const booleanConfig = (key: string): boolean => {
     if (TRUE_STRINGS.has(normalized)) return accept(key, true)
     if (FALSE_STRINGS.has(normalized)) return accept(key, false)
   }
-  warn(key, raw, 'not a boolean', fallback)
-  return fallback
+  const safe = ON_WHEN_UNRECOGNIZED.has(key) || fallback
+  warn(key, raw, 'not a boolean', safe)
+  return safe
 }

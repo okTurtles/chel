@@ -421,7 +421,7 @@ export async function startServer (): Promise<{ uri: string }> {
   // Defense in depth: refuse to boot before touching the DB or binding ports.
   assertServerIdConfigured()
   const configuredServerId = nconf.get('server_id')
-  const reclaimForeignSubscriptions = !!nconf.get('server:reclaimForeignSubscriptions')
+  const reclaimForeignSubscriptions = booleanConfig('server:reclaimForeignSubscriptions')
   // Read configuration from nconf
   const appManifest = nconf.get('appManifest') || join(nconf.get('server:appDir') || process.cwd(), 'chelonia.json')
   const ARCHIVE_MODE = booleanConfig('server:archiveMode')

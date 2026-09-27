@@ -68477,9 +68477,10 @@ var nconfDefaults = {
     signup: {
       disabled: false,
       // Size sanity cap for unattributed (ownerless) first messages, i.e.
-      // identity contract registration. It bounds how much data can be written
-      // 'for free'; see POST /event in src/serve/routes.ts.
-      maxFirstMessageBytes: 5 * 1024,
+      // identity contract registration: the one write an unauthenticated
+      // client can make. See POST /event in src/serve/routes.ts. A current
+      // Group Income registration is about 4.3 KiB.
+      maxFirstMessageBytes: 8 * 1024,
       limit: {
         disabled: false,
         minute: 2,
@@ -68566,6 +68567,7 @@ var nonNegativeIntConfig = (key, max) => {
 };
 var TRUE_STRINGS = /* @__PURE__ */ new Set(["true", "1", "yes", "on"]);
 var FALSE_STRINGS = /* @__PURE__ */ new Set(["false", "0", "no", "off", ""]);
+var ON_WHEN_UNRECOGNIZED = /* @__PURE__ */ new Set(["server:archiveMode", "server:signup:disabled"]);
 var booleanConfig = (key) => {
   const fallback = requireDefault(key, "boolean");
   const raw2 = import_npm_nconf.default.get(key);
@@ -68577,8 +68579,9 @@ var booleanConfig = (key) => {
     if (TRUE_STRINGS.has(normalized)) return accept(key, true);
     if (FALSE_STRINGS.has(normalized)) return accept(key, false);
   }
-  warn(key, raw2, "not a boolean", fallback);
-  return fallback;
+  const safe = ON_WHEN_UNRECOGNIZED.has(key) || fallback;
+  warn(key, raw2, "not a boolean", safe);
+  return safe;
 };
 init_errors3();
 var BackendErrorNotFound = ChelErrorGenerator("BackendErrorNotFound");
@@ -69878,7 +69881,8 @@ var module6 = {
 };
 var CREDITS_WORKER_TASK_TIME_INTERVAL = 3e5;
 var OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL = 3e4;
-var MAX_EVENT_BODY_BYTES = 1048576;
+var MEGABYTE = 1048576;
+var MAX_EVENT_BODY_BYTES = MEGABYTE;
 var DEFAULT_CONFIG_PATH = "chel.toml";
 var tomlValue = (v2) => {
   if (typeof v2 === "string") return `"${v2}"`;
@@ -69912,7 +69916,7 @@ dashboardPort = ${tomlValue(d.server.dashboardPort)}
 [server.signup]
 # disabled = ${tomlValue(d.server.signup.disabled)}
 # Size sanity cap for ownerless (unattributed) first messages, i.e. identity
-# contract registration. It bounds how much data can be written 'for free'.
+# contract registration: the one write an unauthenticated client can make.
 # 'maxFirstMessageBytes' cannot exceed ${tomlValue(MAX_EVENT_BODY_BYTES)}, the request body limit
 # 'POST /event' enforces before this cap is consulted.
 # maxFirstMessageBytes = ${tomlValue(d.server.signup.maxFirstMessageBytes)}
@@ -74236,6 +74240,8 @@ var limiterKey = (ip) => {
     return ip;
   } else if (ipVersion === 6) {
     const [address, zoneIdx] = ip.split("%");
+    const v4Tail = address.slice(address.lastIndexOf(":") + 1);
+    if (isIP(v4Tail) === 4) return v4Tail;
     const segments = address.split(":");
     let isCompressed = false;
     for (let i2 = 0; i2 < segments.length - 1; i2++) {
@@ -74256,9 +74262,7 @@ var limiterKey = (ip) => {
       }
       segments[i2] = normalizeHextet(segments[i2]);
     }
-    if (segments.length === 8 && isIP(segments[7]) === 4) {
-      return segments[7];
-    } else if (segments.length === 8) {
+    if (segments.length === 8) {
       if (zoneIdx) {
         segments[7] = normalizeHextet(segments[7]);
         return segments.join(":").toLowerCase() + "%" + zoneIdx;
@@ -74277,7 +74281,16 @@ var group = (reservoir, intervalMs) => {
     highWater: 0,
     reservoir,
     reservoirRefreshInterval: intervalMs,
-    reservoirRefreshAmount: reservoir
+    reservoirRefreshAmount: reservoir,
+    // A Group deletes the limiter for a key once `timeout` has passed since
+    // that key's last *successful* request (rejected ones do not count), and
+    // a new limiter starts with a full reservoir. With the default of five
+    // minutes, an address that exhausted its hourly or daily allowance got it
+    // back after five idle minutes. Keeping each key for a whole window means
+    // it is only forgotten once its allowance would have refilled anyway.
+    // The cost is that each key's limiter, and its 250 ms heartbeat, lives for
+    // up to one and a half windows (a day and a half for the daily one).
+    timeout: intervalMs
   });
 };
 var createSignupLimiters = ({ minute, hour, day }) => {
@@ -74305,9 +74318,12 @@ var disposeSignupLimiters = async (limiters) => {
   for (const g2 of groups) {
     clearInterval(g2.interval);
   }
+  await Promise.allSettled(groups.flatMap((g2) => g2.keys().map((key) => g2.deleteKey(key))));
 };
-var signupRateLimitDisabled = () => {
-  return process7.env.NODE_ENV !== "production" || booleanConfig("server:signup:limit:disabled");
+var signupRateLimitDisabledReason = () => {
+  if (process7.env.NODE_ENV !== "production") return 'NODE_ENV is not "production"';
+  if (booleanConfig("server:signup:limit:disabled")) return "server.signup.limit.disabled";
+  return void 0;
 };
 var import_npm_nconf6 = __toESM(require_nconf());
 init_zod();
@@ -74356,7 +74372,6 @@ function authMiddleware(strategies, mode = "required") {
     throw new HTTPException(401, { message: "Unauthorized" });
   };
 }
-var MEGABYTE = 1048576;
 var CID_REGEX = /^z[1-9A-HJ-NP-Za-km-z]{8,72}$/;
 var KV_KEY_REGEX = /^(?!_private)[^\x00]{1,256}$/;
 var NAME_REGEX = /^(?![_-])((?!([_-])\2)[a-z\d_-]){1,80}(?<![_-])$/;
@@ -74508,7 +74523,8 @@ function serveAsset(c, subpath, assetsDir) {
 function registerRoutes(app) {
   void disposeSignupLimiters(currentLimiters);
   const FILE_UPLOAD_MAX_BYTES = positiveIntConfig("server:fileUploadMaxBytes");
-  const SIGNUP_LIMIT_DISABLED = signupRateLimitDisabled();
+  const SIGNUP_LIMIT_DISABLED_REASON = signupRateLimitDisabledReason();
+  const SIGNUP_LIMIT_DISABLED = SIGNUP_LIMIT_DISABLED_REASON !== void 0;
   const SIGNUP_MAX_FIRST_MESSAGE_BYTES = positiveIntConfig("server:signup:maxFirstMessageBytes", MAX_EVENT_BODY_BYTES);
   const ARCHIVE_MODE = booleanConfig("server:archiveMode");
   currentLimiters = createSignupLimiters({
@@ -74519,9 +74535,7 @@ function registerRoutes(app) {
   const limiters = currentLimiters;
   installRateLimiterSelectorsOnce();
   if (SIGNUP_LIMIT_DISABLED) {
-    console.warn(
-      "[signup] per-IP registration rate limits are disabled " + (process8.env.NODE_ENV !== "production" ? '(NODE_ENV is not "production")' : "(server.signup.limit.disabled)")
-    );
+    console.warn(`[signup] per-IP registration rate limits are disabled (${SIGNUP_LIMIT_DISABLED_REASON})`);
   }
   const isCheloniaDashboard = process8.env.IS_CHELONIA_DASHBOARD_DEV;
   const staticServeConfig = getStaticServeConfig();
@@ -76095,7 +76109,7 @@ function assertServerIdConfigured() {
 async function startServer() {
   assertServerIdConfigured();
   const configuredServerId = import_npm_nconf8.default.get("server_id");
-  const reclaimForeignSubscriptions = !!import_npm_nconf8.default.get("server:reclaimForeignSubscriptions");
+  const reclaimForeignSubscriptions = booleanConfig("server:reclaimForeignSubscriptions");
   const appManifest = import_npm_nconf8.default.get("appManifest") || join7(import_npm_nconf8.default.get("server:appDir") || process10.cwd(), "chelonia.json");
   const ARCHIVE_MODE = booleanConfig("server:archiveMode");
   const host = import_npm_nconf8.default.get("server:host") || "0.0.0.0";

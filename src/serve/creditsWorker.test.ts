@@ -96,13 +96,28 @@ Deno.test({
       })
 
       await t.step('a missing or invalid allowance falls back to charging the full size', async () => {
-        await sbp('chelonia.db/set', '_private_freeAllowanceBytes', 'not-a-number')
-        await worker.rpcSbp('worker/computeCredits')
-
         // Every cycle bills every entity: the small entity got entries in the
-        // two previous cycles, so wait for the third one here
-        const [smallEntry] = await waitForHistoryLength(smallEntity, 3)
-        assertEquals(smallEntry.sizeTotal, SMALL_ENTITY_SIZE)
+        // two previous cycles
+        let entries = 2
+        const cycle = async () => {
+          await worker.rpcSbp('worker/computeCredits')
+          const [smallEntry] = await waitForHistoryLength(smallEntity, ++entries)
+          return smallEntry.sizeTotal
+        }
+        const setAllowance = (value: string | undefined) => {
+          return value === undefined
+            ? sbp('chelonia.db/delete', '_private_freeAllowanceBytes')
+            : sbp('chelonia.db/set', '_private_freeAllowanceBytes', value)
+        }
+
+        for (const unusable of ['not-a-number', undefined]) {
+          // A usable allowance first, so that each case is seen to change the
+          // outcome rather than inherit it from the case before
+          await setAllowance(String(FREE_ALLOWANCE_BYTES))
+          assertEquals(await cycle(), 0)
+          await setAllowance(unusable)
+          assertEquals(await cycle(), SMALL_ENTITY_SIZE, `allowance ${JSON.stringify(unusable)}`)
+        }
       })
     } finally {
       await closeDB()

@@ -35,6 +35,15 @@ export const limiterKey = (ip: string): string => {
   } else if (ipVersion === 6) {
     // Likely IPv6
     const [address, zoneIdx] = ip.split('%')
+
+    // IPv4-embedded, IPv4-mapped and IPv4-translated addresses are returned as
+    // IPv4. `isIP` has already validated the address as a whole, so a dotted
+    // tail can only be an embedded IPv4 address. This is checked before the
+    // hextets are counted because the tail stands in for two of them: the
+    // uncompressed `0:0:0:0:0:ffff:203.0.113.7` has only seven segments.
+    const v4Tail = address.slice(address.lastIndexOf(':') + 1)
+    if (isIP(v4Tail) === 4) return v4Tail
+
     const segments = address.split(':')
 
     // Is this a compressed form IPv6 address?
@@ -63,11 +72,7 @@ export const limiterKey = (ip: string): string => {
       segments[i] = normalizeHextet(segments[i])
     }
 
-    if (segments.length === 8 && isIP(segments[7]) === 4) {
-      // IPv4-embedded, IPv4-mapped and IPv4-translated addresses are returned
-      // as IPv4
-      return segments[7]
-    } else if (segments.length === 8) {
+    if (segments.length === 8) {
       if (zoneIdx) {
         segments[7] = normalizeHextet(segments[7])
         // Use tagged (link-local) addresses in full
@@ -92,7 +97,16 @@ const group = (reservoir: number, intervalMs: number): Bottleneck.Group => {
     highWater: 0,
     reservoir,
     reservoirRefreshInterval: intervalMs,
-    reservoirRefreshAmount: reservoir
+    reservoirRefreshAmount: reservoir,
+    // A Group deletes the limiter for a key once `timeout` has passed since
+    // that key's last *successful* request (rejected ones do not count), and
+    // a new limiter starts with a full reservoir. With the default of five
+    // minutes, an address that exhausted its hourly or daily allowance got it
+    // back after five idle minutes. Keeping each key for a whole window means
+    // it is only forgotten once its allowance would have refilled anyway.
+    // The cost is that each key's limiter, and its 250 ms heartbeat, lives for
+    // up to one and a half windows (a day and a half for the daily one).
+    timeout: intervalMs
   })
 }
 
@@ -131,13 +145,24 @@ export const disposeSignupLimiters = async (limiters: SignupLimiters | undefined
   for (const g of groups) {
     clearInterval((g as unknown as { interval: ReturnType<typeof setInterval> }).interval)
   }
+  // Each key's limiter has a heartbeat interval of its own, which only
+  // disconnecting that limiter stops. `deleteKey` does so; clearing the
+  // cleanup interval above stopped the only other caller of it.
+  await Promise.allSettled(groups.flatMap(g => g.keys().map(key => g.deleteKey(key))))
 }
 
 // The limits exist to slow down mass registration on a public server, and would
 // only get in the way locally, so they are enforced in production only.
 // `server.signup.limit.disabled` can therefore turn them further off, never on.
 // This is easy to misread as "configured, so active" when testing against a dev
-// server, hence the startup warning in `routes.ts`.
+// server, hence the startup warning in `routes.ts`, which reports the reason
+// returned here. `undefined` means the limits are enforced.
+export const signupRateLimitDisabledReason = (): string | undefined => {
+  if (process.env.NODE_ENV !== 'production') return 'NODE_ENV is not "production"'
+  if (booleanConfig('server:signup:limit:disabled')) return 'server.signup.limit.disabled'
+  return undefined
+}
+
 export const signupRateLimitDisabled = (): boolean => {
-  return process.env.NODE_ENV !== 'production' || booleanConfig('server:signup:limit:disabled')
+  return signupRateLimitDisabledReason() !== undefined
 }

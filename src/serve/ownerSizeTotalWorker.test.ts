@@ -1,4 +1,3 @@
-import { createCID } from 'npm:@chelonia/lib/functions'
 import sbp from 'npm:@sbp/sbp'
 import { assertEquals } from 'jsr:@std/assert'
 import createWorker from './createWorker.ts'
@@ -25,9 +24,7 @@ class Contract {
   indirectResources: Contract[]
 
   constructor (owner?: Contract) {
-    const buffer = new Uint8Array(16)
-    crypto.getRandomValues(buffer)
-    this.id = createCID(buffer)
+    this.id = randCID()
     this._ownSize = 0
     this._kvSize = 0
     this._totalSize = 0
@@ -283,10 +280,11 @@ Deno.test({
     await sizeWorker.ready
 
     try {
-      // The identity: an unattributed billable entity with no owner of its own
+      // The identity: an unattributed billable entity with no owner of its own.
+      // Its first message names itself as the ultimate owner, as POST /event
+      // does for a new billable entity.
       const identityID = randCID()
       await sbp('chelonia.db/set', identityID, 'identity-contract-data')
-      await appendToIndexFactory('_private_billable_entities')(identityID)
       const identityFirstMessageBytes = 700
       await updateSize_(identityID, `_private_size_${identityID}`, identityFirstMessageBytes)
       await sizeWorker.rpcSbp('worker/updateSizeSideEffects', {
@@ -301,18 +299,13 @@ Deno.test({
       await updateSize_(dmID, `_private_size_${dmID}`, 600)
       await sbp('chelonia.db/set', `_private_owner_${dmID}`, identityID)
       await appendToIndexFactory(`_private_resources_${identityID}`)(dmID)
-      // ...which later receives a message of its own
+      // ...which later receives a message of its own. No `ultimateOwnerID` is
+      // passed for the DM, as is the case for regular messages and KV writes
+      // in production, so the worker has to follow the `_private_owner_`
+      // chain to attribute these bytes to the identity.
       await updateSize_(dmID, `_private_size_${dmID}`, 200)
-      await sizeWorker.rpcSbp('worker/updateSizeSideEffects', {
-        resourceID: dmID,
-        size: 600,
-        ultimateOwnerID: identityID
-      })
-      await sizeWorker.rpcSbp('worker/updateSizeSideEffects', {
-        resourceID: dmID,
-        size: 200,
-        ultimateOwnerID: identityID
-      })
+      await sizeWorker.rpcSbp('worker/updateSizeSideEffects', { resourceID: dmID, size: 600 })
+      await sizeWorker.rpcSbp('worker/updateSizeSideEffects', { resourceID: dmID, size: 200 })
 
       await sizeWorker.rpcSbp('backend/server/computeSizeTaskDeltas')
 

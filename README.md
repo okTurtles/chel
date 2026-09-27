@@ -422,7 +422,7 @@ backend = "sqlite"
 # Signup size cap and the billing free tier; see
 # docs/signup-and-billing.md.
 # [server.signup]
-# maxFirstMessageBytes = 5120
+# maxFirstMessageBytes = 8192
 #
 # [server.billing]
 # freeAllowanceBytes = 10485760

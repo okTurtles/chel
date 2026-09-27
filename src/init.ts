@@ -44,7 +44,7 @@ dashboardPort = ${tomlValue(d.server.dashboardPort)}
 [server.signup]
 # disabled = ${tomlValue(d.server.signup.disabled)}
 # Size sanity cap for ownerless (unattributed) first messages, i.e. identity
-# contract registration. It bounds how much data can be written 'for free'.
+# contract registration: the one write an unauthenticated client can make.
 # 'maxFirstMessageBytes' cannot exceed ${tomlValue(MAX_EVENT_BODY_BYTES)}, the request body limit
 # 'POST /event' enforces before this cap is consulted.
 # maxFirstMessageBytes = ${tomlValue(d.server.signup.maxFirstMessageBytes)}

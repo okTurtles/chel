@@ -28,6 +28,7 @@
     "jsr:@std/path/": "jsr:@std/path@1.1.1/",
     "jsr:@std/streams/": "jsr:@std/streams@1.0.10/",
     "jsr:@std/io/": "jsr:@std/io@0.225.2/",
+    "jsr:@std/testing/": "jsr:@std/testing@1.0.21/",
     "npm:better-sqlite3": "npm:better-sqlite3@13.0.3",
     // TODO: update pinned version once newer typings for better-sqlite3 are available
     // v9.6.0 is currently the newest one there is, so `deno check` only

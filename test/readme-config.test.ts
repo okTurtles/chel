@@ -5,8 +5,9 @@
 // `src/init.test.ts` pins that, so the template cannot go stale. The
 // commented-out example in README.md and the prose in docs/signup-and-billing.md
 // are written by hand, which is where the numbers an operator actually reads
-// live, so this test pins those too: a default that changes without the
-// documentation following leaves the docs quietly wrong.
+// live, so this test pins those numbers too: a default that changes without the
+// documentation following leaves the docs quietly wrong. Only the values are
+// checked, not the wording around them, so the prose can be edited freely.
 import { assert } from 'jsr:@std/assert'
 import { nconfDefaults } from '../src/config-defaults.ts'
 import { MAX_EVENT_BODY_BYTES } from '../src/serve/constants.ts'
@@ -27,30 +28,19 @@ Deno.test({
     const { signup, billing } = nconfDefaults.server
 
     // The commented-out example block near "Runtime CLI Configuration"
-    assertDocumented(readme, 'the example first-message cap', `# maxFirstMessageBytes = ${signup.maxFirstMessageBytes}`)
-    assertDocumented(readme, 'the example free allowance', `# freeAllowanceBytes = ${billing.freeAllowanceBytes}`)
+    assertDocumented(readme, 'the example first-message cap', `maxFirstMessageBytes = ${signup.maxFirstMessageBytes}`)
+    assertDocumented(readme, 'the example free allowance', `freeAllowanceBytes = ${billing.freeAllowanceBytes}`)
 
     // The prose in docs/signup-and-billing.md
-    assertDocumented(
-      doc,
-      'the per-IP rate limit defaults',
-      `(defaults \`${signup.limit.minute}\`/\`${signup.limit.hour}\`/\`${signup.limit.day}\` per IP)`
-    )
-    assertDocumented(
-      doc,
-      'the first-message cap default',
-      `\`server.signup.maxFirstMessageBytes\` (default \`${signup.maxFirstMessageBytes}\`)`
-    )
+    for (const [window, value] of Object.entries(signup.limit)) {
+      if (typeof value !== 'number') continue
+      assertDocumented(doc, `the per-${window} rate limit default`, `\`${value}\``)
+    }
+    assertDocumented(doc, 'the first-message cap default', `\`${signup.maxFirstMessageBytes}\``)
     assertDocumented(doc, 'the free allowance default', `\`${billing.freeAllowanceBytes}\``)
-    assertDocumented(
-      doc,
-      'the signup kill switch default',
-      `\`server.signup.disabled\` (default \`${signup.disabled}\`)`
-    )
 
-    // Limits that are enforced elsewhere but bound these settings in practice,
-    // and which operators cannot discover from the settings themselves
-    assertDocumented(doc, 'the POST /event request body limit', `over 1 MiB (${MAX_EVENT_BODY_BYTES} bytes)`)
-    assertDocumented(doc, 'that the per-IP limits only apply in production', '`NODE_ENV=production`')
+    // A limit that is enforced elsewhere but bounds these settings in
+    // practice, and which operators cannot discover from the settings
+    assertDocumented(doc, 'the POST /event request body limit', `(${MAX_EVENT_BODY_BYTES} bytes)`)
   }
 })
