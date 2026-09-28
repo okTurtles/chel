@@ -4877,6 +4877,7 @@ var updateCredits = async (billableEntity, type, amount) => {
       coarseHistory.unshift({
         type: "aggregate",
         date,
+        // Mean billable size over the aggregated period; see `CoarseHistoryEntry`
         sizeTotal: totalPeriodLength > 0 ? Math.floor(periodSize / totalPeriodLength) : 0,
         chargesPicocreditAmount: charges.toString(10),
         creditsPicocreditAmount: credits.toString(10),
@@ -4896,9 +4897,19 @@ esm_default("okTurtles.eventQueue/queueEvent", readyQueueName, () => {
     signalInitError(e);
   }
 });
+var readFreeAllowanceBytes = async () => {
+  const stored = await esm_default("chelonia.db/get", "_private_freeAllowanceBytes", { bypassCache: true });
+  const allowance = stored == null ? NaN : Number(stored);
+  if (!Number.isSafeInteger(allowance) || allowance < 0) {
+    console.warn(`[creditsWorker] Invalid free allowance '${stored}', using 0`);
+    return 0;
+  }
+  return allowance;
+};
 esm_default("sbp/selectors/register", {
   "worker/computeCredits": async () => {
     const billableEntities = await esm_default("chelonia.db/get", "_private_billable_entities", { bypassCache: true });
+    const freeAllowanceBytes = await readFreeAllowanceBytes();
     billableEntities && await Promise.all(billableEntities.split("\0").map(async (billableEntity) => {
       const sizeString = await esm_default("chelonia.db/get", `_private_ownerTotalSize_${billableEntity}`, { bypassCache: true });
       const size = parseInt(sizeString, 10);
@@ -4906,7 +4917,7 @@ esm_default("sbp/selectors/register", {
         console.warn(`[creditsWorker] Invalid size fetched for entity ${billableEntity}: ${sizeString}. Skipping charge.`);
         return;
       }
-      updateCredits(billableEntity, "charge", size).catch((e) => {
+      updateCredits(billableEntity, "charge", Math.max(0, size - freeAllowanceBytes)).catch((e) => {
         console.error(e, "[creditsWorker] Error computing balance", billableEntity);
       });
     }));

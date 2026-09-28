@@ -49,7 +49,7 @@ src/
 ├── utils.ts             # Shared utilities
 ├── <command>.ts         # One file per CLI command (deploy, manifest, serve, pin, ...)
 ├── types/               # TypeScript type definitions
-└── serve/               # Server implementation (routes, database backends, pubsub, dashboard)
+└── serve/               # Server implementation (routes, DB backends, pubsub, dashboard, signup limits, billing workers)
     └── *.test.ts        # Inline test files
 
 scripts/                 # Build, lint, and release tooling (plus their tests)
@@ -106,8 +106,6 @@ import type { CommandModule } from './commands.ts'
 
 ## Guidelines
 
-- **Tests**: Use Deno's built-in test framework. New tests go next to the code (`src/**/*.test.ts`) or in `test/`; shared fixtures go in `test/assets/`. Every `*.test.ts` file must be committed (enforced by `scripts/tracked-tests.test.ts`).
-- **Server code**: Organized around SBP selectors (`@sbp/sbp`) with several database backends; see `src/serve/` and `src/validateConfig.ts`.
 - **Tests**: Use Deno's built-in test framework. New tests go next to the code (`src/**/*.test.ts`) or in `test/`; shared fixtures go in `test/assets/`. Every `*.test.ts` file must be committed (enforced by `scripts/tracked-tests.test.ts`).
 - **Server code**: Organized around SBP selectors (`@sbp/sbp`) with several database backends; see `src/serve/` and `src/validateConfig.ts`.
 
