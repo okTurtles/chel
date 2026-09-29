@@ -8,15 +8,10 @@
 // Third-party modules:
 // https://deno.land/x
 
-import process from 'node:process'
-
-// chel is the server, so @chelonia/lib has to keep what it stores. Since
-// okTurtles/libcheloniajs#104 it defaults to a lightweight client that keeps
-// nothing, and it reads this once when it loads, so it is set before the imports.
-process.env.LIGHTWEIGHT_CLIENT = 'false'
-
-const { default: parseConfig, handlerState } = await import('./parseConfig.ts')
-const { exit } = await import('./utils.ts')
+// Has to stay the first import. See the module for why.
+import './lightweight-client-off.ts'
+import parseConfig, { handlerState } from './parseConfig.ts'
+import { exit } from './utils.ts'
 
 // `postHandler` is set by `parseArgs` (called by `parseConfig`)
 // Run the selected subcommand

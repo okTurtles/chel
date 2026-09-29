@@ -1000,9 +1000,10 @@ import { Buffer as Buffer10 } from "node:buffer";
 import Database from "npm:better-sqlite3";
 import { mkdir as mkdir2 } from "node:fs/promises";
 import { basename as basename22, dirname as dirname22, join as join32, resolve as resolve32 } from "node:path";
-import process13 from "node:process";
-import { Buffer as Buffer11 } from "node:buffer";
 import process2 from "node:process";
+import process14 from "node:process";
+import { Buffer as Buffer11 } from "node:buffer";
+import process3 from "node:process";
 import { Readable } from "node:stream";
 import { Buffer as Buffer6 } from "node:buffer";
 import { Buffer as Buffer4 } from "node:buffer";
@@ -1098,13 +1099,13 @@ async function writeAll(writer, data) {
 import { realpathSync } from "node:fs";
 import { readFile as readFile3 } from "node:fs/promises";
 import { resolve as resolve5 } from "node:path";
-import process3 from "node:process";
+import process4 from "node:process";
 import { readFile as readFile2 } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { copyFile, mkdir as mkdir3, readFile as readFile4, writeFile as writeFile2 } from "node:fs/promises";
 import { basename as basename42, dirname as dirname42, join as join6 } from "node:path";
-import process4 from "node:process";
-import process11 from "node:process";
+import process5 from "node:process";
+import process12 from "node:process";
 import { createServer as createServerHTTP } from "node:http";
 import { Http2ServerRequest as Http2ServerRequest2, constants as h2constants } from "node:http2";
 import { Http2ServerRequest } from "node:http2";
@@ -1112,21 +1113,21 @@ import { Readable as Readable2 } from "node:stream";
 import crypto2 from "node:crypto";
 import { Buffer as Buffer12 } from "node:buffer";
 import { basename as basename5 } from "node:path";
-import process5 from "node:process";
+import process6 from "node:process";
 import { join as join7 } from "node:path";
-import process10 from "node:process";
+import process11 from "node:process";
 import { Buffer as Buffer13 } from "node:buffer";
 import path6 from "node:path";
-import process8 from "node:process";
-import { Readable as Readable3 } from "node:stream";
-import process6 from "node:process";
-import { isIP } from "node:net";
-import process7 from "node:process";
 import process9 from "node:process";
+import { Readable as Readable3 } from "node:stream";
+import process7 from "node:process";
+import { isIP } from "node:net";
+import process8 from "node:process";
+import process10 from "node:process";
 import { Buffer as Buffer14 } from "node:buffer";
 import { pathToFileURL } from "node:url";
 import path7 from "node:path";
-import process12 from "node:process";
+import process13 from "node:process";
 import { join as join8 } from "node:path";
 import { notStrictEqual, strictEqual } from "node:assert";
 import { dirname as dirname6, resolve as resolve6 } from "node:path";
@@ -58829,6 +58830,7 @@ var require_websocket_server = __commonJS({
     }
   }
 });
+process2.env.LIGHTWEIGHT_CLIENT = "false";
 var import_npm_nconf11 = __toESM(require_nconf());
 function getLineColFromPtr(string3, ptr) {
   let lines = string3.slice(0, ptr).split(/\r\n|\n|\r/g);
@@ -69098,7 +69100,7 @@ var globImport_database_ts2 = __glob({
   "./database-sqlite.test.ts": () => Promise.resolve().then(() => __toESM(require_database_sqlite_test())),
   "./database-sqlite.ts": () => Promise.resolve().then(() => (init_database_sqlite(), database_sqlite_exports))
 });
-var production = process2.env.NODE_ENV === "production";
+var production = process3.env.NODE_ENV === "production";
 var currentBackend = null;
 var currentCache = null;
 var isClosing = false;
@@ -70469,7 +70471,7 @@ async function migrate(args) {
       let interruptCount = 0;
       let shouldExit = 0;
       const handleSignal = (signal, code2) => {
-        process3.on(signal, () => {
+        process4.on(signal, () => {
           shouldExit = 128 + code2;
           if (++interruptCount < 3) {
             console.error(`Received signal ${signal} (${code2}). Finishing current operation.`);
@@ -70578,7 +70580,7 @@ function sanitizeContractName(contractName) {
 async function pin(args) {
   const version3 = args["manifest-version"];
   const manifestPath = args.manifest;
-  projectRoot = args["dir"] || process4.cwd();
+  projectRoot = args["dir"] || process5.cwd();
   if (!manifestPath) {
     await loadCheloniaConfig();
     return;
@@ -73780,7 +73782,7 @@ var createWorker = (path9) => {
             worker.removeEventListener("message", msgHandler, false);
             ready = launchWorker().catch((e3) => {
               console.error(e3, `Error on worker ${basename5(path9)} relaunch`);
-              process5.exit(1);
+              process6.exit(1);
             });
           }, false);
           resolve10();
@@ -74189,9 +74191,9 @@ var etag = (options2) => {
   };
 };
 var import_npm_pino = __toESM(require_pino());
-var verboseByDefault = process6.env.NODE_ENV === "development" || process6.env.CI || process6.env.CYPRESS_RECORD_KEY || process6.env.PRETTY;
+var verboseByDefault = process7.env.NODE_ENV === "development" || process7.env.CI || process7.env.CYPRESS_RECORD_KEY || process7.env.PRETTY;
 function getLogLevel() {
-  return process6.env.LOG_LEVEL || (verboseByDefault ? "debug" : "info");
+  return process7.env.LOG_LEVEL || (verboseByDefault ? "debug" : "info");
 }
 function logMethod(args, method) {
   const stringIdx = typeof args[0] === "string" ? 0 : 1;
@@ -74212,7 +74214,7 @@ var isTestRun = (() => {
 var pinoFactory = import_npm_pino.default;
 var logger = isTestRun ? pinoFactory(
   { hooks: { logMethod } },
-  import_npm_pino.default.destination({ fd: process6.stdout.fd || 1, sync: true })
+  import_npm_pino.default.destination({ fd: process7.stdout.fd || 1, sync: true })
 ) : pinoFactory({ hooks: { logMethod } });
 var logLevel = getLogLevel();
 if (Object.keys(logger.levels.values).includes(logLevel)) {
@@ -74321,7 +74323,7 @@ var disposeSignupLimiters = async (limiters) => {
   await Promise.allSettled(groups.flatMap((g2) => g2.keys().map((key) => g2.deleteKey(key))));
 };
 var signupRateLimitDisabledReason = () => {
-  if (process7.env.NODE_ENV !== "production") return 'NODE_ENV is not "production"';
+  if (process8.env.NODE_ENV !== "production") return 'NODE_ENV is not "production"';
   if (booleanConfig("server:signup:limit:disabled")) return "server.signup.limit.disabled";
   return void 0;
 };
@@ -74456,7 +74458,7 @@ function installRateLimiterSelectorsOnce() {
   });
 }
 function getStaticServeConfig() {
-  const isCheloniaDashboard = process8.env.IS_CHELONIA_DASHBOARD_DEV;
+  const isCheloniaDashboard = process9.env.IS_CHELONIA_DASHBOARD_DEV;
   const appDir = import_npm_nconf6.default.get("server:appDir") || ".";
   const dashboardDir = import.meta.dirname || "./build/dist-dashboard";
   return {
@@ -74537,7 +74539,7 @@ function registerRoutes(app) {
   if (SIGNUP_LIMIT_DISABLED) {
     console.warn(`[signup] per-IP registration rate limits are disabled (${SIGNUP_LIMIT_DISABLED_REASON})`);
   }
-  const isCheloniaDashboard = process8.env.IS_CHELONIA_DASHBOARD_DEV;
+  const isCheloniaDashboard = process9.env.IS_CHELONIA_DASHBOARD_DEV;
   const staticServeConfig = getStaticServeConfig();
   app.post(
     "/event",
@@ -74683,7 +74685,7 @@ function registerRoutes(app) {
       return c.json(resources || []);
     }
   );
-  if (process8.env.NODE_ENV === "development") {
+  if (process9.env.NODE_ENV === "development") {
     const levelToColor = {
       error: import_npm_chalk.default.bold.red,
       warn: import_npm_chalk.default.yellow,
@@ -74753,7 +74755,7 @@ function registerRoutes(app) {
       throw new HTTPException(400);
     }
   });
-  if (process8.env.NODE_ENV === "development") {
+  if (process9.env.NODE_ENV === "development") {
     app.post("/dev-file", bodyLimit({ maxSize: 6 * MEGABYTE }), async function(c) {
       if (ARCHIVE_MODE) throw new HTTPException(501, { message: "Server in archive mode" });
       try {
@@ -75523,7 +75525,7 @@ var { bold } = import_npm_chalk2.default;
 var { PING, PONG, PUB, SUB, UNSUB, KV_FILTER } = NOTIFICATION_TYPE;
 var { ERROR, OK } = RESPONSE_TYPE;
 var defaultOptions3 = {
-  logPingRounds: process9.env.NODE_ENV !== "production" && !process9.env.CI,
+  logPingRounds: process10.env.NODE_ENV !== "production" && !process10.env.CI,
   logPongMessages: false,
   maxPayload: 6 * 1024 * 1024,
   pingInterval: 3e4
@@ -76110,7 +76112,7 @@ async function startServer() {
   assertServerIdConfigured();
   const configuredServerId = import_npm_nconf8.default.get("server_id");
   const reclaimForeignSubscriptions = booleanConfig("server:reclaimForeignSubscriptions");
-  const appManifest = import_npm_nconf8.default.get("appManifest") || join7(import_npm_nconf8.default.get("server:appDir") || process10.cwd(), "chelonia.json");
+  const appManifest = import_npm_nconf8.default.get("appManifest") || join7(import_npm_nconf8.default.get("server:appDir") || process11.cwd(), "chelonia.json");
   const ARCHIVE_MODE = booleanConfig("server:archiveMode");
   const host = import_npm_nconf8.default.get("server:host") || "0.0.0.0";
   const port = import_npm_nconf8.default.get("server:port") ?? 8e3;
@@ -76141,7 +76143,7 @@ async function startServer() {
     response.headers.set("X-Frame-Options", "DENY");
     return response;
   });
-  if (process10.env.NODE_ENV === "development" && !process10.env.CI) {
+  if (process11.env.NODE_ENV === "development" && !process11.env.CI) {
     currentApp.use("*", async (c, next) => {
       await next();
       const ip = getClientIP(c) || "unknown";
@@ -76413,13 +76415,13 @@ var globalExceptionHandlersInstalled = false;
 function installGlobalExceptionHandlers() {
   if (globalExceptionHandlersInstalled) return;
   globalExceptionHandlersInstalled = true;
-  process11.on("uncaughtException", (err) => {
+  process12.on("uncaughtException", (err) => {
     console.error(err, "[server] Unhandled exception");
-    process11.exit(1);
+    process12.exit(1);
   });
-  process11.on("unhandledRejection", (reason) => {
+  process12.on("unhandledRejection", (reason) => {
     console.error(reason, "[server] Unhandled promise rejection:", reason);
-    process11.exit(1);
+    process12.exit(1);
   });
 }
 function installSignalHandlers() {
@@ -76431,7 +76433,7 @@ function installSignalHandlers() {
       exit2(128 + code2);
     };
     signalHandlers.push([signal, handler]);
-    process11.on(signal, handler);
+    process12.on(signal, handler);
   };
   [
     ["SIGHUP", 1],
@@ -76446,7 +76448,7 @@ var exit2 = (code2) => {
   esm_default("okTurtles.events/once", SERVER_EXITING, () => {
     esm_default("okTurtles.eventQueue/queueEvent", SERVER_EXITING, async () => {
       await stopServer();
-      process11.nextTick(() => process11.exit(code2));
+      process12.nextTick(() => process12.exit(code2));
     });
   });
   esm_default("okTurtles.events/emit", SERVER_EXITING);
@@ -76454,13 +76456,13 @@ var exit2 = (code2) => {
 async function startServer2(options2 = {}) {
   const { installSignalHandlers: shouldInstallSignalHandlers = true } = options2;
   initializeLogger();
-  if (import_npm_nconf9.default.get("server:logLevel") && !process11.env.LOG_LEVEL) {
+  if (import_npm_nconf9.default.get("server:logLevel") && !process12.env.LOG_LEVEL) {
     console.warn(
       "[chel] Note: the server.logLevel setting has no effect; set the LOG_LEVEL environment variable instead."
     );
   }
   console.info(import_npm_chalk4.default.bold(
-    `Running in ${process11.env.NODE_ENV === "production" ? "production" : "development"} mode.`
+    `Running in ${process12.env.NODE_ENV === "production" ? "production" : "development"} mode.`
   ));
   if (shouldInstallSignalHandlers) {
     installGlobalExceptionHandlers();
@@ -76746,7 +76748,7 @@ var upgradeWebSocket = defineWebSocketHelper(async (c, events, options2) => {
 });
 var import_npm_nconf10 = __toESM(require_nconf());
 var getDashboardPath = () => {
-  const baseDir = import.meta.dirname || path7.join(process12.cwd(), "build");
+  const baseDir = import.meta.dirname || path7.join(process13.cwd(), "build");
   const dashboardPath = path7.resolve(baseDir, "dist-dashboard");
   return dashboardPath;
 };
@@ -81181,7 +81183,7 @@ var parseArgs = () => {
   const commandModules = Object.values(commands_exports).map(
     (c) => handlerWrapper(c)
   );
-  const yargsInstance = yargs_default(hideBin(process13.argv)).version("3.4.0").strict().command(commandModules).demandCommand().help();
+  const yargsInstance = yargs_default(hideBin(process14.argv)).version("3.4.0").strict().command(commandModules).demandCommand().help();
   return yargsInstance;
 };
 var parseArgs_default = parseArgs;
