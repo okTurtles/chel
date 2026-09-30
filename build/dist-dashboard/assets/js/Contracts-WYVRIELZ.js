@@ -3,7 +3,7 @@ import {
 } from "./chunk-JAZDRYJA.js";
 import {
   contractDummyData
-} from "./chunk-HUGS2BMJ.js";
+} from "./chunk-GGGQGPNH.js";
 import {
   humanDate
 } from "./chunk-OID3DFNC.js";

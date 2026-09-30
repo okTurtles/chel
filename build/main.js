@@ -16112,9 +16112,10 @@ var b64ToBuf;
 var b64ToStr;
 var strToBuf;
 var strToB64;
+var randomUUID;
 var getSubscriptionId;
 var init_functions = __esm({
-  "node_modules/.deno/@chelonia+lib@1.5.0/node_modules/@chelonia/lib/dist/esm/functions.mjs"() {
+  "node_modules/.deno/@chelonia+lib@2.0.0/node_modules/@chelonia/lib/dist/esm/functions.mjs"() {
     init_base58();
     init_blake2b();
     init_blake2bstream();
@@ -16149,6 +16150,18 @@ var init_functions = __esm({
     b64ToStr = (b64) => b64ToBuf(b64).toString("utf8");
     strToBuf = (str) => Buffer22.from(str, "utf8");
     strToB64 = (str) => strToBuf(str).toString("base64");
+    randomUUID = (() => {
+      if (typeof crypto === "object" && typeof crypto.randomUUID === "function") {
+        return crypto.randomUUID.bind(crypto);
+      }
+      return () => {
+        const bytes = crypto.getRandomValues(new Uint8Array(16));
+        bytes[6] = bytes[6] & 15 | 64;
+        bytes[8] = bytes[8] & 63 | 128;
+        const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+        return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+      };
+    })();
     getSubscriptionId = async (subscriptionInfo) => {
       const textEncoder = new TextEncoder();
       const endpoint = textEncoder.encode(subscriptionInfo.endpoint);
@@ -16444,8 +16457,36 @@ function omit2(o2, props) {
   }
   return x3;
 }
+function safeDefine(obj, key, value) {
+  Object.defineProperty(obj, key, {
+    value,
+    writable: true,
+    enumerable: true,
+    configurable: true
+  });
+}
 function cloneDeep(obj) {
   return JSON.parse(JSON.stringify(obj));
+}
+function cloneValue(v2) {
+  if (v2 === null || typeof v2 !== "object")
+    return v2;
+  if (Array.isArray(v2)) {
+    const src2 = v2;
+    const out = new Array(src2.length);
+    for (let i2 = 0; i2 < src2.length; i2++) {
+      out[i2] = cloneValue(readJSONIndex(src2, i2));
+    }
+    return out;
+  }
+  if (isPlainObject2(v2)) {
+    const out = Object.create(Object.getPrototypeOf(v2));
+    for (const k of Object.keys(v2)) {
+      safeDefine(out, k, cloneValue(v2[k]));
+    }
+    return out;
+  }
+  return v2;
 }
 function isMergeableObject(val) {
   const nonNullObject = val && typeof val === "object";
@@ -16460,12 +16501,7 @@ function merge2(obj, src2) {
       merge2(x3, clone2);
       continue;
     }
-    Object.defineProperty(res, key, {
-      configurable: true,
-      enumerable: true,
-      value: clone2 || src2[key],
-      writable: true
-    });
+    safeDefine(res, key, clone2 || src2[key]);
   }
   return res;
 }
@@ -16496,24 +16532,61 @@ function difference(a1, ...arrays) {
   const a2 = Array.prototype.concat.apply([], arrays);
   return a1.filter((v2) => a2.indexOf(v2) === -1);
 }
+function isPlainObject2(v2) {
+  if (v2 === null || typeof v2 !== "object")
+    return false;
+  if (Array.isArray(v2))
+    return false;
+  const proto3 = Object.getPrototypeOf(v2);
+  return proto3 === Object.prototype || proto3 === null;
+}
+function shallowEqualPrimitives(a, b) {
+  if (a === b)
+    return true;
+  if (typeof a === "number" && typeof b === "number" && Number.isNaN(a) && Number.isNaN(b))
+    return true;
+  return false;
+}
+function readJSONIndex(arr, i2) {
+  return i2 in arr ? arr[i2] : null;
+}
 function deepEqualJSONType(a, b) {
   if (a === b)
     return true;
-  if (a == null || b == null || typeof a !== typeof b)
+  if (a === void 0 || b === void 0)
     return false;
-  if (typeof a !== "object")
-    return a === b;
-  if (Array.isArray(a) && Array.isArray(b)) {
-    if (a.length !== b.length)
+  const aIsArr = Array.isArray(a);
+  const bIsArr = Array.isArray(b);
+  const aIsObj = isPlainObject2(a);
+  const bIsObj = isPlainObject2(b);
+  if (aIsArr !== bIsArr || aIsObj !== bIsObj)
+    return false;
+  if (aIsArr && bIsArr) {
+    const aArr = a;
+    const bArr = b;
+    if (aArr.length !== bArr.length)
       return false;
-  } else if (![Object.prototype, null].includes(Object.getPrototypeOf(a))) {
-    throw new Error(`not JSON type: ${a}`);
+    for (let i2 = 0; i2 < aArr.length; i2++) {
+      if (!deepEqualJSONType(readJSONIndex(aArr, i2), readJSONIndex(bArr, i2)))
+        return false;
+    }
+    return true;
   }
-  for (const key in a) {
-    if (!deepEqualJSONType(a[key], b[key]))
+  if (aIsObj && bIsObj) {
+    const aObj = a;
+    const bObj = b;
+    const aKeys = Object.keys(aObj);
+    if (aKeys.length !== Object.keys(bObj).length)
       return false;
+    for (const k of aKeys) {
+      if (!has(bObj, k))
+        return false;
+      if (!deepEqualJSONType(aObj[k], bObj[k]))
+        return false;
+    }
+    return true;
   }
-  return true;
+  return shallowEqualPrimitives(a, b);
 }
 function debounce(func, wait, immediate) {
   let timeout, args, context, timestamp, result;
@@ -16565,7 +16638,7 @@ function debounce(func, wait, immediate) {
 }
 var has;
 var init_esm4 = __esm({
-  "node_modules/.deno/turtledash@1.0.3/node_modules/turtledash/dist/esm/index.js"() {
+  "node_modules/.deno/turtledash@2.0.0/node_modules/turtledash/dist/esm/index.js"() {
     has = Function.prototype.call.bind(Object.prototype.hasOwnProperty);
   }
 });
@@ -16595,7 +16668,7 @@ var ChelErrorKvValidation;
 var ChelErrorKvConflict;
 var ChelErrorKvReentrant;
 var init_errors3 = __esm({
-  "node_modules/.deno/@chelonia+lib@1.5.0/node_modules/@chelonia/lib/dist/esm/errors.mjs"() {
+  "node_modules/.deno/@chelonia+lib@2.0.0/node_modules/@chelonia/lib/dist/esm/errors.mjs"() {
     ChelErrorGenerator = (name, base2 = Error) => class extends base2 {
       constructor(...params) {
         super(...params);
@@ -19997,7 +20070,7 @@ var signedDataKeyId;
 var isRawSignedData;
 var rawSignedIncomingData;
 var init_signedData = __esm({
-  "node_modules/.deno/@chelonia+lib@1.5.0/node_modules/@chelonia/lib/dist/esm/signedData.mjs"() {
+  "node_modules/.deno/@chelonia+lib@2.0.0/node_modules/@chelonia/lib/dist/esm/signedData.mjs"() {
     init_esm6();
     init_esm();
     init_esm4();
@@ -20270,7 +20343,7 @@ var isRawEncryptedData;
 var unwrapMaybeEncryptedData;
 var maybeEncryptedIncomingData;
 var init_encryptedData = __esm({
-  "node_modules/.deno/@chelonia+lib@1.5.0/node_modules/@chelonia/lib/dist/esm/encryptedData.mjs"() {
+  "node_modules/.deno/@chelonia+lib@2.0.0/node_modules/@chelonia/lib/dist/esm/encryptedData.mjs"() {
     init_esm6();
     init_esm();
     init_esm4();
@@ -20535,7 +20608,7 @@ var decryptedAndVerifiedDeserializedMessage;
 var SPMessage;
 var keyOps;
 var init_SPMessage = __esm({
-  "node_modules/.deno/@chelonia+lib@1.5.0/node_modules/@chelonia/lib/dist/esm/SPMessage.mjs"() {
+  "node_modules/.deno/@chelonia+lib@2.0.0/node_modules/@chelonia/lib/dist/esm/SPMessage.mjs"() {
     init_esm6();
     init_esm7();
     init_esm4();
@@ -20953,7 +21026,7 @@ var prefixHandlers;
 var dbPrimitiveSelectors;
 var db_default;
 var init_db = __esm({
-  "node_modules/.deno/@chelonia+lib@1.5.0/node_modules/@chelonia/lib/dist/esm/db.mjs"() {
+  "node_modules/.deno/@chelonia+lib@2.0.0/node_modules/@chelonia/lib/dist/esm/db.mjs"() {
     init_esm3();
     init_esm2();
     init_esm();
@@ -20999,7 +21072,7 @@ var init_db = __esm({
       */
     };
     esm_default("sbp/selectors/unsafe", ["chelonia.db/get", "chelonia.db/set", "chelonia.db/delete", "chelonia.db/iterKeys", "chelonia.db/keyCount"]);
-    dbPrimitiveSelectors = process.env.LIGHTWEIGHT_CLIENT === "true" ? {
+    dbPrimitiveSelectors = process.env.LIGHTWEIGHT_CLIENT !== "false" ? {
       "chelonia.db/get": function(key) {
         const id = getContractIdFromLogHead(key);
         if (!id)
@@ -49114,7 +49187,7 @@ var require_modifiers = __commonJS({
       }
       return store;
     }
-    function has2(obj, prop) {
+    function has3(obj, prop) {
       return obj !== void 0 && obj !== null ? "hasOwn" in Object ? Object.hasOwn(obj, prop) : Object.prototype.hasOwnProperty.call(obj, prop) : false;
     }
     function specialSet(store, o2, k, path9, afterPath, censor, isCensorFct, censorFctTakesPath) {
@@ -49175,7 +49248,7 @@ var require_modifiers = __commonJS({
                   n[wck] = nv;
                 } else {
                   if (wcov[k] === nv) {
-                  } else if (nv === void 0 && censor !== void 0 || has2(wcov, k) && nv === ov) {
+                  } else if (nv === void 0 && censor !== void 0 || has3(wcov, k) && nv === ov) {
                     redactPathCurrent = node(redactPathCurrent, wck, depth);
                   } else {
                     redactPathCurrent = node(redactPathCurrent, wck, depth);
@@ -49192,7 +49265,7 @@ var require_modifiers = __commonJS({
           ov = n[k];
           redactPathCurrent = node(redactPathCurrent, k, depth);
           nv = i2 !== lastPathIndex ? ov : isCensorFct ? censorFctTakesPath ? censor(ov, [...path9, originalKey, ...afterPath]) : censor(ov) : censor;
-          if (has2(n, k) && nv === ov || nv === void 0 && censor !== void 0) {
+          if (has3(n, k) && nv === ov || nv === void 0 && censor !== void 0) {
           } else {
             const rv = restoreInstr(redactPathCurrent, ov, o2[originalKey]);
             store.push(rv);
@@ -49229,7 +49302,7 @@ var require_modifiers = __commonJS({
             n[wck] = nv;
           } else {
             if (wcov[k] === nv) {
-            } else if (nv === void 0 && censor !== void 0 || has2(wcov, k) && nv === ov) {
+            } else if (nv === void 0 && censor !== void 0 || has3(wcov, k) && nv === ov) {
             } else {
               const rv = restoreInstr(node(redactPathCurrent, k, depth + 1), ov, parent);
               store.push(rv);
@@ -60476,33 +60549,6 @@ function parseDottedPath(path9) {
     return [];
   return path9.split(".");
 }
-function isPlainObject2(v2) {
-  if (v2 === null || typeof v2 !== "object")
-    return false;
-  if (Array.isArray(v2))
-    return false;
-  const proto3 = Object.getPrototypeOf(v2);
-  return proto3 === Object.prototype || proto3 === null;
-}
-function cloneValue(v2) {
-  if (v2 === null || typeof v2 !== "object")
-    return v2;
-  if (Array.isArray(v2))
-    return v2.map(cloneValue);
-  if (isPlainObject2(v2)) {
-    const out = Object.create(Object.getPrototypeOf(v2));
-    for (const k of Object.keys(v2)) {
-      Object.defineProperty(out, k, {
-        value: cloneValue(v2[k]),
-        writable: true,
-        enumerable: true,
-        configurable: true
-      });
-    }
-    return out;
-  }
-  return v2;
-}
 function defaultDiff(before, after) {
   const patches = [];
   diffInto(before, after, [], patches);
@@ -60529,7 +60575,7 @@ function diffInto(before, after, segments, out) {
   const bIsObj = isPlainObject2(before);
   const aIsObj = isPlainObject2(after);
   if (bIsArr !== aIsArr || bIsObj !== aIsObj || !bIsArr && !bIsObj) {
-    if (!shallowEqualPrimitives(before, after)) {
+    if (!deepEqualJSONType(before, after)) {
       out.push({ op: "replace", path: path9, value: cloneValue(after) });
     }
     return;
@@ -60539,14 +60585,14 @@ function diffInto(before, after, segments, out) {
     const aArr = after;
     const minLen = Math.min(bArr.length, aArr.length);
     for (let i2 = 0; i2 < minLen; i2++) {
-      diffInto(bArr[i2], aArr[i2], [...segments, String(i2)], out);
+      diffInto(readJSONIndex(bArr, i2), readJSONIndex(aArr, i2), [...segments, String(i2)], out);
     }
     if (aArr.length > bArr.length) {
       for (let i2 = bArr.length; i2 < aArr.length; i2++) {
         out.push({
           op: "add",
           path: segmentsToPointer([...segments, String(i2)]),
-          value: cloneValue(aArr[i2])
+          value: cloneValue(readJSONIndex(aArr, i2))
         });
       }
     } else if (bArr.length > aArr.length) {
@@ -60581,21 +60627,6 @@ function diffInto(before, after, segments, out) {
       diffInto(bObj[k], aObj[k], [...segments, k], out);
     }
   }
-}
-function shallowEqualPrimitives(a, b) {
-  if (a === b)
-    return true;
-  if (typeof a === "number" && typeof b === "number" && Number.isNaN(a) && Number.isNaN(b))
-    return true;
-  return false;
-}
-function safeDefine(obj, last, value) {
-  Object.defineProperty(obj, last, {
-    value,
-    writable: true,
-    enumerable: true,
-    configurable: true
-  });
 }
 function defaultApplyPatch(state, patches) {
   let current = cloneValue(state);
@@ -60699,19 +60730,134 @@ function applyOne(root, patch) {
   return root;
 }
 var REDACTION_ERROR_SENTINEL = "[REDACTION_ERROR]";
-function applyRedactions(state, redactions, contractName) {
+var REDACTION_NON_JSON_SAFE_SENTINEL = "[REDACTION_NON_JSON_SAFE]";
+function isJSONSafeValue(v2, seen) {
+  if (v2 === null)
+    return true;
+  const t = typeof v2;
+  if (t === "string" || t === "boolean")
+    return true;
+  if (t === "number")
+    return Number.isFinite(v2);
+  if (t !== "object")
+    return false;
+  if (seen.has(v2))
+    return false;
+  if (Array.isArray(v2)) {
+    seen.add(v2);
+    const arr = v2;
+    let ok2 = Object.keys(arr).length === arr.length;
+    for (let i2 = 0; ok2 && i2 < arr.length; i2++) {
+      if (!(i2 in arr) || !isJSONSafeValue(arr[i2], seen)) {
+        ok2 = false;
+      }
+    }
+    seen.delete(v2);
+    return ok2;
+  }
+  if (!isPlainObject2(v2))
+    return false;
+  seen.add(v2);
+  const ok = Object.keys(v2).every((k) => isJSONSafeValue(v2[k], seen));
+  seen.delete(v2);
+  return ok;
+}
+function normalizeToJSONSafe(v2, seen) {
+  if (v2 === null)
+    return v2;
+  const t = typeof v2;
+  if (t === "string" || t === "boolean")
+    return v2;
+  if (t === "number") {
+    return Number.isFinite(v2) ? v2 : REDACTION_NON_JSON_SAFE_SENTINEL;
+  }
+  if (t !== "object")
+    return REDACTION_NON_JSON_SAFE_SENTINEL;
+  if (seen.has(v2))
+    return REDACTION_NON_JSON_SAFE_SENTINEL;
+  if (Array.isArray(v2)) {
+    seen.add(v2);
+    const arr = v2;
+    const out2 = new Array(arr.length);
+    for (let i2 = 0; i2 < arr.length; i2++) {
+      out2[i2] = i2 in arr ? normalizeToJSONSafe(arr[i2], seen) : REDACTION_NON_JSON_SAFE_SENTINEL;
+    }
+    seen.delete(v2);
+    return out2;
+  }
+  if (!isPlainObject2(v2))
+    return REDACTION_NON_JSON_SAFE_SENTINEL;
+  seen.add(v2);
+  const out = Object.create(Object.getPrototypeOf(v2));
+  for (const k of Object.keys(v2)) {
+    safeDefine(out, k, normalizeToJSONSafe(v2[k], seen));
+  }
+  seen.delete(v2);
+  return out;
+}
+function describeNonJSONSafe(v2) {
+  if (typeof v2 === "number")
+    return "non-finite number";
+  if (typeof v2 === "object" && v2 !== null) {
+    if (Array.isArray(v2)) {
+      const keyCount = Object.keys(v2).length;
+      if (keyCount < v2.length)
+        return "sparse array (holes are not JSON values)";
+      if (keyCount > v2.length) {
+        return "array with non-index properties (dropped by JSON)";
+      }
+      return "array containing a non-JSON-safe value";
+    }
+    if (isPlainObject2(v2))
+      return "object containing a non-JSON-safe or cyclic value";
+    return `non-plain object (${v2.constructor?.name ?? "unknown"})`;
+  }
+  return typeof v2;
+}
+var pluralLeaves = (n) => `${n} more ${n === 1 ? "leaf" : "leaves"}`;
+function flushRedactionPassWarnings(pass) {
+  if (pass.threwCount > 0) {
+    const more = pass.threwCount > 1 ? ` (and ${pluralLeaves(pass.threwCount - 1)} in this projection)` : "";
+    console.warn(`[chelonia][journal] redactor threw for path '${pass.threwFirstPath}'${more}:`, pass.threwFirstError);
+  }
+  if (pass.unsafeCount > 0) {
+    const more = pass.unsafeCount > 1 ? ` (and ${pluralLeaves(pass.unsafeCount - 1)} in this projection)` : "";
+    console.warn(`[chelonia][journal] redactor for path '${pass.unsafeFirstPath}' returned a non-JSON-safe value (${pass.unsafeFirstShape}); normalizing it to a JSON-safe equivalent${more}`);
+  }
+}
+function applyRedactions(state, redactions, contractName, sites) {
   const cloned = cloneValue(state);
   if (!redactions || redactions.length === 0)
     return cloned;
-  for (const r of redactions) {
-    const segments = parseDottedPath(r.path);
-    if (segments.length === 0)
-      continue;
-    walkAndRedact(cloned, segments, 0, r.redact, [], contractName);
+  const source = sites ? state : void 0;
+  const pass = {
+    seen: /* @__PURE__ */ new Set(),
+    sites,
+    threwCount: 0,
+    unsafeCount: 0
+  };
+  try {
+    for (const r of redactions) {
+      const segments = parseDottedPath(r.path);
+      if (segments.length === 0)
+        continue;
+      walkAndRedact(cloned, source, segments, 0, r.redact, [], contractName, pass);
+    }
+  } finally {
+    flushRedactionPassWarnings(pass);
   }
   return cloned;
 }
-function walkAndRedact(parent, segments, i2, redact, resolved, contractName) {
+function recordSite(sites, fullPath, original, replacement) {
+  const pointer = segmentsToPointer(fullPath);
+  const existing = sites.get(pointer);
+  if (existing) {
+    existing.replacement = replacement;
+  } else {
+    sites.set(pointer, { original, replacement });
+  }
+}
+function walkAndRedact(parent, source, segments, i2, redact, resolved, contractName, pass) {
   if (parent === null || typeof parent !== "object")
     return;
   const seg = segments[i2];
@@ -60721,33 +60867,145 @@ function walkAndRedact(parent, segments, i2, redact, resolved, contractName) {
     const fullPath = [...resolved, k];
     if (isLast) {
       const container = parent;
-      const original = container[k];
+      const value = container[k];
+      const sourceValue = pass.sites ? resolveAtSegments(source, fullPath) : void 0;
+      const original = sourceValue?.found ? sourceValue.value : value;
       let replacement;
       try {
-        replacement = redact(original, fullPath, contractName);
+        replacement = redact(value, [...fullPath], contractName);
       } catch (e2) {
-        console.warn(`[chelonia][journal] redactor threw for path '${fullPath.join(".")}':`, e2);
+        pass.threwCount++;
+        if (pass.threwFirstPath === void 0) {
+          pass.threwFirstPath = fullPath.join(".");
+          pass.threwFirstError = e2;
+        }
         replacement = REDACTION_ERROR_SENTINEL;
       }
+      if (!isJSONSafeValue(replacement, pass.seen)) {
+        pass.unsafeCount++;
+        if (pass.unsafeFirstPath === void 0) {
+          pass.unsafeFirstPath = fullPath.join(".");
+          pass.unsafeFirstShape = describeNonJSONSafe(replacement);
+        }
+        replacement = normalizeToJSONSafe(replacement, pass.seen);
+      }
+      let written = true;
       if (Array.isArray(container)) {
         const idx = Number(k);
-        if (Number.isInteger(idx) && idx >= 0 && idx < container.length) {
+        written = Number.isInteger(idx) && idx >= 0 && idx < container.length;
+        if (written)
           container[idx] = replacement;
-        }
       } else {
-        Object.defineProperty(container, k, {
-          value: replacement,
-          writable: true,
-          enumerable: true,
-          configurable: true
-        });
+        safeDefine(container, k, replacement);
+      }
+      if (pass.sites && written) {
+        recordSite(pass.sites, fullPath, original, replacement);
       }
     } else {
-      walkAndRedact(parent[k], segments, i2 + 1, redact, fullPath, contractName);
+      walkAndRedact(parent[k], source, segments, i2 + 1, redact, fullPath, contractName, pass);
     }
   }
 }
+function resolveAtSegments(root, segments) {
+  const notFound = { found: false, value: void 0 };
+  let current = root;
+  for (const seg of segments) {
+    if (current === null || typeof current !== "object")
+      return notFound;
+    if (Array.isArray(current)) {
+      const idx = Number(seg);
+      if (!Number.isInteger(idx) || idx < 0 || idx >= current.length)
+        return notFound;
+      current = readJSONIndex(current, idx);
+    } else {
+      if (!has(current, seg))
+        return notFound;
+      current = current[seg];
+    }
+  }
+  return { found: true, value: current };
+}
+function resolveAtPointer(root, pointer) {
+  return resolveAtSegments(root, pointerToSegments(pointer));
+}
+function buildCoverageIndex(patch) {
+  const paths = /* @__PURE__ */ new Set();
+  let wholeRoot = false;
+  for (const p of patch) {
+    const path9 = p?.path;
+    if (typeof path9 !== "string")
+      continue;
+    if (path9 === "") {
+      wholeRoot = true;
+      continue;
+    }
+    paths.add(path9);
+  }
+  return { paths, wholeRoot };
+}
+function coveredByPatch(idx, pointer) {
+  if (idx.wholeRoot)
+    return true;
+  if (idx.paths.has(pointer))
+    return true;
+  for (let i2 = pointer.lastIndexOf("/"); i2 > 0; i2 = pointer.lastIndexOf("/", i2 - 1)) {
+    if (idx.paths.has(pointer.slice(0, i2)))
+      return true;
+  }
+  return false;
+}
+function hasHiddenChange(before, after) {
+  const visiblePaths = defaultDiff(before.replacement, after.replacement);
+  if (visiblePaths.length === 0) {
+    return !deepEqualJSONType(before.original, after.original);
+  }
+  if (visiblePaths.some((p) => p.path === ""))
+    return false;
+  const visible = new Set(visiblePaths.map((p) => p.path));
+  for (const { path: path9 } of defaultDiff(before.original, after.original)) {
+    if (!visible.has(path9))
+      return true;
+  }
+  return false;
+}
+function synthesizeRedactedChangeOps(patch, beforeSites, afterSites, redactedAfter) {
+  if (beforeSites.size === 0 || afterSites.size === 0)
+    return patch;
+  const idx = buildCoverageIndex(patch);
+  const markers = [];
+  for (const [pointer, after] of afterSites) {
+    const before = beforeSites.get(pointer);
+    if (before === void 0)
+      continue;
+    if (deepEqualJSONType(before.original, after.original))
+      continue;
+    if (coveredByPatch(idx, pointer))
+      continue;
+    if (!hasHiddenChange(before, after))
+      continue;
+    const resolved = resolveAtPointer(redactedAfter, pointer);
+    if (!resolved.found)
+      continue;
+    markers.push({
+      op: "replace",
+      path: pointer,
+      value: cloneValue(resolved.value),
+      redacted: true
+    });
+  }
+  if (markers.length === 0)
+    return patch;
+  return patch.concat(markers);
+}
 var DEFAULT_SNAPSHOT_INTERVAL = 50;
+function defaultJournalConfig() {
+  return {
+    enabled: false,
+    snapshotInterval: DEFAULT_SNAPSHOT_INTERVAL,
+    contractIDs: [],
+    redactions: []
+  };
+}
 function resolveJournalConfig(cfg) {
   const enabled2 = cfg?.enabled === true;
   const snapshotInterval = typeof cfg?.snapshotInterval === "number" ? cfg.snapshotInterval : DEFAULT_SNAPSHOT_INTERVAL;
@@ -60755,7 +61013,16 @@ function resolveJournalConfig(cfg) {
   const redactions = cfg?.redactions ?? [];
   const diff = cfg?.diff ?? defaultDiff;
   const applyPatch = cfg?.applyPatch ?? defaultApplyPatch;
-  return { enabled: enabled2, snapshotInterval, contractIDs, redactions, diff, applyPatch };
+  const markRedactedChanges = cfg?.markRedactedChanges ?? (diff === defaultDiff && applyPatch === defaultApplyPatch);
+  return {
+    enabled: enabled2,
+    snapshotInterval,
+    contractIDs,
+    redactions,
+    markRedactedChanges,
+    diff,
+    applyPatch
+  };
 }
 function indexOfLastSnapshot(entries) {
   for (let i2 = entries.length - 1; i2 >= 0; i2--) {
@@ -60764,30 +61031,90 @@ function indexOfLastSnapshot(entries) {
   }
   return -1;
 }
-function appendAndTrim(entries, entry, snapshotInterval, postSnapshotState) {
+function isPlaceholderSnapshot(entry) {
+  return entry.kind === "snapshot" && entry.state == null;
+}
+function indexOfLastSeedSnapshot(entries) {
+  for (let i2 = entries.length - 1; i2 >= 0; i2--) {
+    const entry = entries[i2];
+    if (entry.kind === "snapshot" && !isPlaceholderSnapshot(entry))
+      return i2;
+  }
+  return -1;
+}
+function replayBoundaryState(window2, applyPatch) {
+  const seedIdx = indexOfLastSeedSnapshot(window2);
+  if (seedIdx < 0)
+    return null;
+  const seed = window2[seedIdx];
+  let state = seed.state;
+  try {
+    for (let i2 = seedIdx + 1; i2 < window2.length; i2++) {
+      const e2 = window2[i2];
+      if (e2.kind !== "patch" || e2.patch.length === 0)
+        continue;
+      state = applyPatch(state, e2.patch);
+    }
+  } catch (e2) {
+    logJournalError("boundary snapshot replay failed", e2);
+    return null;
+  }
+  if (state == null)
+    return null;
+  return { state: cloneValue(state), replayed: true };
+}
+function dropOldestNoOpPatches(entries, maxEntries) {
+  let excess = entries.length - maxEntries;
+  if (excess <= 0)
+    return;
+  for (let i2 = 1; i2 < entries.length && excess > 0; ) {
+    const e2 = entries[i2];
+    if (e2.kind === "patch" && e2.patch.length === 0) {
+      entries.splice(i2, 1);
+      excess--;
+    } else {
+      i2++;
+    }
+  }
+}
+function appendAndTrim(entries, entry, snapshotInterval, resolveSnapshotState) {
   entries = entries.slice();
   entries.push(entry);
-  if (postSnapshotState && postSnapshotState.state !== void 0 && entry.kind === "patch") {
+  if (resolveSnapshotState && entry.kind === "patch") {
     const lastSnapIdx = indexOfLastSnapshot(entries);
     const patchesSinceSnap = entries.length - 1 - lastSnapIdx;
     if (patchesSinceSnap >= snapshotInterval) {
-      const snap = /* @__PURE__ */ Object.create(null);
-      snap.kind = "snapshot";
-      snap.hash = entry.hash;
-      snap.height = entry.height;
-      snap.opType = entry.opType;
-      snap.description = entry.description;
-      snap.state = postSnapshotState.state;
-      if (entry.kind === "patch" && entry.error !== void 0) {
-        snap.error = entry.error;
+      const resolved = resolveSnapshotState(entries);
+      if (resolved && resolved.state != null) {
+        const snap = /* @__PURE__ */ Object.create(null);
+        snap.kind = "snapshot";
+        snap.hash = entry.hash;
+        snap.height = entry.height;
+        snap.opType = entry.opType;
+        snap.description = entry.description;
+        snap.state = resolved.state;
+        if (resolved.replayed) {
+          snap.replayed = true;
+        }
+        if (entry.error !== void 0) {
+          snap.error = entry.error;
+        }
+        if (entry.diffError !== void 0) {
+          snap.diffError = entry.diffError;
+        }
+        if (entry.redactionError !== void 0) {
+          snap.redactionError = entry.redactionError;
+        }
+        entries.push(snap);
       }
-      entries.push(snap);
     }
   }
   if (entries.length > 2 * snapshotInterval) {
     const lastSnapIdx = indexOfLastSnapshot(entries);
     if (lastSnapIdx > 0) {
       entries.splice(0, lastSnapIdx);
+    } else {
+      dropOldestNoOpPatches(entries, 2 * snapshotInterval);
     }
   }
   return entries;
@@ -60795,7 +61122,7 @@ function appendAndTrim(entries, entry, snapshotInterval, postSnapshotState) {
 function logJournalError(label, e2) {
   console.warn(`[chelonia][journal] ${label}:`, e2);
 }
-function normalizeProcessingError(e2) {
+function normalizeErrorDetail(e2) {
   if (e2 !== null && typeof e2 === "object") {
     const obj = e2;
     const rawName = obj.name;
@@ -60867,24 +61194,36 @@ var journal_default = esm_default("sbp/selectors/register", {
       }
       const isBackwards = lastEntry !== void 0 && height < lastEntry.height;
       const isForwardGap = lastEntry !== void 0 && height > lastEntry.height + 1;
-      const isResync = isBackwards || isForwardGap;
-      const isFirstOrResync = !existing || existing.length === 0 || isResync;
+      const isRewrite = lastEntry !== void 0 && height === lastEntry.height;
+      const isResync = isBackwards || isForwardGap || isRewrite;
+      const reseedAfterPlaceholder = lastEntry !== void 0 && !isResync && isPlaceholderSnapshot(lastEntry);
+      const isFirstOrResync = !existing || existing.length === 0 || isResync || reseedAfterPlaceholder;
       const willEmitEmptyPatch = !isFirstOrResync && processingErrored;
       let redactedBefore;
       let redactedAfter;
+      const trackRedactedChanges = cfg.markRedactedChanges && cfg.redactions.length > 0 && !willEmitEmptyPatch && !isFirstOrResync;
+      const beforeSites = trackRedactedChanges ? /* @__PURE__ */ new Map() : void 0;
+      const afterSites = trackRedactedChanges ? /* @__PURE__ */ new Map() : void 0;
+      let redactionError = null;
+      let redactionAfterFailed = false;
       if (!willEmitEmptyPatch && !isFirstOrResync) {
         try {
-          redactedBefore = beforeState === void 0 ? void 0 : applyRedactions(beforeState, cfg.redactions, contractName);
+          redactedBefore = beforeState === void 0 ? void 0 : applyRedactions(beforeState, cfg.redactions, contractName, beforeSites);
         } catch (e2) {
           logJournalError("redaction (before) failed", e2);
           redactedBefore = void 0;
+          if (redactionError == null)
+            redactionError = e2;
         }
       }
       try {
-        redactedAfter = afterState === void 0 ? null : applyRedactions(afterState, cfg.redactions, contractName);
+        redactedAfter = afterState === void 0 ? null : applyRedactions(afterState, cfg.redactions, contractName, afterSites);
       } catch (e2) {
         logJournalError("redaction (after) failed", e2);
         redactedAfter = null;
+        redactionAfterFailed = true;
+        if (redactionError == null)
+          redactionError = e2;
       }
       let nextEntries;
       if (isFirstOrResync) {
@@ -60896,19 +61235,35 @@ var journal_default = esm_default("sbp/selectors/register", {
         snap.description = description;
         snap.state = redactedAfter;
         if (processingErrored && processingError != null) {
-          snap.error = normalizeProcessingError(processingError);
+          snap.error = normalizeErrorDetail(processingError);
         }
-        nextEntries = [snap];
+        if (redactionError != null) {
+          snap.redactionError = normalizeErrorDetail(redactionError);
+        }
+        nextEntries = reseedAfterPlaceholder && existing ? appendAndTrim(existing, snap, cfg.snapshotInterval, null) : [snap];
       } else {
         let patch;
+        let diffError = null;
         if (processingErrored) {
           patch = [];
+        } else if (redactionError != null) {
+          patch = [];
         } else {
+          let diffFailed = false;
           try {
             patch = cfg.diff(redactedBefore, redactedAfter);
           } catch (e2) {
             logJournalError("diff failed", e2);
             patch = [];
+            diffFailed = true;
+            diffError = e2;
+          }
+          if (trackRedactedChanges && !diffFailed && beforeSites && afterSites) {
+            try {
+              patch = synthesizeRedactedChangeOps(patch, beforeSites, afterSites, redactedAfter);
+            } catch (e2) {
+              logJournalError("redacted-change marking failed", e2);
+            }
           }
         }
         const entry = /* @__PURE__ */ Object.create(null);
@@ -60919,9 +61274,28 @@ var journal_default = esm_default("sbp/selectors/register", {
         entry.description = description;
         entry.patch = patch;
         if (processingErrored && processingError != null) {
-          entry.error = normalizeProcessingError(processingError);
+          entry.error = normalizeErrorDetail(processingError);
         }
-        nextEntries = appendAndTrim(existing, entry, cfg.snapshotInterval, { state: redactedAfter });
+        if (diffError != null) {
+          entry.diffError = normalizeErrorDetail(diffError);
+        }
+        if (redactionError != null) {
+          entry.redactionError = normalizeErrorDetail(redactionError);
+        }
+        nextEntries = appendAndTrim(
+          existing,
+          entry,
+          cfg.snapshotInterval,
+          // A failed *after*-projection means `redactedAfter` is a
+          // placeholder `null`, not the real state: snapshotting it would
+          // anchor `reconstruct` on a bogus state once trimming discards
+          // everything before it. Recover the boundary state by replaying
+          // the window instead, which check-points exactly what
+          // `reconstruct` already returns and so keeps the window bounded
+          // without inventing a state. A failed before-projection leaves
+          // `redactedAfter` valid and usable.
+          redactionAfterFailed ? (window2) => replayBoundaryState(window2, cfg.applyPatch) : () => ({ state: redactedAfter })
+        );
       }
       const wrapper3 = /* @__PURE__ */ Object.create(null);
       wrapper3.entries = nextEntries;
@@ -60942,7 +61316,8 @@ var journal_default = esm_default("sbp/selectors/register", {
   // Public: rebuild the redacted contract state at the journal's HEAD by
   // walking from the most recent snapshot and applying subsequent patches.
   // Returns `undefined` if no journal exists (or the journal exists but is
-  // empty / has no snapshot to seed from). Throws `ChelErrorJournalCorrupt`
+  // empty / has no snapshot with a usable state to seed from — see
+  // `isPlaceholderSnapshot`). Throws `ChelErrorJournalCorrupt`
   // if a recorded patch fails to apply: this is a debugging tool and a
   // self-check, so a loud failure is preferable to silently returning
   // `undefined` (which would be indistinguishable from "no journal"). The
@@ -60954,7 +61329,7 @@ var journal_default = esm_default("sbp/selectors/register", {
     const entries = rootState?.contracts?.[contractID]?._journal?.entries;
     if (!entries || entries.length === 0)
       return void 0;
-    const startIdx = indexOfLastSnapshot(entries);
+    const startIdx = indexOfLastSeedSnapshot(entries);
     if (startIdx < 0)
       return void 0;
     const snap = entries[startIdx];
@@ -61716,7 +62091,7 @@ function eventsAfter(contractID, { sinceHeight, limit, sinceHash, stream = true 
     lastUrl = `${this.config.connectionURL}/eventsAfter/${contractID}/${sinceHeight}${Number.isInteger(requestLimit) ? `/${requestLimit}` : ""}`;
     const eventsResponse = await this.config.fetch(lastUrl, { signal });
     if (!eventsResponse.ok) {
-      const msg = `${eventsResponse.status}: ${eventsResponse.statusText}`;
+      const msg = httpErrorMessage(eventsResponse);
       if (eventsResponse.status === 404 || eventsResponse.status === 410) {
         throw new ChelErrorResourceGone(msg, { cause: eventsResponse.status });
       }
@@ -61951,10 +62326,11 @@ var logEvtError = (msg, ...args) => {
     console.error(...args, extra);
   }
 };
+var httpErrorMessage = (r) => `${r.status}: ${r.statusText}`;
 var handleFetchResult = (type) => {
   return function(r) {
     if (!r.ok) {
-      const msg = `${r.status}: ${r.statusText}`;
+      const msg = httpErrorMessage(r);
       if (r.status === 404 || r.status === 410) {
         throw new ChelErrorResourceGone(msg, { cause: r.status });
       }
@@ -61962,6 +62338,49 @@ var handleFetchResult = (type) => {
     }
     return r[type]();
   };
+};
+var MAX_ERROR_DETAIL_PREFIX_LENGTH = 512;
+var MAX_ERROR_BODY_LENGTH = 8192;
+var truncateDetail = (s) => {
+  return s.length > MAX_ERROR_DETAIL_PREFIX_LENGTH ? `${s.slice(0, MAX_ERROR_DETAIL_PREFIX_LENGTH)}\u2026[truncated]` : s;
+};
+var cleanDetail = (s) => (
+  // eslint-disable-next-line no-control-regex
+  truncateDetail(s.replace(/[\u0000-\u001F\u007F]+/g, " ").trim())
+);
+var readCappedBody = async (r) => {
+  if (!r.body?.getReader)
+    return (await r.text()).slice(0, MAX_ERROR_BODY_LENGTH);
+  const reader = r.body.getReader();
+  const decoder = new TextDecoder();
+  let text = "";
+  try {
+    while (text.length < MAX_ERROR_BODY_LENGTH) {
+      const { done, value } = await reader.read();
+      if (done)
+        break;
+      text += decoder.decode(value, { stream: true });
+    }
+    return (text + decoder.decode()).slice(0, MAX_ERROR_BODY_LENGTH);
+  } finally {
+    await reader.cancel().catch(() => {
+    });
+  }
+};
+var httpErrorDetail = async (r) => {
+  try {
+    const mediaType = (r.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
+    const isJson = mediaType === "application/json" || mediaType.startsWith("application/") && mediaType.endsWith("+json");
+    const body = await readCappedBody(r);
+    if (!isJson)
+      return cleanDetail(body);
+    const parsed = JSON.parse(body);
+    const detail = ["message", "detail", "error"].map((field) => parsed?.[field]).find((value) => typeof value === "string");
+    return detail === void 0 ? "" : cleanDetail(detail);
+  } catch (e2) {
+    console.warn("[chelonia] Could not read the body of a failed response", e2);
+    return "";
+  }
 };
 var deleteKeyHelper = (state, height, keyIds) => {
   const namesToCheck = new Set(keyIds.map((id) => state._vm.authorizedKeys[id]?.name).filter((name) => name != null));
@@ -62138,7 +62557,7 @@ var aes256gcmHandlers = {
     const recordSize = params?.rs ?? 1 << 16;
     if (!IKM) {
       IKM = new Uint8Array(33);
-      self.crypto.getRandomValues(IKM);
+      crypto.getRandomValues(IKM);
     }
     const keyId2 = blake32Hash("aes256gcm-keyId" + blake32Hash(IKM)).slice(-8);
     const binaryKeyId = Buffer4.from(keyId2);
@@ -62254,7 +62673,7 @@ var files_default = esm_default("sbp/selectors/register", {
         }
       })
     });
-    const boundary = typeof self.crypto?.randomUUID === "function" ? self.crypto.randomUUID() : new Array(36).fill("").map(() => "abcdefghijklmnopqrstuvwxyz"[(0, Math.random)() * 26 | 0]).join("");
+    const boundary = randomUUID();
     const stream = x(boundary, transferParts);
     const deletionToken = "deletionToken" + generateSalt();
     const deletionTokenHash = blake32Hash(deletionToken);
@@ -62809,7 +63228,7 @@ var internals_default = esm_default("sbp/selectors/register", {
           if (r.status === 409) {
             if (attempt + 1 > maxAttempts) {
               console.error(`[chelonia] failed to publish ${entry.description()} after ${attempt} attempts`, entry);
-              throw new Error(`publishEvent: ${r.status} - ${r.statusText}. attempt ${attempt}`);
+              throw new ChelErrorUnexpectedHttpResponseCode(`publishEvent: ${httpErrorMessage(r)}. attempt ${attempt}`, { cause: r.status });
             }
             const randDelay = randomIntFromRange(0, 1500);
             console.warn(`[chelonia] publish attempt ${attempt} of ${maxAttempts} failed. Waiting ${randDelay} msec before resending ${entry.description()}`);
@@ -62819,9 +63238,12 @@ var internals_default = esm_default("sbp/selectors/register", {
               await esm_default("chelonia/private/in/sync", contractID, { force: true });
             }
           } else {
-            const message = (await r.json())?.message;
-            console.error(`[chelonia] ERROR: failed to publish ${entry.description()}: ${r.status} - ${r.statusText}: ${message}`, entry);
-            throw new Error(`publishEvent: ${r.status} - ${r.statusText}: ${message}`);
+            const detail = await httpErrorDetail(r);
+            const description = `${httpErrorMessage(r)}${detail ? ` - ${detail}` : ""}`;
+            console.error(`[chelonia] ERROR: failed to publish ${entry.description()}: ${description}`, entry);
+            throw new ChelErrorUnexpectedHttpResponseCode(`publishEvent: ${description}`, {
+              cause: r.status
+            });
           }
         } catch (e2) {
           esm_default("okTurtles.events/off", EVENT_HANDLED, onreceivedHandler);
@@ -66506,17 +66928,10 @@ var chelonia_default = esm_default("sbp/selectors/register", {
       // Opt-in by default: enabling it imposes per-event CPU (deep clones
       // + diff) and persisted-state cost (up to ~2X entries plus full
       // snapshots) on every active contract. Consumers turn it on via
-      // `chelonia/configure`. Function fields (`redactions[*].redact`,
-      // `diff`, `applyPatch`) are intentionally left unset here so they
-      // survive `merge()` (which deep-clones via JSON and would otherwise
-      // strip them); `chelonia/configure` reattaches them in a dedicated
-      // pass.
-      journal: {
-        enabled: false,
-        snapshotInterval: DEFAULT_SNAPSHOT_INTERVAL,
-        contractIDs: [],
-        redactions: []
-      },
+      // `chelonia/configure`. See `defaultJournalConfig` for why the block
+      // is deliberately partial (function fields must survive `merge()`;
+      // `markRedactedChanges` is derived, not stored).
+      journal: defaultJournalConfig(),
       unwrapMaybeEncryptedData
     };
     this._instance = /* @__PURE__ */ Object.create(null);
@@ -66619,14 +67034,12 @@ var chelonia_default = esm_default("sbp/selectors/register", {
     merge2(this.config, configForMerge);
     Object.assign(this.config.hooks, config2.hooks || {});
     if (journalOverride === null) {
-      this.config.journal = {
-        enabled: false,
-        snapshotInterval: DEFAULT_SNAPSHOT_INTERVAL,
-        contractIDs: [],
-        redactions: []
-      };
+      this.config.journal = defaultJournalConfig();
       esm_default("chelonia/journal/clear");
     } else if (journalOverride !== void 0) {
+      if (typeof journalOverride !== "object" || Array.isArray(journalOverride)) {
+        throw new TypeError(`[chelonia][journal] config.journal must be an object, \`null\` to reset the whole block to disabled defaults, or omitted to leave it alone; got ${Array.isArray(journalOverride) ? "array" : typeof journalOverride}`);
+      }
       const rejectNull = (name) => {
         if (has(journalOverride, name) && journalOverride[name] === null) {
           throw new TypeError(`[chelonia][journal] config.journal.${name} cannot be null; omit the field to leave it alone, or pass \`journal: null\` to reset the whole block to disabled defaults`);
@@ -66636,57 +67049,57 @@ var chelonia_default = esm_default("sbp/selectors/register", {
       rejectNull("snapshotInterval");
       rejectNull("contractIDs");
       rejectNull("redactions");
+      rejectNull("markRedactedChanges");
       rejectNull("diff");
       rejectNull("applyPatch");
-      if (!this.config.journal) {
-        this.config.journal = {
-          enabled: false,
-          snapshotInterval: DEFAULT_SNAPSHOT_INTERVAL,
-          contractIDs: [],
-          redactions: []
-        };
-      }
-      const target = this.config.journal;
-      if (journalOverride.enabled !== void 0) {
-        if (typeof journalOverride.enabled !== "boolean") {
-          throw new TypeError(`[chelonia][journal] config.journal.enabled must be a boolean; got ${typeof journalOverride.enabled}`);
+      const staged = {};
+      let intervalWarning;
+      const stageTypedField = (name, type) => {
+        const value = journalOverride[name];
+        if (value === void 0)
+          return;
+        const actualType = typeof value;
+        if (actualType !== type) {
+          throw new TypeError(`[chelonia][journal] config.journal.${name} must be a ${type}; got ${actualType}`);
         }
-        target.enabled = journalOverride.enabled;
-      }
+        staged[name] = value;
+      };
+      stageTypedField("enabled", "boolean");
+      stageTypedField("markRedactedChanges", "boolean");
+      stageTypedField("diff", "function");
+      stageTypedField("applyPatch", "function");
       if (journalOverride.snapshotInterval !== void 0) {
         const si = journalOverride.snapshotInterval;
-        target.snapshotInterval = Number.isInteger(si) && si > 0 ? si : DEFAULT_SNAPSHOT_INTERVAL;
-        if (target.snapshotInterval !== si) {
-          console.warn(`[chelonia][journal] invalid snapshotInterval ${String(si)}; falling back to ${DEFAULT_SNAPSHOT_INTERVAL}`);
+        staged.snapshotInterval = Number.isInteger(si) && si > 0 ? si : DEFAULT_SNAPSHOT_INTERVAL;
+        if (staged.snapshotInterval !== si) {
+          intervalWarning = `[chelonia][journal] invalid snapshotInterval ${String(si)}; falling back to ${DEFAULT_SNAPSHOT_INTERVAL}`;
         }
       }
       if (journalOverride.contractIDs !== void 0) {
         if (!Array.isArray(journalOverride.contractIDs)) {
           throw new TypeError(`[chelonia][journal] config.journal.contractIDs must be an array; got ${typeof journalOverride.contractIDs}`);
         }
-        target.contractIDs = journalOverride.contractIDs.slice();
+        staged.contractIDs = journalOverride.contractIDs.slice();
       }
       if (journalOverride.redactions !== void 0) {
         if (!Array.isArray(journalOverride.redactions)) {
           throw new TypeError(`[chelonia][journal] config.journal.redactions must be an array; got ${typeof journalOverride.redactions}`);
         }
-        target.redactions = journalOverride.redactions.map((r) => ({
-          path: r.path,
-          redact: r.redact
-        }));
+        staged.redactions = journalOverride.redactions.map((r, i2) => {
+          const path9 = r?.path;
+          const redact = r?.redact;
+          if (r === null || typeof r !== "object" || Array.isArray(r) || typeof path9 !== "string" || typeof redact !== "function") {
+            throw new TypeError(`[chelonia][journal] config.journal.redactions[${i2}] must be \`{ path: string, redact: function }\`; got path=${typeof path9}, redact=${typeof redact}`);
+          }
+          return { path: r.path, redact: r.redact };
+        });
       }
-      if (journalOverride.diff !== void 0) {
-        if (typeof journalOverride.diff !== "function") {
-          throw new TypeError(`[chelonia][journal] config.journal.diff must be a function; got ${typeof journalOverride.diff}`);
-        }
-        target.diff = journalOverride.diff;
+      if (!this.config.journal) {
+        this.config.journal = defaultJournalConfig();
       }
-      if (journalOverride.applyPatch !== void 0) {
-        if (typeof journalOverride.applyPatch !== "function") {
-          throw new TypeError(`[chelonia][journal] config.journal.applyPatch must be a function; got ${typeof journalOverride.applyPatch}`);
-        }
-        target.applyPatch = journalOverride.applyPatch;
-      }
+      Object.assign(this.config.journal, staged);
+      if (intervalWarning !== void 0)
+        console.warn(intervalWarning);
     }
     if (config2.contracts) {
       Object.assign(this.config.contracts.defaults, config2.contracts.defaults || {});
@@ -67527,6 +67940,41 @@ var chelonia_default = esm_default("sbp/selectors/register", {
       signal: this.abortController.signal
     }).then(handleFetchResult("json"));
   },
+  // Resolves a registered name (e.g., a username) to a contract ID.
+  // A 404 means that the name isn't registered (or a 410 that the mapping
+  // was deleted), and a 400 that the name can't be registered at all
+  // because it's malformed. All three are reported as `null` rather than
+  // as errors; with `throwOnInvalidName` set, a 400 instead rejects with
+  // ChelErrorUnexpectedHttpResponseCode (see below), while 404 and 410
+  // still resolve to `null`.
+  "chelonia/out/nameToContractID": async function(name, { throwOnInvalidName } = {}) {
+    if (!name) {
+      throw new TypeError("A name must be provided");
+    }
+    if (name === "." || name === "..") {
+      if (!throwOnInvalidName)
+        return null;
+      throw new ChelErrorUnexpectedHttpResponseCode(`400: invalid name ${name}`, { cause: 400 });
+    }
+    const response = await this.config.fetch(`${this.config.connectionURL}/name/${encodeURIComponent(name)}`, {
+      cache: "no-store",
+      signal: this.abortController.signal
+    });
+    if (response.status === 400 && !throwOnInvalidName)
+      return null;
+    if (response.status === 404 || response.status === 410)
+      return null;
+    if (!response.ok) {
+      throw new ChelErrorUnexpectedHttpResponseCode(httpErrorMessage(response), { cause: response.status });
+    }
+    const value = (await response.text()).trim();
+    if (value === "")
+      return null;
+    if (maybeParseCID(value)?.code !== multicodes.SHELTER_CONTRACT_DATA) {
+      throw new ChelErrorUnexpected(`Invalid contract ID in name lookup response for ${name}`);
+    }
+    return value;
+  },
   "chelonia/out/deserializedHEAD": async function(hash3, { contractID } = {}) {
     const message = await esm_default("chelonia/out/fetchResource", hash3, {
       code: multicodes.SHELTER_CONTRACT_DATA
@@ -67633,27 +68081,27 @@ var chelonia_default = esm_default("sbp/selectors/register", {
     }
     return stateCopy;
   },
-  "chelonia/contract/fullState": function(contractID, key) {
+  "chelonia/contract/fullState": function(contractID, key, options2) {
+    const { includeJournal = false } = options2 ?? {};
     const rootState = esm_default(this.config.stateSelector);
-    if (Array.isArray(contractID)) {
-      return Object.fromEntries(contractID.map((contractID2) => {
-        return [
-          contractID2,
-          {
-            contractState: rootState[contractID2],
-            cheloniaState: rootState.contracts[contractID2],
-            kvState: rootState._kv?.[contractID2],
-            kvEntry: key === void 0 ? void 0 : rootState._kv?.[contractID2]?.[key]
-          }
-        ];
-      }));
-    }
-    return {
-      contractState: rootState[contractID],
-      cheloniaState: rootState.contracts[contractID],
-      kvState: rootState._kv?.[contractID],
-      kvEntry: key === void 0 ? void 0 : rootState._kv?.[contractID]?.[key]
+    const stateFor = (id) => {
+      const meta = rootState.contracts?.[id];
+      let cheloniaState = meta;
+      if (meta != null) {
+        const { _journal, ...rest } = meta;
+        cheloniaState = includeJournal && _journal !== void 0 ? { ...rest, _journal } : rest;
+      }
+      return {
+        contractState: rootState[id],
+        cheloniaState,
+        kvState: rootState._kv?.[id],
+        kvEntry: key === void 0 ? void 0 : rootState._kv?.[id]?.[key]
+      };
     };
+    if (Array.isArray(contractID)) {
+      return Object.fromEntries(contractID.map((id) => [id, stateFor(id)]));
+    }
+    return stateFor(contractID);
   },
   // 'chelonia/out' - selectors that send data out to the server
   "chelonia/out/registerContract": async function(params) {
@@ -67714,7 +68162,7 @@ var chelonia_default = esm_default("sbp/selectors/register", {
     });
     if (!response.ok) {
       console.error("Unable to fetch own resources", contractID, response.status);
-      throw new Error(`Unable to fetch own resources for ${contractID}: ${response.status}`);
+      throw new ChelErrorUnexpectedHttpResponseCode(`Unable to fetch own resources for ${contractID}: ${httpErrorMessage(response)}`, { cause: response.status });
     }
     return response.json();
   },
@@ -68105,7 +68553,7 @@ var chelonia_default = esm_default("sbp/selectors/register", {
           }
         }
       } else if (response.status !== 404 && response.status !== 410) {
-        throw new ChelErrorUnexpectedHttpResponseCode("[kv/set] Invalid response code: " + response.status);
+        throw new ChelErrorUnexpectedHttpResponseCode(`[kv/set] ${httpErrorMessage(response)}`, { cause: response.status });
       }
       if (!recoveryGetAttempted && !headerEtag && !currentValue && (response.status === 409 || response.status === 412)) {
         recoveryGetAttempted = true;
@@ -68225,7 +68673,7 @@ var chelonia_default = esm_default("sbp/selectors/register", {
               break;
             }
           }
-          throw new ChelErrorUnexpectedHttpResponseCode("kv/set invalid response status: " + response.status);
+          throw new ChelErrorUnexpectedHttpResponseCode(`[kv/set] ${httpErrorMessage(response)}`, { cause: response.status });
         }
         successEtag = response.headers.get("x-cid") || response.headers.get("etag");
         break;
@@ -68246,7 +68694,7 @@ var chelonia_default = esm_default("sbp/selectors/register", {
       return null;
     }
     if (!response.ok) {
-      throw new Error("Invalid response status: " + response.status);
+      throw new ChelErrorUnexpectedHttpResponseCode(`[kv/get] ${httpErrorMessage(response)}`, { cause: response.status });
     }
     const etag2 = response.headers.get("x-cid") || response.headers.get("etag");
     const data = await response.json();
@@ -70785,7 +71233,55 @@ var module11 = {
   }
 };
 init_esm();
-init_esm4();
+function debounce2(func, wait, immediate) {
+  let timeout, args, context, timestamp, result;
+  if (wait == null)
+    wait = 100;
+  function later() {
+    const last = performance.now() - timestamp;
+    if (last < wait && last >= 0) {
+      timeout = setTimeout(later, wait - last);
+    } else {
+      timeout = void 0;
+      if (!immediate) {
+        result = func.apply(context, args);
+        args = void 0;
+        context = void 0;
+      }
+    }
+  }
+  const debounced = function(...args_) {
+    args = args_;
+    context = this;
+    timestamp = performance.now();
+    const callNow = immediate && !timeout;
+    if (!timeout)
+      timeout = setTimeout(later, wait);
+    if (callNow) {
+      result = func.apply(context, args);
+      args = void 0;
+      context = void 0;
+    }
+    return result;
+  };
+  debounced.clear = function() {
+    if (timeout) {
+      clearTimeout(timeout);
+      timeout = void 0;
+    }
+  };
+  debounced.flush = function() {
+    if (timeout) {
+      result = func.apply(context, args);
+      args = void 0;
+      context = void 0;
+      clearTimeout(timeout);
+      timeout = void 0;
+    }
+  };
+  return debounced;
+}
+var has2 = Function.prototype.call.bind(Object.prototype.hasOwnProperty);
 init_utils();
 init_esm3();
 init_esm2();
@@ -70797,6 +71293,7 @@ var SERVER_RUNNING = "server-running";
 init_SPMessage();
 init_functions();
 init_esm();
+init_functions();
 var timer = Symbol("timer");
 var coerceToError = (arg) => {
   if (arg && arg instanceof Error)
@@ -70816,7 +71313,7 @@ var PersistentAction = class {
   status;
   [timer];
   constructor(invocation, options2 = {}) {
-    this.id = crypto.randomUUID();
+    this.id = randomUUID();
     this.invocation = invocation;
     this.options = { ...defaultOptions2, ...options2 };
     this.status = {
@@ -75226,7 +75723,6 @@ function registerRoutes(app) {
 }
 var SERVER_INSTANCE = "@instance/server";
 var PUBSUB_INSTANCE = "@instance/pubsub";
-init_esm4();
 init_functions();
 init_esm();
 var import_npm_nconf7 = __toESM(require_nconf());
@@ -75519,7 +76015,7 @@ var import_websocket = __toESM(require_websocket(), 1);
 var import_websocket_server = __toESM(require_websocket_server(), 1);
 var wrapper_default = import_websocket.default;
 var isPushSubscriptionInfo = (x3) => {
-  return has(x3, "endpoint");
+  return has2(x3, "endpoint");
 };
 var { bold } = import_npm_chalk2.default;
 var { PING, PONG, PUB, SUB, UNSUB, KV_FILTER } = NOTIFICATION_TYPE;
@@ -76799,7 +77295,7 @@ async function watch(args) {
   const manifestSet = /* @__PURE__ */ new Set();
   const watcher = Deno.watchFs(dir, { recursive: true });
   const queueName = "internal:manifests-watch";
-  const debouncedRedeploy = debounce(() => {
+  const debouncedRedeploy = debounce2(() => {
     if (manifestSet.size === 0) return;
     esm_default("okTurtles.eventQueue/queueEvent", queueName, () => {
       const manifests = Array.from(manifestSet);

@@ -20,9 +20,9 @@
     "npm:@apeleghq/rfc8188@*": "1.0.8",
     "npm:@apeleghq/rfc8188@1.0.7": "1.0.7",
     "npm:@chelonia/crypto@*": "1.0.1",
-    "npm:@chelonia/lib@*": "1.5.0_@sbp+sbp@2.4.1",
+    "npm:@chelonia/lib@*": "2.0.0_@sbp+sbp@2.4.1",
     "npm:@chelonia/lib@1.4.4": "1.4.4_@sbp+sbp@2.4.1",
-    "npm:@chelonia/lib@1.5.0": "1.5.0_@sbp+sbp@2.4.1",
+    "npm:@chelonia/lib@2.0.0": "2.0.0_@sbp+sbp@2.4.1",
     "npm:@chelonia/serdes@1.0.1": "1.0.1",
     "npm:@eslint/js@9.31.0": "9.31.0",
     "npm:@hono/node-server@*": "1.19.14_hono@4.12.12",
@@ -188,12 +188,12 @@
         "@sbp/okturtles.events",
         "@sbp/sbp",
         "scrypt-async",
-        "turtledash",
+        "turtledash@1.0.3",
         "tweetnacl"
       ]
     },
-    "@chelonia/lib@1.5.0_@sbp+sbp@2.4.1": {
-      "integrity": "sha512-nJ1cgt5v7OF2XRvdKdATiUxWDVvCiBRgaT2NNo7ESPs2S2OROnj+oMt96NrmvAuX7BU6feu/yBxrLBtN6Bk6GQ==",
+    "@chelonia/lib@2.0.0_@sbp+sbp@2.4.1": {
+      "integrity": "sha512-JRtJ0IwpRltXQrswa1o0VEX15LRY52BF82bT/DQSuEAR5VAViNy08SNm8mlS0NMxcKafozlUZmJXTQxDZj+EBw==",
       "dependencies": [
         "@apeleghq/multipart-parser",
         "@apeleghq/rfc8188@1.0.8",
@@ -204,7 +204,7 @@
         "@sbp/okturtles.events",
         "@sbp/sbp",
         "scrypt-async",
-        "turtledash",
+        "turtledash@2.0.0",
         "tweetnacl"
       ]
     },
@@ -1408,6 +1408,7 @@
         "natural-compare",
         "optionator"
       ],
+      "deprecated": true,
       "bin": true
     },
     "espree@10.4.0_acorn@8.15.0": {
@@ -2568,6 +2569,9 @@
     "turtledash@1.0.3": {
       "integrity": "sha512-Z7LIPDSvnl0U53DyJ7YxLxG/yQac/NK0OwGNOM37SjE87S5KtybFEwHVhevUWtK8iaEzYHWyC5/vEd1GKm5iQw=="
     },
+    "turtledash@2.0.0": {
+      "integrity": "sha512-EqkzVI49LZju/y8KyRb4L6/FyZRS/ZPV28vsWk+L4J+j5zUtnMpmUOfPw2AKy17UbzjcwjgKG3xHyJntT6k/8w=="
+    },
     "tweetnacl@1.0.3": {
       "integrity": "sha512-6rt+RN7aOi1nGMyC4Xa5DdYiukl2UWCbcJft7YhxReBGQD7OAM8Pbxw6YMo4r2diNEA8FEmu32YOn9rhaiE5yw=="
     },
@@ -2729,7 +2733,7 @@
       "jsr:@std/streams@1.0.10",
       "jsr:@std/testing@1.0.21",
       "npm:@apeleghq/rfc8188@1.0.7",
-      "npm:@chelonia/lib@1.5.0",
+      "npm:@chelonia/lib@2.0.0",
       "npm:@chelonia/serdes@1.0.1",
       "npm:@eslint/js@9.31.0",
       "npm:@hono/node-server@1.19.14",

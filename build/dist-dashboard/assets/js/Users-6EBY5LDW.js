@@ -4,7 +4,7 @@ import {
 import {
   fakeUserStats,
   fakeUserTableData
-} from "./chunk-HUGS2BMJ.js";
+} from "./chunk-GGGQGPNH.js";
 import "./chunk-OID3DFNC.js";
 import {
   PageTemplate_default

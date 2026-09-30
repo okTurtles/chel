@@ -8,8 +8,10 @@
 // Third-party modules:
 // https://deno.land/x
 
-// Has to stay the first import. See the module for why.
+// Has to stay the first import. The server always has to store messages, and
+// @chelonia/lib has to know that before it loads. See the module for more.
 import './lightweight-client-off.ts'
+
 import parseConfig, { handlerState } from './parseConfig.ts'
 import { exit } from './utils.ts'
 
