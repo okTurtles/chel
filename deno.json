@@ -9,8 +9,8 @@
     "publish": "deno run --allow-run --allow-read --allow-write=./build,./dist,./node_modules,./package.json --allow-env scripts/publish.ts",
     "sync-versions": "deno run --allow-read=. --allow-write=. --allow-run scripts/sync-versions.ts",
     "smoke": "deno test --allow-read --allow-write=.,./dist,./node_modules --allow-env --allow-ffi --allow-net --allow-sys --allow-run test/compile-smoke.test.ts",
-    "test:symlinks": "deno test --allow-read --allow-write --allow-env=CI,LIGHTWEIGHT_CLIENT,MAX_EVENTS_AFTER,NODE_ENV,UNSAFE_TRUST_ALL_MANIFEST_SIGNING_KEYS scripts/binaries-symlinks.test.ts src/migrate-symlinks.test.ts",
-    "test": "deno task lint && deno task check && deno test --unstable-worker-options --allow-read=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-write=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-env --allow-ffi --allow-net --allow-sys --allow-run=node,git && deno task test:symlinks"
+    "test:symlinks": "LIGHTWEIGHT_CLIENT=false deno test --allow-read --allow-write --allow-env=CI,LIGHTWEIGHT_CLIENT,MAX_EVENTS_AFTER,NODE_ENV,UNSAFE_TRUST_ALL_MANIFEST_SIGNING_KEYS scripts/binaries-symlinks.test.ts src/migrate-symlinks.test.ts",
+    "test": "deno task lint && deno task check && LIGHTWEIGHT_CLIENT=false deno test --unstable-worker-options --allow-read=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-write=.,$HOME/.cache,$HOME/Library/Caches/deno --allow-env --allow-ffi --allow-net --allow-sys --allow-run=node,git && deno task test:symlinks"
   },
   "imports": {
     "~/": "./src/",
@@ -57,7 +57,7 @@
     "npm:vuelidate": "npm:vuelidate@0.7.6",
     "npm:vuex": "npm:vuex@3.6.0",
     "npm:multiformats/": "npm:multiformats@11.0.2/",
-    "npm:@chelonia/lib/": "npm:@chelonia/lib@1.5.0/",
+    "npm:@chelonia/lib/": "npm:@chelonia/lib@2.0.0/",
     "npm:lru-cache": "npm:lru-cache@7.14.0",
     "npm:pino": "npm:pino@8.19.0",
     "npm:tweetnacl": "npm:tweetnacl@1.0.3",

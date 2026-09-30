@@ -8,7 +8,7 @@ import {
 } from "./chunk-JAZDRYJA.js";
 import {
   contractDummyData
-} from "./chunk-HUGS2BMJ.js";
+} from "./chunk-GGGQGPNH.js";
 import "./chunk-OID3DFNC.js";
 import "./chunk-ZI2WDK4P.js";
 import {

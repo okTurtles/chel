@@ -3868,7 +3868,7 @@ function encodeCID(version, code, multihash) {
 }
 var cidSymbol = Symbol.for("@ipld/js-cid/CID");
 
-// node_modules/.deno/@chelonia+lib@1.5.0/node_modules/@chelonia/lib/dist/esm/functions.mjs
+// node_modules/.deno/@chelonia+lib@2.0.0/node_modules/@chelonia/lib/dist/esm/functions.mjs
 var import_buffer = __toESM(require_buffer(), 1);
 var multicodes = {
   RAW: 0,
@@ -3884,6 +3884,18 @@ function createCID(data, multicode = multicodes.RAW) {
   const digest = blake2b256.digest(uint8array);
   return CID.create(1, multicode, digest).toString(base58btc);
 }
+var randomUUID = (() => {
+  if (typeof crypto === "object" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID.bind(crypto);
+  }
+  return () => {
+    const bytes = crypto.getRandomValues(new Uint8Array(16));
+    bytes[6] = bytes[6] & 15 | 64;
+    bytes[8] = bytes[8] & 63 | 128;
+    const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  };
+})();
 
 // src/serve/dashboard/views/utils/dummy-data.ts
 var fakeUsers = ["Flex Kubin", "Attila Hun", "Childish Gambino", "Ken M", "Margarida", "Rosalia", "Leihla P", "Andrea"];

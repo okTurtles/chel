@@ -34148,11 +34148,11 @@ lazyComponent("Prompt", () => import("./Prompt-IEVYE3G7.js"));
 
 // src/serve/dashboard/controller/router.ts
 var lazyDashboard = lazyPage(() => import("./Dashboard-FEKZLZYG.js"));
-var lazyContracts = lazyPage(() => import("./Contracts-QPNWOUQV.js"));
-var lazyUsers = lazyPage(() => import("./Users-K63WYX5A.js"));
+var lazyContracts = lazyPage(() => import("./Contracts-WYVRIELZ.js"));
+var lazyUsers = lazyPage(() => import("./Users-6EBY5LDW.js"));
 var lazyBilling = lazyPage(() => import("./Billing-7PZQ3UDA.js"));
-var lazyAccounts = lazyPage(() => import("./Accounts-QFBMFRDV.js"));
-var lazyDesignSystem = lazyPage(() => import("./CheloniaDesignSystem-WVUZMNMC.js"));
+var lazyAccounts = lazyPage(() => import("./Accounts-K2BBXRWE.js"));
+var lazyDesignSystem = lazyPage(() => import("./CheloniaDesignSystem-KCA2SDU6.js"));
 import_npm_vue2.default.use(VueRouter$1);
 var router = new VueRouter$1({
   mode: "history",
