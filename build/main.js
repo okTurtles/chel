@@ -77531,7 +77531,7 @@ var module13 = {
   }
 };
 function version2() {
-  console.log("3.4.0");
+  console.log("3.4.1");
 }
 var module14 = {
   command: "version",
@@ -81679,7 +81679,7 @@ var parseArgs = () => {
   const commandModules = Object.values(commands_exports).map(
     (c) => handlerWrapper(c)
   );
-  const yargsInstance = yargs_default(hideBin(process14.argv)).version("3.4.0").strict().command(commandModules).demandCommand().help();
+  const yargsInstance = yargs_default(hideBin(process14.argv)).version("3.4.1").strict().command(commandModules).demandCommand().help();
   return yargsInstance;
 };
 var parseArgs_default = parseArgs;
