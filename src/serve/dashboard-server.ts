@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { Hono } from 'npm:hono'
@@ -12,7 +13,9 @@ const getDashboardPath = () => {
   // import.meta.dirname points to the build/ directory in that case
   const baseDir = import.meta.dirname || path.join(process.cwd(), 'build')
   const dashboardPath = path.resolve(baseDir, 'dist-dashboard')
-  return dashboardPath
+  if (existsSync(dashboardPath)) return dashboardPath
+  // Run from source, this file is in src/serve/, so go back to build/
+  return path.resolve(baseDir, '../../build/dist-dashboard')
 }
 
 export async function startDashboard (): Promise<ServerType> {
@@ -24,7 +27,9 @@ export async function startDashboard (): Promise<ServerType> {
 
   // Cache middleware instances to avoid creating new ones on every request
   const staticMiddleware = serveStatic({ root: dashboardRoot, rewriteRequestPath: (p) => p })
-  const indexMiddleware = serveStatic({ path: path.join(dashboardRoot, 'index.html') })
+  // `path` alone would be joined onto `./` and resolve against the working
+  // directory, so every page except `/` would 404 on reload.
+  const indexMiddleware = serveStatic({ root: dashboardRoot, path: 'index.html' })
 
   app.get('/assets/*', etag(), staticMiddleware)
 

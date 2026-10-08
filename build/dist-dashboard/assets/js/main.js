@@ -1044,6 +1044,48 @@ var esm_default2 = esm_default("sbp/selectors/register", {
   }
 });
 
+// node_modules/.deno/@sbp+okturtles.events@1.0.1/node_modules/@sbp/okturtles.events/dist/esm/index.mjs
+var listenKey = (evt) => `events/${evt}/listeners`;
+var esm_default3 = esm_default("sbp/selectors/register", {
+  "okTurtles.events/_init": function() {
+    this.errorHandler = (event, e) => {
+      console.error(`[okTurtles.events] Error at handler for ${event}`, e);
+    };
+  },
+  "okTurtles.events/on": function(event, handler) {
+    esm_default("okTurtles.data/add", listenKey(event), handler);
+    return () => esm_default("okTurtles.events/off", event, handler);
+  },
+  "okTurtles.events/once": function(event, handler) {
+    const cbWithOff = (...args) => {
+      handler(...args);
+      esm_default("okTurtles.events/off", event, cbWithOff);
+    };
+    return esm_default("okTurtles.events/on", event, cbWithOff);
+  },
+  "okTurtles.events/emit": function(event, ...data) {
+    var _a;
+    for (const listener of esm_default("okTurtles.data/get", listenKey(event)) || []) {
+      try {
+        listener(...data);
+      } catch (e) {
+        (_a = this.errorHandler) === null || _a === void 0 ? void 0 : _a.call(this, event, e);
+      }
+    }
+  },
+  // almost identical to Vue.prototype.$off, except we require `event` argument
+  "okTurtles.events/off": function(event, handler) {
+    if (handler) {
+      esm_default("okTurtles.data/remove", listenKey(event), handler);
+    } else {
+      esm_default("okTurtles.data/delete", listenKey(event));
+    }
+  },
+  "okTurtles.events/setErrorHandler": function(errorHandler) {
+    this.errorHandler = errorHandler;
+  }
+});
+
 // src/serve/dashboard/main.ts
 var import_npm_vue8 = __toESM(require_vue());
 
@@ -34148,10 +34190,10 @@ lazyComponent("Prompt", () => import("./Prompt-IEVYE3G7.js"));
 
 // src/serve/dashboard/controller/router.ts
 var lazyDashboard = lazyPage(() => import("./Dashboard-FEKZLZYG.js"));
-var lazyContracts = lazyPage(() => import("./Contracts-WYVRIELZ.js"));
+var lazyContracts = lazyPage(() => import("./Contracts-FZ3DGHGS.js"));
 var lazyUsers = lazyPage(() => import("./Users-6EBY5LDW.js"));
-var lazyBilling = lazyPage(() => import("./Billing-7PZQ3UDA.js"));
-var lazyAccounts = lazyPage(() => import("./Accounts-K2BBXRWE.js"));
+var lazyBilling = lazyPage(() => import("./Billing-A74SC3JT.js"));
+var lazyAccounts = lazyPage(() => import("./Accounts-OVLDPBGO.js"));
 var lazyDesignSystem = lazyPage(() => import("./CheloniaDesignSystem-KCA2SDU6.js"));
 import_npm_vue2.default.use(VueRouter$1);
 var router = new VueRouter$1({
@@ -34205,9 +34247,7 @@ var router = new VueRouter$1({
     },
     {
       path: "*",
-      meta: { title: L("Chelonia dashboard") },
-      name: "Landing",
-      component: Landing_default
+      redirect: "/"
     }
   ]
 });

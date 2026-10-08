@@ -1126,6 +1126,7 @@ import process8 from "node:process";
 import process10 from "node:process";
 import { Buffer as Buffer14 } from "node:buffer";
 import { pathToFileURL } from "node:url";
+import { existsSync as existsSync2 } from "node:fs";
 import path7 from "node:path";
 import process13 from "node:process";
 import { join as join8 } from "node:path";
@@ -9610,7 +9611,7 @@ var require_file = __commonJS({
     var formats = require_formats();
     var Memory = require_memory().Memory;
     var exists = fs.exists || path9.exists;
-    var existsSync2 = fs.existsSync || path9.existsSync;
+    var existsSync3 = fs.existsSync || path9.existsSync;
     var File2 = exports2.File = function(options2) {
       if (!options2 || !options2.file) {
         throw new Error("Missing required option `file`");
@@ -9680,7 +9681,7 @@ var require_file = __commonJS({
       });
     };
     File2.prototype.loadSync = function() {
-      if (!existsSync2(this.file)) {
+      if (!existsSync3(this.file)) {
         this.store = {};
         return this.store;
       }
@@ -77246,7 +77247,8 @@ var import_npm_nconf10 = __toESM(require_nconf());
 var getDashboardPath = () => {
   const baseDir = import.meta.dirname || path7.join(process13.cwd(), "build");
   const dashboardPath = path7.resolve(baseDir, "dist-dashboard");
-  return dashboardPath;
+  if (existsSync2(dashboardPath)) return dashboardPath;
+  return path7.resolve(baseDir, "../../build/dist-dashboard");
 };
 async function startDashboard() {
   const port = import_npm_nconf10.default.get("server:dashboardPort");
@@ -77254,7 +77256,7 @@ async function startDashboard() {
   const dashboardRoot = getDashboardPath();
   const app = new Hono2();
   const staticMiddleware = serveStatic2({ root: dashboardRoot, rewriteRequestPath: (p) => p });
-  const indexMiddleware = serveStatic2({ path: path7.join(dashboardRoot, "index.html") });
+  const indexMiddleware = serveStatic2({ root: dashboardRoot, path: "index.html" });
   app.get("/assets/*", etag(), staticMiddleware);
   app.get("/dashboard", etag(), indexMiddleware);
   app.get("/dashboard/", etag(), indexMiddleware);
