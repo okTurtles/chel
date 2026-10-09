@@ -1,3 +1,6 @@
+import { Buffer } from 'node:buffer'
+import { timingSafeEqual } from 'node:crypto'
+import { existsSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { Hono } from 'npm:hono'
@@ -6,25 +9,86 @@ import { createAdaptorServer, type ServerType } from 'npm:@hono/node-server'
 import { etag } from 'npm:hono/etag'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
+import { contractManifest, listContracts, listUsers, overview } from './dashboard-data.ts'
 
-const getDashboardPath = () => {
-  // When running from build/main.js, the dashboard is in build/dist-dashboard
-  // import.meta.dirname points to the build/ directory in that case
+// The same rule routes.ts checks contract IDs with
+const CID_REGEX = /^z[1-9A-HJ-NP-Za-km-z]{8,72}$/
+
+// Takes the same time whatever was guessed. When the lengths differ, the
+// password is compared with itself, which takes as long as a real comparison.
+const samePassword = (given: Buffer, expected: Buffer): boolean => {
+  if (given.length !== expected.length) {
+    timingSafeEqual(expected, expected)
+    return false
+  }
+  return timingSafeEqual(given, expected)
+}
+
+// The password from an `Authorization: Basic` header. Browsers send
+// `user:password` as UTF-8 in base64, and only the password is checked.
+const passwordFrom = (header: string | undefined): Buffer | null => {
+  const encoded = /^Basic +(\S+) *$/i.exec(header ?? '')?.[1]
+  if (!encoded) return null
+  const credentials = Buffer.from(encoded, 'base64')
+  const colon = credentials.indexOf(':')
+  return colon === -1 ? null : credentials.subarray(colon + 1)
+}
+
+export const getDashboardPath = (): string => {
   const baseDir = import.meta.dirname || path.join(process.cwd(), 'build')
-  const dashboardPath = path.resolve(baseDir, 'dist-dashboard')
-  return dashboardPath
+  const candidates = [
+    // build/main.js: the dashboard is next to it, in build/dist-dashboard
+    path.resolve(baseDir, 'dist-dashboard'),
+    // Run from source, this file is in src/serve/
+    path.resolve(baseDir, '../../build/dist-dashboard')
+  ]
+  return candidates.find((p) => existsSync(p)) ?? candidates[0]
 }
 
 export async function startDashboard (): Promise<ServerType> {
   const port = nconf.get('server:dashboardPort')
-  const host = nconf.get('server:host') || '0.0.0.0'
+  // The dashboard shows usernames, storage and credits, so by default only
+  // this machine can reach it
+  const host = nconf.get('server:dashboardListenIP') || '127.0.0.1'
+  // Set from the environment, nconf turns a password like "1234" into a number
+  const configured = nconf.get('server:dashboardAdminPassword')
+  const password = configured == null || configured === '' ? undefined : String(configured)
   const dashboardRoot = getDashboardPath()
 
   const app = new Hono()
 
+  // With a password, the browser asks for it before showing any page. Only
+  // the password is checked, not the user name.
+  if (password) {
+    const expected = Buffer.from(password)
+    app.use('*', async (c, next) => {
+      const given = passwordFrom(c.req.header('authorization'))
+      if (given && samePassword(given, expected)) return next()
+      return c.text('Unauthorized', 401, { 'WWW-Authenticate': 'Basic realm="Chelonia dashboard"' })
+    })
+  }
+
+  // Without one, the pages still load, but they get no data
+  app.use('/api/*', async (c, next) => {
+    if (!password) return c.json({ error: 'no-password' }, 403)
+    await next()
+  })
+  app.get('/api/overview', async (c) => c.json(await overview()))
+  app.get('/api/contracts', async (c) => c.json(await listContracts()))
+  app.get('/api/users', async (c) => c.json(await listUsers()))
+  app.get('/api/contracts/:contractID/manifest', async (c) => {
+    const contractID = c.req.param('contractID')
+    const found = CID_REGEX.test(contractID) ? await contractManifest(contractID) : null
+    return found ? c.json(found) : c.json({ error: 'not-found' }, 404)
+  })
+  // Rather than the app's index.html from the fallback below
+  app.all('/api/*', (c) => c.json({ error: 'not-found' }, 404))
+
   // Cache middleware instances to avoid creating new ones on every request
   const staticMiddleware = serveStatic({ root: dashboardRoot, rewriteRequestPath: (p) => p })
-  const indexMiddleware = serveStatic({ path: path.join(dashboardRoot, 'index.html') })
+  // `path` alone would be joined onto `./` and resolve against the working
+  // directory, so every page except `/` would 404 on reload.
+  const indexMiddleware = serveStatic({ root: dashboardRoot, path: 'index.html' })
 
   app.get('/assets/*', etag(), staticMiddleware)
 

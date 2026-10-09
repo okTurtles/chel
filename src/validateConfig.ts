@@ -49,6 +49,8 @@ export const ConfigSchema = z.strictObject({
     host: z.optional(z.string().min(1, 'must be a non-empty string')),
     port: z.optional(portSchema),
     dashboardPort: z.optional(portSchema),
+    dashboardListenIP: z.optional(z.string().min(1, 'must be a non-empty string')),
+    dashboardAdminPassword: z.optional(z.string().min(1, 'must be a non-empty string')),
     fileUploadMaxBytes: z.optional(positiveInt),
     // NOTE: validated for shape only; the logger reads `LOG_LEVEL` from the
     // environment directly (see `src/serve/logger.ts`). A warning is printed

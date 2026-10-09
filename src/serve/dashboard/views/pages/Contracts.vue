@@ -3,13 +3,16 @@ PageTemplate.c-page-contracts
   template(#title='') {{ L('Contracts') }}
 
   Dropdown.c-filter-menu(
+    v-if='live.data'
     defaultItemId='all-contracts'
     :isOverlayStyle='true'
-    :options='ephemeral.filterOptions'
+    :options='filterOptions'
     @select='onFilterSelect'
   )
 
-  section.c-contracts-list-container
+  InfoCard(v-if='live.error' :heading='L("Note")') {{ live.error }}
+
+  section.c-contracts-list-container(v-else-if='live.data')
     .summary-list.c-contracts-list
       .c-table-wrapper
         table.table.c-contract-ids-table
@@ -17,19 +20,19 @@ PageTemplate.c-page-contracts
             tr
               i18n.c-th-contract-id(tag='th') contractID
               i18n.c-th-type(tag='th') Type
-              i18n.c-th-size(tag='th') Size (MB)
-              i18n.c-th-space(tag='th') Space Used(%)
-              i18n.c-th-created-date(tag='th') Created on
+              i18n.c-th-size(tag='th') Size
+              i18n.c-th-messages(tag='th') Messages
+              i18n.c-th-owner(tag='th') Belongs to
               i18n.c-th-action(tag='th') Action
 
           tbody
-            tr(v-for='item in filteredContracts' :key='item.contractId')
-              td.c-cell-contract-id {{ item.contractId }}
+            tr(v-for='item in filteredContracts' :key='item.contractID')
+              td.c-cell-contract-id {{ item.contractID }}
               td.c-cell-type
-                span.pill(:class='typeToPillMap(item.type)') {{ item.type }}
-              td.c-cell-size {{ (item.size).toFixed(2) }}
-              td.c-cell-space {{ (item.spaceUsed).toFixed(2) }}%
-              td.c-cell-created-date {{ transformDate(item.createdDate) }}
+                span.pill(:class='pillFor(item.type)') {{ item.type || L('Unknown') }}
+              td.c-cell-size {{ humanBytes(item.size) }}
+              td.c-cell-messages {{ item.messages }}
+              td.c-cell-owner {{ item.name || item.ownerName || item.owner || L('None') }}
               td.c-cell-action
                 i18n.is-extra-small.has-blue-background(tag='button' @click='viewManifest(item)') view
 </template>
@@ -38,56 +41,55 @@ PageTemplate.c-page-contracts
 import sbp from '@sbp/sbp'
 import PageTemplate from './PageTemplate.vue'
 import Dropdown from '@forms/Dropdown.vue'
+import InfoCard from '@components/InfoCard.vue'
 import L from '@common/translations.js'
-import { humanDate } from '@common/cdTimeUtils.js'
-import { contractDummyData } from '@view-utils/dummy-data.js'
+import liveData from '@view-utils/liveData.js'
+import { humanBytes } from '@view-utils/format.js'
 import { OPEN_MODAL } from '@view-utils/events.js'
+
+const ALL_CONTRACTS = { id: 'all-contracts', name: L('All contracts') }
+// The pill colors there are, given out to the types in sorted order
+const PILLS = ['is-warning', 'is-purple-1', 'is-blue-1', 'is-green-1', 'is-neautral']
 
 export default {
   name: 'Contracts',
+  mixins: [liveData('contracts')],
   components: {
     PageTemplate,
-    Dropdown
+    Dropdown,
+    InfoCard
   },
   data () {
     return {
       ephemeral: {
-        contractFilter: { id: 'all-contracts', name: L('All contracts') },
-        filterOptions: [
-          { id: 'all-contracts', name: L('All contracts') },
-          { id: 'chatroom', name: L('Chatroom') },
-          { id: 'identity', name: L('Identity') },
-          { id: 'group', name: L('Group') }
-        ],
-        contractDummyData
+        contractFilter: ALL_CONTRACTS
       }
     }
   },
   computed: {
+    types () {
+      return [...new Set(this.live.data.map(item => item.type).filter(Boolean))].sort()
+    },
+    filterOptions () {
+      return [ALL_CONTRACTS, ...this.types.map(type => ({ id: type, name: type }))]
+    },
     filteredContracts () {
       const filterId = this.ephemeral.contractFilter.id
-      return this.ephemeral.contractDummyData
-        .filter(item => filterId === 'all-contracts' || (item.type === `gi.contracts/${filterId}`))
+      return this.live.data
+        .filter(item => filterId === ALL_CONTRACTS.id || item.type === filterId)
     }
   },
   methods: {
-    transformDate (date) {
-      return humanDate(date, { month: 'short', day: 'numeric', year: 'numeric' })
-    },
+    humanBytes,
     onFilterSelect (item) {
       this.ephemeral.contractFilter = item
     },
     viewManifest (item) {
       sbp('okTurtles.events/emit', OPEN_MODAL, 'ViewContractManifestModal', { contract: item })
     },
-    typeToPillMap (type) {
-      const classMap = {
-        'gi.contracts/group': 'is-neautral',
-        'gi.contracts/chatroom': 'is-purple-1',
-        'gi.contracts/identity': 'is-warning'
-      }
-
-      return classMap[type]
+    pillFor (type) {
+      const index = this.types.indexOf(type)
+      return index === -1 ? 'is-neautral' : PILLS[index % PILLS.length]
     }
   }
 }
@@ -170,8 +172,8 @@ export default {
   }
 }
 
-.c-th-space,
-.c-cell-space {
+.c-th-messages,
+.c-cell-messages {
   min-width: 11.25rem;
   text-align: center;
 
@@ -180,10 +182,14 @@ export default {
   }
 }
 
-.c-th-created-date,
-.c-cell-created-date {
+.c-th-owner,
+.c-cell-owner {
   min-width: 7.75rem;
+  max-width: 12rem;
   text-align: right;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .c-th-action,

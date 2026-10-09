@@ -8,6 +8,11 @@ export const nconfDefaults = {
     host: '0.0.0.0',
     port: 8000,
     dashboardPort: 8888,
+    // The dashboard shows usernames, storage and credits, so it only listens
+    // on this machine unless this is changed
+    dashboardListenIP: '127.0.0.1',
+    // Needed for the dashboard to show any data. Left unset on purpose.
+    dashboardAdminPassword: undefined,
     fileUploadMaxBytes: 31457280,
     signup: {
       disabled: false,
