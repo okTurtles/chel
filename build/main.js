@@ -1126,7 +1126,8 @@ import process8 from "node:process";
 import process10 from "node:process";
 import { Buffer as Buffer14 } from "node:buffer";
 import { pathToFileURL } from "node:url";
-import { createHash as createHash2, timingSafeEqual as timingSafeEqual3 } from "node:crypto";
+import { Buffer as Buffer15 } from "node:buffer";
+import { timingSafeEqual as timingSafeEqual2 } from "node:crypto";
 import { existsSync as existsSync2 } from "node:fs";
 import path7 from "node:path";
 import process13 from "node:process";
@@ -16168,8 +16169,8 @@ var init_functions = __esm({
       const textEncoder = new TextEncoder();
       const endpoint = textEncoder.encode(subscriptionInfo.endpoint);
       const p256dh = textEncoder.encode(subscriptionInfo.keys.p256dh);
-      const auth2 = textEncoder.encode(subscriptionInfo.keys.auth);
-      const canonicalForm = new ArrayBuffer(8 + (4 + endpoint.byteLength) + (2 + p256dh.byteLength) + (2 + auth2.byteLength));
+      const auth = textEncoder.encode(subscriptionInfo.keys.auth);
+      const canonicalForm = new ArrayBuffer(8 + (4 + endpoint.byteLength) + (2 + p256dh.byteLength) + (2 + auth.byteLength));
       const canonicalFormU8 = new Uint8Array(canonicalForm);
       const canonicalFormDV = new DataView(canonicalForm);
       let offset = 0;
@@ -16183,9 +16184,9 @@ var init_functions = __esm({
       offset += 2;
       canonicalFormU8.set(p256dh, offset);
       offset += p256dh.byteLength;
-      canonicalFormDV.setUint16(offset, auth2.byteLength, false);
+      canonicalFormDV.setUint16(offset, auth.byteLength, false);
       offset += 2;
-      canonicalFormU8.set(auth2, offset);
+      canonicalFormU8.set(auth, offset);
       const digest = await crypto.subtle.digest("SHA-384", canonicalForm);
       const id = Buffer22.from(digest.slice(0, 16));
       id[6] = 128 | id[6] & 15;
@@ -57699,7 +57700,7 @@ var require_websocket = __commonJS({
     var http = __require2("node:http");
     var net = __require2("node:net");
     var tls = __require2("node:tls");
-    var { randomBytes: randomBytes3, createHash: createHash3 } = __require2("node:crypto");
+    var { randomBytes: randomBytes3, createHash } = __require2("node:crypto");
     var { Readable: Readable4 } = __require2("node:stream");
     var { URL: URL2 } = __require2("node:url");
     var PerMessageDeflate = require_permessage_deflate();
@@ -58326,7 +58327,7 @@ var require_websocket = __commonJS({
         websocket.emit("upgrade", res);
         if (websocket.readyState !== WebSocket3.CONNECTING) return;
         req = websocket._req = null;
-        const digest = createHash3("sha1").update(key + GUID).digest("base64");
+        const digest = createHash("sha1").update(key + GUID).digest("base64");
         if (res.headers["sec-websocket-accept"] !== digest) {
           abortHandshake(websocket, socket, "Invalid Sec-WebSocket-Accept header");
           return;
@@ -58564,7 +58565,7 @@ var require_websocket_server = __commonJS({
     var https = __require2("node:https");
     var net = __require2("node:net");
     var tls = __require2("node:tls");
-    var { createHash: createHash3 } = __require2("node:crypto");
+    var { createHash } = __require2("node:crypto");
     var extension = require_extension();
     var PerMessageDeflate = require_permessage_deflate();
     var subprotocol = require_subprotocol();
@@ -58828,7 +58829,7 @@ var require_websocket_server = __commonJS({
           );
         }
         if (this._state > RUNNING) return abortHandshake(socket, 503);
-        const digest = createHash3("sha1").update(key + GUID).digest("base64");
+        const digest = createHash("sha1").update(key + GUID).digest("base64");
         const headers = [
           "HTTP/1.1 101 Switching Protocols",
           "Upgrade: websocket",
@@ -74437,70 +74438,6 @@ var getCookie = (c, key, prefix) => {
   const obj = parse42(cookie);
   return obj;
 };
-var sha256 = async (data) => {
-  const algorithm = { name: "SHA-256", alias: "sha256" };
-  const hash3 = await createHash(data, algorithm);
-  return hash3;
-};
-var createHash = async (data, algorithm) => {
-  let sourceBuffer;
-  if (ArrayBuffer.isView(data) || data instanceof ArrayBuffer) {
-    sourceBuffer = data;
-  } else {
-    if (typeof data === "object") {
-      data = JSON.stringify(data);
-    }
-    sourceBuffer = new TextEncoder().encode(String(data));
-  }
-  if (crypto && crypto.subtle) {
-    const buffer = await crypto.subtle.digest(
-      {
-        name: algorithm.name
-      },
-      sourceBuffer
-    );
-    const hash3 = Array.prototype.map.call(new Uint8Array(buffer), (x3) => ("00" + x3.toString(16)).slice(-2)).join("");
-    return hash3;
-  }
-  return null;
-};
-var constantTimeEqualString = (a, b) => {
-  const aLen = a.length;
-  const bLen = b.length;
-  const maxLen = Math.max(aLen, bLen);
-  let out = aLen ^ bLen;
-  for (let i2 = 0; i2 < maxLen; i2++) {
-    const aChar = i2 < aLen ? a.charCodeAt(i2) : 0;
-    const bChar = i2 < bLen ? b.charCodeAt(i2) : 0;
-    out |= aChar ^ bChar;
-  }
-  return out === 0;
-};
-var timingSafeEqualString = async (a, b, hashFunction) => {
-  if (!hashFunction) {
-    hashFunction = sha256;
-  }
-  const [sa, sb] = await Promise.all([hashFunction(a), hashFunction(b)]);
-  if (sa == null || sb == null || typeof sa !== "string" || typeof sb !== "string") {
-    return false;
-  }
-  const hashEqual = constantTimeEqualString(sa, sb);
-  const originalEqual = constantTimeEqualString(a, b);
-  return hashEqual && originalEqual;
-};
-var timingSafeEqual2 = async (a, b, hashFunction) => {
-  if (typeof a === "string" && typeof b === "string") {
-    return timingSafeEqualString(a, b, hashFunction);
-  }
-  if (!hashFunction) {
-    hashFunction = sha256;
-  }
-  const [sa, sb] = await Promise.all([hashFunction(a), hashFunction(b)]);
-  if (!sa || !sb || typeof sa !== "string" || typeof sb !== "string") {
-    return false;
-  }
-  return timingSafeEqualString(sa, sb);
-};
 var bufferToFormData = (arrayBuffer, contentType) => {
   const response = new Response(arrayBuffer, {
     headers: {
@@ -77051,93 +76988,6 @@ async function startServer2(options2 = {}) {
     startServer().catch(reject);
   });
 }
-var decodeBase642 = (str) => {
-  const binary = atob(str);
-  const bytes = new Uint8Array(new ArrayBuffer(binary.length));
-  const half = binary.length / 2;
-  for (let i2 = 0, j = binary.length - 1; i2 <= half; i2++, j--) {
-    bytes[i2] = binary.charCodeAt(i2);
-    bytes[j] = binary.charCodeAt(j);
-  }
-  return bytes;
-};
-var CREDENTIALS_REGEXP = /^ *(?:[Bb][Aa][Ss][Ii][Cc]) +([A-Za-z0-9._~+/-]+=*) *$/;
-var USER_PASS_REGEXP = /^([^:]*):(.*)$/;
-var utf8Decoder = new TextDecoder();
-var auth = (req) => {
-  const match2 = CREDENTIALS_REGEXP.exec(req.headers.get("Authorization") || "");
-  if (!match2) {
-    return void 0;
-  }
-  let userPass = void 0;
-  try {
-    userPass = USER_PASS_REGEXP.exec(utf8Decoder.decode(decodeBase642(match2[1])));
-  } catch {
-  }
-  if (!userPass) {
-    return void 0;
-  }
-  return { username: userPass[1], password: userPass[2] };
-};
-var basicAuth = (options2, ...users) => {
-  const usernamePasswordInOptions = "username" in options2 && "password" in options2;
-  const verifyUserInOptions = "verifyUser" in options2;
-  if (!(usernamePasswordInOptions || verifyUserInOptions)) {
-    throw new Error(
-      'basic auth middleware requires options for "username and password" or "verifyUser"'
-    );
-  }
-  if (!options2.realm) {
-    options2.realm = "Secure Area";
-  }
-  if (!options2.invalidUserMessage) {
-    options2.invalidUserMessage = "Unauthorized";
-  }
-  if (usernamePasswordInOptions) {
-    users.unshift({ username: options2.username, password: options2.password });
-  }
-  return async function basicAuth2(ctx, next) {
-    const requestUser = auth(ctx.req.raw);
-    if (requestUser) {
-      if (verifyUserInOptions) {
-        if (await options2.verifyUser(requestUser.username, requestUser.password, ctx)) {
-          if (options2.onAuthSuccess) {
-            await options2.onAuthSuccess(ctx, requestUser.username);
-          }
-          await next();
-          return;
-        }
-      } else {
-        for (const user of users) {
-          const [usernameEqual, passwordEqual] = await Promise.all([
-            timingSafeEqual2(user.username, requestUser.username, options2.hashFunction),
-            timingSafeEqual2(user.password, requestUser.password, options2.hashFunction)
-          ]);
-          if (usernameEqual && passwordEqual) {
-            if (options2.onAuthSuccess) {
-              await options2.onAuthSuccess(ctx, requestUser.username);
-            }
-            await next();
-            return;
-          }
-        }
-      }
-    }
-    const status = 401;
-    const headers = {
-      "WWW-Authenticate": 'Basic realm="' + options2.realm?.replace(/"/g, '\\"') + '"'
-    };
-    const responseMessage = typeof options2.invalidUserMessage === "function" ? await options2.invalidUserMessage(ctx) : options2.invalidUserMessage;
-    const res = typeof responseMessage === "string" ? new Response(responseMessage, { status, headers }) : new Response(JSON.stringify(responseMessage), {
-      status,
-      headers: {
-        ...headers,
-        "content-type": "application/json"
-      }
-    });
-    throw new HTTPException(status, { res });
-  };
-};
 var COMPRESSIBLE_CONTENT_TYPE_REGEX = /^\s*(?:text\/(?!event-stream(?:[;\s]|$))[^;\s]+|application\/(?:javascript|json|xml|xml-dtd|ecmascript|dart|postscript|rtf|tar|toml|vnd\.dart|vnd\.ms-fontobject|vnd\.ms-opentype|wasm|x-httpd-php|x-javascript|x-ns-proxy-autoconfig|x-sh|x-tar|x-virtualbox-hdd|x-virtualbox-ova|x-virtualbox-ovf|x-virtualbox-vbox|x-virtualbox-vdi|x-virtualbox-vhd|x-virtualbox-vmdk|x-www-form-urlencoded)|font\/(?:otf|ttf)|image\/(?:bmp|vnd\.adobe\.photoshop|vnd\.microsoft\.icon|vnd\.ms-dds|x-icon|x-ms-bmp)|message\/rfc822|model\/gltf-binary|x-shader\/x-fragment|x-shader\/x-vertex|[^;\s]+?\+(?:json|text|xml|yaml))(?:[;\s]|$)/i;
 var getMimeType = (filename, mimes = baseMimes) => {
   const regexp = /\.([a-zA-Z0-9]+?)$/;
@@ -77509,8 +77359,18 @@ async function contractManifest(contractID) {
 }
 var CID_REGEX2 = /^z[1-9A-HJ-NP-Za-km-z]{8,72}$/;
 var samePassword = (given, expected) => {
-  const digest = (s) => createHash2("sha256").update(s).digest();
-  return timingSafeEqual3(digest(given), digest(expected));
+  if (given.length !== expected.length) {
+    timingSafeEqual2(expected, expected);
+    return false;
+  }
+  return timingSafeEqual2(given, expected);
+};
+var passwordFrom = (header) => {
+  const encoded = /^Basic +(\S+) *$/i.exec(header ?? "")?.[1];
+  if (!encoded) return null;
+  const credentials = Buffer15.from(encoded, "base64");
+  const colon = credentials.indexOf(":");
+  return colon === -1 ? null : credentials.subarray(colon + 1);
 };
 var getDashboardPath = () => {
   const baseDir = import.meta.dirname || path7.join(process13.cwd(), "build");
@@ -77530,10 +77390,12 @@ async function startDashboard() {
   const dashboardRoot = getDashboardPath();
   const app = new Hono2();
   if (password) {
-    app.use("*", basicAuth({
-      realm: "Chelonia dashboard",
-      verifyUser: (_username, given) => samePassword(given, password)
-    }));
+    const expected = Buffer15.from(password);
+    app.use("*", async (c, next) => {
+      const given = passwordFrom(c.req.header("authorization"));
+      if (given && samePassword(given, expected)) return next();
+      return c.text("Unauthorized", 401, { "WWW-Authenticate": 'Basic realm="Chelonia dashboard"' });
+    });
   }
   app.use("/api/*", async (c, next) => {
     if (!password) return c.json({ error: "no-password" }, 403);

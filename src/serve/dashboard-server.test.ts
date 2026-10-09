@@ -2,6 +2,7 @@
 // answer with index.html, or reloading any page but the landing one is a 404.
 // Its data shows usernames, storage and credits, so it needs a password.
 import { assert, assertEquals } from 'jsr:@std/assert'
+import { Buffer } from 'node:buffer'
 import { existsSync } from 'node:fs'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
@@ -30,7 +31,9 @@ const startOnFreePort = async (password?: string | number) => {
 }
 
 // Only the password is checked, so any user name works
-const asAdmin = (password = PASSWORD) => ({ authorization: 'Basic ' + btoa(`anyone:${password}`) })
+// Browsers send it as UTF-8, which `btoa` can't encode
+const asAdmin = (password = PASSWORD) =>
+  ({ authorization: 'Basic ' + Buffer.from(`anyone:${password}`).toString('base64') })
 
 Deno.test({
   name: 'dashboard server',
@@ -172,6 +175,40 @@ Deno.test({
       const allowed = await get('/dashboard/main', asAdmin('12345678'))
       await allowed.text()
       assertEquals(allowed.status, 200)
+    } finally {
+      await stop()
+    }
+  }
+})
+
+Deno.test({
+  name: 'dashboard password with any characters',
+  async fn (t: Deno.TestContext) {
+    const password = 'pässwörd: with spaces'
+    const { get, stop } = await startOnFreePort(password)
+    // Bodies are read rather than cancelled, for the same reason as above
+    const status = async (headers: Record<string, string>) => {
+      const res = await get('/dashboard/main', headers)
+      await res.text()
+      return res.status
+    }
+    try {
+      await t.step('the whole password counts, colons and all', async () => {
+        assertEquals(await status(asAdmin(password)), 200)
+        // Same length, one letter off
+        assertEquals(await status(asAdmin('Pässwörd: with spaces')), 401)
+        assertEquals(await status(asAdmin('pässwörd')), 401)
+        assertEquals(await status(asAdmin(password + ' ')), 401)
+      })
+
+      await t.step('anything that isn\'t Basic auth is refused', async () => {
+        const encoded = Buffer.from(password).toString('base64')
+        for (const authorization of [
+          `Bearer ${encoded}`, `Basic ${encoded}`, 'Basic', 'Basic !!!', 'Basic '
+        ]) {
+          assertEquals(await status({ authorization }), 401, authorization)
+        }
+      })
     } finally {
       await stop()
     }

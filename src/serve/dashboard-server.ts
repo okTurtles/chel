@@ -1,9 +1,9 @@
-import { createHash, timingSafeEqual } from 'node:crypto'
+import { Buffer } from 'node:buffer'
+import { timingSafeEqual } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 import { Hono } from 'npm:hono'
-import { basicAuth } from 'npm:hono/basic-auth'
 import { serveStatic } from 'npm:hono/deno'
 import { createAdaptorServer, type ServerType } from 'npm:@hono/node-server'
 import { etag } from 'npm:hono/etag'
@@ -14,10 +14,24 @@ import { contractManifest, listContracts, listUsers, overview } from './dashboar
 // The same rule routes.ts checks contract IDs with
 const CID_REGEX = /^z[1-9A-HJ-NP-Za-km-z]{8,72}$/
 
-// Compares digests, so how long it takes says nothing about the password
-const samePassword = (given: string, expected: string): boolean => {
-  const digest = (s: string) => createHash('sha256').update(s).digest()
-  return timingSafeEqual(digest(given), digest(expected))
+// Takes the same time whatever was guessed. When the lengths differ, the
+// password is compared with itself, which takes as long as a real comparison.
+const samePassword = (given: Buffer, expected: Buffer): boolean => {
+  if (given.length !== expected.length) {
+    timingSafeEqual(expected, expected)
+    return false
+  }
+  return timingSafeEqual(given, expected)
+}
+
+// The password from an `Authorization: Basic` header. Browsers send
+// `user:password` as UTF-8 in base64, and only the password is checked.
+const passwordFrom = (header: string | undefined): Buffer | null => {
+  const encoded = /^Basic +(\S+) *$/i.exec(header ?? '')?.[1]
+  if (!encoded) return null
+  const credentials = Buffer.from(encoded, 'base64')
+  const colon = credentials.indexOf(':')
+  return colon === -1 ? null : credentials.subarray(colon + 1)
 }
 
 export const getDashboardPath = (): string => {
@@ -46,10 +60,12 @@ export async function startDashboard (): Promise<ServerType> {
   // With a password, the browser asks for it before showing any page. Only
   // the password is checked, not the user name.
   if (password) {
-    app.use('*', basicAuth({
-      realm: 'Chelonia dashboard',
-      verifyUser: (_username, given) => samePassword(given, password)
-    }))
+    const expected = Buffer.from(password)
+    app.use('*', async (c, next) => {
+      const given = passwordFrom(c.req.header('authorization'))
+      if (given && samePassword(given, expected)) return next()
+      return c.text('Unauthorized', 401, { 'WWW-Authenticate': 'Basic realm="Chelonia dashboard"' })
+    })
   }
 
   // Without one, the pages still load, but they get no data
