@@ -9,6 +9,7 @@ import {
   PROMPT_RESPONSE,
   REPLACE_MODAL
 } from "./chunk-JAZDRYJA.js";
+import "./chunk-LFSZ3O36.js";
 import {
   PageTemplate_default
 } from "./chunk-3KF7JRLD.js";
@@ -34185,16 +34186,16 @@ function lazyPage(lazyImport) {
     }
   });
 }
-lazyComponent("ViewContractManifestModal", () => import("./ViewContractManifestModal-YWQOYDTT.js"));
+lazyComponent("ViewContractManifestModal", () => import("./ViewContractManifestModal-GM5YOTO7.js"));
 lazyComponent("Prompt", () => import("./Prompt-IEVYE3G7.js"));
 
 // src/serve/dashboard/controller/router.ts
-var lazyDashboard = lazyPage(() => import("./Dashboard-FEKZLZYG.js"));
-var lazyContracts = lazyPage(() => import("./Contracts-FZ3DGHGS.js"));
-var lazyUsers = lazyPage(() => import("./Users-6EBY5LDW.js"));
+var lazyDashboard = lazyPage(() => import("./Dashboard-MN4GUQE5.js"));
+var lazyContracts = lazyPage(() => import("./Contracts-WYLIX3UC.js"));
+var lazyUsers = lazyPage(() => import("./Users-QM34L3NT.js"));
 var lazyBilling = lazyPage(() => import("./Billing-A74SC3JT.js"));
-var lazyAccounts = lazyPage(() => import("./Accounts-OVLDPBGO.js"));
-var lazyDesignSystem = lazyPage(() => import("./CheloniaDesignSystem-KCA2SDU6.js"));
+var lazyAccounts = lazyPage(() => import("./Accounts-5XZJH62M.js"));
+var lazyDesignSystem = lazyPage(() => import("./CheloniaDesignSystem-HPRRVMTF.js"));
 import_npm_vue2.default.use(VueRouter$1);
 var router = new VueRouter$1({
   mode: "history",
@@ -34462,27 +34463,6 @@ esm_default("sbp/selectors/register", {
         resolve2(response);
       });
     });
-  }
-});
-
-// src/serve/dashboard/controller/backend.ts
-var languageFileMap = /* @__PURE__ */ new Map([
-  ["ko", "korean.json"]
-]);
-function handleFetchResult(type) {
-  return function(r) {
-    if (!r.ok) throw new Error(`${r.status}: ${r.statusText}`);
-    return r[type]();
-  };
-}
-esm_default("sbp/selectors/register", {
-  async "backend/translations/get"(language) {
-    const [languageCode] = language.toLowerCase().split("-");
-    const languageFileName = languageFileMap.get(languageCode) || "";
-    if (languageFileName !== "") {
-      return await fetch(`${esm_default("okTurtles.data/get", "API_URL")}/assets/strings/${languageFileName}`).then(handleFetchResult("json"));
-    }
-    return null;
   }
 });
 

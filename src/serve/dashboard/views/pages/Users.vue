@@ -2,12 +2,14 @@
 PageTemplate
   template(#title='') {{ L('Users') }}
 
-  .is-centered-on-mobile
+  InfoCard(v-if='live.error' :heading='L("Note")') {{ live.error }}
+
+  .is-centered-on-mobile(v-else-if='live.data')
     section.c-user-stats-section
-      i18n.section-title Activity stats
+      i18n.section-title Stats
 
       .c-stat-cards
-        StatCard(v-for='(item, index) in ephemeral.userStats'
+        StatCard(v-for='(item, index) in userStats'
           :key='item.id'
           :description='item.name'
           :stat='item.value'
@@ -16,7 +18,7 @@ PageTemplate
         )
 
     section.c-user-table
-      i18n.section-title User usage summary
+      i18n.section-title Usage by user
 
       .summary-list.c-user-usages
         .c-table-wrapper
@@ -24,50 +26,61 @@ PageTemplate
             thead
               tr
                 i18n.c-th-user(tag='th') User
-                i18n.c-th-groups(tag='th') Groups
                 i18n.c-th-owned-contracts(tag='th') Contracts owned
-                i18n.c-th-contracts-size(tag='th') Contract size (MB)
-                i18n.c-th-space-used(tag='th') Space used (%)
+                i18n.c-th-owned-files(tag='th') Files owned
+                i18n.c-th-space-used(tag='th') Space used
+                i18n.c-th-space-share(tag='th') Share of storage
                 i18n.c-th-credits(tag='th') Credits
-                i18n.c-th-action(tag='th') Action
 
             tbody
-              tr(v-for='item in ephemeral.userTableData' :key='item.id')
-                td.c-cell-name.has-text-bold {{ item.name }}
-                td.c-cell-group-count {{ item.groupCount }}
-                td.c-cell-contracts-owned {{ item.ownedContractsCount }}
-                td.c-cell-contract-size {{ (item.contractSize).toFixed(2) }}
-                td.c-cell-space {{ (item.spaceUsed).toFixed(2) }}
-                td.c-cell-credits(:class='{ "has-text-danger": isCreditShort(item.credits) }') {{ `${item.credits.used}/${item.credits.limit}` }}
-                td.c-cell-action
-                  i18n.is-extra-small.has-blue-background(tag='button' @click='viewUserSummary(item)') view
+              tr(v-for='item in live.data' :key='item.username')
+                td.c-cell-name.has-text-bold {{ item.username }}
+                td.c-cell-deleted(v-if='item.deleted' colspan='5')
+                  i18n.pill.is-danger(tag='span') Account deleted
+                template(v-else)
+                  td.c-cell-contracts-owned {{ item.ownedContracts }}
+                  td.c-cell-files-owned {{ item.ownedFiles }}
+                  td.c-cell-space {{ humanBytes(item.size) }}
+                  td.c-cell-space-share {{ shareOf(item.size) }}
+                  td.c-cell-credits(:class='{ "has-text-danger": item.picocredits.startsWith("-") }') {{ credits(item.picocredits) }}
 </template>
 
 <script>
 import PageTemplate from './PageTemplate.vue'
 import StatCard from '@components/StatCard.vue'
-import { fakeUserStats, fakeUserTableData } from '@view-utils/dummy-data.js'
+import InfoCard from '@components/InfoCard.vue'
+import L from '@common/translations.js'
+import liveData from '@view-utils/liveData.js'
+import { credits, humanBytes } from '@view-utils/format.js'
 
 export default {
   name: 'Users',
+  mixins: [liveData('users')],
   components: {
     PageTemplate,
-    StatCard
+    StatCard,
+    InfoCard
   },
-  data () {
-    return {
-      ephemeral: {
-        userStats: fakeUserStats,
-        userTableData: fakeUserTableData
-      }
+  computed: {
+    liveUsers () {
+      return this.live.data.filter(user => !user.deleted)
+    },
+    totalSize () {
+      return this.liveUsers.reduce((sum, user) => sum + user.size, 0)
+    },
+    userStats () {
+      return [
+        { id: 'users', name: L('Users'), value: this.liveUsers.length, icon: 'users' },
+        { id: 'deleted', name: L('Deleted accounts'), value: this.live.data.length - this.liveUsers.length, icon: 'trend-down' },
+        { id: 'storage', name: L('Storage used'), value: humanBytes(this.totalSize), icon: 'battery-charging' }
+      ]
     }
   },
   methods: {
-    viewUserSummary () {
-      alert('TODO: Implement!')
-    },
-    isCreditShort ({ used, limit }) {
-      return used >= limit
+    credits,
+    humanBytes,
+    shareOf (size) {
+      return this.totalSize ? `${(100 * size / this.totalSize).toFixed(1)}%` : '0%'
     }
   }
 }
@@ -118,8 +131,8 @@ export default {
   padding-bottom: 0.25rem;
 }
 
-.c-th-groups,
-.c-cell-group-count,
+.c-th-owned-files,
+.c-cell-files-owned,
 .c-th-credits,
 .c-cell-credits {
   min-width: 6.25rem;
@@ -134,15 +147,13 @@ export default {
   text-align: center;
 }
 
-.c-th-contracts-size,
-.c-cell-contract-size {
+.c-th-space-share,
+.c-cell-space-share {
   min-width: 9.25rem;
   text-align: center;
 }
 
-.c-th-action,
-.c-cell-action {
-  min-width: 4.5rem;
+.c-cell-deleted {
   text-align: center;
 }
 </style>

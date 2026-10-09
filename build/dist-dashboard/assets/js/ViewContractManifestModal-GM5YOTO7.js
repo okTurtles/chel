@@ -2,6 +2,9 @@ import {
   CLOSE_MODAL
 } from "./chunk-JAZDRYJA.js";
 import {
+  InfoCard_default
+} from "./chunk-QZCHUD6N.js";
+import {
   L
 } from "./chunk-ZI2WDK4P.js";
 import {
@@ -599,24 +602,43 @@ var __vue_component__2 = /* @__PURE__ */ __vue_normalize__2(
 var TextToCopy_default = __vue_component__2;
 
 // src/serve/dashboard/views/containers/modal/ViewContractManifestModal.vue
+var pretty = (value) => {
+  try {
+    return JSON.stringify(typeof value === "string" ? JSON.parse(value) : value, null, 2);
+  } catch {
+    return String(value);
+  }
+};
 var __vue_script__3 = {
   name: "ViewContractManifestModal",
   components: {
     ModalTemplate: ModalTemplate_default,
-    TextToCopy: TextToCopy_default
+    TextToCopy: TextToCopy_default,
+    InfoCard: InfoCard_default
   },
   props: {
-    contract: Object
+    contract: Object,
+    // Shown as is, without asking the server. The design system page uses it.
+    preview: Object
   },
-  computed: {
-    content() {
-      const manifest = this.contract.manifestJSON;
-      const stringify = (content) => JSON.stringify(content).replace(/\\/g, "");
-      return {
-        head: stringify(manifest.head),
-        body: stringify(manifest.body),
-        signature: stringify(manifest.signature)
+  data() {
+    return {
+      content: null,
+      error: ""
+    };
+  },
+  async created() {
+    try {
+      const { manifestCID, manifest } = this.preview || await esm_default("backend/dashboard/get", `contracts/${this.contract.contractID}/manifest`);
+      this.content = {
+        manifestCID,
+        head: pretty(manifest.head),
+        body: pretty(manifest.body),
+        signature: pretty(manifest.signature)
       };
+    } catch (e) {
+      console.error("[dashboard] could not load the manifest", e);
+      this.error = L("Could not load the manifest. The browser console has the details.");
     }
   }
 };
@@ -639,18 +661,28 @@ var __vue_render__3 = function() {
             "TextToCopy",
             {
               staticClass: "c-id-copy",
-              attrs: { text: _vm.contract.contractId }
+              attrs: { text: _vm.contract.contractID }
             },
             [
               _c("div", { staticClass: "c-id-value" }, [
-                _vm._v(_vm._s(_vm.contract.contractId))
+                _vm._v(_vm._s(_vm.contract.contractID))
               ])
             ]
           )
         ],
         1
       ),
-      _c("div", { staticClass: "c-code-demo-container" }, [
+      _vm.error ? _c("InfoCard", { attrs: { heading: _vm.L("Note") } }, [
+        _vm._v(_vm._s(_vm.error))
+      ]) : _vm.content ? _c("div", { staticClass: "c-code-demo-container" }, [
+        _c("div", { staticClass: "c-code-demo-block" }, [
+          _c("div", { staticClass: "c-code-demo-label" }, [
+            _vm._v("manifest")
+          ]),
+          _c("pre", { staticClass: "custom-pre" }, [
+            _vm._v(_vm._s(_vm.content.manifestCID))
+          ])
+        ]),
         _c("div", { staticClass: "c-code-demo-block" }, [
           _c("div", { staticClass: "c-code-demo-label" }, [_vm._v("head")]),
           _c("pre", { staticClass: "custom-pre" }, [
@@ -660,7 +692,7 @@ var __vue_render__3 = function() {
         _c("div", { staticClass: "c-code-demo-block" }, [
           _c("div", { staticClass: "c-code-demo-label" }, [_vm._v("body")]),
           _c("pre", { staticClass: "custom-pre" }, [
-            _vm._v(_vm._s(_vm.content.body) + "}")
+            _vm._v(_vm._s(_vm.content.body))
           ])
         ]),
         _c("div", { staticClass: "c-code-demo-block" }, [
@@ -671,29 +703,36 @@ var __vue_render__3 = function() {
             _vm._v(_vm._s(_vm.content.signature))
           ])
         ])
-      ])
-    ]
+      ]) : _vm._e()
+    ],
+    1
   );
 };
 var __vue_staticRenderFns__3 = [];
 __vue_render__3._withStripped = true;
 var __vue_inject_styles__3 = function(inject) {
   if (!inject) return;
-  inject("data-v-66d7fa76_0", { source: '/* NOTE: <variable-name> : (<light-theme-value>, <dark-theme-value>) */\n/* stylelint-disable */\n/* stylelint-enable */\n[data-v-66d7fa76]:root {\n  --button-primary-bg-color: #1c1c1c;\n  --button-primary-text-color: #fff;\n  --button-outline-bg-color: rgba(0, 0, 0, 0);\n  --button-outline-border-color: rgba(0, 0, 0, 0.4);\n  --button-outline-text-color: #1c1c1c;\n  --button-box-shadow: 0 0 16px rgba(219, 219, 219, 0.5);\n  --styled-input-border-color: rgba(0, 0, 0, 0.1);\n  --styled-input-border-color_focus: rgba(0, 0, 0, 0.4);\n  --styled-input-background-color: #fff;\n  --styled-input-background-color_disabled: rgba(0, 0, 0, 0.1);\n  --styled-input-placeholder-color: rgba(0, 0, 0, 0.275);\n  --styled-input-label-color: #9747ff;\n  --radio-outer-border-color: rgba(0, 0, 0, 0.2);\n  --radio-outer-border-color_active: #1C1C1C;\n  --radio-inner-bg-color: #1C1C1C;\n  --toggle-switch-border-color: rgba(0, 0, 0, 0.1);\n  --toggle-switch-border-color_focus: rgba(0, 0, 0, 0.4);\n  --toggle-switch-bg-color: rgba(0, 0, 0, 0.4);\n  --toggle-switch-bg-color_active: #9747ff;\n  --toggle-switch-thumb-color: #fff;\n  --dropdown-bg-color: #FFFFFF;\n  --dropdown-active-bg-color: #F7F9FB;\n  --dropdown-box-shadow: 0 0 16px rgba(219, 219, 219, 0.5);\n  --summary-list-bg-color: #fff;\n  --custom-pre-bg-color: #f2f2f2;\n  --custom-pre-text-color: #1c1c1c;\n  --custom-pre-border-color: rgba(0, 0, 0, 0.1);\n  --modal-bg-color: #fff;\n  --stat-card-icon-color: var(--text_1);\n  --info-card-bg-color: #fff;\n  --info-card-feature-color: #1c1c1c;\n  --info-card-content-color: rgba(0, 0, 0, 0.5);\n  --tooltip-trigger-bg-color: #f7f9fb;\n  --tooltip-trigger-text-color: #1c1c1c;\n  --tooltip-trigger-border-color: #1c1c1c;\n  --tooltip-trigger-box-shadow_hover: 0 0 5px rgba(0, 0, 0, 0.35);\n  --tooltip-bg-color: rgba(28, 28, 28, 0.875);\n  --tooltip-text-color: #fff;\n  --skeleton-gradient: linear-gradient(110deg, rgba(0, 0, 0, 0.05) 12%, rgba(60, 60, 60, 0.125) 25%, rgba(0, 0, 0, 0.05) 42%);\n  --pill-text-color: rgba(0, 0, 0, 0.5);\n  --helper: #9747FF;\n  --ds-menu-border-color: #E5ECF6;\n}\n:root[data-theme=dark][data-v-66d7fa76] {\n  --button-primary-bg-color: #b1e3ff;\n  --button-primary-text-color: #1c1c1c;\n  --button-outline-bg-color: rgba(0, 0, 0, 0);\n  --button-outline-border-color: rgb(65, 65, 65);\n  --button-outline-text-color: #fff;\n  --button-box-shadow: 0 0 12px rgba(132, 132, 132, 0.35);\n  --styled-input-border-color: rgb(65, 65, 65);\n  --styled-input-border-color_focus: rgb(65, 65, 65);\n  --styled-input-background-color: #2a2a2a;\n  --styled-input-background-color_disabled: #1c1c1c;\n  --styled-input-placeholder-color: rgba(255, 255, 255, 0.325);\n  --styled-input-label-color: #b1e3ff;\n  --radio-outer-border-color: rgba(255, 255, 255, 0.275);\n  --radio-outer-border-color_active: #b1e3ff;\n  --radio-inner-bg-color: #b1e3ff;\n  --toggle-switch-border-color: rgb(65, 65, 65);\n  --toggle-switch-border-color_focus: rgb(65, 65, 65);\n  --toggle-switch-bg-color: #2a2a2a;\n  --toggle-switch-bg-color_active: #95A4FC;\n  --toggle-switch-thumb-color: #fff;\n  --dropdown-bg-color: #1c1c1c;\n  --dropdown-active-bg-color: #2a2a2a;\n  --dropdown-box-shadow: 0 0 1px rgba(0, 0, 0, 0);\n  --summary-list-bg-color: #2a2a2a;\n  --custom-pre-bg-color: #1c1c1c;\n  --custom-pre-text-color: #f2f2f2;\n  --custom-pre-border-color: rgb(65, 65, 65);\n  --modal-bg-color: #2a2a2a;\n  --stat-card-icon-color: var(--text_black);\n  --info-card-bg-color: rgba(255, 255, 255, 0.05);\n  --info-card-feature-color: #b1e3ff;\n  --info-card-content-color: #fff;\n  --tooltip-trigger-bg-color: #b1e3ff;\n  --tooltip-trigger-text-color: #1c1c1c;\n  --tooltip-trigger-border-color: #b1e3ff;\n  --tooltip-trigger-box-shadow_hover: 0 0 7px #b1e3ff;\n  --tooltip-bg-color: rgba(242, 244, 247, 0.925);\n  --tooltip-text-color: #1c1c1c;\n  --skeleton-gradient: linear-gradient(110deg, rgba(255, 255, 255, 0.1) 8%, rgba(255, 255, 255, 0.14) 29%, rgba(255, 255, 255, 0.1) 47%);\n  --pill-text-color: #1c1c1c;\n  --helper: #b1e3ff;\n  --ds-menu-border-color: rgb(65, 65, 65);\n}\n.c-contract-id-container[data-v-66d7fa76] {\n  position: relative;\n  padding-left: 0.8rem;\n  display: flex;\n  align-items: center;\n  margin-bottom: 1rem;\n}\n.c-contract-id-container[data-v-66d7fa76]::before {\n  content: "";\n  position: absolute;\n  left: 0;\n  top: 0;\n  height: 100%;\n  width: 0.4rem;\n  background-color: var(--text_1);\n}\n.c-contract-id-container .c-id-label[data-v-66d7fa76] {\n  display: inline-block;\n  margin-right: 0.4rem;\n  font-weight: 600;\n  font-size: 0.875rem;\n}\n.c-contract-id-container .c-id-value[data-v-66d7fa76] {\n  display: inline-block;\n  max-width: 10rem;\n  overflow: hidden;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n  direction: rtl;\n  margin-top: 2px;\n}\n@media screen and (max-width: 440px) {\n.c-contract-id-container .c-id-value[data-v-66d7fa76] {\n    max-width: 7.5rem;\n}\n}\n.c-code-demo-block[data-v-66d7fa76] {\n  position: relative;\n  margin-bottom: 1.2rem;\n}\n.c-code-demo-label[data-v-66d7fa76] {\n  display: block;\n  font-weight: 600;\n  font-size: 0.875rem;\n  font-family: "Poppins";\n  margin-bottom: 0.4rem;\n  margin-left: 0.2rem;\n}\n\n/*# sourceMappingURL=ViewContractManifestModal.vue.map */', map: { "version": 3, "sources": ["ViewContractManifestModal.vue", "src/serve/dashboard/views/containers/modal/ViewContractManifestModal.vue"], "names": [], "mappings": "AAAA,sEAAsE;AACtE,sBAAsB;AACtB,qBAAqB;AACrB;EACE,kCAAkC;EAClC,iCAAiC;EACjC,2CAA2C;EAC3C,iDAAiD;EACjD,oCAAoC;EACpC,sDAAsD;EACtD,+CAA+C;EAC/C,qDAAqD;EACrD,qCAAqC;EACrC,4DAA4D;EAC5D,sDAAsD;EACtD,mCAAmC;EACnC,8CAA8C;EAC9C,0CAA0C;EAC1C,+BAA+B;EAC/B,gDAAgD;EAChD,sDAAsD;EACtD,4CAA4C;EAC5C,wCAAwC;EACxC,iCAAiC;EACjC,4BAA4B;EAC5B,mCAAmC;EACnC,wDAAwD;EACxD,6BAA6B;EAC7B,8BAA8B;EAC9B,gCAAgC;EAChC,6CAA6C;EAC7C,sBAAsB;EACtB,qCAAqC;EACrC,0BAA0B;EAC1B,kCAAkC;EAClC,6CAA6C;EAC7C,mCAAmC;EACnC,qCAAqC;EACrC,uCAAuC;EACvC,+DAA+D;EAC/D,2CAA2C;EAC3C,0BAA0B;EAC1B,2HAA2H;EAC3H,qCAAqC;EACrC,iBAAiB;EACjB,+BAA+B;AACjC;AAEA;EACE,kCAAkC;EAClC,oCAAoC;EACpC,2CAA2C;EAC3C,8CAA8C;EAC9C,iCAAiC;EACjC,uDAAuD;EACvD,4CAA4C;EAC5C,kDAAkD;EAClD,wCAAwC;EACxC,iDAAiD;EACjD,4DAA4D;EAC5D,mCAAmC;EACnC,sDAAsD;EACtD,0CAA0C;EAC1C,+BAA+B;EAC/B,6CAA6C;EAC7C,mDAAmD;EACnD,iCAAiC;EACjC,wCAAwC;EACxC,iCAAiC;EACjC,4BAA4B;EAC5B,mCAAmC;EACnC,+CAA+C;EAC/C,gCAAgC;EAChC,8BAA8B;EAC9B,gCAAgC;EAChC,0CAA0C;EAC1C,yBAAyB;EACzB,yCAAyC;EACzC,+CAA+C;EAC/C,kCAAkC;EAClC,+BAA+B;EAC/B,mCAAmC;EACnC,qCAAqC;EACrC,uCAAuC;EACvC,mDAAmD;EACnD,8CAA8C;EAC9C,6BAA6B;EAC7B,sIAAsI;EACtI,0BAA0B;EAC1B,iBAAiB;EACjB,uCAAuC;AACzC;ACvCA;EACA,kBAAA;EACA,oBAAA;EACA,aAAA;EACA,mBAAA;EACA,mBAAA;AD0CA;ACxCA;EACA,WAAA;EACA,kBAAA;EACA,OAAA;EACA,MAAA;EACA,YAAA;EACA,aAAA;EACA,+BAAA;AD0CA;ACvCA;EACA,qBAAA;EACA,oBAAA;EACA,gBAAA;EACA,mBAAA;ADyCA;ACtCA;EACA,qBAAA;EACA,gBAAA;EACA,gBAAA;EACA,mBAAA;EACA,uBAAA;EACA,cAAA;EACA,eAAA;ADwCA;ACzEA;AA0BA;IAUA,iBAAA;ADyCE;AACF;ACrCA;EACA,kBAAA;EACA,qBAAA;ADwCA;ACrCA;EACA,cAAA;EACA,gBAAA;EACA,mBAAA;EACA,sBAAA;EACA,qBAAA;EACA,mBAAA;ADwCA;;AAEA,wDAAwD", "file": "ViewContractManifestModal.vue", "sourcesContent": ['/* NOTE: <variable-name> : (<light-theme-value>, <dark-theme-value>) */\n/* stylelint-disable */\n/* stylelint-enable */\n:root {\n  --button-primary-bg-color: #1c1c1c;\n  --button-primary-text-color: #fff;\n  --button-outline-bg-color: rgba(0, 0, 0, 0);\n  --button-outline-border-color: rgba(0, 0, 0, 0.4);\n  --button-outline-text-color: #1c1c1c;\n  --button-box-shadow: 0 0 16px rgba(219, 219, 219, 0.5);\n  --styled-input-border-color: rgba(0, 0, 0, 0.1);\n  --styled-input-border-color_focus: rgba(0, 0, 0, 0.4);\n  --styled-input-background-color: #fff;\n  --styled-input-background-color_disabled: rgba(0, 0, 0, 0.1);\n  --styled-input-placeholder-color: rgba(0, 0, 0, 0.275);\n  --styled-input-label-color: #9747ff;\n  --radio-outer-border-color: rgba(0, 0, 0, 0.2);\n  --radio-outer-border-color_active: #1C1C1C;\n  --radio-inner-bg-color: #1C1C1C;\n  --toggle-switch-border-color: rgba(0, 0, 0, 0.1);\n  --toggle-switch-border-color_focus: rgba(0, 0, 0, 0.4);\n  --toggle-switch-bg-color: rgba(0, 0, 0, 0.4);\n  --toggle-switch-bg-color_active: #9747ff;\n  --toggle-switch-thumb-color: #fff;\n  --dropdown-bg-color: #FFFFFF;\n  --dropdown-active-bg-color: #F7F9FB;\n  --dropdown-box-shadow: 0 0 16px rgba(219, 219, 219, 0.5);\n  --summary-list-bg-color: #fff;\n  --custom-pre-bg-color: #f2f2f2;\n  --custom-pre-text-color: #1c1c1c;\n  --custom-pre-border-color: rgba(0, 0, 0, 0.1);\n  --modal-bg-color: #fff;\n  --stat-card-icon-color: var(--text_1);\n  --info-card-bg-color: #fff;\n  --info-card-feature-color: #1c1c1c;\n  --info-card-content-color: rgba(0, 0, 0, 0.5);\n  --tooltip-trigger-bg-color: #f7f9fb;\n  --tooltip-trigger-text-color: #1c1c1c;\n  --tooltip-trigger-border-color: #1c1c1c;\n  --tooltip-trigger-box-shadow_hover: 0 0 5px rgba(0, 0, 0, 0.35);\n  --tooltip-bg-color: rgba(28, 28, 28, 0.875);\n  --tooltip-text-color: #fff;\n  --skeleton-gradient: linear-gradient(110deg, rgba(0, 0, 0, 0.05) 12%, rgba(60, 60, 60, 0.125) 25%, rgba(0, 0, 0, 0.05) 42%);\n  --pill-text-color: rgba(0, 0, 0, 0.5);\n  --helper: #9747FF;\n  --ds-menu-border-color: #E5ECF6;\n}\n\n:root[data-theme=dark] {\n  --button-primary-bg-color: #b1e3ff;\n  --button-primary-text-color: #1c1c1c;\n  --button-outline-bg-color: rgba(0, 0, 0, 0);\n  --button-outline-border-color: rgb(65, 65, 65);\n  --button-outline-text-color: #fff;\n  --button-box-shadow: 0 0 12px rgba(132, 132, 132, 0.35);\n  --styled-input-border-color: rgb(65, 65, 65);\n  --styled-input-border-color_focus: rgb(65, 65, 65);\n  --styled-input-background-color: #2a2a2a;\n  --styled-input-background-color_disabled: #1c1c1c;\n  --styled-input-placeholder-color: rgba(255, 255, 255, 0.325);\n  --styled-input-label-color: #b1e3ff;\n  --radio-outer-border-color: rgba(255, 255, 255, 0.275);\n  --radio-outer-border-color_active: #b1e3ff;\n  --radio-inner-bg-color: #b1e3ff;\n  --toggle-switch-border-color: rgb(65, 65, 65);\n  --toggle-switch-border-color_focus: rgb(65, 65, 65);\n  --toggle-switch-bg-color: #2a2a2a;\n  --toggle-switch-bg-color_active: #95A4FC;\n  --toggle-switch-thumb-color: #fff;\n  --dropdown-bg-color: #1c1c1c;\n  --dropdown-active-bg-color: #2a2a2a;\n  --dropdown-box-shadow: 0 0 1px rgba(0, 0, 0, 0);\n  --summary-list-bg-color: #2a2a2a;\n  --custom-pre-bg-color: #1c1c1c;\n  --custom-pre-text-color: #f2f2f2;\n  --custom-pre-border-color: rgb(65, 65, 65);\n  --modal-bg-color: #2a2a2a;\n  --stat-card-icon-color: var(--text_black);\n  --info-card-bg-color: rgba(255, 255, 255, 0.05);\n  --info-card-feature-color: #b1e3ff;\n  --info-card-content-color: #fff;\n  --tooltip-trigger-bg-color: #b1e3ff;\n  --tooltip-trigger-text-color: #1c1c1c;\n  --tooltip-trigger-border-color: #b1e3ff;\n  --tooltip-trigger-box-shadow_hover: 0 0 7px #b1e3ff;\n  --tooltip-bg-color: rgba(242, 244, 247, 0.925);\n  --tooltip-text-color: #1c1c1c;\n  --skeleton-gradient: linear-gradient(110deg, rgba(255, 255, 255, 0.1) 8%, rgba(255, 255, 255, 0.14) 29%, rgba(255, 255, 255, 0.1) 47%);\n  --pill-text-color: #1c1c1c;\n  --helper: #b1e3ff;\n  --ds-menu-border-color: rgb(65, 65, 65);\n}\n\n.c-contract-id-container {\n  position: relative;\n  padding-left: 0.8rem;\n  display: flex;\n  align-items: center;\n  margin-bottom: 1rem;\n}\n.c-contract-id-container::before {\n  content: "";\n  position: absolute;\n  left: 0;\n  top: 0;\n  height: 100%;\n  width: 0.4rem;\n  background-color: var(--text_1);\n}\n.c-contract-id-container .c-id-label {\n  display: inline-block;\n  margin-right: 0.4rem;\n  font-weight: 600;\n  font-size: 0.875rem;\n}\n.c-contract-id-container .c-id-value {\n  display: inline-block;\n  max-width: 10rem;\n  overflow: hidden;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n  direction: rtl;\n  margin-top: 2px;\n}\n@media screen and (max-width: 440px) {\n  .c-contract-id-container .c-id-value {\n    max-width: 7.5rem;\n  }\n}\n\n.c-code-demo-block {\n  position: relative;\n  margin-bottom: 1.2rem;\n}\n\n.c-code-demo-label {\n  display: block;\n  font-weight: 600;\n  font-size: 0.875rem;\n  font-family: "Poppins";\n  margin-bottom: 0.4rem;\n  margin-left: 0.2rem;\n}\n\n/*# sourceMappingURL=ViewContractManifestModal.vue.map */', `<template lang="pug">
+  inject("data-v-47977654_0", { source: '/* NOTE: <variable-name> : (<light-theme-value>, <dark-theme-value>) */\n/* stylelint-disable */\n/* stylelint-enable */\n[data-v-47977654]:root {\n  --button-primary-bg-color: #1c1c1c;\n  --button-primary-text-color: #fff;\n  --button-outline-bg-color: rgba(0, 0, 0, 0);\n  --button-outline-border-color: rgba(0, 0, 0, 0.4);\n  --button-outline-text-color: #1c1c1c;\n  --button-box-shadow: 0 0 16px rgba(219, 219, 219, 0.5);\n  --styled-input-border-color: rgba(0, 0, 0, 0.1);\n  --styled-input-border-color_focus: rgba(0, 0, 0, 0.4);\n  --styled-input-background-color: #fff;\n  --styled-input-background-color_disabled: rgba(0, 0, 0, 0.1);\n  --styled-input-placeholder-color: rgba(0, 0, 0, 0.275);\n  --styled-input-label-color: #9747ff;\n  --radio-outer-border-color: rgba(0, 0, 0, 0.2);\n  --radio-outer-border-color_active: #1C1C1C;\n  --radio-inner-bg-color: #1C1C1C;\n  --toggle-switch-border-color: rgba(0, 0, 0, 0.1);\n  --toggle-switch-border-color_focus: rgba(0, 0, 0, 0.4);\n  --toggle-switch-bg-color: rgba(0, 0, 0, 0.4);\n  --toggle-switch-bg-color_active: #9747ff;\n  --toggle-switch-thumb-color: #fff;\n  --dropdown-bg-color: #FFFFFF;\n  --dropdown-active-bg-color: #F7F9FB;\n  --dropdown-box-shadow: 0 0 16px rgba(219, 219, 219, 0.5);\n  --summary-list-bg-color: #fff;\n  --custom-pre-bg-color: #f2f2f2;\n  --custom-pre-text-color: #1c1c1c;\n  --custom-pre-border-color: rgba(0, 0, 0, 0.1);\n  --modal-bg-color: #fff;\n  --stat-card-icon-color: var(--text_1);\n  --info-card-bg-color: #fff;\n  --info-card-feature-color: #1c1c1c;\n  --info-card-content-color: rgba(0, 0, 0, 0.5);\n  --tooltip-trigger-bg-color: #f7f9fb;\n  --tooltip-trigger-text-color: #1c1c1c;\n  --tooltip-trigger-border-color: #1c1c1c;\n  --tooltip-trigger-box-shadow_hover: 0 0 5px rgba(0, 0, 0, 0.35);\n  --tooltip-bg-color: rgba(28, 28, 28, 0.875);\n  --tooltip-text-color: #fff;\n  --skeleton-gradient: linear-gradient(110deg, rgba(0, 0, 0, 0.05) 12%, rgba(60, 60, 60, 0.125) 25%, rgba(0, 0, 0, 0.05) 42%);\n  --pill-text-color: rgba(0, 0, 0, 0.5);\n  --helper: #9747FF;\n  --ds-menu-border-color: #E5ECF6;\n}\n:root[data-theme=dark][data-v-47977654] {\n  --button-primary-bg-color: #b1e3ff;\n  --button-primary-text-color: #1c1c1c;\n  --button-outline-bg-color: rgba(0, 0, 0, 0);\n  --button-outline-border-color: rgb(65, 65, 65);\n  --button-outline-text-color: #fff;\n  --button-box-shadow: 0 0 12px rgba(132, 132, 132, 0.35);\n  --styled-input-border-color: rgb(65, 65, 65);\n  --styled-input-border-color_focus: rgb(65, 65, 65);\n  --styled-input-background-color: #2a2a2a;\n  --styled-input-background-color_disabled: #1c1c1c;\n  --styled-input-placeholder-color: rgba(255, 255, 255, 0.325);\n  --styled-input-label-color: #b1e3ff;\n  --radio-outer-border-color: rgba(255, 255, 255, 0.275);\n  --radio-outer-border-color_active: #b1e3ff;\n  --radio-inner-bg-color: #b1e3ff;\n  --toggle-switch-border-color: rgb(65, 65, 65);\n  --toggle-switch-border-color_focus: rgb(65, 65, 65);\n  --toggle-switch-bg-color: #2a2a2a;\n  --toggle-switch-bg-color_active: #95A4FC;\n  --toggle-switch-thumb-color: #fff;\n  --dropdown-bg-color: #1c1c1c;\n  --dropdown-active-bg-color: #2a2a2a;\n  --dropdown-box-shadow: 0 0 1px rgba(0, 0, 0, 0);\n  --summary-list-bg-color: #2a2a2a;\n  --custom-pre-bg-color: #1c1c1c;\n  --custom-pre-text-color: #f2f2f2;\n  --custom-pre-border-color: rgb(65, 65, 65);\n  --modal-bg-color: #2a2a2a;\n  --stat-card-icon-color: var(--text_black);\n  --info-card-bg-color: rgba(255, 255, 255, 0.05);\n  --info-card-feature-color: #b1e3ff;\n  --info-card-content-color: #fff;\n  --tooltip-trigger-bg-color: #b1e3ff;\n  --tooltip-trigger-text-color: #1c1c1c;\n  --tooltip-trigger-border-color: #b1e3ff;\n  --tooltip-trigger-box-shadow_hover: 0 0 7px #b1e3ff;\n  --tooltip-bg-color: rgba(242, 244, 247, 0.925);\n  --tooltip-text-color: #1c1c1c;\n  --skeleton-gradient: linear-gradient(110deg, rgba(255, 255, 255, 0.1) 8%, rgba(255, 255, 255, 0.14) 29%, rgba(255, 255, 255, 0.1) 47%);\n  --pill-text-color: #1c1c1c;\n  --helper: #b1e3ff;\n  --ds-menu-border-color: rgb(65, 65, 65);\n}\n.c-contract-id-container[data-v-47977654] {\n  position: relative;\n  padding-left: 0.8rem;\n  display: flex;\n  align-items: center;\n  margin-bottom: 1rem;\n}\n.c-contract-id-container[data-v-47977654]::before {\n  content: "";\n  position: absolute;\n  left: 0;\n  top: 0;\n  height: 100%;\n  width: 0.4rem;\n  background-color: var(--text_1);\n}\n.c-contract-id-container .c-id-label[data-v-47977654] {\n  display: inline-block;\n  margin-right: 0.4rem;\n  font-weight: 600;\n  font-size: 0.875rem;\n}\n.c-contract-id-container .c-id-value[data-v-47977654] {\n  display: inline-block;\n  max-width: 10rem;\n  overflow: hidden;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n  direction: rtl;\n  margin-top: 2px;\n}\n@media screen and (max-width: 440px) {\n.c-contract-id-container .c-id-value[data-v-47977654] {\n    max-width: 7.5rem;\n}\n}\n.c-code-demo-block[data-v-47977654] {\n  position: relative;\n  margin-bottom: 1.2rem;\n}\n.c-code-demo-label[data-v-47977654] {\n  display: block;\n  font-weight: 600;\n  font-size: 0.875rem;\n  font-family: "Poppins";\n  margin-bottom: 0.4rem;\n  margin-left: 0.2rem;\n}\n\n/*# sourceMappingURL=ViewContractManifestModal.vue.map */', map: { "version": 3, "sources": ["ViewContractManifestModal.vue", "src/serve/dashboard/views/containers/modal/ViewContractManifestModal.vue"], "names": [], "mappings": "AAAA,sEAAsE;AACtE,sBAAsB;AC6GtB,qBAAA;AAGA;EAIA,kCAAA;EAAA,iCAAA;EAAA,2CAAA;EAAA,iDAAA;EAAA,oCAAA;EAAA,sDAAA;EAAA,+CAAA;EAAA,qDAAA;EAAA,qCAAA;EAAA,4DAAA;EAAA,sDAAA;EAAA,mCAAA;EAAA,8CAAA;EAAA,0CAAA;EAAA,+BAAA;EAAA,gDAAA;EAAA,sDAAA;EAAA,4CAAA;EAAA,wCAAA;EAAA,iCAAA;EAAA,4BAAA;EAAA,mCAAA;EAAA,wDAAA;EAAA,6BAAA;EAAA,8BAAA;EAAA,gCAAA;EAAA,6CAAA;EAAA,sBAAA;EAAA,qCAAA;EAAA,0BAAA;EAAA,kCAAA;EAAA,6CAAA;EAAA,mCAAA;EAAA,qCAAA;EAAA,uCAAA;EAAA,+DAAA;EAAA,2CAAA;EAAA,0BAAA;EAAA,2HAAA;EAAA,qCAAA;EAAA,iBAAA;EAAA,+BAAA;ADvEA;AC4EA;EAIA,kCAAA;EAAA,oCAAA;EAAA,2CAAA;EAAA,8CAAA;EAAA,iCAAA;EAAA,uDAAA;EAAA,4CAAA;EAAA,kDAAA;EAAA,wCAAA;EAAA,iDAAA;EAAA,4DAAA;EAAA,mCAAA;EAAA,sDAAA;EAAA,0CAAA;EAAA,+BAAA;EAAA,6CAAA;EAAA,mDAAA;EAAA,iCAAA;EAAA,wCAAA;EAAA,iCAAA;EAAA,4BAAA;EAAA,mCAAA;EAAA,+CAAA;EAAA,gCAAA;EAAA,8BAAA;EAAA,gCAAA;EAAA,0CAAA;EAAA,yBAAA;EAAA,yCAAA;EAAA,+CAAA;EAAA,kCAAA;EAAA,+BAAA;EAAA,mCAAA;EAAA,qCAAA;EAAA,uCAAA;EAAA,mDAAA;EAAA,8CAAA;EAAA,6BAAA;EAAA,sIAAA;EAAA,0BAAA;EAAA,iBAAA;EAAA,uCAAA;ADnCA;ACTA;EACA,kBAAA;EACA,oBAAA;EACA,aAAA;EACA,mBAAA;EACA,mBAAA;ADYA;ACVA;EACA,WAAA;EACA,kBAAA;EACA,OAAA;EACA,MAAA;EACA,YAAA;EACA,aAAA;EACA,+BAAA;ADYA;ACTA;EACA,qBAAA;EACA,oBAAA;EACA,gBAAA;EACA,mBAAA;ADWA;ACRA;EACA,qBAAA;EACA,gBAAA;EACA,gBAAA;EACA,mBAAA;EACA,uBAAA;EACA,cAAA;EACA,eAAA;ADUA;AACA;AClBA;IAUA,iBAAA;ADWE;AACF;ACPA;EACA,kBAAA;EACA,qBAAA;ADUA;ACPA;EACA,cAAA;EACA,gBAAA;EACA,mBAAA;EACA,sBAAA;EACA,qBAAA;EACA,mBAAA;ADUA;;AAEA,wDAAwD", "file": "ViewContractManifestModal.vue", "sourcesContent": ['/* NOTE: <variable-name> : (<light-theme-value>, <dark-theme-value>) */\n/* stylelint-disable */\n/* stylelint-enable */\n:root {\n  --button-primary-bg-color: #1c1c1c;\n  --button-primary-text-color: #fff;\n  --button-outline-bg-color: rgba(0, 0, 0, 0);\n  --button-outline-border-color: rgba(0, 0, 0, 0.4);\n  --button-outline-text-color: #1c1c1c;\n  --button-box-shadow: 0 0 16px rgba(219, 219, 219, 0.5);\n  --styled-input-border-color: rgba(0, 0, 0, 0.1);\n  --styled-input-border-color_focus: rgba(0, 0, 0, 0.4);\n  --styled-input-background-color: #fff;\n  --styled-input-background-color_disabled: rgba(0, 0, 0, 0.1);\n  --styled-input-placeholder-color: rgba(0, 0, 0, 0.275);\n  --styled-input-label-color: #9747ff;\n  --radio-outer-border-color: rgba(0, 0, 0, 0.2);\n  --radio-outer-border-color_active: #1C1C1C;\n  --radio-inner-bg-color: #1C1C1C;\n  --toggle-switch-border-color: rgba(0, 0, 0, 0.1);\n  --toggle-switch-border-color_focus: rgba(0, 0, 0, 0.4);\n  --toggle-switch-bg-color: rgba(0, 0, 0, 0.4);\n  --toggle-switch-bg-color_active: #9747ff;\n  --toggle-switch-thumb-color: #fff;\n  --dropdown-bg-color: #FFFFFF;\n  --dropdown-active-bg-color: #F7F9FB;\n  --dropdown-box-shadow: 0 0 16px rgba(219, 219, 219, 0.5);\n  --summary-list-bg-color: #fff;\n  --custom-pre-bg-color: #f2f2f2;\n  --custom-pre-text-color: #1c1c1c;\n  --custom-pre-border-color: rgba(0, 0, 0, 0.1);\n  --modal-bg-color: #fff;\n  --stat-card-icon-color: var(--text_1);\n  --info-card-bg-color: #fff;\n  --info-card-feature-color: #1c1c1c;\n  --info-card-content-color: rgba(0, 0, 0, 0.5);\n  --tooltip-trigger-bg-color: #f7f9fb;\n  --tooltip-trigger-text-color: #1c1c1c;\n  --tooltip-trigger-border-color: #1c1c1c;\n  --tooltip-trigger-box-shadow_hover: 0 0 5px rgba(0, 0, 0, 0.35);\n  --tooltip-bg-color: rgba(28, 28, 28, 0.875);\n  --tooltip-text-color: #fff;\n  --skeleton-gradient: linear-gradient(110deg, rgba(0, 0, 0, 0.05) 12%, rgba(60, 60, 60, 0.125) 25%, rgba(0, 0, 0, 0.05) 42%);\n  --pill-text-color: rgba(0, 0, 0, 0.5);\n  --helper: #9747FF;\n  --ds-menu-border-color: #E5ECF6;\n}\n\n:root[data-theme=dark] {\n  --button-primary-bg-color: #b1e3ff;\n  --button-primary-text-color: #1c1c1c;\n  --button-outline-bg-color: rgba(0, 0, 0, 0);\n  --button-outline-border-color: rgb(65, 65, 65);\n  --button-outline-text-color: #fff;\n  --button-box-shadow: 0 0 12px rgba(132, 132, 132, 0.35);\n  --styled-input-border-color: rgb(65, 65, 65);\n  --styled-input-border-color_focus: rgb(65, 65, 65);\n  --styled-input-background-color: #2a2a2a;\n  --styled-input-background-color_disabled: #1c1c1c;\n  --styled-input-placeholder-color: rgba(255, 255, 255, 0.325);\n  --styled-input-label-color: #b1e3ff;\n  --radio-outer-border-color: rgba(255, 255, 255, 0.275);\n  --radio-outer-border-color_active: #b1e3ff;\n  --radio-inner-bg-color: #b1e3ff;\n  --toggle-switch-border-color: rgb(65, 65, 65);\n  --toggle-switch-border-color_focus: rgb(65, 65, 65);\n  --toggle-switch-bg-color: #2a2a2a;\n  --toggle-switch-bg-color_active: #95A4FC;\n  --toggle-switch-thumb-color: #fff;\n  --dropdown-bg-color: #1c1c1c;\n  --dropdown-active-bg-color: #2a2a2a;\n  --dropdown-box-shadow: 0 0 1px rgba(0, 0, 0, 0);\n  --summary-list-bg-color: #2a2a2a;\n  --custom-pre-bg-color: #1c1c1c;\n  --custom-pre-text-color: #f2f2f2;\n  --custom-pre-border-color: rgb(65, 65, 65);\n  --modal-bg-color: #2a2a2a;\n  --stat-card-icon-color: var(--text_black);\n  --info-card-bg-color: rgba(255, 255, 255, 0.05);\n  --info-card-feature-color: #b1e3ff;\n  --info-card-content-color: #fff;\n  --tooltip-trigger-bg-color: #b1e3ff;\n  --tooltip-trigger-text-color: #1c1c1c;\n  --tooltip-trigger-border-color: #b1e3ff;\n  --tooltip-trigger-box-shadow_hover: 0 0 7px #b1e3ff;\n  --tooltip-bg-color: rgba(242, 244, 247, 0.925);\n  --tooltip-text-color: #1c1c1c;\n  --skeleton-gradient: linear-gradient(110deg, rgba(255, 255, 255, 0.1) 8%, rgba(255, 255, 255, 0.14) 29%, rgba(255, 255, 255, 0.1) 47%);\n  --pill-text-color: #1c1c1c;\n  --helper: #b1e3ff;\n  --ds-menu-border-color: rgb(65, 65, 65);\n}\n\n.c-contract-id-container {\n  position: relative;\n  padding-left: 0.8rem;\n  display: flex;\n  align-items: center;\n  margin-bottom: 1rem;\n}\n.c-contract-id-container::before {\n  content: "";\n  position: absolute;\n  left: 0;\n  top: 0;\n  height: 100%;\n  width: 0.4rem;\n  background-color: var(--text_1);\n}\n.c-contract-id-container .c-id-label {\n  display: inline-block;\n  margin-right: 0.4rem;\n  font-weight: 600;\n  font-size: 0.875rem;\n}\n.c-contract-id-container .c-id-value {\n  display: inline-block;\n  max-width: 10rem;\n  overflow: hidden;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n  direction: rtl;\n  margin-top: 2px;\n}\n@media screen and (max-width: 440px) {\n  .c-contract-id-container .c-id-value {\n    max-width: 7.5rem;\n  }\n}\n\n.c-code-demo-block {\n  position: relative;\n  margin-bottom: 1.2rem;\n}\n\n.c-code-demo-label {\n  display: block;\n  font-weight: 600;\n  font-size: 0.875rem;\n  font-family: "Poppins";\n  margin-bottom: 0.4rem;\n  margin-left: 0.2rem;\n}\n\n/*# sourceMappingURL=ViewContractManifestModal.vue.map */', `<template lang="pug">
 ModalTemplate(:title='L("Contract manifest")' icon='suitcase')
   .c-contract-id-container
     span.c-id-label.has-family-poppins contractID :
-    TextToCopy.c-id-copy(:text='contract.contractId')
-      .c-id-value {{ contract.contractId }}
+    TextToCopy.c-id-copy(:text='contract.contractID')
+      .c-id-value {{ contract.contractID }}
 
-  .c-code-demo-container
+  InfoCard(v-if='error' :heading='L("Note")') {{ error }}
+
+  .c-code-demo-container(v-else-if='content')
+    .c-code-demo-block
+      .c-code-demo-label manifest
+      pre.custom-pre {{ content.manifestCID }}
+
     .c-code-demo-block
       .c-code-demo-label head
       pre.custom-pre {{ content.head }}
 
     .c-code-demo-block
       .c-code-demo-label body
-      pre.custom-pre {{ content.body }}}
+      pre.custom-pre {{ content.body }}
 
     .c-code-demo-block
       .c-code-demo-label signature
@@ -701,28 +740,52 @@ ModalTemplate(:title='L("Contract manifest")' icon='suitcase')
 </template>
 
 <script>
+import sbp from '@sbp/sbp'
 import ModalTemplate from './ModalTemplate.vue'
 import TextToCopy from '../../../../../../src/serve/dashboard/views/components/TextToCopy.vue'
+import InfoCard from '../../../../../../src/serve/dashboard/views/components/InfoCard.vue'
+import L from '../../../../../../src/serve/dashboard/common/translations.js'
+
+// head and body are JSON inside strings, so they are parsed before showing
+const pretty = (value) => {
+  try {
+    return JSON.stringify(typeof value === 'string' ? JSON.parse(value) : value, null, 2)
+  } catch {
+    return String(value)
+  }
+}
 
 export default {
   name: 'ViewContractManifestModal',
   components: {
     ModalTemplate,
-    TextToCopy
+    TextToCopy,
+    InfoCard
   },
   props: {
-    contract: Object
+    contract: Object,
+    // Shown as is, without asking the server. The design system page uses it.
+    preview: Object
   },
-  computed: {
-    content () {
-      const manifest = this.contract.manifestJSON
-      const stringify = content => JSON.stringify(content).replace(/\\\\/g, '')
-
-      return {
-        head: stringify(manifest.head),
-        body: stringify(manifest.body),
-        signature: stringify(manifest.signature)
+  data () {
+    return {
+      content: null,
+      error: ''
+    }
+  },
+  async created () {
+    try {
+      const { manifestCID, manifest } = this.preview ||
+        await sbp('backend/dashboard/get', \`contracts/\${this.contract.contractID}/manifest\`)
+      this.content = {
+        manifestCID,
+        head: pretty(manifest.head),
+        body: pretty(manifest.body),
+        signature: pretty(manifest.signature)
       }
+    } catch (e) {
+      console.error('[dashboard] could not load the manifest', e)
+      this.error = L('Could not load the manifest. The browser console has the details.')
     }
   }
 }
@@ -786,7 +849,7 @@ export default {
 </style>
 `] }, media: void 0 });
 };
-var __vue_scope_id__3 = "data-v-66d7fa76";
+var __vue_scope_id__3 = "data-v-47977654";
 var __vue_module_identifier__3 = void 0;
 var __vue_is_functional_template__3 = false;
 function __vue_normalize__3(template, style, script, scope, functional, moduleIdentifier, shadowMode, createInjector, createInjectorSSR, createInjectorShadow) {
@@ -795,17 +858,23 @@ function __vue_normalize__3(template, style, script, scope, functional, moduleId
 ModalTemplate(:title='L("Contract manifest")' icon='suitcase')
   .c-contract-id-container
     span.c-id-label.has-family-poppins contractID :
-    TextToCopy.c-id-copy(:text='contract.contractId')
-      .c-id-value {{ contract.contractId }}
+    TextToCopy.c-id-copy(:text='contract.contractID')
+      .c-id-value {{ contract.contractID }}
 
-  .c-code-demo-container
+  InfoCard(v-if='error' :heading='L("Note")') {{ error }}
+
+  .c-code-demo-container(v-else-if='content')
+    .c-code-demo-block
+      .c-code-demo-label manifest
+      pre.custom-pre {{ content.manifestCID }}
+
     .c-code-demo-block
       .c-code-demo-label head
       pre.custom-pre {{ content.head }}
 
     .c-code-demo-block
       .c-code-demo-label body
-      pre.custom-pre {{ content.body }}}
+      pre.custom-pre {{ content.body }}
 
     .c-code-demo-block
       .c-code-demo-label signature
@@ -813,28 +882,52 @@ ModalTemplate(:title='L("Contract manifest")' icon='suitcase')
 </template>
 
 <script>
+import sbp from '@sbp/sbp'
 import ModalTemplate from './ModalTemplate.vue'
 import TextToCopy from '../../../../../../src/serve/dashboard/views/components/TextToCopy.vue'
+import InfoCard from '../../../../../../src/serve/dashboard/views/components/InfoCard.vue'
+import L from '../../../../../../src/serve/dashboard/common/translations.js'
+
+// head and body are JSON inside strings, so they are parsed before showing
+const pretty = (value) => {
+  try {
+    return JSON.stringify(typeof value === 'string' ? JSON.parse(value) : value, null, 2)
+  } catch {
+    return String(value)
+  }
+}
 
 export default {
   name: 'ViewContractManifestModal',
   components: {
     ModalTemplate,
-    TextToCopy
+    TextToCopy,
+    InfoCard
   },
   props: {
-    contract: Object
+    contract: Object,
+    // Shown as is, without asking the server. The design system page uses it.
+    preview: Object
   },
-  computed: {
-    content () {
-      const manifest = this.contract.manifestJSON
-      const stringify = content => JSON.stringify(content).replace(/\\\\/g, '')
-
-      return {
-        head: stringify(manifest.head),
-        body: stringify(manifest.body),
-        signature: stringify(manifest.signature)
+  data () {
+    return {
+      content: null,
+      error: ''
+    }
+  },
+  async created () {
+    try {
+      const { manifestCID, manifest } = this.preview ||
+        await sbp('backend/dashboard/get', \`contracts/\${this.contract.contractID}/manifest\`)
+      this.content = {
+        manifestCID,
+        head: pretty(manifest.head),
+        body: pretty(manifest.body),
+        signature: pretty(manifest.signature)
       }
+    } catch (e) {
+      console.error('[dashboard] could not load the manifest', e)
+      this.error = L('Could not load the manifest. The browser console has the details.')
     }
   }
 }

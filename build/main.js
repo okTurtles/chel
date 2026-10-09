@@ -1126,6 +1126,7 @@ import process8 from "node:process";
 import process10 from "node:process";
 import { Buffer as Buffer14 } from "node:buffer";
 import { pathToFileURL } from "node:url";
+import { createHash as createHash2, timingSafeEqual as timingSafeEqual3 } from "node:crypto";
 import { existsSync as existsSync2 } from "node:fs";
 import path7 from "node:path";
 import process13 from "node:process";
@@ -16167,8 +16168,8 @@ var init_functions = __esm({
       const textEncoder = new TextEncoder();
       const endpoint = textEncoder.encode(subscriptionInfo.endpoint);
       const p256dh = textEncoder.encode(subscriptionInfo.keys.p256dh);
-      const auth = textEncoder.encode(subscriptionInfo.keys.auth);
-      const canonicalForm = new ArrayBuffer(8 + (4 + endpoint.byteLength) + (2 + p256dh.byteLength) + (2 + auth.byteLength));
+      const auth2 = textEncoder.encode(subscriptionInfo.keys.auth);
+      const canonicalForm = new ArrayBuffer(8 + (4 + endpoint.byteLength) + (2 + p256dh.byteLength) + (2 + auth2.byteLength));
       const canonicalFormU8 = new Uint8Array(canonicalForm);
       const canonicalFormDV = new DataView(canonicalForm);
       let offset = 0;
@@ -16182,9 +16183,9 @@ var init_functions = __esm({
       offset += 2;
       canonicalFormU8.set(p256dh, offset);
       offset += p256dh.byteLength;
-      canonicalFormDV.setUint16(offset, auth.byteLength, false);
+      canonicalFormDV.setUint16(offset, auth2.byteLength, false);
       offset += 2;
-      canonicalFormU8.set(auth, offset);
+      canonicalFormU8.set(auth2, offset);
       const digest = await crypto.subtle.digest("SHA-384", canonicalForm);
       const id = Buffer22.from(digest.slice(0, 16));
       id[6] = 128 | id[6] & 15;
@@ -50889,14 +50890,14 @@ var require_thread_stream = __commonJS({
       stream[kImpl].ended = true;
       try {
         stream.flushSync();
-        let readIndex = Atomics.load(stream[kImpl].state, READ_INDEX);
+        let readIndex2 = Atomics.load(stream[kImpl].state, READ_INDEX);
         Atomics.store(stream[kImpl].state, WRITE_INDEX, -1);
         Atomics.notify(stream[kImpl].state, WRITE_INDEX);
         let spins = 0;
-        while (readIndex !== -1) {
-          Atomics.wait(stream[kImpl].state, READ_INDEX, readIndex, 1e3);
-          readIndex = Atomics.load(stream[kImpl].state, READ_INDEX);
-          if (readIndex === -2) {
+        while (readIndex2 !== -1) {
+          Atomics.wait(stream[kImpl].state, READ_INDEX, readIndex2, 1e3);
+          readIndex2 = Atomics.load(stream[kImpl].state, READ_INDEX);
+          if (readIndex2 === -2) {
             destroy(stream, new Error("end() failed"));
             return;
           }
@@ -50959,12 +50960,12 @@ var require_thread_stream = __commonJS({
       const writeIndex = Atomics.load(stream[kImpl].state, WRITE_INDEX);
       let spins = 0;
       while (true) {
-        const readIndex = Atomics.load(stream[kImpl].state, READ_INDEX);
-        if (readIndex === -2) {
+        const readIndex2 = Atomics.load(stream[kImpl].state, READ_INDEX);
+        if (readIndex2 === -2) {
           throw Error("_flushSync failed");
         }
-        if (readIndex !== writeIndex) {
-          Atomics.wait(stream[kImpl].state, READ_INDEX, readIndex, 1e3);
+        if (readIndex2 !== writeIndex) {
+          Atomics.wait(stream[kImpl].state, READ_INDEX, readIndex2, 1e3);
         } else {
           break;
         }
@@ -57698,7 +57699,7 @@ var require_websocket = __commonJS({
     var http = __require2("node:http");
     var net = __require2("node:net");
     var tls = __require2("node:tls");
-    var { randomBytes: randomBytes3, createHash } = __require2("node:crypto");
+    var { randomBytes: randomBytes3, createHash: createHash3 } = __require2("node:crypto");
     var { Readable: Readable4 } = __require2("node:stream");
     var { URL: URL2 } = __require2("node:url");
     var PerMessageDeflate = require_permessage_deflate();
@@ -58325,7 +58326,7 @@ var require_websocket = __commonJS({
         websocket.emit("upgrade", res);
         if (websocket.readyState !== WebSocket3.CONNECTING) return;
         req = websocket._req = null;
-        const digest = createHash("sha1").update(key + GUID).digest("base64");
+        const digest = createHash3("sha1").update(key + GUID).digest("base64");
         if (res.headers["sec-websocket-accept"] !== digest) {
           abortHandshake(websocket, socket, "Invalid Sec-WebSocket-Accept header");
           return;
@@ -58563,7 +58564,7 @@ var require_websocket_server = __commonJS({
     var https = __require2("node:https");
     var net = __require2("node:net");
     var tls = __require2("node:tls");
-    var { createHash } = __require2("node:crypto");
+    var { createHash: createHash3 } = __require2("node:crypto");
     var extension = require_extension();
     var PerMessageDeflate = require_permessage_deflate();
     var subprotocol = require_subprotocol();
@@ -58827,7 +58828,7 @@ var require_websocket_server = __commonJS({
           );
         }
         if (this._state > RUNNING) return abortHandshake(socket, 503);
-        const digest = createHash("sha1").update(key + GUID).digest("base64");
+        const digest = createHash3("sha1").update(key + GUID).digest("base64");
         const headers = [
           "HTTP/1.1 101 Switching Protocols",
           "Upgrade: websocket",
@@ -68924,6 +68925,11 @@ var nconfDefaults = {
     host: "0.0.0.0",
     port: 8e3,
     dashboardPort: 8888,
+    // The dashboard shows usernames, storage and credits, so it only listens
+    // on this machine unless this is changed
+    dashboardListenIP: "127.0.0.1",
+    // Needed for the dashboard to show any data. Left unset on purpose.
+    dashboardAdminPassword: void 0,
     fileUploadMaxBytes: 31457280,
     signup: {
       disabled: false,
@@ -70359,6 +70365,11 @@ server_id = "${serverId}"
 host = ${tomlValue(d.server.host)}
 port = ${tomlValue(d.server.port)}
 dashboardPort = ${tomlValue(d.server.dashboardPort)}
+# The dashboard shows usernames, storage and credits, so it only listens on
+# this machine by default.
+dashboardListenIP = ${tomlValue(d.server.dashboardListenIP)}
+# The dashboard shows no data until this is set. The browser asks for it.
+# dashboardAdminPassword =
 # fileUploadMaxBytes = ${tomlValue(d.server.fileUploadMaxBytes)}
 # maxEventsBatchSize = ${tomlValue(d.server.maxEventsBatchSize)}
 # archiveMode = ${tomlValue(d.server.archiveMode)}
@@ -70630,6 +70641,8 @@ var ConfigSchema = strictObject({
     host: optional(string2().min(1, "must be a non-empty string")),
     port: optional(portSchema),
     dashboardPort: optional(portSchema),
+    dashboardListenIP: optional(string2().min(1, "must be a non-empty string")),
+    dashboardAdminPassword: optional(string2().min(1, "must be a non-empty string")),
     fileUploadMaxBytes: optional(positiveInt),
     // NOTE: validated for shape only; the logger reads `LOG_LEVEL` from the
     // environment directly (see `src/serve/logger.ts`). A warning is printed
@@ -74424,6 +74437,70 @@ var getCookie = (c, key, prefix) => {
   const obj = parse42(cookie);
   return obj;
 };
+var sha256 = async (data) => {
+  const algorithm = { name: "SHA-256", alias: "sha256" };
+  const hash3 = await createHash(data, algorithm);
+  return hash3;
+};
+var createHash = async (data, algorithm) => {
+  let sourceBuffer;
+  if (ArrayBuffer.isView(data) || data instanceof ArrayBuffer) {
+    sourceBuffer = data;
+  } else {
+    if (typeof data === "object") {
+      data = JSON.stringify(data);
+    }
+    sourceBuffer = new TextEncoder().encode(String(data));
+  }
+  if (crypto && crypto.subtle) {
+    const buffer = await crypto.subtle.digest(
+      {
+        name: algorithm.name
+      },
+      sourceBuffer
+    );
+    const hash3 = Array.prototype.map.call(new Uint8Array(buffer), (x3) => ("00" + x3.toString(16)).slice(-2)).join("");
+    return hash3;
+  }
+  return null;
+};
+var constantTimeEqualString = (a, b) => {
+  const aLen = a.length;
+  const bLen = b.length;
+  const maxLen = Math.max(aLen, bLen);
+  let out = aLen ^ bLen;
+  for (let i2 = 0; i2 < maxLen; i2++) {
+    const aChar = i2 < aLen ? a.charCodeAt(i2) : 0;
+    const bChar = i2 < bLen ? b.charCodeAt(i2) : 0;
+    out |= aChar ^ bChar;
+  }
+  return out === 0;
+};
+var timingSafeEqualString = async (a, b, hashFunction) => {
+  if (!hashFunction) {
+    hashFunction = sha256;
+  }
+  const [sa, sb] = await Promise.all([hashFunction(a), hashFunction(b)]);
+  if (sa == null || sb == null || typeof sa !== "string" || typeof sb !== "string") {
+    return false;
+  }
+  const hashEqual = constantTimeEqualString(sa, sb);
+  const originalEqual = constantTimeEqualString(a, b);
+  return hashEqual && originalEqual;
+};
+var timingSafeEqual2 = async (a, b, hashFunction) => {
+  if (typeof a === "string" && typeof b === "string") {
+    return timingSafeEqualString(a, b, hashFunction);
+  }
+  if (!hashFunction) {
+    hashFunction = sha256;
+  }
+  const [sa, sb] = await Promise.all([hashFunction(a), hashFunction(b)]);
+  if (!sa || !sb || typeof sa !== "string" || typeof sb !== "string") {
+    return false;
+  }
+  return timingSafeEqualString(sa, sb);
+};
 var bufferToFormData = (arrayBuffer, contentType) => {
   const response = new Response(arrayBuffer, {
     headers: {
@@ -76974,6 +77051,93 @@ async function startServer2(options2 = {}) {
     startServer().catch(reject);
   });
 }
+var decodeBase642 = (str) => {
+  const binary = atob(str);
+  const bytes = new Uint8Array(new ArrayBuffer(binary.length));
+  const half = binary.length / 2;
+  for (let i2 = 0, j = binary.length - 1; i2 <= half; i2++, j--) {
+    bytes[i2] = binary.charCodeAt(i2);
+    bytes[j] = binary.charCodeAt(j);
+  }
+  return bytes;
+};
+var CREDENTIALS_REGEXP = /^ *(?:[Bb][Aa][Ss][Ii][Cc]) +([A-Za-z0-9._~+/-]+=*) *$/;
+var USER_PASS_REGEXP = /^([^:]*):(.*)$/;
+var utf8Decoder = new TextDecoder();
+var auth = (req) => {
+  const match2 = CREDENTIALS_REGEXP.exec(req.headers.get("Authorization") || "");
+  if (!match2) {
+    return void 0;
+  }
+  let userPass = void 0;
+  try {
+    userPass = USER_PASS_REGEXP.exec(utf8Decoder.decode(decodeBase642(match2[1])));
+  } catch {
+  }
+  if (!userPass) {
+    return void 0;
+  }
+  return { username: userPass[1], password: userPass[2] };
+};
+var basicAuth = (options2, ...users) => {
+  const usernamePasswordInOptions = "username" in options2 && "password" in options2;
+  const verifyUserInOptions = "verifyUser" in options2;
+  if (!(usernamePasswordInOptions || verifyUserInOptions)) {
+    throw new Error(
+      'basic auth middleware requires options for "username and password" or "verifyUser"'
+    );
+  }
+  if (!options2.realm) {
+    options2.realm = "Secure Area";
+  }
+  if (!options2.invalidUserMessage) {
+    options2.invalidUserMessage = "Unauthorized";
+  }
+  if (usernamePasswordInOptions) {
+    users.unshift({ username: options2.username, password: options2.password });
+  }
+  return async function basicAuth2(ctx, next) {
+    const requestUser = auth(ctx.req.raw);
+    if (requestUser) {
+      if (verifyUserInOptions) {
+        if (await options2.verifyUser(requestUser.username, requestUser.password, ctx)) {
+          if (options2.onAuthSuccess) {
+            await options2.onAuthSuccess(ctx, requestUser.username);
+          }
+          await next();
+          return;
+        }
+      } else {
+        for (const user of users) {
+          const [usernameEqual, passwordEqual] = await Promise.all([
+            timingSafeEqual2(user.username, requestUser.username, options2.hashFunction),
+            timingSafeEqual2(user.password, requestUser.password, options2.hashFunction)
+          ]);
+          if (usernameEqual && passwordEqual) {
+            if (options2.onAuthSuccess) {
+              await options2.onAuthSuccess(ctx, requestUser.username);
+            }
+            await next();
+            return;
+          }
+        }
+      }
+    }
+    const status = 401;
+    const headers = {
+      "WWW-Authenticate": 'Basic realm="' + options2.realm?.replace(/"/g, '\\"') + '"'
+    };
+    const responseMessage = typeof options2.invalidUserMessage === "function" ? await options2.invalidUserMessage(ctx) : options2.invalidUserMessage;
+    const res = typeof responseMessage === "string" ? new Response(responseMessage, { status, headers }) : new Response(JSON.stringify(responseMessage), {
+      status,
+      headers: {
+        ...headers,
+        "content-type": "application/json"
+      }
+    });
+    throw new HTTPException(status, { res });
+  };
+};
 var COMPRESSIBLE_CONTENT_TYPE_REGEX = /^\s*(?:text\/(?!event-stream(?:[;\s]|$))[^;\s]+|application\/(?:javascript|json|xml|xml-dtd|ecmascript|dart|postscript|rtf|tar|toml|vnd\.dart|vnd\.ms-fontobject|vnd\.ms-opentype|wasm|x-httpd-php|x-javascript|x-ns-proxy-autoconfig|x-sh|x-tar|x-virtualbox-hdd|x-virtualbox-ova|x-virtualbox-ovf|x-virtualbox-vbox|x-virtualbox-vdi|x-virtualbox-vhd|x-virtualbox-vmdk|x-www-form-urlencoded)|font\/(?:otf|ttf)|image\/(?:bmp|vnd\.adobe\.photoshop|vnd\.microsoft\.icon|vnd\.ms-dds|x-icon|x-ms-bmp)|message\/rfc822|model\/gltf-binary|x-shader\/x-fragment|x-shader\/x-vertex|[^;\s]+?\+(?:json|text|xml|yaml))(?:[;\s]|$)/i;
 var getMimeType = (filename, mimes = baseMimes) => {
   const regexp = /\.([a-zA-Z0-9]+?)$/;
@@ -77244,6 +77408,110 @@ var upgradeWebSocket = defineWebSocketHelper(async (c, events, options2) => {
   return response;
 });
 var import_npm_nconf10 = __toESM(require_nconf());
+init_esm();
+var readIndex = async (key) => {
+  const value = await esm_default("chelonia.db/get", key);
+  return value ? value.split("\0") : [];
+};
+var readNumber = async (key) => Number(await esm_default("chelonia.db/get", key)) || 0;
+var contractInfos = () => esm_default("chelonia/rootState").contracts ?? {};
+async function listContracts() {
+  const infos = contractInfos();
+  const names = /* @__PURE__ */ new Map();
+  const nameOf = (contractID) => {
+    if (!names.has(contractID)) {
+      names.set(contractID, esm_default("chelonia.db/get", `_private_cid2name_${contractID}`).then((name) => name ?? null));
+    }
+    return names.get(contractID);
+  };
+  const contractIDs = await readIndex("_private_cheloniaState_index");
+  return Promise.all(contractIDs.map(async (contractID) => {
+    const info = infos[contractID];
+    const owner = await esm_default("chelonia.db/get", `_private_owner_${contractID}`) ?? null;
+    return {
+      contractID,
+      type: info?.type ?? null,
+      size: await readNumber(`_private_size_${contractID}`),
+      // Heights start at 0
+      messages: info ? info.height + 1 : 0,
+      name: await nameOf(contractID),
+      owner,
+      ownerName: owner ? await nameOf(owner) : null
+    };
+  }));
+}
+async function listUsers() {
+  const infos = contractInfos();
+  const [usernames, orphaned] = await Promise.all([
+    readIndex("_private_names_index"),
+    readIndex("_private_orphaned_names_index")
+  ]);
+  const deleted = new Set(orphaned);
+  return Promise.all(usernames.map(async (username) => {
+    if (deleted.has(username)) {
+      return {
+        username,
+        deleted: true,
+        contractID: null,
+        ownedContracts: null,
+        ownedFiles: null,
+        size: null,
+        picocredits: null
+      };
+    }
+    const contractID = await esm_default("chelonia.db/get", namespaceKey(username));
+    const owned = await readIndex(`_private_resources_${contractID}`);
+    const ownedContracts = owned.filter((id) => id in infos).length;
+    return {
+      username,
+      deleted: false,
+      contractID,
+      ownedContracts,
+      ownedFiles: owned.length - ownedContracts,
+      size: await readNumber(`_private_ownerTotalSize_${contractID}`),
+      // No balance yet means nothing was charged or credited yet
+      picocredits: await esm_default("chelonia.db/get", `_private_ownerPicocreditBalance_${contractID}`) ?? "0"
+    };
+  }));
+}
+async function overview() {
+  const [contracts, users, billable] = await Promise.all([
+    listContracts(),
+    listUsers(),
+    readIndex("_private_billable_entities")
+  ]);
+  const sizes = await Promise.all(billable.map((id) => readNumber(`_private_ownerTotalSize_${id}`)));
+  const total = sizes.reduce((sum, size) => sum + size, 0);
+  const contractsSize = contracts.reduce((sum, contract) => sum + contract.size, 0);
+  const live = users.filter((user) => !user.deleted);
+  return {
+    users: live.length,
+    deletedUsers: users.length - live.length,
+    contracts: contracts.length,
+    storage: {
+      total,
+      contracts: contractsSize,
+      // Owner totals can lag a little behind, so never below 0
+      files: Math.max(0, total - contractsSize)
+    },
+    freeAllowance: await readNumber("_private_freeAllowanceBytes"),
+    newestUsers: live.slice(-5).reverse().map(({ username, size }) => ({ username, size }))
+  };
+}
+async function contractManifest(contractID) {
+  const info = contractInfos()[contractID];
+  if (!info) return null;
+  const message = await esm_default("chelonia.db/get", info.HEAD);
+  if (!message) return null;
+  const manifestCID = JSON.parse(JSON.parse(message).head).manifest;
+  const manifest2 = await esm_default("chelonia.db/get", manifestCID);
+  return manifest2 ? { manifestCID, manifest: JSON.parse(manifest2) } : null;
+}
+var CID_REGEX2 = /^z[1-9A-HJ-NP-Za-km-z]{8,72}$/;
+var samePassword = (given, expected) => {
+  const digest = (s) => createHash2("sha256").update(s).digest();
+  return timingSafeEqual3(digest(given), digest(expected));
+};
 var getDashboardPath = () => {
   const baseDir = import.meta.dirname || path7.join(process13.cwd(), "build");
   const candidates = [
@@ -77256,9 +77524,30 @@ var getDashboardPath = () => {
 };
 async function startDashboard() {
   const port = import_npm_nconf10.default.get("server:dashboardPort");
-  const host = import_npm_nconf10.default.get("server:host") || "0.0.0.0";
+  const host = import_npm_nconf10.default.get("server:dashboardListenIP") || "127.0.0.1";
+  const configured = import_npm_nconf10.default.get("server:dashboardAdminPassword");
+  const password = configured == null || configured === "" ? void 0 : String(configured);
   const dashboardRoot = getDashboardPath();
   const app = new Hono2();
+  if (password) {
+    app.use("*", basicAuth({
+      realm: "Chelonia dashboard",
+      verifyUser: (_username, given) => samePassword(given, password)
+    }));
+  }
+  app.use("/api/*", async (c, next) => {
+    if (!password) return c.json({ error: "no-password" }, 403);
+    await next();
+  });
+  app.get("/api/overview", async (c) => c.json(await overview()));
+  app.get("/api/contracts", async (c) => c.json(await listContracts()));
+  app.get("/api/users", async (c) => c.json(await listUsers()));
+  app.get("/api/contracts/:contractID/manifest", async (c) => {
+    const contractID = c.req.param("contractID");
+    const found = CID_REGEX2.test(contractID) ? await contractManifest(contractID) : null;
+    return found ? c.json(found) : c.json({ error: "not-found" }, 404);
+  });
+  app.all("/api/*", (c) => c.json({ error: "not-found" }, 404));
   const staticMiddleware = serveStatic2({ root: dashboardRoot, rewriteRequestPath: (p) => p });
   const indexMiddleware = serveStatic2({ root: dashboardRoot, path: "index.html" });
   app.get("/assets/*", etag(), staticMiddleware);
