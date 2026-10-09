@@ -77246,9 +77246,13 @@ var upgradeWebSocket = defineWebSocketHelper(async (c, events, options2) => {
 var import_npm_nconf10 = __toESM(require_nconf());
 var getDashboardPath = () => {
   const baseDir = import.meta.dirname || path7.join(process13.cwd(), "build");
-  const dashboardPath = path7.resolve(baseDir, "dist-dashboard");
-  if (existsSync2(dashboardPath)) return dashboardPath;
-  return path7.resolve(baseDir, "../../build/dist-dashboard");
+  const candidates = [
+    // build/main.js: the dashboard is next to it, in build/dist-dashboard
+    path7.resolve(baseDir, "dist-dashboard"),
+    // Run from source, this file is in src/serve/
+    path7.resolve(baseDir, "../../build/dist-dashboard")
+  ];
+  return candidates.find((p) => existsSync2(p)) ?? candidates[0];
 };
 async function startDashboard() {
   const port = import_npm_nconf10.default.get("server:dashboardPort");

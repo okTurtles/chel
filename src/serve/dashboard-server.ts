@@ -8,14 +8,15 @@ import { etag } from 'npm:hono/etag'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
 
-const getDashboardPath = () => {
-  // When running from build/main.js, the dashboard is in build/dist-dashboard
-  // import.meta.dirname points to the build/ directory in that case
+export const getDashboardPath = (): string => {
   const baseDir = import.meta.dirname || path.join(process.cwd(), 'build')
-  const dashboardPath = path.resolve(baseDir, 'dist-dashboard')
-  if (existsSync(dashboardPath)) return dashboardPath
-  // Run from source, this file is in src/serve/, so go back to build/
-  return path.resolve(baseDir, '../../build/dist-dashboard')
+  const candidates = [
+    // build/main.js: the dashboard is next to it, in build/dist-dashboard
+    path.resolve(baseDir, 'dist-dashboard'),
+    // Run from source, this file is in src/serve/
+    path.resolve(baseDir, '../../build/dist-dashboard')
+  ]
+  return candidates.find((p) => existsSync(p)) ?? candidates[0]
 }
 
 export async function startDashboard (): Promise<ServerType> {
