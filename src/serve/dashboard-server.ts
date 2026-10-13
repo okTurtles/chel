@@ -9,10 +9,8 @@ import { createAdaptorServer, type ServerType } from 'npm:@hono/node-server'
 import { etag } from 'npm:hono/etag'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
+import { CID_REGEX } from './constants.ts'
 import { contractManifest, listContracts, listUsers, overview } from './dashboard-data.ts'
-
-// The same rule routes.ts checks contract IDs with
-const CID_REGEX = /^z[1-9A-HJ-NP-Za-km-z]{8,72}$/
 
 // Takes the same time whatever was guessed. When the lengths differ, the
 // password is compared with itself, which takes as long as a real comparison.
@@ -33,6 +31,10 @@ const passwordFrom = (header: string | undefined): Buffer | null => {
   const colon = credentials.indexOf(':')
   return colon === -1 ? null : credentials.subarray(colon + 1)
 }
+
+// Wrong passwords are answered this much later, so guessing is slow. A request
+// with no password at all, like the browser's first one, is answered at once.
+export const WRONG_PASSWORD_DELAY = 1000
 
 export const getDashboardPath = (): string => {
   const baseDir = import.meta.dirname || path.join(process.cwd(), 'build')
@@ -64,6 +66,7 @@ export async function startDashboard (): Promise<ServerType> {
     app.use('*', async (c, next) => {
       const given = passwordFrom(c.req.header('authorization'))
       if (given && samePassword(given, expected)) return next()
+      if (given) await new Promise((resolve) => setTimeout(resolve, WRONG_PASSWORD_DELAY))
       return c.text('Unauthorized', 401, { 'WWW-Authenticate': 'Basic realm="Chelonia dashboard"' })
     })
   }

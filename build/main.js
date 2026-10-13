@@ -70341,6 +70341,7 @@ var CREDITS_WORKER_TASK_TIME_INTERVAL = 3e5;
 var OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL = 3e4;
 var MEGABYTE = 1048576;
 var MAX_EVENT_BODY_BYTES = MEGABYTE;
+var CID_REGEX = /^z[1-9A-HJ-NP-Za-km-z]{8,72}$/;
 var DEFAULT_CONFIG_PATH = "chel.toml";
 var tomlValue = (v2) => {
   if (typeof v2 === "string") return `"${v2}"`;
@@ -74886,7 +74887,6 @@ function authMiddleware(strategies, mode = "required") {
     throw new HTTPException(401, { message: "Unauthorized" });
   };
 }
-var CID_REGEX = /^z[1-9A-HJ-NP-Za-km-z]{8,72}$/;
 var KV_KEY_REGEX = /^(?!_private)[^\x00]{1,256}$/;
 var NAME_REGEX = /^(?![_-])((?!([_-])\2)[a-z\d_-]){1,80}(?<![_-])$/;
 var NON_NEGATIVE_INTEGER_REGEX = /^\d{1,16}$/;
@@ -77357,7 +77357,6 @@ async function contractManifest(contractID) {
   const manifest2 = await esm_default("chelonia.db/get", manifestCID);
   return manifest2 ? { manifestCID, manifest: JSON.parse(manifest2) } : null;
 }
-var CID_REGEX2 = /^z[1-9A-HJ-NP-Za-km-z]{8,72}$/;
 var samePassword = (given, expected) => {
   if (given.length !== expected.length) {
     timingSafeEqual2(expected, expected);
@@ -77372,6 +77371,7 @@ var passwordFrom = (header) => {
   const colon = credentials.indexOf(":");
   return colon === -1 ? null : credentials.subarray(colon + 1);
 };
+var WRONG_PASSWORD_DELAY = 1e3;
 var getDashboardPath = () => {
   const baseDir = import.meta.dirname || path7.join(process13.cwd(), "build");
   const candidates = [
@@ -77394,6 +77394,7 @@ async function startDashboard() {
     app.use("*", async (c, next) => {
       const given = passwordFrom(c.req.header("authorization"));
       if (given && samePassword(given, expected)) return next();
+      if (given) await new Promise((resolve10) => setTimeout(resolve10, WRONG_PASSWORD_DELAY));
       return c.text("Unauthorized", 401, { "WWW-Authenticate": 'Basic realm="Chelonia dashboard"' });
     });
   }
@@ -77406,7 +77407,7 @@ async function startDashboard() {
   app.get("/api/users", async (c) => c.json(await listUsers()));
   app.get("/api/contracts/:contractID/manifest", async (c) => {
     const contractID = c.req.param("contractID");
-    const found = CID_REGEX2.test(contractID) ? await contractManifest(contractID) : null;
+    const found = CID_REGEX.test(contractID) ? await contractManifest(contractID) : null;
     return found ? c.json(found) : c.json({ error: "not-found" }, 404);
   });
   app.all("/api/*", (c) => c.json({ error: "not-found" }, 404));

@@ -38,7 +38,16 @@ var humanBytes = (bytes) => {
   }
   return unit === 0 ? `${value} B` : `${value.toFixed(1)} ${units[unit]}`;
 };
-var credits = (picocredits) => (Number(picocredits) / 1e12).toFixed(2);
+var PICOCREDITS_PER_CREDIT = 1000000000000n;
+var PICOCREDITS_PER_CENT = PICOCREDITS_PER_CREDIT / 100n;
+var credits = (picocredits) => {
+  const balance = BigInt(picocredits);
+  const abs = balance < 0n ? -balance : balance;
+  const whole = abs / PICOCREDITS_PER_CREDIT;
+  const cents = abs % PICOCREDITS_PER_CREDIT / PICOCREDITS_PER_CENT;
+  const shown = `${whole}.${String(cents).padStart(2, "0")}`;
+  return balance < 0n && shown !== "0.00" ? `-${shown}` : shown;
+};
 
 export {
   liveData_default,

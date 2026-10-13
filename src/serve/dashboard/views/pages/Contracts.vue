@@ -49,7 +49,7 @@ import { OPEN_MODAL } from '@view-utils/events.js'
 
 const ALL_CONTRACTS = { id: 'all-contracts', name: L('All contracts') }
 // The pill colors there are, given out to the types in sorted order
-const PILLS = ['is-warning', 'is-purple-1', 'is-blue-1', 'is-green-1', 'is-neautral']
+const PILLS = ['is-warning', 'is-purple-1', 'is-blue-1', 'is-green-1', 'is-neutral']
 
 export default {
   name: 'Contracts',
@@ -89,7 +89,7 @@ export default {
     },
     pillFor (type) {
       const index = this.types.indexOf(type)
-      return index === -1 ? 'is-neautral' : PILLS[index % PILLS.length]
+      return index === -1 ? 'is-neutral' : PILLS[index % PILLS.length]
     }
   }
 }

@@ -6,10 +6,13 @@ import { Buffer } from 'node:buffer'
 import { existsSync } from 'node:fs'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
-import { getDashboardPath, startDashboard } from './dashboard-server.ts'
+import { WRONG_PASSWORD_DELAY, getDashboardPath, startDashboard } from './dashboard-server.ts'
 import { createTestContractRegistration, startTestServer, stopTestServer } from './routes-test-helpers.ts'
 
 const PASSWORD = 'a long dashboard password'
+
+// Every response body below is read, never cancelled: a cancelled body keeps
+// fetch's connection open, and closing the server then waits for it to time out
 
 const startOnFreePort = async (password?: string | number) => {
   nconf.use('memory')
@@ -62,7 +65,7 @@ Deno.test({
 
       await t.step('the app script is served', async () => {
         const res = await get('/assets/js/main.js')
-        await res.body?.cancel()
+        await res.text()
         assertEquals(res.status, 200)
         assert(res.headers.get('content-type')?.includes('javascript'))
       })
@@ -102,12 +105,12 @@ Deno.test({
           ['/api/users', asAdmin('not the password')]
         ] as const) {
           const res = await get(path, headers)
-          await res.body?.cancel()
+          await res.text()
           assertEquals(res.status, 401, path)
           assertEquals(res.headers.get('www-authenticate'), 'Basic realm="Chelonia dashboard"')
         }
         const res = await get('/dashboard/main', asAdmin())
-        await res.body?.cancel()
+        await res.text()
         assertEquals(res.status, 200)
       })
 
@@ -167,8 +170,6 @@ Deno.test({
     // nconf parses environment values, so this one arrives as a number
     const { get, stop } = await startOnFreePort(12345678)
     try {
-      // Read rather than cancelled: a cancelled body keeps fetch's connection
-      // open, and closing the server then waits for it
       const denied = await get('/dashboard/main')
       await denied.text()
       assertEquals(denied.status, 401)
@@ -186,7 +187,6 @@ Deno.test({
   async fn (t: Deno.TestContext) {
     const password = 'pässwörd: with spaces'
     const { get, stop } = await startOnFreePort(password)
-    // Bodies are read rather than cancelled, for the same reason as above
     const status = async (headers: Record<string, string>) => {
       const res = await get('/dashboard/main', headers)
       await res.text()
@@ -195,19 +195,32 @@ Deno.test({
     try {
       await t.step('the whole password counts, colons and all', async () => {
         assertEquals(await status(asAdmin(password)), 200)
-        // Same length, one letter off
-        assertEquals(await status(asAdmin('Pässwörd: with spaces')), 401)
-        assertEquals(await status(asAdmin('pässwörd')), 401)
-        assertEquals(await status(asAdmin(password + ' ')), 401)
+        // At the same time, since each wrong one takes a while to answer
+        const wrong = [
+          // Same length, one letter off
+          'Pässwörd: with spaces',
+          'pässwörd',
+          password + ' '
+        ]
+        assertEquals(await Promise.all(wrong.map((p) => status(asAdmin(p)))), [401, 401, 401])
       })
 
       await t.step('anything that isn\'t Basic auth is refused', async () => {
         const encoded = Buffer.from(password).toString('base64')
-        for (const authorization of [
-          `Bearer ${encoded}`, `Basic ${encoded}`, 'Basic', 'Basic !!!', 'Basic '
-        ]) {
-          assertEquals(await status({ authorization }), 401, authorization)
+        const headers = [`Bearer ${encoded}`, `Basic ${encoded}`, 'Basic', 'Basic !!!', 'Basic ']
+        const statuses = await Promise.all(headers.map((authorization) => status({ authorization })))
+        assertEquals(statuses, headers.map(() => 401))
+      })
+
+      await t.step('a wrong password is answered late, a missing one at once', async () => {
+        const timed = async (headers: Record<string, string>) => {
+          const start = performance.now()
+          assertEquals(await status(headers), 401)
+          return performance.now() - start
         }
+        // A timer can fire a millisecond or so early
+        assert(await timed(asAdmin('wrong')) >= WRONG_PASSWORD_DELAY - 5)
+        assert(await timed({}) < WRONG_PASSWORD_DELAY / 2)
       })
     } finally {
       await stop()

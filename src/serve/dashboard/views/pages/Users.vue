@@ -42,7 +42,7 @@ PageTemplate
                   td.c-cell-files-owned {{ item.ownedFiles }}
                   td.c-cell-space {{ humanBytes(item.size) }}
                   td.c-cell-space-share {{ shareOf(item.size) }}
-                  td.c-cell-credits(:class='{ "has-text-danger": item.picocredits.startsWith("-") }') {{ credits(item.picocredits) }}
+                  td.c-cell-credits(:class='{ "has-text-danger": credits(item.picocredits).startsWith("-") }') {{ credits(item.picocredits) }}
 </template>
 
 <script>
