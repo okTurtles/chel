@@ -18,7 +18,7 @@ import type { Context, Hono, MiddlewareHandler } from 'npm:hono'
 import { bodyLimit } from 'npm:hono/body-limit'
 import { etag } from 'npm:hono/etag'
 import { booleanConfig, positiveIntConfig } from './config-utils.ts'
-import { MAX_EVENT_BODY_BYTES, MEGABYTE } from './constants.ts'
+import { CID_REGEX, MAX_EVENT_BODY_BYTES, MEGABYTE } from './constants.ts'
 import { appendToIndexFactory, lookupUltimateOwner } from './database.ts'
 import logger from './logger.ts'
 import {
@@ -35,7 +35,6 @@ import * as z from 'npm:zod'
 import { authMiddleware, type AuthCredentials } from './auth.ts'
 
 // Regexes validated as safe with <https://devina.io/redos-checker>
-const CID_REGEX = /^z[1-9A-HJ-NP-Za-km-z]{8,72}$/
 // deno-lint-ignore no-control-regex
 const KV_KEY_REGEX = /^(?!_private)[^\x00]{1,256}$/
 // Rules from validateUsername:

@@ -114,6 +114,9 @@ Deno.test({
         assertEquals(parsed.server!.host, SERVER_DEFAULTS.server.host)
         assertEquals(parsed.server!.port, SERVER_DEFAULTS.server.port)
         assertEquals(parsed.server!.dashboardPort, SERVER_DEFAULTS.server.dashboardPort)
+        assertEquals(parsed.server!.dashboardListenIP, SERVER_DEFAULTS.server.dashboardListenIP)
+        // No default password: the line is there to be filled in
+        assert(raw.includes('\n# dashboardAdminPassword =\n'), 'expected a commented dashboardAdminPassword line')
         assertEquals(parsed.database!.backend, SERVER_DEFAULTS.database.backend)
 
         const d = SERVER_DEFAULTS
