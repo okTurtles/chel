@@ -1,5 +1,5 @@
 import { Buffer } from 'node:buffer'
-import { timingSafeEqual } from 'node:crypto'
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
@@ -12,15 +12,10 @@ import nconf from 'npm:nconf'
 import { CID_REGEX } from './constants.ts'
 import { contractManifest, listContracts, listUsers, overview } from './dashboard-data.ts'
 
-// Takes the same time whatever was guessed. When the lengths differ, the
-// password is compared with itself, which takes as long as a real comparison.
-const samePassword = (given: Buffer, expected: Buffer): boolean => {
-  if (given.length !== expected.length) {
-    timingSafeEqual(expected, expected)
-    return false
-  }
-  return timingSafeEqual(given, expected)
-}
+// Both sides are hashed with the same random salt before comparing, so they
+// are always the same length and the timing says nothing about the password.
+const salted = (salt: Buffer, password: Buffer): Buffer =>
+  createHash('sha256').update(salt).update(password).digest()
 
 // The password from an `Authorization: Basic` header. Browsers send
 // `user:password` as UTF-8 in base64, and only the password is checked.
@@ -62,10 +57,11 @@ export async function startDashboard (): Promise<ServerType> {
   // With a password, the browser asks for it before showing any page. Only
   // the password is checked, not the user name.
   if (password) {
-    const expected = Buffer.from(password)
+    const salt = randomBytes(16)
+    const expected = salted(salt, Buffer.from(password))
     app.use('*', async (c, next) => {
       const given = passwordFrom(c.req.header('authorization'))
-      if (given && samePassword(given, expected)) return next()
+      if (given && timingSafeEqual(salted(salt, given), expected)) return next()
       if (given) await new Promise((resolve) => setTimeout(resolve, WRONG_PASSWORD_DELAY))
       return c.text('Unauthorized', 401, { 'WWW-Authenticate': 'Basic realm="Chelonia dashboard"' })
     })
