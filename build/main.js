@@ -1127,7 +1127,7 @@ import process10 from "node:process";
 import { Buffer as Buffer14 } from "node:buffer";
 import { pathToFileURL } from "node:url";
 import { Buffer as Buffer15 } from "node:buffer";
-import { timingSafeEqual as timingSafeEqual2 } from "node:crypto";
+import { createHash, randomBytes as randomBytes3, timingSafeEqual as timingSafeEqual2 } from "node:crypto";
 import { existsSync as existsSync2 } from "node:fs";
 import path7 from "node:path";
 import process13 from "node:process";
@@ -57700,7 +57700,7 @@ var require_websocket = __commonJS({
     var http = __require2("node:http");
     var net = __require2("node:net");
     var tls = __require2("node:tls");
-    var { randomBytes: randomBytes3, createHash } = __require2("node:crypto");
+    var { randomBytes: randomBytes4, createHash: createHash2 } = __require2("node:crypto");
     var { Readable: Readable4 } = __require2("node:stream");
     var { URL: URL2 } = __require2("node:url");
     var PerMessageDeflate = require_permessage_deflate();
@@ -58213,7 +58213,7 @@ var require_websocket = __commonJS({
         }
       }
       const defaultPort = isSecure ? 443 : 80;
-      const key = randomBytes3(16).toString("base64");
+      const key = randomBytes4(16).toString("base64");
       const get2 = isSecure ? https.get : http.get;
       const protocolSet = /* @__PURE__ */ new Set();
       let perMessageDeflate;
@@ -58327,7 +58327,7 @@ var require_websocket = __commonJS({
         websocket.emit("upgrade", res);
         if (websocket.readyState !== WebSocket3.CONNECTING) return;
         req = websocket._req = null;
-        const digest = createHash("sha1").update(key + GUID).digest("base64");
+        const digest = createHash2("sha1").update(key + GUID).digest("base64");
         if (res.headers["sec-websocket-accept"] !== digest) {
           abortHandshake(websocket, socket, "Invalid Sec-WebSocket-Accept header");
           return;
@@ -58565,7 +58565,7 @@ var require_websocket_server = __commonJS({
     var https = __require2("node:https");
     var net = __require2("node:net");
     var tls = __require2("node:tls");
-    var { createHash } = __require2("node:crypto");
+    var { createHash: createHash2 } = __require2("node:crypto");
     var extension = require_extension();
     var PerMessageDeflate = require_permessage_deflate();
     var subprotocol = require_subprotocol();
@@ -58829,7 +58829,7 @@ var require_websocket_server = __commonJS({
           );
         }
         if (this._state > RUNNING) return abortHandshake(socket, 503);
-        const digest = createHash("sha1").update(key + GUID).digest("base64");
+        const digest = createHash2("sha1").update(key + GUID).digest("base64");
         const headers = [
           "HTTP/1.1 101 Switching Protocols",
           "Upgrade: websocket",
@@ -70341,7 +70341,6 @@ var CREDITS_WORKER_TASK_TIME_INTERVAL = 3e5;
 var OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL = 3e4;
 var MEGABYTE = 1048576;
 var MAX_EVENT_BODY_BYTES = MEGABYTE;
-var CID_REGEX = /^z[1-9A-HJ-NP-Za-km-z]{8,72}$/;
 var DEFAULT_CONFIG_PATH = "chel.toml";
 var tomlValue = (v2) => {
   if (typeof v2 === "string") return `"${v2}"`;
@@ -74887,6 +74886,7 @@ function authMiddleware(strategies, mode = "required") {
     throw new HTTPException(401, { message: "Unauthorized" });
   };
 }
+var CID_REGEX = /^z[1-9A-HJ-NP-Za-km-z]{8,72}$/;
 var KV_KEY_REGEX = /^(?!_private)[^\x00]{1,256}$/;
 var NAME_REGEX = /^(?![_-])((?!([_-])\2)[a-z\d_-]){1,80}(?<![_-])$/;
 var NON_NEGATIVE_INTEGER_REGEX = /^\d{1,16}$/;
@@ -77258,12 +77258,16 @@ var upgradeWebSocket = defineWebSocketHelper(async (c, events, options2) => {
   return response;
 });
 var import_npm_nconf10 = __toESM(require_nconf());
+init_functions();
 init_esm();
 var readIndex = async (key) => {
   const value = await esm_default("chelonia.db/get", key);
   return value ? value.split("\0") : [];
 };
-var readNumber = async (key) => Number(await esm_default("chelonia.db/get", key)) || 0;
+var readNumber = async (key) => {
+  const stored = await esm_default("chelonia.db/get", key);
+  return typeof stored === "string" && /^\d+$/.test(stored) ? Number(stored) : 0;
+};
 var contractInfos = () => esm_default("chelonia/rootState").contracts ?? {};
 async function listContracts() {
   const infos = contractInfos();
@@ -77357,13 +77361,7 @@ async function contractManifest(contractID) {
   const manifest2 = await esm_default("chelonia.db/get", manifestCID);
   return manifest2 ? { manifestCID, manifest: JSON.parse(manifest2) } : null;
 }
-var samePassword = (given, expected) => {
-  if (given.length !== expected.length) {
-    timingSafeEqual2(expected, expected);
-    return false;
-  }
-  return timingSafeEqual2(given, expected);
-};
+var salted = (salt, password) => createHash("sha256").update(salt).update(password).digest();
 var passwordFrom = (header) => {
   const encoded = /^Basic +(\S+) *$/i.exec(header ?? "")?.[1];
   if (!encoded) return null;
@@ -77390,10 +77388,11 @@ async function startDashboard() {
   const dashboardRoot = getDashboardPath();
   const app = new Hono2();
   if (password) {
-    const expected = Buffer15.from(password);
+    const salt = randomBytes3(16);
+    const expected = salted(salt, Buffer15.from(password));
     app.use("*", async (c, next) => {
       const given = passwordFrom(c.req.header("authorization"));
-      if (given && samePassword(given, expected)) return next();
+      if (given && timingSafeEqual2(salted(salt, given), expected)) return next();
       if (given) await new Promise((resolve10) => setTimeout(resolve10, WRONG_PASSWORD_DELAY));
       return c.text("Unauthorized", 401, { "WWW-Authenticate": 'Basic realm="Chelonia dashboard"' });
     });
@@ -77407,7 +77406,8 @@ async function startDashboard() {
   app.get("/api/users", async (c) => c.json(await listUsers()));
   app.get("/api/contracts/:contractID/manifest", async (c) => {
     const contractID = c.req.param("contractID");
-    const found = CID_REGEX.test(contractID) ? await contractManifest(contractID) : null;
+    const isContract = maybeParseCID(contractID)?.code === multicodes.SHELTER_CONTRACT_DATA;
+    const found = isContract ? await contractManifest(contractID) : null;
     return found ? c.json(found) : c.json({ error: "not-found" }, 404);
   });
   app.all("/api/*", (c) => c.json({ error: "not-found" }, 404));

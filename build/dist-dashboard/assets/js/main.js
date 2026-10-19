@@ -34190,9 +34190,9 @@ lazyComponent("ViewContractManifestModal", () => import("./ViewContractManifestM
 lazyComponent("Prompt", () => import("./Prompt-IEVYE3G7.js"));
 
 // src/serve/dashboard/controller/router.ts
-var lazyDashboard = lazyPage(() => import("./Dashboard-KAEXO3DD.js"));
-var lazyContracts = lazyPage(() => import("./Contracts-J5EQVWUB.js"));
-var lazyUsers = lazyPage(() => import("./Users-MNFCLER4.js"));
+var lazyDashboard = lazyPage(() => import("./Dashboard-VDLWWUAB.js"));
+var lazyContracts = lazyPage(() => import("./Contracts-A663WGZT.js"));
+var lazyUsers = lazyPage(() => import("./Users-VCNQ5LMN.js"));
 var lazyBilling = lazyPage(() => import("./Billing-A74SC3JT.js"));
 var lazyAccounts = lazyPage(() => import("./Accounts-5XZJH62M.js"));
 var lazyDesignSystem = lazyPage(() => import("./CheloniaDesignSystem-ZGKU6NVD.js"));

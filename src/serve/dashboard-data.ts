@@ -47,8 +47,12 @@ const readIndex = async (key: string): Promise<string[]> => {
   return value ? (value as string).split('\x00') : []
 }
 
-const readNumber = async (key: string): Promise<number> =>
-  Number(await sbp('chelonia.db/get', key)) || 0
+// The server writes these as whole numbers in decimal. Anything else, even
+// what Number() would take, like "0x1" or "1.1", is read as missing.
+const readNumber = async (key: string): Promise<number> => {
+  const stored = await sbp('chelonia.db/get', key)
+  return typeof stored === 'string' && /^\d+$/.test(stored) ? Number(stored) : 0
+}
 
 const contractInfos = (): Record<string, ContractInfo> =>
   sbp('chelonia/rootState').contracts ?? {}

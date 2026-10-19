@@ -9,7 +9,7 @@ import { createAdaptorServer, type ServerType } from 'npm:@hono/node-server'
 import { etag } from 'npm:hono/etag'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
-import { CID_REGEX } from './constants.ts'
+import { maybeParseCID, multicodes } from 'npm:@chelonia/lib/functions'
 import { contractManifest, listContracts, listUsers, overview } from './dashboard-data.ts'
 
 // Both sides are hashed with the same random salt before comparing, so they
@@ -77,7 +77,10 @@ export async function startDashboard (): Promise<ServerType> {
   app.get('/api/users', async (c) => c.json(await listUsers()))
   app.get('/api/contracts/:contractID/manifest', async (c) => {
     const contractID = c.req.param('contractID')
-    const found = CID_REGEX.test(contractID) ? await contractManifest(contractID) : null
+    // Parsed rather than matched, so only a real contract ID gets as far as the
+    // database
+    const isContract = maybeParseCID(contractID)?.code === multicodes.SHELTER_CONTRACT_DATA
+    const found = isContract ? await contractManifest(contractID) : null
     return found ? c.json(found) : c.json({ error: 'not-found' }, 404)
   })
   // Rather than the app's index.html from the fallback below

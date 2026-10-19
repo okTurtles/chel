@@ -151,7 +151,13 @@ Deno.test({
       })
 
       await t.step('anything else under /api is a 404', async () => {
-        for (const path of ['/api/nope', '/api/contracts/not-a-cid/manifest']) {
+        const paths = [
+          '/api/nope',
+          '/api/contracts/not-a-cid/manifest',
+          // Looks like an ID, but doesn't parse as one
+          `/api/contracts/z${'1'.repeat(51)}/manifest`
+        ]
+        for (const path of paths) {
           const res = await get(path, asAdmin())
           assertEquals(res.status, 404, path)
           assertEquals(await res.json(), { error: 'not-found' })
