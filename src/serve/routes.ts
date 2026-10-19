@@ -35,6 +35,8 @@ import * as z from 'npm:zod'
 import { authMiddleware, type AuthCredentials } from './auth.ts'
 
 // Regexes validated as safe with <https://devina.io/redos-checker>
+// TODO: use the CID check @chelonia/lib will export instead
+// (okTurtles/libcheloniajs#114)
 const CID_REGEX = /^z[1-9A-HJ-NP-Za-km-z]{8,72}$/
 // deno-lint-ignore no-control-regex
 const KV_KEY_REGEX = /^(?!_private)[^\x00]{1,256}$/
