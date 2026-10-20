@@ -72,9 +72,7 @@ const router = new (Router as unknown as new (options: {
     },
     {
       path: '*',
-      meta: { title: L('Chelonia dashboard') },
-      name: 'Landing',
-      component: Landing
+      redirect: '/'
     }
   ]
 })

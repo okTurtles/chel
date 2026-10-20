@@ -213,10 +213,23 @@ chel serve --dashboard-port 8888 --port 8000 ./my-app
 ```
 
 The serve command will:
-- Start a dashboard server (default: http://localhost:8888)
+- Start a dashboard server (default: http://localhost:8888, see below)
 - Start an application server (default: http://localhost:8000)
 - Serve static assets and handle API routes
 - Support different database backends (memory, filesystem, SQLite, Redis)
+
+The dashboard shows the server's registered usernames, the contracts it
+stores, how much space each account uses and each account's credits. It never
+shows what is inside a contract, since that is encrypted. Because of the
+usernames, it has two settings under `[server]` in `chel.toml`:
+
+- `dashboardListenIP`: the address it listens on, `127.0.0.1` by default, so
+  only this machine can open it.
+- `dashboardAdminPassword`: until this is set, the dashboard shows no data.
+  Once it is, the browser asks for it (any user name works). To keep it out of
+  the file, set `server__dashboardAdminPassword` in the environment instead.
+  The password travels with every request, so put the dashboard behind HTTPS
+  before opening it to other machines.
 
 ### `chel manifest`
 
@@ -412,6 +425,10 @@ The project uses two separate configuration files for different purposes:
 host = "0.0.0.0"
 port = 8000
 dashboardPort = 8888
+# The dashboard listens on this machine only, unless you change this
+dashboardListenIP = "127.0.0.1"
+# The dashboard shows no data until this is set to a long, random password
+# dashboardAdminPassword = "..."
 
 [server.vapid]
 email = "admin@example.com"
