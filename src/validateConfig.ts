@@ -322,16 +322,22 @@ export function validateParsedConfig (parsed: unknown, label: string): void {
 // Reads, parses, and validates a TOML config file against `ConfigSchema`.
 // Prints warnings for unknown keys and throws an `Error` (listing every
 // value-shape problem) on invalid values. A missing file is ignored, mirroring
-// nconf's behaviour. Exported so the file-level behaviour (ENOENT handling,
-// TOML parse errors and error aggregation) can be tested directly.
-export async function validateConfigFile (filePath: string): Promise<void> {
+// nconf's behaviour, unless `required` is set (a path given with `--config`).
+// Exported so the file-level behaviour (ENOENT handling, TOML parse errors and
+// error aggregation) can be tested directly.
+export async function validateConfigFile (
+  filePath: string, { required = false }: { required?: boolean } = {}
+): Promise<void> {
   let raw: string
   try {
     raw = await readFile(filePath, { encoding: 'utf-8', flag: 'r' })
   } catch (e: unknown) {
-    // No config file is the common case (e.g. for non-server commands); mirror
-    // nconf's behaviour and skip validation.
-    if ((e as NodeJS.ErrnoException)?.code === 'ENOENT') return
+    if ((e as NodeJS.ErrnoException)?.code === 'ENOENT') {
+      if (required) throw new Error(`Config file not found: ${filePath}`)
+      // No config file is the common case (e.g. for non-server commands);
+      // mirror nconf's behaviour and skip validation.
+      return
+    }
     throw e
   }
 

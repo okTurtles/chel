@@ -1,12 +1,12 @@
 import * as colors from 'jsr:@std/fmt/colors'
 import * as path from 'jsr:@std/path'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
+import { DEFAULT_CONFIG_FILE } from './config-defaults.ts'
 import { SERVER_DEFAULTS } from './parseConfig.ts'
 import { MAX_EVENT_BODY_BYTES } from './serve/constants.ts'
 
-type Params = { force?: boolean }
-
-const DEFAULT_CONFIG_PATH = 'chel.toml'
+// `config` is the global `--config` option (see `parseArgs.ts`)
+type Params = { force?: boolean; config?: string }
 
 // Template written by `chel init`. Every default value is interpolated from
 // `SERVER_DEFAULTS` (single source of truth in `src/config-defaults.ts`) so the
@@ -82,7 +82,8 @@ backend = ${tomlValue(d.database.backend)}
 }
 
 export const init = async (args: ArgumentsCamelCase<Params>): Promise<void> => {
-  const configPath = path.resolve(DEFAULT_CONFIG_PATH)
+  const configFile = args.config ?? DEFAULT_CONFIG_FILE
+  const configPath = path.resolve(configFile)
   const serverId = crypto.randomUUID()
   const contents = buildTemplate(serverId)
   if (args.force) {
@@ -93,7 +94,7 @@ export const init = async (args: ArgumentsCamelCase<Params>): Promise<void> => {
     } catch (err: unknown) {
       if (err instanceof Deno.errors.AlreadyExists) {
         throw new Error(
-          `Refusing to overwrite existing '${DEFAULT_CONFIG_PATH}'. Re-run with --force to overwrite.`
+          `Refusing to overwrite existing '${configFile}'. Re-run with --force to overwrite.`
         )
       }
       // `createNew: true` above created the file before the write failed;
@@ -103,7 +104,7 @@ export const init = async (args: ArgumentsCamelCase<Params>): Promise<void> => {
       throw err
     }
   }
-  console.log(colors.green('wrote:'), DEFAULT_CONFIG_PATH)
+  console.log(colors.green('wrote:'), configFile)
   console.log(
     colors.blue('server_id:'),
     serverId,

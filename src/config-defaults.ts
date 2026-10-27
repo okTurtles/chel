@@ -1,3 +1,7 @@
+// Where `chel` reads its config, and where `chel init` writes it, when
+// `--config` doesn't say otherwise. Relative to the working directory.
+export const DEFAULT_CONFIG_FILE = 'chel.toml'
+
 export const nconfDefaults = {
   // Unique, stable identity for this server instance. Required at runtime by
   // `chel serve` (see `src/serve/server.ts`) to scope push subscriptions;

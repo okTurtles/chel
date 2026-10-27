@@ -97,6 +97,31 @@ Deno.test({
       })
     })
 
+    await t.step('writes to the --config path instead of ./chel.toml', async () => {
+      await withTempCwd(async () => {
+        await Deno.mkdir('data')
+        await init({ config: 'data/my-chel.toml' } as never)
+
+        const stat = await Deno.stat('data/my-chel.toml')
+        assert(stat.isFile, 'data/my-chel.toml should exist and be a regular file')
+        await assertRejects(() => Deno.stat('chel.toml'), Deno.errors.NotFound)
+      })
+    })
+
+    await t.step('refuses to overwrite the --config file, and names it', async () => {
+      await withTempCwd(async () => {
+        await init({ config: 'my-chel.toml' } as never)
+        const firstContents = await Deno.readTextFile('my-chel.toml')
+
+        await assertRejects(
+          () => init({ config: 'my-chel.toml' } as never),
+          Error,
+          'Refusing to overwrite existing \'my-chel.toml\''
+        )
+        assertEquals(await Deno.readTextFile('my-chel.toml'), firstContents)
+      })
+    })
+
     // Drift guard: the template in `init.ts` interpolates every default from
     // `SERVER_DEFAULTS` (single source of truth in `parseConfig.ts`). This
     // step fails if anyone hardcodes a value in the template instead of

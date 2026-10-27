@@ -1,4 +1,5 @@
-import { assertEquals } from 'jsr:@std/assert'
+import { assertEquals, assertRejects } from 'jsr:@std/assert'
+import * as path from 'jsr:@std/path'
 import process from 'node:process'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
@@ -30,8 +31,11 @@ type Resolved = {
   appManifest?: string
 }
 
+// `files` are more files to write in the working directory, by relative path,
+// for the cases that point `--config` somewhere else.
 async function resolveConfig (
-  toml: string | null, args: string[], env: Record<string, string> = {}
+  toml: string | null, args: string[], env: Record<string, string> = {},
+  files: Record<string, string> = {}
 ): Promise<Resolved> {
   let resolved: Resolved = {}
   await withTempDir(async (dir) => {
@@ -39,6 +43,10 @@ async function resolveConfig (
     const originalArgv = process.argv
     const originalEnv = ENV_KEYS.map((key) => [key, process.env[key]] as const)
     if (toml !== null) await Deno.writeTextFile(`${dir}/chel.toml`, toml)
+    for (const [file, contents] of Object.entries(files)) {
+      await Deno.mkdir(path.dirname(path.join(dir, file)), { recursive: true })
+      await Deno.writeTextFile(path.join(dir, file), contents)
+    }
     try {
       Deno.chdir(dir)
       process.argv = ['deno', 'chel', ...args]
@@ -120,6 +128,66 @@ Deno.test({
     await t.step('reach `chel pin` from the file too', async () => {
       const args = ['pin', 'some.manifest.json']
       assertEquals((await resolveConfig(CONFIG, args)).appManifest, 'from-the-file.json')
+    })
+  }
+})
+
+// `--config` names another file than `./chel.toml` (issue #174), e.g. one in
+// a volume while the working directory stays where the app files are.
+const OTHER_CONFIG = `server_id = "parseConfig-test-other"
+
+[server]
+port = 9002
+appDir = "from-the-other-file"
+`
+const OTHER = { 'data/other.toml': OTHER_CONFIG }
+
+Deno.test({
+  name: 'the --config flag',
+  async fn (t: Deno.TestContext) {
+    await t.step('reads the given file instead of ./chel.toml', async () => {
+      const args = ['serve', '--config', 'data/other.toml']
+      assertEquals(await resolveConfig(CONFIG, args, {}, OTHER), {
+        port: 9002,
+        dashboardPort: 8888,
+        appDir: 'from-the-other-file',
+        // only ./chel.toml has it, and that file is not read
+        appManifest: undefined
+      })
+    })
+
+    await t.step('works before the command name too', async () => {
+      const args = ['--config', 'data/other.toml', 'serve']
+      assertEquals((await resolveConfig(CONFIG, args, {}, OTHER)).port, 9002)
+    })
+
+    // The file store is added in a second step now, so this checks that it
+    // still comes after argv
+    await t.step('still loses to a flag', async () => {
+      const args = ['serve', '--config', 'data/other.toml', '--port', '7777']
+      assertEquals((await resolveConfig(CONFIG, args, {}, OTHER)).port, 7777)
+    })
+
+    await t.step('fails when the given file is missing', async () => {
+      await assertRejects(
+        () => resolveConfig(CONFIG, ['serve', '--config', 'missing.toml']),
+        Error,
+        'Config file not found: missing.toml'
+      )
+    })
+
+    await t.step('is validated like ./chel.toml', async () => {
+      const files = { 'bad.toml': '[server]\nport = 999999\n' }
+      await assertRejects(
+        () => resolveConfig(null, ['serve', '--config', 'bad.toml'], {}, files),
+        Error,
+        'Invalid bad.toml'
+      )
+    })
+
+    // `chel hash` reads no config, so a missing file can't matter to it
+    await t.step('is not needed by a command that reads no config', async () => {
+      await resolveConfig(null, ['hash', 'some-file', '--config', 'missing.toml'])
     })
   }
 })
