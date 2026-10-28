@@ -410,13 +410,11 @@ The project uses two separate configuration files for different purposes:
 
 `chel.toml` configures the `chel` command itself at runtime. It is read by `nconf` with priority: environment variables > CLI arguments > `chel.toml` > defaults. It controls things like server host/port, database backend selection, and other operational settings.
 
-`chel` reads `chel.toml` from the current directory. To use another file, give its path with `--config`, which every command takes:
+By default, `chel` reads `./chel.toml`. To use another file, pass its path with `--config`:
 
 ```bash
 chel serve --config data/chel.toml dist
 ```
-
-A missing `--config` file is an error for the commands that read the config (a missing `./chel.toml` is not). Relative paths inside the file, such as a database `filepath`, stay relative to the current directory, not to the file.
 
 ```toml
 # Example chel.toml
