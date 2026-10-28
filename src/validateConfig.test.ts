@@ -18,6 +18,8 @@ Deno.test({
           host: '0.0.0.0',
           port: 8000,
           dashboardPort: 8888,
+          dashboardListenIP: '127.0.0.1',
+          dashboardAdminPassword: 'a long password',
           fileUploadMaxBytes: 1024,
           logLevel: 'debug',
           messages: [{ type: 'info', text: 'hi' }],
@@ -201,6 +203,12 @@ Deno.test({
       })
       assertEquals(result.warnings, [])
       assertEquals(result.errors.length, 1)
+    })
+
+    await t.step('errors on an empty dashboard password', () => {
+      // An empty password would look set but turn the data off
+      const result = validateTomlConfig({ server: { dashboardAdminPassword: '' } })
+      assertEquals(result.errors, ['server.dashboardAdminPassword: must be a non-empty string'])
     })
 
     await t.step('errors on a value of the wrong type', () => {
