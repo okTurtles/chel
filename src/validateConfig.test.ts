@@ -457,6 +457,15 @@ Deno.test({
         await validateConfigFile(`${tmpDir}/does-not-exist.toml`)
       })
 
+      await t.step('throws on a missing config file that is required', async () => {
+        // A path given with --config, where a missing file is most likely a typo
+        await assertRejects(
+          () => validateConfigFile(`${tmpDir}/does-not-exist.toml`, { required: true }),
+          Error,
+          'Config file not found'
+        )
+      })
+
       await t.step('throws a friendly error on a TOML syntax error', async () => {
         const filePath = await write('bad-syntax.toml', '[server\nport = 8000\n')
         const err = await assertRejects(

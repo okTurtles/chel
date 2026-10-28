@@ -369,6 +369,31 @@ Deno.test({
   }
 })
 
+Deno.test({
+  name: 'serve.serve() points the missing server_id error at the file it reads',
+  async fn (t: Deno.TestContext): Promise<void> {
+    await withServerId(undefined, async () => {
+      await t.step('without --config: suggests `chel init` and chel.toml', async () => {
+        await assertRejects(
+          () => serve({} as never),
+          Error,
+          'Run `chel init` to generate one, or set it in chel.toml'
+        )
+      })
+      // The `--config` file exists by now (`parseConfig` checks it), so
+      // `chel init` would refuse to overwrite it.
+      await t.step('with --config: names that file, without `chel init`', async () => {
+        const err = await assertRejects(
+          () => serve({ config: 'data/chel.toml' } as never),
+          Error,
+          'Set it in data/chel.toml'
+        )
+        assert(!err.message.includes('chel init'), `should not suggest chel init, got: ${err.message}`)
+      })
+    })
+  }
+})
+
 // ---------------------------------------------------------------------------
 // startServer() (the library entry point) refuses to boot without server_id
 // ---------------------------------------------------------------------------

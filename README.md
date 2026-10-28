@@ -16,7 +16,7 @@ chel help [command]
 chel version
 chel pin [--dir <output-directory>] [--overwrite] <manifest-file-path> <version>
 chel test
-chel init [--force]
+chel init [--force] [--config <file>]
 chel keygen [--out=<key.json>]
 chel manifest [-k|--key <pubkey1> [-k|--key <pubkey2> ...]] [--out=<manifest.json>] [-s|--slim <contract-slim.js>] [-V|--contract-version <version>] <key.json> <contract-bundle.js>
 chel deploy <url-or-dir-or-sqlitedb> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
@@ -29,6 +29,8 @@ chel migrate --from <backend> --to <backend> [--from-config <from-config.toml>] 
 ```
 
 Note: in many (if not all) instances, the `<url>` parameter can refer to a local folder path, in which case the command will operate without making a network connection, and will instead use the folder's contents to perform its operations.
+
+Every command also takes `--config <file>`, to use another config file than `./chel.toml` (see [`chel.toml`](#cheltoml--runtime-cli-configuration)).
 
 ### `chel pin` - Per-Contract Versioning System
 
@@ -104,7 +106,7 @@ sensible defaults and a freshly-generated `server_id`. This is the recommended
 way to bootstrap a new server instance.
 
 ```
-chel init [--force]
+chel init [--force] [--config <file>]
 ```
 
 **Options:**
@@ -112,6 +114,8 @@ chel init [--force]
   refuses to clobber an existing file — a safety against accidentally rotating
   `server_id`, which would orphan push subscriptions tagged with the old id
   (see [`chel.toml`](#cheltoml--runtime-cli-configuration)).
+- `--config <file>`: Write the file there instead of `./chel.toml`. The other
+  commands then need the same `--config <file>` to read it.
 
 **What it writes:**
 - A top-level `server_id` (a random UUID). Keep this stable for the lifetime of
@@ -405,6 +409,12 @@ The project uses two separate configuration files for different purposes:
 ### `chel.toml` — Runtime CLI Configuration
 
 `chel.toml` configures the `chel` command itself at runtime. It is read by `nconf` with priority: environment variables > CLI arguments > `chel.toml` > defaults. It controls things like server host/port, database backend selection, and other operational settings.
+
+By default, `chel` reads `./chel.toml`. To use another file, pass its path with `--config`:
+
+```bash
+chel serve --config data/chel.toml dist
+```
 
 ```toml
 # Example chel.toml

@@ -68913,6 +68913,7 @@ init_functions();
 init_esm();
 var import_npm_lru_cache = __toESM(require_lru_cache());
 var import_npm_nconf = __toESM(require_nconf());
+var DEFAULT_CONFIG_FILE = "chel.toml";
 var nconfDefaults = {
   // Unique, stable identity for this server instance. Required at runtime by
   // `chel serve` (see `src/serve/server.ts`) to scope push subscriptions;
@@ -70333,7 +70334,6 @@ var CREDITS_WORKER_TASK_TIME_INTERVAL = 3e5;
 var OWNER_SIZE_TOTAL_WORKER_TASK_TIME_INTERVAL = 3e4;
 var MEGABYTE = 1048576;
 var MAX_EVENT_BODY_BYTES = MEGABYTE;
-var DEFAULT_CONFIG_PATH = "chel.toml";
 var tomlValue = (v2) => {
   if (typeof v2 === "string") return `"${v2}"`;
   if (typeof v2 === "boolean" || typeof v2 === "number") return String(v2);
@@ -70403,7 +70403,8 @@ backend = ${tomlValue(d.database.backend)}
 `;
 };
 var init = async (args) => {
-  const configPath = resolve3(DEFAULT_CONFIG_PATH);
+  const configFile = args.config ?? DEFAULT_CONFIG_FILE;
+  const configPath = resolve3(configFile);
   const serverId = crypto.randomUUID();
   const contents = buildTemplate(serverId);
   if (args.force) {
@@ -70414,7 +70415,7 @@ var init = async (args) => {
     } catch (err) {
       if (err instanceof Deno.errors.AlreadyExists) {
         throw new Error(
-          `Refusing to overwrite existing '${DEFAULT_CONFIG_PATH}'. Re-run with --force to overwrite.`
+          `Refusing to overwrite existing '${configFile}'. Re-run with --force to overwrite.`
         );
       }
       await Deno.remove(configPath).catch(() => {
@@ -70422,7 +70423,7 @@ var init = async (args) => {
       throw err;
     }
   }
-  console.log(green("wrote:"), DEFAULT_CONFIG_PATH);
+  console.log(green("wrote:"), configFile);
   console.log(
     blue("server_id:"),
     serverId,
@@ -70434,11 +70435,11 @@ var module7 = {
     return yargs.option("force", {
       boolean: true,
       default: false,
-      describe: "Overwrite an existing chel.toml"
+      describe: "Overwrite an existing config file"
     });
   },
   command: "init",
-  describe: "generate a template chel.toml (including a fresh server_id)",
+  describe: "generate a template config file (including a fresh server_id)",
   postHandler: (argv) => {
     return init(argv);
   }
@@ -70811,12 +70812,15 @@ function validateParsedConfig(parsed, label) {
 ${listing}`);
   }
 }
-async function validateConfigFile(filePath) {
+async function validateConfigFile(filePath, { required: required2 = false } = {}) {
   let raw2;
   try {
     raw2 = await readFile2(filePath, { encoding: "utf-8", flag: "r" });
   } catch (e2) {
-    if (e2?.code === "ENOENT") return;
+    if (e2?.code === "ENOENT") {
+      if (required2) throw new Error(`Config file not found: ${filePath}`);
+      return;
+    }
     throw e2;
   }
   let parsed;
@@ -76597,8 +76601,13 @@ function installServerSelectorsOnce() {
     }
   });
 }
-function assertServerIdConfigured() {
+function assertServerIdConfigured(configFile) {
   if (!import_npm_nconf8.default.get("server_id")) {
+    if (configFile !== void 0) {
+      throw new Error(
+        `Missing required config 'server_id'. Set it in ${configFile}, or set the \`server_id\` environment variable.`
+      );
+    }
     throw new Error(
       "Missing required config 'server_id'. Run `chel init` to generate one, or set it in chel.toml / the `server_id` environment variable."
     );
@@ -77342,7 +77351,7 @@ async function watch(args) {
   })();
 }
 async function serve(args) {
-  assertServerIdConfigured();
+  assertServerIdConfigured(args.config);
   await initDB();
   try {
     try {
@@ -81661,7 +81670,8 @@ var yargs_default = Yargs2;
 var handlerState = {
   postHandler: () => {
   },
-  validatesConfig: false
+  validatesConfig: false,
+  configFile: void 0
 };
 var parseArgs = () => {
   const handlerWrapper = (commandModule) => {
@@ -81670,6 +81680,7 @@ var parseArgs = () => {
       handler: (argv) => {
         handlerState.postHandler = () => commandModule.postHandler(argv);
         handlerState.validatesConfig = commandModule.validatesConfig === true;
+        handlerState.configFile = argv.config;
         if (commandModule.handler) {
           return commandModule.handler(argv);
         }
@@ -81679,7 +81690,13 @@ var parseArgs = () => {
   const commandModules = Object.values(commands_exports).map(
     (c) => handlerWrapper(c)
   );
-  const yargsInstance = yargs_default(hideBin(process14.argv)).version("3.4.1").strict().command(commandModules).demandCommand().help();
+  const yargsInstance = yargs_default(hideBin(process14.argv)).version("3.4.1").strict().option("config", {
+    describe: "Path to the config file",
+    defaultDescription: DEFAULT_CONFIG_FILE,
+    requiresArg: true,
+    string: true,
+    global: true
+  }).command(commandModules).demandCommand().help();
   return yargsInstance;
 };
 var parseArgs_default = parseArgs;
@@ -81688,9 +81705,11 @@ var parseConfig = async () => {
   import_npm_nconf11.default.env({
     separator: "__",
     parseValues: true
-  }).argv(parseArgs_default()).file({ file: "chel.toml", format: { parse: parse4, stringify } }).defaults(nconfDefaults);
+  }).argv(parseArgs_default());
+  const configFile = handlerState.configFile ?? DEFAULT_CONFIG_FILE;
+  import_npm_nconf11.default.file({ file: configFile, format: { parse: parse4, stringify } }).defaults(nconfDefaults);
   if (handlerState.validatesConfig) {
-    await validateConfigFile("chel.toml");
+    await validateConfigFile(configFile, { required: handlerState.configFile !== void 0 });
   }
 };
 var parseConfig_default = parseConfig;
