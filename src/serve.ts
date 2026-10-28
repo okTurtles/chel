@@ -18,6 +18,8 @@ type Params = {
   dev: boolean
   'manifests-dir': string
   'app-manifest'?: string
+  // Not a `chel.toml` setting: the global `--config` option (see `parseArgs.ts`)
+  config?: string
 }
 
 async function deployManifests (args: ArgumentsCamelCase<Params>): Promise<string | null> {
@@ -93,7 +95,7 @@ export async function serve (args: ArgumentsCamelCase<Params>) {
   // specific server instance. Fail fast, before any DB / port resources are
   // allocated. `startServer()` re-checks this (defense in depth) via the same
   // helper, so any caller that bypasses `serve()` is still protected.
-  assertServerIdConfigured()
+  assertServerIdConfigured(args.config)
   // `deployManifests` / `watch` will open the database and then close it.
   // By calling `initDB` here, we ensure that the DB isn't closed.
   await initDB()

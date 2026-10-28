@@ -408,8 +408,17 @@ function installServerSelectorsOnce (): void {
 // re-tag subscriptions incorrectly. Both `serve()` in `src/serve.ts` and
 // `startServer()` here call this so the invariant holds regardless of entry
 // point — including any future library consumer that bypasses `serve()`.
-export function assertServerIdConfigured (): void {
+// `configFile` is the `--config` path, when one was given.
+export function assertServerIdConfigured (configFile?: string): void {
   if (!nconf.get('server_id')) {
+    if (configFile !== undefined) {
+      // `parseConfig` has already checked that this file exists, so
+      // `chel init --config` would only refuse to overwrite it.
+      throw new Error(
+        `Missing required config 'server_id'. Set it in ${configFile}, ` +
+        'or set the `server_id` environment variable.'
+      )
+    }
     throw new Error(
       'Missing required config \'server_id\'. Run `chel init` to generate one, ' +
       'or set it in chel.toml / the `server_id` environment variable.'

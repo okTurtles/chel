@@ -118,11 +118,11 @@ export const module = {
       .option('force', {
         boolean: true,
         default: false,
-        describe: 'Overwrite an existing chel.toml'
+        describe: 'Overwrite an existing config file'
       })
   },
   command: 'init',
-  describe: 'generate a template chel.toml (including a fresh server_id)',
+  describe: 'generate a template config file (including a fresh server_id)',
   postHandler: (argv) => {
     return init(argv)
   }

@@ -70435,11 +70435,11 @@ var module7 = {
     return yargs.option("force", {
       boolean: true,
       default: false,
-      describe: "Overwrite an existing chel.toml"
+      describe: "Overwrite an existing config file"
     });
   },
   command: "init",
-  describe: "generate a template chel.toml (including a fresh server_id)",
+  describe: "generate a template config file (including a fresh server_id)",
   postHandler: (argv) => {
     return init(argv);
   }
@@ -76601,8 +76601,13 @@ function installServerSelectorsOnce() {
     }
   });
 }
-function assertServerIdConfigured() {
+function assertServerIdConfigured(configFile) {
   if (!import_npm_nconf8.default.get("server_id")) {
+    if (configFile !== void 0) {
+      throw new Error(
+        `Missing required config 'server_id'. Set it in ${configFile}, or set the \`server_id\` environment variable.`
+      );
+    }
     throw new Error(
       "Missing required config 'server_id'. Run `chel init` to generate one, or set it in chel.toml / the `server_id` environment variable."
     );
@@ -77346,7 +77351,7 @@ async function watch(args) {
   })();
 }
 async function serve(args) {
-  assertServerIdConfigured();
+  assertServerIdConfigured(args.config);
   await initDB();
   try {
     try {
