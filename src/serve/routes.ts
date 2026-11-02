@@ -3,7 +3,8 @@
 import { Buffer } from 'node:buffer'
 import { SPMessage } from 'npm:@chelonia/lib/SPMessage'
 import 'npm:@chelonia/lib/chelonia'
-import { blake32Hash, createCID, maybeParseCID, multicodes } from 'npm:@chelonia/lib/functions'
+import { blake32Hash, CHELONIA_CID_REGEX, createCID, maybeParseCID, multicodes } from 'npm:@chelonia/lib/functions'
+import { isValidUsername } from 'npm:@chelonia/lib/names'
 import 'npm:@chelonia/lib/persistent-actions'
 import { getConnInfo } from 'npm:@hono/node-server/conninfo'
 import sbp from 'npm:@sbp/sbp'
@@ -35,17 +36,8 @@ import * as z from 'npm:zod'
 import { authMiddleware, type AuthCredentials } from './auth.ts'
 
 // Regexes validated as safe with <https://devina.io/redos-checker>
-// CID_REGEX goes once @chelonia/lib exports its own CID check
-// (okTurtles/libcheloniajs#114, added in okTurtles/libcheloniajs#115)
-const CID_REGEX = /^z[1-9A-HJ-NP-Za-km-z]{8,72}$/
 // deno-lint-ignore no-control-regex
 const KV_KEY_REGEX = /^(?!_private)[^\x00]{1,256}$/
-// Rules from validateUsername:
-//   - Length: 1-80
-//   - Can't start or end with _ or -
-//   - No two consecutive - or _
-//   - Allowed characters: lowercase letters, numbers, underscore and dashes
-const NAME_REGEX = /^(?![_-])((?!([_-])\2)[a-z\d_-]){1,80}(?<![_-])$/
 const NON_NEGATIVE_INTEGER_REGEX = /^\d{1,16}$/
 
 // MIME types for asset serving
@@ -71,9 +63,10 @@ const MIME_TYPES: Record<string, string> = {
   '.map': 'application/json'
 }
 
-// Zod schemas for declarative request validation
-const cidSchema = z.string().regex(CID_REGEX, 'Invalid CID')
-const nameSchema = z.string().regex(NAME_REGEX, 'Invalid name')
+// Zod schemas for declarative request validation. The CID shape and the
+// username rule come from @chelonia/lib, so apps can check them the same way.
+const cidSchema = z.string().regex(CHELONIA_CID_REGEX, 'Invalid CID')
+const nameSchema = z.string().refine(isValidUsername, 'Invalid name')
 const kvKeySchema = z.string().regex(KV_KEY_REGEX, 'Invalid key')
 const nonNegativeIntegerSchema = z.string().regex(NON_NEGATIVE_INTEGER_REGEX, 'Invalid non-negative integer')
 

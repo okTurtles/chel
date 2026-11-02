@@ -177,6 +177,14 @@ Deno.test({
         if (res.status !== 400) throw new Error(`Expected 400 but got ${res.status}`)
       })
 
+      // Looks like a base58 CID but has no Chelonia codec prefix, so the
+      // check from @chelonia/lib rejects it before the route runs
+      await t.step('GET /zkpp/{contractID}/auth_hash with a CID that is not a Chelonia CID returns 400', async () => {
+        const res = await fetch(`${baseURL}/zkpp/z${'2'.repeat(44)}/auth_hash?b=test`)
+        await res.body?.cancel()
+        if (res.status !== 400) throw new Error(`Expected 400 but got ${res.status}`)
+      })
+
       await t.step('GET /zkpp/{contractID}/auth_hash with missing b param returns 400', async () => {
         const cid = createCID('zkpp-test', multicodes.SHELTER_CONTRACT_DATA)
         const res = await fetch(`${baseURL}/zkpp/${cid}/auth_hash`)

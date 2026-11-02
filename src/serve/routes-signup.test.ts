@@ -126,6 +126,15 @@ Deno.test({
         if (nameBody !== contractID) throw new Error(`Expected ${contractID} but got ${nameBody}`)
       })
 
+      await t.step('an invalid name to register returns 400', async () => {
+        const { serialized } = await createTestContractRegistration({
+          name: 'com.example/invalid-ns'
+        })
+        const res = await postEvent(serialized, { 'shelter-namespace-registration': 'INVALID_NAME!!' })
+        await res.body?.cancel()
+        if (res.status !== 400) throw new Error(`Expected 400 but got ${res.status}`)
+      })
+
       await t.step('namespace registration is skipped for attributed contracts', async () => {
         const owner = createTestIdentity()
         await sbp('chelonia.db/set', owner.contractID, 'identity-contract-data')

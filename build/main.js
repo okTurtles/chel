@@ -16110,6 +16110,11 @@ function blake32Hash(data) {
 }
 var multicodes;
 var parseCID;
+var BASE58;
+var CONTRACT_ID_PREFIX;
+var CHELONIA_CID_REGEX;
+var CONTRACT_ID_REGEX;
+var CID_REGEX;
 var maybeParseCID;
 var b64ToBuf;
 var b64ToStr;
@@ -16118,7 +16123,7 @@ var strToB64;
 var randomUUID;
 var getSubscriptionId;
 var init_functions = __esm({
-  "node_modules/.deno/@chelonia+lib@2.0.0/node_modules/@chelonia/lib/dist/esm/functions.mjs"() {
+  "node_modules/.deno/@chelonia+lib@2.1.0/node_modules/@chelonia/lib/dist/esm/functions.mjs"() {
     init_base58();
     init_blake2b();
     init_blake2bstream();
@@ -16142,6 +16147,11 @@ var init_functions = __esm({
       }
       return parsed;
     };
+    BASE58 = "[1-9A-HJ-NP-Za-km-z]";
+    CONTRACT_ID_PREFIX = "zLDXeQ2AgfCu";
+    CHELONIA_CID_REGEX = new RegExp(`^z(?:9brRu3V|yop8PQyp|L(?:7mM9d4Xb4T|AeVmpcc88g|${CONTRACT_ID_PREFIX.slice(2)}|GQo2DimCH8|KHweRGqjMM))${BASE58}{44}$`);
+    CONTRACT_ID_REGEX = new RegExp(`^${CONTRACT_ID_PREFIX}${BASE58}{44}$`);
+    CID_REGEX = new RegExp(`^(?:Qm${BASE58}{44}|ba[e-h][a-z2-7]{37,}|z[2-9A-HJ-NP-Za-km-z]${BASE58}{31,})$`);
     maybeParseCID = (cid) => {
       try {
         return parseCID(cid);
@@ -16671,7 +16681,7 @@ var ChelErrorKvValidation;
 var ChelErrorKvConflict;
 var ChelErrorKvReentrant;
 var init_errors3 = __esm({
-  "node_modules/.deno/@chelonia+lib@2.0.0/node_modules/@chelonia/lib/dist/esm/errors.mjs"() {
+  "node_modules/.deno/@chelonia+lib@2.1.0/node_modules/@chelonia/lib/dist/esm/errors.mjs"() {
     ChelErrorGenerator = (name, base2 = Error) => class extends base2 {
       constructor(...params) {
         super(...params);
@@ -20073,7 +20083,7 @@ var signedDataKeyId;
 var isRawSignedData;
 var rawSignedIncomingData;
 var init_signedData = __esm({
-  "node_modules/.deno/@chelonia+lib@2.0.0/node_modules/@chelonia/lib/dist/esm/signedData.mjs"() {
+  "node_modules/.deno/@chelonia+lib@2.1.0/node_modules/@chelonia/lib/dist/esm/signedData.mjs"() {
     init_esm6();
     init_esm();
     init_esm4();
@@ -20346,7 +20356,7 @@ var isRawEncryptedData;
 var unwrapMaybeEncryptedData;
 var maybeEncryptedIncomingData;
 var init_encryptedData = __esm({
-  "node_modules/.deno/@chelonia+lib@2.0.0/node_modules/@chelonia/lib/dist/esm/encryptedData.mjs"() {
+  "node_modules/.deno/@chelonia+lib@2.1.0/node_modules/@chelonia/lib/dist/esm/encryptedData.mjs"() {
     init_esm6();
     init_esm();
     init_esm4();
@@ -20611,7 +20621,7 @@ var decryptedAndVerifiedDeserializedMessage;
 var SPMessage;
 var keyOps;
 var init_SPMessage = __esm({
-  "node_modules/.deno/@chelonia+lib@2.0.0/node_modules/@chelonia/lib/dist/esm/SPMessage.mjs"() {
+  "node_modules/.deno/@chelonia+lib@2.1.0/node_modules/@chelonia/lib/dist/esm/SPMessage.mjs"() {
     init_esm6();
     init_esm7();
     init_esm4();
@@ -21029,7 +21039,7 @@ var prefixHandlers;
 var dbPrimitiveSelectors;
 var db_default;
 var init_db = __esm({
-  "node_modules/.deno/@chelonia+lib@2.0.0/node_modules/@chelonia/lib/dist/esm/db.mjs"() {
+  "node_modules/.deno/@chelonia+lib@2.1.0/node_modules/@chelonia/lib/dist/esm/db.mjs"() {
     init_esm3();
     init_esm2();
     init_esm();
@@ -74353,6 +74363,8 @@ var createWorker = (path9) => {
 var createWorker_default = createWorker;
 init_SPMessage();
 init_functions();
+var USERNAME_REGEX = /^(?![_-])((?!([_-])\2)[a-z\d_-]){1,80}(?<![_-])$/;
+var isValidUsername = (username) => typeof username === "string" && USERNAME_REGEX.test(username);
 var getConnInfo = (c) => {
   const bindings = c.env.server ? c.env.server : c.env;
   const address = bindings.incoming.socket.remoteAddress;
@@ -74886,9 +74898,7 @@ function authMiddleware(strategies, mode = "required") {
     throw new HTTPException(401, { message: "Unauthorized" });
   };
 }
-var CID_REGEX = /^z[1-9A-HJ-NP-Za-km-z]{8,72}$/;
 var KV_KEY_REGEX = /^(?!_private)[^\x00]{1,256}$/;
-var NAME_REGEX = /^(?![_-])((?!([_-])\2)[a-z\d_-]){1,80}(?<![_-])$/;
 var NON_NEGATIVE_INTEGER_REGEX = /^\d{1,16}$/;
 var MIME_TYPES = {
   ".js": "application/javascript",
@@ -74911,8 +74921,8 @@ var MIME_TYPES = {
   ".webm": "video/webm",
   ".map": "application/json"
 };
-var cidSchema = string2().regex(CID_REGEX, "Invalid CID");
-var nameSchema = string2().regex(NAME_REGEX, "Invalid name");
+var cidSchema = string2().regex(CHELONIA_CID_REGEX, "Invalid CID");
+var nameSchema = string2().refine(isValidUsername, "Invalid name");
 var kvKeySchema = string2().regex(KV_KEY_REGEX, "Invalid key");
 var nonNegativeIntegerSchema = string2().regex(NON_NEGATIVE_INTEGER_REGEX, "Invalid non-negative integer");
 function zValidatorFormOrJson(schema) {
