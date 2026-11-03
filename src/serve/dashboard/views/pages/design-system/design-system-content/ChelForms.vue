@@ -100,8 +100,20 @@ import TableRow from './TableRow.vue'
 import ToggleSwitch from '@forms/ToggleSwitch.vue'
 import StyledInput from '@forms/StyledInput.vue'
 import Tooltip from '@components/Tooltip.vue'
-import { contractDummyData } from '@view-utils/dummy-data.js'
 import { OPEN_MODAL, OPEN_PROMPT } from '@view-utils/events.js'
+
+// Sample data for the manifest modal, shown without asking the server
+const DEMO_CONTRACT = {
+  contractID: 'zDemoContractID',
+  preview: {
+    manifestCID: 'zDemoManifestCID',
+    manifest: {
+      head: '{"manifestVersion":"1.0.0"}',
+      body: '{"name":"com.example/demo","version":"0.0.1","contract":{"hash":"zDemoContractHash","file":"demo.js"}}',
+      signature: { keyId: 'zDemoKeyID', value: 'demo signature' }
+    }
+  }
+}
 
 export default {
   name: 'ChelForms',
@@ -122,7 +134,7 @@ export default {
         styledInput2: 'Disabled style',
         styledInput3: 'Error style'
       },
-      dummyContractItem: contractDummyData[0]
+      dummyContractItem: DEMO_CONTRACT
     }
   },
   methods: {
@@ -131,7 +143,7 @@ export default {
         'okTurtles.events/emit',
         OPEN_MODAL,
         'ViewContractManifestModal',
-        { contract: this.dummyContractItem }
+        { contract: this.dummyContractItem, preview: this.dummyContractItem.preview }
       )
     },
     onPromptBtnClick () {

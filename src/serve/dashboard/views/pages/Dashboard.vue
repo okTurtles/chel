@@ -2,12 +2,14 @@
 PageTemplate
   template(#title='') {{ L('Dashboard') }}
 
-  .is-centered-on-mobile
+  InfoCard(v-if='live.error' :heading='L("Note")') {{ live.error }}
+
+  .is-centered-on-mobile(v-else-if='live.data')
     section.c-stats-section
       i18n.section-title Stats
 
       .c-stat-cards
-        StatCard.c-stat-card(v-for='(item, index) in ephemeral.stats'
+        StatCard.c-stat-card(v-for='(item, index) in stats'
           :key='item.id'
           :description='item.name'
           :stat='item.value'
@@ -20,65 +22,61 @@ PageTemplate
 
       .c-flex-container
         .summary-list.c-summary-list
-          i18n.summary-list-label Recent users
+          i18n.summary-list-label Newest users
 
           ul
             li.summary-list-item.c-user-list-ths
               i18n(tag='label') Name
-              i18n(tag='label') Joined on
-            li.summary-list-item(v-for='user in ephemeral.recentUsers' :key='user.name')
-              span {{ user.name }}
-              span {{ humanDate(user.joined) }}
+              i18n(tag='label') Space used
+            li.summary-list-item(v-for='user in live.data.newestUsers' :key='user.username')
+              span {{ user.username }}
+              span {{ humanBytes(user.size) }}
 
         .summary-list.is-outlined.c-summary-list
           i18n.summary-list-label Space usage
 
           ul
-            li.summary-list-item(v-for='(item, key) in ephemeral.spaceUsage' :key='key')
+            li.summary-list-item(v-for='item in spaceUsage' :key='item.id')
               label {{ item.name }}
-              span.c-usage-value {{ item.value }} {{ item.unit }}
+              span.c-usage-value {{ item.value }}
 </template>
 
 <script>
 import PageTemplate from './PageTemplate.vue'
 import StatCard from '@components/StatCard.vue'
+import InfoCard from '@components/InfoCard.vue'
 import L from '@common/translations.js'
-import { addTimeToDate, MONTHS_MILLIS, humanDate } from '@common/cdTimeUtils.js'
-
-const PAST_THREE_MONTHS = -3 * MONTHS_MILLIS
-const randomPastDate = () => addTimeToDate(new Date(), Math.floor(Math.random() * PAST_THREE_MONTHS))
+import liveData from '@view-utils/liveData.js'
+import { humanBytes } from '@view-utils/format.js'
 
 export default {
   name: 'Dashboard',
+  mixins: [liveData('overview')],
   components: {
     PageTemplate,
-    StatCard
+    StatCard,
+    InfoCard
   },
-  data () {
-    return {
-      ephemeral: {
-        // ------ temporary dummy placeholder data ------ //
-        stats: [
-          { id: 'users', name: L('Total users'), value: 2150, icon: 'trend-up' },
-          { id: 'groups', name: L('Total groups'), value: 23, icon: 'chart-bar' },
-          { id: 'storage', name: L('Total storage'), value: '2GB', icon: 'battery-charging' }
-        ],
-        recentUsers: [
-          { name: 'TaoEffect', joined: randomPastDate() },
-          { name: 'Leilha P', joined: randomPastDate() },
-          { name: 'Alex Jin', joined: randomPastDate() },
-          { name: 'Sebin Song', joined: randomPastDate() },
-          { name: 'Pierre', joined: randomPastDate() }
-        ].sort((a, b) => b.joined.getTime() - a.joined.getTime()),
-        spaceUsage: {
-          database: { name: L('Database'), value: 1.8, unit: 'Gb' },
-          media: { name: L('Media/Images'), value: 500, unit: 'Mb' }
-        }
-      }
+  computed: {
+    stats () {
+      const { users, contracts, storage } = this.live.data
+      return [
+        { id: 'users', name: L('Users'), value: users, icon: 'users' },
+        { id: 'contracts', name: L('Contracts'), value: contracts, icon: 'chart-bar' },
+        { id: 'storage', name: L('Storage used'), value: humanBytes(storage.total), icon: 'battery-charging' }
+      ]
+    },
+    spaceUsage () {
+      const { storage, freeAllowance } = this.live.data
+      return [
+        { id: 'contracts', name: L('Contracts'), value: humanBytes(storage.contracts) },
+        { id: 'files', name: L('Files'), value: humanBytes(storage.files) },
+        { id: 'free', name: L('Free per account'), value: humanBytes(freeAllowance) }
+      ]
     }
   },
   methods: {
-    humanDate
+    humanBytes
   }
 }
 </script>

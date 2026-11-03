@@ -1126,6 +1126,9 @@ import process8 from "node:process";
 import process10 from "node:process";
 import { Buffer as Buffer14 } from "node:buffer";
 import { pathToFileURL } from "node:url";
+import { Buffer as Buffer15 } from "node:buffer";
+import { createHash, randomBytes as randomBytes3, timingSafeEqual as timingSafeEqual2 } from "node:crypto";
+import { existsSync as existsSync2 } from "node:fs";
 import path7 from "node:path";
 import process13 from "node:process";
 import { join as join8 } from "node:path";
@@ -9610,7 +9613,7 @@ var require_file = __commonJS({
     var formats = require_formats();
     var Memory = require_memory().Memory;
     var exists = fs.exists || path9.exists;
-    var existsSync2 = fs.existsSync || path9.existsSync;
+    var existsSync3 = fs.existsSync || path9.existsSync;
     var File2 = exports2.File = function(options2) {
       if (!options2 || !options2.file) {
         throw new Error("Missing required option `file`");
@@ -9680,7 +9683,7 @@ var require_file = __commonJS({
       });
     };
     File2.prototype.loadSync = function() {
-      if (!existsSync2(this.file)) {
+      if (!existsSync3(this.file)) {
         this.store = {};
         return this.store;
       }
@@ -16107,6 +16110,11 @@ function blake32Hash(data) {
 }
 var multicodes;
 var parseCID;
+var BASE58;
+var CONTRACT_ID_PREFIX;
+var CHELONIA_CID_REGEX;
+var CONTRACT_ID_REGEX;
+var CID_REGEX;
 var maybeParseCID;
 var b64ToBuf;
 var b64ToStr;
@@ -16115,7 +16123,7 @@ var strToB64;
 var randomUUID;
 var getSubscriptionId;
 var init_functions = __esm({
-  "node_modules/.deno/@chelonia+lib@2.0.0/node_modules/@chelonia/lib/dist/esm/functions.mjs"() {
+  "node_modules/.deno/@chelonia+lib@2.1.0/node_modules/@chelonia/lib/dist/esm/functions.mjs"() {
     init_base58();
     init_blake2b();
     init_blake2bstream();
@@ -16139,6 +16147,11 @@ var init_functions = __esm({
       }
       return parsed;
     };
+    BASE58 = "[1-9A-HJ-NP-Za-km-z]";
+    CONTRACT_ID_PREFIX = "zLDXeQ2AgfCu";
+    CHELONIA_CID_REGEX = new RegExp(`^z(?:9brRu3V|yop8PQyp|L(?:7mM9d4Xb4T|AeVmpcc88g|${CONTRACT_ID_PREFIX.slice(2)}|GQo2DimCH8|KHweRGqjMM))${BASE58}{44}$`);
+    CONTRACT_ID_REGEX = new RegExp(`^${CONTRACT_ID_PREFIX}${BASE58}{44}$`);
+    CID_REGEX = new RegExp(`^(?:Qm${BASE58}{44}|ba[e-h][a-z2-7]{37,}|z[2-9A-HJ-NP-Za-km-z]${BASE58}{31,})$`);
     maybeParseCID = (cid) => {
       try {
         return parseCID(cid);
@@ -16668,7 +16681,7 @@ var ChelErrorKvValidation;
 var ChelErrorKvConflict;
 var ChelErrorKvReentrant;
 var init_errors3 = __esm({
-  "node_modules/.deno/@chelonia+lib@2.0.0/node_modules/@chelonia/lib/dist/esm/errors.mjs"() {
+  "node_modules/.deno/@chelonia+lib@2.1.0/node_modules/@chelonia/lib/dist/esm/errors.mjs"() {
     ChelErrorGenerator = (name, base2 = Error) => class extends base2 {
       constructor(...params) {
         super(...params);
@@ -20070,7 +20083,7 @@ var signedDataKeyId;
 var isRawSignedData;
 var rawSignedIncomingData;
 var init_signedData = __esm({
-  "node_modules/.deno/@chelonia+lib@2.0.0/node_modules/@chelonia/lib/dist/esm/signedData.mjs"() {
+  "node_modules/.deno/@chelonia+lib@2.1.0/node_modules/@chelonia/lib/dist/esm/signedData.mjs"() {
     init_esm6();
     init_esm();
     init_esm4();
@@ -20343,7 +20356,7 @@ var isRawEncryptedData;
 var unwrapMaybeEncryptedData;
 var maybeEncryptedIncomingData;
 var init_encryptedData = __esm({
-  "node_modules/.deno/@chelonia+lib@2.0.0/node_modules/@chelonia/lib/dist/esm/encryptedData.mjs"() {
+  "node_modules/.deno/@chelonia+lib@2.1.0/node_modules/@chelonia/lib/dist/esm/encryptedData.mjs"() {
     init_esm6();
     init_esm();
     init_esm4();
@@ -20608,7 +20621,7 @@ var decryptedAndVerifiedDeserializedMessage;
 var SPMessage;
 var keyOps;
 var init_SPMessage = __esm({
-  "node_modules/.deno/@chelonia+lib@2.0.0/node_modules/@chelonia/lib/dist/esm/SPMessage.mjs"() {
+  "node_modules/.deno/@chelonia+lib@2.1.0/node_modules/@chelonia/lib/dist/esm/SPMessage.mjs"() {
     init_esm6();
     init_esm7();
     init_esm4();
@@ -21026,7 +21039,7 @@ var prefixHandlers;
 var dbPrimitiveSelectors;
 var db_default;
 var init_db = __esm({
-  "node_modules/.deno/@chelonia+lib@2.0.0/node_modules/@chelonia/lib/dist/esm/db.mjs"() {
+  "node_modules/.deno/@chelonia+lib@2.1.0/node_modules/@chelonia/lib/dist/esm/db.mjs"() {
     init_esm3();
     init_esm2();
     init_esm();
@@ -50888,14 +50901,14 @@ var require_thread_stream = __commonJS({
       stream[kImpl].ended = true;
       try {
         stream.flushSync();
-        let readIndex = Atomics.load(stream[kImpl].state, READ_INDEX);
+        let readIndex2 = Atomics.load(stream[kImpl].state, READ_INDEX);
         Atomics.store(stream[kImpl].state, WRITE_INDEX, -1);
         Atomics.notify(stream[kImpl].state, WRITE_INDEX);
         let spins = 0;
-        while (readIndex !== -1) {
-          Atomics.wait(stream[kImpl].state, READ_INDEX, readIndex, 1e3);
-          readIndex = Atomics.load(stream[kImpl].state, READ_INDEX);
-          if (readIndex === -2) {
+        while (readIndex2 !== -1) {
+          Atomics.wait(stream[kImpl].state, READ_INDEX, readIndex2, 1e3);
+          readIndex2 = Atomics.load(stream[kImpl].state, READ_INDEX);
+          if (readIndex2 === -2) {
             destroy(stream, new Error("end() failed"));
             return;
           }
@@ -50958,12 +50971,12 @@ var require_thread_stream = __commonJS({
       const writeIndex = Atomics.load(stream[kImpl].state, WRITE_INDEX);
       let spins = 0;
       while (true) {
-        const readIndex = Atomics.load(stream[kImpl].state, READ_INDEX);
-        if (readIndex === -2) {
+        const readIndex2 = Atomics.load(stream[kImpl].state, READ_INDEX);
+        if (readIndex2 === -2) {
           throw Error("_flushSync failed");
         }
-        if (readIndex !== writeIndex) {
-          Atomics.wait(stream[kImpl].state, READ_INDEX, readIndex, 1e3);
+        if (readIndex2 !== writeIndex) {
+          Atomics.wait(stream[kImpl].state, READ_INDEX, readIndex2, 1e3);
         } else {
           break;
         }
@@ -57697,7 +57710,7 @@ var require_websocket = __commonJS({
     var http = __require2("node:http");
     var net = __require2("node:net");
     var tls = __require2("node:tls");
-    var { randomBytes: randomBytes3, createHash } = __require2("node:crypto");
+    var { randomBytes: randomBytes4, createHash: createHash2 } = __require2("node:crypto");
     var { Readable: Readable4 } = __require2("node:stream");
     var { URL: URL2 } = __require2("node:url");
     var PerMessageDeflate = require_permessage_deflate();
@@ -58210,7 +58223,7 @@ var require_websocket = __commonJS({
         }
       }
       const defaultPort = isSecure ? 443 : 80;
-      const key = randomBytes3(16).toString("base64");
+      const key = randomBytes4(16).toString("base64");
       const get2 = isSecure ? https.get : http.get;
       const protocolSet = /* @__PURE__ */ new Set();
       let perMessageDeflate;
@@ -58324,7 +58337,7 @@ var require_websocket = __commonJS({
         websocket.emit("upgrade", res);
         if (websocket.readyState !== WebSocket3.CONNECTING) return;
         req = websocket._req = null;
-        const digest = createHash("sha1").update(key + GUID).digest("base64");
+        const digest = createHash2("sha1").update(key + GUID).digest("base64");
         if (res.headers["sec-websocket-accept"] !== digest) {
           abortHandshake(websocket, socket, "Invalid Sec-WebSocket-Accept header");
           return;
@@ -58562,7 +58575,7 @@ var require_websocket_server = __commonJS({
     var https = __require2("node:https");
     var net = __require2("node:net");
     var tls = __require2("node:tls");
-    var { createHash } = __require2("node:crypto");
+    var { createHash: createHash2 } = __require2("node:crypto");
     var extension = require_extension();
     var PerMessageDeflate = require_permessage_deflate();
     var subprotocol = require_subprotocol();
@@ -58826,7 +58839,7 @@ var require_websocket_server = __commonJS({
           );
         }
         if (this._state > RUNNING) return abortHandshake(socket, 503);
-        const digest = createHash("sha1").update(key + GUID).digest("base64");
+        const digest = createHash2("sha1").update(key + GUID).digest("base64");
         const headers = [
           "HTTP/1.1 101 Switching Protocols",
           "Upgrade: websocket",
@@ -68924,6 +68937,11 @@ var nconfDefaults = {
     host: "0.0.0.0",
     port: 8e3,
     dashboardPort: 8888,
+    // The dashboard shows usernames, storage and credits, so it only listens
+    // on this machine unless this is changed
+    dashboardListenIP: "127.0.0.1",
+    // Needed for the dashboard to show any data. Left unset on purpose.
+    dashboardAdminPassword: void 0,
     fileUploadMaxBytes: 31457280,
     signup: {
       disabled: false,
@@ -70358,6 +70376,11 @@ server_id = "${serverId}"
 host = ${tomlValue(d.server.host)}
 port = ${tomlValue(d.server.port)}
 dashboardPort = ${tomlValue(d.server.dashboardPort)}
+# The dashboard shows usernames, storage and credits, so it only listens on
+# this machine by default.
+dashboardListenIP = ${tomlValue(d.server.dashboardListenIP)}
+# The dashboard shows no data until this is set. The browser asks for it.
+# dashboardAdminPassword =
 # fileUploadMaxBytes = ${tomlValue(d.server.fileUploadMaxBytes)}
 # maxEventsBatchSize = ${tomlValue(d.server.maxEventsBatchSize)}
 # archiveMode = ${tomlValue(d.server.archiveMode)}
@@ -70630,6 +70653,8 @@ var ConfigSchema = strictObject({
     host: optional(string2().min(1, "must be a non-empty string")),
     port: optional(portSchema),
     dashboardPort: optional(portSchema),
+    dashboardListenIP: optional(string2().min(1, "must be a non-empty string")),
+    dashboardAdminPassword: optional(string2().min(1, "must be a non-empty string")),
     fileUploadMaxBytes: optional(positiveInt),
     // NOTE: validated for shape only; the logger reads `LOG_LEVEL` from the
     // environment directly (see `src/serve/logger.ts`). A warning is printed
@@ -74342,6 +74367,8 @@ var createWorker = (path9) => {
 var createWorker_default = createWorker;
 init_SPMessage();
 init_functions();
+var USERNAME_REGEX = /^(?![_-])((?!([_-])\2)[a-z\d_-]){1,80}(?<![_-])$/;
+var isValidUsername = (username) => typeof username === "string" && USERNAME_REGEX.test(username);
 var getConnInfo = (c) => {
   const bindings = c.env.server ? c.env.server : c.env;
   const address = bindings.incoming.socket.remoteAddress;
@@ -74875,9 +74902,7 @@ function authMiddleware(strategies, mode = "required") {
     throw new HTTPException(401, { message: "Unauthorized" });
   };
 }
-var CID_REGEX = /^z[1-9A-HJ-NP-Za-km-z]{8,72}$/;
 var KV_KEY_REGEX = /^(?!_private)[^\x00]{1,256}$/;
-var NAME_REGEX = /^(?![_-])((?!([_-])\2)[a-z\d_-]){1,80}(?<![_-])$/;
 var NON_NEGATIVE_INTEGER_REGEX = /^\d{1,16}$/;
 var MIME_TYPES = {
   ".js": "application/javascript",
@@ -74900,8 +74925,8 @@ var MIME_TYPES = {
   ".webm": "video/webm",
   ".map": "application/json"
 };
-var cidSchema = string2().regex(CID_REGEX, "Invalid CID");
-var nameSchema = string2().regex(NAME_REGEX, "Invalid name");
+var cidSchema = string2().regex(CHELONIA_CID_REGEX, "Invalid CID");
+var nameSchema = string2().refine(isValidUsername, "Invalid name");
 var kvKeySchema = string2().regex(KV_KEY_REGEX, "Invalid key");
 var nonNegativeIntegerSchema = string2().regex(NON_NEGATIVE_INTEGER_REGEX, "Invalid non-negative integer");
 function zValidatorFormOrJson(schema) {
@@ -77252,18 +77277,161 @@ var upgradeWebSocket = defineWebSocketHelper(async (c, events, options2) => {
   return response;
 });
 var import_npm_nconf10 = __toESM(require_nconf());
+init_functions();
+init_esm();
+var readIndex = async (key) => {
+  const value = await esm_default("chelonia.db/get", key);
+  return value ? value.split("\0") : [];
+};
+var readNumber = async (key) => {
+  const stored = await esm_default("chelonia.db/get", key);
+  return typeof stored === "string" && /^\d+$/.test(stored) ? Number(stored) : 0;
+};
+var contractInfos = () => esm_default("chelonia/rootState").contracts ?? {};
+async function listContracts() {
+  const infos = contractInfos();
+  const names = /* @__PURE__ */ new Map();
+  const nameOf = (contractID) => {
+    if (!names.has(contractID)) {
+      names.set(contractID, esm_default("chelonia.db/get", `_private_cid2name_${contractID}`).then((name) => name ?? null));
+    }
+    return names.get(contractID);
+  };
+  const contractIDs = await readIndex("_private_cheloniaState_index");
+  return Promise.all(contractIDs.map(async (contractID) => {
+    const info = infos[contractID];
+    const owner = await esm_default("chelonia.db/get", `_private_owner_${contractID}`) ?? null;
+    return {
+      contractID,
+      type: info?.type ?? null,
+      size: await readNumber(`_private_size_${contractID}`),
+      // Heights start at 0
+      messages: info ? info.height + 1 : 0,
+      name: await nameOf(contractID),
+      owner,
+      ownerName: owner ? await nameOf(owner) : null
+    };
+  }));
+}
+async function listUsers() {
+  const infos = contractInfos();
+  const [usernames, orphaned] = await Promise.all([
+    readIndex("_private_names_index"),
+    readIndex("_private_orphaned_names_index")
+  ]);
+  const deleted = new Set(orphaned);
+  return Promise.all(usernames.map(async (username) => {
+    if (deleted.has(username)) {
+      return {
+        username,
+        deleted: true,
+        contractID: null,
+        ownedContracts: null,
+        ownedFiles: null,
+        size: null,
+        picocredits: null
+      };
+    }
+    const contractID = await esm_default("chelonia.db/get", namespaceKey(username));
+    const owned = await readIndex(`_private_resources_${contractID}`);
+    const ownedContracts = owned.filter((id) => id in infos).length;
+    return {
+      username,
+      deleted: false,
+      contractID,
+      ownedContracts,
+      ownedFiles: owned.length - ownedContracts,
+      size: await readNumber(`_private_ownerTotalSize_${contractID}`),
+      // No balance yet means nothing was charged or credited yet
+      picocredits: await esm_default("chelonia.db/get", `_private_ownerPicocreditBalance_${contractID}`) ?? "0"
+    };
+  }));
+}
+async function overview() {
+  const [contracts, users, billable] = await Promise.all([
+    listContracts(),
+    listUsers(),
+    readIndex("_private_billable_entities")
+  ]);
+  const sizes = await Promise.all(billable.map((id) => readNumber(`_private_ownerTotalSize_${id}`)));
+  const total = sizes.reduce((sum, size) => sum + size, 0);
+  const contractsSize = contracts.reduce((sum, contract) => sum + contract.size, 0);
+  const live = users.filter((user) => !user.deleted);
+  return {
+    users: live.length,
+    deletedUsers: users.length - live.length,
+    contracts: contracts.length,
+    storage: {
+      total,
+      contracts: contractsSize,
+      // Owner totals can lag a little behind, so never below 0
+      files: Math.max(0, total - contractsSize)
+    },
+    freeAllowance: await readNumber("_private_freeAllowanceBytes"),
+    newestUsers: live.slice(-5).reverse().map(({ username, size }) => ({ username, size }))
+  };
+}
+async function contractManifest(contractID) {
+  const info = contractInfos()[contractID];
+  if (!info) return null;
+  const message = await esm_default("chelonia.db/get", info.HEAD);
+  if (!message) return null;
+  const manifestCID = JSON.parse(JSON.parse(message).head).manifest;
+  const manifest2 = await esm_default("chelonia.db/get", manifestCID);
+  return manifest2 ? { manifestCID, manifest: JSON.parse(manifest2) } : null;
+}
+var salted = (salt, password) => createHash("sha256").update(salt).update(password).digest();
+var passwordFrom = (header) => {
+  const encoded = /^Basic +(\S+) *$/i.exec(header ?? "")?.[1];
+  if (!encoded) return null;
+  const credentials = Buffer15.from(encoded, "base64");
+  const colon = credentials.indexOf(":");
+  return colon === -1 ? null : credentials.subarray(colon + 1);
+};
+var WRONG_PASSWORD_DELAY = 1e3;
 var getDashboardPath = () => {
   const baseDir = import.meta.dirname || path7.join(process13.cwd(), "build");
-  const dashboardPath = path7.resolve(baseDir, "dist-dashboard");
-  return dashboardPath;
+  const candidates = [
+    // build/main.js: the dashboard is next to it, in build/dist-dashboard
+    path7.resolve(baseDir, "dist-dashboard"),
+    // Run from source, this file is in src/serve/
+    path7.resolve(baseDir, "../../build/dist-dashboard")
+  ];
+  return candidates.find((p) => existsSync2(p)) ?? candidates[0];
 };
 async function startDashboard() {
   const port = import_npm_nconf10.default.get("server:dashboardPort");
-  const host = import_npm_nconf10.default.get("server:host") || "0.0.0.0";
+  const host = import_npm_nconf10.default.get("server:dashboardListenIP") || "127.0.0.1";
+  const configured = import_npm_nconf10.default.get("server:dashboardAdminPassword");
+  const password = configured == null || configured === "" ? void 0 : String(configured);
   const dashboardRoot = getDashboardPath();
   const app = new Hono2();
+  if (password) {
+    const salt = randomBytes3(16);
+    const expected = salted(salt, Buffer15.from(password));
+    app.use("*", async (c, next) => {
+      const given = passwordFrom(c.req.header("authorization"));
+      if (given && timingSafeEqual2(salted(salt, given), expected)) return next();
+      if (given) await new Promise((resolve10) => setTimeout(resolve10, WRONG_PASSWORD_DELAY));
+      return c.text("Unauthorized", 401, { "WWW-Authenticate": 'Basic realm="Chelonia dashboard"' });
+    });
+  }
+  app.use("/api/*", async (c, next) => {
+    if (!password) return c.json({ error: "no-password" }, 403);
+    await next();
+  });
+  app.get("/api/overview", async (c) => c.json(await overview()));
+  app.get("/api/contracts", async (c) => c.json(await listContracts()));
+  app.get("/api/users", async (c) => c.json(await listUsers()));
+  app.get("/api/contracts/:contractID/manifest", async (c) => {
+    const contractID = c.req.param("contractID");
+    const isContract = maybeParseCID(contractID)?.code === multicodes.SHELTER_CONTRACT_DATA;
+    const found = isContract ? await contractManifest(contractID) : null;
+    return found ? c.json(found) : c.json({ error: "not-found" }, 404);
+  });
+  app.all("/api/*", (c) => c.json({ error: "not-found" }, 404));
   const staticMiddleware = serveStatic2({ root: dashboardRoot, rewriteRequestPath: (p) => p });
-  const indexMiddleware = serveStatic2({ path: path7.join(dashboardRoot, "index.html") });
+  const indexMiddleware = serveStatic2({ root: dashboardRoot, path: "index.html" });
   app.get("/assets/*", etag(), staticMiddleware);
   app.get("/dashboard", etag(), indexMiddleware);
   app.get("/dashboard/", etag(), indexMiddleware);

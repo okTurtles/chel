@@ -1248,7 +1248,7 @@ p.error.is-hidden {
   color: var(--danger);
   background-color: var(--danger_bg);
 }
-.pill.is-neautral {
+.pill.is-neutral {
   color: var(--text_0);
   background-color: var(--border);
 }

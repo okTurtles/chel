@@ -19,7 +19,7 @@
 
 <script>
 import L from '@common/translations.js'
-import { clickaway } from 'npm:vue-clickaway'
+import { mixin as clickaway } from 'npm:vue-clickaway'
 
 export default {
   name: 'Dropdown',

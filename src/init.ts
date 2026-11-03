@@ -36,6 +36,11 @@ server_id = "${serverId}"
 host = ${tomlValue(d.server.host)}
 port = ${tomlValue(d.server.port)}
 dashboardPort = ${tomlValue(d.server.dashboardPort)}
+# The dashboard shows usernames, storage and credits, so it only listens on
+# this machine by default.
+dashboardListenIP = ${tomlValue(d.server.dashboardListenIP)}
+# The dashboard shows no data until this is set. The browser asks for it.
+# dashboardAdminPassword =
 # fileUploadMaxBytes = ${tomlValue(d.server.fileUploadMaxBytes)}
 # maxEventsBatchSize = ${tomlValue(d.server.maxEventsBatchSize)}
 # archiveMode = ${tomlValue(d.server.archiveMode)}
