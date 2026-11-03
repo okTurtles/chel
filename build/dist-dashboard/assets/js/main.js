@@ -34680,7 +34680,58 @@ var __vue_render__5 = function() {
         "div",
         { staticClass: "c-app-title" },
         [
-          _c("i", { staticClass: "icon-moonstar c-logo" }),
+          _c(
+            "svg",
+            {
+              staticClass: "c-logo",
+              attrs: {
+                viewBox: "0 0 64 64",
+                "aria-hidden": "true",
+                focusable: "false"
+              }
+            },
+            [
+              _c("g", { attrs: { fill: "currentColor", opacity: ".55" } }, [
+                _c("path", {
+                  attrs: {
+                    d: "M46.40 48.91 L39.45 52.92 L32.50 48.91 L32.50 40.89 L39.45 36.88 L46.40 40.89 Z"
+                  }
+                }),
+                _c("path", {
+                  attrs: {
+                    d: "M31.50 48.91 L24.55 52.92 L17.60 48.91 L17.60 40.89 L24.55 36.88 L31.50 40.89 Z"
+                  }
+                }),
+                _c("path", {
+                  attrs: {
+                    d: "M24.05 36.01 L17.10 40.02 L10.15 36.01 L10.15 27.99 L17.10 23.98 L24.05 27.99 Z"
+                  }
+                }),
+                _c("path", {
+                  attrs: {
+                    d: "M31.50 23.11 L24.55 27.13 L17.60 23.11 L17.60 15.09 L24.55 11.08 L31.50 15.09 Z"
+                  }
+                }),
+                _c("path", {
+                  attrs: {
+                    d: "M46.40 23.11 L39.45 27.12 L32.50 23.11 L32.50 15.09 L39.45 11.08 L46.40 15.09 Z"
+                  }
+                })
+              ]),
+              _c("g", { attrs: { fill: "currentColor", opacity: ".22" } }, [
+                _c("path", {
+                  attrs: {
+                    d: "M53.85 36.01 L46.90 40.02 L39.95 36.01 L39.95 27.99 L46.90 23.98 L53.85 27.99 Z"
+                  }
+                }),
+                _c("path", {
+                  attrs: {
+                    d: "M38.95 36.01 L32.00 40.02 L25.05 36.01 L25.05 27.99 L32.00 23.98 L38.95 27.99 Z"
+                  }
+                })
+              ])
+            ]
+          ),
           _c(
             "i18n",
             {
@@ -34714,14 +34765,24 @@ var __vue_staticRenderFns__5 = [];
 __vue_render__5._withStripped = true;
 var __vue_inject_styles__5 = function(inject) {
   if (!inject) return;
-  inject("data-v-4c7f7bbc_0", { source: ".c-app-title h1[data-v-4c7f7bbc] {\n  -webkit-touch-callout: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n  user-select: none;\n}\n\n/* NOTE: <variable-name> : (<light-theme-value>, <dark-theme-value>) */\n/* stylelint-disable */\n/* stylelint-enable */\n[data-v-4c7f7bbc]:root {\n  --button-primary-bg-color: #1c1c1c;\n  --button-primary-text-color: #fff;\n  --button-outline-bg-color: rgba(0, 0, 0, 0);\n  --button-outline-border-color: rgba(0, 0, 0, 0.4);\n  --button-outline-text-color: #1c1c1c;\n  --button-box-shadow: 0 0 16px rgba(219, 219, 219, 0.5);\n  --styled-input-border-color: rgba(0, 0, 0, 0.1);\n  --styled-input-border-color_focus: rgba(0, 0, 0, 0.4);\n  --styled-input-background-color: #fff;\n  --styled-input-background-color_disabled: rgba(0, 0, 0, 0.1);\n  --styled-input-placeholder-color: rgba(0, 0, 0, 0.275);\n  --styled-input-label-color: #9747ff;\n  --radio-outer-border-color: rgba(0, 0, 0, 0.2);\n  --radio-outer-border-color_active: #1C1C1C;\n  --radio-inner-bg-color: #1C1C1C;\n  --toggle-switch-border-color: rgba(0, 0, 0, 0.1);\n  --toggle-switch-border-color_focus: rgba(0, 0, 0, 0.4);\n  --toggle-switch-bg-color: rgba(0, 0, 0, 0.4);\n  --toggle-switch-bg-color_active: #9747ff;\n  --toggle-switch-thumb-color: #fff;\n  --dropdown-bg-color: #FFFFFF;\n  --dropdown-active-bg-color: #F7F9FB;\n  --dropdown-box-shadow: 0 0 16px rgba(219, 219, 219, 0.5);\n  --summary-list-bg-color: #fff;\n  --custom-pre-bg-color: #f2f2f2;\n  --custom-pre-text-color: #1c1c1c;\n  --custom-pre-border-color: rgba(0, 0, 0, 0.1);\n  --modal-bg-color: #fff;\n  --stat-card-icon-color: var(--text_1);\n  --info-card-bg-color: #fff;\n  --info-card-feature-color: #1c1c1c;\n  --info-card-content-color: rgba(0, 0, 0, 0.5);\n  --tooltip-trigger-bg-color: #f7f9fb;\n  --tooltip-trigger-text-color: #1c1c1c;\n  --tooltip-trigger-border-color: #1c1c1c;\n  --tooltip-trigger-box-shadow_hover: 0 0 5px rgba(0, 0, 0, 0.35);\n  --tooltip-bg-color: rgba(28, 28, 28, 0.875);\n  --tooltip-text-color: #fff;\n  --skeleton-gradient: linear-gradient(110deg, rgba(0, 0, 0, 0.05) 12%, rgba(60, 60, 60, 0.125) 25%, rgba(0, 0, 0, 0.05) 42%);\n  --pill-text-color: rgba(0, 0, 0, 0.5);\n  --helper: #9747FF;\n  --ds-menu-border-color: #E5ECF6;\n}\n:root[data-theme=dark][data-v-4c7f7bbc] {\n  --button-primary-bg-color: #b1e3ff;\n  --button-primary-text-color: #1c1c1c;\n  --button-outline-bg-color: rgba(0, 0, 0, 0);\n  --button-outline-border-color: rgb(65, 65, 65);\n  --button-outline-text-color: #fff;\n  --button-box-shadow: 0 0 12px rgba(132, 132, 132, 0.35);\n  --styled-input-border-color: rgb(65, 65, 65);\n  --styled-input-border-color_focus: rgb(65, 65, 65);\n  --styled-input-background-color: #2a2a2a;\n  --styled-input-background-color_disabled: #1c1c1c;\n  --styled-input-placeholder-color: rgba(255, 255, 255, 0.325);\n  --styled-input-label-color: #b1e3ff;\n  --radio-outer-border-color: rgba(255, 255, 255, 0.275);\n  --radio-outer-border-color_active: #b1e3ff;\n  --radio-inner-bg-color: #b1e3ff;\n  --toggle-switch-border-color: rgb(65, 65, 65);\n  --toggle-switch-border-color_focus: rgb(65, 65, 65);\n  --toggle-switch-bg-color: #2a2a2a;\n  --toggle-switch-bg-color_active: #95A4FC;\n  --toggle-switch-thumb-color: #fff;\n  --dropdown-bg-color: #1c1c1c;\n  --dropdown-active-bg-color: #2a2a2a;\n  --dropdown-box-shadow: 0 0 1px rgba(0, 0, 0, 0);\n  --summary-list-bg-color: #2a2a2a;\n  --custom-pre-bg-color: #1c1c1c;\n  --custom-pre-text-color: #f2f2f2;\n  --custom-pre-border-color: rgb(65, 65, 65);\n  --modal-bg-color: #2a2a2a;\n  --stat-card-icon-color: var(--text_black);\n  --info-card-bg-color: rgba(255, 255, 255, 0.05);\n  --info-card-feature-color: #b1e3ff;\n  --info-card-content-color: #fff;\n  --tooltip-trigger-bg-color: #b1e3ff;\n  --tooltip-trigger-text-color: #1c1c1c;\n  --tooltip-trigger-border-color: #b1e3ff;\n  --tooltip-trigger-box-shadow_hover: 0 0 7px #b1e3ff;\n  --tooltip-bg-color: rgba(242, 244, 247, 0.925);\n  --tooltip-text-color: #1c1c1c;\n  --skeleton-gradient: linear-gradient(110deg, rgba(255, 255, 255, 0.1) 8%, rgba(255, 255, 255, 0.14) 29%, rgba(255, 255, 255, 0.1) 47%);\n  --pill-text-color: #1c1c1c;\n  --helper: #b1e3ff;\n  --ds-menu-border-color: rgb(65, 65, 65);\n}\n.c-toolbar[data-v-4c7f7bbc] {\n  position: relative;\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  border-bottom: 1px solid var(--border);\n  padding: 0 1rem;\n  opacity: 0;\n  animation: opacity-in 500ms ease-out forwards;\n}\n.c-flex-block[data-v-4c7f7bbc] {\n  display: flex;\n  align-items: center;\n}\n.c-app-title h1[data-v-4c7f7bbc] {\n  display: inline-block;\n  letter-spacing: 1px;\n  cursor: pointer;\n}\n.c-app-title .c-logo[data-v-4c7f7bbc] {\n  position: relative;\n  display: inline-block;\n  color: inherit;\n  font-weight: 600;\n  font-size: 1.5rem;\n  line-height: 1;\n  margin-right: 0.25rem;\n  transform: translateY(4px);\n}\n.c-nav-menu[data-v-4c7f7bbc] {\n  margin-right: 1rem;\n  width: 1.75rem;\n  height: 1.75rem;\n  border-radius: 6px;\n}\n.c-btn-icon[data-v-4c7f7bbc] {\n  display: inline-block;\n  margin-top: 2px;\n  font-size: 1.2rem;\n}\n\n/*# sourceMappingURL=Toolbar.vue.map */", map: { "version": 3, "sources": ["src/serve/dashboard/views/containers/toolbar/Toolbar.vue", "Toolbar.vue"], "names": [], "mappings": "AA+EA;EACA,2BAAA;EACA,yBAAA;EACA,sBAAA;EC9EE,qBAAqB;EDgFvB,iBAAA;AC9EA;;AAEA,sEAAsE;AACtE,sBAAsB;AACtB,qBAAqB;AACrB;EACE,kCAAkC;EAClC,iCAAiC;EACjC,2CAA2C;EAC3C,iDAAiD;EACjD,oCAAoC;EACpC,sDAAsD;EACtD,+CAA+C;EAC/C,qDAAqD;EACrD,qCAAqC;EACrC,4DAA4D;EAC5D,sDAAsD;EACtD,mCAAmC;EACnC,8CAA8C;EAC9C,0CAA0C;EAC1C,+BAA+B;EAC/B,gDAAgD;EAChD,sDAAsD;EACtD,4CAA4C;EAC5C,wCAAwC;EACxC,iCAAiC;EACjC,4BAA4B;EAC5B,mCAAmC;EACnC,wDAAwD;EACxD,6BAA6B;EAC7B,8BAA8B;EAC9B,gCAAgC;EAChC,6CAA6C;EAC7C,sBAAsB;EACtB,qCAAqC;EACrC,0BAA0B;EAC1B,kCAAkC;EAClC,6CAA6C;EAC7C,mCAAmC;EACnC,qCAAqC;EACrC,uCAAuC;EACvC,+DAA+D;EAC/D,2CAA2C;EAC3C,0BAA0B;EAC1B,2HAA2H;EAC3H,qCAAqC;EACrC,iBAAiB;EACjB,+BAA+B;AACjC;AAEA;EACE,kCAAkC;EAClC,oCAAoC;EACpC,2CAA2C;EAC3C,8CAA8C;EAC9C,iCAAiC;EACjC,uDAAuD;EACvD,4CAA4C;EAC5C,kDAAkD;EAClD,wCAAwC;EACxC,iDAAiD;EACjD,4DAA4D;EAC5D,mCAAmC;EACnC,sDAAsD;EACtD,0CAA0C;EAC1C,+BAA+B;EAC/B,6CAA6C;EAC7C,mDAAmD;EACnD,iCAAiC;EACjC,wCAAwC;EACxC,iCAAiC;EACjC,4BAA4B;EAC5B,mCAAmC;EACnC,+CAA+C;EAC/C,gCAAgC;EAChC,8BAA8B;EAC9B,gCAAgC;EAChC,0CAA0C;EAC1C,yBAAyB;EACzB,yCAAyC;EACzC,+CAA+C;EAC/C,kCAAkC;EAClC,+BAA+B;EAC/B,mCAAmC;EACnC,qCAAqC;EACrC,uCAAuC;EACvC,mDAAmD;EACnD,8CAA8C;EAC9C,6BAA6B;EAC7B,sIAAsI;EACtI,0BAA0B;EAC1B,iBAAiB;EACjB,uCAAuC;AACzC;AD1DA;EACA,kBAAA;EACA,aAAA;EACA,mBAAA;EACA,8BAAA;EACA,sCAAA;EACA,eAAA;EACA,UAAA;EACA,6CAAA;AC6DA;AD1DA;EACA,aAAA;EACA,mBAAA;AC6DA;ADzDA;EACA,qBAAA;EACA,mBAAA;EACA,eAAA;AC4DA;ADxDA;EACA,kBAAA;EACA,qBAAA;EACA,cAAA;EACA,gBAAA;EACA,iBAAA;EACA,cAAA;EACA,qBAAA;EACA,0BAAA;AC0DA;ADtDA;EACA,kBAAA;EACA,cAAA;EACA,eAAA;EACA,kBAAA;ACyDA;ADtDA;EACA,qBAAA;EACA,eAAA;EACA,iBAAA;ACyDA;;AAEA,sCAAsC", "file": "Toolbar.vue", "sourcesContent": [`<template lang="pug">
+  inject("data-v-4b34c1a6_0", { source: ".c-app-title h1[data-v-4b34c1a6] {\n  -webkit-touch-callout: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n  user-select: none;\n}\n\n/* NOTE: <variable-name> : (<light-theme-value>, <dark-theme-value>) */\n/* stylelint-disable */\n/* stylelint-enable */\n[data-v-4b34c1a6]:root {\n  --button-primary-bg-color: #1c1c1c;\n  --button-primary-text-color: #fff;\n  --button-outline-bg-color: rgba(0, 0, 0, 0);\n  --button-outline-border-color: rgba(0, 0, 0, 0.4);\n  --button-outline-text-color: #1c1c1c;\n  --button-box-shadow: 0 0 16px rgba(219, 219, 219, 0.5);\n  --styled-input-border-color: rgba(0, 0, 0, 0.1);\n  --styled-input-border-color_focus: rgba(0, 0, 0, 0.4);\n  --styled-input-background-color: #fff;\n  --styled-input-background-color_disabled: rgba(0, 0, 0, 0.1);\n  --styled-input-placeholder-color: rgba(0, 0, 0, 0.275);\n  --styled-input-label-color: #9747ff;\n  --radio-outer-border-color: rgba(0, 0, 0, 0.2);\n  --radio-outer-border-color_active: #1C1C1C;\n  --radio-inner-bg-color: #1C1C1C;\n  --toggle-switch-border-color: rgba(0, 0, 0, 0.1);\n  --toggle-switch-border-color_focus: rgba(0, 0, 0, 0.4);\n  --toggle-switch-bg-color: rgba(0, 0, 0, 0.4);\n  --toggle-switch-bg-color_active: #9747ff;\n  --toggle-switch-thumb-color: #fff;\n  --dropdown-bg-color: #FFFFFF;\n  --dropdown-active-bg-color: #F7F9FB;\n  --dropdown-box-shadow: 0 0 16px rgba(219, 219, 219, 0.5);\n  --summary-list-bg-color: #fff;\n  --custom-pre-bg-color: #f2f2f2;\n  --custom-pre-text-color: #1c1c1c;\n  --custom-pre-border-color: rgba(0, 0, 0, 0.1);\n  --modal-bg-color: #fff;\n  --stat-card-icon-color: var(--text_1);\n  --info-card-bg-color: #fff;\n  --info-card-feature-color: #1c1c1c;\n  --info-card-content-color: rgba(0, 0, 0, 0.5);\n  --tooltip-trigger-bg-color: #f7f9fb;\n  --tooltip-trigger-text-color: #1c1c1c;\n  --tooltip-trigger-border-color: #1c1c1c;\n  --tooltip-trigger-box-shadow_hover: 0 0 5px rgba(0, 0, 0, 0.35);\n  --tooltip-bg-color: rgba(28, 28, 28, 0.875);\n  --tooltip-text-color: #fff;\n  --skeleton-gradient: linear-gradient(110deg, rgba(0, 0, 0, 0.05) 12%, rgba(60, 60, 60, 0.125) 25%, rgba(0, 0, 0, 0.05) 42%);\n  --pill-text-color: rgba(0, 0, 0, 0.5);\n  --helper: #9747FF;\n  --ds-menu-border-color: #E5ECF6;\n}\n:root[data-theme=dark][data-v-4b34c1a6] {\n  --button-primary-bg-color: #b1e3ff;\n  --button-primary-text-color: #1c1c1c;\n  --button-outline-bg-color: rgba(0, 0, 0, 0);\n  --button-outline-border-color: rgb(65, 65, 65);\n  --button-outline-text-color: #fff;\n  --button-box-shadow: 0 0 12px rgba(132, 132, 132, 0.35);\n  --styled-input-border-color: rgb(65, 65, 65);\n  --styled-input-border-color_focus: rgb(65, 65, 65);\n  --styled-input-background-color: #2a2a2a;\n  --styled-input-background-color_disabled: #1c1c1c;\n  --styled-input-placeholder-color: rgba(255, 255, 255, 0.325);\n  --styled-input-label-color: #b1e3ff;\n  --radio-outer-border-color: rgba(255, 255, 255, 0.275);\n  --radio-outer-border-color_active: #b1e3ff;\n  --radio-inner-bg-color: #b1e3ff;\n  --toggle-switch-border-color: rgb(65, 65, 65);\n  --toggle-switch-border-color_focus: rgb(65, 65, 65);\n  --toggle-switch-bg-color: #2a2a2a;\n  --toggle-switch-bg-color_active: #95A4FC;\n  --toggle-switch-thumb-color: #fff;\n  --dropdown-bg-color: #1c1c1c;\n  --dropdown-active-bg-color: #2a2a2a;\n  --dropdown-box-shadow: 0 0 1px rgba(0, 0, 0, 0);\n  --summary-list-bg-color: #2a2a2a;\n  --custom-pre-bg-color: #1c1c1c;\n  --custom-pre-text-color: #f2f2f2;\n  --custom-pre-border-color: rgb(65, 65, 65);\n  --modal-bg-color: #2a2a2a;\n  --stat-card-icon-color: var(--text_black);\n  --info-card-bg-color: rgba(255, 255, 255, 0.05);\n  --info-card-feature-color: #b1e3ff;\n  --info-card-content-color: #fff;\n  --tooltip-trigger-bg-color: #b1e3ff;\n  --tooltip-trigger-text-color: #1c1c1c;\n  --tooltip-trigger-border-color: #b1e3ff;\n  --tooltip-trigger-box-shadow_hover: 0 0 7px #b1e3ff;\n  --tooltip-bg-color: rgba(242, 244, 247, 0.925);\n  --tooltip-text-color: #1c1c1c;\n  --skeleton-gradient: linear-gradient(110deg, rgba(255, 255, 255, 0.1) 8%, rgba(255, 255, 255, 0.14) 29%, rgba(255, 255, 255, 0.1) 47%);\n  --pill-text-color: #1c1c1c;\n  --helper: #b1e3ff;\n  --ds-menu-border-color: rgb(65, 65, 65);\n}\n.c-toolbar[data-v-4b34c1a6] {\n  position: relative;\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  border-bottom: 1px solid var(--border);\n  padding: 0 1rem;\n  opacity: 0;\n  animation: opacity-in 500ms ease-out forwards;\n}\n.c-flex-block[data-v-4b34c1a6] {\n  display: flex;\n  align-items: center;\n}\n.c-app-title h1[data-v-4b34c1a6] {\n  display: inline-block;\n  letter-spacing: 1px;\n  cursor: pointer;\n}\n.c-app-title .c-logo[data-v-4b34c1a6] {\n  display: inline-block;\n  width: 2rem;\n  height: 2rem;\n  margin-right: 0.25rem;\n  vertical-align: middle;\n  transform: translateY(-3px);\n}\n.c-nav-menu[data-v-4b34c1a6] {\n  margin-right: 1rem;\n  width: 1.75rem;\n  height: 1.75rem;\n  border-radius: 6px;\n}\n.c-btn-icon[data-v-4b34c1a6] {\n  display: inline-block;\n  margin-top: 2px;\n  font-size: 1.2rem;\n}\n\n/*# sourceMappingURL=Toolbar.vue.map */", map: { "version": 3, "sources": ["src/serve/dashboard/views/containers/toolbar/Toolbar.vue", "Toolbar.vue"], "names": [], "mappings": "AA+EA;EACA,2BAAA;EACA,yBAAA;EACA,sBAAA;EACA,qBAAA;EC9EE,iBAAiB;AACnB;;AAEA,sEAAsE;AACtE,sBAAsB;AACtB,qBAAqB;AACrB;EACE,kCAAkC;EAClC,iCAAiC;EACjC,2CAA2C;EAC3C,iDAAiD;EACjD,oCAAoC;EACpC,sDAAsD;EACtD,+CAA+C;EAC/C,qDAAqD;EACrD,qCAAqC;EACrC,4DAA4D;EAC5D,sDAAsD;EACtD,mCAAmC;EACnC,8CAA8C;EAC9C,0CAA0C;EAC1C,+BAA+B;EAC/B,gDAAgD;EAChD,sDAAsD;EACtD,4CAA4C;EAC5C,wCAAwC;EACxC,iCAAiC;EACjC,4BAA4B;EAC5B,mCAAmC;EACnC,wDAAwD;EACxD,6BAA6B;EAC7B,8BAA8B;EAC9B,gCAAgC;EAChC,6CAA6C;EAC7C,sBAAsB;EACtB,qCAAqC;EACrC,0BAA0B;EAC1B,kCAAkC;EAClC,6CAA6C;EAC7C,mCAAmC;EACnC,qCAAqC;EACrC,uCAAuC;EACvC,+DAA+D;EAC/D,2CAA2C;EAC3C,0BAA0B;EAC1B,2HAA2H;EAC3H,qCAAqC;EACrC,iBAAiB;EACjB,+BAA+B;AACjC;AAEA;EACE,kCAAkC;EAClC,oCAAoC;EACpC,2CAA2C;EAC3C,8CAA8C;EAC9C,iCAAiC;EACjC,uDAAuD;EACvD,4CAA4C;EAC5C,kDAAkD;EAClD,wCAAwC;EACxC,iDAAiD;EACjD,4DAA4D;EAC5D,mCAAmC;EACnC,sDAAsD;EACtD,0CAA0C;EAC1C,+BAA+B;EAC/B,6CAA6C;EAC7C,mDAAmD;EACnD,iCAAiC;EACjC,wCAAwC;EACxC,iCAAiC;EACjC,4BAA4B;EAC5B,mCAAmC;EACnC,+CAA+C;EAC/C,gCAAgC;EAChC,8BAA8B;EAC9B,gCAAgC;EAChC,0CAA0C;EAC1C,yBAAyB;EACzB,yCAAyC;EACzC,+CAA+C;EAC/C,kCAAkC;EAClC,+BAA+B;EAC/B,mCAAmC;EACnC,qCAAqC;EACrC,uCAAuC;EACvC,mDAAmD;EACnD,8CAA8C;EAC9C,6BAA6B;EAC7B,sIAAsI;EACtI,0BAA0B;EAC1B,iBAAiB;EACjB,uCAAuC;AACzC;ADhDA;EACA,kBAAA;EACA,aAAA;EACA,mBAAA;EACA,8BAAA;EACA,sCAAA;EACA,eAAA;EACA,UAAA;EACA,6CAAA;ACmDA;ADhDA;EACA,aAAA;EACA,mBAAA;ACmDA;AD/CA;EACA,qBAAA;EACA,mBAAA;EACA,eAAA;ACkDA;AD9CA;EACA,qBAAA;EACA,WAAA;EACA,YAAA;EACA,qBAAA;EACA,sBAAA;EACA,2BAAA;ACgDA;AD5CA;EACA,kBAAA;EACA,cAAA;EACA,eAAA;EACA,kBAAA;AC+CA;AD5CA;EACA,qBAAA;EACA,eAAA;EACA,iBAAA;AC+CA;;AAEA,sCAAsC", "file": "Toolbar.vue", "sourcesContent": [`<template lang="pug">
 .c-toolbar
   .c-flex-block
     button.is-icon.hide-tablet.c-nav-menu(v-if='!noNavigation' @click='$emit("open-nav")')
       i.icon-menu.c-btn-icon
 
     .c-app-title
-      i.icon-moonstar.c-logo
+      //- The Chelonia mark, in the text color so it follows the theme
+      svg.c-logo(viewBox='0 0 64 64' aria-hidden='true' focusable='false')
+        g(fill='currentColor' opacity='.55')
+          path(d='M46.40 48.91 L39.45 52.92 L32.50 48.91 L32.50 40.89 L39.45 36.88 L46.40 40.89 Z')
+          path(d='M31.50 48.91 L24.55 52.92 L17.60 48.91 L17.60 40.89 L24.55 36.88 L31.50 40.89 Z')
+          path(d='M24.05 36.01 L17.10 40.02 L10.15 36.01 L10.15 27.99 L17.10 23.98 L24.05 27.99 Z')
+          path(d='M31.50 23.11 L24.55 27.13 L17.60 23.11 L17.60 15.09 L24.55 11.08 L31.50 15.09 Z')
+          path(d='M46.40 23.11 L39.45 27.12 L32.50 23.11 L32.50 15.09 L39.45 11.08 L46.40 15.09 Z')
+        g(fill='currentColor' opacity='.22')
+          path(d='M53.85 36.01 L46.90 40.02 L39.95 36.01 L39.95 27.99 L46.90 23.98 L53.85 27.99 Z')
+          path(d='M38.95 36.01 L32.00 40.02 L25.05 36.01 L25.05 27.99 L32.00 23.98 L38.95 27.99 Z')
       i18n.is-title-3(tag='h1' @click='$router.push({ path: "/main" })') Chelonia
 
   .c-flex-block
@@ -34780,14 +34841,12 @@ export default {
   }
 
   .c-logo {
-    position: relative;
     display: inline-block;
-    color: inherit;
-    font-weight: 600;
-    font-size: 1.5rem;
-    line-height: 1;
+    width: 2rem;
+    height: 2rem;
     margin-right: 0.25rem;
-    transform: translateY(4px);
+    vertical-align: middle;
+    transform: translateY(-3px);
   }
 }
 
@@ -34804,9 +34863,9 @@ export default {
   font-size: 1.2rem;
 }
 </style>
-`, ".c-app-title h1 {\n  -webkit-touch-callout: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n  user-select: none;\n}\n\n/* NOTE: <variable-name> : (<light-theme-value>, <dark-theme-value>) */\n/* stylelint-disable */\n/* stylelint-enable */\n:root {\n  --button-primary-bg-color: #1c1c1c;\n  --button-primary-text-color: #fff;\n  --button-outline-bg-color: rgba(0, 0, 0, 0);\n  --button-outline-border-color: rgba(0, 0, 0, 0.4);\n  --button-outline-text-color: #1c1c1c;\n  --button-box-shadow: 0 0 16px rgba(219, 219, 219, 0.5);\n  --styled-input-border-color: rgba(0, 0, 0, 0.1);\n  --styled-input-border-color_focus: rgba(0, 0, 0, 0.4);\n  --styled-input-background-color: #fff;\n  --styled-input-background-color_disabled: rgba(0, 0, 0, 0.1);\n  --styled-input-placeholder-color: rgba(0, 0, 0, 0.275);\n  --styled-input-label-color: #9747ff;\n  --radio-outer-border-color: rgba(0, 0, 0, 0.2);\n  --radio-outer-border-color_active: #1C1C1C;\n  --radio-inner-bg-color: #1C1C1C;\n  --toggle-switch-border-color: rgba(0, 0, 0, 0.1);\n  --toggle-switch-border-color_focus: rgba(0, 0, 0, 0.4);\n  --toggle-switch-bg-color: rgba(0, 0, 0, 0.4);\n  --toggle-switch-bg-color_active: #9747ff;\n  --toggle-switch-thumb-color: #fff;\n  --dropdown-bg-color: #FFFFFF;\n  --dropdown-active-bg-color: #F7F9FB;\n  --dropdown-box-shadow: 0 0 16px rgba(219, 219, 219, 0.5);\n  --summary-list-bg-color: #fff;\n  --custom-pre-bg-color: #f2f2f2;\n  --custom-pre-text-color: #1c1c1c;\n  --custom-pre-border-color: rgba(0, 0, 0, 0.1);\n  --modal-bg-color: #fff;\n  --stat-card-icon-color: var(--text_1);\n  --info-card-bg-color: #fff;\n  --info-card-feature-color: #1c1c1c;\n  --info-card-content-color: rgba(0, 0, 0, 0.5);\n  --tooltip-trigger-bg-color: #f7f9fb;\n  --tooltip-trigger-text-color: #1c1c1c;\n  --tooltip-trigger-border-color: #1c1c1c;\n  --tooltip-trigger-box-shadow_hover: 0 0 5px rgba(0, 0, 0, 0.35);\n  --tooltip-bg-color: rgba(28, 28, 28, 0.875);\n  --tooltip-text-color: #fff;\n  --skeleton-gradient: linear-gradient(110deg, rgba(0, 0, 0, 0.05) 12%, rgba(60, 60, 60, 0.125) 25%, rgba(0, 0, 0, 0.05) 42%);\n  --pill-text-color: rgba(0, 0, 0, 0.5);\n  --helper: #9747FF;\n  --ds-menu-border-color: #E5ECF6;\n}\n\n:root[data-theme=dark] {\n  --button-primary-bg-color: #b1e3ff;\n  --button-primary-text-color: #1c1c1c;\n  --button-outline-bg-color: rgba(0, 0, 0, 0);\n  --button-outline-border-color: rgb(65, 65, 65);\n  --button-outline-text-color: #fff;\n  --button-box-shadow: 0 0 12px rgba(132, 132, 132, 0.35);\n  --styled-input-border-color: rgb(65, 65, 65);\n  --styled-input-border-color_focus: rgb(65, 65, 65);\n  --styled-input-background-color: #2a2a2a;\n  --styled-input-background-color_disabled: #1c1c1c;\n  --styled-input-placeholder-color: rgba(255, 255, 255, 0.325);\n  --styled-input-label-color: #b1e3ff;\n  --radio-outer-border-color: rgba(255, 255, 255, 0.275);\n  --radio-outer-border-color_active: #b1e3ff;\n  --radio-inner-bg-color: #b1e3ff;\n  --toggle-switch-border-color: rgb(65, 65, 65);\n  --toggle-switch-border-color_focus: rgb(65, 65, 65);\n  --toggle-switch-bg-color: #2a2a2a;\n  --toggle-switch-bg-color_active: #95A4FC;\n  --toggle-switch-thumb-color: #fff;\n  --dropdown-bg-color: #1c1c1c;\n  --dropdown-active-bg-color: #2a2a2a;\n  --dropdown-box-shadow: 0 0 1px rgba(0, 0, 0, 0);\n  --summary-list-bg-color: #2a2a2a;\n  --custom-pre-bg-color: #1c1c1c;\n  --custom-pre-text-color: #f2f2f2;\n  --custom-pre-border-color: rgb(65, 65, 65);\n  --modal-bg-color: #2a2a2a;\n  --stat-card-icon-color: var(--text_black);\n  --info-card-bg-color: rgba(255, 255, 255, 0.05);\n  --info-card-feature-color: #b1e3ff;\n  --info-card-content-color: #fff;\n  --tooltip-trigger-bg-color: #b1e3ff;\n  --tooltip-trigger-text-color: #1c1c1c;\n  --tooltip-trigger-border-color: #b1e3ff;\n  --tooltip-trigger-box-shadow_hover: 0 0 7px #b1e3ff;\n  --tooltip-bg-color: rgba(242, 244, 247, 0.925);\n  --tooltip-text-color: #1c1c1c;\n  --skeleton-gradient: linear-gradient(110deg, rgba(255, 255, 255, 0.1) 8%, rgba(255, 255, 255, 0.14) 29%, rgba(255, 255, 255, 0.1) 47%);\n  --pill-text-color: #1c1c1c;\n  --helper: #b1e3ff;\n  --ds-menu-border-color: rgb(65, 65, 65);\n}\n\n.c-toolbar {\n  position: relative;\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  border-bottom: 1px solid var(--border);\n  padding: 0 1rem;\n  opacity: 0;\n  animation: opacity-in 500ms ease-out forwards;\n}\n\n.c-flex-block {\n  display: flex;\n  align-items: center;\n}\n\n.c-app-title h1 {\n  display: inline-block;\n  letter-spacing: 1px;\n  cursor: pointer;\n}\n.c-app-title .c-logo {\n  position: relative;\n  display: inline-block;\n  color: inherit;\n  font-weight: 600;\n  font-size: 1.5rem;\n  line-height: 1;\n  margin-right: 0.25rem;\n  transform: translateY(4px);\n}\n\n.c-nav-menu {\n  margin-right: 1rem;\n  width: 1.75rem;\n  height: 1.75rem;\n  border-radius: 6px;\n}\n\n.c-btn-icon {\n  display: inline-block;\n  margin-top: 2px;\n  font-size: 1.2rem;\n}\n\n/*# sourceMappingURL=Toolbar.vue.map */"] }, media: void 0 });
+`, ".c-app-title h1 {\n  -webkit-touch-callout: none;\n  -webkit-user-select: none;\n  -moz-user-select: none;\n  -ms-user-select: none;\n  user-select: none;\n}\n\n/* NOTE: <variable-name> : (<light-theme-value>, <dark-theme-value>) */\n/* stylelint-disable */\n/* stylelint-enable */\n:root {\n  --button-primary-bg-color: #1c1c1c;\n  --button-primary-text-color: #fff;\n  --button-outline-bg-color: rgba(0, 0, 0, 0);\n  --button-outline-border-color: rgba(0, 0, 0, 0.4);\n  --button-outline-text-color: #1c1c1c;\n  --button-box-shadow: 0 0 16px rgba(219, 219, 219, 0.5);\n  --styled-input-border-color: rgba(0, 0, 0, 0.1);\n  --styled-input-border-color_focus: rgba(0, 0, 0, 0.4);\n  --styled-input-background-color: #fff;\n  --styled-input-background-color_disabled: rgba(0, 0, 0, 0.1);\n  --styled-input-placeholder-color: rgba(0, 0, 0, 0.275);\n  --styled-input-label-color: #9747ff;\n  --radio-outer-border-color: rgba(0, 0, 0, 0.2);\n  --radio-outer-border-color_active: #1C1C1C;\n  --radio-inner-bg-color: #1C1C1C;\n  --toggle-switch-border-color: rgba(0, 0, 0, 0.1);\n  --toggle-switch-border-color_focus: rgba(0, 0, 0, 0.4);\n  --toggle-switch-bg-color: rgba(0, 0, 0, 0.4);\n  --toggle-switch-bg-color_active: #9747ff;\n  --toggle-switch-thumb-color: #fff;\n  --dropdown-bg-color: #FFFFFF;\n  --dropdown-active-bg-color: #F7F9FB;\n  --dropdown-box-shadow: 0 0 16px rgba(219, 219, 219, 0.5);\n  --summary-list-bg-color: #fff;\n  --custom-pre-bg-color: #f2f2f2;\n  --custom-pre-text-color: #1c1c1c;\n  --custom-pre-border-color: rgba(0, 0, 0, 0.1);\n  --modal-bg-color: #fff;\n  --stat-card-icon-color: var(--text_1);\n  --info-card-bg-color: #fff;\n  --info-card-feature-color: #1c1c1c;\n  --info-card-content-color: rgba(0, 0, 0, 0.5);\n  --tooltip-trigger-bg-color: #f7f9fb;\n  --tooltip-trigger-text-color: #1c1c1c;\n  --tooltip-trigger-border-color: #1c1c1c;\n  --tooltip-trigger-box-shadow_hover: 0 0 5px rgba(0, 0, 0, 0.35);\n  --tooltip-bg-color: rgba(28, 28, 28, 0.875);\n  --tooltip-text-color: #fff;\n  --skeleton-gradient: linear-gradient(110deg, rgba(0, 0, 0, 0.05) 12%, rgba(60, 60, 60, 0.125) 25%, rgba(0, 0, 0, 0.05) 42%);\n  --pill-text-color: rgba(0, 0, 0, 0.5);\n  --helper: #9747FF;\n  --ds-menu-border-color: #E5ECF6;\n}\n\n:root[data-theme=dark] {\n  --button-primary-bg-color: #b1e3ff;\n  --button-primary-text-color: #1c1c1c;\n  --button-outline-bg-color: rgba(0, 0, 0, 0);\n  --button-outline-border-color: rgb(65, 65, 65);\n  --button-outline-text-color: #fff;\n  --button-box-shadow: 0 0 12px rgba(132, 132, 132, 0.35);\n  --styled-input-border-color: rgb(65, 65, 65);\n  --styled-input-border-color_focus: rgb(65, 65, 65);\n  --styled-input-background-color: #2a2a2a;\n  --styled-input-background-color_disabled: #1c1c1c;\n  --styled-input-placeholder-color: rgba(255, 255, 255, 0.325);\n  --styled-input-label-color: #b1e3ff;\n  --radio-outer-border-color: rgba(255, 255, 255, 0.275);\n  --radio-outer-border-color_active: #b1e3ff;\n  --radio-inner-bg-color: #b1e3ff;\n  --toggle-switch-border-color: rgb(65, 65, 65);\n  --toggle-switch-border-color_focus: rgb(65, 65, 65);\n  --toggle-switch-bg-color: #2a2a2a;\n  --toggle-switch-bg-color_active: #95A4FC;\n  --toggle-switch-thumb-color: #fff;\n  --dropdown-bg-color: #1c1c1c;\n  --dropdown-active-bg-color: #2a2a2a;\n  --dropdown-box-shadow: 0 0 1px rgba(0, 0, 0, 0);\n  --summary-list-bg-color: #2a2a2a;\n  --custom-pre-bg-color: #1c1c1c;\n  --custom-pre-text-color: #f2f2f2;\n  --custom-pre-border-color: rgb(65, 65, 65);\n  --modal-bg-color: #2a2a2a;\n  --stat-card-icon-color: var(--text_black);\n  --info-card-bg-color: rgba(255, 255, 255, 0.05);\n  --info-card-feature-color: #b1e3ff;\n  --info-card-content-color: #fff;\n  --tooltip-trigger-bg-color: #b1e3ff;\n  --tooltip-trigger-text-color: #1c1c1c;\n  --tooltip-trigger-border-color: #b1e3ff;\n  --tooltip-trigger-box-shadow_hover: 0 0 7px #b1e3ff;\n  --tooltip-bg-color: rgba(242, 244, 247, 0.925);\n  --tooltip-text-color: #1c1c1c;\n  --skeleton-gradient: linear-gradient(110deg, rgba(255, 255, 255, 0.1) 8%, rgba(255, 255, 255, 0.14) 29%, rgba(255, 255, 255, 0.1) 47%);\n  --pill-text-color: #1c1c1c;\n  --helper: #b1e3ff;\n  --ds-menu-border-color: rgb(65, 65, 65);\n}\n\n.c-toolbar {\n  position: relative;\n  display: flex;\n  align-items: center;\n  justify-content: space-between;\n  border-bottom: 1px solid var(--border);\n  padding: 0 1rem;\n  opacity: 0;\n  animation: opacity-in 500ms ease-out forwards;\n}\n\n.c-flex-block {\n  display: flex;\n  align-items: center;\n}\n\n.c-app-title h1 {\n  display: inline-block;\n  letter-spacing: 1px;\n  cursor: pointer;\n}\n.c-app-title .c-logo {\n  display: inline-block;\n  width: 2rem;\n  height: 2rem;\n  margin-right: 0.25rem;\n  vertical-align: middle;\n  transform: translateY(-3px);\n}\n\n.c-nav-menu {\n  margin-right: 1rem;\n  width: 1.75rem;\n  height: 1.75rem;\n  border-radius: 6px;\n}\n\n.c-btn-icon {\n  display: inline-block;\n  margin-top: 2px;\n  font-size: 1.2rem;\n}\n\n/*# sourceMappingURL=Toolbar.vue.map */"] }, media: void 0 });
 };
-var __vue_scope_id__5 = "data-v-4c7f7bbc";
+var __vue_scope_id__5 = "data-v-4b34c1a6";
 var __vue_module_identifier__5 = void 0;
 var __vue_is_functional_template__5 = false;
 function __vue_normalize__5(template, style, script, scope, functional, moduleIdentifier, shadowMode, createInjector, createInjectorSSR, createInjectorShadow) {
@@ -34818,7 +34877,17 @@ function __vue_normalize__5(template, style, script, scope, functional, moduleId
       i.icon-menu.c-btn-icon
 
     .c-app-title
-      i.icon-moonstar.c-logo
+      //- The Chelonia mark, in the text color so it follows the theme
+      svg.c-logo(viewBox='0 0 64 64' aria-hidden='true' focusable='false')
+        g(fill='currentColor' opacity='.55')
+          path(d='M46.40 48.91 L39.45 52.92 L32.50 48.91 L32.50 40.89 L39.45 36.88 L46.40 40.89 Z')
+          path(d='M31.50 48.91 L24.55 52.92 L17.60 48.91 L17.60 40.89 L24.55 36.88 L31.50 40.89 Z')
+          path(d='M24.05 36.01 L17.10 40.02 L10.15 36.01 L10.15 27.99 L17.10 23.98 L24.05 27.99 Z')
+          path(d='M31.50 23.11 L24.55 27.13 L17.60 23.11 L17.60 15.09 L24.55 11.08 L31.50 15.09 Z')
+          path(d='M46.40 23.11 L39.45 27.12 L32.50 23.11 L32.50 15.09 L39.45 11.08 L46.40 15.09 Z')
+        g(fill='currentColor' opacity='.22')
+          path(d='M53.85 36.01 L46.90 40.02 L39.95 36.01 L39.95 27.99 L46.90 23.98 L53.85 27.99 Z')
+          path(d='M38.95 36.01 L32.00 40.02 L25.05 36.01 L25.05 27.99 L32.00 23.98 L38.95 27.99 Z')
       i18n.is-title-3(tag='h1' @click='$router.push({ path: "/main" })') Chelonia
 
   .c-flex-block
@@ -34877,14 +34946,12 @@ export default {
   }
 
   .c-logo {
-    position: relative;
     display: inline-block;
-    color: inherit;
-    font-weight: 600;
-    font-size: 1.5rem;
-    line-height: 1;
+    width: 2rem;
+    height: 2rem;
     margin-right: 0.25rem;
-    transform: translateY(4px);
+    vertical-align: middle;
+    transform: translateY(-3px);
   }
 }
 
