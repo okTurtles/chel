@@ -43,5 +43,5 @@ contract plus everything it owns. `server.billing.freeAllowanceBytes`
 tier. Storage beyond the allowance is charged by the credits worker, which
 runs a billing cycle in the background and debits the entity's balance for
 the bytes it keeps stored. Balances are recorded but not yet enforced: an
-entity whose balance drops below zero is not frozen and can keep writing
-(see okTurtles/chel#160).
+entity whose balance drops below zero is not frozen and can keep writing.
+Freezing it is the plan agreed in the discussion of okTurtles/chel#160.

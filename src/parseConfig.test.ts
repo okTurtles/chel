@@ -116,7 +116,7 @@ Deno.test({
       })
     })
 
-    // What the README says the order is. nconf adds the env store first, so it
+    // What docs/configuration.md says the order is. nconf adds the env store first, so it
     // wins over a flag, which surprises most people.
     await t.step('come from the environment even when a flag is given', async () => {
       const args = ['serve', '--port', '7777']
