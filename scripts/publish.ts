@@ -118,7 +118,7 @@ async function assertFreshBundle (): Promise<void> {
     throw new Error(
       `Untracked files under ${SERVE_DIR}/ or ${DASHBOARD_DIR}/ would be embedded ` +
       'into the compiled binaries but are not committed; remove them, or rebuild ' +
-      'and amend the version commit (see the release steps in README.md)'
+      'and amend the version commit (see the release steps in docs/distributing.md)'
     )
   }
 }
