@@ -77708,7 +77708,7 @@ var module13 = {
   }
 };
 function version2() {
-  console.log("3.4.1");
+  console.log("3.5.0");
 }
 var module14 = {
   command: "version",
@@ -81858,7 +81858,7 @@ var parseArgs = () => {
   const commandModules = Object.values(commands_exports).map(
     (c) => handlerWrapper(c)
   );
-  const yargsInstance = yargs_default(hideBin(process14.argv)).version("3.4.1").strict().option("config", {
+  const yargsInstance = yargs_default(hideBin(process14.argv)).version("3.5.0").strict().option("config", {
     describe: "Path to the config file",
     defaultDescription: DEFAULT_CONFIG_FILE,
     requiresArg: true,
