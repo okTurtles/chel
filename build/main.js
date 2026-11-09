@@ -70343,7 +70343,7 @@ var module6 = {
     });
   },
   command: "hash <filename>",
-  describe: "Computes and logs the content identifier (CID) for the given file.\nFile contents will be interpreted as raw binary data, unless the file extension is '.json'.",
+  describe: "Computes and logs the content identifier (CID) for the given file.\nFile contents are hashed as raw binary data.",
   postHandler: (argv) => {
     return void hash2(argv);
   }

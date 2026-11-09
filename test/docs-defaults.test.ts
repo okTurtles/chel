@@ -30,20 +30,40 @@ Deno.test({
 
     // The example chel.toml in docs/configuration.md
     assertDocumented(config, 'the example app port', `port = ${server.port}`)
-    assertDocumented(config, 'the example dashboard port', `dashboardPort = ${server.dashboardPort}`)
-    assertDocumented(config, 'the example dashboard address', `dashboardListenIP = "${server.dashboardListenIP}"`)
-    assertDocumented(config, 'the example first-message cap', `maxFirstMessageBytes = ${signup.maxFirstMessageBytes}`)
-    assertDocumented(config, 'the example free allowance', `freeAllowanceBytes = ${billing.freeAllowanceBytes}`)
+    assertDocumented(
+      config,
+      'the example dashboard port',
+      `dashboardPort = ${server.dashboardPort}`
+    )
+    assertDocumented(
+      config,
+      'the example dashboard address',
+      `dashboardListenIP = "${server.dashboardListenIP}"`
+    )
+    assertDocumented(
+      config,
+      'the example first-message cap',
+      `maxFirstMessageBytes = ${signup.maxFirstMessageBytes}`
+    )
+    assertDocumented(
+      config,
+      'the example free allowance',
+      `freeAllowanceBytes = ${billing.freeAllowanceBytes}`
+    )
 
     // The backends table in docs/configuration.md
     assertDocumented(config, 'the default backend', `\`${database.backend}\` (default)`)
     assertDocumented(config, 'the cache size default', `(default \`${database.lruNumItems}\`)`)
 
-    // The prose in docs/signup-and-billing.md
-    for (const [window, value] of Object.entries(signup.limit)) {
-      if (typeof value !== 'number') continue
-      assertDocumented(doc, `the per-${window} rate limit default`, `\`${value}\``)
-    }
+    // The prose in docs/signup-and-billing.md. The three rate limits are
+    // checked together, in the order the doc lists them, so a changed default
+    // can't pass by matching another number in the doc.
+    const { minute, hour, day } = signup.limit
+    assertDocumented(
+      doc,
+      'the per-minute/hour/day rate limit defaults',
+      `\`${minute}\`/\`${hour}\`/\`${day}\``
+    )
     assertDocumented(doc, 'the first-message cap default', `\`${signup.maxFirstMessageBytes}\``)
     assertDocumented(doc, 'the free allowance default', `\`${billing.freeAllowanceBytes}\``)
 

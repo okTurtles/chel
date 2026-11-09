@@ -12,7 +12,7 @@ Chel is the command-line tool for
 It signs and pins your app's contracts, runs the server that stores and relays
 their messages, and reads and writes the server's data.
 
-## Why chel
+## Features
 
 - **One tool, from contract to server.** Make a signing key, sign each version
   of a contract, pin it, and serve your app: `chel serve` uploads the pinned
@@ -22,10 +22,16 @@ their messages, and reads and writes the server's data.
 - **Your choice of database:** in memory, files, SQLite, Redis, or a mix of
   them by key prefix.
 - **Ready for a public server.** Signups are limited per IP address, new
-  accounts have a size cap, storage is counted per account, and the dashboard
-  only shows its data behind a password.
+  accounts have a size cap, and storage is counted per account.
+- **A dashboard for your server.** `chel serve` also starts a dashboard with
+  the registered users, the stored contracts, and each account's storage and
+  credits. It shows this only behind a password, and by default only the
+  server's own machine can open it. See
+  [docs/server.md](docs/server.md#the-dashboard).
 - **One config file.** `chel.toml` is checked for typos and wrong values when
   chel starts, and any setting can also come from an environment variable.
+
+![The chel dashboard, with the number of users and contracts, the storage used, the newest users and the space usage](docs/images/dashboard.png)
 
 ## Install
 

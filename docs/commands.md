@@ -331,8 +331,8 @@ or print a warning to `stderr`, but not every one does.
 chel hash <filename>
 ```
 
-Prints the content identifier (CID) of a file. The contents are read as raw
-binary data, unless the file name ends in `.json`.
+Prints the content identifier (CID) of a file, hashing its contents as raw
+binary data.
 
 ## chel migrate
 
