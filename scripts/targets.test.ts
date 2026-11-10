@@ -295,10 +295,11 @@ Deno.test('native addon packages', async (t) => {
     }
   })
 
-  await t.step('the committed bundle still imports each package externally', () => {
+  await t.step('the built bundle still imports each package externally', () => {
     // The counterpart of the above: the bundler must have kept the bare `npm:`
-    // specifier instead of inlining the package. Checked against the committed
-    // bundle so a lost external marking cannot reach a release unnoticed.
+    // specifier instead of inlining the package. Checked against the bundle
+    // that `deno task test` builds first, so a lost external marking cannot
+    // reach a release unnoticed.
     const bundle = Deno.readTextFileSync(new URL(`../${BUNDLE_PATH}`, import.meta.url))
     for (const { name } of NATIVE_ADDON_PACKAGES) {
       assertEquals(

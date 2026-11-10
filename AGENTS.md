@@ -12,8 +12,8 @@ All commands are run via Deno tasks defined in `deno.json`:
 
 ```bash
 deno task lint            # Lint the codebase
-deno task test            # Run tests (includes test:symlinks)
-deno task build           # Build the project (outputs to build/)
+deno task test            # Lint, type-check, build, then run tests (includes test:symlinks)
+deno task build           # Clean build into build/ (gitignored)
 deno task compile         # Native binaries + release tarballs (outputs to dist/)
 deno task dist            # Full distribution (lint + build + compile)
 deno task chel -- <args>  # Run the CLI locally (lint + build + execute)
@@ -178,10 +178,8 @@ Manifests are JSON with signed body:
 ## Development Workflow
 
 1. Make changes in `src/`
-2. `deno task lint`
-3. `deno task test`
-4. `deno task build`
-5. Try the CLI: `./build/main.js <command>`
+2. `deno task test` (lints, type-checks and builds first)
+3. Try the CLI: `./build/main.js <command>`
 
 ## Release Process
 
