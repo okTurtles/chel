@@ -26,17 +26,20 @@ deno run --allow-net --allow-read=. --allow-write=. --allow-sys --allow-env --al
 ./build/main.js <command>  # after building
 ```
 
-Available CLI commands:
+Available CLI commands (all documented in `docs/commands.md`):
+- `chel init` - Generate a template `chel.toml`
 - `chel keygen` - Generate cryptographic key pairs
 - `chel manifest` - Create signed contract manifests
+- `chel verifySignature` - Check a manifest's signature and file hashes
 - `chel deploy` - Deploy contracts to a server or directory
 - `chel serve` - Start the server with contract preloading
 - `chel pin` - Pin contracts to specific versions
 - `chel upload` - Upload files to a server or directory
+- `chel get` - Print the entry stored under a key
 - `chel hash` - Compute CID hash of a file
 - `chel migrate` - Migrate data between database backends
-- `chel latestState` - Get latest contract state
-- `chel eventsAfter` / `chel eventsBefore` - Query contract events
+- `chel eventsAfter` - Query contract events
+- `chel version` - Print the version
 
 ## Project Structure
 
@@ -187,4 +190,4 @@ Manifests are JSON with signed body:
 3. `git diff --exit-code -- build` to confirm the rebuild is reproducible
 4. `npm publish --access public`
 
-See the Packaging section of README.md for the full procedure.
+See `docs/distributing.md` for the full procedure.

@@ -6,502 +6,49 @@
 
 # Chel: Chelonia Command-line Interface
 
-Modern CLI for Chelonia contract development, deployment, and management.
-
-## All Available Commands
-
-```
-chel
-chel help [command]
-chel version
-chel pin [--dir <output-directory>] [--overwrite] <manifest-file-path> <version>
-chel test
-chel init [--force] [--config <file>]
-chel keygen [--out=<key.json>]
-chel manifest [-k|--key <pubkey1> [-k|--key <pubkey2> ...]] [--out=<manifest.json>] [-s|--slim <contract-slim.js>] [-V|--contract-version <version>] <key.json> <contract-bundle.js>
-chel deploy <url-or-dir-or-sqlitedb> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
-chel upload <url-or-dir-or-sqlitedb> <file1> [<file2> [<file3> ...]]
-chel serve [options] <directory>
-chel latestState <url> <contractID>
-chel eventsAfter [--limit N] [--url <url>] [--keys <file>] <contractID> <height>
-chel hash <file>
-chel migrate --from <backend> --to <backend> [--from-config <from-config.toml>] [--to-config <to-config.toml>]
-```
-
-Note: in many (if not all) instances, the `<url>` parameter can refer to a local folder path, in which case the command will operate without making a network connection, and will instead use the folder's contents to perform its operations.
-
-Every command also takes `--config <file>`, to use another config file than `./chel.toml` (see [`chel.toml`](#cheltoml--runtime-cli-configuration)).
-
-### `chel pin` - Per-Contract Versioning System
-
-🎯 Pin individual contracts to specific versions independently!
-
-**Key Features:**
-- ✅ **Per-contract versioning** using `chelonia.json` configuration
-- ✅ **Individual contract pinning** by specifying manifest file path
-- ✅ **New directory structure**: `contracts/<contract-name>/<version>/`
-- ✅ **Manifest-based workflow** - requires existing manifest files
-- ✅ **Ecosystem-agnostic** - no coupling to Node.js/npm
-
-**Workflow:**
-1. **Generate keys**: Use `chel keygen` to create cryptographic key files (required for production)
-2. **Pin from manifest**: Use `chel pin` with the manifest file path
-3. **Contract files copied**: Contract files (main/slim) and manifest are copied to new structure
-
-**Usage Examples:**
-```bash
-# First, generate cryptographic keys (required for production)
-chel keygen
-
-# Then pin contracts with re-signing`
-chel pin <manifest-file-path> <version>
-
-# Pin specific contract to a version using its manifest (from dist/contracts)
-chel pin 2.0.5 dist/contracts/2.0.5/chatroom.2.0.5.manifest.json
-chel pin 2.0.0 dist/contracts/2.0.0/group.2.0.0.manifest.json
-
-# Note: Contracts are pinned to the contracts/ output directory
-```
-
-**Configuration (`chelonia.json`):**
-```json
-{
-  "contracts": {
-    "gi.contracts/chatroom": {
-      "version": "2.0.6",
-      "path": "contracts/gi.contracts_chatroom/2.0.6/chatroom.2.0.6.manifest.json"
-    },
-    "gi.contracts/group": {
-      "version": "2.0.0",
-      "path": "contracts/gi.contracts_group/2.0.0/group.2.0.0.manifest.json"
-    }
-  }
-}
-```
-
-**Directory Structure Created:**
-```
-contracts/
-├── gi.contracts_chatroom/
-│   ├── 2.0.5/
-│   │   ├── chatroom.js
-│   │   └── chatroom-slim.js
-│   └── 2.0.6/
-│       ├── chatroom.js
-│       └── chatroom-slim.js
-└── gi.contracts_group/
-    └── 2.0.0/
-        ├── group.js
-        └── group-slim.js
-```
-
-**Command Options:**
-- **`--overwrite`**: Force overwrite existing versions
-- **Default**: Create new version by copying from source
-
-### `chel init` - Generate `chel.toml`
-
-Generates a template `chel.toml` in the current directory, pre-populated with
-sensible defaults and a freshly-generated `server_id`. This is the recommended
-way to bootstrap a new server instance.
-
-```
-chel init [--force] [--config <file>]
-```
-
-**Options:**
-- `--force`: Overwrite an existing `chel.toml`. Without this flag, `chel init`
-  refuses to clobber an existing file — a safety against accidentally rotating
-  `server_id`, which would orphan push subscriptions tagged with the old id
-  (see [`chel.toml`](#cheltoml--runtime-cli-configuration)).
-- `--config <file>`: Write the file there instead of `./chel.toml`. The other
-  commands then need the same `--config <file>` to read it.
-
-**What it writes:**
-- A top-level `server_id` (a random UUID). Keep this stable for the lifetime of
-  the database; do **not** reuse it across environments (prod / staging / dev)
-  that share a database.
-- `[server]` / `[database]` blocks mirroring the defaults from `parseConfig.ts`,
-  with less-common options left as commented-out lines for guidance.
-
-**Example:**
-```bash
-$ chel init
-wrote: chel.toml
-server_id: 7b3f2c1a-... keep this stable; do not reuse across environments,
-                        and do not rotate it on an existing DB.
-```
-
-### `chel serve` - Development Server with Contract Preloading
-
-```
-chel serve [options] <directory>
-
-OPTIONS
-
---dashboard-port <port>  set dashboard port (default: 8888)
---port           <port>  set application port (default: 8000)
---dev                    start in development mode (watch and redeploy contract manifests)
-```
-
-> [!IMPORTANT]  
-> **Prerequisites:** Ensure your application directory contains a `contracts/` directory with the correct contract structure before running `chel serve`. The server automatically preloads all contract manifests found in `contracts/<contract-name>/<version>/` directories into the database on startup in development mode.
-
-**Example Output:**
-```bash
-$ chel serve
-🚀 Starting Chelonia app server...
-📦 Step 1: Preloading contracts...
-📋 Found 4 contract manifest(s) to deploy
-contracts/gi.contracts_chatroom/2.0.6/chatroom.js: /data/zLAeVmpcc88g...
-contracts/gi.contracts_group/2.0.0/group.js: /data/zLAeVmpcc88g...
-✅ Successfully preloaded 4 contract(s) into database
-🚀 Step 2: Starting dashboard server...
-📊 Dashboard server running at: http://localhost:8888
-🚀 Step 3: Starting application server...
-```
-
-**Usage Examples:**
-```bash
-# Start with automatic contract preloading
-chel serve
-
-# Serve Group Income app from extracted directory
-chel serve ./gi-v2.0.0
-
-# Serve with custom ports and SQLite database
-chel serve --dashboard-port 8888 --port 8000 ./my-app
-```
-
-**What happens during startup:**
-1. **Contract Discovery** - Scans `contracts/<name>/<version>/` directories
-2. **Manifest Collection** - Finds all `.manifest.json` files
-3. **Database Preloading** - Deploys all contracts with content-addressed storage
-4. **Server Startup** - Starts dashboard and application servers
-5. **Ready for Development** - All historical contracts available for message processing
-
-### `chel keygen`
-
-```
-{
-  "version": "1.0.0",
-  "cipher": "algo",
-  "pubkey": "...",
-  "privkey": "...",
-  "encrypted": "algo"
-}
-```
-
-If `"encrypted"` doesn't exist - it means the `"privkey"` was saved in the clear.
-
-### `chel serve`
-
-Starts a local development server for Chelonia applications.
-
-```
-chel serve [options] <directory>
-
-OPTIONS
-
---dashboard-port <port>    set dashboard port (default: 8888)
---port           <port>    set application port (default: 8000)
-```
-
-**Example:**
-```bash
-# Serve Group Income app from extracted directory
-chel serve ./gi-v2.0.0
-
-# Serve with custom ports and SQLite database
-chel serve --dashboard-port 8888 --port 8000 ./my-app
-```
-
-The serve command will:
-- Start a dashboard server (default: http://localhost:8888, see below)
-- Start an application server (default: http://localhost:8000)
-- Serve static assets and handle API routes
-- Support different database backends (memory, filesystem, SQLite, Redis)
-
-The dashboard shows the server's registered usernames, the contracts it
-stores, how much space each account uses and each account's credits. It never
-shows what is inside a contract, since that is encrypted. Because of the
-usernames, it has two settings under `[server]` in `chel.toml`:
-
-- `dashboardListenIP`: the address it listens on, `127.0.0.1` by default, so
-  only this machine can open it.
-- `dashboardAdminPassword`: until this is set, the dashboard shows no data.
-  Once it is, the browser asks for it (any user name works). To keep it out of
-  the file, set `server__dashboardAdminPassword` in the environment instead.
-  The password travels with every request, so put the dashboard behind HTTPS
-  before opening it to other machines.
-
-### `chel manifest`
-
-Let's say you have the following files:
-
-- `contract-bundle.js`
-- `contract-slim.js`
-
-Running `chel manifest --add-key alex.json --slim contract-slim.js deploy-key.json contract-bundle.js` will generate the following `contract-bundle.manifest.json`:
-
-```
-{
-  "head": {
-    "manifestVersion": "1.0.0"
-  },
-  "body": JSON.stringify({
-    "version": "<contract version string, 'x'> by default",
-    "contract": { "hash": "<hash of contract-bundle.js>", "file": "contract-bundle.js" },
-    "contractSlim": { "hash": "<hash of contract-slim.js>", "file": "contract-slim.js" },
-    "authors": [
-      {"cipher": "algo", "key": "<pubkey from deploy-key.json>"},
-      {"cipher": "algo", "key": "<pubkey from alex.json>"}
-    ]
-  }),
-  "signature": {
-    "key": "<which of the 'authors' keys was used to sign 'body'>",
-    "signature": "<signature>"
-  }
-}
-```
-
-It will upload both versions of the contracts, and this JSON.
-
-This format makes it as efficient as possible for using the contract system from both in-app and from the commandline.
-
-The CLI tool will always use the self-contained contract bundle, whereas apps can load less code by loading the slim version of the contract. You just need to make sure that none of the external dependencies that you're referencing ever change if you do this, as otherwise you will get different state between the two versions of the contracts.
-
-Note also that Chelonia is fundamentally language agnostic. We started out using Chelonia to build JS apps, but you can use this protocol with any programming language that supports source evaluation at runtime.
-
-Some commands of this CLI tool (like `latestState`), only support JavaScript, but that is a limitation of resources on our side, and not a fundamental limitation of the protocol.
-
-### `chel deploy`
-
-Deploys manifest(s) generated with `chel manifest`.
-
-Automatically uploads any corresponding contract files.
-
-Outputs the hash(es) corresponding to the manifest(s).
-
-Useful command:
-
-```
-cp -r path/to/contracts/* test/assets/ && ls ./test/assets/*-slim.js | sed -En 's/.*\/(.*)-slim.js/\1/p' | xargs -I {} ./src/main.ts manifest --out=test/assets/{}.manifest.json --slim test/assets/{}-slim.js key.json test/assets/{}.js && ls ./test/assets/*.manifest.json | xargs ./src/main.ts deploy http://127.0.0.1:8888
-```
-
-### `chel eventsAfter`
-
-Displays a JSON array of events that happened in a given contract since a given
-height. Older events come first. The output is parseable with tools like `jq`.
-
-```
-chel eventsAfter [--limit N] [--url <url>] [--keys <keys.json>] <contractID> <height>
-```
-
-If `--url` is supplied, the remote server's `/eventsAfter` endpoint is queried.
-Otherwise, the local database (configured via `chel.toml`) is read directly.
-
-#### Decrypting events with `--keys`
-
-By default, encrypted events (`OP_ACTION_ENCRYPTED` and friends) are returned
-as opaque envelopes — useful for forensics, but unreadable. Pass `--keys` with
-a JSON file of secret keys to decrypt them in place.
-
-**Current limitation:** decryption only works when the returned event list
-starts with the contract's `OP_CONTRACT` event (for example, by querying from
-height `0`). If you query from a later height, `decryptOne` has no prior
-contract/key state, so encrypted events are returned as raw envelopes with
-`no prior contract state` rather than being decrypted.
-
-**Warning:** this file contains secret key material and grants decryption
-capability for any events encrypted to those keys. Do **not** commit it to
-version control, include it in logs, or share it casually. Store it with
-restrictive file permissions, use it only for local debugging, and delete or
-otherwise protect it when you are done.
-
-The file is a flat object mapping each `keyId` to its serialized secret key:
-
-```json
-{
-  "z9brR...sigKeyId": "<serializedSecretKey>",
-  "z9brR...encKeyId": "<serializedSecretKey>"
-}
-```
-
-This is exactly the shape Chelonia stores at `rootState.secretKeys` in any app
-built with [`libcheloniajs`](https://github.com/okTurtles/libcheloniajs). The
-easiest way to generate this file is from a running app:
-
-**In a browser DevTools console (with the app open):**
-
-```js
-copy(JSON.stringify(await sbp('chelonia/rootState').secretKeys, null, 2))
-// then paste into keys.json
-```
-
-**Example:**
+Chel is the command-line tool for
+[Chelonia](https://github.com/okTurtles/libcheloniajs), which implements
+[Shelter Protocol](https://shelterprotocol.net) for end-to-end encrypted apps.
+It signs and pins your app's contracts, runs the server that stores and relays
+their messages, and reads and writes the server's data.
+
+## Features
+
+- **One tool, from contract to server.** Make a signing key, sign each version
+  of a contract, pin it, and serve your app: `chel serve` uploads the pinned
+  contracts when it starts.
+- **A native binary from npm.** `npm install` picks the build for your
+  platform, so you don't need Deno to run it.
+- **Your choice of database:** in memory, files, SQLite, Redis, or a mix of
+  them by key prefix.
+- **Ready for a public server.** Signups are limited per IP address, new
+  accounts have a size cap, and storage is counted per account.
+- **A dashboard for your server.** `chel serve` also starts a dashboard with
+  the registered users, the stored contracts, and each account's storage and
+  credits. It shows this only behind a password, and by default only the
+  server's own machine can open it. See
+  [docs/server.md](docs/server.md#the-dashboard).
+- **One config file.** `chel.toml` is checked for typos and wrong values when
+  chel starts, and any setting can also come from an environment variable.
+
+![The chel dashboard, with the number of users and contracts, the storage used, the newest users and the space usage](docs/images/dashboard.png)
+
+## Install
+
+Add it to your project, and run it with `npx chel`:
 
 ```bash
-chel eventsAfter --keys ./keys.json <contractID> 0 --limit 10
+npm install --save-dev @chelonia/cli
 ```
 
-When `--keys` is supplied each event is emitted as:
-
-```jsonc
-{
-  "height": 1,
-  "hash": "z9brR...",
-  "contractID": "z9brR...",
-  "op": "ae",
-  "signingKeyId": "z9brR...",
-  "innerSigningKeyId": "z9brR...",
-  "decryptedValue": { /* the inner contract action payload */ },
-  "raw": {
-    "serverMeta": {
-      "date": "2025-06-09T20:35:43.305Z",
-      "isKeyOp": true
-    },
-    "message": "{...}"
-  }
-}
-```
-
-Decryption is best-effort: if the required key is missing or a signature
-cannot be verified, the event is still emitted with the original envelope
-under `raw`, and `decryptedValue` may be absent or `undefined`. Some failure
-cases may also include a per-event `error` and/or print a one-line warning to
-`stderr`, but that is not guaranteed for every decryption failure.
-
-### `chel migrate`
-
-Performs a non-destructive migration from one backend (`--from`) to another
-one (`--to`). For example, this can be used to migrate from the `fs` backend to
-the `sqlite` backend.
-
-Since some backends may require additional configuration, `chel migrate` allows
-for specifying additional options for these backends with the `--from-config`
-and `--to-config` options.
-
-By default, the general `chel` configuration will be used both for the `--from`
-and `--to` backends (such as the values given in `chel.toml`). However, if
-`--from-config` or `--to-config` are specified, those will take precedence.
-
-The configuration files for `--from-config` and `--to-config` follow the same
-syntax and structure as `chel.toml`. This makes it easy to migrate to a new
-backend by writing a new `chel.toml` for that backend.
-
-#### Examples
-
-```sh
-# Migrate from sqlite to redis using default values (possibly overridden in chel.toml)
-chel migrate --from sqlite --to redis
-```
-
-```sh
-# Migrate from sqlite to redis using default values (possibly overridden in chel.toml)
-# for redis and the configuration in sqlite.toml for sqlite
-chel migrate --from sqlite --from-config sqlite.toml --to redis
-```
-
-```sh
-# Migrate from sqlite to redis using default values (possibly overridden in chel.toml)
-# for sqlite and the configuration in redis.toml for redis
-chel migrate --from sqlite --to redis --to-config redis.toml
-```
-
-```sh
-# Migrate from sqlite to redis using the configuration in sqlite.toml for sqlite
-# and the configuration in redis.toml for redis
-chel migrate --from sqlite --from-config sqlite.toml --to redis --to-config redis.toml
-```
-
-## Configuration Files
-
-The project uses two separate configuration files for different purposes:
-
-### `chel.toml` — Runtime CLI Configuration
-
-`chel.toml` configures the `chel` command itself at runtime. It is read by `nconf` with priority: environment variables > CLI arguments > `chel.toml` > defaults. It controls things like server host/port, database backend selection, and other operational settings.
-
-By default, `chel` reads `./chel.toml`. To use another file, pass its path with `--config`:
+Or install it for your user:
 
 ```bash
-chel serve --config data/chel.toml dist
+npm install --global @chelonia/cli
 ```
 
-```toml
-# Example chel.toml
-[server]
-host = "0.0.0.0"
-port = 8000
-dashboardPort = 8888
-# The dashboard listens on this machine only, unless you change this
-dashboardListenIP = "127.0.0.1"
-# The dashboard shows no data until this is set to a long, random password
-# dashboardAdminPassword = "..."
-
-[server.vapid]
-email = "admin@example.com"
-
-[database]
-backend = "sqlite"
-
-# Signup size cap and the billing free tier; see
-# docs/signup-and-billing.md.
-# [server.signup]
-# maxFirstMessageBytes = 8192
-#
-# [server.billing]
-# freeAllowanceBytes = 10485760
-```
-
-### `chelonia.json` — App Properties
-
-`chelonia.json` is an **app-level properties file** that describes which
-contracts make up the application and their pinned versions. It is **not**
-runtime configuration for `chel`. Instead, it is:
-
-- **Created and updated** by `chel pin` when pinning contracts to specific
-  versions.
-- **Read by the server** (`chel serve`) at startup to provide version
-  information and other app-specific settings to clients.
-
-The file contains a `contracts` object keyed by the full contract name
-(e.g. `gi.contracts/chatroom`), where each entry has:
-
-| Field | Description |
-|-------|-------------|
-| `version` | The pinned version string for this contract |
-| `path` | Relative path to the manifest file in the `contracts/` directory |
-
-It may also contain an `appVersion` field for the overall application version.
-
-**Example:**
-```json
-{
-  "appVersion": "2.0.0",
-  "contracts": {
-    "gi.contracts/chatroom": {
-      "version": "2.0.6",
-      "path": "contracts/gi.contracts_chatroom/2.0.6/chatroom.2.0.6.manifest.json"
-    },
-    "gi.contracts/group": {
-      "version": "2.0.0",
-      "path": "contracts/gi.contracts_group/2.0.0/group.2.0.0.manifest.json"
-    }
-  }
-}
-```
-
-**Summary of differences:**
-
-| | `chel.toml` | `chelonia.json` |
-|---|---|---|
-| **Purpose** | Runtime configuration of the `chel` CLI | App properties (e.g., contract versions) |
-| **Managed by** | Manually by the developer / system administrator | Automatically by `chel pin` |
-| **Read by** | `chel` commands (via `nconf`) | The server (at startup), values exposed to clients |
-| **Format** | TOML | JSON |
-| **Example content** | Database configuration | Contract versions |
+`chel --help` lists the commands, and `chel <command> --help` shows the
+options of one.
 
 ## Supported Platforms
 
@@ -515,144 +62,47 @@ Pre-compiled native binaries are published for the following platforms:
 | macOS   | x64 (Intel)  | `@chelonia/cli-x64-darwin`   |
 | macOS   | arm64 (Apple Silicon) | `@chelonia/cli-arm64-darwin` |
 
-When you install `@chelonia/cli`, npm automatically selects the correct
-sub-package for your platform via `optionalDependencies`. Windows arm64 is
-currently **not** supported.
+When you install `@chelonia/cli`, npm selects the sub-package for your platform
+through `optionalDependencies`. Windows on arm64 is **not** supported.
 
-The Linux binaries are linked against glibc, so Linux distributions built on
-musl libc (Alpine, for example) are **not** covered: the native SQLite addon
-each Linux binary carries is the glibc build for its platform. Running `chel`
-from source with Deno works there instead. Only the SQLite backend is affected,
-and selecting it on such a system fails with a message saying so rather than
-with a raw loader or missing-module error.
+The Linux binaries are linked against glibc, so on musl-based distributions
+(Alpine, for example) their SQLite backend does not work. Run chel from source
+with Deno 2.8.0 or newer there, or use another database backend. The details
+are in [docs/distributing.md](docs/distributing.md#linux-on-musl).
 
-From source, nothing has to be compiled locally: the SQLite driver ships musl
-prebuilds (`prebuilds/linuxmusl-<arch>.node`) next to the glibc ones, and its
-resolver chooses between them by asking Node whether the process is running
-against glibc. Deno hardcoded a glibc version into that answer until Deno
-2.8.0 ([denoland/deno#33948](https://github.com/denoland/deno/issues/33948)),
-so older versions pick the glibc prebuild on musl and then fail inside the
-dynamic loader.
+If `chel` cannot start, the launcher explains why rather than printing a stack
+trace: exit code 127 means no sub-package for your platform is installed, and
+126 means one was found but its binary is missing or not executable (reinstall
+with `npm install --force @chelonia/cli`).
 
-On Deno 2.8.0 or newer this works out of the box. On anything older, either
-upgrade Deno or patch `node_modules/better-sqlite3/lib/binding.js` so that
-`isLinuxMusl` always returns `true`. Compiling the addon from its C sources
-(`npm run build-release`) does **not** help: the resolver returns a matching
-prebuild before it ever looks at a locally built copy.
+## Getting started
 
-The `chel` command itself is always provided by the main `@chelonia/cli`
-package, which ships a small launcher that spawns the native binary from the
-sub-package npm selected. The sub-packages intentionally declare no command of
-their own: if they did, they would compete with the main package for the same
-`chel` entry in `node_modules/.bin`, and npm would end up wiring `chel` to a
-bare platform binary (or to nothing at all when the main package is the project
-root). Because npm therefore never adjusts the binary's permissions at install
-time, the executable bit is baked into the published sub-package instead.
+```bash
+chel init        # writes chel.toml, with a fresh server_id
+chel keygen      # makes a key pair to sign contracts with
 
-This layout is verified against npm 10, pnpm (both its isolated and hoisted
-layouts), Yarn 1, and Yarn 4 (both Plug'n'Play and `node-modules`), for local
-and global installs. If `chel` cannot start, the launcher explains why rather
-than printing a stack trace: exit code 127 means no sub-package for your
-platform is installed, and 126 means one was found but its binary is missing or
-not executable (reinstall with `npm install --force @chelonia/cli`).
+# Sign a contract, then pin it into contracts/ and chelonia.json
+chel manifest --name my.app/list --contract-version 1.0.0 <secret key file> list.js
+chel pin list.1.0.0.manifest.json
 
-## Packaging
+# Serve the app in dist/, upload contracts/, and watch it for new versions
+chel serve --dev --app-manifest chelonia.json dist
+```
 
-Steps to publish a new release of `@chelonia/cli` to npm:
+By default the server keeps everything in memory. Before running it for other
+people, read [docs/server.md](docs/server.md#in-production).
 
-1. **Login to npm** (prerequisite):
+## Documentation
 
-   ```bash
-   npm login
-   ```
-
-   If your account uses 2FA, `npm publish` may prompt for authentication.
-   Do not rely on `--otp=<code>`: a TOTP code entered at the start of the
-   release may well have expired by the time the first sub-package is
-   published. Complete the browser-based authentication flow when prompted,
-   or use a granular automation token instead.
-
-2. **Bump the version:**
-
-   ```bash
-   npm version patch   # or minor / major
-   ```
-
-   This triggers the `version` lifecycle hook, which runs *after* the version
-   is bumped but *before* `npm version` commits and tags. The hook:
-   - Runs `deno task sync-versions` to update `optionalDependencies` in
-     `package.json` so they match the new version (and stages the change)
-   - Runs `deno task build` to rebuild the JS bundle (stamped with the new
-     version in `build/version.json`) and the dashboard
-   - Stages the rebuilt `build/` artifacts
-
-   As a result, the version commit and tag contain the up-to-date bundle and
-   the working directory stays clean. The publish step verifies that what it
-   ships is exactly this committed bundle and refuses to run otherwise.
-   This also guarantees the maintainer rebuilds the bundle on `master`
-   (merged PRs can each produce a correct bundle individually, yet the
-   combined result on `master` may still differ).
-
-3. **Build the release artifacts** (the tarballs for the GitHub release):
-
-   ```bash
-   deno task dist
-   git diff --exit-code -- build   # fails if the rebuild diverged from the tag
-   ```
-
-   This lints, rebuilds the bundle, compiles one native binary per supported
-   platform, and packs each one into `dist/chel-v<version>-<target>.tar.gz`,
-   printing SHA256 checksums.
-
-   The `git diff --exit-code -- build` afterwards confirms the rebuild is
-   byte-identical to the version commit, i.e. that the build is reproducible.
-   It also has to pass before publishing, since the next step requires a clean
-   `build/`. If it fails, do not publish: investigate the divergence first.
-
-4. **Publish:**
-
-   ```bash
-   npm publish --access public
-   ```
-
-   This triggers the `prepublishOnly` hook, which runs `deno task publish`.
-   That script:
-   - Verifies that the committed bundle matches `package.json` (via
-     `build/version.json`) and that the working tree is clean for `build/`
-     and `package.json`, refusing to publish otherwise
-   - Reuses the native binaries from step 3 instead of compiling its own
-     copies, so a release compiles each binary once and npm and GitHub are
-     guaranteed to ship identical bytes. If a binary is missing, or was built
-     from a different bundle, it is compiled here instead — publishing without
-     step 3 works, it just takes several minutes longer
-   - Creates and publishes a platform sub-package (`@chelonia/cli-<arch>-<os>`) for each target
-   - Reconciles `optionalDependencies` as a final safety check
-
-   After the sub-packages are published, `npm publish` proceeds to publish the
-   main `@chelonia/cli` package, whose `optionalDependencies` now point to the
-   freshly published sub-packages.
-
-5. **Push the version commit and tag:**
-
-   ```bash
-   git push && git push --tags
-   ```
-
-### Build caching
-
-Compiling the five native binaries is by far the slowest part of a release, so
-the tarballs and the npm sub-packages share one set of them, kept under the
-gitignored `dist/` directory. `deno task dist` remains usable on its own, at
-any time, to produce the tarballs without publishing anything.
-
-The cache operates on content, not on timestamps. When the bundle, the Deno
-version, or a compile flag changes, `deno task dist` compiles the binaries
-again. When nothing changes, it does no compile work. To compile all binaries
-again, set `CHEL_FORCE_COMPILE=1` or delete `dist/`.
-
-To check that a compiled binary loads its SQLite addon, run
-`CHEL_SMOKE_COMPILE=1 deno task smoke`. This test compiles a binary and is
-therefore not part of `deno task test`.
+- [Commands](docs/commands.md): every command and its options.
+- [Running a server](docs/server.md): what `chel serve` does, the dashboard,
+  and production.
+- [Configuration](docs/configuration.md): `chel.toml`, its database backends,
+  and `chelonia.json`.
+- [Signup and billing](docs/signup-and-billing.md): the checks on new
+  accounts, and how storage is charged.
+- [Distributing](docs/distributing.md): how chel is built, packaged and
+  published.
 
 ## History
 
