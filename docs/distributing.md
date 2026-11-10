@@ -26,35 +26,22 @@ Steps to publish a new release of `@chelonia/cli` to npm:
    ```
 
    This triggers the `version` lifecycle hook, which runs *after* the version
-   is bumped but *before* `npm version` commits and tags. The hook:
-   - Runs `deno task sync-versions` to update `optionalDependencies` in
-     `package.json` so they match the new version (and stages the change)
-   - Runs `deno task build` to rebuild the JS bundle (stamped with the new
-     version in `build/version.json`) and the dashboard
-   - Stages the rebuilt `build/` artifacts
+   is bumped but *before* `npm version` commits and tags. The hook runs
+   `deno task sync-versions`, which updates `optionalDependencies` in
+   `package.json` to the new version, and stages `package.json`.
 
-   As a result, the version commit and tag contain the up-to-date bundle and
-   the working directory stays clean. The publish step verifies that what it
-   ships is exactly this committed bundle and refuses to run otherwise.
-   This also guarantees the maintainer rebuilds the bundle on `master`
-   (merged PRs can each produce a correct bundle individually, yet the
-   combined result on `master` may still differ).
+   `build/` is gitignored, so the version commit and tag contain only the
+   source. The next two steps each build the bundle from it.
 
 3. **Build the release artifacts** (the tarballs for the GitHub release):
 
    ```bash
    deno task dist
-   git diff --exit-code -- build   # fails if the rebuild diverged from the tag
    ```
 
-   This lints, rebuilds the bundle, compiles one native binary per supported
-   platform, and packs each one into `dist/chel-v<version>-<target>.tar.gz`,
-   printing SHA256 checksums.
-
-   The `git diff --exit-code -- build` afterwards confirms the rebuild is
-   byte-identical to the version commit, i.e. that the build is reproducible.
-   It also has to pass before publishing, since the next step requires a clean
-   `build/`. If it fails, do not publish: investigate the divergence first.
+   This lints, builds `build/` from scratch, compiles one native binary per
+   supported platform, and packs each one into
+   `dist/chel-v<version>-<target>.tar.gz`, printing SHA256 checksums.
 
 4. **Publish:**
 
@@ -64,14 +51,18 @@ Steps to publish a new release of `@chelonia/cli` to npm:
 
    This triggers the `prepublishOnly` hook, which runs `deno task publish`.
    That script:
-   - Verifies that the committed bundle matches `package.json` (via
-     `build/version.json`) and that the working tree is clean for `build/`
-     and `package.json`, refusing to publish otherwise
+   - Refuses to publish if tracked files differ from the version commit
+     (commit or stash them first), then builds `build/` from scratch, so the
+     binaries embed exactly what the version commit and tag contain
    - Reuses the native binaries from step 3 instead of compiling its own
-     copies, so a release compiles each binary once and npm and GitHub are
-     guaranteed to ship identical bytes. If a binary is missing, or was built
-     from a different bundle, it is compiled here instead. Publishing without
-     step 3 works, it just takes several minutes longer
+     copies: the build is reproducible, so the rebuild matches the bundle
+     that step 3 compiled, and npm and GitHub ship identical bytes. If a
+     binary is missing, or was built from a different bundle, it is compiled
+     here instead. Publishing without step 3 works, it just takes several
+     minutes longer. If step 3 ran on the same commit and this step still
+     prints `Compiling` instead of `Reusing`, the two builds differ: stop it
+     with Ctrl-C (nothing is published until the compiles finish) and
+     investigate the divergence first
    - Creates and publishes a platform sub-package (`@chelonia/cli-<arch>-<os>`) for each target
    - Reconciles `optionalDependencies` as a final safety check
 

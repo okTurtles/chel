@@ -183,9 +183,8 @@ Manifests are JSON with signed body:
 
 ## Release Process
 
-1. `npm version <patch|minor|major>` (rebuilds and commits the bundle)
-2. `deno task dist` to compile the binaries and pack the release tarballs
-3. `git diff --exit-code -- build` to confirm the rebuild is reproducible
-4. `npm publish --access public`
+1. `npm version <patch|minor|major>` (syncs `optionalDependencies`; `build/` is gitignored, never committed)
+2. `deno task dist` to build, compile the binaries and pack the release tarballs
+3. `npm publish --access public` (refuses uncommitted tracked changes, then rebuilds `build/`)
 
 See `docs/distributing.md` for the full procedure.
