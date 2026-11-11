@@ -76,6 +76,49 @@ Steps to publish a new release of `@chelonia/cli` to npm:
    git push && git push --tags
    ```
 
+   The tag push starts the [build audit](#build-audit).
+
+## Build audit
+
+When a `v*` tag is pushed, `.github/workflows/build-review.yml` audits the
+build of that release. It calls the reusable workflow `build-review-crush.yml`
+of [okTurtles/libcheloniajs](https://github.com/okTurtles/libcheloniajs/blob/main/.github/workflows/build-review-crush.yml)
+from its `main` branch, whose header describes the audit in full. The job
+builds the tag and the previous `v*` tag in a sandbox without network, diffs
+the two `build/` dirs, and has crush review the diff with the code-review
+skill. The job fails when the review finds code that the source changes do not
+explain, or when the review cannot finish. The review is in the job summary and
+in the `build-review-<tag>` artifact. Nothing is posted to GitHub.
+
+The audit needs these repository settings (Settings → Secrets and variables →
+Actions):
+
+- The secret with the API key of the review provider: `OPENROUTER_API_KEY`
+  (the default provider), `ZAI_API_KEY` or `KIMI_API_KEY`.
+- Optional variables: `REVIEW_PROVIDER`, `REVIEW_MODEL` and `PROJECT_CTX`,
+  which the PR review also uses, and `BUILD_REVIEW_TIMEOUT_MINUTES` (default
+  60).
+
+To run the audit again, for example after a provider error, run the Build
+Review workflow by hand with the tag and, if needed, the tag to compare with:
+
+```bash
+gh workflow run build-review.yml -f tag=v3.6.0 -f base-tag=v3.5.0
+```
+
+Tags before v3.4.1 do not build from an empty `build/`, so the audit cannot
+use them as either tag.
+
+Limits:
+
+- The audit vets the build that CI makes. The binaries on npm and in the
+  GitHub release embed the build made on the maintainer's machine, which the
+  audit does not compare with its own.
+- Each release is compared only with the previous one, whose build the audit
+  trusts.
+- The fonts in `build/dist-dashboard/assets/fonts/` are not reviewed. The
+  workflow checks that each one equals a font file in git.
+
 ## Build caching
 
 Compiling the five native binaries is by far the slowest part of a release, so
