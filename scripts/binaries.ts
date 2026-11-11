@@ -436,8 +436,9 @@ export async function ensureBinaries (targets: readonly Target[] = TARGETS): Pro
   }
   if (stale.length === 0) return 0
 
-  // Checked only once something has to be compiled: only `deno compile` reads
-  // the addon files, so a fully cached run does not need them.
+  // Checked only once something has to be compiled. A missing addon file
+  // changes the fingerprint of each target that embeds it, so a run without
+  // the addon files always gets here.
   await assertNativeAddonsPresent()
   // Only needed when something is actually compiled, and deliberately done
   // once for all of them: the binaries must be reproducible across targets and
