@@ -31,7 +31,8 @@ Steps to publish a new release of `@chelonia/cli` to npm:
    `package.json` to the new version, and stages `package.json`.
 
    `build/` is gitignored, so the version commit and tag contain only the
-   source. The next two steps each build the bundle from it.
+   source. Steps 3 and 5 each build the bundle from it, and so does the build
+   audit that step 4 starts.
 
 3. **Build the release artifacts** (the tarballs for the GitHub release):
 
@@ -43,7 +44,24 @@ Steps to publish a new release of `@chelonia/cli` to npm:
    supported platform, and packs each one into
    `dist/chel-v<version>-<target>.tar.gz`, printing SHA256 checksums.
 
-4. **Publish:**
+4. **Push the version commit and tag, then wait for the build audit:**
+
+   To release a fix committed after `npm version`, first move the tag to it
+   with `git tag -f v<version>` and run step 3 again. Once the tag is pushed,
+   do not move it: release the fix as a new version instead.
+
+   ```bash
+   git push && git push --tags
+   ```
+
+   The tag push starts the [build audit](#build-audit). Follow its Build
+   Review run in the Actions tab or with `gh run watch`, and go on only when
+   it passes: a published release is hard to take back (a sub-package can
+   only be unpublished within 72 hours). If the review could not finish, for
+   example after a provider error, run it again as described in that section.
+   If it reports suspect code, find the cause before you publish.
+
+5. **Publish:**
 
    ```bash
    npm publish --access public
@@ -53,11 +71,10 @@ Steps to publish a new release of `@chelonia/cli` to npm:
    That script:
    - Refuses to publish unless `HEAD` is the commit that the `v<version>`
      tag points to and no tracked file differs from it (stash or discard such
-     changes first). To publish a fix committed after `npm version`, first
-     move the tag to it with `git tag -f v<version>`. It also refuses when
-     untracked files are in `src/` or `scripts/` (move or delete them first):
-     the build can bundle such files. It then builds `build/` from scratch,
-     so the binaries embed exactly what the tag contains
+     changes first). It also refuses when untracked files are in `src/` or
+     `scripts/` (move or delete them first): the build can bundle such files.
+     It then builds `build/` from scratch, so the binaries embed exactly what
+     the tag contains
    - Reuses the native binaries from step 3 instead of compiling its own
      copies: the build is reproducible, so the rebuild matches the bundle
      that step 3 compiled, and npm and GitHub ship identical bytes. If a
@@ -74,14 +91,6 @@ Steps to publish a new release of `@chelonia/cli` to npm:
    After the sub-packages are published, `npm publish` proceeds to publish the
    main `@chelonia/cli` package, whose `optionalDependencies` now point to the
    freshly published sub-packages.
-
-5. **Push the version commit and tag:**
-
-   ```bash
-   git push && git push --tags
-   ```
-
-   The tag push starts the [build audit](#build-audit).
 
 ## Build audit
 

@@ -86,8 +86,8 @@ async function buildCommittedSource (): Promise<void> {
   if (await shell(`git tag --points-at HEAD --list ${tag}`) !== tag) {
     throw new Error(
       `HEAD is not the commit that the ${tag} tag points to, so the published ` +
-      `bundle would not match the tag. Run \`git checkout ${tag}\`, or move the ` +
-      `tag to this commit with \`git tag -f ${tag}\` first.`
+      'bundle would not match the tag that the build audit checked. Run ' +
+      `\`git checkout ${tag}\` first.`
     )
   }
 
