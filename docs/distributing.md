@@ -108,7 +108,9 @@ The audit needs these repository settings (Settings â†’ Secrets and variables â†
 Actions):
 
 - The secret with the API key of the review provider: `OPENROUTER_API_KEY`
-  (the default provider), `ZAI_API_KEY` or `KIMI_API_KEY`.
+  (the default provider) or `ZAI_API_KEY`. The audit also accepts `kimi` with
+  `KIMI_API_KEY`, but do not set `REVIEW_PROVIDER=kimi` yet: the PR review
+  reads the same variable and does not support it.
 - Optional variables: `REVIEW_PROVIDER`, `REVIEW_MODEL` and `PROJECT_CTX`,
   which the PR review also uses, and `BUILD_REVIEW_TIMEOUT_MINUTES` (default
   60).
