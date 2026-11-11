@@ -185,7 +185,7 @@ Manifests are JSON with signed body:
 
 1. `npm version <patch|minor|major>` (syncs `optionalDependencies`; `build/` is gitignored, never committed)
 2. `deno task dist` to build, compile the binaries and pack the release tarballs
-3. `npm publish --access public` (refuses uncommitted tracked changes, then rebuilds `build/`)
+3. `npm publish --access public` (needs `HEAD` at the `v<version>` tag with no tracked changes, then rebuilds `build/`)
 4. `git push && git push --tags` (the tag push runs the build audit, `.github/workflows/build-review.yml`)
 
 See `docs/distributing.md` for the full procedure.

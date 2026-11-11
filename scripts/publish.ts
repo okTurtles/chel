@@ -10,8 +10,9 @@
 //
 // Wired into `npm publish` via the `prepublishOnly` npm script (see package.json),
 // which calls `deno task publish`. It:
-//   0. Refuses to publish if tracked files differ from the last commit, then
-//      rebuilds `build/` from that commit (see buildCommittedSource)
+//   0. Refuses to publish unless HEAD is the commit of the `v<version>` tag
+//      and no tracked file differs from it, then rebuilds `build/` from that
+//      commit (see buildCommittedSource)
 //   1. For each OS/CPU target, obtains a native binary built from that
 //      `build/` bundle and assembles `dist/cli-<cpu>-<os>/` around it,
 //      together with a minimal `package.json`
@@ -50,18 +51,29 @@ import { reconcileOptionalDeps, rootPackagePath } from './sync-versions.ts'
 const { default: rootPkg } = await import('../package.json', { with: { type: 'json' } })
 
 // `build/` is gitignored, so what is on disk may be stale or built from
-// uncommitted edits. It is rebuilt here from a tree whose tracked files match
-// the last commit, so the binaries embed exactly what the version commit and
-// tag contain. Untracked files are not checked: every checkout has some, for
-// example the files `deno install` adds under `vendor/`.
+// uncommitted edits. It is rebuilt here from the commit that the version tag
+// points to, with no tracked file changed, so the binaries embed exactly what
+// the tag contains, which is also what the tag-push build audit checks.
+// Untracked files are not checked: every checkout has some, for example the
+// files `deno install` adds under `vendor/`.
 async function buildCommittedSource (): Promise<void> {
   console.log('=== Step 0: Building the bundle from the committed source ===')
 
+  // Checked first: only a clean `package.json` gives the version of HEAD.
   const changed = await shell('git diff --name-only HEAD')
   if (changed) {
     throw new Error(
-      'These tracked files differ from the last commit, so the published bundle ' +
-      `would not match the version commit. Commit or stash them first:\n${changed}`
+      'These tracked files differ from HEAD, so the published bundle would not ' +
+      `match the version tag. Stash or discard them first:\n${changed}`
+    )
+  }
+
+  const tag = `v${rootPkg.version}`
+  if (await shell(`git tag --points-at HEAD --list ${tag}`) !== tag) {
+    throw new Error(
+      `HEAD is not the commit that the ${tag} tag points to, so the published ` +
+      `bundle would not match the tag. Run \`git checkout ${tag}\`, or move the ` +
+      `tag to this commit with \`git tag -f ${tag}\` first.`
     )
   }
 
