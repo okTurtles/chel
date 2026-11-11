@@ -323,6 +323,16 @@ export async function writeStamp (path: string, fingerprint: string): Promise<vo
   await Deno.writeTextFile(path, JSON.stringify({ fingerprint }, null, 2) + '\n')
 }
 
+// Anything unreadable or unparseable counts as a mismatch.
+async function stampMatches (stampFile: string, fingerprint: string): Promise<boolean> {
+  try {
+    const stamp = JSON.parse(await Deno.readTextFile(stampFile))
+    return stamp?.fingerprint === fingerprint
+  } catch {
+    return false
+  }
+}
+
 // True iff `artifactPath` exists and was produced from `fingerprint`. Both
 // conditions matter: the stamp alone would happily vouch for an artifact that
 // was deleted, and the artifact alone says nothing about what produced it.
@@ -334,13 +344,7 @@ export async function isFresh (
 ): Promise<boolean> {
   const force = Deno.env.get('CHEL_FORCE_COMPILE')?.toLowerCase()
   if (force && force !== '0' && force !== 'false') return false
-  if (!await exists(artifactPath)) return false
-  try {
-    const stamp = JSON.parse(await Deno.readTextFile(stampFile))
-    return stamp?.fingerprint === fingerprint
-  } catch {
-    return false
-  }
+  return await exists(artifactPath) && await stampMatches(stampFile, fingerprint)
 }
 
 // The stamp is deleted before `fn` runs and only written after it returns, so
@@ -373,6 +377,20 @@ export async function ensureArtifact (
   }
   await rebuildWithStamp(stampFile, fingerprint, fn)
   return true
+}
+
+// True iff `artifactPath` exists and its stamp does not record `fingerprint`.
+// A missing or unreadable stamp counts as other inputs. Unlike isFresh, it
+// ignores CHEL_FORCE_COMPILE: it tells what an existing artifact was made
+// from, not whether to make it again.
+export async function madeFromOtherInputs (
+  kind: ArtifactKind,
+  target: Target,
+  artifactPath: string,
+  fingerprint: string
+): Promise<boolean> {
+  return await exists(artifactPath) &&
+    !await stampMatches(stampPath(kind, target), fingerprint)
 }
 
 // Fails before any compilation when a file a binary must embed is absent.
@@ -418,9 +436,9 @@ export async function ensureBinaries (targets: readonly Target[] = TARGETS): Pro
   }
   if (stale.length === 0) return 0
 
-  // Checked only once something has to be compiled, so that a fully cached
-  // release (`deno task dist` followed by `deno task publish`) does not need
-  // node_modules at all.
+  // Checked only once something has to be compiled. A missing addon file
+  // changes the fingerprint of each target that embeds it, so a run without
+  // the addon files always gets here.
   await assertNativeAddonsPresent()
   // Only needed when something is actually compiled, and deliberately done
   // once for all of them: the binaries must be reproducible across targets and

@@ -26,37 +26,42 @@ Steps to publish a new release of `@chelonia/cli` to npm:
    ```
 
    This triggers the `version` lifecycle hook, which runs *after* the version
-   is bumped but *before* `npm version` commits and tags. The hook:
-   - Runs `deno task sync-versions` to update `optionalDependencies` in
-     `package.json` so they match the new version (and stages the change)
-   - Runs `deno task build` to rebuild the JS bundle (stamped with the new
-     version in `build/version.json`) and the dashboard
-   - Stages the rebuilt `build/` artifacts
+   is bumped but *before* `npm version` commits and tags. The hook runs
+   `deno task sync-versions`, which updates `optionalDependencies` in
+   `package.json` to the new version, and stages `package.json`.
 
-   As a result, the version commit and tag contain the up-to-date bundle and
-   the working directory stays clean. The publish step verifies that what it
-   ships is exactly this committed bundle and refuses to run otherwise.
-   This also guarantees the maintainer rebuilds the bundle on `master`
-   (merged PRs can each produce a correct bundle individually, yet the
-   combined result on `master` may still differ).
+   `build/` is gitignored, so the version commit and tag contain only the
+   source. Steps 3 and 5 each build the bundle from it, and so does the build
+   audit that step 4 starts.
 
 3. **Build the release artifacts** (the tarballs for the GitHub release):
 
    ```bash
    deno task dist
-   git diff --exit-code -- build   # fails if the rebuild diverged from the tag
    ```
 
-   This lints, rebuilds the bundle, compiles one native binary per supported
-   platform, and packs each one into `dist/chel-v<version>-<target>.tar.gz`,
-   printing SHA256 checksums.
+   This lints, builds `build/` from scratch, compiles one native binary per
+   supported platform, and packs each one into
+   `dist/chel-v<version>-<target>.tar.gz`, printing SHA256 checksums.
 
-   The `git diff --exit-code -- build` afterwards confirms the rebuild is
-   byte-identical to the version commit, i.e. that the build is reproducible.
-   It also has to pass before publishing, since the next step requires a clean
-   `build/`. If it fails, do not publish: investigate the divergence first.
+4. **Push the version commit and tag, then wait for the build audit:**
 
-4. **Publish:**
+   To release a fix committed after `npm version`, first move the tag to it
+   with `git tag -f v<version>` and run step 3 again. Once the tag is pushed,
+   do not move it: release the fix as a new version instead.
+
+   ```bash
+   git push && git push --tags
+   ```
+
+   The tag push starts the [build audit](#build-audit). Follow its Build
+   Review run in the Actions tab or with `gh run watch`, and go on only when
+   it passes: a published release is hard to take back (a sub-package can
+   only be unpublished within 72 hours). If the review could not finish, for
+   example after a provider error, run it again as described in that section.
+   If it reports suspect code, find the cause before you publish.
+
+5. **Publish:**
 
    ```bash
    npm publish --access public
@@ -64,14 +69,22 @@ Steps to publish a new release of `@chelonia/cli` to npm:
 
    This triggers the `prepublishOnly` hook, which runs `deno task publish`.
    That script:
-   - Verifies that the committed bundle matches `package.json` (via
-     `build/version.json`) and that the working tree is clean for `build/`
-     and `package.json`, refusing to publish otherwise
+   - Refuses to publish unless `HEAD` is the commit that the `v<version>`
+     tag points to and no tracked file differs from it (stash or discard such
+     changes first). It also refuses when untracked files are in `src/` or
+     `scripts/` (move or delete them first): the build can bundle such files.
+     It then builds `build/` from scratch, so the binaries embed exactly what
+     the tag contains
    - Reuses the native binaries from step 3 instead of compiling its own
-     copies, so a release compiles each binary once and npm and GitHub are
-     guaranteed to ship identical bytes. If a binary is missing, or was built
-     from a different bundle, it is compiled here instead. Publishing without
-     step 3 works, it just takes several minutes longer
+     copies: the build is reproducible, so the rebuild matches the bundle
+     that step 3 compiled, and npm and GitHub ship identical bytes. If a
+     binary is missing, or was built from a different bundle, it is compiled
+     here instead. Publishing without step 3 works, it just takes several
+     minutes longer. If a tarball of this version in `dist/` was packed from
+     a different build (for example, step 3 ran with uncommitted changes),
+     it stops before it compiles or publishes anything. Then run step 3
+     again, or delete the tarballs to publish without them. If it stops
+     again after step 3, the build is not reproducible: investigate that first
    - Creates and publishes a platform sub-package (`@chelonia/cli-<arch>-<os>`) for each target
    - Reconciles `optionalDependencies` as a final safety check
 
@@ -79,11 +92,48 @@ Steps to publish a new release of `@chelonia/cli` to npm:
    main `@chelonia/cli` package, whose `optionalDependencies` now point to the
    freshly published sub-packages.
 
-5. **Push the version commit and tag:**
+## Build audit
 
-   ```bash
-   git push && git push --tags
-   ```
+When a `v*` tag is pushed, `.github/workflows/build-review.yml` audits the
+build of that release. It calls the reusable workflow `build-review-crush.yml`
+of [okTurtles/libcheloniajs](https://github.com/okTurtles/libcheloniajs/blob/main/.github/workflows/build-review-crush.yml)
+from its `main` branch, whose header describes the audit in full. The job
+builds the tag and the previous `v*` tag in a sandbox without network, diffs
+the two `build/` dirs, and has crush review the diff with the code-review
+skill. The job fails when the review finds code that the source changes do not
+explain, or when the review cannot finish. The review is in the job summary and
+in the `build-review-<tag>` artifact. Nothing is posted to GitHub.
+
+The audit needs these repository settings (Settings → Secrets and variables →
+Actions):
+
+- The secret with the API key of the review provider: `OPENROUTER_API_KEY`
+  (the default provider) or `ZAI_API_KEY`. The audit also accepts `kimi` with
+  `KIMI_API_KEY`, but do not set `REVIEW_PROVIDER=kimi` yet: the PR review
+  reads the same variable and does not support it.
+- Optional variables: `REVIEW_PROVIDER`, `REVIEW_MODEL` and `PROJECT_CTX`,
+  which the PR review also uses, and `BUILD_REVIEW_TIMEOUT_MINUTES` (default
+  60).
+
+To run the audit again, for example after a provider error, run the Build
+Review workflow by hand with the tag and, if needed, the tag to compare with:
+
+```bash
+gh workflow run build-review.yml -f tag=v3.6.0 -f base-tag=v3.5.0
+```
+
+Tags before v3.4.1 do not build from an empty `build/`, so the audit cannot
+use them as either tag.
+
+Limits:
+
+- The audit vets the build that CI makes. The binaries on npm and in the
+  GitHub release embed the build made on the maintainer's machine, which the
+  audit does not compare with its own.
+- Each release is compared only with the previous one, whose build the audit
+  trusts.
+- The fonts in `build/dist-dashboard/assets/fonts/` are not reviewed. The
+  workflow checks that each one equals a font file in git.
 
 ## Build caching
 

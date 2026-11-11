@@ -41,7 +41,8 @@ const asAdmin = (password = PASSWORD) =>
 Deno.test({
   name: 'dashboard server',
   async fn (t: Deno.TestContext) {
-    // `deno task test` doesn't build it, so say so rather than fail every step
+    // `deno task test` builds it first but a bare `deno test` doesn't, so say
+    // so rather than fail every step
     assert(
       existsSync(getDashboardPath()),
       'build/dist-dashboard is missing, run `deno task build` first'

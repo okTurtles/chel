@@ -2,13 +2,14 @@
 // (including the Node-flavored dashboard build) can import them without
 // dragging in the rest of the toolchain.
 //
-// NOTE: package.json's "version" script runs `git add build/`, which stages
-// every path below; if an artifact ever moves outside build/, update it.
+// NOTE: every build artifact must live under build/. The `build` task in
+// deno.json deletes it first, .gitignore ignores it, and the binary cache
+// (scripts/binaries.ts) fingerprints it whole; an artifact outside build/
+// would escape all three.
 
 export const BUILD_DIR = 'build'
 export const BUNDLE_PATH = `${BUILD_DIR}/main.js`
 export const SERVE_DIR = `${BUILD_DIR}/serve`
-export const VERSION_STAMP_PATH = `${BUILD_DIR}/version.json`
 export const DASHBOARD_DIR = `${BUILD_DIR}/dist-dashboard`
 
 // Release artifacts. Everything below lives under the gitignored `dist/`, and

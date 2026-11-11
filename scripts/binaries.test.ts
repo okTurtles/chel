@@ -12,29 +12,17 @@ import {
 } from './binaries.ts'
 import { BIN_DIR, STAMP_DIR } from './paths.ts'
 import { TARGETS, nativeAddonPaths, type Target } from './targets.ts'
-import { FAKE_COMPILE_FLAGS as FLAGS, withTempDir } from '../test/test-helpers.ts'
+import {
+  FAKE_COMPILE_FLAGS as FLAGS,
+  withForceCompile,
+  withTempDir
+} from '../test/test-helpers.ts'
 
 const TARGET: Target = {
   denoTarget: 'x86_64-unknown-linux-gnu',
   os: 'linux',
   cpu: 'x64',
   binary: 'chel'
-}
-
-// Runs `fn` with CHEL_FORCE_COMPILE set to `value`, restoring whatever the
-// surrounding environment had (including it being unset) afterwards.
-const withForceCompile = async (value: string, fn: () => Promise<void>): Promise<void> => {
-  const previous = Deno.env.get('CHEL_FORCE_COMPILE')
-  Deno.env.set('CHEL_FORCE_COMPILE', value)
-  try {
-    await fn()
-  } finally {
-    if (previous === undefined) {
-      Deno.env.delete('CHEL_FORCE_COMPILE')
-    } else {
-      Deno.env.set('CHEL_FORCE_COMPILE', previous)
-    }
-  }
 }
 
 Deno.test('artifact paths', async (t) => {
