@@ -10,9 +10,10 @@
 //
 // Wired into `npm publish` via the `prepublishOnly` npm script (see package.json),
 // which calls `deno task publish`. It:
-//   0. Refuses to publish unless HEAD is the commit of the `v<version>` tag
-//      and no tracked file differs from it, then rebuilds `build/` from that
-//      commit (see buildCommittedSource)
+//   0. Refuses to publish unless HEAD is the commit of the `v<version>` tag,
+//      no tracked file differs from it and no untracked file is in `src/` or
+//      `scripts/`, then rebuilds `build/` from that commit (see
+//      buildCommittedSource)
 //   1. For each OS/CPU target, obtains a native binary built from that
 //      `build/` bundle and assembles `dist/cli-<cpu>-<os>/` around it,
 //      together with a minimal `package.json`
@@ -56,8 +57,11 @@ const { default: rootPkg } = await import('../package.json', { with: { type: 'js
 // uncommitted edits. It is rebuilt here from the commit that the version tag
 // points to, with no tracked file changed, so the binaries embed exactly what
 // the tag contains, which is also what the tag-push build audit checks.
-// Untracked files are not checked: every checkout has some, for example the
-// files `deno install` adds under `vendor/`.
+// Untracked files in `src/` and `scripts/` are refused too: esbuild bundles
+// every file on disk that a computed import can match (see the `omit-tests`
+// plugin in ./build.ts), so an untracked `src/serve/database-*.ts` would get
+// into the bundle. Other untracked files are allowed: every checkout has
+// some, for example the files `deno install` adds under `vendor/`.
 async function buildCommittedSource (): Promise<void> {
   console.log('=== Step 0: Building the bundle from the committed source ===')
 
@@ -67,6 +71,14 @@ async function buildCommittedSource (): Promise<void> {
     throw new Error(
       'These tracked files differ from HEAD, so the published bundle would not ' +
       `match the version tag. Stash or discard them first:\n${changed}`
+    )
+  }
+
+  const untracked = await shell('git ls-files --others --exclude-standard -- src scripts')
+  if (untracked) {
+    throw new Error(
+      'These untracked files are in the build input dirs, so they can get into the ' +
+      `published bundle. Move or delete them first:\n${untracked}`
     )
   }
 

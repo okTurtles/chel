@@ -54,8 +54,10 @@ Steps to publish a new release of `@chelonia/cli` to npm:
    - Refuses to publish unless `HEAD` is the commit that the `v<version>`
      tag points to and no tracked file differs from it (stash or discard such
      changes first). To publish a fix committed after `npm version`, first
-     move the tag to it with `git tag -f v<version>`. It then builds `build/`
-     from scratch, so the binaries embed exactly what the tag contains
+     move the tag to it with `git tag -f v<version>`. It also refuses when
+     untracked files are in `src/` or `scripts/` (move or delete them first):
+     the build can bundle such files. It then builds `build/` from scratch,
+     so the binaries embed exactly what the tag contains
    - Reuses the native binaries from step 3 instead of compiling its own
      copies: the build is reproducible, so the rebuild matches the bundle
      that step 3 compiled, and npm and GitHub ship identical bytes. If a
