@@ -22,9 +22,10 @@
 // shared cache in `./binaries.ts`. The build is reproducible, so step 0 gives
 // the same `build/` that `deno task dist` compiled, and a release that already
 // produced the GitHub tarballs reuses those exact binaries instead of
-// spending minutes recompiling identical ones, which also guarantees npm and
-// GitHub ship the same bytes. If no cached binary matches the rebuilt
-// bundle, it is compiled on demand, so publishing on its own still works.
+// spending minutes recompiling identical ones. Step 1 refuses to go on when a
+// tarball of this version was packed from another build, so npm and GitHub
+// ship the same bytes. If no cached binary matches the rebuilt bundle, it is
+// compiled on demand, so publishing on its own still works.
 // Compiling writes nothing to `build/` beyond pinning mtimes for
 // reproducibility, which is why this script may write there.
 //
@@ -43,6 +44,7 @@ import {
   subPackageManifest
 } from './targets.ts'
 import { binaryPath, ensureBinaries } from './binaries.ts'
+import { assertTarballsMatchBuild } from './compile.ts'
 import { reconcileOptionalDeps, rootPackagePath } from './sync-versions.ts'
 
 // Static import for TS JSON-import-attribute type inference. The path also
@@ -82,6 +84,7 @@ async function buildCommittedSource (): Promise<void> {
 
 async function createSubPackages (): Promise<void> {
   console.log('=== Step 1: Obtaining binaries & creating sub-packages ===')
+  await assertTarballsMatchBuild()
   await ensureBinaries()
 
   for (const target of TARGETS) {

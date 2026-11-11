@@ -20,6 +20,7 @@ import { BIN_DIR, DIST_DIR } from './paths.ts'
 import {
   ensureArtifact,
   ensureBinaries,
+  madeFromOtherInputs,
   normalizeMtimes,
   targetFingerprint
 } from './binaries.ts'
@@ -55,6 +56,36 @@ const TAR_FORMAT_VERSION = '1'
 // would silently ship the previously packed archive.
 export function tarFingerprint (targetFp: string, target: Target): string {
   return `${targetFp}:tar${TAR_FORMAT_VERSION}:${target.binary}`
+}
+
+export function tarballPath (target: Target): string {
+  return `${DIST_DIR}/chel-v${version}-${target.denoTarget}.tar.gz`
+}
+
+// Called by ./publish.ts after it rebuilds `build/`, before it obtains the
+// binaries. A tarball of this version that was packed from another build holds
+// other binaries than the ones npm would get. This happens when the build is
+// not reproducible, or when `deno task dist` packed uncommitted edits. Without
+// tarballs of this version (publishing without `deno task dist`) it passes.
+export async function assertTarballsMatchBuild (
+  targets: readonly Target[] = TARGETS
+): Promise<void> {
+  const mismatched: string[] = []
+  for (const target of targets) {
+    const archivePath = tarballPath(target)
+    const fingerprint = tarFingerprint(await targetFingerprint(target), target)
+    if (await madeFromOtherInputs('tar', target, archivePath, fingerprint)) {
+      mismatched.push(archivePath)
+    }
+  }
+  if (mismatched.length > 0) {
+    throw new Error(
+      'These release tarballs were packed from another build than the one just made, ' +
+      'so npm and the GitHub release would ship different binaries. Run `deno task dist` ' +
+      'again (if this error comes back, the build is not reproducible), or delete the ' +
+      `tarballs to publish without them:\n${mismatched.join('\n')}`
+    )
+  }
 }
 
 // Detect whether the system `tar` is GNU tar. bsdtar (macOS default) rejects
@@ -175,7 +206,7 @@ export async function compile (): Promise<void> {
   for (const target of TARGETS) {
     const { denoTarget } = target
     const fingerprint = tarFingerprint(await targetFingerprint(target), target)
-    const archivePath = `${DIST_DIR}/chel-v${version}-${denoTarget}.tar.gz`
+    const archivePath = tarballPath(target)
     // The archive holds `<target>/<binary>`, so it can be created straight out
     // of the shared binary cache: BIN_DIR is already laid out that way.
     await ensureArtifact('tar', target, archivePath, fingerprint, () =>

@@ -61,10 +61,11 @@ Steps to publish a new release of `@chelonia/cli` to npm:
      that step 3 compiled, and npm and GitHub ship identical bytes. If a
      binary is missing, or was built from a different bundle, it is compiled
      here instead. Publishing without step 3 works, it just takes several
-     minutes longer. If step 3 ran on the same commit and this step still
-     prints `Compiling` instead of `Reusing`, the two builds differ: stop it
-     with Ctrl-C (nothing is published until the compiles finish) and
-     investigate the divergence first
+     minutes longer. If a tarball of this version in `dist/` was packed from
+     a different build (for example, step 3 ran with uncommitted changes),
+     it stops before it compiles or publishes anything. Then run step 3
+     again, or delete the tarballs to publish without them. If it stops
+     again after step 3, the build is not reproducible: investigate that first
    - Creates and publishes a platform sub-package (`@chelonia/cli-<arch>-<os>`) for each target
    - Reconciles `optionalDependencies` as a final safety check
 
