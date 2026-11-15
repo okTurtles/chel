@@ -37,9 +37,11 @@ jobs:
       with:
         deno-version: v2.9.5
     # The compile embeds files straight out of node_modules, so the addon has
-    # to be materialised first; the committed bundle in build/ is what gets
-    # compiled, so nothing else needs building.
+    # to be materialised first. build/ is not committed, so the bundle that
+    # gets compiled is built here.
     - name: Install dependencies
       run: deno install
+    - name: Build
+      run: deno task build
     - name: Compile the host binary and load its SQLite addon
       run: CHEL_SMOKE_COMPILE=1 deno task smoke

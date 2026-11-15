@@ -1,6 +1,9 @@
-import { assertEquals, assertStringIncludes } from 'jsr:@std/assert'
-import { tarFingerprint } from './compile.ts'
+import { assertEquals, assertRejects, assertStringIncludes } from 'jsr:@std/assert'
+import { stampPath, targetFingerprint, writeStamp } from './binaries.ts'
+import { assertTarballsMatchBuild, tarFingerprint, tarballPath } from './compile.ts'
+import { DIST_DIR } from './paths.ts'
 import type { Target } from './targets.ts'
+import { withForceCompile } from '../test/test-helpers.ts'
 
 const LINUX: Target = {
   denoTarget: 'x86_64-unknown-linux-gnu',
@@ -42,4 +45,51 @@ Deno.test('tarFingerprint', async (t) => {
     // reused as if it were current.
     assertEquals(tarFingerprint('abc', LINUX) === tarFingerprint('abc', WINDOWS), false)
   })
+})
+
+Deno.test('assertTarballsMatchBuild', async (t) => {
+  // The tarball and its stamp live in the real DIST_DIR and STAMP_DIR, so use a
+  // fake target whose name cannot collide with a real one, and clean up after.
+  const target: Target = { ...LINUX, denoTarget: 'test-tarball-check' }
+  const archive = tarballPath(target)
+  const stamp = stampPath('tar', target)
+
+  const withCleanup = async (fn: () => Promise<void>): Promise<void> => {
+    try {
+      await fn()
+    } finally {
+      for (const path of [archive, stamp]) {
+        await Deno.remove(path).catch(() => {})
+      }
+    }
+  }
+  const pack = async (): Promise<void> => {
+    await Deno.mkdir(DIST_DIR, { recursive: true })
+    await Deno.writeTextFile(archive, 'tarball')
+  }
+
+  await t.step('passes when no tarball of this version exists', () => withCleanup(async () => {
+    // Publishing without `deno task dist`; a stamp left by an older run is not a tarball.
+    await writeStamp(stamp, 'another build')
+    await assertTarballsMatchBuild([target])
+  }))
+
+  await t.step('passes for a tarball packed from this build', () => withCleanup(async () => {
+    await pack()
+    await writeStamp(stamp, tarFingerprint(await targetFingerprint(target), target))
+    await assertTarballsMatchBuild([target])
+    // Forcing a recompile must not make the tarball look like another build.
+    await withForceCompile('1', () => assertTarballsMatchBuild([target]))
+  }))
+
+  await t.step('fails for a tarball packed from another build', () => withCleanup(async () => {
+    await pack()
+    await writeStamp(stamp, 'another build')
+    await assertRejects(() => assertTarballsMatchBuild([target]), Error, archive)
+  }))
+
+  await t.step('fails when the tarball has no stamp', () => withCleanup(async () => {
+    await pack()
+    await assertRejects(() => assertTarballsMatchBuild([target]), Error, archive)
+  }))
 })

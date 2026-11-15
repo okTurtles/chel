@@ -12,8 +12,8 @@ All commands are run via Deno tasks defined in `deno.json`:
 
 ```bash
 deno task lint            # Lint the codebase
-deno task test            # Run tests (includes test:symlinks)
-deno task build           # Build the project (outputs to build/)
+deno task test            # Lint, type-check, build, then run tests (includes test:symlinks)
+deno task build           # Clean build into build/ (gitignored)
 deno task compile         # Native binaries + release tarballs (outputs to dist/)
 deno task dist            # Full distribution (lint + build + compile)
 deno task chel -- <args>  # Run the CLI locally (lint + build + execute)
@@ -178,16 +178,14 @@ Manifests are JSON with signed body:
 ## Development Workflow
 
 1. Make changes in `src/`
-2. `deno task lint`
-3. `deno task test`
-4. `deno task build`
-5. Try the CLI: `./build/main.js <command>`
+2. `deno task test` (lints, type-checks and builds first)
+3. Try the CLI: `./build/main.js <command>`
 
 ## Release Process
 
-1. `npm version <patch|minor|major>` (rebuilds and commits the bundle)
-2. `deno task dist` to compile the binaries and pack the release tarballs
-3. `git diff --exit-code -- build` to confirm the rebuild is reproducible
-4. `npm publish --access public`
+1. `npm version <patch|minor|major>` (syncs `optionalDependencies`; `build/` is gitignored, never committed)
+2. `deno task dist` to build, compile the binaries and pack the release tarballs
+3. `git push && git push --tags`, then wait for the build audit (`.github/workflows/build-review.yml`, started by the tag push) to pass
+4. `npm publish --access public` (needs `HEAD` at the `v<version>` tag with no tracked changes and no untracked files in `src/` or `scripts/`, then rebuilds `build/`)
 
 See `docs/distributing.md` for the full procedure.

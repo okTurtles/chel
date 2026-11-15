@@ -1,11 +1,12 @@
-// Guards a property of the committed bundle that is easy to lose and hard to
-// notice: it must contain the code the CLI runs, and nothing else.
+// Guards a property of the built bundle that is easy to lose and hard to
+// notice: it must contain the code the CLI runs, and nothing else. `deno task
+// test` builds it before running the tests.
 import { assertEquals } from 'jsr:@std/assert'
 import { BUNDLE_PATH } from './paths.ts'
 
 const bundle = Deno.readTextFileSync(new URL(`../${BUNDLE_PATH}`, import.meta.url))
 
-Deno.test('the committed bundle', async (t) => {
+Deno.test('the built bundle', async (t) => {
   await t.step('contains no test suites', () => {
     // The database layer loads its backend through a computed specifier, and
     // esbuild expands that into every file matching the pattern, test suites

@@ -63,11 +63,6 @@ const outDir = DASHBOARD_DIR
 async function build () {
   console.log('🚀 Starting dashboard build...')
 
-  // Start from a clean output directory so stale assets (e.g. chunks from a
-  // previous build with different content hashes) can't survive a rebuild and
-  // later get committed or embedded into the compiled binaries.
-  fs.rmSync(outDir, { recursive: true, force: true })
-
   const mainScssPath = join(dashboardDir, 'assets/style/main.scss')
 
   const entryPoints = [

@@ -1,0 +1,67 @@
+name: Build Review
+
+# Audits the build of each release with build-review-crush.yml of
+# okTurtles/libcheloniajs. Its header describes the audit, the inputs and the
+# limits. docs/distributing.md tells how to run the audit again.
+
+on:
+  push:
+    tags: ['v[0-9]*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Version tag to audit, e.g. v3.5.0.
+        type: string
+        required: true
+      base-tag:
+        description: Tag to compare with. Empty means the nearest earlier v* tag.
+        type: string
+        required: false
+
+jobs:
+  audit:
+    uses: okTurtles/libcheloniajs/.github/workflows/build-review-crush.yml@main
+    permissions:
+      contents: read
+    with:
+      tag: ${{ inputs.tag || github.ref_name }}
+      base-tag: ${{ inputs.base-tag }}
+      provider: ${{ vars.REVIEW_PROVIDER }}
+      model: ${{ vars.REVIEW_MODEL }}
+      project-context: ${{ vars.PROJECT_CTX }}
+      timeout-minutes: ${{ fromJSON(vars.BUILD_REVIEW_TIMEOUT_MINUTES || '60') }}
+      package-name: '@chelonia/cli'
+      output-dir: build
+      # The Deno version of ci.yml.
+      deno-version: v2.9.5
+      # `deno bundle` (run by scripts/build.ts) downloads its own esbuild the
+      # first time it runs, and the build has no network. Bundling an empty
+      # module during the install puts that esbuild in the Deno cache.
+      install-command: >-
+        deno install --frozen &&
+        cd /tmp && echo 'export {}' > warm.ts && deno bundle --quiet -o warm.js warm.ts
+      # `deno install` also vendors into vendor/, which git tracks, the jsr
+      # modules of the deno.json imports that the code does not use.
+      install-dirs: node_modules vendor
+      build-command: deno task build
+      source-paths: >-
+        src scripts deno.json deno.lock package.json .npmrc tsconfig.json
+        vendor
+      # The esbuild `file` loader of scripts/dashboard-esbuild.ts copies the
+      # fonts from src/serve/dashboard/assets/fonts/.
+      copied-files: 'dist-dashboard/assets/fonts/*'
+      build-notes: >-
+        `built/main.js` is the CLI and `built/serve/` holds the server workers.
+        `scripts/build.ts` bundles them from `src/main.ts` and
+        `src/serve/*Worker.ts` with esbuild, then again with `deno bundle`.
+        `npm:better-sqlite3` stays an import, because it loads a native addon.
+        `built/dist-dashboard/` is the dashboard web app (Vue 2), which
+        `scripts/dashboard-esbuild.ts` builds from `src/serve/dashboard/`.
+        The release binaries embed these files (`deno compile`).
+      # deno.lock is in source-paths, so the source diff shows each
+      # dependency change.
+      dependency-list-command: ''
+    secrets:
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      ZAI_API_KEY: ${{ secrets.ZAI_API_KEY }}
+      KIMI_API_KEY: ${{ secrets.KIMI_API_KEY }}

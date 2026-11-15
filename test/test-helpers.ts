@@ -37,6 +37,22 @@ export async function withTempDir (fn: (dir: string) => Promise<void>): Promise<
   }
 }
 
+// Runs `fn` with CHEL_FORCE_COMPILE set to `value`, restoring whatever the
+// surrounding environment had (including it being unset) afterwards.
+export async function withForceCompile (value: string, fn: () => Promise<void>): Promise<void> {
+  const previous = Deno.env.get('CHEL_FORCE_COMPILE')
+  Deno.env.set('CHEL_FORCE_COMPILE', value)
+  try {
+    await fn()
+  } finally {
+    if (previous === undefined) {
+      Deno.env.delete('CHEL_FORCE_COMPILE')
+    } else {
+      Deno.env.set('CHEL_FORCE_COMPILE', previous)
+    }
+  }
+}
+
 let symlinkProbe: Promise<boolean> | undefined
 
 // Whether this process can actually create a symlink, answered by trying it
