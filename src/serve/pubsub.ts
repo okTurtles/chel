@@ -47,7 +47,9 @@ const { bold } = chalk
 const { PING, PONG, PUB, SUB, UNSUB, KV_FILTER } = NOTIFICATION_TYPE
 const { ERROR, OK } = RESPONSE_TYPE
 // For 'remote SBP invocation'.
-const RSI = 'rsi'
+export const RSI = 'rsi'
+export const RSI_ERROR = 'rsi-error'
+export const RSI_OK = 'rsi-ok'
 
 const defaultOptions = {
   logPingRounds: process.env.NODE_ENV !== 'production' && !process.env.CI,
@@ -411,16 +413,19 @@ const defaultMessageHandlers: Partial<MessageHandlers> = {
     const socket = this
     if (!Array.isArray(data)) {
       return socket.send(JSON.stringify(
-        { type: 'error', to: id, data: 'Field "payload" must be a [selector, ...args] array.' }
+        { type: RSI_ERROR, to: id, data: 'Field "data" must be a [selector, ...args] array.' }
       ))
     }
     const [selector, ...args] = data
     try {
       const rv = await sbp('pubsub/' + selector, ...args)
-      const response = rv === undefined ? { type: 'ok', to: id } : { type: 'ok', to: id, data: rv }
+      const response = rv === undefined ? { type: RSI_OK, to: id } : { type: RSI_OK, to: id, data: rv }
       socket.send(JSON.stringify(response))
     } catch (err) {
-      socket.send(JSON.stringify({ type: 'error', to: id, data: (err as Error)?.message ?? '' }))
+      // Be careful in case we got e.g. a non-error-like promise rejection from the SBP invocation,
+      const data = (err as Error)?.message ?? ''
+      if (!data) console.warn(`[pubsub] Selector 'pubsub/${selector}' threw or rejected with no error message.`)
+      socket.send(JSON.stringify({ type: RSI_ERROR, to: id, data }))
     }
   },
 
