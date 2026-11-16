@@ -47,14 +47,17 @@ Deno.test('Remote SBP invocation via web sockets', async () => {
 
     ws.onmessage = ({ data }) => {
       const msg = JSON.parse(data)
+      const { to } = msg
+      if (!to || typeof to !== 'string') throw new Error('Message field "to" must be a non-empty string.')
       pending.get(msg.to)?.(msg)
     }
   })
-  let nextId = 0
-  const pending = new Map<number, (msg: unknown) => void>()
+  const clientID = 'abcdef'
+  let counter = 0
+  const pending = new Map<string, (msg: unknown) => void>()
 
   const rsi = (data: unknown, timeout = 2000) => {
-    const id = ++nextId
+    const id = `${clientID}-${++counter}`
     return new Promise<any>((resolve, reject) => {
       const timeoutID = setTimeout(() => { pending.delete(id); reject(new Error(`No reply for ID ${id}`)) }, timeout)
       pending.set(id, msg => { clearTimeout(timeoutID); pending.delete(id); resolve(msg) })
@@ -67,12 +70,12 @@ Deno.test('Remote SBP invocation via web sockets', async () => {
     const msg = 'boom'
     // Run the promises concurrently to test if the returned 'to' values still match correctly.
     await Promise.all([
-      rsi(['test/reject', ...data]).then(r => assertEquals(r, { type: RSI_ERROR, to: 1, data: '' })),
-      rsi(['test/resolve', ...data]).then(r => assertEquals(r, { type: RSI_OK, to: 2, data })),
-      rsi(['test/return', ...data]).then(r => assertEquals(r, { type: RSI_OK, to: 3, data })),
-      rsi(['test/rejectNewError', msg]).then(r => assertEquals(r, { type: RSI_ERROR, to: 4, data: msg })),
-      rsi(['test/throwNewError', msg]).then(r => assertEquals(r, { type: RSI_ERROR, to: 5, data: msg })),
-      rsi(['test/throwNewErrorAsync', msg]).then(r => assertEquals(r, { type: RSI_ERROR, to: 6, data: msg }))
+      rsi(['test/reject', ...data]).then(r => assertEquals(r, { type: RSI_ERROR, to: 'abcdef-1', data: '' })),
+      rsi(['test/resolve', ...data]).then(r => assertEquals(r, { type: RSI_OK, to: 'abcdef-2', data })),
+      rsi(['test/return', ...data]).then(r => assertEquals(r, { type: RSI_OK, to: 'abcdef-3', data })),
+      rsi(['test/rejectNewError', msg]).then(r => assertEquals(r, { type: RSI_ERROR, to: 'abcdef-4', data: msg })),
+      rsi(['test/throwNewError', msg]).then(r => assertEquals(r, { type: RSI_ERROR, to: 'abcdef-5', data: msg })),
+      rsi(['test/throwNewErrorAsync', msg]).then(r => assertEquals(r, { type: RSI_ERROR, to: 'abcdef-6', data: msg }))
     ])
 
     assertEquals((await rsi([])).type, RSI_ERROR)

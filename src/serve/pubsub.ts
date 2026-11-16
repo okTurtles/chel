@@ -26,6 +26,15 @@ import type {
   NotificationTypeEnum,
   PubMessage, SubMessage, UnsubMessage
 } from 'npm:@chelonia/lib/pubsub'
+
+// TODO: import these two types from libchelonia when it is updated to have them.
+type JsonSbpInvocation = [selector: string, ...args: JSONType[]]
+type RsiMessage = {
+  type: 'rsi';
+  id: string;
+  data: JsonSbpInvocation
+};
+
 import { postEvent, PushSubscriptionInfo } from './push.ts'
 
 const isPushSubscriptionInfo = (x: unknown): x is PushSubscriptionInfo => {
@@ -173,7 +182,7 @@ interface PushActionMessage {
 interface MessageHandlers {
   [PONG]: (this: WS) => void;
   [PUB]: (this: WS, msg: PubMessage) => void;
-  [RSI]: (this: WS, msg: Message) => Promise<void>;
+  [RSI]: (this: WS, msg: RsiMessage) => Promise<void>;
   [SUB]: (this: WS, msg: SubMessage) => void;
   [KV_FILTER]: (this: WS, msg: SubMessage) => void;
   [UNSUB]: (this: WS, msg: UnsubMessage) => void;
