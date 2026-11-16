@@ -2,31 +2,31 @@ import { createServer as createHttpServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
 import { assertEquals } from 'jsr:@std/assert'
 import sbp from 'npm:@sbp/sbp'
-import { RSI_ERROR, RSI_OK, createServer, type WSS } from '../src/serve/pubsub.ts'
+import { RSI_ERROR, RSI_OK, WS, createServer, type WSS } from '../src/serve/pubsub.ts'
 import '../src/serve/remote-sbp-api.ts'
 
 sbp('sbp/selectors/register', {
-  'pubsub/test/reject' (...args: unknown[]) {
+  'pubsub/test/reject' (socket: WS, ...args: unknown[]) {
     return new Promise((resolve, reject) => reject(args))
   },
-  'pubsub/test/rejectNewError' (message: string) {
+  'pubsub/test/rejectNewError' (socket: WS, message: string) {
     return new Promise((resolve, reject) => reject(new Error(message)))
   },
-  'pubsub/test/return' (...args: unknown[]) {
+  'pubsub/test/return' (socket: WS, ...args: unknown[]) {
     return args
   },
-  'pubsub/test/resolve' (...args: unknown[]) {
+  'pubsub/test/resolve' (socket: WS, ...args: unknown[]) {
     return new Promise(resolve => resolve(args))
   },
-  'pubsub/test/resolveLater' (arg: unknown, delay: number) {
+  'pubsub/test/resolveLater' (socket: WS, arg: unknown, delay: number) {
     return new Promise(resolve => {
       setTimeout(() => resolve(arg), delay)
     })
   },
-  'pubsub/test/throwNewError' (message: string) {
+  'pubsub/test/throwNewError' (socket: WS, message: string) {
     throw new Error(message)
   },
-  'pubsub/test/throwNewErrorAsync' (message: string) {
+  'pubsub/test/throwNewErrorAsync' (socket: WS, message: string) {
     return new Promise(() => {
       throw new Error(message)
     })

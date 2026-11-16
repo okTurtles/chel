@@ -427,7 +427,7 @@ const defaultMessageHandlers: Partial<MessageHandlers> = {
     }
     const [selector, ...args] = data
     try {
-      const rv = await sbp('pubsub/' + selector, ...args)
+      const rv = await sbp('pubsub/' + selector, socket, ...args)
       const response = rv === undefined ? { type: RSI_OK, to: id } : { type: RSI_OK, to: id, data: rv }
       socket.send(JSON.stringify(response))
     } catch (err) {
