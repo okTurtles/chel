@@ -79,6 +79,26 @@ options from its own table, `[database.backendOptions.<backend>]`.
 | `redis` | `url`, starting with `redis://` or `rediss://` |
 | `router` | sends keys to other backends by prefix: each prefix maps to `{ name, options }`, and an entry for `*` takes every other key |
 
+For example, this router keeps uploaded files in their own database. The IDs
+of file manifests start with `zLGQo2DimCH8`, and those of file chunks with
+`zLKHweRGqjMM`. What the server records about each file, like its owner and
+size, stays with every other key in `*`. `chel init` writes the same example,
+commented out.
+
+```toml
+[database]
+backend = "router"
+
+[database.backendOptions.router]
+zLGQo2DimCH8 = { name = "sqlite", options = { filepath = "data/chelonia-files.db" } }
+zLKHweRGqjMM = { name = "sqlite", options = { filepath = "data/chelonia-files.db" } }
+"*" = { name = "sqlite", options = { filepath = "data/chelonia.db" } }
+```
+
+Each key is only looked for in the backend its prefix picks. So set up a
+router before the server has data, or copy the data into it with
+[`chel migrate`](commands.md#chel-migrate).
+
 With any backend but `mem`, `database.lruNumItems` (default `10000`) sets how
 many entries the in-memory cache in front of it holds.
 
