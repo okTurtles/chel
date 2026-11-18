@@ -38,6 +38,7 @@ import { pathToFileURL } from 'node:url'
 import { HTTPException } from 'npm:hono/http-exception'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
+import './remote-sbp-api.ts'
 
 // ============================================================================
 // Module-scope state for the current server run

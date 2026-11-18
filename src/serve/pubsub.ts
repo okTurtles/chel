@@ -4,6 +4,7 @@
 
 import { Buffer } from 'node:buffer'
 import process from 'node:process'
+import sbp from 'npm:@sbp/sbp'
 import { has } from 'npm:turtledash'
 
 /*
@@ -12,7 +13,6 @@ import { has } from 'npm:turtledash'
  */
 
 import {
-  createClient,
   createKvMessage,
   createMessage,
   messageParser,
@@ -26,6 +26,15 @@ import type {
   NotificationTypeEnum,
   PubMessage, SubMessage, UnsubMessage
 } from 'npm:@chelonia/lib/pubsub'
+
+// TODO: import these two types from libchelonia when it is updated to have them.
+type JsonSbpInvocation = [selector: string, ...args: JSONType[]]
+type RsiMessage = {
+  type: 'rsi';
+  id: string;
+  data: JsonSbpInvocation
+};
+
 import { postEvent, PushSubscriptionInfo } from './push.ts'
 
 const isPushSubscriptionInfo = (x: unknown): x is PushSubscriptionInfo => {
@@ -46,6 +55,10 @@ const { bold } = chalk
 
 const { PING, PONG, PUB, SUB, UNSUB, KV_FILTER } = NOTIFICATION_TYPE
 const { ERROR, OK } = RESPONSE_TYPE
+// For 'remote SBP invocation'.
+export const RSI = 'rsi'
+export const RSI_ERROR = 'rsi-error'
+export const RSI_OK = 'rsi-ok'
 
 const defaultOptions = {
   logPingRounds: process.env.NODE_ENV !== 'production' && !process.env.CI,
@@ -76,7 +89,7 @@ log.error = (error: unknown, ...args: unknown[]) => logger.error(error, bold.red
 // ====== API ====== //
 
 // Re-export some useful things from the shared module.
-export { createClient, createKvMessage, createMessage, NOTIFICATION_TYPE, REQUEST_TYPE, RESPONSE_TYPE }
+export { createKvMessage, createMessage, NOTIFICATION_TYPE, REQUEST_TYPE, RESPONSE_TYPE }
 
 export function createErrorResponse (data: JSONType): string {
   return JSON.stringify({ type: ERROR, data })
@@ -169,6 +182,7 @@ interface PushActionMessage {
 interface MessageHandlers {
   [PONG]: (this: WS) => void;
   [PUB]: (this: WS, msg: PubMessage) => void;
+  [RSI]: (this: WS, msg: RsiMessage) => Promise<void>;
   [SUB]: (this: WS, msg: SubMessage) => void;
   [KV_FILTER]: (this: WS, msg: SubMessage) => void;
   [UNSUB]: (this: WS, msg: UnsubMessage) => void;
@@ -402,6 +416,26 @@ const defaultMessageHandlers: Partial<MessageHandlers> = {
     const { server } = this
     const subscribers = server.subscribersByChannelID[msg.channelID]
     server.broadcast(msg, { to: subscribers ?? [] })
+  },
+
+  async [RSI] ({ id, data }) {
+    const socket = this
+    if (!Array.isArray(data)) {
+      return socket.send(JSON.stringify(
+        { type: RSI_ERROR, to: id, data: 'Field "data" must be a [selector, ...args] array.' }
+      ))
+    }
+    const [selector, ...args] = data
+    try {
+      const rv = await sbp('pubsub/' + selector, socket, ...args)
+      const response = rv === undefined ? { type: RSI_OK, to: id } : { type: RSI_OK, to: id, data: rv }
+      socket.send(JSON.stringify(response))
+    } catch (err) {
+      // Be careful in case we got e.g. a non-error-like promise rejection from the SBP invocation,
+      const data = (err as Error)?.message ?? ''
+      if (!data) console.warn(`[pubsub] Selector 'pubsub/${selector}' threw or rejected with no error message.`)
+      socket.send(JSON.stringify({ type: RSI_ERROR, to: id, data }))
+    }
   },
 
   [SUB] ({ channelID, kvFilter }: SubMessage) {
