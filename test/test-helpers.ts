@@ -7,7 +7,7 @@
 // What lives here is the scaffolding that was previously copy-pasted per file
 // and had already started to drift (one copy of `withTempDir` resolved its
 // directory to an absolute path, two others did not).
-import { resolve } from 'jsr:@std/path/'
+import { resolve } from 'jsr:@std/path'
 
 // Scratch space inside the project, so the main test task's `--allow-write=.`
 // covers it without widening the grant to the OS temp dir.

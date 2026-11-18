@@ -9,7 +9,7 @@ import {
   startTestServer,
   stopTestServer
 } from './routes-test-helpers.ts'
-import { CS } from 'npm:@chelonia/lib/zkppConstants'
+import { CS } from '@chelonia/lib/zkppConstants'
 
 async function zkppFullFlow (baseURL: string, contentType: 'json' | 'form'): Promise<void> {
   const keyPair = nacl.box.keyPair()

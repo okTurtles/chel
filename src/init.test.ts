@@ -1,7 +1,7 @@
 import { assert, assertEquals, assertRejects } from 'jsr:@std/assert'
 import * as path from 'jsr:@std/path'
 import * as toml from 'npm:smol-toml'
-import { createCID, multicodes } from 'npm:@chelonia/lib/functions'
+import { createCID, multicodes } from '@chelonia/lib/functions'
 import { init } from './init.ts'
 import { SERVER_DEFAULTS } from './parseConfig.ts'
 import RouterBackend from './serve/database-router.ts'

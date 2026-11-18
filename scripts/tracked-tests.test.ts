@@ -4,7 +4,7 @@
 // is missing for everybody else, and a `deno.json` task naming the file fails
 // with a module-resolution error rather than a test failure.
 import { assertEquals } from 'jsr:@std/assert'
-import { fromFileUrl } from 'jsr:@std/path/'
+import { fromFileUrl } from 'jsr:@std/path'
 
 // Mirrors deno.json's lint exclusions plus the generated and scratch trees:
 // none of them hold sources of ours.

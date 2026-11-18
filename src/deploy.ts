@@ -1,6 +1,6 @@
 // chel deploy <url-or-dir-or-sqlitedb> <contract-manifest.json> [<manifest2.json> [<manifest3.json> ...]]
 
-import * as path from 'jsr:@std/path/'
+import * as path from 'jsr:@std/path'
 import * as z from 'npm:zod'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { upload } from './upload.ts'

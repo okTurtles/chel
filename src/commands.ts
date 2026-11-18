@@ -1,5 +1,5 @@
 // @deno-types="npm:@types/yargs"
-import type { ArgumentsCamelCase, CommandModule as YCommandModule } from 'npm:yargs'
+import type { ArgumentsCamelCase, CommandModule as YCommandModule } from 'yargs'
 export type CommandModule<T, U> = Omit<YCommandModule<T, U>, 'handler'> & {
   handler?: YCommandModule<T, U>['handler']
   postHandler: YCommandModule<T, U>['handler']

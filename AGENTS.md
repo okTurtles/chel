@@ -93,19 +93,25 @@ test/                    # Test suites; fixtures live in test/assets/
 
 ```typescript
 // Deno standard library
-import * as path from 'jsr:@std/path/'
+import * as path from 'jsr:@std/path'
 import { assertEquals } from 'jsr:@std/assert'
 import * as colors from 'jsr:@std/fmt/colors'
 
 // npm packages (prefixed with npm:)
 import sbp from 'npm:@sbp/sbp'
 import * as z from 'npm:zod'
-import yargs from 'npm:yargs'
+
+// npm packages imported by subpath use bare names mapped in deno.json
+import { createCID } from '@chelonia/lib/functions'
+import { HTTPException } from 'hono/http-exception'
 
 // Local imports (using ~/ alias)
 import { exit, readJsonFile } from '~/utils.ts'
 import type { CommandModule } from './commands.ts'
 ```
+
+Every subpath import needs a matching `deno.json` `imports` entry: `npm:`/`jsr:` keys ending in `/`
+never match subpaths, so Deno silently resolves them as `@*`.
 
 ## Guidelines
 

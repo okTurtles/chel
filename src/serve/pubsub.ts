@@ -19,13 +19,13 @@ import {
   NOTIFICATION_TYPE,
   REQUEST_TYPE,
   RESPONSE_TYPE
-} from 'npm:@chelonia/lib/pubsub'
+} from '@chelonia/lib/pubsub'
 
 import type {
   Message,
   NotificationTypeEnum,
   PubMessage, SubMessage, UnsubMessage
-} from 'npm:@chelonia/lib/pubsub'
+} from '@chelonia/lib/pubsub'
 import { postEvent, PushSubscriptionInfo } from './push.ts'
 
 const isPushSubscriptionInfo = (x: unknown): x is PushSubscriptionInfo => {

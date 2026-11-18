@@ -1,7 +1,7 @@
 import { Buffer } from 'node:buffer'
 import { randomBytes, timingSafeEqual } from 'node:crypto'
-import { base64ToBase64url, base64urlToBase64, boxKeyPair, computeCAndHc, decryptSaltUpdate, encryptContractSalt, encryptSaltUpdate, hash, hashRawStringArray, hashStringArray, parseRegisterSalt, randomNonce } from 'npm:@chelonia/lib/zkpp'
-import { AUTHSALT, CONTRACTSALT, SALT_LENGTH_IN_OCTETS, SU } from 'npm:@chelonia/lib/zkppConstants'
+import { base64ToBase64url, base64urlToBase64, boxKeyPair, computeCAndHc, decryptSaltUpdate, encryptContractSalt, encryptSaltUpdate, hash, hashRawStringArray, hashStringArray, parseRegisterSalt, randomNonce } from '@chelonia/lib/zkpp'
+import { AUTHSALT, CONTRACTSALT, SALT_LENGTH_IN_OCTETS, SU } from '@chelonia/lib/zkppConstants'
 import sbp from 'npm:@sbp/sbp'
 import tweetnacl from 'npm:tweetnacl'
 

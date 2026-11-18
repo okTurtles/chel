@@ -10,9 +10,9 @@
 
 import { assertEquals, assertExists, assertStringIncludes } from 'jsr:@std/assert'
 import { CURVE25519XSALSA20POLY1305, EDWARDS25519SHA512BATCH, keygen, keyId, serializeKey } from 'npm:@chelonia/crypto'
-import { SPMessage } from 'npm:@chelonia/lib/SPMessage'
-import { encryptedOutgoingData } from 'npm:@chelonia/lib/encryptedData'
-import { signedOutgoingData } from 'npm:@chelonia/lib/signedData'
+import { SPMessage } from '@chelonia/lib/SPMessage'
+import { encryptedOutgoingData } from '@chelonia/lib/encryptedData'
+import { signedOutgoingData } from '@chelonia/lib/signedData'
 
 import { decryptEnvelopes, loadSecretKeys } from '../src/eventsAfter.ts'
 

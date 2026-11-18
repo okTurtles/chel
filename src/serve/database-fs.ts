@@ -1,7 +1,7 @@
 import type { Buffer } from 'node:buffer'
 import { mkdir, readdir, readFile, rm, unlink, writeFile } from 'node:fs/promises'
 import { basename, dirname, join, normalize, resolve } from 'node:path'
-import { checkKey } from 'npm:@chelonia/lib/db'
+import { checkKey } from '@chelonia/lib/db'
 import { FsOptionsSchema as ConfigSchema, type FsOptions } from './backend-schemas.ts'
 import DatabaseBackend from './DatabaseBackend.ts'
 

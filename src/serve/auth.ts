@@ -1,13 +1,13 @@
-import { verifyShelterAuthorizationHeader } from 'npm:@chelonia/lib/utils'
-import { HTTPException } from 'npm:hono/http-exception'
-import type { Context, MiddlewareHandler } from 'npm:hono'
+import { verifyShelterAuthorizationHeader } from '@chelonia/lib/utils'
+import { HTTPException } from 'hono/http-exception'
+import type { Context, MiddlewareHandler } from 'hono'
 
 export type AuthCredentials = {
   token?: string
   billableContractID?: string
 }
 
-declare module 'npm:hono' {
+declare module 'hono' {
   interface ContextVariableMap {
     credentials: AuthCredentials
     authStrategy: string

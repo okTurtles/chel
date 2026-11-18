@@ -32,7 +32,7 @@
 // Set CHEL_FORCE_COMPILE=1 to ignore the cache and recompile everything.
 
 import { encodeHex } from 'jsr:@std/encoding/hex'
-import { dirname } from 'jsr:@std/path/'
+import { dirname } from 'jsr:@std/path'
 import { BIN_DIR, BUILD_DIR, STAMP_DIR } from './paths.ts'
 import {
   ALL_NATIVE_ADDON_PATHS,
