@@ -11,7 +11,9 @@ type Config = {
 
 // Which database an entry opens. SQLite files are compared by their real
 // path, so two spellings of one file match. Other backends match when their
-// options do.
+// options do. Sorting only the top-level keys is enough because every
+// backend's options are flat (see backend-schemas.ts); a backend with nested
+// options would need a deeper sort here.
 const databaseOf = ({ name, options }: ConfigEntry): string =>
   name === 'sqlite'
     ? `sqlite:${sqliteFilepath(options as { filepath?: string })}`
@@ -68,6 +70,9 @@ export default class RouterBackend extends DatabaseBackend {
       let backend = opened.get(databaseOf(entry))
       if (!backend) {
         backend = await openBackend(entry)
+        // Worked out again on purpose: the file may only exist now, so this
+        // gives its real path even if this entry reached it through a
+        // symlink or another letter case, and later entries can match it
         opened.set(databaseOf(entry), backend)
       }
       this.backends[keyPrefix] = backend
