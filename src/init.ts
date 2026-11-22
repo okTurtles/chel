@@ -83,6 +83,15 @@ backend = ${tomlValue(d.database.backend)}
 #
 # [database.backendOptions.redis]
 # url = "redis://localhost:6379"
+#
+# The router picks a backend by how each key starts. This one keeps uploaded
+# files (manifests start with zLGQo2DimCH8, chunks with zLKHweRGqjMM) in their
+# own database, and "*" takes every other key. Set it up before the server has
+# data: each key is only looked for in the backend its prefix picks.
+# [database.backendOptions.router]
+# zLGQo2DimCH8 = { name = "sqlite", options = { filepath = "data/chelonia-files.db" } }
+# zLKHweRGqjMM = { name = "sqlite", options = { filepath = "data/chelonia-files.db" } }
+# "*" = { name = "sqlite", options = { filepath = "data/chelonia.db" } }
 `
 }
 

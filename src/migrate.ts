@@ -2,15 +2,13 @@
 
 import * as colors from 'jsr:@std/fmt/colors'
 import type { Buffer } from 'node:buffer'
-import { realpathSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
-import { resolve } from 'node:path'
 import process from 'node:process'
 import sbp from 'npm:@sbp/sbp'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import type DatabaseBackend from './serve/DatabaseBackend.ts'
-import { SQLITE_DEFAULT_FILEPATH } from './serve/backend-schemas.ts'
 import { closeDB, initDB } from './serve/database.ts'
+import { sqliteFilepath as filepathOf } from './serve/sqlite-filepath.ts'
 import { exit, isValidKey } from './utils.ts'
 import { validateParsedConfig } from './validateConfig.ts'
 // @deno-types="npm:@types/nconf"
@@ -27,29 +25,6 @@ type Params = { from: string; fromConfig?: string; to: string; toConfig?: string
 type SqliteOptionsLike = { filepath?: string }
 type RouterEntryLike = { name?: string; options?: SqliteOptionsLike }
 type BackendOptionsLike = SqliteOptionsLike | Record<string, RouterEntryLike> | undefined
-
-// Canonicalizes a filepath for same-file comparison. resolve() alone is
-// lexical, which is not enough on two counts: on case-insensitive
-// filesystems (the macOS and Windows defaults) two spellings can name one
-// file, and a symlink can name the source file from somewhere else.
-// realpathSync.native answers both, returning the path the filesystem itself
-// recognizes (including the on-disk case). A path that does not exist yet has
-// no real path to ask for; it cannot be the already-opened source file in
-// that case, so the lexical form stands in.
-function canonicalFilepath (filepath: string): string {
-  const resolved = resolve(filepath)
-  try {
-    return realpathSync.native(resolved)
-  } catch {
-    return resolved
-  }
-}
-
-// An omitted filepath resolves the way SqliteBackend itself resolves it, via
-// the constant the backend derives its own defaults from.
-function filepathOf (options: SqliteOptionsLike | undefined): string {
-  return canonicalFilepath(options?.filepath || SQLITE_DEFAULT_FILEPATH)
-}
 
 // Every SQLite file `backend` would open, deduplicated. A router counts: it
 // delegates reads and writes (including the `iterKeys` cursor the guard below

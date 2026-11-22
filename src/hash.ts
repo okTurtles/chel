@@ -1,4 +1,4 @@
-import { multicodes } from 'npm:@chelonia/lib/functions'
+import { multicodes } from '@chelonia/lib/functions'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { createEntryFromFile } from './utils.ts'
 

@@ -19,13 +19,13 @@ import {
   NOTIFICATION_TYPE,
   REQUEST_TYPE,
   RESPONSE_TYPE
-} from 'npm:@chelonia/lib/pubsub'
+} from '@chelonia/lib/pubsub'
 
 import type {
   Message,
   NotificationTypeEnum,
   PubMessage, SubMessage, UnsubMessage
-} from 'npm:@chelonia/lib/pubsub'
+} from '@chelonia/lib/pubsub'
 
 // TODO: import these two types from libchelonia when it is updated to have them.
 type JsonSbpInvocation = [selector: string, ...args: JSONType[]]

@@ -1,5 +1,5 @@
 import { Buffer } from 'node:buffer'
-import { AUTHSALT, CONTRACTSALT, CS, SALT_LENGTH_IN_OCTETS, SU } from 'npm:@chelonia/lib/zkppConstants'
+import { AUTHSALT, CONTRACTSALT, CS, SALT_LENGTH_IN_OCTETS, SU } from '@chelonia/lib/zkppConstants'
 import tweetnacl from 'npm:tweetnacl'
 import { closeDB, initDB } from './database.ts'
 

@@ -4,7 +4,7 @@
 //       contracts to the same folder as --out.
 
 import * as colors from 'jsr:@std/fmt/colors'
-import * as path from 'jsr:@std/path/'
+import * as path from 'jsr:@std/path'
 import {
   EDWARDS25519SHA512BATCH,
   deserializeKey,
@@ -12,7 +12,7 @@ import {
   serializeKey,
   sign
 } from 'npm:@chelonia/crypto'
-import { multicodes } from 'npm:@chelonia/lib/functions'
+import { multicodes } from '@chelonia/lib/functions'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { hash } from './hash.ts'
 import { exit, readJsonFile, revokeNet } from './utils.ts'

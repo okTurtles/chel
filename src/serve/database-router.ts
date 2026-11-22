@@ -2,10 +2,37 @@ import type { Buffer } from 'node:buffer'
 import { RouterOptionsSchema as ConfigSchema } from './backend-schemas.ts'
 import DatabaseBackend from './DatabaseBackend.ts'
 import { tagBackendError } from './db-errors.ts'
+import { sqliteFilepath } from './sqlite-filepath.ts'
 
 type ConfigEntry = { name: string; options: Record<string, unknown> }
 type Config = {
   [key: string]: ConfigEntry
+}
+
+// Which database an entry opens. SQLite files are compared by their real
+// path, so two spellings of one file match. Other backends match when their
+// options do. Sorting only the top-level keys is enough because every
+// backend's options are flat (see backend-schemas.ts); a backend with nested
+// options would need a deeper sort here.
+const databaseOf = ({ name, options }: ConfigEntry): string =>
+  name === 'sqlite'
+    ? `sqlite:${sqliteFilepath(options as { filepath?: string })}`
+    : `${name}:${JSON.stringify(options, Object.keys(options).sort())}`
+
+async function openBackend ({ name, options }: ConfigEntry): Promise<DatabaseBackend> {
+  let Ctor
+  try {
+    Ctor = (await import(`./database-${name}.ts`)).default
+  } catch (e) {
+    throw tagBackendError(name, e)
+  }
+  const backend = new Ctor(options)
+  try {
+    await backend.init()
+  } catch (e) {
+    throw tagBackendError(name, e)
+  }
+  return backend
 }
 
 export default class RouterBackend extends DatabaseBackend {
@@ -32,25 +59,24 @@ export default class RouterBackend extends DatabaseBackend {
   }
 
   async init (): Promise<void> {
-    // Init backends
     this.backends = Object.create(null) as { [key: string]: DatabaseBackend }
-    const entries = Object.entries(this.config)
-    await Promise.all(entries.map(async entry => {
-      const [keyPrefix, { name, options }] = entry
-      let Ctor
-      try {
-        Ctor = (await import(`./database-${name}.ts`)).default
-      } catch (e) {
-        throw tagBackendError(name, e)
-      }
-      const backend = new Ctor(options)
-      try {
-        await backend.init()
-      } catch (e) {
-        throw tagBackendError(name, e)
+    // Prefixes that point at the same database share one backend. With one
+    // each, iterKeys and keyCount would go through that database once per
+    // prefix, and `chel migrate` would copy its keys more than once.
+    const opened = new Map<string, DatabaseBackend>()
+    // One at a time, so a file an earlier entry created has a real path by
+    // the time a later entry is compared with it
+    for (const [keyPrefix, entry] of Object.entries(this.config)) {
+      let backend = opened.get(databaseOf(entry))
+      if (!backend) {
+        backend = await openBackend(entry)
+        // Worked out again on purpose: the file may only exist now, so this
+        // gives its real path even if this entry reached it through a
+        // symlink or another letter case, and later entries can match it
+        opened.set(databaseOf(entry), backend)
       }
       this.backends[keyPrefix] = backend
-    }))
+    }
   }
 
   async readData (key: string): Promise<Buffer | string | void> {

@@ -3,13 +3,13 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
-import { Hono } from 'npm:hono'
-import { serveStatic } from 'npm:hono/deno'
-import { createAdaptorServer, type ServerType } from 'npm:@hono/node-server'
-import { etag } from 'npm:hono/etag'
+import { Hono } from 'hono'
+import { serveStatic } from 'hono/deno'
+import { createAdaptorServer, type ServerType } from '@hono/node-server'
+import { etag } from 'hono/etag'
 // @deno-types="npm:@types/nconf"
 import nconf from 'npm:nconf'
-import { maybeParseCID, multicodes } from 'npm:@chelonia/lib/functions'
+import { maybeParseCID, multicodes } from '@chelonia/lib/functions'
 import { contractManifest, listContracts, listUsers, overview } from './dashboard-data.ts'
 
 // Both sides are hashed with the same random salt before comparing, so they

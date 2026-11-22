@@ -1,10 +1,10 @@
 // deno-lint-ignore-file no-this-alias
 /* eslint-disable @typescript-eslint/no-this-alias */
 import { Buffer } from 'node:buffer'
-import { aes128gcm } from 'npm:@apeleghq/rfc8188/encodings'
-import encrypt from 'npm:@apeleghq/rfc8188/encrypt'
-import { getSubscriptionId } from 'npm:@chelonia/lib/functions'
-import { PUSH_SERVER_ACTION_TYPE, REQUEST_TYPE, createMessage } from 'npm:@chelonia/lib/pubsub'
+import { aes128gcm } from '@apeleghq/rfc8188/encodings'
+import encrypt from '@apeleghq/rfc8188/encrypt'
+import { getSubscriptionId } from '@chelonia/lib/functions'
+import { PUSH_SERVER_ACTION_TYPE, REQUEST_TYPE, createMessage } from '@chelonia/lib/pubsub'
 import sbp from 'npm:@sbp/sbp'
 import nconf from 'npm:nconf'
 import { appendToIndexFactory, removeFromIndexFactory } from './database.ts'

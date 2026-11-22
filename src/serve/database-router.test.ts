@@ -1,4 +1,5 @@
-import { assertThrows } from 'jsr:@std/assert'
+import { assertEquals, assertNotStrictEquals, assertStrictEquals, assertThrows } from 'jsr:@std/assert'
+import { basename } from 'node:path'
 import { cloneDeep, omit } from 'npm:turtledash'
 import RouterBackend from './database-router.ts'
 import { RouterOptionsSchema } from './backend-schemas.ts'
@@ -113,5 +114,57 @@ Deno.test({
       // Teardown
       await db.clear()
     }
+  }
+})
+
+// File manifests and chunks: the router example `chel init` writes sends both
+// to one file
+const MANIFEST = 'zLGQo2DimCH8'
+const CHUNK = 'zLKHweRGqjMM'
+
+Deno.test({
+  name: 'RouterBackend with prefixes on the same database',
+  async fn (t: Deno.TestContext) {
+    const dir = `./test/temp/router-shared-${globalThis.crypto.randomUUID()}`
+    const sqlite = (filepath: string) => ({ name: 'sqlite', options: { filepath } })
+    const fs = (dirname: string) => ({ name: 'fs', options: { dirname, skipFsCaseSensitivityCheck: true } })
+
+    await t.step('opens a shared SQLite file once, and lists and counts its keys once', async () => {
+      const db = new RouterBackend({
+        [MANIFEST]: sqlite(`${dir}/files.db`),
+        // The same file, spelled another way
+        [CHUNK]: sqlite(`${dir}/../${basename(dir)}/./files.db`),
+        '*': sqlite(`${dir}/main.db`)
+      })
+      await db.init()
+      try {
+        assertStrictEquals(db.backends[MANIFEST], db.backends[CHUNK])
+        assertNotStrictEquals(db.backends[MANIFEST], db.backends['*'])
+
+        const keys = [MANIFEST, CHUNK, '_private_size_'].map(randomKeyWithPrefix)
+        for (const key of keys) await db.writeData(key, 'x')
+        assertEquals(await db.keyCount(), keys.length)
+        assertEquals((await Array.fromAsync(db.iterKeys())).sort(), keys.sort())
+      } finally {
+        await db.close()
+      }
+    })
+
+    await t.step('shares other backends when their options match, in any order', async () => {
+      const db = new RouterBackend({
+        [MANIFEST]: fs(`${dir}/files`),
+        [CHUNK]: { name: 'fs', options: { skipFsCaseSensitivityCheck: true, dirname: `${dir}/files` } },
+        '*': fs(`${dir}/main`)
+      })
+      await db.init()
+      try {
+        assertStrictEquals(db.backends[MANIFEST], db.backends[CHUNK])
+        assertNotStrictEquals(db.backends[MANIFEST], db.backends['*'])
+      } finally {
+        await db.close()
+      }
+    })
+
+    await Deno.remove(dir, { recursive: true }).catch(() => {})
   }
 })

@@ -10,9 +10,9 @@
 // size accounting can be tested directly, without an HTTP server.
 
 import { Buffer } from 'node:buffer'
-import { maybeParseCID, multicodes } from 'npm:@chelonia/lib/functions'
+import { maybeParseCID, multicodes } from '@chelonia/lib/functions'
 import sbp from 'npm:@sbp/sbp'
-import { HTTPException } from 'npm:hono/http-exception'
+import { HTTPException } from 'hono/http-exception'
 
 // The hashes in a manifest body are attacker-influenced (whoever deployed the
 // manifest wrote them) and are about to be used as database keys, so an

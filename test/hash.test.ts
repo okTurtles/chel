@@ -1,7 +1,7 @@
 import { assertEquals } from 'jsr:@std/assert'
-import { multicodes } from 'npm:@chelonia/lib/functions'
-import { base58btc } from 'npm:multiformats/bases/base58'
-import { CID } from 'npm:multiformats/cid'
+import { multicodes } from '@chelonia/lib/functions'
+import { base58btc } from 'multiformats/bases/base58'
+import { CID } from 'multiformats/cid'
 import { hash } from '../src/hash.ts'
 
 const argsHelper = (filename: string) => ({

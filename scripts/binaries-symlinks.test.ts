@@ -12,7 +12,7 @@
 // the released bytes) and the fingerprint (or the change never invalidates the
 // cache).
 import { assertEquals } from 'jsr:@std/assert'
-import { resolve } from 'jsr:@std/path/'
+import { resolve } from 'jsr:@std/path'
 import { assertNativeAddonsPresent, computeFingerprint, normalizeMtimes } from './binaries.ts'
 import {
   FAKE_COMPILE_FLAGS as FLAGS,

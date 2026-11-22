@@ -1,8 +1,11 @@
 import { assert, assertEquals, assertRejects } from 'jsr:@std/assert'
 import * as path from 'jsr:@std/path'
 import * as toml from 'npm:smol-toml'
+import { createCID, multicodes } from '@chelonia/lib/functions'
 import { init } from './init.ts'
 import { SERVER_DEFAULTS } from './parseConfig.ts'
+import RouterBackend from './serve/database-router.ts'
+import type SqliteBackend from './serve/database-sqlite.ts'
 import { validateTomlConfig } from './validateConfig.ts'
 
 // Run `chel init` against a clean temporary working directory so the test
@@ -174,6 +177,49 @@ Deno.test({
         const result = validateTomlConfig(parsed)
         assertEquals(result.errors, [])
         assertEquals(result.warnings, [])
+      })
+    })
+
+    // The commented router example has to work as written: uncommented, it is
+    // valid, and its prefixes are the ones uploaded files really start with.
+    await t.step('the router example works once uncommented', async () => {
+      await withTempCwd(async () => {
+        await init({} as never)
+        const lines = (await Deno.readTextFile('chel.toml')).split('\n')
+
+        // Uncomment the block the way someone would by hand
+        const start = lines.indexOf('# [database.backendOptions.router]')
+        assert(start !== -1, 'expected a commented router block')
+        for (let i = start; lines[i]?.startsWith('# '); i++) lines[i] = lines[i].slice(2)
+        const backendLine = lines.indexOf(`backend = "${SERVER_DEFAULTS.database.backend}"`)
+        assert(backendLine !== -1, 'expected the active backend line')
+        lines[backendLine] = 'backend = "router"'
+
+        const parsed = toml.parse(lines.join('\n')) as {
+          database: {
+            backend: string
+            backendOptions: { router: Record<string, { name: string; options: Record<string, unknown> }> }
+          }
+        }
+        const result = validateTomlConfig(parsed)
+        assertEquals(result.errors, [])
+        assertEquals(result.warnings, [])
+        assertEquals(parsed.database.backend, 'router')
+
+        const db = new RouterBackend(parsed.database.backendOptions.router)
+        await db.init()
+        try {
+          const fileOf = (key: string) => (db.lookupBackend(key) as SqliteBackend).filename
+          const manifest = createCID('manifest', multicodes.SHELTER_FILE_MANIFEST)
+          assertEquals(fileOf(manifest), 'chelonia-files.db')
+          assertEquals(fileOf(createCID('chunk', multicodes.SHELTER_FILE_CHUNK)), 'chelonia-files.db')
+          // Everything else, like contracts and the server's own keys, even
+          // the ones about a file
+          assertEquals(fileOf(createCID('contract', multicodes.SHELTER_CONTRACT_DATA)), 'chelonia.db')
+          assertEquals(fileOf(`_private_deletionTokenDgst_${manifest}`), 'chelonia.db')
+        } finally {
+          await db.close()
+        }
       })
     })
   }

@@ -21,7 +21,7 @@ import { createAliasReplacer } from './utils.ts'
 
 // @vue/component-compiler for Vue 2 SFC compilation
 import * as componentCompiler from 'npm:@vue/component-compiler@4.2.4'
-import type * as esbuild from 'npm:esbuild@0.25.6'
+import type * as esbuild from 'npm:esbuild'
 
 interface VuePluginOptions {
   aliases?: Record<string, string>

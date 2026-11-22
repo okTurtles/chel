@@ -2,8 +2,8 @@ import process from 'node:process'
 import * as commands from './commands.ts'
 // @deno-types="npm:@types/nconf"
 // @deno-types="npm:@types/yargs"
-import yargs, { type ArgumentsCamelCase, type CommandModule as YCommandModule } from 'npm:yargs'
-import { hideBin } from 'npm:yargs/helpers'
+import yargs, { type ArgumentsCamelCase, type CommandModule as YCommandModule } from 'yargs'
+import { hideBin } from 'yargs/helpers'
 import { DEFAULT_CONFIG_FILE } from './config-defaults.ts'
 
 // Use an object to hold the handler to ensure live binding works

@@ -1,7 +1,7 @@
 import * as colors from 'jsr:@std/fmt/colors'
-import * as path from 'jsr:@std/path/'
+import * as path from 'jsr:@std/path'
 import { join } from 'node:path'
-import { createCID } from 'npm:@chelonia/lib/functions'
+import { createCID } from '@chelonia/lib/functions'
 
 // For now our entry keys are CIDs serialized to base58btc and our values are always Uint8Array instances.
 export type Entry = [string, Uint8Array<ArrayBuffer>]

@@ -26,8 +26,7 @@
     "npm:vue-router": "npm:vue-router@3.6.5",
     "npm:vuelidate": "npm:vuelidate@0.7.6",
     "npm:vuex": "npm:vuex@3.6.0",
-    "npm:turtledash": "npm:turtledash@1.0.3",
-    "npm:@chelonia/lib/": "npm:@chelonia/lib@1.4.4/"
+    "npm:turtledash": "npm:turtledash@1.0.3"
   },
   "lint": {
     "rules": {

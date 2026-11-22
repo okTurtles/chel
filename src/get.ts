@@ -7,7 +7,7 @@ If it's a binary file, for example an image, the command will be used like this:
 chel get https://url.com mygreatlongkey > file.png
 */
 
-import { writeAll } from 'jsr:@std/io/'
+import { writeAll } from 'jsr:@std/io'
 import sbp from 'npm:@sbp/sbp'
 import type { ArgumentsCamelCase, CommandModule } from './commands.ts'
 import { closeDB, initDB } from './serve/database.ts'
