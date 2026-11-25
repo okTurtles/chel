@@ -70,10 +70,37 @@ NODE_ENV=production chel serve --app-manifest chelonia.json dist
   from the app folder, unless `--app-manifest` points somewhere else. `chel pin` writes it in the current folder, hence the
   flag when the app is in `dist/`. Without it, the server only logs a warning,
   and clients get no version information.
-- **Behind a reverse proxy.** chel limits signups per client address, and
-  takes that address from the `X-Real-IP` header when a request has one. So
-  the proxy must set `X-Real-IP` and pass websocket upgrades through, and
-  clients must not be able to reach chel directly: they could send their own
-  `X-Real-IP` and get around the limits.
+- **Behind a reverse proxy.** The proxy must set `X-Real-IP` and pass the
+  websocket through, and clients must not reach chel directly. See
+  [behind a reverse proxy](#behind-a-reverse-proxy).
 - **Backups.** Every account is in the database, so back it up, together with
   `chel.toml` and its `server_id`.
+
+## Behind a reverse proxy
+
+chel takes each client's address from the `X-Real-IP` header, and from the
+connection when there is none. The signup limits go by that address, and
+some log lines show it. The limits never read `X-Forwarded-For`. So if the
+proxy doesn't set `X-Real-IP`, every visitor has the proxy's address and they
+all share one limit. And nginx passes on an `X-Real-IP` that a visitor sends,
+so anyone could get around the limit.
+
+For nginx on the same machine as chel:
+
+```nginx
+location / {
+  proxy_pass http://127.0.0.1:8000;
+  proxy_set_header Host $host;
+  # Replaces any X-Real-IP the client sent
+  proxy_set_header X-Real-IP $remote_addr;
+  # The websocket
+  proxy_http_version 1.1;
+  proxy_set_header Upgrade $http_upgrade;
+  proxy_set_header Connection "upgrade";
+}
+```
+
+Then make sure nginx is the only way in, or anyone could send chel their own
+`X-Real-IP` and get around the limits. Keep chel's port closed to the outside,
+or set `host = "127.0.0.1"` under `[server]` in `chel.toml` so it only listens
+on this machine.
