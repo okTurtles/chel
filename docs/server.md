@@ -79,7 +79,7 @@ NODE_ENV=production chel serve --app-manifest chelonia.json dist
 ## Behind a reverse proxy
 
 chel takes each client's address from the `X-Real-IP` header, and from the
-connection when there is none. The signup limits count by that address, and
+connection when there is none. The signup limits go by that address, and
 some log lines show it. The limits never read `X-Forwarded-For`. So if the
 proxy doesn't set `X-Real-IP`, every visitor has the proxy's address and they
 all share one limit. And nginx passes on an `X-Real-IP` that a visitor sends,
